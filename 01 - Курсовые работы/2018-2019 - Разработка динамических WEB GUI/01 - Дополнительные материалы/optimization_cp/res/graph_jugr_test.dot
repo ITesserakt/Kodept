@@ -1,0 +1,16 @@
+digraph JUGR_GraphModel
+{
+	HOM_POST [predicate=CHECK_BC]
+	CHECK_BC [type=boolean, binname=jugr, entry_func=predicate_1]
+	FUNC_1 [binname=jugr, entry_func=function_1]
+	FUNC_2 [binname=jugr, entry_func=function_2]
+	FUNC_3 [binname=jugr, entry_func=function_3]
+ 	FINALIZE [binname=jugr, entry_func=function_3]
+
+	__BEGIN__ -> INPUT
+	INPUT -> HOM_POST [edge=FUNC_1]
+	HOM_POST -> SOLVED_2 [on_predicate_value=false, edge=FUNC_2]
+	HOM_POST -> SOLVED_3 [on_predicate_value=true, edge=FUNC_3]
+	SOLVED_2 -> FINILEZED [edge=FINALIZE]
+	FINILEZED -> __END__
+}
