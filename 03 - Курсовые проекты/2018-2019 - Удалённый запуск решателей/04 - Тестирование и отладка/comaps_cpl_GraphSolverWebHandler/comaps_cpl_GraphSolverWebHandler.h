@@ -84,8 +84,6 @@ public:
     */
     virtual void execute(cls_AnyMap& p_input, ifc_ActionItem::tdf_onMessageClb p_MessCallback);
 
-    void onTableReceived(boost::shared_ptr< cls_SQLTable > p_table);
-
 private:
     ifc_ActionItem::tdf_onMessageClb m_callback;
 };
