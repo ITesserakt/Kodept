@@ -40,6 +40,7 @@
 #include <boost/bind.hpp>
 #include <anymap.h>
 #include <iniparser.h>
+#include <fstream>
 
 using namespace std;
 using namespace ini;
@@ -52,27 +53,67 @@ void cls_XDBTDumperPlugin::execute(cls_AnyMap& p_input, ifc_ActionItem::tdf_onMe
     int err = 0;
 
     if(!p_input){
+
         err = ecEmptyData;
+        
+        COUT_LOG << "Solver execution didn`t done. Error code: " << err << endl;
+        (*answer)[ "ERROR_CODE" ] = static_cast< int >(err);
+        m_callback(boost::shared_ptr< cls_AnyMap >(answer)); 
+        return;
     }
+    else{
+        string adotFile = p_input["ADOT_FNAME"];
 
-    string adotFile = p_input["ADOT_FNAME"];
+        if(!adotFile){
 
-    if(!adotFile){
+            err = ecFileNotFound;
 
-        err = ecFileNotFound;
+            
+            COUT_LOG << "Solver execution didn`t done. Error code: " << err << endl;
+            (*answer)[ "ERROR_CODE" ] = static_cast< int >(err);
+            m_callback(boost::shared_ptr< cls_AnyMap >(answer)); 
+            return;
+        }
+        else{
+
+            ifstream file1("ADOT_FNAME"), file2("IN_FNAME");
+            string test_read;
+            if(!(getline(file1, test_read)){
+
+                err = ecFileRead;
+
+                
+                COUT_LOG << "Solver execution didn`t done. Error code: " << err << endl;
+                (*answer)[ "ERROR_CODE" ] = static_cast< int >(err);
+                m_callback(boost::shared_ptr< cls_AnyMap >(answer)); 
+                return;
+            }
+            else if(!(getline(file2, test_read)){
+
+                err = ecFileRead;
+
+                
+                COUT_LOG << "Solver execution didn`t done. Error code: " << err << endl;
+                (*answer)[ "ERROR_CODE" ] = static_cast< int >(err);
+                m_callback(boost::shared_ptr< cls_AnyMap >(answer)); 
+                return;
+                
+            }
+
+            std::shared_ptr<com::graph::Node> adotNode = com::graph::loadFromADot(adotFile);
+
+            if(!(adotNode->run(p_input["IN_FNAME":])){
+
+                err = ecExecError;
+
+                            
+                COUT_LOG << "Solver execution didn`t done. Error code: " << err << endl;
+                (*answer)[ "ERROR_CODE" ] = static_cast< int >(err);
+                m_callback(boost::shared_ptr< cls_AnyMap >(answer)); 
+                return;
+            }
+        }
     }
-
-    std::shared_ptr<com::graph::Node> adotNode = com::graph::loadFromADot(adotFile);
-
-    if(!(adotNode->run(p_input["IN_FNAME":])){
-
-        err = ecExecError;
-    }
-
-    COUT_LOG << "Solver execution didn`t done. Error code: " << err << endl;
-    (*answer)[ "ERROR_CODE" ] = static_cast< int >(err);
-    m_callback(boost::shared_ptr< cls_AnyMap >(answer)); 
-    return;
 
 }
 
