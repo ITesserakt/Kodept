@@ -50,6 +50,7 @@ public:
             ecSuccess = 0,
             ecEmptyData = 100,
             ecFileNotFound,
+            ecFileRead,
             ecExecError = 200,
         };
 
