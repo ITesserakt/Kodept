@@ -1,0 +1,30 @@
+digraph JUGR_GraphModel
+{
+	INPUT [predicate=INP]
+	HOM_POST [predicate=CHECK_1]
+	SOLVED_2 [predicate=CHECK_2]
+	SOLVED_3 [predicate=CHECK_3]
+	SOLVED_4 [predicate=CHECK_4]
+	INP [type=boolean, binname=jugr, entry_func=predicate_input]
+	CHECK_1 [type=boolean, binname=jugr, entry_func=predicate_1]
+	CHECK_2 [type=boolean, binname=jugr, entry_func=predicate_2]
+	CHECK_3 [type=boolean, binname=jugr, entry_func=predicate_3]
+	CHECK_4 [type=boolean, binname=jugr, entry_func=predicate_4]
+	FUNC_INP [binnamen=jugr, entry_func=function_input]
+	FUNC_12 [binname=jugr, entry_func=function_12]
+	FUNC_13 [binname=jugr, entry_func=function_13]
+	FUNC_24 [binname=jugr, entry_func=function_24]
+	FUNC_34 [binname=jugr, entry_func=function_34]
+	FUNC_41 [binname=jugr, entry_func=function_41]
+ 	FINALIZE [binname=jugr, entry_func=function_final]
+
+	__BEGIN__ -> INPUT
+	INPUT -> HOM_POST [on_predicate_value=true, edge=FUNC_INP]
+	HOM_POST -> SOLVED_2 [on_predicate_value=true, edge=FUNC_12]
+	HOM_POST -> SOLVED_3 [on_predicate_value=true, edge=FUNC_13]
+	SOLVED_2 -> SOLVED_4 [on_predicate_value=true, edge=FUNC_24]
+	SOLVED_3 -> SOLVED_4 [on_predicate_value=true, edge=FUNC_34]
+	SOLVED_4 -> HOM_POST [on_predicate_value=false, edge=FUNC_41]
+	SOLVED_4 -> FINILEZED [on_predicate_value=true,edge=FINALIZE]
+	FINILEZED -> __END__
+}
