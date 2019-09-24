@@ -1,0 +1,20 @@
+#include <anymap.h>
+//---------------------------------------------------
+//  Определяем стандартную сигнатуру функции-обратчика
+typedef int processorFuncType(AnyMap& );
+//---------------------------------------------------
+//  Определяем стандартную сигнатуру функции-предиката
+typedef bool predicateFuncType(const AnyMap& );
+//---------------------------------------------------
+template<processorFuncType* tf, predicateFuncType* tp>
+int F(AnyMap& p_m)
+{
+	return (tp(p_m))?tf(p_m):tp(p_m);
+}
+//---------------------------------------------------
+
+
+int main()
+{
+
+}
