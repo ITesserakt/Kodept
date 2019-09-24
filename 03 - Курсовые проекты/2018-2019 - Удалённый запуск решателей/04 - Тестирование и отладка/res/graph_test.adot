@@ -1,0 +1,14 @@
+digraph test_R
+{
+	HOM_POST [predicate=CHECK_BC]
+	CHECK_BC [type=boolean, binname=test_R, entry_func=predicate_1]
+	FUNC_1 [binname=test_R, entry_func=function_1]
+	FUNC_2 [binname=test_R, entry_func=function_2]
+ 	FINALIZE [binname=test_R, entry_func=function_3]
+
+	__BEGIN__ -> INPUT
+	INPUT -> HOM_POST [edge=FUNC_1]
+	HOM_POST -> SOLVED_2 [on_predicate_value=false, edge=FUNC_2]
+	SOLVED_2 -> FINALIZED [edge=FINALIZE]
+	FINALIZED -> __END__
+}

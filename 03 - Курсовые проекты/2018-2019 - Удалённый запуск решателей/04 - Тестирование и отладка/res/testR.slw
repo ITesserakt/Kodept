@@ -1,0 +1,11 @@
+[MAIN]//Основные настройки решателя
+SOLVER_SID=[TEST_R]$com.slvrs//Идентификатор решателя
+IN_FNAME=[testR.tsk]//Файл входных данных
+-FINISH_NODE=[FINALIZED]$com.mstts//Конечное состояние
+
+
+
+
+
+
+
