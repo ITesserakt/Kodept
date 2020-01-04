@@ -1,0 +1,39 @@
+variables:
+  PYTHONIOENCODING: "utf-8"
+  LANG: "ru_RU.UTF-8"
+  DB_NAME: "GCDDB"
+  DB_USER: "files_smart_sorter"
+  DB_PASSWORD: "ZIc8837S"
+  DB_HOST: "sa2systems.ru"
+  DB_PORT: "5432"
+  DEST_PATH: "/mnt/sda1_6tb/owncloud_data/$DB_USER/files/"
+  FILE_FORMATS: ".pdf .doc .docx"
+
+stages:
+  - check
+  - deploy
+
+check:
+  stage: check
+#  only:
+#    - $CI_COMMIT_REF_NAME 
+#    - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+  script:
+    - sudo python3 --version
+    - echo -e "CI_BUILDS_DIR=$CI_BUILDS_DIR\n CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME\n PYTHONIOENCODING=$PYTHONIOENCODING\n LANG=$LANG\n DB_NAME=$DB_NAME\n DB_USER=$DB_USER\n DB_PASSWORD=$DB_PASSWORD\n DB_HOST=$DB_HOST\n DB_PORT=$DB_PORT\n LOCAL_GIT_REP_COPY_DIR=$LOCAL_GIT_REP_COPY_DIR\n DEST_PATH=$DEST_PATH\n FILE_FORMATS=$FILE_FORMATS"
+    - whoami
+  
+build:
+  stage: deploy
+#  only:
+#    - $CI_COMMIT_REF_NAME 
+#    - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+  script:
+    - echo "Scanning REP ... copying files ..."
+# 1. gitlab-runner must have rights to write into $DEST_PATH: must be applied by 'setfacl -m "u:gitlab-runner:rwx" files/')
+# 2. In etc/sudoers
+#    gitlab-runner ALL=(root) NOPASSWD: /bin/python3, /bin/chown 
+    - sudo python3 git_cloud.py $DB_NAME $DB_USER $DB_PASSWORD $DB_HOST $DB_PORT $PWD $DEST_PATH $FILE_FORMATS
+# 3. In etc/sudoers
+#    gitlab-runner ALL=(apache) NOPASSWD: /bin/php 
+    - sudo -u apache php /var/www/nextcloud/occ files:scan --path="files_smart_sorter/files"
