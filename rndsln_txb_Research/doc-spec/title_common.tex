@@ -1,0 +1,115 @@
+﻿\thispagestyle{empty}
+
+\vspace*{-\baselineskip}
+\vspace*{-\headheight}
+\vspace*{-\headsep}
+\vspace*{-2pt}
+
+\begin{center}
+
+\begin{textblock}{1}(0,0)
+\rotatebox{90}{\textcolor{gray!20.}{МГТУ им. Н.Э.Баумана, кафедра <<Системы автоматизированного проектирования>> (РК-6), шаблон RNT (размещение sa2tml)}}
+\end{textblock}
+
+{\centering%
+\begin{tabular}{P{0.15\textwidth}P{0.85\textwidth}}
+%\hline
+\smash{%
+		\raisebox{-0.9\height}{%
+		\includegraphics[width=0.15\textwidth]{doc-spec/bmstu.pdf}
+		}}
+ & \UpperFullOrganisationName\newline \FullOrganisationName \\
+\hline
+\multicolumn{1}{p{0.15\textwidth}}{} & \multicolumn{1}{p{0.85\textwidth}}{} \\
+\multicolumn{1}{p{0.15\textwidth}}{ФАКУЛЬТЕТ}	&	\multicolumn{1}{p{0.85\textwidth}}{\Faculty}	\\
+\multicolumn{1}{p{0.15\textwidth}}{КАФЕДРА}	&	\multicolumn{1}{p{0.85\textwidth}}{\Department}	\\
+\end{tabular}}
+
+\vspace{3.5cm}
+
+\Large
+
+\underline{\MakeUppercase{\DocumentType}}
+
+\SubTitle
+
+\vspace{2cm}
+
+\large
+
+\noindent\begin{tabular}{p{0.35\textwidth}p{0.65\textwidth}} 
+Авторы (исследователи):	& \AllAuthors \\[10pt]
+\hline
+Научные руководители:	& \ScientificAdviser \\[10pt]
+\hline
+Консультанты:	& \Consultants \\ 
+\hline
+\end{tabular}
+
+\vspace{7cm}
+
+\City, \BeginYear--\Year
+
+\end{center}
+
+% -------------------------------------------
+% вторая страница, содержащая общую информацию по документу
+\newpage
+\thispagestyle{empty}
+
+{%
+\noindent\begin{tabular}{p{0.05\textwidth}p{0.05\textwidth}} 
+\MakeUppercase{\rndfield} & \\
+%УДК & 519.6 \\
+%ББК & 22.19 \\
+		& С59 \\
+\end{tabular}
+\begin{center}
+
+\vspace{0.5cm}
+
+\RNDCredits
+
+\vspace{2cm}
+
+\textbf{Руководители по направлению:}
+
+\begin{tabular}{p{0.25\textwidth}cp{0.55\textwidth}}
+{СОКОЛОВ,\newline Александр Павлович} & -- & канд.~физ.-мат.~наук, доцент кафедры САПР,\newline \ShortOrganisationName\\[4pt]
+{ПЕРШИН,\newline Антон Юрьевич} & -- & PhD, ассистент кафедры САПР,\newline \ShortOrganisationName\\
+\end{tabular}
+
+\vspace{1.0cm}
+
+\noindent\textbf{Исследователи (студенты кафедры САПР, \ShortOrganisationName):}
+
+\noindent \AllAuthors
+
+\end{center}
+
+\vspace{0.5cm}
+
+\noindent\begin{tabular}{p{0.05\textwidth}p{0.95\textwidth}}
+С59 & \qquad \DocOutReference\newline \PrefaceIntro\newline \TargetAudience \\
+\end{tabular}
+
+\vspace{3mm}
+
+\noindent\begin{tabular}{p{0.8\textwidth}p{0.05\textwidth}p{0.05\textwidth}}
+ & \MakeUppercase{\rndfield} \\
+%& \textbf{УДК} & 519.6 \\
+%& \textbf{ББК} & 22.19 \\
+\end{tabular}
+
+\vfill
+\noindent\begin{tabular}{p{0.45\textwidth}p{0.05\textwidth}p{0.5\textwidth}}
+ & & \copyright \smallskip \AllAuthors, \Year \\
+ & & \\
+ & & \\
+\multicolumn{3}{l}{Сборка: \gitMark} \\
+%\textbf{ISBN 978-5-XXXXXX-XX-X} & & \\
+\end{tabular}
+}
+
+
+
