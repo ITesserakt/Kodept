@@ -1,0 +1,4 @@
+digraph G {
+	rankdir = "BT";
+	a -> b -> c;
+}

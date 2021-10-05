@@ -1,0 +1,8 @@
+digraph G {
+	node[shape=diamond];
+	a [label="Node A"];
+	b [shape=circle];
+	c [color=lightblue];
+	a -> b;
+	a -> c [style=dotted, color=red];
+}

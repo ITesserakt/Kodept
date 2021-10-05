@@ -1,0 +1,94 @@
+digraph BusinessModel {
+	start [
+		shape=invhouse,
+		width=2.5,
+		label="Старт"
+		fillcolor=green3,
+		style=filled
+	];
+
+	node_manager [
+		shape=record,
+		width=2.5,
+		label="{ Менеджер | Создать&#160;проект&#160;договора }",
+		fillcolor=yellow2,
+		style=filled
+	];
+
+	node_director [
+		shape=record,
+		width=2.5,
+		label="{ Руководитель | Утвердить&#160;договор}",
+		fillcolor=yellow2,
+		style=filled
+	];
+
+	is_approved [
+		shape=octagon,
+		width=2.5,
+		label="Договор утвержден"
+		fillcolor=red3,
+		style=filled
+	];
+
+	node_consultant [
+		shape=record,
+		width=2.5,
+		label="{ Юрисконсультант | Проверить&#160;договор}",
+		fillcolor=yellow2,
+		style=filled
+	];
+
+	node_contract_result [
+		shape=record,
+		width=2.5,
+		label="{ Результат&#160;проверки | 
+			<f0>Изменение&#160;условий&#160;договора |
+			<f1>Изменение&#160;формулировок |
+			<f2>Без&#160;изменений}",
+		fillcolor=red3,
+		style=filled
+	];
+
+	node_manager_1 [
+		shape=record,
+		width=2.5,
+		label="{ Менеджер |
+			Доработать&#160;формулировку&#160;договора }",
+		fillcolor=yellow2,
+		style=filled
+	];
+
+	node_secretary [
+		shape=record,
+		width=2.5,
+		label="{ Секретарь |
+			Отправить&#160;договор&#160;клиенту }",
+		fillcolor=yellow2,
+		style=filled
+	];
+
+	end [
+		shape=house,
+		width=2.5,
+		label="Завершение"
+		fillcolor=green3,
+		style=filled
+	];
+
+	start -> node_manager;
+	node_manager -> node_director;
+	node_director -> is_approved;
+	is_approved -> node_manager [
+		xlabel="Нет    "     
+	];
+	is_approved -> node_consultant [
+		label="  Да"
+	];
+	node_consultant -> node_contract_result;
+	node_contract_result:f0 -> node_manager;
+	node_contract_result:f1:e -> node_manager_1;
+	node_contract_result:f2 -> node_secretary;
+	node_manager_1 -> node_consultant;
+	node_secretary -> end;
+}

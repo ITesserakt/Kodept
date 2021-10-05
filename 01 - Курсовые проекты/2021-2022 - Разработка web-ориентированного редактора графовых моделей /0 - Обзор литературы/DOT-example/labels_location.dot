@@ -1,0 +1,7 @@
+digraph G {
+	rankdir="LR";
+	a [xlabel="Vertex A"];
+	a -> b;
+	d [xlabel="Vertex D"];
+	a -> c -> d;
+}
