@@ -1,0 +1,8 @@
+digraph G {
+	rankdir = "LR";
+	node[width=0.15, height=0.15, shape=point];
+	edge[weight=2];
+	1 -> 2 -> 3 -> 4 -> 5;
+	edge[weight=1];
+	2 -> 6 -> 7;
+}

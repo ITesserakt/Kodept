@@ -1,0 +1,6 @@
+digraph G {
+	rankdir = "LR";
+	1 -> 3;
+	2 [label=<<b><i>2</i></b>>];
+	1 -> 2;
+}
