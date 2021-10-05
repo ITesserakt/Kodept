@@ -17,3 +17,4 @@
 *.tmp
 *.glo
 *.vrb*sw*
+*.DS_Store*
