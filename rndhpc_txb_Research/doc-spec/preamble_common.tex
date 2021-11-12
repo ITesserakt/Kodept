@@ -1,11 +1,11 @@
-﻿%----------------------------------------------------------
+%----------------------------------------------------------
 %\usepackage{mathtext}
 \usepackage{amsfonts}
 %\usepackage{amsmath}
 %\usepackage{mathabx}
 \usepackage{MnSymbol}
-\usepackage{ccicons}
-\usepackage{graphicx}
+%\usepackage{ccicons}
+%\usepackage{graphicx}
 %----------------------------------------------------------
 %\newcommand{\doclicense}{\copyright\xspace}
 %\newcommand{\doclicense}{\ccLogo\ccAttribution\xspace}%\ccShareAlike
@@ -27,7 +27,26 @@
 \usepackage{multicol}
 
 \usepackage{hyperref}
-\hypersetup{colorlinks=true, linkcolor=red}
+\hypersetup{%
+    bookmarks=false,         % show bookmarks bar?
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+%    pdftitle={Exposure response relationship to noise in the presence of vibration},    % title
+    pdfauthor={Alexandr Sokolov},     % author
+%    pdfsubject={Environmental Noise and Vibration},   % subject of the document
+%    pdfcreator={Zbigniew Koziel},   % creator of the document
+%    pdfproducer={Zbigniew Koziel}, % producer of the document
+%    pdfkeywords={noise} {vibration} {exposure response-relationship}, % list of keywords
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,
+    citecolor=blue,
+    linkcolor=red,      % color of internal links (change box color with linkbordercolor)
+    urlcolor=blue,
+    filecolor=black      % color of file links
+}
+
 %----------------------------------------------------------
 % добавление поддержки команды вывода текста на полях \marginnote
 \usepackage{marginnote}
@@ -40,6 +59,8 @@
 \newcommand{\messnote}[1]{\marginnote{\color[rgb]{1,0,0}\Huge\textbf{!}\pdfcomment{#1}}[-1.0cm]}
 
 \usepackage{pdfpages}
+%----------------------------------------------------------------
+\includepdfset{turn=true,scale=0.9,pages=-,pagecommand={\pagestyle{fancy}}}
 %----------------------------------------------------------
 % необходимо для работы команды \xspace (умный пробел после замены, осуществляемой некоторой командой в тексте)
 \usepackage{xspace}
@@ -68,6 +89,23 @@
 \topskip=10pt
 \baselineskip=15pt
 \topmargin=-4mm
+%----------------------------------------------------------
+% Настройки колонтитулов
+\usepackage{fancyhdr} % Headers and footers
+\pagestyle{fancy} % All pages have headers and footers
+\fancyhf{} % clear all headers and footers - equivalent to %\fancyhead{} and \fancyfoot{}
+\renewcommand{\headrulewidth}{0.2pt}
+\renewcommand{\footrulewidth}{0.2pt}
+\newcommand{\mymarks}{%
+    \ifthenelse{\equal{\rightmark}{}} % is \rightmark empty?
+        {\leftmark} % when empty
+        {\itshape\notedate: \rightmark~(\currentauthor)} % when not empty
+}
+\renewcommand{\sectionmark}[1]{\markboth{\thesection.\ #1}{}}
+\renewcommand{\subsectionmark}[1]{\markright{#1}}
+
+\fancyhead[C]{\mymarks}
+\fancyfoot[C]{\thepage}
 %----------------------------------------------------------
 % указание 
 \setcounter{secnumdepth}{2}
@@ -172,17 +210,12 @@
 %----------------------------------------------------------
 % Определение заголовка заметки
 \newcommand{\notestatement}[2]{%
-%\subsection*{\notedate: #2 (\currentauthor)}\label{#1}
 \subsection*{\notedate: #2}\label{#1}
 \addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}
 }
-
-% \pdfnotestatement{@label@}{@title@}{@pdffile@}
-\newcommand{\pdfnotestatement}[3]{%
-\subsection*{\notedate: #2}\label{#1}
-\addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}
-{\catcode`\_=11
-\includepdf[pages=-]{#3}}
+\newcommand{\pdfnotestatement}[2]{%
+\markright{#2}\label{#1}
+\addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}%\rightmark}
 }
 %----------------------------------------------------------
 % оформление "теорем"
@@ -204,6 +237,7 @@
 \newtheorem{task}{Задача}
 \newtheorem{solution}{Решение}
 \newtheorem{remark}{Замечание}
+\newtheorem{theorem}{Теорема}
 %--------------------------------------------------
 % атрибуты задачи
 \newcommand{\noteattributes}[1]{%
@@ -248,4 +282,7 @@
 %----------------------------------------------------------
 \newcommand{\DocumentType}{Научно-исследовательские заметки} % тип документа
 \newcommand{\SubTitle}{по направлению <<\rndfielddscr{\rndfield}>>}
+%----------------------------------------------------------
+%----------------------------------------------------------
+\DeclareMathOperator*{\argmax}{\arg\!\max}
 %----------------------------------------------------------
