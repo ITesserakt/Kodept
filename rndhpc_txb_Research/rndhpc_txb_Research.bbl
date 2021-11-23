@@ -50,27 +50,37 @@
 \newblock Vol.~32, no.~12.
 \newblock P.~2936--2952.{}
 
-\bibitem{DatadvanceOffWebsite2021}
-\selectlanguageifdefined{russian}
-ДАТАДВАНС | Программное обеспечение для
-  анализа данных и оптимизации [Электронный
-  ресурс] [Офиц. сайт].
-\newblock 2021.
-\newblock (дата обращения 06.11.2021).{}
+\bibitem{Pignatelli2016}
+\selectlanguageifdefined{english}
+{Miguel Pignatelli}. TnT: a set of libraries for visualizing trees and
+  track-based annotations for the web~// Bioinformatics.
+\newblock 2016.
+\newblock Vol.~32, no.~16.
+\newblock P.~2524--2525.{}
 
-\bibitem{pSevenDocsWorkflow2021}
-\selectlanguageifdefined{russian}
-Расчётные схемы - Руководство пользователя
-  pSeven 6.27 [Электронный ресурс] [Офиц. сайт].
+\bibitem{Cantrell2021}
+\selectlanguageifdefined{english}
+{Cantrell K., Fedarko M.W., Rahman G., McDonald D., Y.,Zaw T., Gonzalez A.,
+  Janssen S., Estaki M., Haiminen N., Beck K.L., Zhu Q.} Empress enables
+  tree-guided, interactive, and exploratory analyses of multi-omic data sets~//
+  mSystems.
 \newblock 2021.
-\newblock {Дата обращения: 15.11.2021}.{}
+\newblock Vol.~6, no.~2.{}
 
-\bibitem{pSevenDocsParallel2021}
+\bibitem{Jadeja2020}
+\selectlanguageifdefined{english}
+{Jadeja M., Kanakia H., Muthu R.} Interactive Labelled Object Treemap:
+  Visualization Tool for Multiple Hierarchies~// Advances in Intelligent
+  Systems and Computing.
+\newblock 2020.
+\newblock P.~499--508.{}
+
+\bibitem{Kuitche2021}
 \selectlanguageifdefined{russian}
-Параллельные вычисления - Руководство
-  пользователя pSeven 6.27 [Электронный ресурс]
-  [Офиц. сайт].
-\newblock 2021.
-\newblock (дата обращения 15.11.2021).{}
+{Esaie Kuitche, Yanchun Qi, Nadia Tahiri, Jack Parmer,Aïda Ouangraoua }.
+  DoubleRecViz: A Web-Based Tool for Visualizing Transcript-Gene-Species tree
+  reconciliation~// Bioinformatics.
+\newblock Т.~37, {№}~13.
+\newblock {С.}~1920--1922.{}
 
 \end{thebibliography}
