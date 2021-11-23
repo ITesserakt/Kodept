@@ -1,0 +1,110 @@
+\begin{thebibliography}{10}
+\def\selectlanguageifdefined#1{
+\expandafter\ifx\csname date#1\endcsname\relax
+\else\language\csname l@#1\endcsname\fi}
+\ifx\undefined\url\def\url#1{{\small #1}}\else\fi
+\ifx\undefined\BibUrl\def\BibUrl#1{\url{#1}}\else\fi
+\ifx\undefined\BibAnnote\long\def\BibAnnote#1{(#1)}\else\fi
+\ifx\undefined\BibEmph\def\BibEmph#1{\emph{#1}}\else\fi
+
+\bibitem{Pignatelli2016}
+\selectlanguageifdefined{english}
+{Miguel Pignatelli}. TnT: a set of libraries for visualizing trees and
+  track-based annotations for the web~// Bioinformatics.
+\newblock 2016.
+\newblock Vol.~32, no.~16.
+\newblock P.~2524--2525.{}
+
+\bibitem{Cantrell2021}
+\selectlanguageifdefined{english}
+{Cantrell K., Fedarko M.W., Rahman G., McDonald D., Y.,Zaw T., Gonzalez A.,
+  Janssen S., Estaki M., Haiminen N., Beck K.L., Zhu Q.} Empress enables
+  tree-guided, interactive, and exploratory analyses of multi-omic data sets~//
+  mSystems.
+\newblock 2021.
+\newblock Vol.~6, no.~2.{}
+
+\bibitem{Jadeja2020}
+\selectlanguageifdefined{english}
+{Jadeja M., Kanakia H., Muthu R.} Interactive Labelled Object Treemap:
+  Visualization Tool for Multiple Hierarchies~// Advances in Intelligent
+  Systems and Computing.
+\newblock 2020.
+\newblock P.~499--508.{}
+
+\bibitem{Kuitche2021}
+\selectlanguageifdefined{english}
+{Esaie Kuitche, Yanchun Qi, Nadia Tahiri, Jack Parmer,Aïda Ouangraoua }.
+  DoubleRecViz: A Web-Based Tool for Visualizing Transcript-Gene-Species tree
+  reconciliation~// Bioinformatics.
+\newblock 2021.
+\newblock Vol.~37, no.~13.
+\newblock P.~1920--1922.{}
+
+\bibitem{Eichinger2008}
+\selectlanguageifdefined{english}
+{Frank Eichinger, Klemens Bohm, and Matthias Huber}. Mining Edge-Weighted Call
+  Graphs to Localise Software Bugs~// Lecture Notes in Computer Science.
+\newblock 2008.
+\newblock P.~333--348.{}
+
+\bibitem{Pop2014}
+\selectlanguageifdefined{english}
+{A. Pop, M. Sjolund, A. Asghar, P. Fritzson, F. Casella}. Integrated Debugging
+  of Modelica Models~// Modeling, Identification and Control.
+\newblock 2014.
+\newblock Vol.~35, no.~2.
+\newblock P.~93–107.{}
+
+\bibitem{Humphrey2014}
+\selectlanguageifdefined{english}
+{Alan Humphrey, Qingyu Meng, Martin Berzins, Diego Caminha B. de Oliveira,
+  Zvonimir Rakamaric, Ganesh Gopalakrishnan}. Systematic debugging methods for
+  large-scale hpc computational frameworks~// Computing in Science and
+  Engineering.
+\newblock 2014.
+\newblock Vol.~16, no.~3.
+\newblock P.~48--56.{}
+
+\bibitem{Dinh2013}
+\selectlanguageifdefined{english}
+{Minh Ngoc Dinh, David Abramso1, Chao Jin, Andrew Gontarek, Bob Moench, Luiz
+  DeRose}. A data-centric framework for debugging highly parallel
+  applications~// Software - Practice and Experience.
+\newblock 2013.
+\newblock Vol.~45, no.~4.
+\newblock P.~501--526.{}
+
+\bibitem{Chapp2021}
+\selectlanguageifdefined{english}
+{Dylan Chapp, Nigel Tan, Sanjukta Bhowmick, Michela Taufer}. Identifying Degree
+  and Sources of Non-Determinism in MPI Applications via Graph Kernels~// IEEE
+  Transactions on Parallel and Distributed Systems.
+\newblock 2021.
+\newblock Vol.~32, no.~12.
+\newblock P.~2936--2952.{}
+
+\bibitem{DatadvanceOffWebsite2021}
+\selectlanguageifdefined{russian}
+ДАТАДВАНС | Программное обеспечение для
+  анализа данных и оптимизации [Электронный
+  ресурс] [Офиц. сайт].
+\newblock 2021.
+\newblock (дата обращения 06.11.2021).{}
+
+\bibitem{pSevenDocsWorkflow2021}
+\selectlanguageifdefined{russian}
+Расчётные схемы - Руководство пользователя
+  pSeven 6.27 [Электронный ресурс] [Офиц. сайт].
+\newblock 2021.
+\newblock {Дата обращения: 15.11.2021}.{}
+
+\bibitem{pSevenDocsParallel2021}
+\selectlanguageifdefined{russian}
+Параллельные вычисления - Руководство
+  пользователя pSeven 6.27 [Электронный ресурс]
+  [Офиц. сайт].
+\newblock 2021.
+\newblock (дата обращения 15.11.2021).{}
+
+\end{thebibliography}
