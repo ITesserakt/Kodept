@@ -60,7 +60,7 @@
 \selectlanguageifdefined{english}
 {Alan Humphrey, Qingyu Meng, Martin Berzins, Diego Caminha B. de Oliveira,
   Zvonimir Rakamaric, Ganesh Gopalakrishnan}. Systematic debugging methods for
-  large-scale hpc computational frameworks~// Computing in Science and
+  large-scale HPC computational frameworks~// Computing in Science and
   Engineering.
 \newblock 2014.
 \newblock Vol.~16, no.~3.
@@ -83,6 +83,28 @@
 \newblock 2021.
 \newblock Vol.~32, no.~12.
 \newblock P.~2936--2952.{}
+
+\bibitem{davidrajuh2016}
+\selectlanguageifdefined{english}
+{Davidrajuh R}. Detecting Existence of Cycles in Petri Nets~// Department of
+  Electrical and Computer Engineering.
+\newblock 2016.
+\newblock Vol.~10, no.~12.
+\newblock P.~2936--2951.{}
+
+\bibitem{Mahdi2011}
+\selectlanguageifdefined{english}
+{Fahad Mahdi, Maytham Safar, Khaled Mahdi}. Detecting Cycles in Graphs Using
+  Parallel Capabilities of GPU~// Computer Engineering Department.
+\newblock 2011.
+\newblock Vol.~13, no.~12.
+\newblock P.~2936--2952.{}
+
+\bibitem{diestel2012graph}
+\selectlanguageifdefined{russian}
+Diestel~R. Graph Theory: Springer Graduate Text GTM 173. Springer Graduate
+  Texts in Mathematics (GTM).
+\newblock Springer New York, 2012.{}
 
 \bibitem{DatadvanceOffWebsite2021}
 \selectlanguageifdefined{russian}

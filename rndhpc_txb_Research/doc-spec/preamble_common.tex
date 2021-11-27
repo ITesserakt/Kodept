@@ -1,7 +1,7 @@
 %----------------------------------------------------------
 %\usepackage{mathtext}
 \usepackage{amsfonts}
-%\usepackage{amsmath}
+\usepackage{amsmath}
 %\usepackage{mathabx}
 \usepackage{MnSymbol}
 %\usepackage{ccicons}
@@ -16,6 +16,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage[english,russian]{babel} %% это необходимо для включения переносов
 \usepackage{float}
+\usepackage{algpseudocode}      % для окружения algorithmic
+\usepackage{algorithm}          % для нумерации алгоритмов
+
 \usepackage{listings}
 \usepackage{longtable}
 \usepackage{rotating}
@@ -286,3 +289,4 @@
 %----------------------------------------------------------
 \DeclareMathOperator*{\argmax}{\arg\!\max}
 %----------------------------------------------------------
+\newcommand{\bs}[1]{\boldsymbol{#1}}
