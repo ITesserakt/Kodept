@@ -18,3 +18,4 @@
 *.glo
 *.vrb*sw*
 *.DS_Store*
+*node_modules/*
