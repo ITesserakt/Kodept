@@ -10,6 +10,7 @@
 *.glg
 *.ist
 *.blg
+*.bbl
 *.glg-abr
 *.gls
 *.gls-abr
