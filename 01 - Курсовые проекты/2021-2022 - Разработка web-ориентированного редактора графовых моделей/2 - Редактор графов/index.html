@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="index.css" />
+    <script
+      type="text/javascript"
+      src="node_modules/d3/dist/d3.min.js"
+    ></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="left-sidebar">
+      <div class="top">
+        <button class="switch-button" id="set_edge_button">
+          Добавить ребро
+        </button>
+        <button class="switch-button" id="set_vertex_button">
+          Добавить вершину
+        </button>
+        <button class="switch-button" id="remove_vertex_button">
+          Удалить вершину
+        </button>
+        <button class="switch-button" id="remove_edge_button">
+          Удалить ребро
+        </button>
+        <button class="switch-button" id="clear_canvas_button">Очистить холст</button>
+        <button class="switch-button" id="export_adot_button" style="height: 50px">
+          Экспортировать в формат ADOT
+        </button>
+        <button class="switch-button" id="import_adot_button" style="height: 50px">
+          <label for="input_adot" style="display: block"
+            >Импортировать из формата ADOT</label
+          >
+          <input id="input_adot" type="file" />
+        </button>
+        <button class="switch-button" id="find_cycles_button">
+          Найти циклы
+        </button>
+      </div>
+    </div>
+    <div class="svg-block">
+      <svg></svg>
+      <div class="information-console">
+        <p class="information-console__label">Информационная консоль</p>
+        <p class="information-console__message">Выберите действие</p>
+      </div>
+    </div>
+    <div class="right-sidebar">
+      <div class="right-sidebar-block">
+        <button class="right-sidebar__button" id="right-sidebar__button_id">
+          ОК
+        </button>
+      </div>
+    </div>
+    <script src="app.js"></script>
+    <!--<script src="test.js"></script>-->
+  </body>
+</html>

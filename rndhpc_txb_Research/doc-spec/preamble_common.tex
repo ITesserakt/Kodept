@@ -176,6 +176,155 @@
 }
 
 \lstloadlanguages{Python, C++}
+
+%----------------------------------------------------------
+% дополнительные определения (работать будет только при подключенном пакете listings)
+
+% Подписи к листингам на русском языке.
+\renewcommand\lstlistlistingname{\cyr\CYRL\cyri\cyrs\cyrt\cyri\cyrn\cyrg\cyri}
+
+\lstloadlanguages{[LaTeX]TeX, bash, XML, make, C++}
+
+\lstset
+{
+		language=C++,
+		extendedchars=\true, % включаем не латиницу (работает только если указано \true, а не true)
+		frame=tb, % рамка сверху и снизу
+%		escapechar=|, % |«выпадаем» в LATEX|
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		columns=fullflexible,
+%		aboveskip=5pt,
+		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+		numbersep=4pt,                   % how far the line-numbers are from the code
+		showspaces=false,
+		showstringspaces=false,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace (работает только если указано true, а не \true)
+		breaklines=true,                 % sets automatic line breaking (работает только если указано true, а не \true)
+		basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
+		commentstyle=\color{gray}\itshape, % шрифт для комментариев
+		stringstyle=\color{orange},
+%		stringstyle=\bfseries, % шрифт для строк
+		numberstyle=\footnotesize\color{gray},
+%		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
+		keywordstyle=\color{black}\bfseries,
+		directivestyle=\color{red},
+		emph={int,char,double,float,unsigned,bool,string},
+		emphstyle={\color{blue}\bfseries},
+		tabsize=2,
+		morecomment=[l]{//},
+		otherkeywords={=,==,:,&},
+		texcl=true,
+}
+
+\lstdefinelanguage{TmlSyntax}
+{
+		extendedchars=\true,
+%		texcl=\true,
+    basicstyle=\sffamily\scriptsize,
+		frame=single,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    numberstyle=\small\color{gray}, % the style that is used for the line-numbers
+    columns=fullflexible,
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    morecomment=[l]{-},
+    otherkeywords={=,|,(,)},
+    keywordstyle={\color{brown}\bfseries},
+    commentstyle=\color{gray}\itshape
+}
+
+\lstdefinelanguage{BNFSyntax}%
+{%
+		extendedchars=\true,
+%		texcl=true,
+		escapechar=>, % |«выпадаем» в LATEX|
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		showspaces=\false,
+		showstringspaces=\false,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+		breaklines=true,                 % sets automatic line breaking
+		basicstyle=\color{black}\small\sffamily,
+    numberstyle=\footnotesize\color{gray}, % the style that is used for the line-numbers
+    keywordstyle={\color{black}\bfseries},
+		commentstyle=\color{gray}\itshape, % шрифт для комментариев
+		stringstyle=\color{orange}, % шрифт для строк
+    morecomment=[s][\color{blue}]{'}{'},
+		keywords={ID,TEXT,NUM},%, edge_id, binname, entry_func, strategy, parallelization, branching},
+    morecomment=[l]{//},
+		tabsize=2,
+		literate=
+		{=}{\textcolor{blue}{=}\bfseries}1%
+}
+
+\lstdefinelanguage{aINIExample}%
+{%
+		extendedchars=\true,
+    basicstyle=\sffamily\small,
+%		texcl=\true, % необходимо для того, чтобы пакет listings не ругался при компиляции UTF8 материала при содержании кирилических символов в комментариях
+		escapechar=\#, % |«выпадаем» в LATEX|
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,% how far the line-numbers are from the code
+    numberstyle=\small\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{black}\bfseries]{[}{]},
+    morecomment=[s][\color{purple}\bfseries]{=[}{]},
+    morecomment=[s][\color{pink}\bfseries]{[[}{]]},
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={=,\$,-,*},
+    keywordstyle={\color{brown}\bfseries}
+%		literate=
+%		{[}{\textcolor{brown}{[}}1
+%		{]}{\textcolor{brown}{]}}1
+%		{*}{\textcolor{brown}\bfseries{*}}1
+}
+
+\lstdefinelanguage{aDOTExample}%
+{
+		extendedchars=\true,
+		escapechar=\#,
+%		texcl=\true, этот параметр криво работает - удаляет все пробелы из комментариев
+    basicstyle=\sffamily\small,
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\small\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace 
+		showstringspaces=false,
+		showspaces=false,
+		morestring=[b]{"},
+		stringstyle=\color{orange}, % шрифт для строк
+		morecomment=[s][\color{gray}\bfseries]{[}{]},
+    morecomment=[s][\color{blue}\bfseries]{__}{__},
+    morecomment=[l]{//},
+		keywords={digraph, module, entry_func, keys_mapping, edge, predicate, function, morphism, morphisms, selector, parallelism, threading, pseudo-parallelism},
+    keywordstyle={\color{black}\bfseries},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={},
+		literate=
+%		{\$}{\textcolor{brown}{\$}}1
+		{=}{\textcolor{brown}{=}}1
+		{->}{\textcolor{brown}{->}}1
+		{=>}{\textcolor{brown}{=>}}1
+		{[}{\textcolor{red}{[}}1
+		{]}{\textcolor{red}{]}}1
+}
+
 %--------------------------------------------
 % необходимо для команды \cancelto{0}{x}
 \usepackage{cancel}
@@ -290,3 +439,17 @@
 \DeclareMathOperator*{\argmax}{\arg\!\max}
 %----------------------------------------------------------
 \newcommand{\bs}[1]{\boldsymbol{#1}}
+% #1 - current \doctype
+% #2 - destination document
+% #3 - text
+\newcommand{\myconditionaltext}[3]%
+{%
+	\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{avtoreferat}}{#3}{}% short version
+	\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{thesis}}{}{}% short version
+	\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{presentation}}{}{}% short version
+	\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{presentation}}{}{}% short version
+	\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{thesis}}{#3}{}% short version
+	\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{presentation}}{#3}{}% short version
+	\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{thesis}}{\pdfcomment{#3}}{}% short version
+}
+%----------------------------------------------------------
