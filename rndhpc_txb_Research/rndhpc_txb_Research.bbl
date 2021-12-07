@@ -76,11 +76,12 @@
 \newblock P.~499--508.{}
 
 \bibitem{Kuitche2021}
-\selectlanguageifdefined{russian}
+\selectlanguageifdefined{english}
 {Esaie Kuitche, Yanchun Qi, Nadia Tahiri, Jack Parmer,Aïda Ouangraoua }.
   DoubleRecViz: A Web-Based Tool for Visualizing Transcript-Gene-Species tree
   reconciliation~// Bioinformatics.
-\newblock Т.~37, {№}~13.
-\newblock {С.}~1920--1922.{}
+\newblock 2021.
+\newblock Vol.~37, no.~13.
+\newblock P.~1920--1922.{}
 
 \end{thebibliography}
