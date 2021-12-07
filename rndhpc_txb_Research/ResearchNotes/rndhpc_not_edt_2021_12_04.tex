@@ -31,7 +31,7 @@ digraph G {
 Если нарисовать такой граф на бумаге, то становится очевидно, что каждый набор вершин имеет одну координату по оси X, а связанные с ними вершины находятся правее по координате X, таким образом напрашивается разбиение графа по уровням. На рисунке (\ref{fig:graph_levels}) представлен этот граф, разбитый на уровни.
 
 \begin{figure}[ht!]
-\center{\includegraphics[width=0.8\linewidth]{ResearchNotes/images/graph_levels.png}}
+\center{\includegraphics[width=0.8\linewidth]{ResearchNotes/rndhpc_not_edt_2021_12_04/graph_levels.png}}
 \caption{Узлы графовой модели \textsf{G}, представленные на разных ``уровнях''}
 \label{fig:graph_levels}
 \end{figure}
@@ -87,7 +87,7 @@ digraph TEST
 В результате визуализации модели будет получен граф, представленный на рисунке (\ref{fig:main_graph}).
 
 \begin{figure}[ht!]
-\center{\includegraphics[width=0.85\linewidth]{ResearchNotes/images/main_graph.png}}
+\center{\includegraphics[width=0.85\linewidth]{ResearchNotes/rndhpc_not_edt_2021_12_04/main_graph.png}}
 \caption{Визуализация графовой модели \textsf{TEST}}\label{fig:main_graph}
 \end{figure}
 
@@ -127,9 +127,8 @@ digraph TEST
 На рисунке (\ref{fig:main_graph_level5}) представлен граф с выделенным уровнем №5.
 
 \begin{figure}[ht!]
-\center{\includegraphics[width=0.85\linewidth]{ResearchNotes/images/main_graph_level5.png}}
-\caption{Уровень №5 на графе}
-\label{fig:main_graph_level5}
+\center{\includegraphics[width=0.85\linewidth]{ResearchNotes/rndhpc_not_edt_2021_12_04/main_graph_level5.png}}
+\caption{Уровень №5 на графе}\label{fig:main_graph_level5}
 \end{figure}
 
 Обратим вниманием на то, что в объекте levels для уровня №5 содержится вершина $s_9$ которой нет на уровне №5, а она присутствует только на уровне №6. Заполнение объекта levels происходит слево-направо, то есть от меньшего
