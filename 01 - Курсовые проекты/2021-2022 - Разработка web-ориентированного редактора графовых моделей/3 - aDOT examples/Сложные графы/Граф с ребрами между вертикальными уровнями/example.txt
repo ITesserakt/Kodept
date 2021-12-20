@@ -1,0 +1,41 @@
+digraph TEST
+{
+// В узле указана стратегия распараллеливания
+	s11 [parallelism=threading]
+	s4 [parallelism=threading]
+	s12 [parallelism=threading]
+	s15 [parallelism=threading]
+	s2 [parallelism=threading]
+	s8 [parallelism=threading]
+// Определения функций−обработчиков
+	f1 [module=DEFAULT_VALUE, entry_func=DEFAULT_VALUE]
+// Определения функций−предикатов
+	p1 [module=DEFAULT_VALUE, entry_func=DEFAULT_VALUE]
+// Определения функций перехода
+	edge_1 [predicate=p1, function=f1]
+// Описание графовой модели
+	__BEGIN__ -> s1
+	s6 -> s8 [morphism=edge_1]
+	s7 -> s8 [morphism=edge_1]
+	s10 -> s8 [morphism=edge_1]
+	s11 => s8 [morphism=edge_1]
+	s11 => s9 [morphism=edge_1]
+	s14 -> s9 [morphism=edge_1]
+	s3 -> s9 [morphism=edge_1]
+	s4 => s6 [morphism=edge_1]
+	s4 => s7 [morphism=edge_1]
+	s4 => s10 [morphism=edge_1]
+	s4 => s11 [morphism=edge_1]
+	s12 => s4 [morphism=edge_1]
+	s12 => s14 [morphism=edge_1]
+	s13 -> s3 [morphism=edge_1]
+	s15 => s14 [morphism=edge_1]
+	s15 => s14 [morphism=edge_1]
+	s2 => s12 [morphism=edge_1]
+	s2 => s13 [morphism=edge_1]
+	s2 => s15 [morphism=edge_1]
+	s1 -> s2 [morphism=edge_1]
+	s8 => s9 [morphism=edge_1]
+	s8 => s6 [morphism=edge_1]
+	s9 -> __END__ 
+}

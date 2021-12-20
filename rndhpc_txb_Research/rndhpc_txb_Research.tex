@@ -1,4 +1,4 @@
-﻿\documentclass[12pt]{article}
+\documentclass[12pt]{article}
 %----------------------------------------------------------
 %общая преамбула для всех статей - настройки общего вида оформления
 \input{doc-spec/preamble_common.tex}
@@ -12,6 +12,9 @@
 %----------------------------------------------------------
 \include{doc-spec/title_common}
 %----------------------------------------------------------
+% глубина содержания должна быть не более, чем глава (chapter), раздел (section) и подраздел (subsection) 
+\setcounter{tocdepth}{2}
+
 \tableofcontents
 %----------------------------------------------------------
 \newpage
@@ -20,7 +23,7 @@
 %----------------------------------------------------------
 \renewcommand\bibname{\small{Литература}}\label{bibs}
 \bibliographystyle{utf8gost705u}
-\bibliography{bibliography}
+\bibliography{bibliography,bibliography-avtoreferat}
 %----------------------------------------------------------
 \end{document}
 %----------------------------------------------------------

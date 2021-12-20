@@ -1,4 +1,4 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 \def\selectlanguageifdefined#1{
 \expandafter\ifx\csname date#1\endcsname\relax
 \else\language\csname l@#1\endcsname\fi}
@@ -26,7 +26,7 @@
 \selectlanguageifdefined{english}
 {Alan Humphrey, Qingyu Meng, Martin Berzins, Diego Caminha B. de Oliveira,
   Zvonimir Rakamaric, Ganesh Gopalakrishnan}. Systematic debugging methods for
-  large-scale hpc computational frameworks~// Computing in Science and
+  large-scale HPC computational frameworks~// Computing in Science and
   Engineering.
 \newblock 2014.
 \newblock Vol.~16, no.~3.
@@ -83,5 +83,108 @@
 \newblock 2021.
 \newblock Vol.~37, no.~13.
 \newblock P.~1920--1922.{}
+
+\bibitem{SokADOT}
+\selectlanguageifdefined{russian}
+{Соколов А.П.} Описание формата данных aDOT
+  (advanced DOT) [Электронный ресурс]. Облачный
+  сервис SA2 Systems. [Офиц. сайт].
+\newblock 2020.
+\newblock (дата обращения
+  05.03.2020)\pdfcomment{Соискателю принадлежит идея
+  языка определения графовых моделей aDOT,
+  построенного на основе известного языка
+  DOT. Разработан синтаксис языка. Позже
+  совместно с Першиным А.П. создан парсер
+  языка.}{}
+
+\bibitem{SokPersh2018GBSE}
+\selectlanguageifdefined{russian}
+{Соколов А.П., Першин А.Ю.}
+  Графоориентированный программный каркас
+  для реализации сложных вычислительных
+  методов~// Программирование.
+\newblock 2019.
+\newblock Т.~47, {№}~5.
+\newblock {С.}~43--55.
+\newblock
+  {\myconditionaltext{\doctype}{avtoreferat}{(1.6~п.л./0.8~п.л.)}\pdfcomment{(+1)
+  МРБ (международные реферативные базы).
+  Соискателю принадлежат научные основы
+  графо-ориентированного подхода и способ
+  создания вычислительных библиотек систем
+  инженерного анализа на основе
+  графо-ориентированного подхода.}}{}
+
+\bibitem{patentRU2681408}
+\selectlanguageifdefined{russian}
+{Соколов А.П., Першин А.Ю.} Патент на
+  изобретение RU 2681408. Способ и система
+  графо-ориентированного создания
+  масштабируемых и сопровождаемых
+  программных реализаций сложных
+  вычислительных методов.
+\newblock 2019.
+\newblock заявка № RU 2017 122 058 A, приоритет 22.07.2017,
+  опубликовано 22.02.2019
+  \myconditionaltext{\doctype}{avtoreferat}{(3.4 п.л. / 2.4
+  п.л.)}\pdfcomment{В результате проведённого
+  патентного поиска был сделан вывод о
+  патентоспособности созданного способа
+  разработки программных реализаций
+  сложных вычислительных методов.
+  Соискателю принадлежат: результаты
+  патентного исследования и обзора
+  литературы; идея и основы способа
+  графоориентированного создания
+  масштабируемых и сопровождаемых
+  программных реализаций сложных
+  вычислительных методов; совместно с
+  Першиным А.Ю. базовые понятия подхода.}{}
+
+\bibitem{davidrajuh2016}
+\selectlanguageifdefined{english}
+{Davidrajuh R}. Detecting Existence of Cycles in Petri Nets~// Department of
+  Electrical and Computer Engineering.
+\newblock 2016.
+\newblock Vol.~10, no.~12.
+\newblock P.~2936--2951.{}
+
+\bibitem{Mahdi2011}
+\selectlanguageifdefined{english}
+{Fahad Mahdi, Maytham Safar, Khaled Mahdi}. Detecting Cycles in Graphs Using
+  Parallel Capabilities of GPU~// Computer Engineering Department.
+\newblock 2011.
+\newblock Vol.~13, no.~12.
+\newblock P.~2936--2952.{}
+
+\bibitem{diestel2012graph}
+\selectlanguageifdefined{russian}
+Diestel~R. Graph Theory: Springer Graduate Text GTM 173. Springer Graduate
+  Texts in Mathematics (GTM).
+\newblock Springer New York, 2012.{}
+
+\bibitem{DatadvanceOffWebsite2021}
+\selectlanguageifdefined{russian}
+ДАТАДВАНС | Программное обеспечение для
+  анализа данных и оптимизации [Электронный
+  ресурс] [Офиц. сайт].
+\newblock 2021.
+\newblock (дата обращения 06.11.2021).{}
+
+\bibitem{pSevenDocsWorkflow2021}
+\selectlanguageifdefined{russian}
+Расчётные схемы - Руководство пользователя
+  pSeven 6.27 [Электронный ресурс] [Офиц. сайт].
+\newblock 2021.
+\newblock {Дата обращения: 15.11.2021}.{}
+
+\bibitem{pSevenDocsParallel2021}
+\selectlanguageifdefined{russian}
+Параллельные вычисления - Руководство
+  пользователя pSeven 6.27 [Электронный ресурс]
+  [Офиц. сайт].
+\newblock 2021.
+\newblock (дата обращения 15.11.2021).{}
 
 \end{thebibliography}
