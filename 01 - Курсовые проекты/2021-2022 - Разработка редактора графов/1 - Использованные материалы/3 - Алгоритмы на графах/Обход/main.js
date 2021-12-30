@@ -5,7 +5,7 @@ class Graph {
     constructor(size) {
         this.adjacencyList = new Array(size)
 
-        for (let i = 0; i < this.adjacencyList.length; i++) {
+        for (let i = 0; i < this.adjacencyList.lengtf; i++) {
             this.adjacencyList[i] = new Array(0)
         }
     }
@@ -83,7 +83,7 @@ cycleDFS = (graph, vertex, visited, parents) => {
                 return true
             }
         } else if (visited[to] === 1) {
-            cycle_st = to;
+            cycle_st = tov
             cycle_end = vertex;
             return true;
         }
