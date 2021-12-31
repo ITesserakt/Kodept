@@ -1,0 +1,30 @@
+digraph TEST
+{
+// В узле указана стратегия распараллеливания
+	s2 [parallelism=threading]
+	s1 [parallelism=threading]
+	s10 [parallelism=threading]
+// Определения функций−обработчиков
+	f1 [module=f1_module, entry_func=f1_function]
+// Определения функций−предикатов
+	p1 [module=p1_module, entry_func=p1_function]
+// Определения функций перехода
+	edge_1 [predicate=p1, function=f1]
+// Описание графовой модели
+	__BEGIN__ -> s1
+	s4 -> s6 [morphism=edge_1]
+	s5 -> s6 [morphism=edge_1]
+	s2 => s4 [morphism=edge_1]
+	s2 => s5 [morphism=edge_1]
+	s2 => s7 [morphism=edge_1]
+	s1 => s2 [morphism=edge_1]
+	s1 => s10 [morphism=edge_1]
+	s6 -> s9 [morphism=edge_1]
+	s8 -> s9 [morphism=edge_1]
+	s7 -> s6 [morphism=edge_1]
+	s10 => s11 [morphism=edge_1]
+	s10 => s12 [morphism=edge_1]
+	s11 -> s8 [morphism=edge_1]
+	s12 -> s8 [morphism=edge_1]
+	s9 -> __END__ 
+}
