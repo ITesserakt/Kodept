@@ -7,6 +7,29 @@
 \ifx\undefined\BibAnnote\long\def\BibAnnote#1{(#1)}\else\fi
 \ifx\undefined\BibEmph\def\BibEmph#1{\emph{#1}}\else\fi
 
+\bibitem{ErmilovLI1970}
+\selectlanguageifdefined{russian}
+{Ермилов Л.И.} Синтез сетевых моделей
+  сложных процессов и систем.
+\newblock {Москва}: МО СССР, 1970.
+\newblock {С.}~100.{}
+
+\bibitem{NechiporenkoVI1968}
+\selectlanguageifdefined{russian}
+{Нечипоренко В.И.} Структурный анализ и
+  методы построения надёжных систем.
+\newblock {Москва}: Издательство <<Советское
+  радио>>, 1968.
+\newblock {С.}~256.{}
+
+\bibitem{NechiporenkoVI1977}
+\selectlanguageifdefined{russian}
+{Нечипоренко В.И.} Структурный анализ
+  систем (эффективность и надёжность).
+\newblock {Москва}: Издательство <<Советское
+  радио>>, 1977.
+\newblock {С.}~216.{}
+
 \bibitem{Eichinger2008}
 \selectlanguageifdefined{english}
 {Frank Eichinger, Klemens Bohm, and Matthias Huber}. Mining Edge-Weighted Call

@@ -28,28 +28,45 @@
 \usepackage{cmap} % необходимо для возможности копирования и поиска в готовом PDF
 \usepackage{array}
 \usepackage{multicol}
-
+%-------------------------
+% определение атрибутов сборки Git
+\usepackage[grumpy, maxdepth=6]{gitinfo2}
+\renewcommand{\gitMark}{[git] \textbullet{} \gitBranch\,@\,\gitAbbrevHash{} \textbullet{} \gitAuthorName, \gitAuthorEmail (\gitAuthorIsoDate)}
+%-------------------------
+\newcommand{\authorSID}{\Year, \AllAuthors, \pdftexbanner, \jobname}
+%-------------------------
+\newcommand{\authorSIDfooter}[1][white]{\begin{tabular}{c}\thepage\\[-6pt]\textcolor{#1}{\tiny\authorSID}\\[-6pt]\textcolor{#1}{\tiny\gitMark}\end{tabular}}
+%-------------------------
+%\newcommand{\authorSIDright}{\begin{tabular}{c}\tiny\authorSID\\\tiny\gitMark\end{tabular}}
+\newcommand{\authorSIDright}{\textcolor{gray!10.0}{\tiny\gitMark}}
+%-------------------------
+% Сохранение метаданных в PDF об авторе документа
+\usepackage{hyperxmp}
 \usepackage{hyperref}
 \hypersetup{%
-    bookmarks=false,         % show bookmarks bar?
+    bookmarks=false,        % show bookmarks bar?
     pdftoolbar=true,        % show Acrobat’s toolbar?
     pdfmenubar=true,        % show Acrobat’s menu?
     pdffitwindow=false,     % window fit to page when opened
     pdfstartview={FitH},    % fits the width of the page to the window
-%    pdftitle={Exposure response relationship to noise in the presence of vibration},    % title
-    pdfauthor={Alexandr Sokolov},     % author
-%    pdfsubject={Environmental Noise and Vibration},   % subject of the document
-%    pdfcreator={Zbigniew Koziel},   % creator of the document
-%    pdfproducer={Zbigniew Koziel}, % producer of the document
-%    pdfkeywords={noise} {vibration} {exposure response-relationship}, % list of keywords
+    pdftitle={\Title},    	% title
+    pdfauthor={\AllAuthors},    % author
+%		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
+		pdfcopyright={CC BY 4.0, \Year, \AllAuthors.},
+		pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
+    pdfsubject={\SubjectOfResearch},   % subject of the document
+    pdfcreator={\pdftexbanner},   % creator of the document
+%		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
+		pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
+    pdfproducer={\AllAuthors(\gitAuthorEmail), \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
+    pdfkeywords={\keywordsru, \keywordsen}, % ключевые слова
     pdfnewwindow=true,      % links in new window
     colorlinks=true,
-    citecolor=blue,
+    citecolor=purple,
     linkcolor=red,      % color of internal links (change box color with linkbordercolor)
-    urlcolor=blue,
+    urlcolor=green,
     filecolor=black      % color of file links
 }
-
 %----------------------------------------------------------
 % добавление поддержки команды вывода текста на полях \marginnote
 \usepackage{marginnote}
@@ -108,7 +125,18 @@
 \renewcommand{\subsectionmark}[1]{\markright{#1}}
 
 \fancyhead[C]{\mymarks}
-\fancyfoot[C]{\thepage}
+\fancyfoot[C]{\authorSIDfooter[white]}
+%\fancyfoot[C]{\thepage}
+%----------------------------------------------------------
+\usepackage[hpos=0.98\paperwidth, % .98 to prevent bleed
+            vpos=0.7\paperwidth,
+            angle=90]{draftwatermark}
+
+\SetWatermarkText{\authorSIDright}
+%\SetWatermarkColor[gray]{0.1}
+\SetWatermarkFontSize{0.2cm}
+\SetWatermarkAngle{90}
+\SetWatermarkHorCenter{20cm}
 %----------------------------------------------------------
 % указание 
 \setcounter{secnumdepth}{2}
@@ -137,7 +165,6 @@
 \def\selectlanguageifdefined#1{}\else\fi
 \ifx\undefined\BibEmph
 \def\BibEmph#1{\emph{#1}}\else\fi
-%----------------------------------------------------------
 %--------------------------------------------
 \usepackage{tikz}
 \usetikzlibrary{tikzmark}
@@ -145,9 +172,7 @@
 \usetikzlibrary{arrows,arrows.meta, shapes}
 \usetikzlibrary{positioning}
 %--------------------------------------------
-
 % подключение листингов и определение языков
-%\usepackage{listingsutf8}
 \usepackage{listings}
 
 \lstset
@@ -411,37 +436,6 @@
 		\end{tabular}
 \end{flushright}
 }
-%----------------------------------------%
-\makeatletter
-\newcommand{\rndfielddscr}[1]{%
-%\csname #1\endcsname (\expandafter\@gobble\string#1)} % Следует выбрать среди одного из доступных направлений
-\expandafter\csname #1\endcsname\xspace (#1)}
-\makeatother
-%----------------------------------------%
-\makeatletter
-\newcommand{\rndprojectdscr}[1]{%
-\expandafter\csname #1\endcsname\xspace}
-\makeatother
-%----------------------------------------------------------
-% общие определения
-\newcommand{\UpperFullOrganisationName}{Министерство науки и высшего образования Российской Федерации}
-\newcommand{\ShortOrganisationName}{МГТУ~им.~Н.Э.~Баумана}
-\newcommand{\FullOrganisationName}{федеральное государственное бюджетное образовательное учреждение высшего профессионального образования\newline <<Московский государственный технический университет имени Н.Э.~Баумана (национальный исследовательский университет)>> (\ShortOrganisationName)}
-\newcommand{\OrganisationAddress}{105005, Россия, Москва, ул.~2-ая Бауманская, д.~5, стр.~1}
-%----------------------------------------------------------
-\newcommand{\TargetAudience}{%
-Документ разработан для оценки результативности проведения научных исследований по направлению <<\expandafter\csname\rndfield\endcsname>>\xspace в рамках реализации курсовых работ, курсовых проектов, выпускных квалификационных работ бакалавров и магистров, а также диссертационных исследований аспирантов кафедры <<Системы автоматизированного проектирования>> (РК6) МГТУ~им.~Н.Э.~Баумана.}
-
-\newcommand{\PrefaceIntro}{%
-Документ содержит краткие материалы, формируемые обучающимися и исследователями в процессе их работ по одному научному направлению.}
-
-\newcommand{\DocOutReference}{\textbf{\AllAuthors}. \textbf{\rndfielddscr{\rndfield}}: \DocumentType.~/ Под редакцией Соколова~А.П. [Электронный ресурс] --- \City: \Year. --- \total{page} с. URL:~\url{https://arch.rk6.bmstu.ru} (облачный сервис кафедры РК6)}
-
-\newcommand{\Preface}{\PrefaceIntro \TargetAudience \newline \DocOutReference}
-%----------------------------------------------------------
-\newcommand{\DocumentType}{Научно-исследовательские заметки} % тип документа
-\newcommand{\SubTitle}{по направлению <<\rndfielddscr{\rndfield}>>}
-%----------------------------------------------------------
 %----------------------------------------------------------
 \DeclareMathOperator*{\argmax}{\arg\!\max}
 %----------------------------------------------------------
@@ -458,5 +452,11 @@
 	\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{thesis}}{#3}{}% short version
 	\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{presentation}}{#3}{}% short version
 	\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{thesis}}{\pdfcomment{#3}}{}% short version
+}
+%----------------------------------------------------------
+\newcommand{\mycitation}[2]{%
+\colorbox{black!5}{\parbox{15cm}{{\large\textbf{``}}\textit{#1}}}\linebreak
+%\vspace{-5pt}
+\parbox{15cm}{\begin{flushright}#2\end{flushright}}
 }
 %----------------------------------------------------------
