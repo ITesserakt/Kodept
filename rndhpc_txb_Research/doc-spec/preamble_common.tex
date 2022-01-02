@@ -44,7 +44,7 @@
 \usepackage{hyperxmp}
 \usepackage{hyperref}
 \hypersetup{%
-    bookmarks=false,        % show bookmarks bar?
+%    bookmarks=false,        % show bookmarks bar?
     pdftoolbar=true,        % show Acrobat’s toolbar?
     pdfmenubar=true,        % show Acrobat’s menu?
     pdffitwindow=false,     % window fit to page when opened
@@ -98,13 +98,11 @@
 \usepackage{enumerate}
 %----------------------------------------------------------
 \raggedbottom
-%%\hfuzz=10pt
 \textwidth=163mm
 \textheight=220mm
 \oddsidemargin=-0.5pt
 \footskip=30pt
-\topmargin=27pt
-\headheight=12pt
+\headheight=28pt
 \headsep=25pt
 \topskip=10pt
 \baselineskip=15pt
@@ -393,12 +391,28 @@
 \renewcommand\cftsubsecnumwidth{2.5cm}
 %----------------------------------------------------------
 % Определение заголовка заметки
+%----------------------------------------------------------
+% Пакеты для подсчета количества: страниц, и т.д.
+\usepackage{etoolbox}
+\usepackage{totcount,assoccnt}
+%----------------------------------------------------------
+% суперсчетчики всего ! :-)
+\newtotcounter{csubsection}
+\setcounter{csubsection}{0}
+\def\oldsubsection{} \let\oldsubsection=\subsection
+\def\subsection{\stepcounter{csubsection}\oldsubsection}
+
+%\csname #1\endcsname\xspace
+
+% Включение LaTeX заметки осуществляться в рамках подраздела уровня subsection
 \newcommand{\notestatement}[2]{%
-\subsection*{\notedate: #2}\label{#1}
+\subsection*{\notedate: #2}\expandafter\label{#1\arabic{csubsection}}
 \addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}
 }
+% Включение PDF-заметки осуществляться НЕ в рамках подраздела уровня subsection,
+% но с искусственным добавлением соответствующего залоговка в содержание
 \newcommand{\pdfnotestatement}[2]{%
-\markright{#2}\label{#1}
+\markright{#2}\stepcounter{csubsection}\expandafter\label{#1\arabic{csubsection}}
 \addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}%\rightmark}
 }
 %----------------------------------------------------------
@@ -455,8 +469,11 @@
 }
 %----------------------------------------------------------
 \newcommand{\mycitation}[2]{%
-\colorbox{black!5}{\parbox{15cm}{{\large\textbf{``}}\textit{#1}}}\linebreak
+\colorbox{black!5}{\parbox{1.0\textwidth}{{\large\textbf{``}}\textit{#1}}}\linebreak
 %\vspace{-5pt}
-\parbox{15cm}{\begin{flushright}#2\end{flushright}}
+\parbox{1.0\textwidth}{\begin{flushright}#2\end{flushright}}
 }
+%----------------------------------------------------------
+% указание на глубину вложенности подразделов при формировании содержания
+\setcounter{secnumdepth}{2}
 %----------------------------------------------------------
