@@ -1,21 +1,23 @@
-﻿%----------------------------------------------------------
+%----------------------------------------------------------
 %\usepackage{mathtext}
 \usepackage{amsfonts}
-%\usepackage{amsmath}
+\usepackage{amsmath}
 %\usepackage{mathabx}
 \usepackage{MnSymbol}
-\usepackage{ccicons}
-\usepackage{graphicx}
+%\usepackage{ccicons}
+%\usepackage{graphicx}
 %----------------------------------------------------------
 %\newcommand{\doclicense}{\copyright\xspace}
 %\newcommand{\doclicense}{\ccLogo\ccAttribution\xspace}%\ccShareAlike
 \newcommand{\doclicense}{\includegraphics[width=0.1\textwidth]{doc-spec/by.eps}\xspace}%\ccShareAlike
-%
 %----------------------------------------------------------
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[english,russian]{babel} %% это необходимо для включения переносов
 \usepackage{float}
+\usepackage{algpseudocode}      % для окружения algorithmic
+\usepackage{algorithm}          % для нумерации алгоритмов
+
 \usepackage{listings}
 \usepackage{longtable}
 \usepackage{rotating}
@@ -25,9 +27,45 @@
 \usepackage{cmap} % необходимо для возможности копирования и поиска в готовом PDF
 \usepackage{array}
 \usepackage{multicol}
-
+%-------------------------
+% определение атрибутов сборки Git
+\usepackage[grumpy, maxdepth=6]{gitinfo2}
+\renewcommand{\gitMark}{[git] \textbullet{} \gitBranch\,@\,\gitAbbrevHash{} \textbullet{} \gitAuthorName, \gitAuthorEmail (\gitAuthorIsoDate)}
+%-------------------------
+\newcommand{\authorSID}{\Year, \AllAuthors, \pdftexbanner, \jobname}
+%-------------------------
+\newcommand{\authorSIDfooter}[1][white]{\begin{tabular}{c}\thepage\\[-6pt]\textcolor{#1}{\tiny\authorSID}\\[-6pt]\textcolor{#1}{\tiny\gitMark}\end{tabular}}
+%-------------------------
+%\newcommand{\authorSIDright}{\begin{tabular}{c}\tiny\authorSID\\\tiny\gitMark\end{tabular}}
+\newcommand{\authorSIDright}{\textcolor{gray!10.0}{\tiny\gitMark}}
+%-------------------------
+% Сохранение метаданных в PDF об авторе документа
+\usepackage{hyperxmp}
 \usepackage{hyperref}
-\hypersetup{colorlinks=true, linkcolor=red}
+\hypersetup{%
+%    bookmarks=false,        % show bookmarks bar?
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={\Title},    	% title
+    pdfauthor={\AllAuthors},    % author
+%		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
+		pdfcopyright={CC BY 4.0, \Year, \AllAuthors.},
+		pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
+    pdfsubject={\SubjectOfResearch},   % subject of the document
+    pdfcreator={\pdftexbanner},   % creator of the document
+%		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
+		pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
+    pdfproducer={\AllAuthors(\gitAuthorEmail), \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
+    pdfkeywords={\keywordsru, \keywordsen}, % ключевые слова
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,
+    citecolor=purple,
+    linkcolor=red,      % color of internal links (change box color with linkbordercolor)
+    urlcolor=green,
+    filecolor=black      % color of file links
+}
 %----------------------------------------------------------
 % добавление поддержки команды вывода текста на полях \marginnote
 \usepackage{marginnote}
@@ -40,6 +78,8 @@
 \newcommand{\messnote}[1]{\marginnote{\color[rgb]{1,0,0}\Huge\textbf{!}\pdfcomment{#1}}[-1.0cm]}
 
 \usepackage{pdfpages}
+%----------------------------------------------------------------
+\includepdfset{turn=true,scale=0.9,pages=-,pagecommand={\pagestyle{fancy}}}
 %----------------------------------------------------------
 % необходимо для работы команды \xspace (умный пробел после замены, осуществляемой некоторой командой в тексте)
 \usepackage{xspace}
@@ -57,17 +97,43 @@
 \usepackage{enumerate}
 %----------------------------------------------------------
 \raggedbottom
-%%\hfuzz=10pt
 \textwidth=163mm
 \textheight=220mm
 \oddsidemargin=-0.5pt
 \footskip=30pt
-\topmargin=27pt
-\headheight=12pt
+\headheight=28pt
 \headsep=25pt
 \topskip=10pt
 \baselineskip=15pt
 \topmargin=-4mm
+%----------------------------------------------------------
+% Настройки колонтитулов
+\usepackage{fancyhdr} % Headers and footers
+\pagestyle{fancy} % All pages have headers and footers
+\fancyhf{} % clear all headers and footers - equivalent to %\fancyhead{} and \fancyfoot{}
+\renewcommand{\headrulewidth}{0.2pt}
+\renewcommand{\footrulewidth}{0.2pt}
+\newcommand{\mymarks}{%
+    \ifthenelse{\equal{\rightmark}{}} % is \rightmark empty?
+        {\leftmark} % when empty
+        {\itshape\notedate: \rightmark~(\currentauthor)} % when not empty
+}
+\renewcommand{\sectionmark}[1]{\markboth{\thesection.\ #1}{}}
+\renewcommand{\subsectionmark}[1]{\markright{#1}}
+
+\fancyhead[C]{\mymarks}
+\fancyfoot[C]{\authorSIDfooter[white]}
+%\fancyfoot[C]{\thepage}
+%----------------------------------------------------------
+\usepackage[hpos=0.98\paperwidth, % .98 to prevent bleed
+            vpos=0.7\paperwidth,
+            angle=90]{draftwatermark}
+
+\SetWatermarkText{\authorSIDright}
+%\SetWatermarkColor[gray]{0.1}
+\SetWatermarkFontSize{0.2cm}
+\SetWatermarkAngle{90}
+\SetWatermarkHorCenter{20cm}
 %----------------------------------------------------------
 % указание 
 \setcounter{secnumdepth}{2}
@@ -96,10 +162,14 @@
 \def\selectlanguageifdefined#1{}\else\fi
 \ifx\undefined\BibEmph
 \def\BibEmph#1{\emph{#1}}\else\fi
-%----------------------------------------------------------
-
+%--------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{tikzmark}
+\usetikzlibrary{trees, calc, automata}
+\usetikzlibrary{arrows,arrows.meta, shapes}
+\usetikzlibrary{positioning}
+%--------------------------------------------
 % подключение листингов и определение языков
-%\usepackage{listingsutf8}
 \usepackage{listings}
 
 \lstset
@@ -135,6 +205,155 @@
 }
 
 \lstloadlanguages{Python, C++}
+
+%----------------------------------------------------------
+% дополнительные определения (работать будет только при подключенном пакете listings)
+
+% Подписи к листингам на русском языке.
+\renewcommand\lstlistlistingname{\cyr\CYRL\cyri\cyrs\cyrt\cyri\cyrn\cyrg\cyri}
+
+\lstloadlanguages{[LaTeX]TeX, bash, XML, make, C++}
+
+\lstset
+{
+		language=C++,
+		extendedchars=\true, % включаем не латиницу (работает только если указано \true, а не true)
+		frame=tb, % рамка сверху и снизу
+%		escapechar=|, % |«выпадаем» в LATEX|
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		columns=fullflexible,
+%		aboveskip=5pt,
+		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+		numbersep=4pt,                   % how far the line-numbers are from the code
+		showspaces=false,
+		showstringspaces=false,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace (работает только если указано true, а не \true)
+		breaklines=true,                 % sets automatic line breaking (работает только если указано true, а не \true)
+		basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
+		commentstyle=\color{gray}\itshape, % шрифт для комментариев
+		stringstyle=\color{orange},
+%		stringstyle=\bfseries, % шрифт для строк
+		numberstyle=\footnotesize\color{gray},
+%		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
+		keywordstyle=\color{black}\bfseries,
+		directivestyle=\color{red},
+		emph={int,char,double,float,unsigned,bool,string},
+		emphstyle={\color{blue}\bfseries},
+		tabsize=2,
+		morecomment=[l]{//},
+		otherkeywords={=,==,:,&},
+		texcl=true,
+}
+
+\lstdefinelanguage{TmlSyntax}
+{
+		extendedchars=\true,
+%		texcl=\true,
+    basicstyle=\sffamily\scriptsize,
+		frame=single,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    numberstyle=\small\color{gray}, % the style that is used for the line-numbers
+    columns=fullflexible,
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    morecomment=[l]{-},
+    otherkeywords={=,|,(,)},
+    keywordstyle={\color{brown}\bfseries},
+    commentstyle=\color{gray}\itshape
+}
+
+\lstdefinelanguage{BNFSyntax}%
+{%
+		extendedchars=\true,
+%		texcl=true,
+		escapechar=>, % |«выпадаем» в LATEX|
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		showspaces=\false,
+		showstringspaces=\false,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+		breaklines=true,                 % sets automatic line breaking
+		basicstyle=\color{black}\small\sffamily,
+    numberstyle=\footnotesize\color{gray}, % the style that is used for the line-numbers
+    keywordstyle={\color{black}\bfseries},
+		commentstyle=\color{gray}\itshape, % шрифт для комментариев
+		stringstyle=\color{orange}, % шрифт для строк
+    morecomment=[s][\color{blue}]{'}{'},
+		keywords={ID,TEXT,NUM},%, edge_id, binname, entry_func, strategy, parallelization, branching},
+    morecomment=[l]{//},
+		tabsize=2,
+		literate=
+		{=}{\textcolor{blue}{=}\bfseries}1%
+}
+
+\lstdefinelanguage{aINIExample}%
+{%
+		extendedchars=\true,
+    basicstyle=\sffamily\small,
+%		texcl=\true, % необходимо для того, чтобы пакет listings не ругался при компиляции UTF8 материала при содержании кирилических символов в комментариях
+		escapechar=\#, % |«выпадаем» в LATEX|
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,% how far the line-numbers are from the code
+    numberstyle=\small\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{black}\bfseries]{[}{]},
+    morecomment=[s][\color{purple}\bfseries]{=[}{]},
+    morecomment=[s][\color{pink}\bfseries]{[[}{]]},
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={=,\$,-,*},
+    keywordstyle={\color{brown}\bfseries}
+%		literate=
+%		{[}{\textcolor{brown}{[}}1
+%		{]}{\textcolor{brown}{]}}1
+%		{*}{\textcolor{brown}\bfseries{*}}1
+}
+
+\lstdefinelanguage{aDOTExample}%
+{
+		extendedchars=\true,
+		escapechar=\#,
+%		texcl=\true, этот параметр криво работает - удаляет все пробелы из комментариев
+    basicstyle=\sffamily\small,
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\small\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace 
+		showstringspaces=false,
+		showspaces=false,
+		morestring=[b]{"},
+		stringstyle=\color{orange}, % шрифт для строк
+		morecomment=[s][\color{gray}\bfseries]{[}{]},
+    morecomment=[s][\color{blue}\bfseries]{__}{__},
+    morecomment=[l]{//},
+		keywords={digraph, module, entry_func, keys_mapping, edge, predicate, function, morphism, morphisms, selector, parallelism, threading, pseudo-parallelism},
+    keywordstyle={\color{black}\bfseries},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={},
+		literate=
+%		{\$}{\textcolor{brown}{\$}}1
+		{=}{\textcolor{brown}{=}}1
+		{->}{\textcolor{brown}{->}}1
+		{=>}{\textcolor{brown}{=>}}1
+		{[}{\textcolor{red}{[}}1
+		{]}{\textcolor{red}{]}}1
+}
+
 %--------------------------------------------
 % необходимо для команды \cancelto{0}{x}
 \usepackage{cancel}
@@ -171,18 +390,29 @@
 \renewcommand\cftsubsecnumwidth{2.5cm}
 %----------------------------------------------------------
 % Определение заголовка заметки
+%----------------------------------------------------------
+% Пакеты для подсчета количества: страниц, и т.д.
+\usepackage{etoolbox}
+\usepackage{totcount,assoccnt}
+%----------------------------------------------------------
+% суперсчетчики всего ! :-)
+\newtotcounter{csubsection}
+\setcounter{csubsection}{0}
+\def\oldsubsection{} \let\oldsubsection=\subsection
+\def\subsection{\stepcounter{csubsection}\oldsubsection}
+
+%\csname #1\endcsname\xspace
+
+% Включение LaTeX заметки осуществляться в рамках подраздела уровня subsection
 \newcommand{\notestatement}[2]{%
-%\subsection*{\notedate: #2 (\currentauthor)}\label{#1}
-\subsection*{\notedate: #2}\label{#1}
+\subsection*{\notedate: #2}\expandafter\label{#1\arabic{csubsection}}
 \addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}
 }
-
-% \pdfnotestatement{@label@}{@title@}{@pdffile@}
-\newcommand{\pdfnotestatement}[3]{%
-\subsection*{\notedate: #2}\label{#1}
-\addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}
-{\catcode`\_=11
-\includepdf[pages=-]{#3}}
+% Включение PDF-заметки осуществляться НЕ в рамках подраздела уровня subsection,
+% но с искусственным добавлением соответствующего залоговка в содержание
+\newcommand{\pdfnotestatement}[2]{%
+\markright{#2}\stepcounter{csubsection}\expandafter\label{#1\arabic{csubsection}}
+\addcontentsline{toc}{subsection}{\notedate:\hspace{10pt} #2}%\rightmark}
 }
 %----------------------------------------------------------
 % оформление "теорем"
@@ -204,6 +434,7 @@
 \newtheorem{task}{Задача}
 \newtheorem{solution}{Решение}
 \newtheorem{remark}{Замечание}
+\newtheorem{theorem}{Теорема}
 %--------------------------------------------------
 % атрибуты задачи
 \newcommand{\noteattributes}[1]{%
@@ -218,34 +449,30 @@
 		\end{tabular}
 \end{flushright}
 }
-%----------------------------------------%
-\makeatletter
-\newcommand{\rndfielddscr}[1]{%
-%\csname #1\endcsname (\expandafter\@gobble\string#1)} % Следует выбрать среди одного из доступных направлений
-\expandafter\csname #1\endcsname\xspace (#1)}
-\makeatother
-%----------------------------------------%
-\makeatletter
-\newcommand{\rndprojectdscr}[1]{%
-\expandafter\csname #1\endcsname\xspace}
-\makeatother
 %----------------------------------------------------------
-% общие определения
-\newcommand{\UpperFullOrganisationName}{Министерство науки и высшего образования Российской Федерации}
-\newcommand{\ShortOrganisationName}{МГТУ~им.~Н.Э.~Баумана}
-\newcommand{\FullOrganisationName}{федеральное государственное бюджетное образовательное учреждение высшего профессионального образования\newline <<Московский государственный технический университет имени Н.Э.~Баумана (национальный исследовательский университет)>> (\ShortOrganisationName)}
-\newcommand{\OrganisationAddress}{105005, Россия, Москва, ул.~2-ая Бауманская, д.~5, стр.~1}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
 %----------------------------------------------------------
-\newcommand{\TargetAudience}{%
-Документ разработан для оценки результативности проведения научных исследований по направлению <<\expandafter\csname\rndfield\endcsname>>\xspace в рамках реализации курсовых работ, курсовых проектов, выпускных квалификационных работ бакалавров и магистров, а также диссертационных исследований аспирантов кафедры <<Системы автоматизированного проектирования>> (РК6) МГТУ~им.~Н.Э.~Баумана.}
-
-\newcommand{\PrefaceIntro}{%
-Документ содержит краткие материалы, формируемые обучающимися и исследователями в процессе их работ по одному научному направлению.}
-
-\newcommand{\DocOutReference}{\textbf{\AllAuthors}. \textbf{\rndfielddscr{\rndfield}}: \DocumentType.~/ Под редакцией Соколова~А.П. [Электронный ресурс] --- \City: \Year. --- \total{page} с. URL:~\url{https://arch.rk6.bmstu.ru} (облачный сервис кафедры РК6)}
-
-\newcommand{\Preface}{\PrefaceIntro \TargetAudience \newline \DocOutReference}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+% #1 - current \doctype
+% #2 - destination document
+% #3 - text
+\newcommand{\myconditionaltext}[3]%
+{%
+	\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{avtoreferat}}{#3}{}% short version
+	\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{thesis}}{}{}% short version
+	\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{presentation}}{}{}% short version
+	\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{presentation}}{}{}% short version
+	\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{thesis}}{#3}{}% short version
+	\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{presentation}}{#3}{}% short version
+	\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{thesis}}{\pdfcomment{#3}}{}% short version
+}
 %----------------------------------------------------------
-\newcommand{\DocumentType}{Научно-исследовательские заметки} % тип документа
-\newcommand{\SubTitle}{по направлению <<\rndfielddscr{\rndfield}>>}
+\newcommand{\mycitation}[2]{%
+\colorbox{black!5}{\parbox{1.0\textwidth}{{\large\textbf{``}}\textit{#1}}}\linebreak
+%\vspace{-5pt}
+\parbox{1.0\textwidth}{\begin{flushright}#2\end{flushright}}
+}
+%----------------------------------------------------------
+% указание на глубину вложенности подразделов при формировании содержания
+\setcounter{secnumdepth}{2}
 %----------------------------------------------------------

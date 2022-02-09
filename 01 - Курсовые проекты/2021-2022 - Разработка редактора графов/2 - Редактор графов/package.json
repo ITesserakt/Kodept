@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "d3": "^7.1.1"
+  },
+  "devDependencies": {
+    "prettier": "2.4.1"
+  }
+}

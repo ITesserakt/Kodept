@@ -1,0 +1,16 @@
+1) Использование графов для реализации СВМ
+https://archrk6.bmstu.ru/remote.php/webdav/050%20-%20%D0%98%D1%81%D1%81%D0%BB%D0%B5%D0%B4%D0%BE%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D1%8C%D1%81%D0%BA%D0%B0%D1%8F%20%D0%B4%D0%B5%D1%8F%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D1%81%D1%82%D1%8C.%20%D0%9D%D0%B0%D1%83%D1%87%D0%BD%D1%8B%D0%B5%20%D0%BF%D1%83%D0%B1%D0%BB%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8/010%20-%20%D0%A1%D0%BE%D0%BA%D0%BE%D0%BB%D0%BE%D0%B2%20%D0%90%D0%9F%20(%D0%BF%D1%83%D0%B1%D0%BB%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8)/303%20-%20comsdk_art_2018_GBSE_Basis%20-%20%D0%93%D1%80%D0%B0%D1%84%D0%BE%D0%BE%D1%80%D0%B8%D0%B5%D0%BD%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BA%D0%B0%D1%80%D0%BA%D0%B0%D1%81/gbse_paper_isp_v1.2_22_11_2018.pdf
+
+2) Онтологии в биомедицине
+https://www.scopus.com/record/display.uri?eid=2-s2.0-34548595489&origin=resultslist&sort=cp-f&src=s&st1=Graph-oriented+approach&nlo=&nlr=&nls=&sid=ed0a27156c7478583cfe63fb6eabd7a8&sot=b&sdt=cl&cluster=scosubjabbr%2c%22COMP%22%2ct%2c%22MATH%22%2ct%2c%22ENGI%22%2ct&sl=38&s=TITLE-ABS-KEY%28Graph-oriented+approach%29&relpos=1&citeCnt=200&searchTerm=
+
+3) Графо-ориентированный подход в СВМ
+https://archrk6.bmstu.ru/index.php/apps/files/?dir=/050%20-%20%D0%98%D1%81%D1%81%D0%BB%D0%B5%D0%B4%D0%BE%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D1%8C%D1%81%D0%BA%D0%B0%D1%8F%20%D0%B4%D0%B5%D1%8F%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D1%81%D1%82%D1%8C.%20%D0%9D%D0%B0%D1%83%D1%87%D0%BD%D1%8B%D0%B5%20%D0%BF%D1%83%D0%B1%D0%BB%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8/010%20-%20%D0%A1%D0%BE%D0%BA%D0%BE%D0%BB%D0%BE%D0%B2%20%D0%90%D0%9F%20(%D0%BF%D1%83%D0%B1%D0%BB%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D0%B8)/304%20-%20sa2gcd_art_CAE_for_CMDesign%20-%20%D0%A1%D0%90%D0%9F%D0%A0%20%D0%9A%D0%9C&fileid=796321#pdfviewer
+
+4) Патент Соколов Першин
+https://findpatent.ru/patent/268/2681408.html
+
+5) Сравнение графовых СУБД и реляционных
+https://www.scopus.com/record/display.uri?eid=2-s2.0-79951825053&origin=resultslist&sort=cp-f&src=s&st1=Neo4j&sid=9771be63c08e8fa3a7b32028623a05f0&sot=b&sdt=b&sl=20&s=TITLE-ABS-KEY%28Neo4j%29&relpos=1&citeCnt=137&searchTerm=
+
+http://sv-journal.org/2015-4/05/?lang=ru

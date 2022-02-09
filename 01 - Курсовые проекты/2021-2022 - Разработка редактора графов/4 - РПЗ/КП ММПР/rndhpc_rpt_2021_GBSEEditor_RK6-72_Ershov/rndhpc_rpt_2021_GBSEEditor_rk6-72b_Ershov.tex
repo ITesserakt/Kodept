@@ -1,0 +1,140 @@
+%\documentclass[12pt]{report}
+\documentclass[utf8, 12pt]{G7-32}  % ГОСТ 7.32-2001
+%----------------------------------------------------------
+% Значения констант по КП, НИРС, ВКР
+\input{doc-spec/cpxsln_rpt_YYYY_TaskName_Group_SurnameNS-id.tex}
+%----------------------------------------------------------
+%общая преамбула для всех лабораторных - настройки общего вида оформления
+\input{doc-spec/preamble_common.tex}
+%----------------------------------------------------------
+\pdfminorversion=7
+%----------------------------------------------------------
+% общие вспомогательные определения
+\input{doc-spec/cpxsln_rpt_YYYY_TaskName_Group_SurnameNS-def.tex}
+%----------------------------------------------------------
+% база аббревиатур и определений
+\input{abbreviations.tex}
+%----------------------------------------------------------
+% сборка документа
+\includeonly{%
+,referat															% Реферат
+,intro																% Введение
+,chapters/chap1_task_statement				% Постановка задачи
+%,chapters/chap2_comp_method						% Вычислительный метод (включается в зависимости от задачи)
+,chapters/chap3_soft_architecture			% Программная реализация (включается в зависимости от задачи)
+,chapters/chap4_soft_testing					% Тестирование и отладка (включается в зависимости от задачи)
+%,chapters/chap5_comp_experiment				% Вычислительный эксперимент (включается в зависимости от задачи)
+,chapters/chap6_results_analysis			% Анализ результатов (включается в зависимости от задачи)
+,conclusion														% Заключение
+%,additionals													% Приложения (включается в зависимости от необходимости)
+}
+%----------------------------------------------------------
+% выключает разворачивание терминов и аббревиатур при первом использовании в том числе, - всегда термины и аббревиатуры будут выводиться кратко 
+\glsunsetall
+%==========================================================
+\begin{document}
+% Процедура сборки: 
+% 1. Первичная сборка: формирование aux, идентификация ссылок (\ref), цитирований (\cite), использования аббревиатур и определений (\gls)
+% pdflatex cpxsln_rpt_YYYY_TaskName_Group_SurnameNS
+%
+% 2. Собираем глоссарии (работает при установленном Perl, например Strawberry)
+% makeglossaries cpxsln_rpt_YYYY_TaskName_Group_SurnameNS
+%
+% 3. Собираем библиографию
+% bibtex cpxsln_rpt_YYYY_TaskName_Group_SurnameNS
+%
+% 4. Окончательная сборка с учётом всех ссылок, библиографии и глоссария
+% pdflatex cpxsln_rpt_YYYY_TaskName_Group_SurnameNS
+%
+\frontmatter %%% <-- это выключает нумерацию ВСЕГО; здесь начинаются ненумерованные главы типа Исполнители, Обозначения и прочее
+%----------------------------------------------------------
+% Титульная страница (включается всегда, поэтому командой input)
+\input{doc-spec/title_common}
+%----------------------------------------------------------
+% Задание (включается для КП и ВКР)
+% Вставится только при сборке КП
+\myconditionaltext{\doctypesid}{kp}{%
+	\input{doc-additional/official_statement}
+}
+% Вставится только при сборке ВКР
+\myconditionaltext{\doctypesid}{vkr}{%
+	\input{doc-additional/official_statement}
+} 
+%----------------------------------------------------------
+% Календарный план, только для ВКР (для НИРС и КП этот документ не включается) 
+\myconditionaltext{\doctypesid}{vkr}{%
+	\input{doc-additional/calendar_plan}
+} 
+%----------------------------------------------------------
+% Направление на защиту (включается только для ВКР, для НИРС и КП не нужно)
+\myconditionaltext{\doctypesid}{vkr}{%
+	\input{doc-additional/referral_for_defense}
+} 
+%----------------------------------------------------------
+% Реферат
+\include{referat}
+%----------------------------------------------------------
+% Сокращения и определения
+\newpage
+\pagestyle{fancy}
+\printglossary[type=\acronymtype, title={СОКРАЩЕНИЯ}, nopostdot=false]
+%\thispagestyle{plain}
+%\printglossary[type=main, title={ОПРЕДЕЛЕНИЯ}, nopostdot=true]
+%----------------------------------------------------------
+% Содержание
+% Глубина содержания должна быть не более, чем глава (chapter), раздел (section) и подраздел (subsection) 
+\setcounter{tocdepth}{2}
+% Добавление в оглавление сверху Стр.
+%\makeatletter
+%\addtocontents{toc}{\string\pagestyle{TOC}}
+%\addtocontents{toc}{\string\thispagestyle{fancy}}
+%\addtocontents{toc}{\hfill Стр.\par}
+%\def\ps@TOC{%
+    %\def\@oddhead{\hfill \thepage \hfill Стр.} % нечетные хедеры
+    %\let\@oddfoot\@empty % нечетные футеры
+    %\def\@evenhead{\hfill \thepage \hfill Стр.} % четные хедеры
+    %\let\@evenfoot\@empty % четные футеры
+%}
+%\makeatother
+%----------------------------------------------------------
+\renewcommand{\contentsname}{\MakeUppercase{Содержание}}
+\newpage
+\tableofcontents
+%----------------------------------------------------------
+% Введение
+{%
+\def\thesection{В.\arabic{section}}
+\def\thefigure{В.\arabic{figure}}
+\def\thetable{В.\arabic{table}}
+\include{intro}
+}
+%----------------------------------------------------------
+\mainmatter %% это включает нумерацию глав и секций в документе ниже
+%----------------------------------------------------------
+\input{cpxsln_rpt_YYYY_TaskName_Group_SurnameNS_chapters.tex}
+%----------------------------------------------------------
+\backmatter %% Здесь заканчивается нумерованная часть документа и начинаются Заключение и Список использованных источников
+%----------------------------------------------------------
+\include{conclusion}
+%----------------------------------------------------------
+% Список литературы
+\bibliographystyle{utf8gost705u}
+\addcontentsline{toc}{chapter}{Литература}
+\bibliography{bibliography}
+%----------------------------------------------------------
+% Акт об отсутствии заимствования (включается только для ВКР, для НИРС и КП не нужно)
+% Вставится только при сборке ВКР
+\myconditionaltext{\doctypesid}{vkr}{%
+		\input{doc-additional/plagiarism_check}
+} 
+%----------------------------------------------------------
+%\include{chapters/additionals}
+%----------------------------------------------------------
+% метка нужна для отслеживания общего числа страниц в документе
+\label{lastpage}
+%----------------------------------------------------------
+\end{document}
+%==========================================================
+
+
+

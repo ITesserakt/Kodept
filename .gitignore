@@ -7,9 +7,11 @@
 *.tps
 *.upa
 *.toc
+*.bbl
 *.glg
 *.ist
 *.blg
+*.bbl
 *.glg-abr
 *.gls
 *.gls-abr
@@ -18,3 +20,4 @@
 *.glo
 *.vrb*sw*
 *.DS_Store*
+*node_modules/*
