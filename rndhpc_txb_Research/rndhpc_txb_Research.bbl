@@ -210,4 +210,46 @@ Diestel~R. Graph Theory: Springer Graduate Text GTM 173. Springer Graduate
 \newblock 2021.
 \newblock (дата обращения 15.11.2021).{}
 
+\bibitem{PradisGeneral2007}
+\selectlanguageifdefined{russian}
+PRADIS. Общее описание системы [Оф.
+  документация].
+\newblock 2007.{}
+
+\bibitem{PradisMethods2007}
+\selectlanguageifdefined{russian}
+PRADIS. Методы формирования и численного
+  расчёта математических моделей
+  переходных процессов [Оф. документация].
+\newblock 2007.{}
+
+\bibitem{Nazarenko2015}
+\selectlanguageifdefined{russian}
+Alexey M.~Nazarenko~Alexander A.~Prokhorov. Hierarchical Dataflow Model with
+  Automated File Management for Engineering and Scientific Applications~//
+  Procedia Computer Science.
+\newblock 2015.
+\newblock Т.~66. URL:  \BibUrl{
+  https://www.sciencedirect.com/science/article/pii/S1877050915034055?pes=vor}.{}
+
+\bibitem{SokolovPershin2018}
+\selectlanguageifdefined{russian}
+Соколов~А.П.~Першин~А.Ю.
+  Графоориентированный программный каркас
+  для реализации сложных вычислительных
+  методов~// Программирование.
+\newblock 2018.
+\newblock {№}~Х.{}
+
+\bibitem{SokolovPershin2017}
+\selectlanguageifdefined{russian}
+Соколов~А.П~Першин~А.Ю. Программный
+  инструментарий для создания подсистем
+  ввода данных при разработке систем
+  инженерного анализа~// Программная
+  инженерия.
+\newblock 2017.
+\newblock Т.~8, {№}~12.
+\newblock {С.}~543--555.{}
+
 \end{thebibliography}
