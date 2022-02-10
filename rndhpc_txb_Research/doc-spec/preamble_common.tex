@@ -1,11 +1,7 @@
 %----------------------------------------------------------
-%\usepackage{mathtext}
 \usepackage{amsfonts}
 \usepackage{amsmath}
-%\usepackage{mathabx}
 \usepackage{MnSymbol}
-%\usepackage{ccicons}
-%\usepackage{graphicx}
 %----------------------------------------------------------
 %\newcommand{\doclicense}{\copyright\xspace}
 %\newcommand{\doclicense}{\ccLogo\ccAttribution\xspace}%\ccShareAlike
@@ -67,6 +63,11 @@
     filecolor=black      % color of file links
 }
 %----------------------------------------------------------
+\usepackage[style=long4colheader, translate=babel, section=section]{glossaries}
+\usepackage[abbreviations, toc=true, xindy, automake]{glossaries-extra}
+\setglossarystyle{treenoname}%+
+\makeglossaries
+%----------------------------------------------------------
 % добавление поддержки команды вывода текста на полях \marginnote
 \usepackage{marginnote}
 % добавление поддержки команды \color
@@ -107,6 +108,7 @@
 \baselineskip=15pt
 \topmargin=-4mm
 %----------------------------------------------------------
+\def\notedate{\date}
 % Настройки колонтитулов
 \usepackage{fancyhdr} % Headers and footers
 \pagestyle{fancy} % All pages have headers and footers
@@ -143,12 +145,13 @@
 % регистрируем счетчик страниц
 \regtotcounter{page}
 %----------------------------------------------------------
-% определение атрибутов сборки Git
-%\usepackage[grumpy, maxdepth=6]{gitinfo2}
-%\renewcommand{\gitMark}{\textcolor{gray}{[git] \textbullet{} \gitBranch\,@\,\gitAbbrevHash{} \textbullet{} \gitAuthorName (\gitAuthorIsoDate)}}
-%----------------------------------------------------------
 % необходимо для того, чтобы в окружениях enumerate можно было менять формат нумерации
+% необходимо для работы опции wide в окружениях enumerate
 \usepackage{enumitem}
+%\setlist{noitemsep, nosep, wide}% topsep=0pt, bottomsep=0pt}
+\setenumerate{noitemsep, nosep, wide}% topsep=0pt, bottomsep=0pt}
+\renewcommand\labelitemi{--}
+
 %----------------------------------------------------------
 %Необходимо для сокращения размера шрифта подписей и сокращения отступов между рисунком и подписью к нему
 \usepackage[margin=5pt,font={small, singlespacing}, labelfont={small}, justification=centering, labelsep=period]{caption}
@@ -207,8 +210,6 @@
 \lstloadlanguages{Python, C++}
 
 %----------------------------------------------------------
-% дополнительные определения (работать будет только при подключенном пакете listings)
-
 % Подписи к листингам на русском языке.
 \renewcommand\lstlistlistingname{\cyr\CYRL\cyri\cyrs\cyrt\cyri\cyrn\cyrg\cyri}
 

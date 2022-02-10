@@ -7,6 +7,32 @@
 \ifx\undefined\BibAnnote\long\def\BibAnnote#1{(#1)}\else\fi
 \ifx\undefined\BibEmph\def\BibEmph#1{\emph{#1}}\else\fi
 
+\bibitem{SokADOT}
+\selectlanguageifdefined{russian}
+{Соколов А.П.} Описание формата данных aDOT
+  (advanced DOT) [Электронный ресурс]. Облачный
+  сервис SA2 Systems. [Офиц. сайт].
+\newblock 2020.
+\newblock (дата обращения
+  05.03.2020)\pdfcomment{Соискателю принадлежит идея
+  языка определения графовых моделей aDOT,
+  построенного на основе известного языка
+  DOT. Разработан синтаксис языка. Позже
+  совместно с Першиным А.П. создан парсер
+  языка.}{}
+
+\bibitem{SokAINI}
+\selectlanguageifdefined{russian}
+{Соколов А.П.} Описание формата данных aINI
+  (advanced INI) [Электронный ресурс]. Облачный
+  сервис SA2 Systems. [Офиц. сайт].
+\newblock 2020.
+\newblock (дата обращения
+  05.03.2020)\pdfcomment{Соискателю принадлежит идея
+  языка определения входных данных aINI,
+  разработан синтаксис языка. Позже создан
+  парсер языка.}{}
+
 \bibitem{ErmilovLI1970}
 \selectlanguageifdefined{russian}
 {Ермилов Л.И.} Синтез сетевых моделей
@@ -125,20 +151,6 @@
   инженерного анализа на основе
   графо-ориентированного подхода.}}{}
 
-\bibitem{SokADOT}
-\selectlanguageifdefined{russian}
-{Соколов А.П.} Описание формата данных aDOT
-  (advanced DOT) [Электронный ресурс]. Облачный
-  сервис SA2 Systems. [Офиц. сайт].
-\newblock 2020.
-\newblock (дата обращения
-  05.03.2020)\pdfcomment{Соискателю принадлежит идея
-  языка определения графовых моделей aDOT,
-  построенного на основе известного языка
-  DOT. Разработан синтаксис языка. Позже
-  совместно с Першиным А.П. создан парсер
-  языка.}{}
-
 \bibitem{patentRU2681408}
 \selectlanguageifdefined{russian}
 {Соколов А.П., Першин А.Ю.} Патент на
@@ -182,7 +194,7 @@
 \newblock P.~2936--2952.{}
 
 \bibitem{diestel2012graph}
-\selectlanguageifdefined{russian}
+\selectlanguageifdefined{english}
 Diestel~R. Graph Theory: Springer Graduate Text GTM 173. Springer Graduate
   Texts in Mathematics (GTM).
 \newblock Springer New York, 2012.{}
@@ -232,24 +244,23 @@ Alexey M.~Nazarenko~Alexander A.~Prokhorov. Hierarchical Dataflow Model with
 \newblock Т.~66. URL:  \BibUrl{
   https://www.sciencedirect.com/science/article/pii/S1877050915034055?pes=vor}.{}
 
-\bibitem{SokolovPershin2018}
+\bibitem{SokPersh2017}
 \selectlanguageifdefined{russian}
-Соколов~А.П.~Першин~А.Ю.
-  Графоориентированный программный каркас
-  для реализации сложных вычислительных
-  методов~// Программирование.
-\newblock 2018.
-\newblock {№}~Х.{}
-
-\bibitem{SokolovPershin2017}
-\selectlanguageifdefined{russian}
-Соколов~А.П~Першин~А.Ю. Программный
+{Соколов~А.П., Першин~А.Ю.} Программный
   инструментарий для создания подсистем
   ввода данных при разработке систем
   инженерного анализа~// Программная
   инженерия.
 \newblock 2017.
 \newblock Т.~8, {№}~12.
-\newblock {С.}~543--555.{}
+\newblock {С.}~543--555.
+\newblock
+  {\myconditionaltext{\doctype}{avtoreferat}{(1.5~п.л./1.2~п.л.)}\pdfcomment{05.13.10
+  (Управление в социальных и экономических
+  системах (технические науки)), 05.13.11, 05.13.17,
+  05.13.18, 05.13.19 и др. Соискателем предложена
+  концепция и архитектура программного
+  инструментария; совместно с Першиным А.Ю
+  принадлежит программная реализация.}}{}
 
 \end{thebibliography}
