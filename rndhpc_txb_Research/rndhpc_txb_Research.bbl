@@ -263,4 +263,19 @@ Alexey M.~Nazarenko~Alexander A.~Prokhorov. Hierarchical Dataflow Model with
   инструментария; совместно с Першиным А.Ю
   принадлежит программная реализация.}}{}
 
+\bibitem{SokolovPershin2018}
+\selectlanguageifdefined{russian}
+Соколов~А.П.~Першин~А.Ю.
+  Графоориентированный программный каркас
+  для реализации сложных вычислительных
+  методов~// Программирование.
+\newblock 2018.
+\newblock {№}~Х.{}
+
+\bibitem{SokolovADOT2020}
+\selectlanguageifdefined{russian}
+Соколов~А.П.~Першин~А.Ю. Описание формата
+  данных aDOT (advanced DOT).
+\newblock 2020.{}
+
 \end{thebibliography}
