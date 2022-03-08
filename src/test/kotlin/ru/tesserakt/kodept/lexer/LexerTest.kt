@@ -1,0 +1,91 @@
+package ru.tesserakt.kodept.lexer
+
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.data.forAll
+import io.kotest.data.headers
+import io.kotest.data.row
+import io.kotest.data.table
+import io.kotest.matchers.sequences.shouldContainAll
+import ru.tesserakt.kodept.lexer.ExpressionToken.*
+
+class LexerTest : StringSpec({
+    val lexer = Lexer()
+
+    fun impliesData(input: String, output: Sequence<ExpressionToken>) {
+        val tokens = lexer.tokenize(input)
+        println(tokens.toList().map { it.type.name })
+        output.map { it.token } shouldContainAll tokens.map { it.type }.filter { !it.ignored }
+    }
+
+    "simple expressions" {
+        table(
+            headers("input", "tokens"),
+            row("val id", sequenceOf(VAL, IDENTIFIER)),
+            row("Either[Int, String]", sequenceOf(TYPE, LBRACKET, TYPE, COMMA, TYPE, RBRACKET)),
+            row("fun println() {}", sequenceOf(FUN, IDENTIFIER, LPAREN, RPAREN, LCURVE_BRACKET, RCURVE_BRACKET)),
+            row("id /= 12", sequenceOf(IDENTIFIER, DIV_EQUALS, DECIMAL)),
+            row("Int // -2^32..2^32 - 1", sequenceOf(TYPE)),
+            row(
+                "F[_]: Functor[_]",
+                sequenceOf(TYPE, LBRACKET, TYPE_GAP, RBRACKET, COLON, TYPE, LBRACKET, TYPE_GAP, RBRACKET)
+            ),
+            row("1 < 2 : List[Double]", sequenceOf(DECIMAL, LESS, DECIMAL, COLON, TYPE, LBRACKET, TYPE, RBRACKET))
+        ).forAll(::impliesData)
+    }
+
+    "complex expressions" {
+        table(
+            headers("input", "output"),
+            row(
+                "output.map { it.token } shouldContainAll tokens.map { it.type }.filter { !it.ignored }",
+                sequenceOf(
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    LCURVE_BRACKET,
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    RCURVE_BRACKET,
+                    IDENTIFIER,
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    LCURVE_BRACKET,
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    RCURVE_BRACKET,
+                    DOT,
+                    IDENTIFIER,
+                    LCURVE_BRACKET,
+                    NOT,
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    RCURVE_BRACKET
+                )
+            ),
+            row(
+                """tasks.withType[KotlinCompile] {
+                    kotlinOptions.jvmTarget = "16"
+                }""".trimIndent(),
+                sequenceOf(
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    LBRACKET,
+                    TYPE,
+                    RBRACKET,
+                    LCURVE_BRACKET,
+                    IDENTIFIER,
+                    DOT,
+                    IDENTIFIER,
+                    EQUALS,
+                    STRING,
+                    RCURVE_BRACKET
+                )
+            )
+        ).forAll(::impliesData)
+    }
+})
