@@ -1,0 +1,79 @@
+\mode<presentation>
+
+% следующий код добавляет водяной знак в форме герба РК6 МГТУ в фон 
+\usepackage{background}
+\backgroundsetup{
+    placement=center,
+    scale=1,
+    contents={%
+		\parbox[c][0.8\textheight][c]{0.35\textwidth}{\centering\includegraphics[width=0.35\textwidth]{images/bmstu_rk6_logo3.png}} 
+		},
+    opacity=0.05,
+		angle = 1,
+		color=black
+}
+
+% Модификация фона
+\setbeamertemplate{background}{
+  \begin{tikzpicture}
+    \ifnum \value{page}=1% только для титульной страницы
+			\useasboundingbox (0,0) rectangle(\the\paperwidth,\the\paperheight);
+
+			\node[inner sep=0pt] at (10.5,4.8) {\includegraphics[width=1.45\textwidth]{images/bmstu_building_lighter.jpeg}};
+			\node[inner sep=0pt] at (11.1,1.5) {\includegraphics[width=0.2\textwidth]{images/bmstu_logo-eps-converted-to.pdf}};
+	
+			\node (v1) at (0,0) {};
+			\node (v2) at (9,0) {};
+			\node (v3) at (11,\the\paperheight) {};
+			\node (v4) at (0,\the\paperheight) {};
+			\path[fill=white] (v1.center)--(v2.center)--(v3.center)--(v4.center)--(v1.center);
+	
+			\node (v5) at (8.7,0) {};
+			\node (v6) at (10.7,\the\paperheight) {};
+			\path[fill=bblue] (v5.center)--(v2.center)--(v3.center)--(v6.center)--(v5.center);
+    \fi
+
+  \end{tikzpicture}
+  \ifnum \value{page}>1\relax% для всех остальных страниц
+    \BgMaterial
+  \fi
+}
+
+% Вёрстка титульной страницы (Title page)
+\defbeamertemplate*{title page}{bmstu}[1][]
+{
+    \vskip\titleheaderskip%
+    \begin{beamercolorbox}[wd=9cm,leftskip=-0.4cm,sep=5pt,#1]{title page header}
+      \usebeamerfont{title}\inserttitle\par
+    \end{beamercolorbox}%
+
+    \ifx\insertsubtitle\empty
+    \else
+      \vskip0.5cm%
+      \begin{beamercolorbox}[wd=9cm,leftskip=-0.4cm,sep=5pt,#1]{subtitle page header}
+        \usebeamerfont{subtitle}\insertsubtitle\par
+      \end{beamercolorbox}%
+    \fi
+
+    \vskip0.5cm%
+    \begin{beamercolorbox}[wd=10cm,leftskip=-0.4cm,sep=5pt,#1]{title page header}
+      \textcolor{bblue}{\rule{0.8\textwidth}{2pt}}
+    \end{beamercolorbox}%
+
+    \begin{beamercolorbox}[wd=10cm,leftskip=-0.4cm,sep=5pt,#1]{author}
+      \usebeamerfont{author}\insertauthor\par
+    \end{beamercolorbox}
+
+    \begin{beamercolorbox}[wd=10cm,leftskip=-0.4cm,sep=5pt,#1]{institute}
+      \usebeamerfont{institute}\insertinstitute\par
+    \end{beamercolorbox}
+
+    \vskip\titlefootertopmargin
+    \begin{beamercolorbox}[wd=10cm,leftskip=-0.4cm,sep=5pt,#1]{date}
+      \usebeamerfont{date}\insertdate\par
+    \end{beamercolorbox}
+
+}
+
+\mode
+<all>

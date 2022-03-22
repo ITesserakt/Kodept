@@ -1,0 +1,121 @@
+﻿%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Описание предметной области}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}%[allowframebreaks=0.9,t]
+
+Рассмотрим процесс проектирования некоторого технического объекта на примере мобильного робота.
+\begin{figure}[!ht]
+  \begin{minipage}{0.455\linewidth}
+    Выделим следующие компоненты:
+    \begin{itemize}
+      \arrowitem двигатели;
+      \arrowitem пила;
+      \arrowitem манипулятор;
+      \arrowitem колёса;
+      \arrowitem привод пилы;
+      \arrowitem привод колёс;
+      \arrowitem батарейный отсек;
+      \arrowitem электронные компоненты;
+      \arrowitem корпус.
+    \end{itemize}
+  \end{minipage}%
+  \begin{minipage}{0.455\linewidth}
+    \centering
+    \includegraphics[width=\textwidth]{images/robot.jpg}
+    \caption{Пример проектируемого объекта}
+    \label{fig:technicalObjectExample}
+  \end{minipage}
+\end{figure}
+
+%\onslide<1->{
+%\begin{center}
+%  \begin{tikzpicture}
+%   \draw (0,0) -- (10,0) -- (10,3) -- (0,3) -- (0,0);
+%   \end{tikzpicture}
+%\end{center}}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame} 
+  Формулируется техническое задание.
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.2]{images/design.frame01.png}
+    \label{fig:desginFrame01}
+  \end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame} 
+  Проектируются компоненты, которые не зависят от других компонентов.
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.2]{images/design.frame02.png}
+    \label{fig:desginFrame02}
+  \end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame} 
+  Проектируются компоненты, зависящие от предыдущих.
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.2]{images/design.frame03.png}
+    \label{fig:desginFrame03}
+  \end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame} 
+  Проектируются компоненты, объединяющие или связывающие предыдущие.
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.2]{images/design.frame04.png}
+    \label{fig:desginFrame04}
+  \end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame} 
+  Проектируются компоненты, объединяющие или связывающие предыдущие.
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.2]{images/design.frame05.png}
+    \caption{Проектирование мобильного робота по компонентам}
+    \label{fig:desginFrame05}
+  \end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{remark}
+    Процесс проектирования некоторого технического объекта удобно представлять в виде графа.
+  \end{remark}
+  \begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{images/design_graph_variants.png}
+    \caption{Различные формы организации процессов проектирования в виде графа}
+    \label{fig:designGraphVariants}
+  \end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Методология программного комплекса GBSE}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \textbf{[Идея]} Узлы графа -- состояния данных, рёбра -- переходы между ними (\emph{морфизмы}).
+
+  \begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{images/adot_example.png}
+    \caption{Пример графовой модели вычислительного процесса}
+    \label{fig:aDotExamplePic}
+  \end{figure}
+\end{frame}
+
+\begin{frame}
+  Дополнительные определения:
+  \begin{definition}
+    \emph{Функция-предикат} -- функция, определяющая соответствие подаваемого ей на вход набора данных тому виду, который требуется для выполнения отображения;  
+  \end{definition}
+  \begin{definition}
+    \emph{Функция-обработчик} -- функция, отвечающая за преобразование данных из одного состояния в другое;    
+  \end{definition}
+  \begin{definition}
+    \emph{Функция-селектор} -- функция, отвечающая в процессе обхода графовой модели за выбор тех рёбер, которые необходимо выполнить на следующем шаге в соответствии с некоторым условием.    
+  \end{definition}
+\end{frame}

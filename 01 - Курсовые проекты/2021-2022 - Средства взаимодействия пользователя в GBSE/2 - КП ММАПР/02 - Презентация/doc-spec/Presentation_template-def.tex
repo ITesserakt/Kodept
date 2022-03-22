@@ -1,0 +1,279 @@
+﻿%----------------------------------------------------------
+\newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+\newcommand\T{\textup{T}}
+\def\argmin{\operatornamewithlimits{argmin}}
+\def\argmax{\operatornamewithlimits{argmax}}
+\def\diag{\operatornamewithlimits{diag}}
+%----------------------------------------------------------
+\newcommand{\bvec}[1]{\mbox{\mathversion{bold}${#1}$}}
+\newcommand{\periodichnost}[1]{[\hspace{-2pt}[#1]\hspace{-2pt}]}
+\newcommand{\volna}[1]{\mathop{#1}\limits\_{\sim}}
+\newcommand{\crujok}[1]{#1}
+\newcommand{\driv}[2]{\frac{d#1}{d#2}}
+\newcommand{\pdriv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\uparr}[1]{\overrightarrow{#1}}
+\newcommand{\intThreeD}[1]{\hspace{6pt}\mathop{\int\hspace{-17pt}\int\hspace{-17pt}\int}\limits\_{#1}\hspace{6pt}}
+\newcommand{\intTwoD}[1]{\hspace{6pt}\mathop{\int\hspace{-17pt}\int}\limits\_{\hspace{-6pt}#1}}
+%\newcommand{\bold}[1]{\mbox{\textbf{#1}}}
+%----------------------------------------------------------
+\newcommand{\multirowbox}[2]
+{
+   \parbox{#1}{\smallskip #2 \smallskip}
+}
+%----------------------------------------------------------
+\newcommand{\multirowboxfixed}[1]
+{
+   \parbox{7cm}{\smallskip #1 \smallskip}
+}
+%----------------------------------------------------------
+\makeatletter
+\def\renewtheorem#1{%
+	\expandafter\let\csname#1\endcsname\relax
+	\expandafter\let\csname c@#1\endcsname\relax
+	\gdef\renewtheorem@envname{#1}
+	\renewtheorem@secpar
+}
+\def\renewtheorem@secpar{\@ifnextchar[{\renewtheorem@numberedlike}{\renewtheorem@nonumberedlike}}
+\def\renewtheorem@numberedlike[#1]#2{\newtheorem{\renewtheorem@envname}[#1]{#2}}
+\def\renewtheorem@nonumberedlike#1{
+	\def\renewtheorem@caption{#1}
+	\edef\renewtheorem@nowithin{\noexpand\newtheorem{\renewtheorem@envname}{\renewtheorem@caption}}
+	\renewtheorem@thirdpar
+}
+\def\renewtheorem@thirdpar{\@ifnextchar[{\renewtheorem@within}{\renewtheorem@nowithin}}
+\def\renewtheorem@within[#1]{\renewtheorem@nowithin[#1]}
+\makeatother
+%----------------------------------------------------------
+\usepackage{amsthm}
+
+\newtheoremstyle{mythr} % namei
+{6pt}  % Space above
+{3pt}  % Space below
+{\normalfont}% Body font
+{\parindent} % Indent amount
+{\bfseries}  % Theorem head font
+{}          % Punctuation after theorem head
+{\newline}   % Space after theorem head
+{}           % Theorem head spec (can be left empty, meaning ‘normal’)i
+
+\theoremstyle{mythr}
+
+\newtheorem{remark}{\texttt{Замечание}}
+\newtheorem{syntax}{\textbf{\underline{Синтаксис}}}
+%\renewtheorem{theorem}{Теорема}
+%\newtheorem{subtheorem}{Теорема}
+%\newtheorem{lemm}{Лемма}
+%\newtheorem{sublemm}{Лемма}
+%\renewtheorem{corollary}{Следствие}
+\newtheorem{statement}{Задача}
+\newtheorem{demand}{Требование}
+
+\renewtheorem{definition}{Определение}
+\newtheorem{designation}{Обозначение}
+%\newtheorem{property}{\texttt{Свойство}}
+\newtheorem{task}{\texttt{Задача}}
+%\newtheorem{mathmod}{\texttt{Математическая модель}}
+%\newtheorem{mytheorem}{\texttt{Теорема}}
+%\newtheorem{task}{Задача}
+
+% Необходимо для обеспечения переносов на следующую строку в длинных заголовках в окружениях newtheorem
+%\makeatletter
+%\renewcommand*{\@opargbegintheorem}[3]{\trivlist
+%      \item[\hskip \labelsep{\bfseries #1\ #2}] \textbf{(#3)}\ \itshape}
+%\makeatother
+%----------------------------------------------------------
+\def\pbs{\raggedright\baselineskip3.0ex}%
+\def\Dfmn{Д-р~физ.-мат.~наук}
+\def\dfmn{д-р~физ.-мат.~наук}
+\def\dtn{д-р~тех.~наук}
+\def\Kfmn{Канд.~физ.-мат.~наук}
+\def\Ktn{Канд.~тех.~наук}
+\def\ktn{канд.~тех.~наук}
+\def\kfmn{канд.~физ.-мат.~наук}
+\def\mns{мл.~науч.~сотр.}
+\def\sns{ст.~науч.~сотр.}
+\def\Tehn{Техник}
+\def\tehn{техник\enskip}
+\def\signvrule{\vrule height 0.5pt width30mm depth0pt}
+\def\Inj{Инженер}
+\def\inj{инженер}
+\def\Dotsent{Доцент}
+\def\dotsent{доцент}
+\def\prof{проф.}
+\def\regi{\textsuperscript{\textregistered}\enskip}
+\newcommand{\datetofill}{<<\underline{~~~~~}>>~\underline{~~~~~~~~~~~~~~~~~~~}~\Year~\cyrg.}
+
+\def\appdxSymb{А}
+
+%----------------------------------------------------------
+\graphicspath{{pictures/}}
+%\usepackage{cite}
+%\usepackage{changepage}
+%\usepackage{pdflscape}
+%\EqInChaper % формулы будут нумероваться в пределах раздела
+%\TableInChaper % таблицы будут нумероваться в пределах раздела
+%\PicInChaper   % рисунки будут нумероваться в пределах раздела
+%\setlength\GostItemGap{2mm}% для красоты можно менять от 0мм
+\bibliographystyle{unsrt} %Стиль библиографических ссылок БибТеХа
+%\usepackage{RNP112_sa}
+%----------------------------------------------------------
+\newcommand{\pageno}[1]{\setcounter{page}{#1}}
+\newcommand{\chapterno}[1]{\setcounter{chapter}{#1}\addtocounter{chapter}{-1}}
+%----------------------------------------------------------
+\newcommand{\PersonSign}[1]
+{
+    \textunderset{}{\signvrule} \quad #1\par
+    \vskip2mm
+    \datetofill
+}
+%----------------------------------------------------------
+\newcommand{\PersonPosition}[1]
+{
+   #1\\
+}
+%----------------------------------------------------------
+\newcommand{\PersonPositionWithSign}[2]
+{
+	\PersonPosition{#1}\par
+  \vskip4mm
+	\PersonSign{#2}
+}
+%----------------------------------------------------------
+\newcommand{\PersonPositionWithSignRight}[2]
+{
+    \parbox[t]{0.5\textwidth}
+    {
+       \raggedright
+	     \PersonPositionWithSign{#1}{#2}
+       \vskip6mm
+    }
+}
+%----------------------------------------------------------
+\newcommand{\SignOKEH}[3]
+{
+    \parbox[t]{75.0mm}
+    {
+       \centering
+       #1\par
+       \vskip2mm
+			 \PersonPositionWithSign{#2}{#3}
+       \vskip2mm
+    }
+}
+%----------------------------------------------------------
+\newcommand{\Appendix}[2]
+{
+\stepcounter{appdxcnt}
+%\newpage
+\addcontentsline{toc}{chapter}{ПРИЛОЖЕНИЕ #1 -- #2}%\label{appdx#1}
+%\chapter*{chapter}{#2}%\label{appdx#1}
+\bgroup
+\begin{center}
+		ПРИЛОЖЕНИЕ #1\\
+		(к отчету о НИР) \\
+		\vskip6mm
+		{\Large\textbf{#2}}
+\end{center}
+\egroup
+}
+%----------------------------------------------------------
+\def\Chapter#1{%
+	\refstepcounter{appdxcnt}
+  \refstepcounter{chapter}% +1
+  \setcounter{section}0%
+  \setcounter{figure}0%
+  \setcounter{table}0%
+  \setcounter{equation}0%
+\newpage
+\begin{center}
+		\chaptername~\thechapter\\
+		(к отчету о НИР) \\
+		\vskip6mm
+		{\Large\textbf{#1}}
+\end{center}
+  \addcontentsline{toc}{chapter}{\chaptername~\thechapter.~#1}%
+}
+%----------------------------------------------------------
+\def\ChapterEX#1{%
+	\refstepcounter{appdxcnt}
+  \refstepcounter{chapter}% +1
+  \setcounter{section}0%
+  \setcounter{figure}0%
+  \setcounter{table}0%
+  \setcounter{equation}0%
+\newpage
+\addcontentsline{toc}{chapter}{\chaptername~\thechapter.~#1}%
+}
+%----------------------------------------------------------
+\newcommand{\AppendixEX}[2]
+{
+\stepcounter{appdxcnt}
+\newpage
+\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ #1 -- #2}
+}
+%----------------------------------------------------------
+% Подписи к листингам на русском языке.
+\renewcommand*\thelstnumber{\oldstylenums{\the\value{lstnumber}}}
+\renewcommand\lstlistingname{\cyr\CYRL\cyri\cyrs\cyrt\cyri\cyrn\cyrg}
+\renewcommand\lstlistlistingname{\cyr\CYRL\cyri\cyrs\cyrt\cyri\cyrn\cyrg\cyri}
+
+\newcommand\executer[3]{\pbs #1 & \textunderset{\scriptsize{подпись, дата}}{\signvrule} & #2 #3 \\}
+\newcommand\executertit[3]{
+\pbs #1 & \vspace*{\fill} \textunderset{\scriptsize{подпись, дата}}{\signvrule} & \vspace*{\fill} #2 \newline #3 \\
+}
+%----------------------------------------------------------
+%\input{doc-spec/edupmi_evn_PMSoftware_DeploymentDistribution-spec.def}
+
+\hyphenation{супер-ком-пью-тер-ный}
+\hyphenation{супер-ком-пью-тер-ное}
+\hyphenation{вы-со-ко-произво-ди-тель-ный}
+\makeatletter
+\def\makefnmark{\hbox{\textsuperscript{\normalfont\@thefnmark)}}}
+\makeatother
+
+%\newcolumntype{x}[1]{ >{\centering\hspace{0pt}}p{#1}}%
+\newcolumntype{x}[1]{ >{\centering}p{#1}}%
+
+%----------------------------------------------------------
+%% Следующие команды можно использовать для форматирования абзацев
+%% в таблице при использовании пакетов типа tabularx, mdwtab:
+\def\L{\leftskip=0pt \rightskip=0pt plus 1 fil}
+\def\C{\leftskip=0pt plus 1 fil \rightskip=0pt plus 1 fil \parfillskip=0pt}
+\def\CB{\C \baselineskip=12pt}
+\def\CBF{\C \baselineskip=10pt}
+\def\LB{\L \baselineskip=12pt}
+\def\LBF{\L \baselineskip=10pt}
+\def\TCS#1 {\tabcolsep=#1\tabcolsep}
+
+
+\newcount\NN \NN=0
+\def\NNN{\global\advance\NN by 1\relax\the\NN\relax}
+%----------------------------------------------------------
+% добавление поддержки команды вывода текста на полях \marginnote
+\usepackage{marginnote}
+% добавление поддержки команды \color
+\usepackage{xcolor}
+%Вывод восклицательного знака на полях для указания о необходимости внесения корректировки
+\newcommand{\mes}{\marginnote{\color[rgb]{1,0,0}\Huge\textbf{!}}[-1.0cm]}
+%----------------------------------------------------------
+\newenvironment{arreqn}[2]
+    {\smaller[1]
+		\begin{block}{\smaller[1] #1}
+    \begin{equation}\label{#2}
+    \begin{array}{l}
+    }
+		{
+    \end{array}
+    \end{equation}
+		\end{block}
+    }
+%----------------------------------------------------------
+
+
+
+
+
+
+
+
+

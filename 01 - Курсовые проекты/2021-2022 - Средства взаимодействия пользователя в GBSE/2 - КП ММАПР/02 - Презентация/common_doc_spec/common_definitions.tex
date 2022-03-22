@@ -1,0 +1,179 @@
+%----------------------------------------------------------
+\newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+\newcommand\T{\textup{T}}
+\def\argmin{\operatornamewithlimits{argmin}}
+\def\argmax{\operatornamewithlimits{argmax}}
+\def\diag{\operatornamewithlimits{diag}}
+\def\dep{\operatornamewithlimits{dep}}
+%----------------------------------------------------------
+\newcommand{\bvec}[1]{\mbox{\mathversion{bold}${#1}$}}
+\newcommand{\periodichnost}[1]{[\hspace{-2pt}[#1]\hspace{-2pt}]}
+\newcommand{\volna}[1]{\mathop{#1}\limits\_{\sim}}
+\newcommand{\crujok}[1]{#1}
+\newcommand{\driv}[2]{\frac{d#1}{d#2}}
+\newcommand{\pdriv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\uparr}[1]{\overrightarrow{#1}}
+\newcommand{\intThreeD}[1]{\hspace{6pt}\mathop{\int\hspace{-17pt}\int\hspace{-17pt}\int}\limits\_{#1}\hspace{6pt}}
+\newcommand{\intTwoD}[1]{\hspace{6pt}\mathop{\int\hspace{-17pt}\int}\limits\_{\hspace{-6pt}#1}}
+%----------------------------------------------------------
+\newcommand{\multirowbox}[2]
+{
+   \parbox{#1}{\smallskip #2 \smallskip}
+}
+%----------------------------------------------------------
+\usepackage{amsthm}
+\usepackage{thmtools}
+
+\declaretheoremstyle[
+  headfont=\normalfont\bfseries,
+	numberwithin=section,
+  bodyfont=\normalfont,
+  spaceabove=1em plus 0.75em minus 0.25em,
+  spacebelow=0em plus 0.75em minus 0.25em,
+%  qed={$\blacksquare$},
+%  qed={$\natural$},%\sharp},%$\square$},
+	headpunct={\newline},%Punctuation after theorem head
+]{thrmstyle}
+\declaretheorem[
+  style=thrmstyle,
+  title=Замечание,
+  refname={замечание,замечания},
+  Refname={Замечание,Замечания}
+]{remark}
+
+\theoremstyle{thrmstyle}
+
+%\newtheorem{question}{Вопрос}
+%\newtheorem{approval}{Утверждение}
+%\newtheorem{demand}{Требование}
+%\newtheorem{statement}{Утверждение}
+%\newtheorem{syntax}{Синтаксис}
+%\newtheorem{definition}{Определение}
+%\newtheorem{designation}{Обозначение}
+%\newtheorem{property}{Свойство}
+%\newtheorem{task}{Задача}
+%\newtheorem{mathmod}{Математическая модель}
+%\newtheorem{mytheorem}{Теорема}
+
+%----------------------------------------------------------
+\hyphenation{супер-ком-пью-тер-ный супер-ком-пью-тер-ное вы-со-ко-произ-во-ди-тель-ный}
+%----------------------------------------------------------
+\newcommand\MyProcess[3]
+{
+%\begin{tabular}{p{0.1\textwidth}p{0.9\textwidth}}
+%&
+\begin{lstlisting}[caption={#1}, label={#2}, language=ALGO, basicstyle=\small]
+#3
+\end{lstlisting}			
+%\end{tabular}
+}
+%----------------------------------------------------------
+\newcommand\myquote[2]{%
+\textit{``#1''}
+\begin{flushright}
+\textcolor{gray}{#2}
+\end{flushright}
+}
+%----------------------------------------------------------
+\newcommand{\mydescr}[1]{%
+
+\colorbox{black!5}{\parbox{0.7\textwidth}{\smaller[1]\textit{#1}}}
+}
+%----------------------------------------------------------
+% вёрстка в две колонки
+\newcommand\cols[4]
+{\smaller[1]%
+		\begin{columns}
+		\begin{column}{#1}
+    #2
+		\end{column}
+		\begin{column}{#3}
+		#4
+		\end{column}
+		\end{columns}}
+%----------------------------------------------------------
+% вёрстка в две колонки двух блоков с itemize
+\newcommand\colsblocks[4]
+{\smaller[1]%
+		\begin{columns}
+		\begin{column}{0.5\textwidth}
+		\begin{block}{#1}
+		\begin{itemize}
+			#2
+		\end{itemize}
+		\end{block}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+		\begin{block}{#3}
+		\begin{itemize}
+			#4
+		\end{itemize}
+		\end{block}
+		\end{column}
+		\end{columns}}
+%----------------------------------------------------------
+%\usepackage{ifthen}
+%%----------------------------------------------------------
+%\usepackage{totcount}
+%%----------------------------------------------------------
+%%\newboolean{shortversion}
+%% #1 - current \doctype
+%% #2 - destination document
+%% #3 - text
+%\newcommand{\myconditionaltext}[3]%
+%{%
+	%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{avtoreferat}}{#3}{}% short version
+	%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{thesis}}{}{}% short version
+	%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{presentation}}{}{}% short version
+	%\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{presentation}}{}{}% short version
+	%\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{thesis}}{#3}{}% short version
+	%\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{presentation}}{#3}{}% short version
+	%\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{thesis}}{\pdfcomment{#3}}{}% short version
+%}
+
+%----------------------------------------------------------
+% #1 - Короткое название практики
+% #2 - Короткое описание
+% #3 - Назначение в форме itemize
+% #4 - LaTeX код
+\newcommand{\bestpractice}[4]{%
+\subsection{#1}
+\begin{frame}%[fragile]
+
+{\smaller[1]
+#2}
+
+\begin{columns}[t]
+
+\begin{column}{0.5\textwidth}
+\begin{block}{Назначение}
+{\smaller[1]%
+#3}
+\end{block}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+\begin{lstlisting}[language={TeX}, basicstyle=\scriptsize]
+#4
+\end{lstlisting}
+\end{column}
+\end{columns}
+
+\end{frame}}
+%----------------------------------------------------------
+\newenvironment{arreqn}[2]
+    {\smaller[1]
+		\begin{block}{\smaller[1] #1}
+    \begin{equation}\label{#2}
+    \begin{array}{l}
+    }
+		{
+    \end{array}
+    \end{equation}
+		\end{block}
+    }
+%----------------------------------------------------------
+
+
+
+
