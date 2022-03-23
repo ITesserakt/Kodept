@@ -1,5 +1,6 @@
 ﻿%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Описание предметной области}
+%\subsection{Описание предметной области}
+\subsection{Пример процесса проектирования некоторого технического устройства}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}%[allowframebreaks=0.9,t]
 
@@ -16,7 +17,8 @@
       \arrowitem привод колёс;
       \arrowitem батарейный отсек;
       \arrowitem электронные компоненты;
-      \arrowitem корпус.
+      \arrowitem корпус;
+      \arrowitem ...
     \end{itemize}
   \end{minipage}%
   \begin{minipage}{0.455\linewidth}
@@ -36,51 +38,48 @@
 
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame} 
-  Формулируется техническое задание.
-  \begin{figure}[!ht]
+\begin{frame}[t]
+	
+	{\smaller[1]
+	
+	\onslide<1>{
+	\begin{enumerate}
+		\item<1-> Формулируется техническое задание.
+		\item<2-> Проектируются компоненты, которые не зависят от других компонентов.
+		\item<3-> Проектируются компоненты, зависящие от предыдущих.
+		\item<4-> Проектируются компоненты, объединяющие или связывающие предыдущие.
+		\item<5-> Проектируются компоненты, объединяющие или связывающие предыдущие.
+	\end{enumerate}}
+	
+	
+	
+	
+	}
+	
+	\begin{figure}[!ht]
     \centering
-    \includegraphics[scale=0.2]{images/design.frame01.png}
-    \label{fig:desginFrame01}
+		\only<1>{%
+		\includegraphics[scale=0.17]{images/design.frame01.png}
+		}
+		\only<2>{%
+		\includegraphics[scale=0.17]{images/design.frame02.png}
+		}
+		\only<3>{%
+		\includegraphics[scale=0.17]{images/design.frame03.png}
+		}
+		\only<4>{%
+		\includegraphics[scale=0.17]{images/design.frame04.png}
+		}
+		\only<5>{%
+		\includegraphics[scale=0.17]{images/design.frame05.png}
+		}
+		\caption{Проектирование мобильного робота по компонентам}\label{fig:desgin.graph}
   \end{figure}
 \end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame} 
-  Проектируются компоненты, которые не зависят от других компонентов.
-  \begin{figure}[!ht]
-    \centering
-    \includegraphics[scale=0.2]{images/design.frame02.png}
-    \label{fig:desginFrame02}
-  \end{figure}
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame} 
-  Проектируются компоненты, зависящие от предыдущих.
-  \begin{figure}[!ht]
-    \centering
-    \includegraphics[scale=0.2]{images/design.frame03.png}
-    \label{fig:desginFrame03}
-  \end{figure}
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame} 
-  Проектируются компоненты, объединяющие или связывающие предыдущие.
-  \begin{figure}[!ht]
-    \centering
-    \includegraphics[scale=0.2]{images/design.frame04.png}
-    \label{fig:desginFrame04}
-  \end{figure}
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame} 
-  Проектируются компоненты, объединяющие или связывающие предыдущие.
-  \begin{figure}[!ht]
-    \centering
-    \includegraphics[scale=0.2]{images/design.frame05.png}
-    \caption{Проектирование мобильного робота по компонентам}
-    \label{fig:desginFrame05}
-  \end{figure}
-\end{frame}
+
+
+\subsection{Возможные формы представления процесса проектирования}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \begin{remark}
@@ -94,7 +93,7 @@
   \end{figure}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Методология программного комплекса GBSE}
+\subsection{Методология графоориентированного подхода (GBSE)}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}
   \textbf{[Идея]} Узлы графа -- состояния данных, рёбра -- переходы между ними (\emph{морфизмы}).
@@ -102,20 +101,19 @@
   \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{images/adot_example.png}
-    \caption{Пример графовой модели вычислительного процесса}
-    \label{fig:aDotExamplePic}
+    \caption{Пример графовой модели вычислительного процесса}\label{fig:aDotExamplePic}
   \end{figure}
 \end{frame}
 
 \begin{frame}
-  Дополнительные определения:
-  \begin{definition}
-    \emph{Функция-предикат} -- функция, определяющая соответствие подаваемого ей на вход набора данных тому виду, который требуется для выполнения отображения;  
-  \end{definition}
-  \begin{definition}
-    \emph{Функция-обработчик} -- функция, отвечающая за преобразование данных из одного состояния в другое;    
-  \end{definition}
-  \begin{definition}
+%  Дополнительные определения:
+  \begin{designation}
+    \emph{Функция-обработчик} -- функция, обеспечивающая преобразование данных из одного состояния в другое.    
+  \end{designation}
+  \begin{designation}
+    \emph{Функция-предикат} -- функция, определяющая соответствие подаваемого ей на вход набора данных тому виду, который требуется для выполнения отображения.
+  \end{designation}
+  \begin{designation}
     \emph{Функция-селектор} -- функция, отвечающая в процессе обхода графовой модели за выбор тех рёбер, которые необходимо выполнить на следующем шаге в соответствии с некоторым условием.    
-  \end{definition}
+  \end{designation}
 \end{frame}
