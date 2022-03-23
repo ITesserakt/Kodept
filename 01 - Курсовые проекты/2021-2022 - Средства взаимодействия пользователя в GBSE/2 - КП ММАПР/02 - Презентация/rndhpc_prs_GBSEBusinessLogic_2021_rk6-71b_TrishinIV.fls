@@ -1,8 +1,8 @@
-PWD c:/Users/primu/Documents/ƒÎˇ ÛÌË‚Â‡/¬ –/ppt/rndhpc_prs_GBSEBusinessLogic_2021_rk6_71b_TrishinIV
+PWD c:/Users/primu/Documents/ƒÎˇ ÛÌË‚Â‡/¬ –/rndhpc/01 -  ÛÒÓ‚˚Â ÔÓÂÍÚ˚/2021-2022 - —Â‰ÒÚ‚‡ ‚Á‡ËÏÓ‰ÂÈÒÚ‚Ëˇ ÔÓÎ¸ÁÓ‚‡ÚÂÎˇ ‚ GBSE/2 -  œ ÃÃ¿œ–/02 - œÂÁÂÌÚ‡ˆËˇ
 INPUT c:/Program Files/TexLive/2021/texmf.cnf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/web2c/texmf.cnf
 INPUT c:/Program Files/TexLive/2021/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT c:/Users/primu/Documents/–î–ª—è —É–Ω–∏–≤–µ—Ä–∞/–í–ö–†/ppt/rndhpc_prs_GBSEBusinessLogic_2021_rk6_71b_TrishinIV/rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.tex
+INPUT c:/Users/primu/Documents/–î–ª—è —É–Ω–∏–≤–µ—Ä–∞/–í–ö–†/rndhpc/01 - –ö—É—Ä—Å–æ–≤—ã–µ –ø—Ä–æ–µ–∫—Ç—ã/2021-2022 - –°—Ä–µ–¥—Å—Ç–≤–∞ –≤–∑–∞–∏–º–æ–¥–µ–π—Å—Ç–≤–∏—è –ø–æ–ª—å–∑–æ–≤–∞—Ç–µ–ª—è –≤ GBSE/2 - –ö–ü –ú–ú–ê–ü–†/02 - –ü—Ä–µ–∑–µ–Ω—Ç–∞—Ü–∏—è/rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.tex
 OUTPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.log
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/beamer/beamer.cls
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/beamer/beamer.cls
@@ -1966,10 +1966,6 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/babel.sty
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/babel.sty
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/babel.sty
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/txtbabel.def
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-english/english.ldf
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-english/english.ldf
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-english/english.ldf
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-english/english.ldf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-russian/russianb.ldf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-russian/russianb.ldf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel-russian/russianb.ldf
@@ -2627,6 +2623,26 @@ INPUT ./sections/intro.tex
 INPUT sections/intro.tex
 INPUT ./sections/intro.tex
 INPUT sections/intro.tex
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmmi8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/matha8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/mathb8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/mathx10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy8.tfm
 INPUT ./images/robot.jpg
 INPUT ./images/robot.jpg
 INPUT images/robot.jpg
@@ -2646,23 +2662,6 @@ INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Regular-tlf-t2a.vf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a--base.tfm
-INPUT ./images/design.frame01.png
-INPUT ./images/design.frame01.png
-INPUT images/design.frame01.png
-INPUT ./images/design.frame01.png
-INPUT ./images/design.frame01.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_logo-eps-converted-to.pdf
-INPUT ./images/bmstu_logo-eps-converted-to.pdf
-INPUT images/bmstu_logo-eps-converted-to.pdf
-INPUT ./images/bmstu_logo-eps-converted-to.pdf
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/design.frame02.png
 INPUT ./images/design.frame02.png
 INPUT images/design.frame02.png
@@ -2732,11 +2731,10 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a.tfm
-INPUT ./images/design_graph_variants.png
-INPUT ./images/design_graph_variants.png
-INPUT images/design_graph_variants.png
-INPUT ./images/design_graph_variants.png
-INPUT ./images/design_graph_variants.png
+INPUT ./images/design.frame05.png
+INPUT ./images/design.frame05.png
+INPUT images/design.frame05.png
+INPUT ./images/design.frame05.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2751,8 +2749,41 @@ INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Regular-tlf-t2a.vf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a--base.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Bold-tlf-t2a.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Italic-tlf-t2a.tfm
+INPUT ./images/design_graph_variants.png
+INPUT ./images/design_graph_variants.png
+INPUT images/design_graph_variants.png
+INPUT ./images/design_graph_variants.png
+INPUT ./images/design_graph_variants.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/matha7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/mathb7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/mathx10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy7.tfm
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Italic-tlf-t2a.vf
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Italic-tlf-t2a--base.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Regular-tlf-t2a.vf
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a--base.tfm
 INPUT ./images/adot_example.png
 INPUT ./images/adot_example.png
 INPUT images/adot_example.png
@@ -2770,10 +2801,23 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Bold-tlf-t2a.vf
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Bold-tlf-t2a--base.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Italic-tlf-t2a.vf
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Italic-tlf-t2a--base.tfm
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/new_structure_example.png
+INPUT ./images/new_structure_example.png
+INPUT images/new_structure_example.png
+INPUT ./images/new_structure_example.png
+INPUT ./images/new_structure_example.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2808,11 +2852,11 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/requirement_sources.png
-INPUT ./images/requirement_sources.png
-INPUT images/requirement_sources.png
-INPUT ./images/requirement_sources.png
-INPUT ./images/requirement_sources.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt0800.tfm
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2825,11 +2869,11 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/new_structure_example.png
-INPUT ./images/new_structure_example.png
-INPUT images/new_structure_example.png
-INPUT ./images/new_structure_example.png
-INPUT ./images/new_structure_example.png
+INPUT ./images/graph.node_data.png
+INPUT ./images/graph.node_data.png
+INPUT images/graph.node_data.png
+INPUT ./images/graph.node_data.png
+INPUT ./images/graph.node_data.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2842,27 +2886,11 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/new_structure_example.png
-INPUT ./images/new_structure_example.png
-INPUT images/new_structure_example.png
-INPUT ./images/new_structure_example.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_logo-eps-converted-to.pdf
-INPUT ./images/bmstu_logo-eps-converted-to.pdf
-INPUT images/bmstu_logo-eps-converted-to.pdf
-INPUT ./images/bmstu_logo-eps-converted-to.pdf
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT images/bmstu_rk6_logo3.png
-INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/structure.png
-INPUT ./images/structure.png
-INPUT images/structure.png
-INPUT ./images/structure.png
-INPUT ./images/structure.png
+INPUT ./images/graph.edge_data.png
+INPUT ./images/graph.edge_data.png
+INPUT images/graph.edge_data.png
+INPUT ./images/graph.edge_data.png
+INPUT ./images/graph.edge_data.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2885,11 +2913,35 @@ INPUT ./sections/chap3_software.tex
 INPUT sections/chap3_software.tex
 INPUT ./sections/chap3_software.tex
 INPUT sections/chap3_software.tex
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/class.node.png
 INPUT ./images/class.node.png
 INPUT images/class.node.png
 INPUT ./images/class.node.png
 INPUT ./images/class.node.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/class.edge.png
 INPUT ./images/class.edge.png
 INPUT images/class.edge.png
@@ -2924,11 +2976,28 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
-INPUT ./images/structure_additional.png
-INPUT ./images/structure_additional.png
-INPUT images/structure_additional.png
-INPUT ./images/structure_additional.png
-INPUT ./images/structure_additional.png
+INPUT ./images/class.nodeop.png
+INPUT ./images/class.nodeop.png
+INPUT images/class.nodeop.png
+INPUT ./images/class.nodeop.png
+INPUT ./images/class.nodeop.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_logo-eps-converted-to.pdf
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT images/bmstu_rk6_logo3.png
+INPUT ./images/bmstu_rk6_logo3.png
+INPUT ./images/class.edgeop.png
+INPUT ./images/class.edgeop.png
+INPUT images/class.edgeop.png
+INPUT ./images/class.edgeop.png
+INPUT ./images/class.edgeop.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2951,18 +3020,6 @@ INPUT ./sections/conclusion.tex
 INPUT sections/conclusion.tex
 INPUT ./sections/conclusion.tex
 INPUT sections/conclusion.tex
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmmi8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/matha8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/mathb8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/mathabx/mathx10.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy8.tfm
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2994,6 +3051,7 @@ INPUT ./rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.gls-abr
 INPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.gls-abr
 INPUT ./rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.gls-abr
 INPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.gls-abr
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Bold-tlf-t2a.tfm
 INPUT ./rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.gls-abr
 INPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.gls-abr
 INPUT ./images/bmstu_rk6_logo3.png
@@ -3008,6 +3066,8 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Bold-tlf-t2a.vf
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Bold-tlf-t2a--base.tfm
 OUTPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.nav
 OUTPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.toc
 OUTPUT rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.snm
@@ -3016,11 +3076,6 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/ru/babel
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/ru/babel-russian.tex
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/ru/babel-russian.tex
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/ru/babel-ru.ini
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/en/babel-english.tex
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/en/babel-english.tex
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/en/babel-english.tex
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/en/babel-english.tex
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/babel/locale/en/babel-en.ini
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/stringenc/se-utf8.def
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/stringenc/se-utf8.def
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/generic/stringenc/se-utf8.def
@@ -3050,9 +3105,12 @@ INPUT sections/conclusion.aux
 INPUT ./rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.out
 INPUT ./rndhpc_prs_GBSEBusinessLogic_2021_rk6-71b_TrishinIV.out
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/enc/dvips/paratype/ptsans_t2a.enc
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t2a.enc
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/paratype/ptsans/PTS55F.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/paratype/ptsans/PTS56F.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/paratype/ptsans/PTS75F.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/mathabx-type1/matha8.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/mathabx-type1/matha9.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/mathabx-type1/mathb8.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/mathabx-type1/mathb9.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sftt0800.pfb

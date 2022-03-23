@@ -28,44 +28,56 @@
 \begin{frame}%[allowframebreaks=0.9,t]
 
 \begin{itemize}
-	\item Для описания топологии ГМ должны использоваться матрицы смежности. 
 	\item Должна обеспечиваться поддержка актуальной версии формата aDOT~\footcite{SokADOT}.
-	\item ...
+	\item Реализуемая структура данных должна содержать в себе все узлы и рёбра, относящиеся к данной графовой модели.
+	\item Топология графовой модели должна описываться матрицей смежности.
+	\item Реализуемая структура данных должна предоставлять интерфейс для доступа к данным о топологии.
 \end{itemize}
 
-%	\begin{figure}
-%		\centering
-%		\includegraphics[width=0.6\textwidth]{images/requirement_sources.png}
-%		\caption{}
-%		\label{fig:requirementSources}
-%	\end{figure}
 \end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Требования формата aDot}
+\subsection{Требования к программной реализации структуры данных узла графовой модели}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}%[allowframebreaks=0.9,t
+\begin{frame}[t]
+	\begin{itemize}
+		\arrowitem{Реализуемая струкутра данных должна содержать в себе:}
+		\begin{itemize}
+			\item описание состояния данных (в некотором внутреннем формате);
+			\item стратегию параллельного исполнения\footnote{т.е. данные о том, как параллельно исполнять исходящие из данного узла рёбра};
+			\item функцию-селектор (или ссылку на неё).
+		\end{itemize}
+		\arrowitem{Реализуемая структура данных должна предоставлять интерфейс для:}
+		\begin{itemize}
+			\item назначения стратегию параллельного выполнения;
+			\item назначения функции-селектора;
+			\item вызова функции селектора с заданным набором данных.
+		\end{itemize}
+	\end{itemize}
 	\begin{figure}
-		\centering
-		\includegraphics[width=\textwidth]{images/new_structure_example.png}
-		\caption{Пример графовой модели с новой структурой c пояснениями}
-	\end{figure}
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Недостатки текущей реализации}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-	\begin{figure}
-			\centering
-			\includegraphics[width=\textwidth]{images/new_structure_example.png}
-			\caption{Пример графовой модели в текущем формате}
+		\includegraphics[height=0.4\textheight]{images/graph.node_data.png}
 	\end{figure}
 \end{frame}
 
-\begin{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Требования к программной реализации структуры данных ребра графовой модели}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}%[allowframebreaks=0.9,t
+	\begin{itemize}
+		\arrowitem{Реализуемая структура должна содержать в себе до трёх структур данных (или ссылок на них) типа <<морфизм>> -- препроцессор, обработчик и постпроцессор.}
+		\arrowitem{Функциональная структура данных типа <<морфизм>> должна содержать в себе:}
+		\begin{itemize}
+			\item ссылку на функцию-предикат;
+			\item ссылку на функцию-обработчик;
+		\end{itemize}
+		\arrowitem{Реализуемая структура должна предоставлять интефейс для:}
+		\begin{itemize}
+			\item назначения препроцессора, обработчика и постпроцессора;
+			\item вызова хранящихся в ней <<морфизмов>> с заданным входным набором данных.
+		\end{itemize}
+	\end{itemize}
 	\begin{figure}
-		\centering
-		\includegraphics[width=\textwidth]{images/structure.png}
-		\caption{Текущая структура классов, связанных с графовыми моделями}
+		\includegraphics[height=0.275\textheight]{images/graph.edge_data.png}
 	\end{figure}
 \end{frame}
 
