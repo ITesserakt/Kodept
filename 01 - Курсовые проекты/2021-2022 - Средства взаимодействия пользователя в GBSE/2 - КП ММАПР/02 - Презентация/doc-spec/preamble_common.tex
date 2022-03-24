@@ -1,0 +1,168 @@
+﻿%----------------------------------------------------------
+\usepackage{mathtext}
+%\usepackage[warn]{mathtext} 
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel} %% это необходимо для включения переносов
+\usepackage{float}
+\usepackage{algorithm,algpseudocode}
+
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{rotating}
+\usepackage{multirow}
+\usepackage{pdflscape}
+\usepackage{cmap} % необходимо для возможности копирования и поиска в готовом PDF
+\usepackage{array}
+\usepackage{multicol}
+\usepackage{mathtools}
+
+\usepackage{datetime}
+\usepackage{tikz}
+\usepackage{relsize}
+
+
+\usepackage{etex} % этот пакет нужен для того, чтобы была возможность создавать свои окружения \newtheorem без ошибок 'no room for a new \count'
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=red}
+
+\usepackage[style=long4colheader, translate=babel, section=section]{glossaries}
+\usepackage[abbreviations, toc=true, xindy, automake]{glossaries-extra}
+\setglossarystyle{treenoname}%+
+\makeglossaries
+% выключает разворачивание терминов и аббревиатур при первом использовании в том числе, - всегда термины и аббревиатуры будут выводиться кратко 
+\glsunsetall
+
+\usepackage{pdfpages}
+\usepackage{xspace}
+\usepackage{amssymb,amsfonts,amsmath,cite,enumerate,float} %подключаем нужные пакеты расширений
+
+% включаем кириллицу и добавляем некоторые опции
+% подгружаемые языки — подробнее в документации listings
+\lstloadlanguages{[LaTeX]TeX, bash, MetaPost, Perl, XML, [Visual]C++, [ISO]C++, make}
+% включаем кириллицу и добавляем кое?какие опции
+%\lstset{language = [Visual]C++, % выбираем язык по умолчанию
+%extendedchars=true, % включаем не латиницу
+%escapechar=|, % |«выпадаем» в LATEX|
+%frame=tb, % рамка сверху и снизу
+%commentstyle=\itshape, % шрифт для комментариев
+%stringstyle=\bfseries} % шрифт для строк
+
+
+\lstset{language=[ISO]C++,
+breaklines=true,                 % sets automatic line breaking
+frame=tb, % рамка сверху и снизу
+                basicstyle=\ttfamily,
+                keywordstyle=\color{blue}\ttfamily,
+                stringstyle=\color{red}\ttfamily,
+                commentstyle=\color{green}\ttfamily,
+                morecomment=[l][\color{magenta}]{\#}
+}
+
+\lstset{language=bash,
+breaklines=true,                 % sets automatic line breaking
+frame=tb, % рамка сверху и снизу
+                basicstyle=\ttfamily,
+                keywordstyle=\color{black}\ttfamily,
+                stringstyle=\color{red}\ttfamily,
+                commentstyle=\color{green}\ttfamily,
+                morecomment=[l][\color{magenta}]{\#}
+}
+
+%\frametitle{Inserting source code without setting typewriter}
+%\lstset{language=C++,
+%                keywordstyle=\color{blue},
+%                stringstyle=\color{red},
+%                commentstyle=\color{green},
+%                morecomment=[l][\color{magenta}]{\#}
+%}
+\renewcommand{\lstlistingname}{Исходный код}
+
+%\setbeamercovered{transparent}
+
+\lstdefinelanguage{Ini}
+{
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{gray}, % the style that is used for the line-numbers
+%		breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{black}\bfseries]{[}{]},
+    morecomment=[s][\color{purple}\bfseries]{=[}{]},
+    morecomment=[s][\color{pink}\bfseries]{[[}{]]},
+    morecomment=[s][\color{blue}\bfseries]{}{},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={=,$},
+    keywordstyle={\color{brown}\bfseries}
+}
+
+\makeatletter
+\renewcommand{\ALG@name}{Алгоритм}
+\makeatother
+
+%-----------------------------------------------------------
+\usepackage{pgffor}
+\usepackage{filecontents}% Used so that the external files can be placed in this file
+
+\usepackage{keyval}
+\usepackage{totcount}
+% суперсчетчики всего ! :-)
+\regtotcounter{page}
+
+\newtotcounter{ffigure}
+\def\oldfigure{} \let\oldfigure=\figure
+\def\figure{\stepcounter{ffigure}\oldfigure}
+
+\newtotcounter{ttable}
+\def\oldtable{} \let\oldtable=\table
+\def\table{\stepcounter{ttable}\oldtable}
+
+\newtotcounter{cchapter}
+\def\oldchapter{} \let\oldchapter=\chapter
+\def\chapter{\stepcounter{cchapter}\oldchapter}
+
+\newtotcounter{eequation}
+\def\oldequation{} \let\oldequation=\equation
+\def\equation{\stepcounter{eequation}\oldequation}
+
+\newtotcounter{bibcnt}
+\def\oldbibitem{} \let\oldbibitem=\bibitem
+\def\bibitem{\stepcounter{bibcnt}\oldbibitem}
+
+
+\usepackage[strings]{underscore}
+
+% Произвольная нумерация списков.
+\usepackage{enumerate}
+
+% 3. Изменение начертания шрифта --- после чего выглядит таймсоподобно.
+% apt-get install scalable-cyrfonts-tex
+
+\IfFileExists{cyrtimes.sty}
+    {
+        \usepackage{cyrtimespatched}
+    }
+    {
+        % А если Times нету, то будет CM...
+    }
+
+\usepackage{datetime}	
+
+%----------------------------------------------------------
+% команда для вывода ссылки на литературу в виде сноски
+\usepackage[numbers]{natbib}
+\usepackage{bibentry}
+%----------------------------------------------------------
+%***natbib, bibentry***%
+% Следующий код необходим для того, чтобы исправить конфликт между пакетами natbib+bibentry и стилем оформления ссылок согласно российскому ГОСТу cp1251gost705u
+\ifx\undefined\selectlanguageifdefined
+\def\selectlanguageifdefined#1{}\else\fi
+\ifx\undefined\BibEmph
+\def\BibEmph#1{\emph{#1}}\else\fi
+%----------------------------------------------------------
+
+

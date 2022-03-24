@@ -1,0 +1,103 @@
+\documentclass[9pt]{beamer}
+%----------------------------------------------------------
+% Стиль презентации (выбрать понравившийся)
+\usetheme{bmstu}
+%------------------------------------------
+% определения значений стандартных параметров
+\input{doc-spec/constants_id.tex}
+%------------------------------------------
+% определения значений стандартных общих параметров для различных документов, в т.ч. различных типов
+\input{common_doc_spec/common_constants_id.tex}
+%------------------------------------------
+% общая кастомизируемая преамбула для презентаций
+\input{common_doc_spec/common_preamble.tex}
+%------------------------------------------
+% дополнительные параметры, имеющие отношение к данному документу
+\input{common_doc_spec/common_definitions.tex}
+%------------------------------------------
+% база терминов! 
+\input{doc-spec/abbreviations.tex}
+%---------------------------------------------
+\includeonly{%
+,cpxsln_prs_prj_YYYY_Group_SurnameNS_intro
+,cpxsln_prs_prj_YYYY_Group_SurnameNS_taskstatement
+,cpxsln_prs_prj_YYYY_Group_SurnameNS_method
+,cpxsln_prs_prj_YYYY_Group_SurnameNS_software
+,cpxsln_prs_prj_YYYY_Group_SurnameNS_calculation
+,cpxsln_prs_prj_YYYY_Group_SurnameNS_conclusion
+}
+%---------------------------------------------
+% выключает разворачивание терминов и аббревиатур при первом использовании в том числе, - всегда термины и аббревиатуры будут выводиться кратко 
+\glsunsetall
+%----------------------------------------------------------
+% Это следует использовать и визуализировать с помощью Dual-side PDF Viewer - dspdfviewer-1.15.1.2)
+%\setbeameroption{show notes on second screen=right} % Both
+%----------------------------------------------------------
+%\setbeameroption{hide notes} % Only slides
+%\setbeameroption{show only notes} % Only notes
+%\setbeameroption{show notes} % Both
+%\setbeamertemplate{note page}{\pagecolor{yellow!5}\insertnote}
+%---------------------------------------------
+\includeonly{
+    sections/intro,
+    sections/chap2_task_statement,
+    sections/chap3_software,
+    sections/conclusion
+}
+
+\begin{document}
+%---------------------------------------------
+% создание стандартной титульной страницы
+\input{common_doc_spec/common_title}
+%---------------------------------------------
+\section*{Содержание доклада}
+%---------------------------------------------
+\begin{frame}
+
+{\smaller[1]
+\setcounter{tocdepth}{1}
+\tableofcontents}
+\setcounter{tocdepth}{2}
+
+\end{frame}
+%---------------------------------------------
+\section{Введение}
+\include{sections/intro}
+%---------------------------------------------
+\section{Постановка задачи}
+\include{sections/chap2_task_statement}
+%---------------------------------------------
+\section{Архитектура программной реализации}
+\include{sections/chap3_software}
+%---------------------------------------------
+\section*{Заключение}
+\include{sections/conclusion}
+%---------------------------------------------
+\def\secname{}
+
+\begin{frame}
+
+\begin{center}
+\LARGE
+Спасибо за внимание!
+\vspace{1cm}
+
+Вопросы?
+\end{center}
+
+\end{frame}
+%---------------------------------------------
+\section*{Приложение. Основная терминология}
+%---------------------------------------------
+\begin{frame}[allowframebreaks=0.9,t]
+
+\printglossary[style=index, type=\acronymtype, title=Аббревиатуры, nopostdot=false]
+%\printglossary[style=index, type=main, title=Термины и определения, nopostdot=true]
+
+\end{frame}
+%---------------------------------------------
+\end{document}
+%---------------------------------------------
+
+
+
