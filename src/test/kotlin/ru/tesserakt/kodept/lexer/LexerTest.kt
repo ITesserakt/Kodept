@@ -22,14 +22,14 @@ class LexerTest : StringSpec({
             headers("input", "tokens"),
             row("val id", sequenceOf(VAL, IDENTIFIER)),
             row("Either[Int, String]", sequenceOf(TYPE, LBRACKET, TYPE, COMMA, TYPE, RBRACKET)),
-            row("fun println() {}", sequenceOf(FUN, IDENTIFIER, LPAREN, RPAREN, LCURVE_BRACKET, RCURVE_BRACKET)),
-            row("id /= 12", sequenceOf(IDENTIFIER, DIV_EQUALS, DECIMAL)),
+            row("fun println() {}", sequenceOf(FUN, IDENTIFIER, LPAREN, RPAREN, LBRACE, RBRACE)),
+            row("id /= 12", sequenceOf(IDENTIFIER, DIV_EQUALS, FLOATING)),
             row("Int // -2^32..2^32 - 1", sequenceOf(TYPE)),
             row(
                 "F[_]: Functor[_]",
                 sequenceOf(TYPE, LBRACKET, TYPE_GAP, RBRACKET, COLON, TYPE, LBRACKET, TYPE_GAP, RBRACKET)
             ),
-            row("1 < 2 : List[Double]", sequenceOf(DECIMAL, LESS, DECIMAL, COLON, TYPE, LBRACKET, TYPE, RBRACKET))
+            row("1 < 2 : List[Double]", sequenceOf(FLOATING, LESS, FLOATING, COLON, TYPE, LBRACKET, TYPE, RBRACKET))
         ).forAll(::impliesData)
     }
 
@@ -42,28 +42,28 @@ class LexerTest : StringSpec({
                     IDENTIFIER,
                     DOT,
                     IDENTIFIER,
-                    LCURVE_BRACKET,
+                    LBRACE,
                     IDENTIFIER,
                     DOT,
                     IDENTIFIER,
-                    RCURVE_BRACKET,
+                    RBRACE,
                     IDENTIFIER,
                     IDENTIFIER,
                     DOT,
                     IDENTIFIER,
-                    LCURVE_BRACKET,
+                    LBRACE,
                     IDENTIFIER,
                     DOT,
                     IDENTIFIER,
-                    RCURVE_BRACKET,
+                    RBRACE,
                     DOT,
                     IDENTIFIER,
-                    LCURVE_BRACKET,
-                    NOT,
+                    LBRACE,
+                    NOT_LOGIC,
                     IDENTIFIER,
                     DOT,
                     IDENTIFIER,
-                    RCURVE_BRACKET
+                    RBRACE
                 )
             ),
             row(
@@ -77,13 +77,13 @@ class LexerTest : StringSpec({
                     LBRACKET,
                     TYPE,
                     RBRACKET,
-                    LCURVE_BRACKET,
+                    LBRACE,
                     IDENTIFIER,
                     DOT,
                     IDENTIFIER,
                     EQUALS,
                     STRING,
-                    RCURVE_BRACKET
+                    RBRACE
                 )
             )
         ).forAll(::impliesData)

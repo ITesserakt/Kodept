@@ -4,16 +4,21 @@ import com.github.h0tk3y.betterParse.lexer.Token
 import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.lexer.literalToken
 import com.github.h0tk3y.betterParse.lexer.regexToken
+import com.github.h0tk3y.betterParse.parser.Parser
 
-enum class ExpressionToken(val token: Token) {
+enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     // Keywords
     FUN(literalToken("fun")),
     VAL(literalToken("val")),
     VAR(literalToken("var")),
     TRAIT(literalToken("trait")),
     STRUCT(literalToken("struct")),
-
-    // CLASS(literalToken("class")), // stack only
+    IF(literalToken("if")),
+    ELIF(literalToken("elif")),
+    ELSE(literalToken("else")),
+    MATCH(literalToken("match")),
+    WHILE(literalToken("while")),
+    CLASS(literalToken("class")), // stack only
     ENUM(literalToken("enum")),
     MODULE(literalToken("module")),
     EXTENSION(literalToken("extension")),
@@ -21,28 +26,28 @@ enum class ExpressionToken(val token: Token) {
     // Symbols
     COMMA(literalToken(",")),
     SEMICOLON(literalToken(";")),
-    LCURVE_BRACKET(literalToken("{")),
-    RCURVE_BRACKET(literalToken("}")),
+    LBRACE(literalToken("{")),
+    RBRACE(literalToken("}")),
     LBRACKET(literalToken("[")),
     RBRACKET(literalToken("]")),
     LPAREN(literalToken("(")),
     RPAREN(literalToken(")")),
     TYPE_GAP(literalToken("_")),
     COLON(literalToken(":")),
-    DOT(literalToken(".")),
 
     // Identifiers
     IDENTIFIER(regexToken("""_?[a-z]\w*""")),
     TYPE(regexToken("""_?[A-Z]\w*""")),
 
     // Literals
-    DECIMAL(regexToken("""[-+]?([1-9][\d_]*\d|\d)""")),
     BINARY(regexToken("""0[bB](1[01_]*[01]|[01])""")),
     OCTAL(regexToken("""0[oO]([1-7][0-7_]*[0-7]|[0-7])""")),
     HEX(regexToken("""0[xX]([1-9A-F][\dA-F_]*[\dA-F]|[\dA-F])""")),
+    FLOATING(regexToken("""[-+]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?\d+)?""")),
+
+    //    DECIMAL(regexToken("""[-+]?([1-9][\d_]*\d|\d)""")),
     CHAR(regexToken("""'[^']'""")),
     STRING(regexToken(""""(?:\\\\"|[^"])*"""")),
-    FLOATING(regexToken("""[-+]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?\d+)?""")),
 
     // Ignore
     WHITESPACE(regexToken("""\s+""", ignore = true)),
@@ -51,6 +56,7 @@ enum class ExpressionToken(val token: Token) {
     MULTILINE_COMMENT(regexToken(Regex("/\\*.*\\*/", RegexOption.DOT_MATCHES_ALL), ignore = true)),
 
     // Operators
+    DOT(literalToken(".")),
     PLUS_EQUALS(literalToken("+=")),
     SUB_EQUALS(literalToken("-=")),
     TIMES_EQUALS(literalToken("*=")),
@@ -65,7 +71,6 @@ enum class ExpressionToken(val token: Token) {
     POW(literalToken("**")),
 
     FLOW(literalToken("=>")),
-    EQUALS(literalToken("=")),
     ELVIS(literalToken("?:")),
 
     OR_LOGIC_EQUALS(literalToken("||=")),
@@ -78,14 +83,17 @@ enum class ExpressionToken(val token: Token) {
     OR_BIT(literalToken("|")),
     AND_BIT(literalToken("&")),
     XOR_BIT(literalToken("^")),
-    NOT(literalToken("!")),
+    NOT_LOGIC(literalToken("!")),
+    NOT_BIT(literalToken("~")),
 
     SPACESHIP(literalToken("<=>")),
+    EQUIV(literalToken("==")),
     LESS_EQUALS(literalToken("<=")),
     GREATER_EQUALS(literalToken(">=")),
     LESS(literalToken("<")),
-    GREATER(literalToken(">"))
-    ;
+    GREATER(literalToken(">")),
+
+    EQUALS(literalToken("="));
 
     init {
         token.name = this.name
