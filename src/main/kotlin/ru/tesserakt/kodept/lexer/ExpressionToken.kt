@@ -88,6 +88,7 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
 
     SPACESHIP(literalToken("<=>")),
     EQUIV(literalToken("==")),
+    NOT_EQUIV(literalToken("!=")),
     LESS_EQUALS(literalToken("<=")),
     GREATER_EQUALS(literalToken(">=")),
     LESS(literalToken("<")),

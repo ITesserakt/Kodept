@@ -7,13 +7,14 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 object TermGrammar : Grammar<AST.Term>() {
     val variableReference by IDENTIFIER use { AST.UnresolvedReference(text) }
 
-    val functionCall by variableReference * -LPAREN * separatedTerms(
+    val functionCall by variableReference * -LPAREN * trailing(
         OperatorGrammar,
-        COMMA,
-        true
+        COMMA
     ) * -RPAREN use { AST.UnresolvedFunctionCall(t1, t2) }
 
-    val callChain by separatedTerms(functionCall or variableReference, DOT) use { AST.TermChain(this) }
+    val callChain by zeroOrMore((functionCall or variableReference) * -DOT) * (functionCall or variableReference) use {
+        AST.TermChain(t1 + listOf(t2))
+    }
 
     override val rootParser by callChain map { if (it.terms.size == 1) it.terms.first() else it }
 }

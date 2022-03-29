@@ -1,6 +1,9 @@
 package ru.tesserakt.kodept.parser
 
-import com.github.h0tk3y.betterParse.combinators.*
+import com.github.h0tk3y.betterParse.combinators.map
+import com.github.h0tk3y.betterParse.combinators.or
+import com.github.h0tk3y.betterParse.combinators.times
+import com.github.h0tk3y.betterParse.combinators.unaryMinus
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
@@ -9,8 +12,8 @@ object TopLevelGrammar : Grammar<AST.TopLevelDecl>() {
     private val objectLevelStatement by ObjectLevelGrammar
     private val functionStatement by FunctionGrammar
 
-    val enumStatement by -ENUM * (STRUCT or CLASS) * TYPE * -LBRACE * separatedTerms(
-        TYPE, COMMA, true
+    val enumStatement by -ENUM * (STRUCT or CLASS) * TYPE * -LBRACE * trailing(
+        TYPE, COMMA, atLeast = 1
     ) * -RBRACE map { (modifier, name, entries) ->
         AST.EnumDecl(name.text, modifier.type == STRUCT.token, entries.map { AST.EnumDecl.Entry(it.text) })
     }

@@ -25,6 +25,7 @@ object OperatorGrammar : Grammar<Expression>() {
         LESS_EQUALS.token -> Comparison.Kind.LessEqual
         GREATER_EQUALS.token -> Comparison.Kind.GreaterEqual
         EQUIV.token -> Comparison.Kind.Equal
+        NOT_EQUIV.token -> Comparison.Kind.NonEqual
         LESS.token -> Comparison.Kind.Less
         GREATER.token -> Comparison.Kind.Greater
         else -> throw IllegalArgumentException("Impossible")
@@ -83,7 +84,7 @@ object OperatorGrammar : Grammar<Expression>() {
         Comparison(a, b, resolveCmpOperation(op))
     }
 
-    val compoundCmpExpr by complexCmpExpr * zeroOrMore((LESS_EQUALS or EQUIV or GREATER_EQUALS) * complexCmpExpr) leftFold { a, op, b ->
+    val compoundCmpExpr by complexCmpExpr * zeroOrMore((LESS_EQUALS or EQUIV or NOT_EQUIV or GREATER_EQUALS) * complexCmpExpr) leftFold { a, op, b ->
         Comparison(a, b, resolveCmpOperation(op))
     }
 

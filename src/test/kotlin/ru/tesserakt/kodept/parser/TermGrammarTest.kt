@@ -51,5 +51,9 @@ class TermGrammarTest : WordSpec({
                 )
             })
         )
+        test(
+            grammar, "id().id().",
+            null
+        )
     }
 })

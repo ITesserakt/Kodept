@@ -94,7 +94,7 @@ data class AST(val nodes: Sequence<Node>) {
     }
 
     data class Comparison(val left: Expression, val right: Expression, val kind: Kind) : Operation.Binary() {
-        enum class Kind { Less, LessEqual, Equal, GreaterEqual, Greater, Complex }
+        enum class Kind { Less, LessEqual, Equal, NonEqual, GreaterEqual, Greater, Complex }
     }
 
     data class Binary(val left: Expression, val right: Expression, val kind: Kind) : Operation.Binary() {
@@ -132,8 +132,12 @@ inline fun <reified T> Grammar<AST.Node>.trailing(
     other: Parser<T>,
     separator: Parser<*> = ExpressionToken.SEMICOLON or ExpressionToken.NEWLINE,
     atLeast: Int = 0
-) =
-    ((atLeast - 1).coerceAtLeast(0) timesOrMore (other * -separator)) * when (atLeast) {
-        0 -> optional(other * -optional(separator))
-        else -> other * -optional(separator)
-    } map { it.t1 + listOfNotNull(it.t2) }
+) = when (atLeast) {
+    0 -> zeroOrMore(other * -separator) * optional(other * -optional(separator)) use {
+        t1 + listOfNotNull(t2)
+    }
+    1 -> (oneOrMore(other * -separator)) or
+            (zeroOrMore(other * -separator) * other use { t1 + listOf(t2) })
+    else -> (atLeast timesOrMore (other * -separator)) or
+            (((atLeast - 1).coerceAtLeast(0) timesOrMore other * -separator) * other use { t1 + listOf(t2) })
+}
