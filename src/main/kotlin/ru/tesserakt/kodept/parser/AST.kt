@@ -1,7 +1,6 @@
 package ru.tesserakt.kodept.parser
 
-import com.github.h0tk3y.betterParse.combinators.optional
-import com.github.h0tk3y.betterParse.combinators.separatedTerms
+import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken
@@ -60,20 +59,17 @@ data class AST(val nodes: Sequence<Node>) {
     data class FunctionDecl(
         override val name: String,
         val params: List<Parameter>,
-        val returns: ReturnType,
+        val returns: TypeExpression?,
         val rest: List<BlockLevelDecl>
     ) : CallableDecl(), TopLevelDecl, NamedDecl, ObjectLevelDecl, BlockLevelDecl {
-        data class ReturnType(override val type: String) : TypedDecl {
-            companion object {
-                val unit = ReturnType("()")
-            }
-        }
-
-        data class Parameter(override val name: String, override val type: String) : NamedDecl, TypedDecl
+        data class Parameter(override val name: String, val type: TypeExpression) : NamedDecl
     }
 
-    data class VariableDecl(override val name: String, val mutable: Boolean, val expression: Expression) :
+    data class VariableDecl(override val name: String, val mutable: Boolean, val type: TypeExpression?) :
         CallableDecl(), NamedDecl, BlockLevelDecl
+
+    data class InitializedVar(val decl: VariableDecl, val expr: Expression) : CallableDecl(), NamedDecl by decl,
+        BlockLevelDecl by decl
 
     data class DecimalLiteral(val value: BigInteger) : Literal.Number()
 
@@ -90,7 +86,7 @@ data class AST(val nodes: Sequence<Node>) {
     data class FloatingLiteral(val value: BigDecimal) : Literal.Number()
 
     data class Mathematical(val left: Expression, val right: Expression, val kind: Kind) : Operation.Binary() {
-        enum class Kind { Add, Sub, Mul, Div, Mod }
+        enum class Kind { Add, Sub, Mul, Div, Mod, Pow }
     }
 
     data class Logical(val left: Expression, val right: Expression, val kind: Kind) : Operation.Binary() {
@@ -115,13 +111,29 @@ data class AST(val nodes: Sequence<Node>) {
 
     data class Elvis(val left: Expression, val right: Expression) : Operation.Binary()
 
+    data class Assignment(val left: Expression, val right: Expression) : Operation.Binary()
+
     data class UnresolvedReference(val name: String) : Term()
 
     data class UnresolvedFunctionCall(val name: UnresolvedReference, val params: List<Expression>) : Term()
 
     data class TermChain(val terms: List<Term>) : Term()
+
+    data class ExpressionList(val expressions: List<BlockLevelDecl>) : Expression()
+
+    data class TypeExpression(override val type: String) : Expression(), TypedDecl {
+        companion object {
+            val unit = TypeExpression("()")
+        }
+    }
 }
 
-inline fun <reified T> Grammar<AST.Node>.statements(other: Parser<T>) =
-    separatedTerms(other, optional(ExpressionToken.SEMICOLON), true)
-
+inline fun <reified T> Grammar<AST.Node>.trailing(
+    other: Parser<T>,
+    separator: Parser<*> = ExpressionToken.SEMICOLON or ExpressionToken.NEWLINE,
+    atLeast: Int = 0
+) =
+    ((atLeast - 1).coerceAtLeast(0) timesOrMore (other * -separator)) * when (atLeast) {
+        0 -> optional(other * -optional(separator))
+        else -> other * -optional(separator)
+    } map { it.t1 + listOfNotNull(it.t2) }

@@ -139,6 +139,9 @@ class ExpressionTokenTest : StringSpec({
             row(CHAR, "'_'", true),
             row(CHAR, "'_", false),
             row(CHAR, "'ab'", false),
+            row(CHAR, """'''""", false),
+            row(CHAR, """'\''""", true),
+            row(CHAR, """'\\'""", true),
 
             row(STRING, """"test"""", true),
             row(STRING, """"te\\"st"""", true),

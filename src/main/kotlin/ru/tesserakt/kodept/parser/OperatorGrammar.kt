@@ -16,6 +16,7 @@ object OperatorGrammar : Grammar<Expression>() {
         MOD.token -> Mathematical.Kind.Mod
         PLUS.token -> Mathematical.Kind.Add
         SUB.token -> Mathematical.Kind.Sub
+        POW.token -> Mathematical.Kind.Pow
         else -> throw IllegalArgumentException("Impossible")
     }
 
@@ -63,7 +64,14 @@ object OperatorGrammar : Grammar<Expression>() {
             (-PLUS * parser { topExpr } use (::Absolution)) or
             atom
 
-    val mulExpr by topExpr * zeroOrMore((TIMES or DIV or MOD) * topExpr) leftFold { a, op, b ->
+    val powExpr: Parser<Expression> by topExpr * optional(POW * parser { powExpr }) map { (a, rest) ->
+        when (rest) {
+            null -> a
+            else -> Mathematical(a, rest.t2, Mathematical.Kind.Pow)
+        }
+    }
+
+    val mulExpr by powExpr * zeroOrMore((TIMES or DIV or MOD) * powExpr) leftFold { a, op, b ->
         Mathematical(a, b, resolveMathOperation(op))
     }
 

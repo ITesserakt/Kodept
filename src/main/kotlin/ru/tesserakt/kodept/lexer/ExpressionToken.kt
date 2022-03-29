@@ -46,12 +46,12 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     FLOATING(regexToken("""[-+]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?\d+)?""")),
 
     //    DECIMAL(regexToken("""[-+]?([1-9][\d_]*\d|\d)""")),
-    CHAR(regexToken("""'[^']'""")),
+    CHAR(regexToken("""'([^'\\]|\\'|\\\\)'""")),
     STRING(regexToken(""""(?:\\\\"|[^"])*"""")),
 
     // Ignore
-    WHITESPACE(regexToken("""\s+""", ignore = true)),
     NEWLINE(regexToken("[\r\n]+", ignore = true)),
+    WHITESPACE(regexToken("""\s+""", ignore = true)),
     COMMENT(regexToken("//.*$", ignore = true)),
     MULTILINE_COMMENT(regexToken(Regex("/\\*.*\\*/", RegexOption.DOT_MATCHES_ALL), ignore = true)),
 

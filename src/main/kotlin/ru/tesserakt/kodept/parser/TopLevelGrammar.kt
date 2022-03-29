@@ -15,11 +15,11 @@ object TopLevelGrammar : Grammar<AST.TopLevelDecl>() {
         AST.EnumDecl(name.text, modifier.type == STRUCT.token, entries.map { AST.EnumDecl.Entry(it.text) })
     }
 
-    val traitStatement by -TRAIT * TYPE * -LBRACE * statements(objectLevelStatement) * -RBRACE map { (name, rest) ->
+    val traitStatement by -TRAIT * TYPE * -LBRACE * trailing(objectLevelStatement) * -RBRACE map { (name, rest) ->
         AST.TraitDecl(name.text, rest)
     }
 
-    val structStatement by -STRUCT * TYPE * -LBRACE * statements(objectLevelStatement) * -RBRACE map { (name, rest) ->
+    val structStatement by -STRUCT * TYPE * -LBRACE * trailing(objectLevelStatement) * -RBRACE map { (name, rest) ->
         AST.StructDecl(name.text, rest)
     }
 
