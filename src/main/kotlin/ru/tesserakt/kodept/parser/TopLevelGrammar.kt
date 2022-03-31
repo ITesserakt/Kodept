@@ -1,15 +1,11 @@
 package ru.tesserakt.kodept.parser
 
-import com.github.h0tk3y.betterParse.combinators.map
-import com.github.h0tk3y.betterParse.combinators.or
-import com.github.h0tk3y.betterParse.combinators.times
-import com.github.h0tk3y.betterParse.combinators.unaryMinus
+import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object TopLevelGrammar : Grammar<AST.TopLevelDecl>() {
-    private val objectLevelStatement by ObjectLevelGrammar
     private val functionStatement by FunctionGrammar
 
     val enumStatement by -ENUM * (STRUCT or CLASS) * TYPE * -LBRACE * trailing(
@@ -18,12 +14,20 @@ object TopLevelGrammar : Grammar<AST.TopLevelDecl>() {
         AST.EnumDecl(name.text, modifier.type == STRUCT.token, entries.map { AST.EnumDecl.Entry(it.text) })
     }
 
-    val traitStatement by -TRAIT * TYPE * -LBRACE * trailing(objectLevelStatement) * -RBRACE map { (name, rest) ->
+    val traitStatement by -TRAIT * TYPE * -LBRACE * trailing(ObjectLevelGrammar) * -RBRACE map { (name, rest) ->
         AST.TraitDecl(name.text, rest)
     }
 
-    val structStatement by -STRUCT * TYPE * -LBRACE * trailing(objectLevelStatement) * -RBRACE map { (name, rest) ->
-        AST.StructDecl(name.text, rest)
+    val structStatement by -STRUCT * TYPE * optional(
+        -LPAREN * trailing(IDENTIFIER * TypeGrammar.strict, COMMA) * -RPAREN
+    ) * optional(
+        -LBRACE * trailing(ObjectLevelGrammar) * -RBRACE
+    ) map { (name, allocated, rest) ->
+        AST.StructDecl(
+            name.text,
+            allocated.orEmpty().map { AST.StructDecl.Parameter(it.t1.text, it.t2) },
+            rest.orEmpty()
+        )
     }
 
     override val rootParser: Parser<AST.TopLevelDecl> by

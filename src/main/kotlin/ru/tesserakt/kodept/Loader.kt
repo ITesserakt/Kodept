@@ -35,7 +35,7 @@ class FileLoader private constructor(private val files: () -> Sequence<File>) : 
     }
 }
 
-class MemoryLoader(private val streams: Sequence<InputStream>) : Loader {
+class MemoryLoader private constructor(private val streams: Sequence<InputStream>) : Loader {
     override fun getSources(): Sequence<CodeSource> = streams.map(::MemoryCodeSource)
 
     companion object {
