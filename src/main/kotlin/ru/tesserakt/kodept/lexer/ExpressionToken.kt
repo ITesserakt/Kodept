@@ -72,6 +72,7 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
 
     FLOW(literalToken("=>")),
     ELVIS(literalToken("?:")),
+    NOT_EQUIV(literalToken("!=")),
 
     OR_LOGIC_EQUALS(literalToken("||=")),
     AND_LOGIC_EQUALS(literalToken("&&=")),
@@ -88,7 +89,6 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
 
     SPACESHIP(literalToken("<=>")),
     EQUIV(literalToken("==")),
-    NOT_EQUIV(literalToken("!=")),
     LESS_EQUALS(literalToken("<=")),
     GREATER_EQUALS(literalToken(">=")),
     LESS(literalToken("<")),

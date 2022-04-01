@@ -41,6 +41,8 @@ data class AST(val root: Node) {
 
     sealed class Term : Expression()
 
+    sealed class CodeFlowExpr : Expression()
+
     data class FileDecl(val modules: List<ModuleDecl>) : Node
 
     data class ModuleDecl(override val name: String, val global: Boolean, val rest: List<TopLevelDecl>) : NamedDecl
@@ -129,12 +131,37 @@ data class AST(val root: Node) {
             val unit = TypeExpression("()")
         }
     }
+
+    data class IfExpr(val condition: Expression, val body: Expression, val elifs: List<ElifExpr>, val el: ElseExpr?) :
+        CodeFlowExpr() {
+        data class ElifExpr(val condition: Expression, val body: Expression)
+        data class ElseExpr(val body: Expression)
+    }
+
+    data class WhileExpr(val condition: Expression, val body: Expression) : CodeFlowExpr()
 }
 
 fun AST.drawTree(): String {
-    operator fun String.times(n: Int) = List(n) { this }.joinToString("")
+    operator fun String.times(n: Int) = run {
+        val builder = StringBuilder(n)
+        for (i in 0 until n)
+            builder.append(this)
+        builder.toString()
+    }
 
     fun AST.Node.drawNode(nesting: Int, ident: (Int) -> String = { " " * it }): String = when (this) {
+        is AST.WhileExpr -> """While:
+            |  - condition:
+            |${condition.drawNode(nesting + 1)}
+            |  - body:
+            |${body.drawNode(nesting + 1)}
+        """.trimMargin().prependIndent(ident(nesting))
+        is AST.IfExpr -> """If:
+            |  - condition:
+            |${condition.drawNode(nesting + 1)}
+            |  - body:
+            |${body.drawNode(nesting + 1)}
+        """.trimMargin().prependIndent(ident(nesting))
         is AST.ExpressionList -> expressions.joinToString("\n") { it.drawNode(nesting + 1) }
         is AST.CharLiteral -> value.toString().prependIndent(ident(nesting))
         is AST.BinaryLiteral -> value.toString().prependIndent(ident(nesting))
