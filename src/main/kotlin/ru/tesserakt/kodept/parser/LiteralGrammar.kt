@@ -3,12 +3,13 @@ package ru.tesserakt.kodept.parser
 import com.github.h0tk3y.betterParse.combinators.or
 import com.github.h0tk3y.betterParse.combinators.use
 import com.github.h0tk3y.betterParse.grammar.Grammar
+import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import java.math.BigDecimal
 import java.math.BigInteger
 
 object LiteralGrammar : Grammar<AST.Literal>() {
-    val numberLiteral by (FLOATING use {
+    val numberLiteral: Parser<AST.Literal> by (FLOATING use {
         if ('.' in text || 'e' in text)
             AST.FloatingLiteral(BigDecimal(text))
         else
