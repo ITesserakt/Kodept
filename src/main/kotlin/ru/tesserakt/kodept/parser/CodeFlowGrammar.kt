@@ -6,22 +6,26 @@ import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object CodeFlowGrammar : Grammar<AST.CodeFlowExpr>() {
-    val block by BlockLevelGrammar.bracedDecls
-    val simple by -FLOW * OperatorGrammar
+    val block by lazy { BlockLevelGrammar.bracedDecls }
+    val simple by lazy { -FLOW * OperatorGrammar }
 
-    val ifExpr = -IF * OperatorGrammar * (simple or block) *
-            zeroOrMore(-ELIF * OperatorGrammar * (simple or block)) *
-            optional(-ELSE * (simple or block)) map { (condition, block, elif, el) ->
-        AST.IfExpr(
-            condition,
-            block,
-            elif.map { AST.IfExpr.ElifExpr(it.t1, it.t2) },
-            el?.let { AST.IfExpr.ElseExpr(it) })
+    val ifExpr by lazy {
+        -IF * OperatorGrammar * (simple or block) *
+                zeroOrMore(-ELIF * OperatorGrammar * (simple or block)) *
+                optional(-ELSE * (simple or block)) map { (condition, block, elif, el) ->
+            AST.IfExpr(
+                condition,
+                block,
+                elif.map { AST.IfExpr.ElifExpr(it.t1, it.t2) },
+                el?.let { AST.IfExpr.ElseExpr(it) })
+        }
     }
 
-    val whileExpr = -WHILE * OperatorGrammar * BlockLevelGrammar.bracedDecls map {
-        AST.WhileExpr(it.t1, it.t2)
+    val whileExpr by lazy {
+        -WHILE * OperatorGrammar * BlockLevelGrammar.bracedDecls map {
+            AST.WhileExpr(it.t1, it.t2)
+        }
     }
 
-    override val rootParser: Parser<AST.CodeFlowExpr> by ifExpr or whileExpr
+    override val rootParser: Parser<AST.CodeFlowExpr> by lazy { ifExpr or whileExpr }
 }
