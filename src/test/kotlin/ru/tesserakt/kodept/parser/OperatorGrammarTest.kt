@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 
 class OperatorGrammarTest : WordSpec({
@@ -107,7 +108,7 @@ class OperatorGrammarTest : WordSpec({
         test(
             OperatorGrammar, """core.println("Hello, " + "world!")""",
             AST.TermChain(
-                listOf(
+                nonEmptyListOf(
                     AST.UnresolvedReference("core"),
                     AST.UnresolvedFunctionCall(
                         AST.UnresolvedReference("println"), listOf(

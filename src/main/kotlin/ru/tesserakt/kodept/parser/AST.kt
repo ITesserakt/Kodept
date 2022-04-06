@@ -1,5 +1,7 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.NonEmptyList
+import arrow.core.nonEmptyListOf
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken
@@ -12,48 +14,48 @@ data class AST(val root: Node) {
     sealed interface Node : Acceptable {
         val children: List<Node>
 
-        override fun accept(visitor: NodeVisitor) {
-            when (this) {
-                is IfExpr -> visitor.visit(this)
-                is WhileExpr -> visitor.visit(this)
-                is ExpressionList -> visitor.visit(this)
-                is CharLiteral -> visitor.visit(this)
-                is BinaryLiteral -> visitor.visit(this)
-                is DecimalLiteral -> visitor.visit(this)
-                is FloatingLiteral -> visitor.visit(this)
-                is HexLiteral -> visitor.visit(this)
-                is OctalLiteral -> visitor.visit(this)
-                is StringLiteral -> visitor.visit(this)
-                is Assignment -> visitor.visit(this)
-                is Binary -> visitor.visit(this)
-                is Comparison -> visitor.visit(this)
-                is Elvis -> visitor.visit(this)
-                is Logical -> visitor.visit(this)
-                is Mathematical -> visitor.visit(this)
-                is Absolution -> visitor.visit(this)
-                is BitInversion -> visitor.visit(this)
-                is Inversion -> visitor.visit(this)
-                is Negation -> visitor.visit(this)
-                is TermChain -> visitor.visit(this)
-                is UnresolvedFunctionCall -> visitor.visit(this)
-                is UnresolvedReference -> visitor.visit(this)
-                is TypeExpression -> visitor.visit(this)
-                is FunctionDecl -> visitor.visit(this)
-                is InitializedVar -> visitor.visit(this)
-                is VariableDecl -> visitor.visit(this)
-                is FileDecl -> visitor.visit(this)
-                is EnumDecl.Entry -> visitor.visit(this)
-                is EnumDecl -> visitor.visit(this)
-                is ModuleDecl -> visitor.visit(this)
-                is StructDecl.Parameter -> visitor.visit(this)
-                is FunctionDecl.Parameter -> visitor.visit(this)
-                is StructDecl -> visitor.visit(this)
-                is TraitDecl -> visitor.visit(this)
-                is IfExpr.ElifExpr -> visitor.visit(this)
-                is IfExpr.ElseExpr -> visitor.visit(this)
-            }
-            children.forEach { it.accept(visitor) }
+        override fun <T> accept(visitor: NodeVisitor<T>) = when (this) {
+            is IfExpr -> visitor.visit(this)
+            is WhileExpr -> visitor.visit(this)
+            is ExpressionList -> visitor.visit(this)
+            is CharLiteral -> visitor.visit(this)
+            is BinaryLiteral -> visitor.visit(this)
+            is DecimalLiteral -> visitor.visit(this)
+            is FloatingLiteral -> visitor.visit(this)
+            is HexLiteral -> visitor.visit(this)
+            is OctalLiteral -> visitor.visit(this)
+            is StringLiteral -> visitor.visit(this)
+            is Assignment -> visitor.visit(this)
+            is Binary -> visitor.visit(this)
+            is Comparison -> visitor.visit(this)
+            is Elvis -> visitor.visit(this)
+            is Logical -> visitor.visit(this)
+            is Mathematical -> visitor.visit(this)
+            is Absolution -> visitor.visit(this)
+            is BitInversion -> visitor.visit(this)
+            is Inversion -> visitor.visit(this)
+            is Negation -> visitor.visit(this)
+            is TermChain -> visitor.visit(this)
+            is UnresolvedFunctionCall -> visitor.visit(this)
+            is UnresolvedReference -> visitor.visit(this)
+            is TypeExpression -> visitor.visit(this)
+            is FunctionDecl -> visitor.visit(this)
+            is InitializedVar -> visitor.visit(this)
+            is VariableDecl -> visitor.visit(this)
+            is FileDecl -> visitor.visit(this)
+            is EnumDecl.Entry -> visitor.visit(this)
+            is EnumDecl -> visitor.visit(this)
+            is ModuleDecl -> visitor.visit(this)
+            is StructDecl.Parameter -> visitor.visit(this)
+            is FunctionDecl.Parameter -> visitor.visit(this)
+            is StructDecl -> visitor.visit(this)
+            is TraitDecl -> visitor.visit(this)
+            is IfExpr.ElifExpr -> visitor.visit(this)
+            is IfExpr.ElseExpr -> visitor.visit(this)
         }
+
+        override fun <T> acceptRecursively(visitor: NodeVisitor<T>): NonEmptyList<T> =
+            nonEmptyListOf(accept(visitor)) + children.flatMap { it.acceptRecursively(visitor) }
     }
 
     sealed interface Leaf : Node {
@@ -135,9 +137,9 @@ data class AST(val root: Node) {
         override val name: String,
         val params: List<Parameter>,
         val returns: TypeExpression?,
-        val rest: List<BlockLevelDecl>
+        val rest: Expression,
     ) : CallableDecl(), TopLevelDecl, NamedDecl, ObjectLevelDecl, BlockLevelDecl {
-        override val children: List<Node> = params + rest + listOfNotNull(returns)
+        override val children: List<Node> = params + listOf(rest) + listOfNotNull(returns)
 
         data class Parameter(override val name: String, val type: TypeExpression) : NamedDecl {
             override val children: List<Node> = listOf(type)
@@ -153,7 +155,9 @@ data class AST(val root: Node) {
         BlockLevelDecl by decl {
         override val children: List<Node> = listOf(decl, expr)
 
-        override fun accept(visitor: NodeVisitor) = visitor.visit(this)
+        override fun <T> accept(visitor: NodeVisitor<T>) = visitor.visit(this)
+        override fun <T> acceptRecursively(visitor: NodeVisitor<T>) =
+            nonEmptyListOf(accept(visitor)) + children.flatMap { it.acceptRecursively(visitor) }
     }
 
     data class DecimalLiteral(val value: BigInteger) : Literal.Number(), Leaf
@@ -208,7 +212,7 @@ data class AST(val root: Node) {
         override val children: List<Node> = params
     }
 
-    data class TermChain(val terms: List<Term>) : Term() {
+    data class TermChain(val terms: NonEmptyList<Term>) : Term() {
         override val children: List<Node> = terms
     }
 

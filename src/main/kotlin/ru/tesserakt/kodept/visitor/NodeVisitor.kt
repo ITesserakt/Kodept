@@ -1,48 +1,127 @@
+@file:Suppress("unused")
+
 package ru.tesserakt.kodept.visitor
 
+import arrow.core.NonEmptyList
 import ru.tesserakt.kodept.parser.AST.*
 
-interface NodeVisitor {
-    fun visit(node: WhileExpr) {}
-    fun visit(node: IfExpr) {}
-    fun visit(node: ExpressionList) {}
-    fun visit(node: CharLiteral) {}
-    fun visit(node: BinaryLiteral) {}
-    fun visit(node: DecimalLiteral) {}
-    fun visit(node: FloatingLiteral) {}
-    fun visit(node: HexLiteral) {}
-    fun visit(node: OctalLiteral) {}
-    fun visit(node: StringLiteral) {}
-    fun visit(node: Assignment) {}
-    fun visit(node: Binary) {}
-    fun visit(node: Comparison) {}
-    fun visit(node: Elvis) {}
-    fun visit(node: Logical) {}
-    fun visit(node: Mathematical) {}
-    fun visit(node: Absolution) {}
-    fun visit(node: BitInversion) {}
-    fun visit(node: Inversion) {}
-    fun visit(node: Negation) {}
-    fun visit(node: TermChain) {}
-    fun visit(node: UnresolvedFunctionCall) {}
-    fun visit(node: UnresolvedReference) {}
-    fun visit(node: TypeExpression) {}
-    fun visit(node: FunctionDecl) {}
-    fun visit(node: FunctionDecl.Parameter) {}
-    fun visit(node: InitializedVar) {}
-    fun visit(node: VariableDecl) {}
-    fun visit(node: FileDecl) {}
-    fun visit(node: EnumDecl) {}
-    fun visit(node: EnumDecl.Entry) {}
-    fun visit(node: ModuleDecl) {}
-    fun visit(node: StructDecl) {}
-    fun visit(node: StructDecl.Parameter) {}
-    fun visit(node: TraitDecl) {}
-    fun visit(node: IfExpr.ElifExpr) {}
-    fun visit(node: IfExpr.ElseExpr) {}
+interface NodeVisitor<T> {
+    fun visit(node: WhileExpr): T
+    fun visit(node: IfExpr): T
+    fun visit(node: ExpressionList): T
+    fun visit(node: CharLiteral): T
+    fun visit(node: BinaryLiteral): T
+    fun visit(node: DecimalLiteral): T
+    fun visit(node: FloatingLiteral): T
+    fun visit(node: HexLiteral): T
+    fun visit(node: OctalLiteral): T
+    fun visit(node: StringLiteral): T
+    fun visit(node: Assignment): T
+    fun visit(node: Binary): T
+    fun visit(node: Comparison): T
+    fun visit(node: Elvis): T
+    fun visit(node: Logical): T
+    fun visit(node: Mathematical): T
+    fun visit(node: Absolution): T
+    fun visit(node: BitInversion): T
+    fun visit(node: Inversion): T
+    fun visit(node: Negation): T
+    fun visit(node: TermChain): T
+    fun visit(node: UnresolvedFunctionCall): T
+    fun visit(node: UnresolvedReference): T
+    fun visit(node: TypeExpression): T
+    fun visit(node: FunctionDecl): T
+    fun visit(node: FunctionDecl.Parameter): T
+    fun visit(node: InitializedVar): T
+    fun visit(node: VariableDecl): T
+    fun visit(node: FileDecl): T
+    fun visit(node: EnumDecl): T
+    fun visit(node: EnumDecl.Entry): T
+    fun visit(node: ModuleDecl): T
+    fun visit(node: StructDecl): T
+    fun visit(node: StructDecl.Parameter): T
+    fun visit(node: TraitDecl): T
+    fun visit(node: IfExpr.ElifExpr): T
+    fun visit(node: IfExpr.ElseExpr): T
 }
 
-interface IntermediateNodeVisitor : NodeVisitor {
+interface UnitNodeVisitor : NodeVisitor<Unit> {
+    override fun visit(node: WhileExpr) {}
+
+    override fun visit(node: IfExpr) {}
+
+    override fun visit(node: ExpressionList) {}
+
+    override fun visit(node: CharLiteral) {}
+
+    override fun visit(node: BinaryLiteral) {}
+
+    override fun visit(node: DecimalLiteral) {}
+
+    override fun visit(node: FloatingLiteral) {}
+
+    override fun visit(node: HexLiteral) {}
+
+    override fun visit(node: OctalLiteral) {}
+
+    override fun visit(node: StringLiteral) {}
+
+    override fun visit(node: Assignment) {}
+
+    override fun visit(node: Binary) {}
+
+    override fun visit(node: Comparison) {}
+
+    override fun visit(node: Elvis) {}
+
+    override fun visit(node: Logical) {}
+
+    override fun visit(node: Mathematical) {}
+
+    override fun visit(node: Absolution) {}
+
+    override fun visit(node: BitInversion) {}
+
+    override fun visit(node: Inversion) {}
+
+    override fun visit(node: Negation) {}
+
+    override fun visit(node: TermChain) {}
+
+    override fun visit(node: UnresolvedFunctionCall) {}
+
+    override fun visit(node: UnresolvedReference) {}
+
+    override fun visit(node: TypeExpression) {}
+
+    override fun visit(node: FunctionDecl) {}
+
+    override fun visit(node: FunctionDecl.Parameter) {}
+
+    override fun visit(node: InitializedVar) {}
+
+    override fun visit(node: VariableDecl) {}
+
+    override fun visit(node: FileDecl) {}
+
+    override fun visit(node: EnumDecl) {}
+
+    override fun visit(node: EnumDecl.Entry) {}
+
+    override fun visit(node: ModuleDecl) {}
+
+    override fun visit(node: StructDecl) {}
+
+    override fun visit(node: StructDecl.Parameter) {}
+
+    override fun visit(node: TraitDecl) {}
+
+    override fun visit(node: IfExpr.ElifExpr) {}
+
+    override fun visit(node: IfExpr.ElseExpr) {}
+}
+
+interface IntermediateNodeVisitor : UnitNodeVisitor {
     fun visit(node: Node) {}
     fun visit(node: TopLevelDecl) {}
     fun visit(node: ObjectLevelDecl) {}
@@ -290,5 +369,7 @@ interface IntermediateNodeVisitor : NodeVisitor {
 }
 
 interface Acceptable {
-    fun accept(visitor: NodeVisitor)
+    fun <T> accept(visitor: NodeVisitor<T>): T
+
+    fun <T> acceptRecursively(visitor: NodeVisitor<T>): NonEmptyList<T>
 }

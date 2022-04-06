@@ -6,13 +6,10 @@ import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object CodeFlowGrammar : Grammar<AST.CodeFlowExpr>() {
-    val block by lazy { BlockLevelGrammar.bracedDecls }
-    val simple by lazy { -FLOW * OperatorGrammar }
-
     val ifExpr by lazy {
-        -IF * OperatorGrammar * (simple or block) *
-                zeroOrMore(-ELIF * OperatorGrammar * (simple or block)) *
-                optional(-ELSE * (simple or block)) map { (condition, block, elif, el) ->
+        -IF * OperatorGrammar * BlockLevelGrammar.body *
+                zeroOrMore(-ELIF * OperatorGrammar * BlockLevelGrammar.body) *
+                optional(-ELSE * BlockLevelGrammar.body) map { (condition, block, elif, el) ->
             AST.IfExpr(
                 condition,
                 block,

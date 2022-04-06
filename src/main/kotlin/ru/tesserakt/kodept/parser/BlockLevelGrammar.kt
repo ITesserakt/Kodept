@@ -13,7 +13,9 @@ object BlockLevelGrammar : Grammar<AST.BlockLevelDecl>() {
     private val expression by OperatorGrammar
     private val functionStatement by FunctionGrammar
 
-    val bracedDecls = -LBRACE * trailing(this, atLeast = 1) * -RBRACE map ::ExpressionList
+    val bracedDecls = -LBRACE * trailing(this) * -RBRACE map ::ExpressionList
+    val simple = -FLOW * OperatorGrammar
+    val body = simple or bracedDecls
 
     val varDecl by (VAL or VAR) * TermGrammar.variableReference * TypeGrammar.optional map {
         AST.VariableDecl(it.t2.name, it.t1.type == VAR.token, it.t3)

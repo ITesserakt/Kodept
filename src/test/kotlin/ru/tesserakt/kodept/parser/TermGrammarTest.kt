@@ -1,5 +1,7 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.NonEmptyList
+import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 
 class TermGrammarTest : WordSpec({
@@ -36,7 +38,7 @@ class TermGrammarTest : WordSpec({
             grammar,
             "key.on()",
             AST.TermChain(
-                listOf(
+                nonEmptyListOf(
                     AST.UnresolvedReference("key"),
                     AST.UnresolvedFunctionCall(AST.UnresolvedReference("on"), listOf())
                 )
@@ -45,11 +47,11 @@ class TermGrammarTest : WordSpec({
         test(
             grammar,
             "id(x).id(x).id(x)",
-            AST.TermChain(List(3) {
+            AST.TermChain(NonEmptyList.fromListUnsafe(List(3) {
                 AST.UnresolvedFunctionCall(
                     AST.UnresolvedReference("id"), listOf(AST.UnresolvedReference("x"))
                 )
-            })
+            }))
         )
         test(
             grammar, "id().id().",

@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 
 class CodeFlowGrammarTest : WordSpec({
@@ -25,7 +26,7 @@ class CodeFlowGrammarTest : WordSpec({
             CodeFlowGrammar, """while s.isEmpty() { doA() }""",
             AST.WhileExpr(
                 AST.TermChain(
-                    listOf(
+                    nonEmptyListOf(
                         AST.UnresolvedReference("s"),
                         AST.UnresolvedFunctionCall(AST.UnresolvedReference("isEmpty"), listOf())
                     )
@@ -67,11 +68,11 @@ class CodeFlowGrammarTest : WordSpec({
                     ), AST.DecimalLiteral(0.toBigInteger()),
                     AST.Comparison.Kind.Equal
                 ),
-                AST.TermChain(listOf(AST.UnresolvedReference("opcode"), AST.UnresolvedReference("foreignKey"))),
+                AST.TermChain(nonEmptyListOf(AST.UnresolvedReference("opcode"), AST.UnresolvedReference("foreignKey"))),
                 listOf(),
                 AST.IfExpr.ElseExpr(
                     AST.TermChain(
-                        listOf(
+                        nonEmptyListOf(
                             AST.UnresolvedReference("opcode"),
                             AST.UnresolvedReference("primaryKey")
                         )
@@ -79,30 +80,30 @@ class CodeFlowGrammarTest : WordSpec({
                 )
             )
         )
+    }
 
-        "nested if" should {
-            test(
-                CodeFlowGrammar, """
+    "nested if" should {
+        test(
+            CodeFlowGrammar, """
                 if a => b
                 elif b => v
                 else => if c => a 
                         elif v => c 
                         else => b
             """.trimIndent(),
-                AST.IfExpr(
-                    AST.UnresolvedReference("a"),
-                    AST.UnresolvedReference("b"),
-                    listOf(AST.IfExpr.ElifExpr(AST.UnresolvedReference("b"), AST.UnresolvedReference("v"))),
-                    AST.IfExpr.ElseExpr(
-                        AST.IfExpr(
-                            AST.UnresolvedReference("c"),
-                            AST.UnresolvedReference("a"),
-                            listOf(AST.IfExpr.ElifExpr(AST.UnresolvedReference("v"), AST.UnresolvedReference("c"))),
-                            AST.IfExpr.ElseExpr(AST.UnresolvedReference("b"))
-                        )
+            AST.IfExpr(
+                AST.UnresolvedReference("a"),
+                AST.UnresolvedReference("b"),
+                listOf(AST.IfExpr.ElifExpr(AST.UnresolvedReference("b"), AST.UnresolvedReference("v"))),
+                AST.IfExpr.ElseExpr(
+                    AST.IfExpr(
+                        AST.UnresolvedReference("c"),
+                        AST.UnresolvedReference("a"),
+                        listOf(AST.IfExpr.ElifExpr(AST.UnresolvedReference("v"), AST.UnresolvedReference("c"))),
+                        AST.IfExpr.ElseExpr(AST.UnresolvedReference("b"))
                     )
                 )
             )
-        }
+        )
     }
 })

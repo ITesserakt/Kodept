@@ -27,7 +27,7 @@ class NodeVisitorTest : DescribeSpec({
         val ast = parsed.toParsedOrThrow().value
 
         it("should count functions in ast") {
-            val visitor = object : NodeVisitor {
+            val visitor = object : UnitNodeVisitor {
                 var funCount = 0
 
                 override fun visit(node: AST.FunctionDecl) {
@@ -36,12 +36,12 @@ class NodeVisitorTest : DescribeSpec({
             }
 
             visitor.funCount shouldBe 0
-            ast.root.accept(visitor)
+            ast.root.acceptRecursively(visitor)
             visitor.funCount shouldBe 3
         }
 
         it("should return all constructions with property") {
-            val visitor = object : NodeVisitor {
+            val visitor = object : UnitNodeVisitor {
                 val fnsWithParams = mutableListOf<AST.FunctionDecl>()
 
                 override fun visit(node: AST.FunctionDecl) {
@@ -51,7 +51,7 @@ class NodeVisitorTest : DescribeSpec({
             }
 
             visitor.fnsWithParams.shouldBeEmpty()
-            ast.root.accept(visitor)
+            ast.root.acceptRecursively(visitor)
             visitor.fnsWithParams shouldHaveSize 1
             visitor.fnsWithParams.first().name shouldBe "b"
         }
@@ -83,14 +83,13 @@ class NodeVisitorTest : DescribeSpec({
                 var nodeCount = 0
 
                 override fun visit(node: AST.Node) {
-                    println(node::class.simpleName)
                     nodeCount++
                 }
             }
 
             visitor.nodeCount shouldBe 0
-            ast.root.accept(visitor)
-            visitor.nodeCount shouldBe 21
+            ast.root.acceptRecursively(visitor)
+            visitor.nodeCount shouldBe 25
         }
     }
 })

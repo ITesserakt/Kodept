@@ -13,7 +13,6 @@ class LexerTest : StringSpec({
 
     fun impliesData(input: String, output: Sequence<ExpressionToken>) {
         val tokens = lexer.tokenize(input)
-        println(tokens.toList().map { it.type.name })
         output.map { it.token } shouldContainAll tokens.map { it.type }.filter { !it.ignored }
     }
 

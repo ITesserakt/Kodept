@@ -6,7 +6,7 @@ class BlockLevelGrammarTest : WordSpec({
     "function decls" should {
         test(
             BlockLevelGrammar, """fun println() {}""",
-            AST.FunctionDecl("println", listOf(), null, listOf())
+            AST.FunctionDecl("println", listOf(), null, AST.ExpressionList(listOf()))
         )
         test(
             BlockLevelGrammar, """fun println() {
@@ -15,11 +15,11 @@ class BlockLevelGrammarTest : WordSpec({
                 |val baz = 4
             }""".trimMargin(),
             AST.FunctionDecl(
-                "println", listOf(), null, listOf(
+                "println", listOf(), null, AST.ExpressionList(listOf(
                     AST.InitializedVar(AST.VariableDecl("foo", false, null), AST.DecimalLiteral(5.toBigInteger())),
                     AST.StringLiteral("term"),
                     AST.InitializedVar(AST.VariableDecl("baz", false, null), AST.DecimalLiteral(4.toBigInteger())),
-                )
+                ))
             )
         )
         test(
@@ -34,11 +34,11 @@ class BlockLevelGrammarTest : WordSpec({
                 |"term"; val baz = 4
             }""".trimMargin(),
             AST.FunctionDecl(
-                "println", listOf(), null, listOf(
+                "println", listOf(), null, AST.ExpressionList(listOf(
                     AST.InitializedVar(AST.VariableDecl("foo", false, null), AST.DecimalLiteral(5.toBigInteger())),
                     AST.StringLiteral("term"),
                     AST.InitializedVar(AST.VariableDecl("baz", false, null), AST.DecimalLiteral(4.toBigInteger())),
-                )
+                ))
             )
         )
     }
@@ -74,7 +74,8 @@ class BlockLevelGrammarTest : WordSpec({
         )
         test(
             BlockLevelGrammar, """val x: String = {}""",
-            null
+            AST.InitializedVar(AST.VariableDecl("x", false, AST.TypeExpression("String")),
+                AST.ExpressionList(emptyList()))
         )
         test(
             BlockLevelGrammar, """val result = 

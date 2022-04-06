@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val betterParseVersion: String by extra
 val kotestVersion: String by extra
+val arrowVersion: String by extra
 
 plugins {
     kotlin("jvm") version "1.6.20-M1"
@@ -17,6 +18,7 @@ repositories {
 
 dependencies {
     implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
+    implementation("io.arrow-kt:arrow-core:$arrowVersion")
 
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
