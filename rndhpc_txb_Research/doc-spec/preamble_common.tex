@@ -23,6 +23,9 @@
 \usepackage{cmap} % необходимо для возможности копирования и поиска в готовом PDF
 \usepackage{array}
 \usepackage{multicol}
+
+\usepackage[normalem]{ulem}
+
 %-------------------------
 % определение атрибутов сборки Git
 \usepackage[grumpy, maxdepth=6]{gitinfo2}
@@ -417,17 +420,37 @@
 }
 %----------------------------------------------------------
 % оформление "теорем"
-\usepackage{amsthm}
 %----------------------------------------------------------
-\newtheoremstyle{theoremstyle}% <name>
-{0pt}% <Space above>
-{0pt}% <Space below>
-{\normalfont}% <Body font>
-{0pt}% <Indent amount>
-{\bfseries}% <Theorem head font>
-{.}% <Punctuation after theorem head>
-{.5em}% <Space after theorem headi>
-{}% <Theorem head spec (can be left empty, meaning `normal')>
+\usepackage{amsthm}
+\usepackage{thmtools}
+%----------------------------------------------------------
+\declaretheoremstyle[
+  headfont=\normalfont\bfseries,
+	numberwithin=section,
+  bodyfont=\normalfont\itshape,
+  spaceabove=1em plus 0.75em minus 0.25em,
+  spacebelow=1em plus 0.75em minus 0.25em,
+	headpunct={\newline},
+%  qed={$\natural$},%\sharp
+]{theoremstyle}
+
+\declaretheoremstyle[
+  headfont=\normalfont\bfseries,
+	numberwithin=section,
+  bodyfont=\normalfont,
+  spaceabove=1em plus 0.75em minus 0.25em,
+  spacebelow=1em plus 0.75em minus 0.25em,
+	headpunct={\newline},
+  qed={$\natural$},%\sharp
+]{vipremarkstyle}
+
+\declaretheorem[
+  style=vipremarkstyle,
+  title=Важное замечание,
+  refname={важное замечание,важные замечания},
+  Refname={Важное замечание,Важные замечания}
+]{vipremark}
+
 %----------------------------------------------------------
 \theoremstyle{theoremstyle}
 %----------------------------------------------------------
@@ -469,7 +492,7 @@
 }
 %----------------------------------------------------------
 \newcommand{\mycitation}[2]{%
-\colorbox{black!5}{\parbox{1.0\textwidth}{{\large\textbf{``}}\textit{#1}}}\linebreak
+\noindent\colorbox{black!5}{\parbox{1.0\textwidth}{{\large\textbf{``}}\textit{#1}}}\linebreak
 %\vspace{-5pt}
 \parbox{1.0\textwidth}{\begin{flushright}#2\end{flushright}}
 }
