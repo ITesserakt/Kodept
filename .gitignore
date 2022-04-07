@@ -21,4 +21,4 @@
 *.vrb*sw*
 *.DS_Store*
 *node_modules/*
-rndhpc_txb_Research/ResearchNotes/rndhpc_not_blo_2022_03_06.drawio
+*.synctex.gz
