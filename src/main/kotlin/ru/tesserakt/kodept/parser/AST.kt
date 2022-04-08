@@ -6,7 +6,7 @@ import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.ExpressionToken
 import ru.tesserakt.kodept.visitor.Acceptable
-import ru.tesserakt.kodept.visitor.NodeVisitor
+import ru.tesserakt.kodept.visitor.NodeProcessor
 import java.math.BigDecimal
 import java.math.BigInteger
 
@@ -14,7 +14,7 @@ data class AST(val root: Node) {
     sealed interface Node : Acceptable {
         val children: List<Node>
 
-        override fun <T> accept(visitor: NodeVisitor<T>) = when (this) {
+        override fun <T> accept(visitor: NodeProcessor<T>) = when (this) {
             is IfExpr -> visitor.visit(this)
             is WhileExpr -> visitor.visit(this)
             is ExpressionList -> visitor.visit(this)
@@ -54,7 +54,7 @@ data class AST(val root: Node) {
             is IfExpr.ElseExpr -> visitor.visit(this)
         }
 
-        override fun <T> acceptRecursively(visitor: NodeVisitor<T>): NonEmptyList<T> =
+        override fun <T> acceptRecursively(visitor: NodeProcessor<T>): NonEmptyList<T> =
             nonEmptyListOf(accept(visitor)) + children.flatMap { it.acceptRecursively(visitor) }
     }
 
@@ -106,31 +106,31 @@ data class AST(val root: Node) {
     sealed class CodeFlowExpr : Expression()
 
     data class FileDecl(val modules: List<ModuleDecl>) : Node {
-        override val children: List<Node> = modules
+        override val children get() = modules
     }
 
     data class ModuleDecl(override val name: String, val global: Boolean, val rest: List<TopLevelDecl>) : NamedDecl {
-        override val children: List<Node> = rest
+        override val children get() = rest
     }
 
     data class StructDecl(override val name: String, val alloc: List<Parameter>, val rest: List<ObjectLevelDecl>) :
         ObjectDecl(), TopLevelDecl,
         NamedDecl {
-        override val children: List<Node> = alloc + rest
+        override val children get() = alloc + rest
 
         data class Parameter(override val name: String, val type: TypeExpression) : Leaf, NamedDecl
     }
 
     data class EnumDecl(override val name: String, val stackBased: Boolean, val enumEntries: List<Entry>) :
         ObjectDecl(), TopLevelDecl, NamedDecl {
-        override val children: List<Node> = enumEntries
+        override val children get() = enumEntries
 
         data class Entry(override val name: String) : ObjectDecl(), Leaf, NamedDecl
     }
 
     data class TraitDecl(override val name: String, val rest: List<ObjectLevelDecl>) : ObjectDecl(), TopLevelDecl,
         NamedDecl {
-        override val children: List<Node> = rest
+        override val children get() = rest
     }
 
     data class FunctionDecl(
@@ -139,24 +139,24 @@ data class AST(val root: Node) {
         val returns: TypeExpression?,
         val rest: Expression,
     ) : CallableDecl(), TopLevelDecl, NamedDecl, ObjectLevelDecl, BlockLevelDecl {
-        override val children: List<Node> = params + listOf(rest) + listOfNotNull(returns)
+        override val children get() = params + listOf(rest) + listOfNotNull(returns)
 
         data class Parameter(override val name: String, val type: TypeExpression) : NamedDecl {
-            override val children: List<Node> = listOf(type)
+            override val children get() = listOf(type)
         }
     }
 
     data class VariableDecl(override val name: String, val mutable: Boolean, val type: TypeExpression?) :
         CallableDecl(), NamedDecl, BlockLevelDecl {
-        override val children: List<Node> = listOfNotNull(type)
+        override val children get() = listOfNotNull(type)
     }
 
     data class InitializedVar(val decl: VariableDecl, val expr: Expression) : CallableDecl(), NamedDecl by decl,
         BlockLevelDecl by decl {
-        override val children: List<Node> = listOf(decl, expr)
+        override val children get() = listOf(decl, expr)
 
-        override fun <T> accept(visitor: NodeVisitor<T>) = visitor.visit(this)
-        override fun <T> acceptRecursively(visitor: NodeVisitor<T>) =
+        override fun <T> accept(visitor: NodeProcessor<T>) = visitor.visit(this)
+        override fun <T> acceptRecursively(visitor: NodeProcessor<T>) =
             nonEmptyListOf(accept(visitor)) + children.flatMap { it.acceptRecursively(visitor) }
     }
 
@@ -209,38 +209,34 @@ data class AST(val root: Node) {
     data class UnresolvedReference(val name: String) : Term(), Leaf
 
     data class UnresolvedFunctionCall(val name: UnresolvedReference, val params: List<Expression>) : Term() {
-        override val children: List<Node> = params
+        override val children get() = params
     }
 
     data class TermChain(val terms: NonEmptyList<Term>) : Term() {
-        override val children: List<Node> = terms
+        override val children get() = terms
     }
 
     data class ExpressionList(val expressions: List<BlockLevelDecl>) : Expression() {
-        override val children: List<Node> = expressions
+        override val children get() = expressions
     }
 
-    data class TypeExpression(override val type: String) : Expression(), Leaf, TypedDecl {
-        companion object {
-            val unit = TypeExpression("()")
-        }
-    }
+    data class TypeExpression(override val type: String) : Expression(), Leaf, TypedDecl
 
     data class IfExpr(val condition: Expression, val body: Expression, val elifs: List<ElifExpr>, val el: ElseExpr?) :
         CodeFlowExpr() {
-        override val children: List<Node> = listOf(condition, body) + elifs + listOfNotNull(el)
+        override val children get() = listOf(condition, body) + elifs + listOfNotNull(el)
 
         data class ElifExpr(val condition: Expression, val body: Expression) : Node {
-            override val children: List<Node> = listOf(condition, body)
+            override val children get() = listOf(condition, body)
         }
 
         data class ElseExpr(val body: Expression) : Node {
-            override val children: List<Node> = listOf(body)
+            override val children get() = listOf(body)
         }
     }
 
     data class WhileExpr(val condition: Expression, val body: Expression) : CodeFlowExpr() {
-        override val children: List<Node> = listOf(condition, body)
+        override val children get() = listOf(condition, body)
     }
 }
 

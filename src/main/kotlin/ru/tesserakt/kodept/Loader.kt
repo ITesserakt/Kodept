@@ -36,7 +36,11 @@ class FileLoader private constructor(private val files: () -> Sequence<File>) : 
 }
 
 class MemoryLoader private constructor(private val streams: Sequence<InputStream>) : Loader {
-    override fun getSources(): Sequence<CodeSource> = streams.map(::MemoryCodeSource)
+    override fun getSources(): Sequence<CodeSource> = streams.mapIndexed { i, it ->
+        MemoryCodeSource(it, "scratch-#$i.kd")
+    }
+
+    override fun loadSources(): Sequence<InputStream> = streams
 
     companion object {
         fun fromText(text: Sequence<String>) = MemoryLoader(text.map { it.byteInputStream() })

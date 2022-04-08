@@ -10,9 +10,7 @@ import io.kotest.matchers.sequences.shouldHaveSize
 class CompilerTest : DescribeSpec({
     describe("compiler") {
         it("should builds") {
-            val compiler = Compiler {
-                loader = MemoryLoader.singleSnippet("module test =>")
-            }
+            val compiler = Compiler(MemoryLoader.singleSnippet("module test =>"))
 
             assertSoftly(compiler) {
                 acquireContents() shouldHaveSize 1
@@ -23,9 +21,7 @@ class CompilerTest : DescribeSpec({
         }
 
         it("should parse files") {
-            val compiler = Compiler {
-                loader = MemoryLoader.fromText(sequenceOf("module a => struct B", "module b =>"))
-            }
+            val compiler = Compiler(MemoryLoader.fromText(sequenceOf("module a => struct B", "module b =>")))
 
             assertSoftly(compiler) {
                 acquireContents() shouldHaveSize 2

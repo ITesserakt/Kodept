@@ -2,7 +2,7 @@ package ru.tesserakt.kodept.visitor
 
 import ru.tesserakt.kodept.parser.AST
 
-class DrawVisitor(private val ident: String = "      ") : NodeVisitor<String> {
+class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String> {
     override fun visit(node: AST.WhileExpr): String = """While 
         |   condition:
         |${node.condition.accept(this).prependIndent(ident)}
