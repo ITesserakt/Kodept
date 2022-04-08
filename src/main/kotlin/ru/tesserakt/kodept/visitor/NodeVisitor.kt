@@ -121,251 +121,267 @@ interface UnitNodeVisitor : NodeVisitor<Unit> {
     override fun visit(node: IfExpr.ElseExpr) {}
 }
 
-interface IntermediateNodeVisitor : UnitNodeVisitor {
-    fun visit(node: Node) {}
-    fun visit(node: TopLevelDecl) {}
-    fun visit(node: ObjectLevelDecl) {}
-    fun visit(node: BlockLevelDecl) {}
-    fun visit(node: NamedDecl) {}
-    fun visit(node: TypedDecl) {}
-    fun visit(node: CallableDecl) {}
-    fun visit(node: ObjectDecl) {}
-    fun visit(node: Expression) {}
-    fun visit(node: Literal) {}
-    fun visit(node: Operation) {}
-    fun visit(node: Term) {}
-    fun visit(node: CodeFlowExpr) {}
+interface IntermediateNodeVisitor<T> : NodeVisitor<List<T>> {
+    fun visit(node: Node): T
+    fun visit(node: TopLevelDecl): T
+    fun visit(node: ObjectLevelDecl): T
+    fun visit(node: BlockLevelDecl): T
+    fun visit(node: NamedDecl): T
+    fun visit(node: TypedDecl): T
+    fun visit(node: CallableDecl): T
+    fun visit(node: ObjectDecl): T
+    fun visit(node: Expression): T
+    fun visit(node: Literal): T
+    fun visit(node: Operation): T
+    fun visit(node: Term): T
+    fun visit(node: CodeFlowExpr): T
 
-    override fun visit(node: IfExpr.ElseExpr) = visit(node as Node)
-    override fun visit(node: IfExpr.ElifExpr) = visit(node as Node)
-    override fun visit(node: TraitDecl) {
-        visit(node as ObjectDecl)
-        visit(node as TopLevelDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: IfExpr.ElseExpr) = listOf(visit(node as Node))
+    override fun visit(node: IfExpr.ElifExpr) = listOf(visit(node as Node))
+    override fun visit(node: TraitDecl) = listOf(
+        visit(node as ObjectDecl),
+        visit(node as TopLevelDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: StructDecl.Parameter) {
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: StructDecl.Parameter) = listOf(
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: StructDecl) {
-        visit(node as ObjectDecl)
-        visit(node as TopLevelDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: StructDecl) = listOf(
+        visit(node as ObjectDecl),
+        visit(node as TopLevelDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: ModuleDecl) {
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: ModuleDecl) = listOf(
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: EnumDecl.Entry) {
-        visit(node as ObjectDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: EnumDecl.Entry) = listOf(
+        visit(node as ObjectDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: EnumDecl) {
-        visit(node as ObjectDecl)
-        visit(node as TopLevelDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: EnumDecl) = listOf(
+        visit(node as ObjectDecl),
+        visit(node as TopLevelDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: FileDecl) = visit(node as Node)
-    override fun visit(node: VariableDecl) {
-        visit(node as BlockLevelDecl)
-        visit(node as CallableDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: FileDecl) = listOf(visit(node as Node))
+    override fun visit(node: VariableDecl) = listOf(
+        visit(node as BlockLevelDecl),
+        visit(node as CallableDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: InitializedVar) {
-        visit(node as BlockLevelDecl)
-        visit(node as CallableDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: InitializedVar) = listOf(
+        visit(node as BlockLevelDecl),
+        visit(node as CallableDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: FunctionDecl.Parameter) = visit(node as Node)
-    override fun visit(node: FunctionDecl) {
-        visit(node as ObjectLevelDecl)
-        visit(node as TopLevelDecl)
-        visit(node as BlockLevelDecl)
-        visit(node as CallableDecl)
-        visit(node as NamedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: FunctionDecl.Parameter) = listOf(visit(node as Node))
+    override fun visit(node: FunctionDecl) = listOf(
+        visit(node as ObjectLevelDecl),
+        visit(node as TopLevelDecl),
+        visit(node as BlockLevelDecl),
+        visit(node as CallableDecl),
+        visit(node as NamedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: TypeExpression) {
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as TypedDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: TypeExpression) = listOf(
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as TypedDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: UnresolvedReference) {
-        visit(node as Term)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: UnresolvedReference) = listOf(
+        visit(node as Term),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: UnresolvedFunctionCall) {
-        visit(node as Term)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: UnresolvedFunctionCall) = listOf(
+        visit(node as Term),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: TermChain) {
-        visit(node as Term)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: TermChain) = listOf(
+        visit(node as Term),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Negation) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Negation) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Inversion) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Inversion) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: BitInversion) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: BitInversion) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Absolution) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Absolution) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Mathematical) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Mathematical) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Logical) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Logical) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Elvis) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Elvis) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Comparison) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Comparison) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Binary) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Binary) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: Assignment) {
-        visit(node as Operation)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: Assignment) = listOf(
+        visit(node as Operation),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: StringLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: StringLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: OctalLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: OctalLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: HexLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: HexLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: FloatingLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: FloatingLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: DecimalLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: DecimalLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: BinaryLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: BinaryLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: CharLiteral) {
-        visit(node as Literal)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: CharLiteral) = listOf(
+        visit(node as Literal),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: ExpressionList) {
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: ExpressionList) = listOf(
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: IfExpr) {
-        visit(node as CodeFlowExpr)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: IfExpr) = listOf(
+        visit(node as CodeFlowExpr),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
 
-    override fun visit(node: WhileExpr) {
-        visit(node as CodeFlowExpr)
-        visit(node as Expression)
-        visit(node as BlockLevelDecl)
-        visit(node as Node)
-    }
+    override fun visit(node: WhileExpr) = listOf(
+        visit(node as CodeFlowExpr),
+        visit(node as Expression),
+        visit(node as BlockLevelDecl),
+        visit(node as Node),
+    )
+}
+
+interface UnitIntermediateNodeVisitor : IntermediateNodeVisitor<Unit> {
+    override fun visit(node: Node) {}
+    override fun visit(node: TopLevelDecl) {}
+    override fun visit(node: ObjectLevelDecl) {}
+    override fun visit(node: BlockLevelDecl) {}
+    override fun visit(node: NamedDecl) {}
+    override fun visit(node: TypedDecl) {}
+    override fun visit(node: CallableDecl) {}
+    override fun visit(node: ObjectDecl) {}
+    override fun visit(node: Expression) {}
+    override fun visit(node: Literal) {}
+    override fun visit(node: Operation) {}
+    override fun visit(node: Term) {}
+    override fun visit(node: CodeFlowExpr) {}
 }
 
 interface Acceptable {

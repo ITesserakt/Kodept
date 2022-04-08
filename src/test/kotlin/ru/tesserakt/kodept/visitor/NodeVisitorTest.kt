@@ -79,17 +79,63 @@ class NodeVisitorTest : DescribeSpec({
         val ast = parsed.toParsedOrThrow().value
 
         it("should traverse all constructions") {
-            val visitor = object : IntermediateNodeVisitor {
-                var nodeCount = 0
-
-                override fun visit(node: AST.Node) {
-                    nodeCount++
-                }
+            val visitor = object : IntermediateNodeVisitor<Int> {
+                override fun visit(node: AST.Node) = 1
+                override fun visit(node: AST.TopLevelDecl): Int = 0
+                override fun visit(node: AST.ObjectLevelDecl): Int = 0
+                override fun visit(node: AST.BlockLevelDecl): Int = 0
+                override fun visit(node: AST.NamedDecl): Int = 0
+                override fun visit(node: AST.TypedDecl): Int = 0
+                override fun visit(node: AST.CallableDecl): Int = 0
+                override fun visit(node: AST.ObjectDecl): Int = 0
+                override fun visit(node: AST.Expression): Int = 0
+                override fun visit(node: AST.Literal): Int = 0
+                override fun visit(node: AST.Operation): Int = 0
+                override fun visit(node: AST.Term): Int = 0
+                override fun visit(node: AST.CodeFlowExpr): Int = 0
             }
 
-            visitor.nodeCount shouldBe 0
-            ast.root.acceptRecursively(visitor)
-            visitor.nodeCount shouldBe 25
+            val trueVisitor = object : NodeVisitor<Int> {
+                override fun visit(node: AST.WhileExpr): Int = 1
+                override fun visit(node: AST.IfExpr): Int = 1
+                override fun visit(node: AST.ExpressionList): Int = 1
+                override fun visit(node: AST.CharLiteral): Int = 1
+                override fun visit(node: AST.BinaryLiteral): Int = 1
+                override fun visit(node: AST.DecimalLiteral): Int = 1
+                override fun visit(node: AST.FloatingLiteral): Int = 1
+                override fun visit(node: AST.HexLiteral): Int = 1
+                override fun visit(node: AST.OctalLiteral): Int = 1
+                override fun visit(node: AST.StringLiteral): Int = 1
+                override fun visit(node: AST.Assignment): Int = 1
+                override fun visit(node: AST.Binary): Int = 1
+                override fun visit(node: AST.Comparison): Int = 1
+                override fun visit(node: AST.Elvis): Int = 1
+                override fun visit(node: AST.Logical): Int = 1
+                override fun visit(node: AST.Mathematical): Int = 1
+                override fun visit(node: AST.Absolution): Int = 1
+                override fun visit(node: AST.BitInversion): Int = 1
+                override fun visit(node: AST.Inversion): Int = 1
+                override fun visit(node: AST.Negation): Int = 1
+                override fun visit(node: AST.TermChain): Int = 1
+                override fun visit(node: AST.UnresolvedFunctionCall): Int = 1
+                override fun visit(node: AST.UnresolvedReference): Int = 1
+                override fun visit(node: AST.TypeExpression): Int = 1
+                override fun visit(node: AST.FunctionDecl): Int = 1
+                override fun visit(node: AST.FunctionDecl.Parameter): Int = 1
+                override fun visit(node: AST.InitializedVar): Int = 1
+                override fun visit(node: AST.VariableDecl): Int = 1
+                override fun visit(node: AST.FileDecl): Int = 1
+                override fun visit(node: AST.EnumDecl): Int = 1
+                override fun visit(node: AST.EnumDecl.Entry): Int = 1
+                override fun visit(node: AST.ModuleDecl): Int = 1
+                override fun visit(node: AST.StructDecl): Int = 1
+                override fun visit(node: AST.StructDecl.Parameter): Int = 1
+                override fun visit(node: AST.TraitDecl): Int = 1
+                override fun visit(node: AST.IfExpr.ElifExpr): Int = 1
+                override fun visit(node: AST.IfExpr.ElseExpr): Int = 1
+            }
+
+            ast.root.acceptRecursively(visitor).flatten().sum() shouldBe ast.root.acceptRecursively(trueVisitor).sum()
         }
     }
 })
