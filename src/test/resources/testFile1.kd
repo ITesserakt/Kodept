@@ -1,0 +1,5 @@
+module prelude {
+    enum struct Bool {
+        True, False
+    }
+}

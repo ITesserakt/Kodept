@@ -6,8 +6,8 @@ val arrowVersion: String by extra
 val serializationVersion: String by extra
 
 plugins {
-    kotlin("jvm") version "1.6.20-M1"
-    kotlin("plugin.serialization") version "1.6.20-M1"
+    kotlin("jvm") version "1.6.20"
+    kotlin("plugin.serialization") version "1.6.20"
     application
 }
 

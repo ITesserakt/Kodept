@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept
 
+import ru.tesserakt.kodept.parser.AST
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.OutputStream
@@ -22,3 +23,5 @@ fun Cache.getOutput() = when (this) {
     is MemoryCache -> getOutput()
     else -> null
 }
+
+data class CacheData(val sourceName: String, val source: String, val ast: AST)

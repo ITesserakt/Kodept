@@ -1,15 +1,10 @@
+import ru.tesserakt.kodept.Compiler
+import ru.tesserakt.kodept.FileCache
 import ru.tesserakt.kodept.FileLoader
-import ru.tesserakt.kodept.lexer.Lexer
-import ru.tesserakt.kodept.lexer.noneMatched
+import java.io.File
 
 fun main() {
-    val lexer = Lexer()
+    val compiler = Compiler(FileLoader())
 
-    FileLoader {
-        extension = "kt"
-    }.loadSources()
-        .map { it.bufferedReader().readText() }
-        .flatMap { lexer.tokenize(it) }
-        .filter { it.noneMatched() }
-        .forEach(::println)
+    compiler.cache { FileCache(File(it.removeSuffix(".kd") + ".kdc")) }.count()
 }

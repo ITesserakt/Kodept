@@ -14,7 +14,7 @@ class LoaderTest : StringSpec({
         val loader = MemoryLoader.singleSnippet(text)
 
         loader.getSources() shouldHaveSize 1
-        loader.getSources().first().getContents().bufferedReader().readText() shouldBe text
+        loader.getSources().first().contents.bufferedReader().readText() shouldBe text
 
         loader.loadSources() shouldHaveSize 1
         loader.loadSources().first().bufferedReader().readText() shouldBe text
@@ -38,7 +38,7 @@ class LoaderTest : StringSpec({
         val file = tempfile(testCase.descriptor.id.value, ".any")
         val loader = FileLoader {
             path = Path("/tmp")
-            anyExtension = true
+            anySourceExtension = true
         }
 
         assertSoftly {
