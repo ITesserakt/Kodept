@@ -23,7 +23,7 @@ class NodeVisitorTest : DescribeSpec({
         val ast = parsed.toParsedOrThrow().value
 
         it("should count functions in ast") {
-            val visitor = object : NodeVisitor {
+            val visitor = object : NodeVisitor() {
                 var funCount = 0
 
                 override fun visit(node: AST.FunctionDecl) {
@@ -37,7 +37,7 @@ class NodeVisitorTest : DescribeSpec({
         }
 
         it("should return all constructions with property") {
-            val visitor = object : NodeVisitor {
+            val visitor = object : NodeVisitor() {
                 val fnsWithParams = mutableListOf<AST.FunctionDecl>()
 
                 override fun visit(node: AST.FunctionDecl) {
@@ -71,7 +71,7 @@ class NodeVisitorTest : DescribeSpec({
         val ast = parsed.toParsedOrThrow().value
 
         it("should traverse all constructions") {
-            val visitor = object : IntermediateNodeProcessor<Int> {
+            val visitor = object : IntermediateNodeProcessor<Int>() {
                 override fun visit(node: AST.Node) = 1
                 override fun visit(node: AST.Leaf): Int = 0
                 override fun visit(node: AST.TopLevelDecl): Int = 0
@@ -88,7 +88,7 @@ class NodeVisitorTest : DescribeSpec({
                 override fun visit(node: AST.CodeFlowExpr): Int = 0
             }
 
-            val trueVisitor = object : NodeProcessor<Int> {
+            val trueVisitor = object : NodeProcessor<Int>() {
                 override fun visit(node: AST.WhileExpr): Int = 1
                 override fun visit(node: AST.IfExpr): Int = 1
                 override fun visit(node: AST.ExpressionList): Int = 1

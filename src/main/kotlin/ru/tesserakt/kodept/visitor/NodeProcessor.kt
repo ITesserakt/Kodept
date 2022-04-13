@@ -5,195 +5,87 @@ package ru.tesserakt.kodept.visitor
 import arrow.core.NonEmptyList
 import ru.tesserakt.kodept.parser.AST.*
 
-interface NodeProcessor<T> {
-    fun visit(node: WhileExpr): T
-    fun visit(node: IfExpr): T
-    fun visit(node: ExpressionList): T
-    fun visit(node: CharLiteral): T
-    fun visit(node: BinaryLiteral): T
-    fun visit(node: DecimalLiteral): T
-    fun visit(node: FloatingLiteral): T
-    fun visit(node: HexLiteral): T
-    fun visit(node: OctalLiteral): T
-    fun visit(node: StringLiteral): T
-    fun visit(node: Assignment): T
-    fun visit(node: Binary): T
-    fun visit(node: Comparison): T
-    fun visit(node: Elvis): T
-    fun visit(node: Logical): T
-    fun visit(node: Mathematical): T
-    fun visit(node: Absolution): T
-    fun visit(node: BitInversion): T
-    fun visit(node: Inversion): T
-    fun visit(node: Negation): T
-    fun visit(node: TermChain): T
-    fun visit(node: UnresolvedFunctionCall): T
-    fun visit(node: UnresolvedReference): T
-    fun visit(node: TypeExpression): T
-    fun visit(node: FunctionDecl): T
-    fun visit(node: FunctionDecl.Parameter): T
-    fun visit(node: InitializedVar): T
-    fun visit(node: VariableDecl): T
-    fun visit(node: FileDecl): T
-    fun visit(node: EnumDecl): T
-    fun visit(node: EnumDecl.Entry): T
-    fun visit(node: ModuleDecl): T
-    fun visit(node: StructDecl): T
-    fun visit(node: StructDecl.Parameter): T
-    fun visit(node: TraitDecl): T
-    fun visit(node: IfExpr.ElifExpr): T
-    fun visit(node: IfExpr.ElseExpr): T
+abstract class NodeProcessor<T> {
+    open fun default(node: Node): T = throw IllegalArgumentException("Override either this method or all visit methods")
+
+    open fun visit(node: WhileExpr): T = default(node)
+    open fun visit(node: IfExpr): T = default(node)
+    open fun visit(node: ExpressionList): T = default(node)
+    open fun visit(node: CharLiteral): T = default(node)
+    open fun visit(node: BinaryLiteral): T = default(node)
+    open fun visit(node: DecimalLiteral): T = default(node)
+    open fun visit(node: FloatingLiteral): T = default(node)
+    open fun visit(node: HexLiteral): T = default(node)
+    open fun visit(node: OctalLiteral): T = default(node)
+    open fun visit(node: StringLiteral): T = default(node)
+    open fun visit(node: Assignment): T = default(node)
+    open fun visit(node: Binary): T = default(node)
+    open fun visit(node: Comparison): T = default(node)
+    open fun visit(node: Elvis): T = default(node)
+    open fun visit(node: Logical): T = default(node)
+    open fun visit(node: Mathematical): T = default(node)
+    open fun visit(node: Absolution): T = default(node)
+    open fun visit(node: BitInversion): T = default(node)
+    open fun visit(node: Inversion): T = default(node)
+    open fun visit(node: Negation): T = default(node)
+    open fun visit(node: TermChain): T = default(node)
+    open fun visit(node: UnresolvedFunctionCall): T = default(node)
+    open fun visit(node: UnresolvedReference): T = default(node)
+    open fun visit(node: TypeExpression): T = default(node)
+    open fun visit(node: FunctionDecl): T = default(node)
+    open fun visit(node: FunctionDecl.Parameter): T = default(node)
+    open fun visit(node: InitializedVar): T = default(node)
+    open fun visit(node: VariableDecl): T = default(node)
+    open fun visit(node: FileDecl): T = default(node)
+    open fun visit(node: EnumDecl): T = default(node)
+    open fun visit(node: EnumDecl.Entry): T = default(node)
+    open fun visit(node: ModuleDecl): T = default(node)
+    open fun visit(node: StructDecl): T = default(node)
+    open fun visit(node: StructDecl.Parameter): T = default(node)
+    open fun visit(node: TraitDecl): T = default(node)
+    open fun visit(node: IfExpr.ElifExpr): T = default(node)
+    open fun visit(node: IfExpr.ElseExpr): T = default(node)
 }
 
-interface NodeVisitor : NodeProcessor<Unit> {
-    override fun visit(node: WhileExpr) {}
-
-    override fun visit(node: IfExpr) {}
-
-    override fun visit(node: ExpressionList) {}
-
-    override fun visit(node: CharLiteral) {}
-
-    override fun visit(node: BinaryLiteral) {}
-
-    override fun visit(node: DecimalLiteral) {}
-
-    override fun visit(node: FloatingLiteral) {}
-
-    override fun visit(node: HexLiteral) {}
-
-    override fun visit(node: OctalLiteral) {}
-
-    override fun visit(node: StringLiteral) {}
-
-    override fun visit(node: Assignment) {}
-
-    override fun visit(node: Binary) {}
-
-    override fun visit(node: Comparison) {}
-
-    override fun visit(node: Elvis) {}
-
-    override fun visit(node: Logical) {}
-
-    override fun visit(node: Mathematical) {}
-
-    override fun visit(node: Absolution) {}
-
-    override fun visit(node: BitInversion) {}
-
-    override fun visit(node: Inversion) {}
-
-    override fun visit(node: Negation) {}
-
-    override fun visit(node: TermChain) {}
-
-    override fun visit(node: UnresolvedFunctionCall) {}
-
-    override fun visit(node: UnresolvedReference) {}
-
-    override fun visit(node: TypeExpression) {}
-
-    override fun visit(node: FunctionDecl) {}
-
-    override fun visit(node: FunctionDecl.Parameter) {}
-
-    override fun visit(node: InitializedVar) {}
-
-    override fun visit(node: VariableDecl) {}
-
-    override fun visit(node: FileDecl) {}
-
-    override fun visit(node: EnumDecl) {}
-
-    override fun visit(node: EnumDecl.Entry) {}
-
-    override fun visit(node: ModuleDecl) {}
-
-    override fun visit(node: StructDecl) {}
-
-    override fun visit(node: StructDecl.Parameter) {}
-
-    override fun visit(node: TraitDecl) {}
-
-    override fun visit(node: IfExpr.ElifExpr) {}
-
-    override fun visit(node: IfExpr.ElseExpr) {}
+abstract class NodeVisitor : NodeProcessor<Unit>() {
+    final override fun default(node: Node) {}
 }
 
-interface IntermediateNodeProcessor<T> : NodeProcessor<List<T>> {
-    private fun Node.forAll() = listOfNotNull(
-        (this as? CodeFlowExpr)?.let(::visit),
-        (this as? Term)?.let(::visit),
-        (this as? Operation)?.let(::visit),
-        (this as? Literal)?.let(::visit),
-        (this as? Expression)?.let(::visit),
-        (this as? ObjectDecl)?.let(::visit),
-        (this as? CallableDecl)?.let(::visit),
-        (this as? TypedDecl)?.let(::visit),
-        (this as? NamedDecl)?.let(::visit),
-        (this as? BlockLevelDecl)?.let(::visit),
-        (this as? ObjectLevelDecl)?.let(::visit),
-        (this as? TopLevelDecl)?.let(::visit),
-        (this as? Leaf)?.let(::visit),
-        visit(this)
+abstract class IntermediateNodeProcessor<T> : NodeProcessor<List<T>>() {
+    final override fun default(node: Node) = listOfNotNull(
+        (node as? CodeFlowExpr)?.let(::visit),
+        (node as? Term)?.let(::visit),
+        (node as? Operation)?.let(::visit),
+        (node as? Literal)?.let(::visit),
+        (node as? Expression)?.let(::visit),
+        (node as? ObjectDecl)?.let(::visit),
+        (node as? CallableDecl)?.let(::visit),
+        (node as? TypedDecl)?.let(::visit),
+        (node as? NamedDecl)?.let(::visit),
+        (node as? BlockLevelDecl)?.let(::visit),
+        (node as? ObjectLevelDecl)?.let(::visit),
+        (node as? TopLevelDecl)?.let(::visit),
+        (node as? Leaf)?.let(::visit),
+        visit(node)
     )
 
-    fun visit(node: Node): T
-    fun visit(node: Leaf): T
-    fun visit(node: TopLevelDecl): T
-    fun visit(node: ObjectLevelDecl): T
-    fun visit(node: BlockLevelDecl): T
-    fun visit(node: NamedDecl): T
-    fun visit(node: TypedDecl): T
-    fun visit(node: CallableDecl): T
-    fun visit(node: ObjectDecl): T
-    fun visit(node: Expression): T
-    fun visit(node: Literal): T
-    fun visit(node: Operation): T
-    fun visit(node: Term): T
-    fun visit(node: CodeFlowExpr): T
-
-    override fun visit(node: WhileExpr): List<T> = node.forAll()
-    override fun visit(node: IfExpr): List<T> = node.forAll()
-    override fun visit(node: ExpressionList): List<T> = node.forAll()
-    override fun visit(node: CharLiteral): List<T> = node.forAll()
-    override fun visit(node: BinaryLiteral): List<T> = node.forAll()
-    override fun visit(node: DecimalLiteral): List<T> = node.forAll()
-    override fun visit(node: FloatingLiteral): List<T> = node.forAll()
-    override fun visit(node: HexLiteral): List<T> = node.forAll()
-    override fun visit(node: OctalLiteral): List<T> = node.forAll()
-    override fun visit(node: StringLiteral): List<T> = node.forAll()
-    override fun visit(node: Assignment): List<T> = node.forAll()
-    override fun visit(node: Binary): List<T> = node.forAll()
-    override fun visit(node: Comparison): List<T> = node.forAll()
-    override fun visit(node: Elvis): List<T> = node.forAll()
-    override fun visit(node: Logical): List<T> = node.forAll()
-    override fun visit(node: Mathematical): List<T> = node.forAll()
-    override fun visit(node: Absolution): List<T> = node.forAll()
-    override fun visit(node: BitInversion): List<T> = node.forAll()
-    override fun visit(node: Inversion): List<T> = node.forAll()
-    override fun visit(node: Negation): List<T> = node.forAll()
-    override fun visit(node: TermChain): List<T> = node.forAll()
-    override fun visit(node: UnresolvedFunctionCall): List<T> = node.forAll()
-    override fun visit(node: UnresolvedReference): List<T> = node.forAll()
-    override fun visit(node: TypeExpression): List<T> = node.forAll()
-    override fun visit(node: FunctionDecl): List<T> = node.forAll()
-    override fun visit(node: FunctionDecl.Parameter): List<T> = node.forAll()
-    override fun visit(node: InitializedVar): List<T> = node.forAll()
-    override fun visit(node: VariableDecl): List<T> = node.forAll()
-    override fun visit(node: FileDecl): List<T> = node.forAll()
-    override fun visit(node: EnumDecl): List<T> = node.forAll()
-    override fun visit(node: EnumDecl.Entry): List<T> = node.forAll()
-    override fun visit(node: ModuleDecl): List<T> = node.forAll()
-    override fun visit(node: StructDecl): List<T> = node.forAll()
-    override fun visit(node: StructDecl.Parameter): List<T> = node.forAll()
-    override fun visit(node: TraitDecl): List<T> = node.forAll()
-    override fun visit(node: IfExpr.ElifExpr): List<T> = node.forAll()
-    override fun visit(node: IfExpr.ElseExpr): List<T> = node.forAll()
+    abstract fun visit(node: Node): T
+    abstract fun visit(node: Leaf): T
+    abstract fun visit(node: TopLevelDecl): T
+    abstract fun visit(node: ObjectLevelDecl): T
+    abstract fun visit(node: BlockLevelDecl): T
+    abstract fun visit(node: NamedDecl): T
+    abstract fun visit(node: TypedDecl): T
+    abstract fun visit(node: CallableDecl): T
+    abstract fun visit(node: ObjectDecl): T
+    abstract fun visit(node: Expression): T
+    abstract fun visit(node: Literal): T
+    abstract fun visit(node: Operation): T
+    abstract fun visit(node: Term): T
+    abstract fun visit(node: CodeFlowExpr): T
 }
 
-interface IntermediateNodeVisitor : IntermediateNodeProcessor<Unit> {
+abstract class IntermediateNodeVisitor : IntermediateNodeProcessor<Unit>() {
     override fun visit(node: Node) {}
     override fun visit(node: Leaf) {}
     override fun visit(node: TopLevelDecl) {}

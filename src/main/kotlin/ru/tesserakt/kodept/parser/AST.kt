@@ -204,7 +204,7 @@ data class AST(val root: Node) {
 
     data class Elvis(override val left: Expression, override val right: Expression) : Operation.Binary()
 
-    data class Assignment(override val left: Expression, override val right: Expression) : Operation.Binary()
+    data class Assignment(override val left: Term, override val right: Expression) : Operation.Binary()
 
     data class UnresolvedReference(val name: String) : Term(), Leaf
 

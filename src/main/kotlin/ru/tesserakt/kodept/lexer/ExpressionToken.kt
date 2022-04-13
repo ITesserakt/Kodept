@@ -7,6 +7,12 @@ import com.github.h0tk3y.betterParse.lexer.regexToken
 import com.github.h0tk3y.betterParse.parser.Parser
 
 enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
+    // Ignore
+    COMMENT(regexToken("""//( |.)*""", ignore = true)),
+    MULTILINE_COMMENT(regexToken(Regex("/\\*.*\\*/", RegexOption.DOT_MATCHES_ALL), ignore = true)),
+    NEWLINE(regexToken("[\r\n]+", ignore = true)),
+    WHITESPACE(regexToken("""\s+""", ignore = true)),
+
     // Keywords
     FUN(literalToken("fun")),
     VAL(literalToken("val")),
@@ -48,12 +54,6 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     //    DECIMAL(regexToken("""[-+]?([1-9][\d_]*\d|\d)""")),
     CHAR(regexToken("""'([^'\\]|\\'|\\\\)'""")),
     STRING(regexToken(""""(?:\\\\"|[^"])*"""")),
-
-    // Ignore
-    NEWLINE(regexToken("[\r\n]+", ignore = true)),
-    WHITESPACE(regexToken("""\s+""", ignore = true)),
-    COMMENT(regexToken("//.*$", ignore = true)),
-    MULTILINE_COMMENT(regexToken(Regex("/\\*.*\\*/", RegexOption.DOT_MATCHES_ALL), ignore = true)),
 
     // Operators
     DOT(literalToken(".")),
