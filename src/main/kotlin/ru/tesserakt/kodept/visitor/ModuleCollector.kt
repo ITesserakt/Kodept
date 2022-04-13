@@ -2,7 +2,7 @@ package ru.tesserakt.kodept.visitor
 
 import ru.tesserakt.kodept.parser.AST
 
-class ModuleCollector : NodeCollector<List<String>, Unit>() {
+class ModuleCollector : NodeCollector<List<String>>() {
     private var modules = mutableListOf<String>()
 
     override val underlyingVisitor = object : NodeVisitor() {

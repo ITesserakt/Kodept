@@ -5,7 +5,7 @@ import kotlin.reflect.KProperty0
 
 data class Declaration(val decl: AST.Node, val parent: Declaration?, val name: String, val module: String)
 
-class DeclarationProcessor : NodeCollector<List<Declaration>, List<Declaration>>() {
+class DeclarationProcessor : NodeCollector<List<Declaration>>() {
     private var declParent: Declaration? = null
     private var currentModule: String = ""
 
