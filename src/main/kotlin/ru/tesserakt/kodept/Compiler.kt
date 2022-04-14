@@ -44,7 +44,7 @@ class Compiler private constructor(
 
         sources.zip(tokens).map { (source, tokens) ->
             when (val hint = source.hint) {
-                null -> rootParser.tryParseToEnd(tokens.first, 0).map(::AST)
+                null -> rootParser.tryParseToEnd(tokens.first, 0).map { AST(it, source.name) }
                 else -> object : Parsed<AST>() {
                     override val nextPosition: Int = 0
                     override val value: AST = hint

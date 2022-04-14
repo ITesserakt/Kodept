@@ -1,12 +1,17 @@
 package ru.tesserakt.kodept.parser
 
 import io.kotest.core.spec.style.WordSpec
+import ru.tesserakt.kodept.lexer.toCodePoint
 
 class BlockLevelGrammarTest : WordSpec({
     "function decls" should {
         test(
             BlockLevelGrammar, """fun println() {}""",
-            AST.FunctionDecl("println", listOf(), null, AST.ExpressionList(listOf()))
+            AST.FunctionDecl("println",
+                listOf(),
+                null,
+                AST.ExpressionList(listOf(), (1 to 15).toCodePoint()),
+                (1 to 1).toCodePoint())
         )
         test(
             BlockLevelGrammar, """fun println() {
@@ -16,10 +21,13 @@ class BlockLevelGrammarTest : WordSpec({
             }""".trimMargin(),
             AST.FunctionDecl(
                 "println", listOf(), null, AST.ExpressionList(listOf(
-                    AST.InitializedVar(AST.VariableDecl("foo", false, null), AST.DecimalLiteral(5.toBigInteger())),
-                    AST.StringLiteral("term"),
-                    AST.InitializedVar(AST.VariableDecl("baz", false, null), AST.DecimalLiteral(4.toBigInteger())),
-                ))
+                    AST.InitializedVar(AST.VariableDecl("foo", false, null, (2 to 1).toCodePoint()),
+                        AST.DecimalLiteral(5.toBigInteger(), (2 to 11).toCodePoint())),
+                    AST.StringLiteral("term", (3 to 1).toCodePoint()),
+                    AST.InitializedVar(AST.VariableDecl("baz", false, null, (4 to 1).toCodePoint()),
+                        AST.DecimalLiteral(4.toBigInteger(), (4 to 11).toCodePoint())),
+                ), (1 to 15).toCodePoint()),
+                (1 to 1).toCodePoint()
             )
         )
         test(
@@ -35,10 +43,13 @@ class BlockLevelGrammarTest : WordSpec({
             }""".trimMargin(),
             AST.FunctionDecl(
                 "println", listOf(), null, AST.ExpressionList(listOf(
-                    AST.InitializedVar(AST.VariableDecl("foo", false, null), AST.DecimalLiteral(5.toBigInteger())),
-                    AST.StringLiteral("term"),
-                    AST.InitializedVar(AST.VariableDecl("baz", false, null), AST.DecimalLiteral(4.toBigInteger())),
-                ))
+                    AST.InitializedVar(AST.VariableDecl("foo", false, null, (2 to 1).toCodePoint()),
+                        AST.DecimalLiteral(5.toBigInteger(), (2 to 11).toCodePoint())),
+                    AST.StringLiteral("term", (3 to 1).toCodePoint()),
+                    AST.InitializedVar(AST.VariableDecl("baz", false, null, (3 to 9).toCodePoint()),
+                        AST.DecimalLiteral(4.toBigInteger(), (3 to 19).toCodePoint())),
+                ), (1 to 15).toCodePoint()),
+                (1 to 1).toCodePoint()
             )
         )
     }
@@ -48,46 +59,53 @@ class BlockLevelGrammarTest : WordSpec({
         test(
             BlockLevelGrammar,
             """var x = 5""",
-            AST.InitializedVar(AST.VariableDecl("x", true, null), AST.DecimalLiteral(5.toBigInteger()))
+            AST.InitializedVar(AST.VariableDecl("x", true, null, (1 to 1).toCodePoint()),
+                AST.DecimalLiteral(5.toBigInteger(), (1 to 9).toCodePoint()))
         )
         test(
             BlockLevelGrammar, """x += 5""",
             AST.Assignment(
-                AST.UnresolvedReference("x"),
+                AST.UnresolvedReference("x", (1 to 1).toCodePoint()),
                 AST.Mathematical(
-                    AST.UnresolvedReference("x"),
-                    AST.DecimalLiteral(5.toBigInteger()),
-                    AST.Mathematical.Kind.Add
-                )
+                    AST.UnresolvedReference("x", (1 to 1).toCodePoint()),
+                    AST.DecimalLiteral(5.toBigInteger(), (1 to 6).toCodePoint()),
+                    AST.Mathematical.Kind.Add,
+                    (1 to 3).toCodePoint()
+                ),
+                (1 to 3).toCodePoint()
             )
         )
         test(
             BlockLevelGrammar, """val x = { 5 }""",
             AST.InitializedVar(
-                AST.VariableDecl("x", false, null),
-                AST.ExpressionList(listOf(AST.DecimalLiteral(5.toBigInteger())))
+                AST.VariableDecl("x", false, null, (1 to 1).toCodePoint()),
+                AST.ExpressionList(listOf(AST.DecimalLiteral(5.toBigInteger(), (1 to 11).toCodePoint())),
+                    (1 to 9).toCodePoint())
             )
         )
         test(
             BlockLevelGrammar, """val x: Int""",
-            AST.VariableDecl("x", false, AST.TypeExpression("Int"))
+            AST.VariableDecl("x", false, AST.TypeExpression("Int", (1 to 8).toCodePoint()), (1 to 1).toCodePoint())
         )
         test(
             BlockLevelGrammar, """val x: String = {}""",
-            AST.InitializedVar(AST.VariableDecl("x", false, AST.TypeExpression("String")),
-                AST.ExpressionList(emptyList()))
+            AST.InitializedVar(AST.VariableDecl("x",
+                false,
+                AST.TypeExpression("String", (1 to 8).toCodePoint()),
+                (1 to 1).toCodePoint()),
+                AST.ExpressionList(emptyList(), (1 to 17).toCodePoint()))
         )
         test(
             BlockLevelGrammar, """val result = 
             |   test(blockLevelGrammar, "val x: String = {}", null)
         """.trimMargin(), AST.InitializedVar(
-                AST.VariableDecl("result", false, null),
+                AST.VariableDecl("result", false, null, (1 to 1).toCodePoint()),
                 AST.UnresolvedFunctionCall(
-                    AST.UnresolvedReference("test"),
+                    AST.UnresolvedReference("test", (2 to 4).toCodePoint()),
                     listOf(
-                        AST.UnresolvedReference("blockLevelGrammar"),
-                        AST.StringLiteral("val x: String = {}"),
-                        AST.UnresolvedReference("null")
+                        AST.UnresolvedReference("blockLevelGrammar", (2 to 9).toCodePoint()),
+                        AST.StringLiteral("val x: String = {}", (2 to 28).toCodePoint()),
+                        AST.UnresolvedReference("null", (2 to 50).toCodePoint())
                     )
                 )
             )

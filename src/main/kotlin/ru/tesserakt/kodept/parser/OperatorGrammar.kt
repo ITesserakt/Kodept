@@ -7,6 +7,7 @@ import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple2
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
+import ru.tesserakt.kodept.lexer.toCodePoint
 import ru.tesserakt.kodept.parser.AST.*
 
 object OperatorGrammar : Grammar<Expression>() {
@@ -59,51 +60,51 @@ object OperatorGrammar : Grammar<Expression>() {
 
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
 
-    val topExpr: Parser<Expression> by (-SUB * parser { topExpr } use (::Negation)) or
-            (-NOT_LOGIC * parser { topExpr } use (::Inversion)) or
-            (-NOT_BIT * parser { topExpr } use (::BitInversion)) or
-            (-PLUS * parser { topExpr } use (::Absolution)) or
+    val topExpr: Parser<Expression> by (SUB * parser { topExpr } use { Negation(t2, t1.toCodePoint()) }) or
+            (NOT_LOGIC * parser { topExpr } use { Inversion(t2, t1.toCodePoint()) }) or
+            (NOT_BIT * parser { topExpr } use { BitInversion(t2, t1.toCodePoint()) }) or
+            (PLUS * parser { topExpr } use { Absolution(t2, t1.toCodePoint()) }) or
             atom
 
     val powExpr: Parser<Expression> by topExpr * optional(POW * parser { powExpr }) map { (a, rest) ->
         when (rest) {
             null -> a
-            else -> Mathematical(a, rest.t2, Mathematical.Kind.Pow)
+            else -> Mathematical(a, rest.t2, Mathematical.Kind.Pow, rest.t1.toCodePoint())
         }
     }
 
     val mulExpr by powExpr * zeroOrMore((TIMES or DIV or MOD) * powExpr) leftFold { a, op, b ->
-        Mathematical(a, b, resolveMathOperation(op))
+        Mathematical(a, b, resolveMathOperation(op), op.toCodePoint())
     }
 
     val addExpr by mulExpr * zeroOrMore((PLUS or SUB) * mulExpr) leftFold { a, op, b ->
-        Mathematical(a, b, resolveMathOperation(op))
+        Mathematical(a, b, resolveMathOperation(op), op.toCodePoint())
     }
 
     val complexCmpExpr = addExpr * zeroOrMore(SPACESHIP * addExpr) leftFold { a, op, b ->
-        Comparison(a, b, resolveCmpOperation(op))
+        Comparison(a, b, resolveCmpOperation(op), op.toCodePoint())
     }
 
     val compoundCmpExpr by complexCmpExpr * zeroOrMore((LESS_EQUALS or EQUIV or NOT_EQUIV or GREATER_EQUALS) * complexCmpExpr) leftFold { a, op, b ->
-        Comparison(a, b, resolveCmpOperation(op))
+        Comparison(a, b, resolveCmpOperation(op), op.toCodePoint())
     }
 
     val cmpExpr by compoundCmpExpr * zeroOrMore((LESS or GREATER) * compoundCmpExpr) leftFold { a, op, b ->
-        Comparison(a, b, resolveCmpOperation(op))
+        Comparison(a, b, resolveCmpOperation(op), op.toCodePoint())
     }
 
     val bitExpr by cmpExpr * zeroOrMore((AND_BIT or XOR_BIT or OR_BIT) * cmpExpr) leftFold { a, op, b ->
-        Binary(a, b, resolveBinaryOperation(op))
+        Binary(a, b, resolveBinaryOperation(op), op.toCodePoint())
     }
 
     val logicExpr by bitExpr * zeroOrMore((AND_LOGIC or OR_LOGIC) * bitExpr) leftFold { a, op, b ->
-        Logical(a, b, resolveLogicalOperation(op))
+        Logical(a, b, resolveLogicalOperation(op), op.toCodePoint())
     }
 
     val elvis: Parser<Expression> by logicExpr * optional(ELVIS * parser { elvis }) map { (a, rest) ->
         when (rest) {
             null -> a
-            else -> Elvis(a, rest.t2)
+            else -> Elvis(a, rest.t2, rest.t1.toCodePoint())
         }
     }
 

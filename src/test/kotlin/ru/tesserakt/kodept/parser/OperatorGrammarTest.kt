@@ -2,6 +2,7 @@ package ru.tesserakt.kodept.parser
 
 import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
+import ru.tesserakt.kodept.lexer.toCodePoint
 
 class OperatorGrammarTest : WordSpec({
     val grammar = OperatorGrammar
@@ -11,34 +12,40 @@ class OperatorGrammarTest : WordSpec({
             grammar.addExpr,
             "123 + 321",
             AST.Mathematical(
-                AST.DecimalLiteral(123.toBigInteger()),
-                AST.DecimalLiteral(321.toBigInteger()),
-                AST.Mathematical.Kind.Add
+                AST.DecimalLiteral(123.toBigInteger(), (1 to 1).toCodePoint()),
+                AST.DecimalLiteral(321.toBigInteger(), (1 to 7).toCodePoint()),
+                AST.Mathematical.Kind.Add,
+                (1 to 5).toCodePoint()
             )
         )
         test(
             grammar.addExpr, "123 - 321 - 0.5",
             AST.Mathematical(
                 AST.Mathematical(
-                    AST.DecimalLiteral(123.toBigInteger()),
-                    AST.DecimalLiteral(321.toBigInteger()),
-                    AST.Mathematical.Kind.Sub
+                    AST.DecimalLiteral(123.toBigInteger(), (1 to 1).toCodePoint()),
+                    AST.DecimalLiteral(321.toBigInteger(), (1 to 7).toCodePoint()),
+                    AST.Mathematical.Kind.Sub,
+                    (1 to 5).toCodePoint()
                 ),
-                AST.FloatingLiteral(0.5.toBigDecimal()),
-                AST.Mathematical.Kind.Sub
+                AST.FloatingLiteral(0.5.toBigDecimal(), (1 to 13).toCodePoint()),
+                AST.Mathematical.Kind.Sub,
+                (1 to 11).toCodePoint()
             )
         )
         test(
             grammar.elvis, "a ?: b ?: c ?: d",
             AST.Elvis(
-                AST.UnresolvedReference("a"),
+                AST.UnresolvedReference("a", (1 to 1).toCodePoint()),
                 AST.Elvis(
-                    AST.UnresolvedReference("b"),
+                    AST.UnresolvedReference("b", (1 to 6).toCodePoint()),
                     AST.Elvis(
-                        AST.UnresolvedReference("c"),
-                        AST.UnresolvedReference("d")
-                    )
-                )
+                        AST.UnresolvedReference("c", (1 to 11).toCodePoint()),
+                        AST.UnresolvedReference("d", (1 to 16).toCodePoint()),
+                        (1 to 13).toCodePoint()
+                    ),
+                    (1 to 8).toCodePoint()
+                ),
+                (1 to 3).toCodePoint()
             )
         )
     }
@@ -47,60 +54,70 @@ class OperatorGrammarTest : WordSpec({
         test(
             OperatorGrammar, """7 & "test" + ~1.2""",
             AST.Binary(
-                AST.DecimalLiteral(7.toBigInteger()),
+                AST.DecimalLiteral(7.toBigInteger(), (1 to 1).toCodePoint()),
                 AST.Mathematical(
-                    AST.StringLiteral("test"),
-                    AST.BitInversion(AST.FloatingLiteral(1.2.toBigDecimal())),
-                    AST.Mathematical.Kind.Add
+                    AST.StringLiteral("test", (1 to 5).toCodePoint()),
+                    AST.BitInversion(AST.FloatingLiteral(1.2.toBigDecimal(), (1 to 15).toCodePoint()),
+                        (1 to 14).toCodePoint()),
+                    AST.Mathematical.Kind.Add,
+                    (1 to 12).toCodePoint()
                 ),
-                AST.Binary.Kind.And
+                AST.Binary.Kind.And,
+                (1 to 3).toCodePoint()
             )
         )
         test(
             OperatorGrammar, """2 * (2 + 2)""",
             AST.Mathematical(
-                AST.DecimalLiteral(2.toBigInteger()),
+                AST.DecimalLiteral(2.toBigInteger(), (1 to 1).toCodePoint()),
                 AST.Mathematical(
-                    AST.DecimalLiteral(2.toBigInteger()),
-                    AST.DecimalLiteral(2.toBigInteger()),
-                    AST.Mathematical.Kind.Add
+                    AST.DecimalLiteral(2.toBigInteger(), (1 to 6).toCodePoint()),
+                    AST.DecimalLiteral(2.toBigInteger(), (1 to 10).toCodePoint()),
+                    AST.Mathematical.Kind.Add,
+                    (1 to 8).toCodePoint()
                 ),
-                AST.Mathematical.Kind.Mul
+                AST.Mathematical.Kind.Mul,
+                (1 to 3).toCodePoint()
             )
         )
         test(
             OperatorGrammar, """2 * (2 + -"αβοβα")""",
             AST.Mathematical(
-                AST.DecimalLiteral(2.toBigInteger()),
+                AST.DecimalLiteral(2.toBigInteger(), (1 to 1).toCodePoint()),
                 AST.Mathematical(
-                    AST.DecimalLiteral(2.toBigInteger()),
-                    AST.Negation(AST.StringLiteral("αβοβα")),
-                    AST.Mathematical.Kind.Add
+                    AST.DecimalLiteral(2.toBigInteger(), (1 to 6).toCodePoint()),
+                    AST.Negation(AST.StringLiteral("αβοβα", (1 to 11).toCodePoint()), (1 to 10).toCodePoint()),
+                    AST.Mathematical.Kind.Add,
+                    (1 to 8).toCodePoint()
                 ),
-                AST.Mathematical.Kind.Mul
+                AST.Mathematical.Kind.Mul,
+                (1 to 3).toCodePoint()
             )
         )
         test(
             OperatorGrammar, """2 * 2 + 2""",
             AST.Mathematical(
                 AST.Mathematical(
-                    AST.DecimalLiteral(2.toBigInteger()),
-                    AST.DecimalLiteral(2.toBigInteger()),
-                    AST.Mathematical.Kind.Mul
+                    AST.DecimalLiteral(2.toBigInteger(), (1 to 1).toCodePoint()),
+                    AST.DecimalLiteral(2.toBigInteger(), (1 to 5).toCodePoint()),
+                    AST.Mathematical.Kind.Mul,
+                    (1 to 3).toCodePoint()
                 ),
-                AST.DecimalLiteral(2.toBigInteger()),
-                AST.Mathematical.Kind.Add
+                AST.DecimalLiteral(2.toBigInteger(), (1 to 9).toCodePoint()),
+                AST.Mathematical.Kind.Add,
+                (1 to 7).toCodePoint()
             )
         )
         test(
             OperatorGrammar, """id(2 + 2)""",
             AST.UnresolvedFunctionCall(
-                AST.UnresolvedReference("id"),
+                AST.UnresolvedReference("id", (1 to 1).toCodePoint()),
                 listOf(
                     AST.Mathematical(
-                        AST.DecimalLiteral(2.toBigInteger()),
-                        AST.DecimalLiteral(2.toBigInteger()),
-                        AST.Mathematical.Kind.Add
+                        AST.DecimalLiteral(2.toBigInteger(), (1 to 4).toCodePoint()),
+                        AST.DecimalLiteral(2.toBigInteger(), (1 to 8).toCodePoint()),
+                        AST.Mathematical.Kind.Add,
+                        (1 to 6).toCodePoint()
                     )
                 )
             )
@@ -109,13 +126,14 @@ class OperatorGrammarTest : WordSpec({
             OperatorGrammar, """core.println("Hello, " + "world!")""",
             AST.TermChain(
                 nonEmptyListOf(
-                    AST.UnresolvedReference("core"),
+                    AST.UnresolvedReference("core", (1 to 1).toCodePoint()),
                     AST.UnresolvedFunctionCall(
-                        AST.UnresolvedReference("println"), listOf(
+                        AST.UnresolvedReference("println", (1 to 6).toCodePoint()), listOf(
                             AST.Mathematical(
-                                AST.StringLiteral("Hello, "),
-                                AST.StringLiteral("world!"),
-                                AST.Mathematical.Kind.Add
+                                AST.StringLiteral("Hello, ", (1 to 14).toCodePoint()),
+                                AST.StringLiteral("world!", (1 to 26).toCodePoint()),
+                                AST.Mathematical.Kind.Add,
+                                (1 to 24).toCodePoint()
                             )
                         )
                     )
