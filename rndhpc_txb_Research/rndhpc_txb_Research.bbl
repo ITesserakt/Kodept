@@ -285,4 +285,26 @@ Condition - pSeven 6.31.1 User Manual [Электронный ресурс]
   данных aDOT (advanced DOT).
 \newblock 2020.{}
 
+\bibitem{DeelmanWorkflow2009}
+\selectlanguageifdefined{english}
+Workflows and e-Science: An overview of workflow system features and
+  capabilities~/ D.~E., G.~D., S.~M. et~al.~// Future Generation Computer
+  Systems.
+\newblock 2009.
+\newblock Vol.~25, no.~5.
+\newblock P.~528 – 540.{}
+
+\bibitem{DanilovPar2011}
+\selectlanguageifdefined{russian}
+{Данилов А.М., Лапшин Э.В., Беликов Г.Г.,
+  Лебедев В.Б.} Методологические принципы
+  организации многопотоковой обработки
+  данных с распараллеливанием
+  вычислительных процессов~// Известия
+  вузов. Поволжский регион. Технические
+  науки.
+\newblock 2001.
+\newblock {№}~4.
+\newblock {С.}~26--34.{}
+
 \end{thebibliography}
