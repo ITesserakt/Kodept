@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.visitor
 
-import ru.tesserakt.kodept.parser.AST
+import ru.tesserakt.kodept.AST
 
 class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String>() {
     override fun visit(node: AST.WhileExpr): String = """While 

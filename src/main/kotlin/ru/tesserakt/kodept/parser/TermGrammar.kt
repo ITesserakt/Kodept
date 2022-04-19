@@ -3,8 +3,10 @@ package ru.tesserakt.kodept.parser
 import arrow.core.NonEmptyList
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
+import ru.tesserakt.kodept.AST
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
+import ru.tesserakt.kodept.trailing
 
 object TermGrammar : Grammar<AST.Term>() {
     val variableReference by IDENTIFIER use { AST.UnresolvedReference(text, toCodePoint()) }

@@ -3,9 +3,10 @@ package ru.tesserakt.kodept.parser
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
+import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.AST.FileDecl
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
-import ru.tesserakt.kodept.parser.AST.FileDecl
 
 object FileGrammar : Grammar<FileDecl>() {
     val moduleStatement by MODULE * IDENTIFIER * -LBRACE * zeroOrMore(TopLevelGrammar) * -RBRACE map { (moduleToken, name, rest) ->

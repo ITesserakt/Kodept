@@ -12,7 +12,7 @@ import ru.tesserakt.kodept.MemoryLoader
 
 class DeclarationProcessorTest : DescribeSpec({
     describe("visitor") {
-        val collector = DeclarationProcessor()
+        val collector = DeclarationCollector()
         val compiler = ru.tesserakt.kodept.Compiler(MemoryLoader.singleSnippet("""
             module a {
                 struct X
@@ -39,8 +39,8 @@ class DeclarationProcessorTest : DescribeSpec({
             val decls = collector.collect(ast.root)
 
             decls shouldHaveSize 14
-            decls.take(5).forAll { it.module shouldBe "a" }
-            decls.drop(5).forAll { it.module shouldBe "b" }
+            decls.take(5).forAll { it.scope.module shouldBe "a" }
+            decls.drop(5).forAll { it.scope.module shouldBe "b" }
 
             decls.take(4).forAll { it.parent.shouldBeNull() }
             decls[4].parent.shouldNotBeNull()

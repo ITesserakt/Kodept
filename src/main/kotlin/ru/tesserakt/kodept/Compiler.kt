@@ -5,7 +5,6 @@ import com.github.h0tk3y.betterParse.lexer.Tokenizer
 import com.github.h0tk3y.betterParse.parser.*
 import com.google.gson.GsonBuilder
 import ru.tesserakt.kodept.lexer.Lexer
-import ru.tesserakt.kodept.parser.AST
 import ru.tesserakt.kodept.parser.FileGrammar
 import java.io.Reader
 

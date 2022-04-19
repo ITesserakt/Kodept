@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.visitor
 
-import ru.tesserakt.kodept.parser.AST
+import ru.tesserakt.kodept.AST
 
 abstract class NodeCollector<T> {
     protected abstract val underlyingVisitor: NodeProcessor<*>

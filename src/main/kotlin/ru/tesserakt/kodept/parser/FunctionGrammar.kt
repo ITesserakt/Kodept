@@ -4,8 +4,10 @@ import com.github.h0tk3y.betterParse.combinators.map
 import com.github.h0tk3y.betterParse.combinators.times
 import com.github.h0tk3y.betterParse.combinators.unaryMinus
 import com.github.h0tk3y.betterParse.grammar.Grammar
+import ru.tesserakt.kodept.AST
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
+import ru.tesserakt.kodept.trailing
 
 object FunctionGrammar : Grammar<AST.FunctionDecl>() {
     val typed = IDENTIFIER * TypeGrammar.strict map { (name, type) ->

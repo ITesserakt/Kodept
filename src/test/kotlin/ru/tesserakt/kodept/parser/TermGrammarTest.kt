@@ -3,6 +3,7 @@ package ru.tesserakt.kodept.parser
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
+import ru.tesserakt.kodept.AST
 import ru.tesserakt.kodept.lexer.toCodePoint
 
 class TermGrammarTest : WordSpec({

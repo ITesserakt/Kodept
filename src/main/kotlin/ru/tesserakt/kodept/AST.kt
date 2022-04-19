@@ -1,4 +1,4 @@
-package ru.tesserakt.kodept.parser
+package ru.tesserakt.kodept
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf

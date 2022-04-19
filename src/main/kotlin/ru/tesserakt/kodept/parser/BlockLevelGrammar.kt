@@ -6,17 +6,18 @@ import com.github.h0tk3y.betterParse.combinators.times
 import com.github.h0tk3y.betterParse.combinators.unaryMinus
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.lexer.TokenMatch
+import ru.tesserakt.kodept.AST
 import ru.tesserakt.kodept.lexer.CodePoint
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
-import ru.tesserakt.kodept.parser.AST.ExpressionList
+import ru.tesserakt.kodept.trailing
 
 object BlockLevelGrammar : Grammar<AST.BlockLevelDecl>() {
     private val expression by OperatorGrammar
     private val functionStatement by FunctionGrammar
 
     val bracedDecls = LBRACE * trailing(this) * -RBRACE map {
-        ExpressionList(it.t2, it.t1.toCodePoint())
+        AST.ExpressionList(it.t2, it.t1.toCodePoint())
     }
     val simple = -FLOW * OperatorGrammar
     val body = simple or bracedDecls

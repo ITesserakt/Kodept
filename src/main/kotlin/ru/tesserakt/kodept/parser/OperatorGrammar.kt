@@ -6,9 +6,9 @@ import com.github.h0tk3y.betterParse.grammar.parser
 import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple2
+import ru.tesserakt.kodept.AST.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
-import ru.tesserakt.kodept.parser.AST.*
 
 object OperatorGrammar : Grammar<Expression>() {
     private fun resolveMathOperation(op: TokenMatch) = when (op.type) {

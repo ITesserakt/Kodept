@@ -1,6 +1,5 @@
 package ru.tesserakt.kodept
 
-import ru.tesserakt.kodept.parser.AST
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.OutputStream

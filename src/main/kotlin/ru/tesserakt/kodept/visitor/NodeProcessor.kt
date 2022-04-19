@@ -3,7 +3,7 @@
 package ru.tesserakt.kodept.visitor
 
 import arrow.core.NonEmptyList
-import ru.tesserakt.kodept.parser.AST.*
+import ru.tesserakt.kodept.AST.*
 
 abstract class NodeProcessor<T> {
     open fun default(node: Node): T = throw IllegalArgumentException("Override either this method or all visit methods")
