@@ -1,13 +1,9 @@
-package ru.tesserakt.kodept.visitor
-
-import ru.tesserakt.kodept.AST
-
-data class Declaration(val decl: AST.Node, val parent: Declaration?, val name: String, val scope: Scope)
+package ru.tesserakt.kodept.core
 
 sealed class Scope {
     abstract val module: String
-    abstract fun isSuperScopeOf(other: Scope): Boolean
-    abstract fun isSubScopeOf(other: Scope): Boolean
+    abstract infix fun isSuperScopeOf(other: Scope): Boolean
+    abstract infix fun isSubScopeOf(other: Scope): Boolean
 
     data class Global(override val module: String) : Scope() {
         override fun isSubScopeOf(other: Scope): Boolean = this == other

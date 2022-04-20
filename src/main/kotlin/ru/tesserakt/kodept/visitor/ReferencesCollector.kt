@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.visitor
 
-import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.core.AST
 
 class ReferencesCollector : NodeCollector<List<AST.Term>>() {
     override val underlyingVisitor = object : NodeProcessor<AST.Term?>() {

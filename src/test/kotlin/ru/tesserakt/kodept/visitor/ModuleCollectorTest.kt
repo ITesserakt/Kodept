@@ -5,13 +5,14 @@ import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldHaveSize
-import ru.tesserakt.kodept.MemoryLoader
+import ru.tesserakt.kodept.core.Compiler
+import ru.tesserakt.kodept.core.MemoryLoader
 
 class ModuleCollectorTest : DescribeSpec({
     describe("collector") {
         val collector = ModuleCollector()
 
-        fun createCompiler(text: String) = ru.tesserakt.kodept.Compiler(MemoryLoader.singleSnippet(text))
+        fun createCompiler(text: String) = Compiler(MemoryLoader.singleSnippet(text))
 
         it("should count global modules") {
             val text = """module a => struct Y"""

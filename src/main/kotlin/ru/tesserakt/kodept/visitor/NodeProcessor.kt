@@ -3,52 +3,54 @@
 package ru.tesserakt.kodept.visitor
 
 import arrow.core.NonEmptyList
-import ru.tesserakt.kodept.AST.*
+import arrow.core.nonEmptyListOf
+import ru.tesserakt.kodept.core.AST.*
+import ru.tesserakt.kodept.error.ReportCollector
 
-abstract class NodeProcessor<T> {
+abstract class NodeProcessor<T> : ReportCollector() {
     open fun default(node: Node): T = throw IllegalArgumentException("Override either this method or all visit methods")
 
-    open fun visit(node: WhileExpr): T = default(node)
-    open fun visit(node: IfExpr): T = default(node)
-    open fun visit(node: ExpressionList): T = default(node)
-    open fun visit(node: CharLiteral): T = default(node)
-    open fun visit(node: BinaryLiteral): T = default(node)
-    open fun visit(node: DecimalLiteral): T = default(node)
-    open fun visit(node: FloatingLiteral): T = default(node)
-    open fun visit(node: HexLiteral): T = default(node)
-    open fun visit(node: OctalLiteral): T = default(node)
-    open fun visit(node: StringLiteral): T = default(node)
-    open fun visit(node: Assignment): T = default(node)
-    open fun visit(node: Binary): T = default(node)
-    open fun visit(node: Comparison): T = default(node)
-    open fun visit(node: Elvis): T = default(node)
-    open fun visit(node: Logical): T = default(node)
-    open fun visit(node: Mathematical): T = default(node)
-    open fun visit(node: Absolution): T = default(node)
-    open fun visit(node: BitInversion): T = default(node)
-    open fun visit(node: Inversion): T = default(node)
-    open fun visit(node: Negation): T = default(node)
-    open fun visit(node: TermChain): T = default(node)
-    open fun visit(node: UnresolvedFunctionCall): T = default(node)
-    open fun visit(node: UnresolvedReference): T = default(node)
-    open fun visit(node: TypeExpression): T = default(node)
-    open fun visit(node: FunctionDecl): T = default(node)
-    open fun visit(node: FunctionDecl.Parameter): T = default(node)
-    open fun visit(node: InitializedVar): T = default(node)
-    open fun visit(node: VariableDecl): T = default(node)
-    open fun visit(node: FileDecl): T = default(node)
-    open fun visit(node: EnumDecl): T = default(node)
-    open fun visit(node: EnumDecl.Entry): T = default(node)
-    open fun visit(node: ModuleDecl): T = default(node)
-    open fun visit(node: StructDecl): T = default(node)
-    open fun visit(node: StructDecl.Parameter): T = default(node)
-    open fun visit(node: TraitDecl): T = default(node)
-    open fun visit(node: IfExpr.ElifExpr): T = default(node)
-    open fun visit(node: IfExpr.ElseExpr): T = default(node)
+    open fun visit(node: WhileExpr) = default(node)
+    open fun visit(node: IfExpr) = default(node)
+    open fun visit(node: ExpressionList) = default(node)
+    open fun visit(node: CharLiteral) = default(node)
+    open fun visit(node: BinaryLiteral) = default(node)
+    open fun visit(node: DecimalLiteral) = default(node)
+    open fun visit(node: FloatingLiteral) = default(node)
+    open fun visit(node: HexLiteral) = default(node)
+    open fun visit(node: OctalLiteral) = default(node)
+    open fun visit(node: StringLiteral) = default(node)
+    open fun visit(node: Assignment) = default(node)
+    open fun visit(node: Binary) = default(node)
+    open fun visit(node: Comparison) = default(node)
+    open fun visit(node: Elvis) = default(node)
+    open fun visit(node: Logical) = default(node)
+    open fun visit(node: Mathematical) = default(node)
+    open fun visit(node: Absolution) = default(node)
+    open fun visit(node: BitInversion) = default(node)
+    open fun visit(node: Inversion) = default(node)
+    open fun visit(node: Negation) = default(node)
+    open fun visit(node: TermChain) = default(node)
+    open fun visit(node: UnresolvedFunctionCall) = default(node)
+    open fun visit(node: UnresolvedReference) = default(node)
+    open fun visit(node: TypeExpression) = default(node)
+    open fun visit(node: FunctionDecl) = default(node)
+    open fun visit(node: FunctionDecl.Parameter) = default(node)
+    open fun visit(node: InitializedVar) = default(node)
+    open fun visit(node: VariableDecl) = default(node)
+    open fun visit(node: FileDecl) = default(node)
+    open fun visit(node: EnumDecl) = default(node)
+    open fun visit(node: EnumDecl.Entry) = default(node)
+    open fun visit(node: ModuleDecl) = default(node)
+    open fun visit(node: StructDecl) = default(node)
+    open fun visit(node: StructDecl.Parameter) = default(node)
+    open fun visit(node: TraitDecl) = default(node)
+    open fun visit(node: IfExpr.ElifExpr) = default(node)
+    open fun visit(node: IfExpr.ElseExpr) = default(node)
 }
 
 abstract class NodeVisitor : NodeProcessor<Unit>() {
-    final override fun default(node: Node) {}
+    override fun default(node: Node) = Unit
 }
 
 abstract class IntermediateNodeProcessor<T> : NodeProcessor<List<T>>() {
@@ -104,8 +106,45 @@ abstract class IntermediateNodeVisitor : IntermediateNodeProcessor<Unit>() {
 
 typealias NodeChecker = NodeProcessor<Boolean>
 
-interface Acceptable {
-    fun <T> accept(visitor: NodeProcessor<T>): T
-
-    fun <T> acceptRecursively(visitor: NodeProcessor<T>): NonEmptyList<T>
+fun <T> Node.accept(visitor: NodeProcessor<T>) = when (this) {
+    is IfExpr -> visitor.visit(this)
+    is WhileExpr -> visitor.visit(this)
+    is ExpressionList -> visitor.visit(this)
+    is CharLiteral -> visitor.visit(this)
+    is BinaryLiteral -> visitor.visit(this)
+    is DecimalLiteral -> visitor.visit(this)
+    is FloatingLiteral -> visitor.visit(this)
+    is HexLiteral -> visitor.visit(this)
+    is OctalLiteral -> visitor.visit(this)
+    is StringLiteral -> visitor.visit(this)
+    is Assignment -> visitor.visit(this)
+    is Binary -> visitor.visit(this)
+    is Comparison -> visitor.visit(this)
+    is Elvis -> visitor.visit(this)
+    is Logical -> visitor.visit(this)
+    is Mathematical -> visitor.visit(this)
+    is Absolution -> visitor.visit(this)
+    is BitInversion -> visitor.visit(this)
+    is Inversion -> visitor.visit(this)
+    is Negation -> visitor.visit(this)
+    is TermChain -> visitor.visit(this)
+    is UnresolvedFunctionCall -> visitor.visit(this)
+    is UnresolvedReference -> visitor.visit(this)
+    is TypeExpression -> visitor.visit(this)
+    is FunctionDecl -> visitor.visit(this)
+    is InitializedVar -> visitor.visit(this)
+    is VariableDecl -> visitor.visit(this)
+    is FileDecl -> visitor.visit(this)
+    is EnumDecl.Entry -> visitor.visit(this)
+    is EnumDecl -> visitor.visit(this)
+    is ModuleDecl -> visitor.visit(this)
+    is StructDecl.Parameter -> visitor.visit(this)
+    is FunctionDecl.Parameter -> visitor.visit(this)
+    is StructDecl -> visitor.visit(this)
+    is TraitDecl -> visitor.visit(this)
+    is IfExpr.ElifExpr -> visitor.visit(this)
+    is IfExpr.ElseExpr -> visitor.visit(this)
 }
+
+fun <T> Node.acceptRecursively(visitor: NodeProcessor<T>): NonEmptyList<T> =
+    nonEmptyListOf(accept(visitor)) + children.flatMap { it.acceptRecursively(visitor) }

@@ -1,4 +1,4 @@
-package ru.tesserakt.kodept
+package ru.tesserakt.kodept.core
 
 import java.io.ByteArrayOutputStream
 import java.io.File

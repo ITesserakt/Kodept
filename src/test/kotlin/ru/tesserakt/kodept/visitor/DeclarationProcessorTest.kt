@@ -7,13 +7,13 @@ import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
-import ru.tesserakt.kodept.MemoryLoader
+import ru.tesserakt.kodept.core.Compiler
+import ru.tesserakt.kodept.core.MemoryLoader
 
 class DeclarationProcessorTest : DescribeSpec({
     describe("visitor") {
         val collector = DeclarationCollector()
-        val compiler = ru.tesserakt.kodept.Compiler(MemoryLoader.singleSnippet("""
+        val compiler = Compiler(MemoryLoader.singleSnippet("""
             module a {
                 struct X
                 struct Y
@@ -39,8 +39,6 @@ class DeclarationProcessorTest : DescribeSpec({
             val decls = collector.collect(ast.root)
 
             decls shouldHaveSize 14
-            decls.take(5).forAll { it.scope.module shouldBe "a" }
-            decls.drop(5).forAll { it.scope.module shouldBe "b" }
 
             decls.take(4).forAll { it.parent.shouldBeNull() }
             decls[4].parent.shouldNotBeNull()

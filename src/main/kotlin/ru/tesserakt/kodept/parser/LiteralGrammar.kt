@@ -4,7 +4,7 @@ import com.github.h0tk3y.betterParse.combinators.or
 import com.github.h0tk3y.betterParse.combinators.use
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
-import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
 import java.math.BigDecimal

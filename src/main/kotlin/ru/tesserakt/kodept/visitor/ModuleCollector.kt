@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.visitor
 
-import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.core.AST
 
 class ModuleCollector : NodeCollector<List<AST.ModuleDecl>>() {
     override val underlyingVisitor = object : NodeProcessor<AST.ModuleDecl?>() {

@@ -1,4 +1,4 @@
-package ru.tesserakt.kodept
+package ru.tesserakt.kodept.core
 
 import com.google.gson.Gson
 import java.io.File

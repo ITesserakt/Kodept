@@ -1,8 +1,15 @@
 package ru.tesserakt.kodept.analyzer
 
-import ru.tesserakt.kodept.AST
+import arrow.core.Eval
+import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.error.Report
+import ru.tesserakt.kodept.error.ReportCollector
 
-fun interface Analyzer {
-    fun analyze(files: Sequence<AST>): Sequence<Report>
+abstract class Analyzer : ReportCollector() {
+    open fun analyze(files: Sequence<AST>): Eval<List<Report>> = Eval.later {
+        files.map { analyzeIndependently(it) }.toList()
+        collectedReports
+    }
+
+    open fun analyzeIndependently(ast: AST) {}
 }

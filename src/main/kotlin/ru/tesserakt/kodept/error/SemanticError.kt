@@ -1,9 +1,18 @@
 package ru.tesserakt.kodept.error
 
-sealed class SemanticError(val code: String, val message: String) {
-    data class DuplicatedModules(val duplicate: String) :
-        SemanticError("K1", "File contains duplicated module $duplicate")
+import arrow.core.NonEmptyList
+import ru.tesserakt.kodept.lexer.CodePoint
 
-    data class DuplicatedVariables(val module: String, val duplicate: String) :
-        SemanticError("K2", "Module $module contains duplicated variable $duplicate")
+sealed class SemanticError(val code: String, val message: String) {
+    data class DuplicatedModules(val duplicates: NonEmptyList<Pair<CodePoint, String>>) :
+        SemanticError(
+            "K1",
+            "File contains duplicated module ${duplicates.head.second} at ${duplicates.map { it.first }}"
+        )
+
+    data class UndeclaredUsage(val name: String) :
+        SemanticError("K3", "Usage of undeclared $name")
+
+    data class AmbitiousReference(val name: String) :
+        SemanticError("K4", "Ambitious usage of $name")
 }

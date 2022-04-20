@@ -1,4 +1,4 @@
-package ru.tesserakt.kodept
+package ru.tesserakt.kodept.core
 
 import io.kotest.assertions.assertSoftly
 import io.kotest.core.spec.style.StringSpec
@@ -6,6 +6,7 @@ import io.kotest.engine.spec.tempfile
 import io.kotest.matchers.sequences.shouldBeLargerThan
 import io.kotest.matchers.sequences.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import ru.tesserakt.kodept.Tags
 import kotlin.io.path.Path
 
 class LoaderTest : StringSpec({
@@ -35,7 +36,7 @@ class LoaderTest : StringSpec({
     }
 
     "load any temp file".config(tags = setOf(Tags.Linux)) {
-        val file = tempfile(testCase.descriptor.id.value, ".any")
+        tempfile(testCase.descriptor.id.value, ".any")
         val loader = FileLoader {
             path = Path("/tmp")
             anySourceExtension = true

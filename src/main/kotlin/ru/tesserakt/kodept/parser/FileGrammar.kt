@@ -1,10 +1,12 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.NonEmptyList
+import arrow.core.nonEmptyListOf
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
-import ru.tesserakt.kodept.AST
-import ru.tesserakt.kodept.AST.FileDecl
+import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.AST.FileDecl
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
 
@@ -18,5 +20,6 @@ object FileGrammar : Grammar<FileDecl>() {
     }
 
     override val rootParser: Parser<FileDecl> by
-    (oneOrMore(moduleStatement) use ::FileDecl) or (globalModuleStatement map { FileDecl(listOf(it)) })
+    (oneOrMore(moduleStatement) map { NonEmptyList.fromListUnsafe(it) } use ::FileDecl) or
+            (globalModuleStatement map { FileDecl(nonEmptyListOf(it)) })
 }

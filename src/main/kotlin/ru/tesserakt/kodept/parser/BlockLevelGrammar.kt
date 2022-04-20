@@ -6,11 +6,10 @@ import com.github.h0tk3y.betterParse.combinators.times
 import com.github.h0tk3y.betterParse.combinators.unaryMinus
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.lexer.TokenMatch
-import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.lexer.CodePoint
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
-import ru.tesserakt.kodept.trailing
 
 object BlockLevelGrammar : Grammar<AST.BlockLevelDecl>() {
     private val expression by OperatorGrammar
@@ -55,5 +54,5 @@ object BlockLevelGrammar : Grammar<AST.BlockLevelDecl>() {
         AST.Assignment(decl, expandAssignment(decl, op, expr, op.toCodePoint()), op.toCodePoint())
     }
 
-    override val rootParser by functionStatement or initialization or varDecl or assignment or expression
+    override val rootParser by functionStatement or initialization or varDecl or assignment or expression or bracedDecls
 }

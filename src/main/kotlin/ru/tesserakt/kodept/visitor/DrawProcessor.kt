@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.visitor
 
-import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.core.AST
 
 class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String>() {
     override fun visit(node: AST.WhileExpr): String = """While 
@@ -103,7 +103,7 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
 
     override fun visit(node: AST.TermChain): String = node.terms.joinToString("\n") { it.accept(this) }
 
-    override fun visit(node: AST.UnresolvedFunctionCall): String = """Function(${node.name})
+    override fun visit(node: AST.UnresolvedFunctionCall): String = """Function(${node.reference})
         |   params:
         |${node.params.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
     """.trimMargin()

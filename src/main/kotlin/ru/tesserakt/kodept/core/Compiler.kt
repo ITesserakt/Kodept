@@ -1,4 +1,4 @@
-package ru.tesserakt.kodept
+package ru.tesserakt.kodept.core
 
 import arrow.core.zip
 import com.github.h0tk3y.betterParse.lexer.Tokenizer

@@ -1,4 +1,4 @@
-package ru.tesserakt.kodept
+package ru.tesserakt.kodept.core
 
 import com.github.h0tk3y.betterParse.parser.toParsedOrThrow
 import io.kotest.assertions.assertSoftly

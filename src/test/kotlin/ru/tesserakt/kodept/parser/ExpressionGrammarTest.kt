@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.parser
 
 import io.kotest.core.spec.style.WordSpec
-import ru.tesserakt.kodept.AST
+import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.lexer.toCodePoint
 
 class LiteralGrammarTest : WordSpec({

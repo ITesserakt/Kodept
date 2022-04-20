@@ -5,9 +5,9 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import ru.tesserakt.kodept.AST
-import ru.tesserakt.kodept.Compiler
-import ru.tesserakt.kodept.MemoryLoader
+import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.Compiler
+import ru.tesserakt.kodept.core.MemoryLoader
 
 class NodeVisitorTest : DescribeSpec({
     describe("simple visitor") {
