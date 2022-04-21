@@ -10,8 +10,8 @@ import ru.tesserakt.kodept.lexer.toCodePoint
 object TopLevelGrammar : Grammar<AST.TopLevelDecl>() {
     private val functionStatement by FunctionGrammar
 
-    val enumStatement by ENUM * (STRUCT or CLASS) * TYPE * -LBRACE * trailing(
-        TYPE, COMMA, atLeast = 1
+    val enumStatement by ENUM * (STRUCT or CLASS) * IDENTIFIER * -LBRACE * trailing(
+        IDENTIFIER, COMMA, atLeast = 1
     ) * -RBRACE map { (enumToken, modifier, name, entries) ->
         AST.EnumDecl(name.text,
             modifier.type == STRUCT.token,
@@ -19,11 +19,11 @@ object TopLevelGrammar : Grammar<AST.TopLevelDecl>() {
             enumToken.toCodePoint())
     }
 
-    val traitStatement by TRAIT * TYPE * -LBRACE * trailing(ObjectLevelGrammar) * -RBRACE map { (traitToken, name, rest) ->
+    val traitStatement by TRAIT * IDENTIFIER * -LBRACE * trailing(ObjectLevelGrammar) * -RBRACE map { (traitToken, name, rest) ->
         AST.TraitDecl(name.text, rest, traitToken.toCodePoint())
     }
 
-    val structStatement by STRUCT * TYPE * optional(
+    val structStatement by STRUCT * IDENTIFIER * optional(
         -LPAREN * trailing(IDENTIFIER * TypeGrammar.strict, COMMA) * -RPAREN
     ) * optional(
         -LBRACE * trailing(ObjectLevelGrammar) * -RBRACE

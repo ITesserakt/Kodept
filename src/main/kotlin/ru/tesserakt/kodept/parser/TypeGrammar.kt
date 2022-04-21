@@ -8,7 +8,7 @@ import ru.tesserakt.kodept.lexer.toCodePoint
 
 object TypeGrammar : Grammar<TypeExpression>() {
     val optional by optional(-COLON * this)
-    val strict by -COLON * TYPE use { TypeExpression(text, toCodePoint()) }
+    val strict by -COLON * IDENTIFIER use { TypeExpression(text, toCodePoint()) }
 
-    override val rootParser by (TYPE or TYPE_GAP) use { TypeExpression(text, toCodePoint()) }
+    override val rootParser by (IDENTIFIER or TYPE_GAP) use { TypeExpression(text, toCodePoint()) }
 }

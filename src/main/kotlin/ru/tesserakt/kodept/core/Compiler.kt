@@ -6,19 +6,23 @@ import com.github.h0tk3y.betterParse.parser.*
 import com.google.gson.GsonBuilder
 import ru.tesserakt.kodept.lexer.Lexer
 import ru.tesserakt.kodept.parser.FileGrammar
+import ru.tesserakt.kodept.transformer.Transformer
+import ru.tesserakt.kodept.transformer.acceptTransform
 import java.io.Reader
 
 class Compiler private constructor(
     private val loader: Loader,
     private val lexer: Tokenizer,
     private val rootParser: Parser<AST.Node>,
+    private val transformers: List<() -> Transformer>,
 ) {
     class Builder {
         var lexer: Tokenizer = Lexer()
         lateinit var loader: Loader
         var rootParser: Parser<AST.Node> = FileGrammar
+        var transformers = listOf<() -> Transformer>()
 
-        fun build() = Compiler(loader, lexer, rootParser)
+        fun build() = Compiler(loader, lexer, rootParser, transformers)
     }
 
     private val sources by lazy {
@@ -52,19 +56,31 @@ class Compiler private constructor(
         }
     }
 
+    private val transformedAST by lazy {
+        ast.map { it.toParsedOrThrow().value }.map { tree ->
+            transformers.fold(tree) { acc, next -> acc.copy(root = acc.root.acceptTransform(next())) }
+        }
+    }
+
     fun acquireContents() = sources
 
     fun tokenize() = tokens.map { it.first }
 
     fun parse() = ast
 
+    fun transform(errorHandler: (ParseException) -> Sequence<AST> = { throw it }) = try {
+        transformedAST
+    } catch (ex: ParseException) {
+        errorHandler(ex)
+    }
+
     private val gson = GsonBuilder()
         .setPrettyPrinting()
         .create()
 
     fun cache(with: (filename: String) -> Cache) =
-        sources.zip(ast, tokens) { source, parsed, (_, text) ->
-            CacheData(source.name, text, parsed.toParsedOrThrow().value)
+        sources.zip(transformedAST, tokens) { source, parsed, (_, text) ->
+            CacheData(source.name, text, parsed)
         }.map {
             val cache = with(it.sourceName)
             cache.stream.writer().use { writer ->

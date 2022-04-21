@@ -2,4 +2,21 @@ module prelude {
     enum struct Bool {
         True, False
     }
+
+    fun not(self: Bool) =>
+        if self == True => False
+        else => True
+
+    fun and(self: Bool, other: Bool) =>
+        if self == True && other == True => True
+        else => False
+
+    fun or(self: Bool, other: Bool) =>
+        if self == False && other == False => False
+        else => True
+
+    fun xor(self: Bool, other: Bool) =>
+        if self == False && other == True => True
+        elif self == True && other == False => True
+        else => False
 }

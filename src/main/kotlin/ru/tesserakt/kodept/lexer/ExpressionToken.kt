@@ -42,8 +42,8 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     COLON(literalToken(":")),
 
     // Identifiers
-    IDENTIFIER(regexToken("""_?[a-z]\w*""")),
-    TYPE(regexToken("""_?[A-Z]\w*""")),
+    IDENTIFIER(regexToken("""_?\w+""")),
+    TYPE(regexToken("""_?\w+""")),
 
     // Literals
     BINARY(regexToken("""0[bB](1[01_]*[01]|[01])""")),
