@@ -14,13 +14,13 @@ class DeclarationProcessorTest : DescribeSpec({
     describe("visitor") {
         val collector = DeclarationCollector()
         val compiler = Compiler(MemoryLoader.singleSnippet("""
-            module a {
+            module A {
                 struct X
                 struct Y
                 fun x() { }
                 fun y() { fun innerY() {} }
             }
-            module b {
+            module B {
                 struct X
                 struct Y
                 fun a() { 
@@ -38,13 +38,12 @@ class DeclarationProcessorTest : DescribeSpec({
             val ast = shouldNotThrowAny { compiler.parse().first().toParsedOrThrow() }.value
             val decls = collector.collect(ast.root)
 
-            decls shouldHaveSize 12
+            decls shouldHaveSize 14
 
-            decls.take(4).forAll { it.parent.shouldBeNull() }
-            decls[4].parent.shouldNotBeNull()
-            decls.drop(5).take(3).forAll { it.parent.shouldBeNull() }
-            decls.drop(8).take(2).forAll { it.parent.shouldNotBeNull() }
-            decls.drop(10).take(2).forAll { it.parent.shouldBeNull() }
+            decls[0].parent.shouldBeNull()
+            decls.drop(1).take(5).forAll { it.parent.shouldNotBeNull() }
+            decls.drop(6).take(1).forAll { it.parent.shouldBeNull() }
+            decls.drop(7).forAll { it.parent.shouldNotBeNull() }
         }
     }
 })

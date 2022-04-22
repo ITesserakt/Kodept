@@ -11,11 +11,11 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
 
 object FileGrammar : Grammar<FileDecl>() {
-    val moduleStatement by MODULE * IDENTIFIER * -LBRACE * zeroOrMore(TopLevelGrammar) * -RBRACE map { (moduleToken, name, rest) ->
+    val moduleStatement by MODULE * TYPE * -LBRACE * zeroOrMore(TopLevelGrammar) * -RBRACE map { (moduleToken, name, rest) ->
         AST.ModuleDecl(name.text, false, rest, moduleToken.toCodePoint())
     }
 
-    val globalModuleStatement by MODULE * IDENTIFIER * -FLOW * zeroOrMore(TopLevelGrammar) map { (moduleToken, name, rest) ->
+    val globalModuleStatement by MODULE * TYPE * -FLOW * zeroOrMore(TopLevelGrammar) map { (moduleToken, name, rest) ->
         AST.ModuleDecl(name.text, true, rest, moduleToken.toCodePoint())
     }
 

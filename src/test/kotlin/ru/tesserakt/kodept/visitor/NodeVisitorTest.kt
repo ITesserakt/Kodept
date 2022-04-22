@@ -12,7 +12,7 @@ import ru.tesserakt.kodept.core.MemoryLoader
 class NodeVisitorTest : DescribeSpec({
     describe("simple visitor") {
         val compiler = Compiler(MemoryLoader.singleSnippet("""
-                module test =>
+                module Test =>
                     fun a() { }
                     fun b(e: Int) { }
                     fun c() { }
@@ -55,7 +55,7 @@ class NodeVisitorTest : DescribeSpec({
 
     describe("intermediate visitor") {
         val compiler = Compiler(MemoryLoader.singleSnippet("""
-                module test =>
+                module Test =>
                     fun a() { }
                     fun b(e: Int) { }
                     fun c() { }

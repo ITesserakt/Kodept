@@ -9,10 +9,10 @@ import ru.tesserakt.kodept.transformer.ASTScopeTagger
 class ReferenceAnalyzerTest : BehaviorSpec({
     given("compiler") {
         val compiler = ru.tesserakt.kodept.core.Compiler(MemoryLoader.fromText(sequenceOf(
-            """module a =>
+            """module A =>
                 |   fun test(a: Int) => a
             """.trimMargin(),
-            """module b {
+            """module B {
                 |   enum struct Bool { True, False }
                 |   
                 |   fun not(self: Bool) =>
@@ -20,7 +20,7 @@ class ReferenceAnalyzerTest : BehaviorSpec({
                 |       else => True
                 |}
             """.trimMargin(),
-            """module c =>
+            """module C =>
                 |   fun x(y: Int) { }
                 |   
                 |   fun z() => y

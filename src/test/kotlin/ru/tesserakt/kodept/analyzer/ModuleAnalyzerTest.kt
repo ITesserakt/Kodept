@@ -12,15 +12,15 @@ import ru.tesserakt.kodept.error.Report
 class ModuleAnalyzerTest : DescribeSpec({
     describe("compiler") {
         val compiler = Compiler(MemoryLoader.fromText(sequenceOf(
-            """module a =>""",
-            """module a {  }
-                |module b {  }
+            """module A =>""",
+            """module A {  }
+                |module B {  }
             """.trimMargin(),
-            """module a {  }
-                |module a {  }
-                |module b {  }
-                |module c {  }
-                |module b {  }
+            """module A {  }
+                |module A {  }
+                |module B {  }
+                |module C {  }
+                |module B {  }
             """.trimMargin()
         )))
 

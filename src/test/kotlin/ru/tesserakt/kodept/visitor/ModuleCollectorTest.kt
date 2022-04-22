@@ -15,7 +15,7 @@ class ModuleCollectorTest : DescribeSpec({
         fun createCompiler(text: String) = Compiler(MemoryLoader.singleSnippet(text))
 
         it("should count global modules") {
-            val text = """module a => struct Y"""
+            val text = """module A => struct Y"""
 
             val ast = shouldNotThrowAny { createCompiler(text).parse().first().toParsedOrThrow() }.value
             collector.collect(ast.root) shouldHaveSize 1
@@ -23,9 +23,9 @@ class ModuleCollectorTest : DescribeSpec({
 
         it("should count multiple modules") {
             val text = """
-                module a { }
-                module b { }
-                module c { }
+                module A { }
+                module B { }
+                module C { }
             """.trimIndent()
 
             val ast = shouldNotThrowAny { createCompiler(text).parse().first().toParsedOrThrow() }.value

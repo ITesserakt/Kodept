@@ -10,8 +10,8 @@ import ru.tesserakt.kodept.core.*
 class ASTScopeTaggerTest : BehaviorSpec({
     given("compiler") {
         val compiler = Compiler(MemoryLoader.fromText(sequenceOf(
-            """module a =>""",
-            """module a {
+            """module A =>""",
+            """module A {
               |    struct String {
               |         fun concat(self: String, other: String) {
               |             var x = 5
@@ -24,8 +24,8 @@ class ASTScopeTaggerTest : BehaviorSpec({
               |         }
               |    }
               |} 
-              |module b { } 
-              |module c { }""".trimMargin(),
+              |module B { } 
+              |module C { }""".trimMargin(),
         )))
 
         `when`("text parsed") {
@@ -52,7 +52,7 @@ class ASTScopeTaggerTest : BehaviorSpec({
                     val varZ = (body.expressions[1] as AST.ExpressionList).expressions[1]
 
                     file.scope shouldBe Scope.Global("")
-                    moduleA.scope shouldBe Scope.Global("a")
+                    moduleA.scope shouldBe Scope.Global("A")
                     structString.scope.parent shouldBe moduleA.scope
                     funConcat.scope.parent shouldBe structString.scope
                     body.scope shouldBe funConcat.scope
