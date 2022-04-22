@@ -110,8 +110,8 @@ class NodeVisitorTest : DescribeSpec({
                 override fun visit(node: AST.Inversion): Int = 1
                 override fun visit(node: AST.Negation): Int = 1
                 override fun visit(node: AST.TermChain): Int = 1
-                override fun visit(node: AST.UnresolvedFunctionCall): Int = 1
-                override fun visit(node: AST.UnresolvedReference): Int = 1
+                override fun visit(node: AST.FunctionCall): Int = 1
+                override fun visit(node: AST.Reference): Int = 1
                 override fun visit(node: AST.TypeExpression): Int = 1
                 override fun visit(node: AST.FunctionDecl): Int = 1
                 override fun visit(node: AST.FunctionDecl.Parameter): Int = 1

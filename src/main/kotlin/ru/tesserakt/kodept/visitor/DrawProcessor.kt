@@ -103,12 +103,12 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
 
     override fun visit(node: AST.TermChain): String = node.terms.joinToString("\n") { it.accept(this) }
 
-    override fun visit(node: AST.UnresolvedFunctionCall): String = """Function(${node.reference})
+    override fun visit(node: AST.FunctionCall): String = """Function(${node.reference})
         |   params:
         |${node.params.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
     """.trimMargin()
 
-    override fun visit(node: AST.UnresolvedReference): String = """Reference(${node.name})"""
+    override fun visit(node: AST.Reference): String = """Reference(${node.name})"""
 
     override fun visit(node: AST.TypeExpression): String = """Type(${node.type})"""
 
@@ -189,5 +189,10 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
     override fun visit(node: AST.IfExpr.ElseExpr): String = """Else
         |   body:
         |${node.body.accept(this).prependIndent(ident)}
+    """.trimMargin()
+
+    override fun visit(node: AST.TypeReference): String = """TypeReference
+        |   type:
+        |${node.type.accept(this).prependIndent(ident)}
     """.trimMargin()
 }

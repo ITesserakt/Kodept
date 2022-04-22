@@ -4,6 +4,7 @@ import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Scope
 import ru.tesserakt.kodept.core.appendMetadata
 import ru.tesserakt.kodept.core.toKey
+import java.util.*
 
 class ASTScopeTagger : Transformer() {
     private var currentScope: Scope = Scope.Global("")
@@ -17,12 +18,16 @@ class ASTScopeTagger : Transformer() {
         return block(scope).also { currentScope = saved }
     }
 
-    private inline fun <T> localScope(block: (Scope.Local) -> T): T = scope({ Scope.Local(it.asInner()) }, block)
+    private inline fun <T> localScope(block: (Scope.Local) -> T): T =
+        scope({ Scope.Local(it.asInner(), UUID.randomUUID()) }, block)
 
-    private inline fun <T> innerScope(block: (Scope.Inner<*>) -> T): T =
-        scope({ (it as? Scope.Global)?.let(Scope::Object) ?: Scope.Local(it.asInner()) }, block)
+    private inline fun <T> innerScope(block: (Scope.Inner<*>) -> T): T = scope({ scope ->
+        (scope as? Scope.Global)?.let { Scope.Object(it, UUID.randomUUID()) } ?: Scope.Local(scope.asInner(),
+            UUID.randomUUID())
+    }, block)
 
-    private inline fun <T> objectScope(block: (Scope.Object) -> T) = scope({ Scope.Object(it as Scope.Global) }, block)
+    private inline fun <T> objectScope(block: (Scope.Object) -> T) =
+        scope({ Scope.Object(it as Scope.Global, UUID.randomUUID()) }, block)
 
     private val self get() = this
 
@@ -48,24 +53,32 @@ class ASTScopeTagger : Transformer() {
         metadata = node.appendMetadata(currentScope.toKey()),
         expressions = localScope { node.expressions.map { it.acceptTransform(self) } })
 
-    override fun visit(node: AST.FunctionDecl) = node.copy(
-        metadata = node.appendMetadata(currentScope.toKey()),
-        params = node.params.map { it.acceptTransform(self) },
-        returns = node.returns?.acceptTransform(self),
-        rest = innerScope { node.rest.acceptTransform(self) })
+    override fun visit(node: AST.FunctionDecl) = innerScope {
+        node.copy(
+            metadata = node.appendMetadata(currentScope.toKey()),
+            params = node.params.map { it.acceptTransform(self) },
+            returns = node.returns?.acceptTransform(self),
+            rest = node.rest.acceptTransform(self))
+    }
 
-    override fun visit(node: AST.EnumDecl) = node.copy(
-        metadata = node.appendMetadata(currentScope.toKey()),
-        enumEntries = objectScope { node.enumEntries.map { it.acceptTransform(self) } })
+    override fun visit(node: AST.EnumDecl) = objectScope {
+        node.copy(
+            metadata = node.appendMetadata(currentScope.toKey()),
+            enumEntries = node.enumEntries.map { it.acceptTransform(self) })
+    }
 
-    override fun visit(node: AST.StructDecl) = node.copy(
-        metadata = node.appendMetadata(currentScope.toKey()),
-        alloc = node.alloc.map { it.acceptTransform(self) },
-        rest = objectScope { node.rest.map { it.acceptTransform(self) } })
+    override fun visit(node: AST.StructDecl) = objectScope {
+        node.copy(
+            metadata = node.appendMetadata(currentScope.toKey()),
+            alloc = node.alloc.map { it.acceptTransform(self) },
+            rest = node.rest.map { it.acceptTransform(self) })
+    }
 
-    override fun visit(node: AST.TraitDecl) = node.copy(
-        metadata = node.appendMetadata(currentScope.toKey()),
-        rest = objectScope { node.rest.map { it.acceptTransform(self) } })
+    override fun visit(node: AST.TraitDecl) = objectScope {
+        node.copy(
+            metadata = node.appendMetadata(currentScope.toKey()),
+            rest = node.rest.map { it.acceptTransform(self) })
+    }
 
     override fun visit(node: AST.IfExpr.ElifExpr) = node.copy(
         metadata = node.appendMetadata(currentScope.toKey()),
@@ -122,12 +135,12 @@ class ASTScopeTagger : Transformer() {
     override fun visit(node: AST.TermChain) = node.copy(metadata = node.appendMetadata(currentScope.toKey()),
         terms = node.terms.map { it.acceptTransform(self) })
 
-    override fun visit(node: AST.UnresolvedFunctionCall) =
+    override fun visit(node: AST.FunctionCall) =
         node.copy(metadata = node.appendMetadata(currentScope.toKey()),
             reference = node.reference.acceptTransform(self),
             params = node.params.map { it.acceptTransform(self) })
 
-    override fun visit(node: AST.UnresolvedReference) = node.copy(metadata = node.appendMetadata(currentScope.toKey()))
+    override fun visit(node: AST.Reference) = node.copy(metadata = node.appendMetadata(currentScope.toKey()))
     override fun visit(node: AST.TypeExpression) = node.copy(metadata = node.appendMetadata(currentScope.toKey()))
     override fun visit(node: AST.FunctionDecl.Parameter) = node.copy(
         metadata = node.appendMetadata(currentScope.toKey()),
@@ -150,4 +163,6 @@ class ASTScopeTagger : Transformer() {
     override fun visit(node: AST.StructDecl.Parameter) = node.copy(
         metadata = node.appendMetadata(currentScope.toKey()),
         type = node.type.acceptTransform(self))
+
+    override fun visit(node: AST.TypeReference) = node.copy(type = node.type.acceptTransform(self))
 }

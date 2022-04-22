@@ -50,7 +50,6 @@ class DeclarationCollector : NodeCollector<List<Declaration>>() {
         override fun visit(node: AST.FunctionDecl) = node.traverseWithChild(node::name, node::rest)
         override fun visit(node: AST.InitializedVar) = node.traverseWithChild(node::name, node::expr)
         override fun visit(node: AST.VariableDecl) = node.traverseWithChild(node::name)
-        override fun visit(node: AST.EnumDecl.Entry) = node.traverseWithChild(node::name)
         override fun visit(node: AST.EnumDecl) = node.traverseWithChildren(node::name, node::enumEntries)
 
         override fun visit(node: AST.StructDecl) = node.traverseWithChildren(node::name, node::rest)

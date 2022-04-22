@@ -3,7 +3,7 @@ package ru.tesserakt.kodept.error
 import arrow.core.NonEmptyList
 import ru.tesserakt.kodept.lexer.CodePoint
 
-sealed class SemanticError(val code: String, val message: String) {
+sealed class SemanticError(override val code: String, override val message: String) : ReportMessage {
     data class DuplicatedModules(val duplicates: NonEmptyList<Pair<CodePoint, String>>) :
         SemanticError(
             "K1",

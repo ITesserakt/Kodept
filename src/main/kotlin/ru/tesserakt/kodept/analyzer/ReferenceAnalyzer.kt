@@ -12,23 +12,31 @@ class ReferenceAnalyzer : Analyzer() {
     private val collector = DeclarationCollector()
     private val references = ReferencesCollector()
 
-    private fun Declaration.isDescriptorOf(term: AST.UnresolvedFunctionCall) =
+    private fun Declaration.isDescriptorOf(term: AST.FunctionCall) =
         decl is AST.FunctionDecl
-                && decl.scope() isSuperScopeOf term.scope()
+                && term.scope isSubScopeOf decl.scope
                 && decl.name == term.name
                 && decl.params.count() == decl.params.count()
 
-    private fun Declaration.isDescriptorOf(term: AST.UnresolvedReference) = decl.scope() isSuperScopeOf term.scope()
+    private fun Declaration.isDescriptorOf(term: AST.Reference) = decl.scope isSuperScopeOf term.scope
             && when (decl) {
         is AST.InitializedVar -> decl.name == term.name
         is AST.StructDecl -> term.name in decl.alloc.map { it.name }
+        is AST.FunctionDecl -> term.name in decl.params.map { it.name }
+        else -> false
+    }
+
+    private fun Declaration.isDescriptorOf(term: AST.TypeReference) = decl.scope isSuperScopeOf term.scope
+            && when (decl) {
+        is AST.EnumDecl -> term.name in decl.enumEntries.map { it.name }
         else -> false
     }
 
     private fun List<Declaration>.resolveByName(term: AST.Term): List<Declaration> = when (term) {
         is AST.TermChain -> TODO()
-        is AST.UnresolvedFunctionCall -> filter { it.isDescriptorOf(term) }
-        is AST.UnresolvedReference -> filter { it.isDescriptorOf(term) }
+        is AST.FunctionCall -> filter { it.isDescriptorOf(term) }
+        is AST.Reference -> filter { it.isDescriptorOf(term) }
+        is AST.TypeReference -> filter { it.isDescriptorOf(term) }
     }
 
     override fun analyzeIndependently(ast: AST) {

@@ -279,14 +279,22 @@ data class AST(val root: Node, val fileName: String) {
         override val metadata: MetadataStore = emptyStore(),
     ) : Operation.Binary()
 
-    data class UnresolvedReference(
+    data class Reference(
         override val name: String,
         override val coordinates: CodePoint,
         override val metadata: MetadataStore = emptyStore(),
     ) : Term.Simple(), Leaf
 
-    data class UnresolvedFunctionCall(
-        val reference: UnresolvedReference,
+    data class TypeReference(
+        val type: TypeExpression,
+    ) : Term.Simple(), Leaf {
+        override val name: String = type.type
+        override val coordinates: CodePoint = type.coordinates
+        override val metadata: MetadataStore = type.metadata
+    }
+
+    data class FunctionCall(
+        val reference: Reference,
         val params: List<Expression>,
         override val metadata: MetadataStore = emptyStore(),
     ) : Term.Simple(), NamedDecl by reference {

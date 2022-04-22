@@ -66,9 +66,9 @@ class BlockLevelGrammarTest : WordSpec({
         test(
             BlockLevelGrammar, """x += 5""",
             AST.Assignment(
-                AST.UnresolvedReference("x", (1 to 1).toCodePoint()),
+                AST.Reference("x", (1 to 1).toCodePoint()),
                 AST.Mathematical(
-                    AST.UnresolvedReference("x", (1 to 1).toCodePoint()),
+                    AST.Reference("x", (1 to 1).toCodePoint()),
                     AST.DecimalLiteral(5.toBigInteger(), (1 to 6).toCodePoint()),
                     AST.Mathematical.Kind.Add,
                     (1 to 3).toCodePoint()
@@ -101,12 +101,12 @@ class BlockLevelGrammarTest : WordSpec({
             |   test(blockLevelGrammar, "val x: String = {}", null)
         """.trimMargin(), AST.InitializedVar(
                 AST.VariableDecl("result", false, null, (1 to 1).toCodePoint()),
-                AST.UnresolvedFunctionCall(
-                    AST.UnresolvedReference("test", (2 to 4).toCodePoint()),
+                AST.FunctionCall(
+                    AST.Reference("test", (2 to 4).toCodePoint()),
                     listOf(
-                        AST.UnresolvedReference("blockLevelGrammar", (2 to 9).toCodePoint()),
+                        AST.Reference("blockLevelGrammar", (2 to 9).toCodePoint()),
                         AST.StringLiteral("val x: String = {}", (2 to 28).toCodePoint()),
-                        AST.UnresolvedReference("null", (2 to 50).toCodePoint())
+                        AST.Reference("null", (2 to 50).toCodePoint())
                     )
                 )
             )

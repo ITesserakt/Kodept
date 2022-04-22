@@ -38,14 +38,13 @@ class DeclarationProcessorTest : DescribeSpec({
             val ast = shouldNotThrowAny { compiler.parse().first().toParsedOrThrow() }.value
             val decls = collector.collect(ast.root)
 
-            decls shouldHaveSize 14
+            decls shouldHaveSize 12
 
             decls.take(4).forAll { it.parent.shouldBeNull() }
             decls[4].parent.shouldNotBeNull()
             decls.drop(5).take(3).forAll { it.parent.shouldBeNull() }
             decls.drop(8).take(2).forAll { it.parent.shouldNotBeNull() }
             decls.drop(10).take(2).forAll { it.parent.shouldBeNull() }
-            decls.drop(12).forAll { it.parent.shouldNotBeNull() }
         }
     }
 })

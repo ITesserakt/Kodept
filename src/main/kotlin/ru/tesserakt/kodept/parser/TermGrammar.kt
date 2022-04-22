@@ -8,16 +8,18 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.toCodePoint
 
 object TermGrammar : Grammar<AST.Term>() {
-    val variableReference by IDENTIFIER use { AST.UnresolvedReference(text, toCodePoint()) }
+    val variableReference by IDENTIFIER use { AST.Reference(text, toCodePoint()) }
 
     val functionCall by variableReference * -LPAREN * trailing(
         OperatorGrammar,
         COMMA
-    ) * -RPAREN use { AST.UnresolvedFunctionCall(t1, t2) }
+    ) * -RPAREN use { AST.FunctionCall(t1, t2) }
+
+    val typeReference by TYPE use { AST.TypeReference(AST.TypeExpression(text, toCodePoint())) }
 
     val callChain by zeroOrMore((functionCall or variableReference) * -DOT) * (functionCall or variableReference) use {
         AST.TermChain(NonEmptyList.fromListUnsafe(t1 + listOf(t2)))
     }
 
-    override val rootParser by callChain map { if (it.terms.size == 1) it.terms.first() else it }
+    override val rootParser by callChain map { if (it.terms.size == 1) it.terms.first() else it } or typeReference
 }

@@ -36,12 +36,12 @@ class OperatorGrammarTest : WordSpec({
         test(
             grammar.elvis, "a ?: b ?: c ?: d",
             AST.Elvis(
-                AST.UnresolvedReference("a", (1 to 1).toCodePoint()),
+                AST.Reference("a", (1 to 1).toCodePoint()),
                 AST.Elvis(
-                    AST.UnresolvedReference("b", (1 to 6).toCodePoint()),
+                    AST.Reference("b", (1 to 6).toCodePoint()),
                     AST.Elvis(
-                        AST.UnresolvedReference("c", (1 to 11).toCodePoint()),
-                        AST.UnresolvedReference("d", (1 to 16).toCodePoint()),
+                        AST.Reference("c", (1 to 11).toCodePoint()),
+                        AST.Reference("d", (1 to 16).toCodePoint()),
                         (1 to 13).toCodePoint()
                     ),
                     (1 to 8).toCodePoint()
@@ -111,8 +111,8 @@ class OperatorGrammarTest : WordSpec({
         )
         test(
             OperatorGrammar, """id(2 + 2)""",
-            AST.UnresolvedFunctionCall(
-                AST.UnresolvedReference("id", (1 to 1).toCodePoint()),
+            AST.FunctionCall(
+                AST.Reference("id", (1 to 1).toCodePoint()),
                 listOf(
                     AST.Mathematical(
                         AST.DecimalLiteral(2.toBigInteger(), (1 to 4).toCodePoint()),
@@ -127,9 +127,9 @@ class OperatorGrammarTest : WordSpec({
             OperatorGrammar, """core.println("Hello, " + "world!")""",
             AST.TermChain(
                 nonEmptyListOf(
-                    AST.UnresolvedReference("core", (1 to 1).toCodePoint()),
-                    AST.UnresolvedFunctionCall(
-                        AST.UnresolvedReference("println", (1 to 6).toCodePoint()), listOf(
+                    AST.Reference("core", (1 to 1).toCodePoint()),
+                    AST.FunctionCall(
+                        AST.Reference("println", (1 to 6).toCodePoint()), listOf(
                             AST.Mathematical(
                                 AST.StringLiteral("Hello, ", (1 to 14).toCodePoint()),
                                 AST.StringLiteral("world!", (1 to 26).toCodePoint()),

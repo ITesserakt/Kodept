@@ -31,8 +31,8 @@ abstract class NodeProcessor<T> : ReportCollector() {
     open fun visit(node: Inversion) = default(node)
     open fun visit(node: Negation) = default(node)
     open fun visit(node: TermChain) = default(node)
-    open fun visit(node: UnresolvedFunctionCall) = default(node)
-    open fun visit(node: UnresolvedReference) = default(node)
+    open fun visit(node: FunctionCall) = default(node)
+    open fun visit(node: Reference) = default(node)
     open fun visit(node: TypeExpression) = default(node)
     open fun visit(node: FunctionDecl) = default(node)
     open fun visit(node: FunctionDecl.Parameter) = default(node)
@@ -47,6 +47,7 @@ abstract class NodeProcessor<T> : ReportCollector() {
     open fun visit(node: TraitDecl) = default(node)
     open fun visit(node: IfExpr.ElifExpr) = default(node)
     open fun visit(node: IfExpr.ElseExpr) = default(node)
+    open fun visit(node: TypeReference) = default(node)
 }
 
 abstract class NodeVisitor : NodeProcessor<Unit>() {
@@ -128,8 +129,8 @@ fun <T> Node.accept(visitor: NodeProcessor<T>) = when (this) {
     is Inversion -> visitor.visit(this)
     is Negation -> visitor.visit(this)
     is TermChain -> visitor.visit(this)
-    is UnresolvedFunctionCall -> visitor.visit(this)
-    is UnresolvedReference -> visitor.visit(this)
+    is FunctionCall -> visitor.visit(this)
+    is Reference -> visitor.visit(this)
     is TypeExpression -> visitor.visit(this)
     is FunctionDecl -> visitor.visit(this)
     is InitializedVar -> visitor.visit(this)
@@ -144,6 +145,7 @@ fun <T> Node.accept(visitor: NodeProcessor<T>) = when (this) {
     is TraitDecl -> visitor.visit(this)
     is IfExpr.ElifExpr -> visitor.visit(this)
     is IfExpr.ElseExpr -> visitor.visit(this)
+    is TypeReference -> visitor.visit(this)
 }
 
 fun <T> Node.acceptRecursively(visitor: NodeProcessor<T>): NonEmptyList<T> =

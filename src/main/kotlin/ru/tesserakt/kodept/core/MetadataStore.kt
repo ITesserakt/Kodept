@@ -37,6 +37,8 @@ class MetadataStore(private val delegate: Set<Key> = emptySet()) : Set<MetadataS
     override fun equals(other: Any?) = other is MetadataStore && delegate == other.delegate
 
     override fun hashCode() = delegate.hashCode()
+
+    override fun toString() = delegate.toString()
 }
 
 fun emptyStore() = MetadataStore()
@@ -49,6 +51,12 @@ fun <N : AST.Node> N.appendMetadata(item: MetadataStore.Key): MetadataStore =
     else
         throw IllegalArgumentException("Trying to add second instance $item of unique data ${item::class.simpleName}")
 
-val AST.Node.scope get() = metadata.retrieveRequired<MetadataStore.Key.Scope>()
+private fun AST.Node.retrieveScope() = metadata.retrieveRequired<MetadataStore.Key.Scope>().value
+
+val AST.ModuleDecl.scope get() = retrieveScope() as RealScope.Global
+val AST.FileDecl.scope get() = retrieveScope() as RealScope.Global
+val AST.FunctionDecl.scope get() = retrieveScope() as RealScope.Inner<*>
+val AST.TopLevelDecl.scope get() = retrieveScope() as RealScope.Object
+val AST.Node.scope get() = retrieveScope()
 
 val AST.Term.descriptor get() = metadata.retrieveRequired<MetadataStore.Key.TermDescriptor>()

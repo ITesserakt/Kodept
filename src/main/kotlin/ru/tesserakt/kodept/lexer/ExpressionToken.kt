@@ -39,11 +39,12 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     LPAREN(literalToken("(")),
     RPAREN(literalToken(")")),
     TYPE_GAP(literalToken("_")),
+    DOUBLE_COLON(literalToken("::")),
     COLON(literalToken(":")),
 
     // Identifiers
-    IDENTIFIER(regexToken("""_?\w+""")),
-    TYPE(regexToken("""_?\w+""")),
+    IDENTIFIER(regexToken("""_?[a-z][\w_]*""")),
+    TYPE(regexToken("""_?[A-Z][\w_]*""")),
 
     // Literals
     BINARY(regexToken("""0[bB](1[01_]*[01]|[01])""")),
