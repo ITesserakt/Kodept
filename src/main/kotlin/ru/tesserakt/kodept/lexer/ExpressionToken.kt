@@ -101,6 +101,3 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
         token.name = this.name
     }
 }
-
-
-fun TokenMatch.noneMatched() = type == com.github.h0tk3y.betterParse.lexer.noneMatched

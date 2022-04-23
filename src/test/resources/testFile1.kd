@@ -1,22 +1,22 @@
-module prelude {
+module Prelude {
     enum struct Bool {
         True, False
     }
 
     fun not(self: Bool) =>
-        if self == True => False
-        else => True
+        if self == Bool::True => Bool::False
+        else => Bool::True
 
     fun and(self: Bool, other: Bool) =>
-        if self == True && other == True => True
-        else => False
+        if self == Bool::True && other == Bool::True => Bool::True
+        else => Bool::False
 
     fun or(self: Bool, other: Bool) =>
-        if self == False && other == False => False
-        else => True
+        if self == Bool::False && other == Bool::False => Bool::False
+        else => Bool::True
 
     fun xor(self: Bool, other: Bool) =>
-        if self == False && other == True => True
-        elif self == True && other == False => True
-        else => False
+        if self == Bool::False && other == Bool::True => Bool::True
+        elif self == Bool::True && other == Bool::False => Bool::True
+        else => Bool::False
 }

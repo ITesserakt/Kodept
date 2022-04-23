@@ -16,8 +16,8 @@ class ReferenceAnalyzerTest : BehaviorSpec({
                 |   enum struct Bool { True, False }
                 |   
                 |   fun not(self: Bool) =>
-                |       if self == True => False
-                |       else => True
+                |       if self == Bool::True => Bool::False
+                |       else => Bool::True
                 |}
             """.trimMargin(),
             """module C =>

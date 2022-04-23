@@ -285,8 +285,11 @@ data class AST(val root: Node, val fileName: String) {
         override val metadata: MetadataStore = emptyStore(),
     ) : Term.Simple(), Leaf
 
+    data class ResolutionContext(val fromRoot: Boolean, val chain: List<TypeReference>)
+
     data class TypeReference(
         val type: TypeExpression,
+        val resolutionContext: ResolutionContext? = null,
     ) : Term.Simple(), Leaf {
         override val name: String = type.type
         override val coordinates: CodePoint = type.coordinates
@@ -296,6 +299,7 @@ data class AST(val root: Node, val fileName: String) {
     data class FunctionCall(
         val reference: Reference,
         val params: List<Expression>,
+        val resolutionContext: ResolutionContext? = null,
         override val metadata: MetadataStore = emptyStore(),
     ) : Term.Simple(), NamedDecl by reference {
         override val coordinates: CodePoint = reference.coordinates

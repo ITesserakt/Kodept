@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.analyzer
 
+import arrow.core.nel
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Declaration
 import ru.tesserakt.kodept.core.scope
@@ -49,11 +50,11 @@ class ReferenceAnalyzer : Analyzer() {
             .filter { it.first.size != 1 }.reportEach { (descriptors, term) ->
                 when (descriptors.size) {
                     0 -> Report(ast.fileName,
-                        term.coordinates,
+                        term.coordinates.nel(),
                         Report.Severity.ERROR,
                         SemanticError.UndeclaredUsage(term.name))
                     else -> Report(ast.fileName,
-                        term.coordinates,
+                        term.coordinates.nel(),
                         Report.Severity.ERROR,
                         SemanticError.AmbitiousReference(term.name))
                 }

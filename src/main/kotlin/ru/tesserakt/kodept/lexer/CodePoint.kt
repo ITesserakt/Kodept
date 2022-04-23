@@ -4,6 +4,8 @@ import com.github.h0tk3y.betterParse.lexer.TokenMatch
 
 data class CodePoint(val line: Int, val position: Int) {
     override fun toString(): String = "$line:$position"
+
+    fun shiftHorizontally(n: Int) = copy(position = position + n)
 }
 
 fun TokenMatch.toCodePoint() = CodePoint(row, column)
