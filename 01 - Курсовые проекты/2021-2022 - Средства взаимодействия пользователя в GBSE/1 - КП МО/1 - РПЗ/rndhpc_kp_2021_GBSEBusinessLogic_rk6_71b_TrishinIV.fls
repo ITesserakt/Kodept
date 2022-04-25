@@ -2359,6 +2359,16 @@ INPUT ./chapters/chap3_soft_architecture.tex
 INPUT chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT chapters/chap3_soft_architecture.tex
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lass1200.tfm
+INPUT ./figures/UML.all.png
+INPUT ./figures/UML.all.png
+INPUT figures/UML.all.png
+INPUT ./figures/UML.all.png
+INPUT ./figures/UML.all.png
 INPUT ./conclusion.tex
 INPUT ./conclusion.tex
 INPUT ./conclusion.tex
@@ -2466,5 +2476,6 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfss1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb
