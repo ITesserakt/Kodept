@@ -27,9 +27,7 @@ class CompilationContext private constructor(
     infix fun <T> flow(scope: CompilationContext.() -> Flowable<T>) = this.scope().result
 
     companion object {
-        operator fun invoke(loader: Loader, block: Builder.() -> Unit = {}) =
-            Builder().apply(block).apply {
-                this.loader = loader
-            }.build()
+        operator fun invoke(block: Builder.() -> Unit = {}) =
+            Builder().apply(block).build()
     }
 }

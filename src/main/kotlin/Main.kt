@@ -5,7 +5,8 @@ import ru.tesserakt.kodept.transformer.ASTScopeTagger
 operator fun String.times(n: Int) = repeat(n)
 
 fun main() {
-    val context = CompilationContext(MemoryLoader.singleSnippet("module A { }")) {
+    val context = CompilationContext {
+        loader = MemoryLoader.singleSnippet("module A { }")
         transformers = listOf(::ASTScopeTagger)
         analyzers = listOf(ModuleAnalyzer())
     }

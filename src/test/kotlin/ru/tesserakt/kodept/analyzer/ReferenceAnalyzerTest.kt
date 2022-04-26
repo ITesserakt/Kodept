@@ -8,11 +8,12 @@ import ru.tesserakt.kodept.transformer.ASTScopeTagger
 
 class ReferenceAnalyzerTest : BehaviorSpec({
     given("compiler") {
-        val compilationContext = ru.tesserakt.kodept.core.CompilationContext(MemoryLoader.fromText(sequenceOf(
-            """module A =>
+        val compilationContext = CompilationContext {
+            loader = MemoryLoader.fromText(sequenceOf(
+                """module A =>
                 |   fun test(a: Int) => a
             """.trimMargin(),
-            """module B {
+                """module B {
                 |   enum struct Bool { True, False }
                 |   
                 |   fun not(self: Bool) =>
@@ -20,12 +21,12 @@ class ReferenceAnalyzerTest : BehaviorSpec({
                 |       else => Bool::True
                 |}
             """.trimMargin(),
-            """module C =>
+                """module C =>
                 |   fun x(y: Int) { }
                 |   
                 |   fun z() => y
             """.trimMargin()
-        ))) {
+            ))
             transformers = listOf(::ASTScopeTagger)
         }
 

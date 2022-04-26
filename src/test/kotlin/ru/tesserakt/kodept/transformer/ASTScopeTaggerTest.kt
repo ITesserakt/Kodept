@@ -7,9 +7,10 @@ import ru.tesserakt.kodept.core.*
 
 class ASTScopeTaggerTest : BehaviorSpec({
     given("compiler") {
-        val compilationContext = CompilationContext(MemoryLoader.fromText(sequenceOf(
-            """module A =>""",
-            """module A {
+        val compilationContext = CompilationContext {
+            loader = MemoryLoader.fromText(sequenceOf(
+                """module A =>""",
+                """module A {
               |    struct String {
               |         fun concat(self: String, other: String) {
               |             var x = 5
@@ -24,7 +25,8 @@ class ASTScopeTaggerTest : BehaviorSpec({
               |} 
               |module B { } 
               |module C { }""".trimMargin(),
-        )))
+            ))
+        }
 
         `when`("text parsed") {
             val parsed = with(compilationContext) {

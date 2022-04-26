@@ -9,7 +9,9 @@ class ModuleCollectorTest : DescribeSpec({
     describe("collector") {
         val collector = ModuleCollector()
 
-        fun createCompiler(text: String) = CompilationContext(MemoryLoader.singleSnippet(text))
+        fun createCompiler(text: String) = CompilationContext {
+            loader = MemoryLoader.singleSnippet(text)
+        }
 
         it("should count global modules") {
             val text = """module A => struct Y"""

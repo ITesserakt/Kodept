@@ -8,14 +8,16 @@ import ru.tesserakt.kodept.core.*
 
 class NodeVisitorTest : DescribeSpec({
     describe("simple visitor") {
-        val compilationContext = CompilationContext(MemoryLoader.singleSnippet("""
+        val compilationContext = CompilationContext {
+            loader = MemoryLoader.singleSnippet("""
                 module Test =>
                     fun a() { }
                     fun b(e: Int) { }
                     fun c() { }
                     
                     struct A
-            """.trimIndent()))
+            """.trimIndent())
+        }
         val ast = with(compilationContext) {
             acquireContent().tokenize().parse().result
         }.map { it.value.orNull()!! }.first()
@@ -52,7 +54,8 @@ class NodeVisitorTest : DescribeSpec({
     }
 
     describe("intermediate visitor") {
-        val compilationContext = CompilationContext(MemoryLoader.singleSnippet("""
+        val compilationContext = CompilationContext {
+            loader = MemoryLoader.singleSnippet("""
                 module Test =>
                     fun a() { }
                     fun b(e: Int) { }
@@ -64,7 +67,8 @@ class NodeVisitorTest : DescribeSpec({
                             else => k - 1
                         }
                     }
-            """.trimIndent()))
+            """.trimIndent())
+        }
         val ast = with(compilationContext) {
             acquireContent().tokenize().parse().result
         }.map { it.value.orNull()!! }.first()

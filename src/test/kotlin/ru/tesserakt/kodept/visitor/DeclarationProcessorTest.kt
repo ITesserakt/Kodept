@@ -10,7 +10,8 @@ import ru.tesserakt.kodept.core.*
 class DeclarationProcessorTest : DescribeSpec({
     describe("visitor") {
         val collector = DeclarationCollector()
-        val compilationContext = CompilationContext(MemoryLoader.singleSnippet("""
+        val compilationContext = CompilationContext {
+            loader = MemoryLoader.singleSnippet("""
             module A {
                 struct X
                 struct Y
@@ -29,7 +30,8 @@ class DeclarationProcessorTest : DescribeSpec({
                 trait A { }
                 enum struct Bool { True, False }
             }
-        """.trimIndent()))
+        """.trimIndent())
+        }
 
         it("should accumulate all declarations") {
             val ast = with(compilationContext) {

@@ -9,18 +9,19 @@ import ru.tesserakt.kodept.error.Report
 
 class ModuleAnalyzerTest : DescribeSpec({
     describe("compiler") {
-        val compilationContext = CompilationContext(MemoryLoader.fromText(sequenceOf(
-            """module A =>""",
-            """module A {  }
+        val compilationContext = CompilationContext {
+            loader = MemoryLoader.fromText(sequenceOf(
+                """module A =>""",
+                """module A {  }
                 |module B {  }
             """.trimMargin(),
-            """module A {  }
+                """module A {  }
                 |module A {  }
                 |module B {  }
                 |module C {  }
                 |module B {  }
             """.trimMargin()
-        ))) {
+            ))
             analyzers = listOf(ModuleAnalyzer())
         }
 
