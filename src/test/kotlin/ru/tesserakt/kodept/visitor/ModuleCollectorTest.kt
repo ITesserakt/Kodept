@@ -1,8 +1,8 @@
 package ru.tesserakt.kodept.visitor
 
+import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.shouldBe
 import ru.tesserakt.kodept.core.*
 
 class ModuleCollectorTest : DescribeSpec({
@@ -38,7 +38,7 @@ class ModuleCollectorTest : DescribeSpec({
 
             with(createCompiler(text)) {
                 acquireContent().tokenize().parse().result
-            }.first().value.isLeft() shouldBe true
+            }.first().value.shouldBeLeft()
         }
     }
 })

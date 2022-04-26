@@ -23,6 +23,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("io.github.microutils:kotlin-logging-jvm:2.1.21")
 
+    implementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
     testImplementation("io.kotest:kotest-property:$kotestVersion")
