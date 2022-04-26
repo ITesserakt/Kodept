@@ -6,7 +6,7 @@ val arrowVersion: String by extra
 val serializationVersion: String by extra
 
 plugins {
-    kotlin("jvm") version "1.6.20"
+    kotlin("jvm") version "1.6.21"
     application
 }
 
@@ -30,14 +30,12 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "16"
+    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-tasks.withType<Test> {
     systemProperties = System.getProperties().map { it.key.toString() to it.value }.toMap()
 }
 

@@ -1,19 +1,16 @@
 package ru.tesserakt.kodept.visitor
 
-import com.github.h0tk3y.betterParse.parser.toParsedOrThrow
-import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
-import ru.tesserakt.kodept.core.Compiler
-import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.*
 
 class DeclarationProcessorTest : DescribeSpec({
     describe("visitor") {
         val collector = DeclarationCollector()
-        val compiler = Compiler(MemoryLoader.singleSnippet("""
+        val compilationContext = CompilationContext(MemoryLoader.singleSnippet("""
             module A {
                 struct X
                 struct Y
@@ -35,7 +32,9 @@ class DeclarationProcessorTest : DescribeSpec({
         """.trimIndent()))
 
         it("should accumulate all declarations") {
-            val ast = shouldNotThrowAny { compiler.parse().first().toParsedOrThrow() }.value
+            val ast = with(compilationContext) {
+                acquireContent().tokenize().parse().result
+            }.map { it.value.orNull()!! }.first()
             val decls = collector.collect(ast.root)
 
             decls shouldHaveSize 14

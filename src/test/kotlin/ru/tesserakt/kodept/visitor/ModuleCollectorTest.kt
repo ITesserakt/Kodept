@@ -1,23 +1,22 @@
 package ru.tesserakt.kodept.visitor
 
-import com.github.h0tk3y.betterParse.parser.toParsedOrThrow
-import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldHaveSize
-import ru.tesserakt.kodept.core.Compiler
-import ru.tesserakt.kodept.core.MemoryLoader
+import io.kotest.matchers.shouldBe
+import ru.tesserakt.kodept.core.*
 
 class ModuleCollectorTest : DescribeSpec({
     describe("collector") {
         val collector = ModuleCollector()
 
-        fun createCompiler(text: String) = Compiler(MemoryLoader.singleSnippet(text))
+        fun createCompiler(text: String) = CompilationContext(MemoryLoader.singleSnippet(text))
 
         it("should count global modules") {
             val text = """module A => struct Y"""
 
-            val ast = shouldNotThrowAny { createCompiler(text).parse().first().toParsedOrThrow() }.value
+            val ast = with(createCompiler(text)) {
+                acquireContent().tokenize().parse().result
+            }.map { it.value.orNull()!! }.first()
             collector.collect(ast.root) shouldHaveSize 1
         }
 
@@ -28,14 +27,18 @@ class ModuleCollectorTest : DescribeSpec({
                 module C { }
             """.trimIndent()
 
-            val ast = shouldNotThrowAny { createCompiler(text).parse().first().toParsedOrThrow() }.value
+            val ast = with(createCompiler(text)) {
+                acquireContent().tokenize().parse().result
+            }.map { it.value.orNull()!! }.first()
             collector.collect(ast.root) shouldHaveSize 3
         }
 
         it("should not work with 0 modules") {
             val text = """"""
 
-            shouldThrowAny { createCompiler(text).parse().first().toParsedOrThrow() }
+            with(createCompiler(text)) {
+                acquireContent().tokenize().parse().result
+            }.first().value.isLeft() shouldBe true
         }
     }
 })

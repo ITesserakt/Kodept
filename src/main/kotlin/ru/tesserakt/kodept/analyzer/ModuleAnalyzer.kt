@@ -29,7 +29,7 @@ class ModuleAnalyzer : Analyzer() {
                 Report(ast.fileName,
                     modules.map { it.coordinates },
                     Report.Severity.ERROR,
-                    SemanticError.DuplicatedModules(modules.map { it.coordinates to it.name }))
+                    SemanticError.DuplicatedModules(modules.head.name))
             }
     }
 }

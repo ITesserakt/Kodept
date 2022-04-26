@@ -1,7 +1,5 @@
 package ru.tesserakt.kodept.transformer
 
-import com.github.h0tk3y.betterParse.parser.toParsedOrThrow
-import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -9,7 +7,7 @@ import ru.tesserakt.kodept.core.*
 
 class ASTScopeTaggerTest : BehaviorSpec({
     given("compiler") {
-        val compiler = Compiler(MemoryLoader.fromText(sequenceOf(
+        val compilationContext = CompilationContext(MemoryLoader.fromText(sequenceOf(
             """module A =>""",
             """module A {
               |    struct String {
@@ -29,7 +27,9 @@ class ASTScopeTaggerTest : BehaviorSpec({
         )))
 
         `when`("text parsed") {
-            val parsed = shouldNotThrowAny { compiler.parse().map { it.toParsedOrThrow().value }.toList() }
+            val parsed = with(compilationContext) {
+                acquireContent().tokenize().parse().transform().result
+            }.map { it.value.orNull()!! }.toList()
 
             then("getting scope should produce error") {
                 shouldThrow<IllegalStateException> { parsed.map { it.root.scope } }

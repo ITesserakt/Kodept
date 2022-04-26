@@ -1,17 +1,14 @@
 package ru.tesserakt.kodept.visitor
 
-import com.github.h0tk3y.betterParse.parser.toParsedOrThrow
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Compiler
-import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.*
 
 class NodeVisitorTest : DescribeSpec({
     describe("simple visitor") {
-        val compiler = Compiler(MemoryLoader.singleSnippet("""
+        val compilationContext = CompilationContext(MemoryLoader.singleSnippet("""
                 module Test =>
                     fun a() { }
                     fun b(e: Int) { }
@@ -19,8 +16,9 @@ class NodeVisitorTest : DescribeSpec({
                     
                     struct A
             """.trimIndent()))
-        val parsed = compiler.parse().first()
-        val ast = parsed.toParsedOrThrow().value
+        val ast = with(compilationContext) {
+            acquireContent().tokenize().parse().result
+        }.map { it.value.orNull()!! }.first()
 
         it("should count functions in ast") {
             val visitor = object : NodeVisitor() {
@@ -54,7 +52,7 @@ class NodeVisitorTest : DescribeSpec({
     }
 
     describe("intermediate visitor") {
-        val compiler = Compiler(MemoryLoader.singleSnippet("""
+        val compilationContext = CompilationContext(MemoryLoader.singleSnippet("""
                 module Test =>
                     fun a() { }
                     fun b(e: Int) { }
@@ -67,8 +65,9 @@ class NodeVisitorTest : DescribeSpec({
                         }
                     }
             """.trimIndent()))
-        val parsed = compiler.parse().first()
-        val ast = parsed.toParsedOrThrow().value
+        val ast = with(compilationContext) {
+            acquireContent().tokenize().parse().result
+        }.map { it.value.orNull()!! }.first()
 
         it("should traverse all constructions") {
             val visitor = object : IntermediateNodeProcessor<Int>() {
