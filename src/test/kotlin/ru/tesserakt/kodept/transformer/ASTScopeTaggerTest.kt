@@ -8,7 +8,7 @@ import ru.tesserakt.kodept.core.*
 class ASTScopeTaggerTest : BehaviorSpec({
     given("compiler") {
         val compilationContext = CompilationContext {
-            loader = MemoryLoader.fromText(sequenceOf(
+            loader = MemoryLoader.fromText(
                 """module A =>""",
                 """module A {
               |    struct String {
@@ -24,8 +24,7 @@ class ASTScopeTaggerTest : BehaviorSpec({
               |    }
               |} 
               |module B { } 
-              |module C { }""".trimMargin(),
-            ))
+              |module C { }""".trimMargin())
         }
 
         `when`("text parsed") {

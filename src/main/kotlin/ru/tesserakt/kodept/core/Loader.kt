@@ -2,7 +2,6 @@ package ru.tesserakt.kodept.core
 
 import com.google.gson.Gson
 import java.io.File
-import java.io.InputStream
 import java.nio.file.Path
 import java.time.Instant
 import kotlin.io.path.Path
@@ -56,17 +55,18 @@ class FileLoader private constructor(private val files: Sequence<File>, caches: 
     }
 }
 
-class MemoryLoader private constructor(private val streams: Iterable<InputStream>) : Loader {
-    private val sources = streams.mapIndexed { i, it ->
-        MemoryCodeSource(it, "scratch-#$i-${Instant.now().epochSecond}.kd")
+class MemoryLoader private constructor(private val streams: Iterable<String>) : Loader {
+    // workaround to eager time computation
+    override fun getSources(): Sequence<CodeSource> = streams.mapIndexed { i, it ->
+        "scratch-#$i-${Instant.now().epochSecond}.kd" to it
+    }.asSequence().map { (name, text) ->
+        MemoryCodeSource(text.byteInputStream(), name)
     }
 
-    override fun getSources(): Sequence<CodeSource> = sources.asSequence()
-
-    override fun loadSources(): Sequence<InputStream> = streams.asSequence()
-
     companion object {
-        fun fromText(text: Iterable<String>) = MemoryLoader(text.map { it.byteInputStream() })
+        fun fromText(text: Iterable<String>) = MemoryLoader(text)
+
+        fun fromText(vararg text: String) = MemoryLoader(text.toList())
 
         fun singleSnippet(text: String) = fromText(arrayListOf(text))
     }

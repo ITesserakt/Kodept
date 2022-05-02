@@ -14,8 +14,8 @@ class LoaderTest : StringSpec({
         val text = "Hello world!"
         val loader = MemoryLoader.singleSnippet(text)
 
-        loader.sources shouldHaveSize 1
-        loader.sources.first().contents.bufferedReader().readText() shouldBe text
+        loader.getSources() shouldHaveSize 1
+        loader.getSources().first().contents.bufferedReader().readText() shouldBe text
 
         loader.loadSources() shouldHaveSize 1
         loader.loadSources().first().bufferedReader().readText() shouldBe text

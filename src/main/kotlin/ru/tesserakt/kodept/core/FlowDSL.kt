@@ -31,13 +31,13 @@ class StringContent : Flowable<CodeSource> {
         it.withFilename { contents.bufferedReader().use(Reader::readText) }
     }
 
-    override val result get() = sources
+    override val result = sources
 }
 
 context (CompilationContext, StringContent)
 class TokenContent : Flowable<FileRelative<TokenMatchesSequence>> {
     val tokens = text.mapWithFilename { lexer.tokenize(it) }
-    override val result get() = tokens
+    override val result = tokens
 }
 
 typealias ParseResult<T> = Either<ErrorResult, T>
@@ -52,7 +52,7 @@ class ParsedContent : Flowable<FileRelative<ParseResult<AST>>> {
         trees.mapWithFilename { Eval.now(it) }.associateBy { it.filename }
     }
 
-    override val result get() = trees
+    override val result = trees
 }
 
 context (StringContent, ParsedContent)
@@ -68,7 +68,7 @@ class HintASTContent : Flowable<FileRelative<ParseResult<AST>>> {
             relative.map { it!!.right() }
     }
 
-    override val result get() = ast
+    override val result = ast
 }
 
 private inline fun <T> Iterable<T>.foldAST(ast: AST, f: MutableList<Report>.(T, AST) -> AST): IorNel<Report, AST> {
@@ -103,7 +103,7 @@ class TransformedContent(astFlowable: Flowable<FileRelative<ParseResult<AST>>>) 
                 }
             }
     }
-    override val result get() = transformed
+    override val result = transformed
 }
 
 context (CompilationContext, TransformedContent)
@@ -121,7 +121,7 @@ class AnalyzedContent : Flowable<FileRelative<IorNel<Report, AST>>> {
             }
         }
     }
-    override val result get() = analyzed
+    override val result = analyzed
 }
 
 context (CompilationContext)

@@ -30,7 +30,7 @@ class CompilerTest : DescribeSpec({
         it("should parse files") {
             val compilationContext =
                 CompilationContext {
-                    loader = MemoryLoader.fromText(sequenceOf("module A => struct B", "module B =>"))
+                    loader = MemoryLoader.fromText("module A => struct B", "module B =>")
                 }
 
             assertSoftly(compilationContext) {

@@ -11,7 +11,7 @@ import ru.tesserakt.kodept.transformer.ASTScopeTagger
 class ReferenceAnalyzerTest : BehaviorSpec({
     given("compiler") {
         val compilationContext = CompilationContext {
-            loader = MemoryLoader.fromText(sequenceOf(
+            loader = MemoryLoader.fromText(
                 """module A =>
                 |   fun test(a: Int) => a
             """.trimMargin(),
@@ -19,8 +19,7 @@ class ReferenceAnalyzerTest : BehaviorSpec({
                 |   fun x(y: Int) { }
                 |   
                 |   fun z() => y
-            """.trimMargin()
-            ))
+            """.trimMargin())
             transformers = listOf(::ASTScopeTagger)
         }
 
