@@ -285,7 +285,7 @@ data class AST(val root: Node, val fileName: String) {
         override val metadata: MetadataStore = emptyStore(),
     ) : Term.Simple(), Leaf
 
-    data class ResolutionContext(val fromRoot: Boolean, val chain: List<TypeReference>)
+    data class ResolutionContext(val fromRoot: Boolean, val chain: NonEmptyList<TypeReference>)
 
     data class TypeReference(
         val type: TypeExpression,

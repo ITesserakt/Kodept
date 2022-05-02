@@ -10,13 +10,12 @@ fun main() {
         transformers = listOf(::ASTScopeTagger)
         analyzers = listOf(ModuleAnalyzer())
     }
-    val result = with(context) {
+    val result = context.flow {
         acquireContent()
             .tokenize()
             .parse()
             .transform()
             .analyze()
-            .result
     }
 
     result.toList().let(::println)

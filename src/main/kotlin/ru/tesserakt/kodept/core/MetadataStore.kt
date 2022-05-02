@@ -2,7 +2,8 @@ package ru.tesserakt.kodept.core
 
 import ru.tesserakt.kodept.core.Scope as RealScope
 
-class MetadataStore(private val delegate: Set<Key> = emptySet()) : Set<MetadataStore.Key> by delegate {
+class MetadataStore(private val delegate: MutableSet<Key> = mutableSetOf()) :
+    MutableSet<MetadataStore.Key> by delegate {
     sealed interface Key {
         sealed interface Unique : Key {
             override val unique get() = true
@@ -32,7 +33,11 @@ class MetadataStore(private val delegate: Set<Key> = emptySet()) : Set<MetadataS
 
     inline fun <reified K : Key> retrieveMany() = filterIsInstance<K>()
 
-    operator fun plus(element: Key): MetadataStore = MetadataStore(delegate + element)
+    operator fun plus(element: Key): MetadataStore = MetadataStore((delegate + element).toMutableSet())
+
+    operator fun plusAssign(element: Key) {
+        delegate += element
+    }
 
     override fun equals(other: Any?) = other is MetadataStore && delegate == other.delegate
 

@@ -31,9 +31,8 @@ class ASTScopeTagger : Transformer() {
 
     private val self get() = this
 
-    override fun visit(node: AST.ModuleDecl): AST.Node {
-        currentScope = Scope.Global(node.name)
-        return node.copy(metadata = node.appendMetadata(currentScope.toKey()),
+    override fun visit(node: AST.ModuleDecl) = scope({ Scope.Global(node.name) }) {
+        node.copy(metadata = node.appendMetadata(currentScope.toKey()),
             rest = node.rest.map { it.acceptTransform(self) })
     }
 

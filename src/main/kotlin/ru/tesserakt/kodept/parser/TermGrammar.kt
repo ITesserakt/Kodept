@@ -13,7 +13,7 @@ object TermGrammar : Grammar<AST.Term>() {
     val typeReference by TYPE use { AST.TypeReference(AST.TypeExpression(text, toCodePoint())) }
 
     val scopeResolution by optional(DOUBLE_COLON) * oneOrMore(typeReference * -DOUBLE_COLON) use {
-        AST.ResolutionContext(t1 != null, t2)
+        AST.ResolutionContext(t1 != null, NonEmptyList.fromListUnsafe(t2))
     }
 
     val functionCall by variableReference * -LPAREN * trailing(

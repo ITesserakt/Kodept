@@ -1,9 +1,11 @@
 package ru.tesserakt.kodept.analyzer
 
+import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.error.UnrecoverableError
 import ru.tesserakt.kodept.transformer.ASTScopeTagger
 
 class ReferenceAnalyzerTest : BehaviorSpec({
@@ -12,14 +14,6 @@ class ReferenceAnalyzerTest : BehaviorSpec({
             loader = MemoryLoader.fromText(sequenceOf(
                 """module A =>
                 |   fun test(a: Int) => a
-            """.trimMargin(),
-                """module B {
-                |   enum struct Bool { True, False }
-                |   
-                |   fun not(self: Bool) =>
-                |       if self == Bool::True => Bool::False
-                |       else => Bool::True
-                |}
             """.trimMargin(),
                 """module C =>
                 |   fun x(y: Int) { }
@@ -33,23 +27,24 @@ class ReferenceAnalyzerTest : BehaviorSpec({
         `when`("text parsed") {
             val ast = with(compilationContext) {
                 acquireContent().tokenize().parse().transform().result
-            }.toList()
+            }.map { it.value.toEither().shouldBeRight() }.toList()
 
             and("analyzed with Reference analyzer") {
                 val analyzer = ReferenceAnalyzer()
 
                 then("the first entry should not produce any reports") {
-                    analyzer.analyzeIndependently(ast[0].value.orNull()!!)
-                    analyzer.collectedReports.shouldBeEmpty()
-                }
-
-                then("the second entry should not produce any reports") {
-                    analyzer.analyzeIndependently(ast[1].value.orNull()!!)
+                    try {
+                        analyzer.analyzeIndependently(ast[0])
+                    } catch (_: UnrecoverableError) {
+                    }
                     analyzer.collectedReports.shouldBeEmpty()
                 }
 
                 then("the third entry should produce reports") {
-                    analyzer.analyzeIndependently(ast[2].value.orNull()!!)
+                    try {
+                        analyzer.analyzeIndependently(ast[1])
+                    } catch (_: UnrecoverableError) {
+                    }
                     analyzer.collectedReports.shouldNotBeEmpty()
                 }
             }
