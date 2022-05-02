@@ -17,6 +17,12 @@ interface Flowable<T> {
     val result: Sequence<T>
 }
 
+class CombinedFlowable<FT : Flowable<T>, FU : Flowable<U>, T, U>(val a: FT, val b: FU) : Flowable<Pair<T, U>> {
+    override val result = a.result.zip(b.result)
+}
+
+operator fun <FT : Flowable<T>, FU : Flowable<U>, T, U> FT.plus(other: FU) = CombinedFlowable(this, other)
+
 context(CompilationContext)
 class StringContent : Flowable<CodeSource> {
     val sources = loader.getSources()

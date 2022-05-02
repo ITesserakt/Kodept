@@ -56,17 +56,19 @@ class FileLoader private constructor(private val files: Sequence<File>, caches: 
     }
 }
 
-class MemoryLoader private constructor(private val streams: Sequence<InputStream>) : Loader {
-    override fun getSources(): Sequence<CodeSource> = streams.mapIndexed { i, it ->
+class MemoryLoader private constructor(private val streams: Iterable<InputStream>) : Loader {
+    private val sources = streams.mapIndexed { i, it ->
         MemoryCodeSource(it, "scratch-#$i-${Instant.now().epochSecond}.kd")
     }
 
-    override fun loadSources(): Sequence<InputStream> = streams
+    override fun getSources(): Sequence<CodeSource> = sources.asSequence()
+
+    override fun loadSources(): Sequence<InputStream> = streams.asSequence()
 
     companion object {
-        fun fromText(text: Sequence<String>) = MemoryLoader(text.map { it.byteInputStream() })
+        fun fromText(text: Iterable<String>) = MemoryLoader(text.map { it.byteInputStream() })
 
-        fun singleSnippet(text: String) = fromText(sequenceOf(text))
+        fun singleSnippet(text: String) = fromText(arrayListOf(text))
     }
 }
 
