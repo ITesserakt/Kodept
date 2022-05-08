@@ -1,11 +1,8 @@
-@file:Suppress("FunctionName")
-
 package ru.tesserakt.kodept.core
 
 import arrow.core.*
 import arrow.typeclasses.Semigroup
 import com.github.h0tk3y.betterParse.lexer.TokenMatchesSequence
-import com.github.h0tk3y.betterParse.parser.ErrorResult
 import com.github.h0tk3y.betterParse.parser.tryParseToEnd
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.UnrecoverableError
@@ -13,134 +10,138 @@ import ru.tesserakt.kodept.error.toReport
 import ru.tesserakt.kodept.transformer.acceptTransform
 import java.io.Reader
 
-interface Flowable<T> {
-    val result: Sequence<T>
+typealias ParseResult = IorNel<Report, AST>
+
+private inline fun <T> Iterable<T>.foldAST(ast: AST, f: MutableList<Report>.(T, AST) -> AST): ParseResult {
+    val reports = mutableListOf<Report>()
+    val newAST = fold(ast) { acc, next -> reports.f(next, acc) }
+    return NonEmptyList.fromList(reports).fold({ newAST.rightIor() }) { it.leftIor() }
 }
 
-class CombinedFlowable<FT : Flowable<T>, FU : Flowable<U>, T, U>(val a: FT, val b: FU) : Flowable<Pair<T, U>> {
-    override val result = a.result.zip(b.result)
-}
+@Suppress("NOTHING_TO_INLINE")
+private inline fun <A, B> Either<A, B>.toIor() = fold({ it.leftIor() }) { it.rightIor() }
 
-operator fun <FT : Flowable<T>, FU : Flowable<U>, T, U> FT.plus(other: FU) = CombinedFlowable(this, other)
+interface Flowable<T : Flowable.Data> {
+    val result: T
+
+    interface Data {
+        interface Source : Data {
+            val source: Sequence<CodeSource>
+        }
+
+        interface Holder : Data {
+            val holder: ProgramCodeHolder
+        }
+
+        interface Tokens : Data {
+            val tokens: Sequence<FileRelative<TokenMatchesSequence>>
+        }
+
+        interface Forest : Data {
+            val forest: Eval<Map<Filename, ParseResult>>
+        }
+
+        interface UnprocessedAST : Data {
+            val unprocessedAST: Sequence<FileRelative<AST?>>
+        }
+
+        interface ErroneousAST : Data {
+            val ast: Sequence<FileRelative<ParseResult>>
+        }
+    }
+}
 
 context(CompilationContext)
-class StringContent : Flowable<CodeSource> {
-    val sources = loader.getSources()
+class StringContent : Flowable<StringContent.Data> {
+    data class Data(
+        override val source: Sequence<CodeSource>,
+        override val holder: ProgramCodeHolder,
+    ) : Flowable.Data.Source, Flowable.Data.Holder
 
-    val text = sources.map {
-        it.withFilename { contents.bufferedReader().use(Reader::readText) }
+    private val sources = loader.getSources()
+    private val text = sources.map {
+        it.withFilename { Eval.later { contents.bufferedReader().use(Reader::readText) } }
     }
+    private val holder = ProgramCodeHolder(text.associate { it.filename to it.value })
 
-    override val result = sources
-}
-
-context (CompilationContext, StringContent)
-class TokenContent : Flowable<FileRelative<TokenMatchesSequence>> {
-    val tokens = text.mapWithFilename { lexer.tokenize(it) }
-    override val result = tokens
-}
-
-typealias ParseResult<T> = Either<ErrorResult, T>
-
-context (CompilationContext, TokenContent)
-class ParsedContent : Flowable<FileRelative<ParseResult<AST>>> {
-    val trees = tokens.mapWithFilename {
-        rootParser.tryParseToEnd(it, 0).toEither().map { node -> AST(node, this) }
-    }
-
-    val forest by lazy {
-        trees.mapWithFilename { Eval.now(it) }.associateBy { it.filename }
-    }
-
-    override val result = trees
-}
-
-context (StringContent, ParsedContent)
-class HintASTContent : Flowable<FileRelative<ParseResult<AST>>> {
-    val unprocessedAST by lazy {
-        sources.map { it.withFilename { hint } }
-    }
-
-    val ast = unprocessedAST.map { relative ->
-        if (relative.value == null)
-            forest[relative.filename]!!.map { it.value() }
-        else
-            relative.map { it!!.right() }
-    }
-
-    override val result = ast
-}
-
-private inline fun <T> Iterable<T>.foldAST(ast: AST, f: MutableList<Report>.(T, AST) -> AST): IorNel<Report, AST> {
-    val reports = mutableListOf<Report>()
-    var newAST = ast
-    for (item in this) {
-        newAST = reports.f(item, newAST)
-    }
-    return when (val reportsNel = NonEmptyList.fromList(reports)) {
-        None -> newAST.rightIor()
-        is Some -> Ior.Both(reportsNel.value, newAST)
-    }
+    override val result = Data(sources, holder)
 }
 
 context (CompilationContext)
-class TransformedContent(astFlowable: Flowable<FileRelative<ParseResult<AST>>>) :
-    Flowable<FileRelative<IorNel<Report, AST>>> {
-    val transformed = astFlowable.result.mapWithFilename { either ->
-        either.mapLeft { it.toReport(this) }
-            .fold({ it.leftIor() }, { it.rightIor() })
-            .flatMap(Semigroup.nonEmptyList()) { ast ->
-                transformers.foldAST(ast) { ctor, acc ->
-                    val transformer = ctor()
-                    try {
-                        AST(acc.root.acceptTransform(transformer), this@mapWithFilename).also {
-                            this += transformer.collectedReports
-                        }
-                    } catch (e: UnrecoverableError) {
-                        this@foldAST += transformer.collectedReports
-                        return@flatMap NonEmptyList.fromListUnsafe(this@foldAST).leftIor()
-                    }
-                }
-            }
-    }
-    override val result = transformed
+class TokenContent(flowable: Flowable.Data.Holder) : Flowable<TokenContent.Data> {
+    data class Data(override val tokens: Sequence<FileRelative<TokenMatchesSequence>>) : Flowable.Data.Tokens
+
+    override val result = Data(flowable.holder
+        .walkThoughAll { FileRelative(lexer.tokenize(it.allText), it.filename) })
 }
 
-context (CompilationContext, TransformedContent)
-class AnalyzedContent : Flowable<FileRelative<IorNel<Report, AST>>> {
-    val analyzed = transformed.mapWithFilename {
-        it.flatMap(Semigroup.nonEmptyList()) {
-            analyzers.foldAST(it) { analyzer, acc ->
+context (CompilationContext)
+class ParsedContent(flowable: Flowable.Data.Tokens) : Flowable<ParsedContent.Data> {
+    data class Data(
+        override val forest: Eval<Map<Filename, ParseResult>>,
+        override val ast: Sequence<FileRelative<IorNel<Report, AST>>>,
+    ) : Flowable.Data.ErroneousAST, Flowable.Data.Forest
+
+    private val trees = flowable.tokens.mapWithFilename {
+        rootParser
+            .tryParseToEnd(it, 0).toEither().map { node -> AST(node, this) }
+            .mapLeft { res -> res.toReport(this) }.toIor()
+    }
+    private val forest = Eval.later {
+        trees.associate { it.filename to it.value }
+    }
+
+    override val result = Data(forest, trees)
+}
+
+class HintASTContent(a: Flowable.Data.Source) : Flowable<HintASTContent.Data> {
+    data class Data(
+        override val unprocessedAST: Sequence<FileRelative<AST?>>,
+    ) : Flowable.Data.UnprocessedAST
+
+    private val unprocessedAST = a.source.map { it.withFilename { hint } }
+
+    override val result = Data(unprocessedAST)
+}
+
+context (CompilationContext)
+class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<TransformedContent.Data> {
+    data class Data(override val ast: Sequence<FileRelative<IorNel<Report, AST>>>) : Flowable.Data.ErroneousAST
+
+    private val transformed = flowable.ast.mapWithFilename { either ->
+        either.flatMap(Semigroup.nonEmptyList()) { ast ->
+            transformers.foldAST(ast) { ctor, acc ->
+                val transformer = ctor()
                 try {
-                    analyzer.analyzeIndependently(acc).also { this += analyzer.collectedReports }
-                    acc
+                    AST(acc.root.acceptTransform(transformer), this@mapWithFilename)
                 } catch (e: UnrecoverableError) {
-                    this += analyzer.collectedReports
-                    return@flatMap NonEmptyList.fromListUnsafe(this).leftIor()
+                    return@flatMap NonEmptyList.fromListUnsafe(this@foldAST).leftIor()
+                } finally {
+                    this += transformer.collectedReports
                 }
             }
         }
     }
-    override val result = analyzed
+    override val result = Data(transformed)
 }
 
 context (CompilationContext)
-fun acquireContent() = StringContent()
+class AnalyzedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<AnalyzedContent.Data> {
+    data class Data(override val ast: Sequence<FileRelative<IorNel<Report, AST>>>) : Flowable.Data.ErroneousAST
 
-context (CompilationContext)
-fun StringContent.tokenize() = TokenContent()
-
-context (CompilationContext)
-fun TokenContent.parse() = ParsedContent()
-
-context (StringContent)
-fun ParsedContent.withCache() = HintASTContent()
-
-context (CompilationContext)
-fun ParsedContent.transform() = TransformedContent(this)
-
-context (CompilationContext)
-fun HintASTContent.transform() = TransformedContent(this)
-
-context (CompilationContext)
-fun TransformedContent.analyze() = AnalyzedContent()
+    private val analyzed = flowable.ast.mapWithFilename {
+        it.flatMap(Semigroup.nonEmptyList()) {
+            analyzers.foldAST(it) { analyzer, acc ->
+                try {
+                    analyzer.analyzeIndependently(acc)
+                    acc
+                } catch (e: UnrecoverableError) {
+                    return@flatMap NonEmptyList.fromListUnsafe(this).leftIor()
+                } finally {
+                    this += analyzer.collectedReports
+                }
+            }
+        }
+    }
+    override val result = Data(analyzed)
+}

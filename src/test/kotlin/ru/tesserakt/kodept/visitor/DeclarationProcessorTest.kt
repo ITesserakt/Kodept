@@ -5,7 +5,9 @@ import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
-import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.core.CompilationContext
+import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.shouldBeValid
 
 class DeclarationProcessorTest : DescribeSpec({
     describe("visitor") {
@@ -34,10 +36,13 @@ class DeclarationProcessorTest : DescribeSpec({
         }
 
         it("should accumulate all declarations") {
-            val ast = with(compilationContext) {
-                acquireContent().tokenize().parse().result
-            }.map { it.value.orNull()!! }.first()
-            val decls = collector.collect(ast.root)
+            val ast = compilationContext.flow {
+                readSources()
+                    .then { tokenize() }
+                    .then { parse() }
+                    .bind().shouldBeValid()
+            }.first()
+            val decls = collector.collect(ast.value.root)
 
             decls shouldHaveSize 14
 

@@ -4,7 +4,10 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.CompilationContext
+import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.shouldBeValid
 
 class NodeVisitorTest : DescribeSpec({
     describe("simple visitor") {
@@ -18,9 +21,12 @@ class NodeVisitorTest : DescribeSpec({
                     struct A
             """.trimIndent())
         }
-        val ast = with(compilationContext) {
-            acquireContent().tokenize().parse().result
-        }.map { it.value.orNull()!! }.first()
+        val ast = compilationContext flow {
+            readSources().then { tokenize() }
+                .then { parse() }
+                .bind().shouldBeValid()
+                .first()
+        }
 
         it("should count functions in ast") {
             val visitor = object : NodeVisitor() {
@@ -32,7 +38,7 @@ class NodeVisitorTest : DescribeSpec({
             }
 
             visitor.funCount shouldBe 0
-            ast.root.acceptRecursively(visitor)
+            ast.value.root.acceptRecursively(visitor)
             visitor.funCount shouldBe 3
         }
 
@@ -47,7 +53,7 @@ class NodeVisitorTest : DescribeSpec({
             }
 
             visitor.fnsWithParams.shouldBeEmpty()
-            ast.root.acceptRecursively(visitor)
+            ast.value.root.acceptRecursively(visitor)
             visitor.fnsWithParams shouldHaveSize 1
             visitor.fnsWithParams.first().name shouldBe "b"
         }
@@ -69,9 +75,12 @@ class NodeVisitorTest : DescribeSpec({
                     }
             """.trimIndent())
         }
-        val ast = with(compilationContext) {
-            acquireContent().tokenize().parse().result
-        }.map { it.value.orNull()!! }.first()
+        val ast = compilationContext flow {
+            readSources().then { tokenize() }
+                .then { parse() }
+                .bind().shouldBeValid()
+                .first()
+        }
 
         it("should traverse all constructions") {
             val visitor = object : IntermediateNodeProcessor<Int>() {
@@ -131,7 +140,8 @@ class NodeVisitorTest : DescribeSpec({
                 override fun visit(node: AST.IfExpr.ElseExpr): Int = 1
             }
 
-            ast.root.acceptRecursively(visitor).flatten().sum() shouldBe ast.root.acceptRecursively(trueVisitor).sum()
+            ast.value.root.acceptRecursively(visitor).flatten().sum() shouldBe ast.value.root.acceptRecursively(
+                trueVisitor).sum()
         }
     }
 })

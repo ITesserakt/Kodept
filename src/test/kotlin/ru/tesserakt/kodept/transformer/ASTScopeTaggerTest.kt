@@ -28,16 +28,20 @@ class ASTScopeTaggerTest : BehaviorSpec({
         }
 
         `when`("text parsed") {
-            val parsed = with(compilationContext) {
-                acquireContent().tokenize().parse().transform().result
-            }.map { it.value.orNull()!! }.toList()
+            val parsed = compilationContext flow {
+                readSources()
+                    .then { tokenize() }
+                    .then { parse() }
+                    .then { applyTransformations() }
+                    .bind().shouldBeValid()
+            }
 
             then("getting scope should produce error") {
-                shouldThrow<IllegalStateException> { parsed.map { it.root.scope } }
+                shouldThrow<IllegalStateException> { parsed.map { it.value.root.scope } }
             }
 
             `when`("ast went through tagger") {
-                val newAST = parsed.map { AST(it.root.acceptTransform(ASTScopeTagger()), it.fileName) }
+                val newAST = parsed.map { AST(it.value.root.acceptTransform(ASTScopeTagger()), it.filename) }
 
                 then("getting scope should not produce error") {
                     newAST.map { it.root.scope shouldBe Scope.Global("") }

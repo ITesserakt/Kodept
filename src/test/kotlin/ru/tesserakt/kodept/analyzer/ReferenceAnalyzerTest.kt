@@ -1,10 +1,11 @@
 package ru.tesserakt.kodept.analyzer
 
-import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldNotBeEmpty
-import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.core.CompilationContext
+import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.shouldBeValid
 import ru.tesserakt.kodept.error.UnrecoverableError
 import ru.tesserakt.kodept.transformer.ASTScopeTagger
 
@@ -24,16 +25,20 @@ class ReferenceAnalyzerTest : BehaviorSpec({
         }
 
         `when`("text parsed") {
-            val ast = with(compilationContext) {
-                acquireContent().tokenize().parse().transform().result
-            }.map { it.value.toEither().shouldBeRight() }.toList()
+            val ast = compilationContext flow {
+                readSources().then { tokenize() }
+                    .then { parse() }
+                    .then { applyTransformations() }
+                    .then { analyze() }
+                    .bind().shouldBeValid()
+            }
 
             and("analyzed with Reference analyzer") {
                 val analyzer = ReferenceAnalyzer()
 
                 then("the first entry should not produce any reports") {
                     try {
-                        analyzer.analyzeIndependently(ast[0])
+                        analyzer.analyzeIndependently(ast[0].value)
                     } catch (_: UnrecoverableError) {
                     }
                     analyzer.collectedReports.shouldBeEmpty()
@@ -41,7 +46,7 @@ class ReferenceAnalyzerTest : BehaviorSpec({
 
                 then("the third entry should produce reports") {
                     try {
-                        analyzer.analyzeIndependently(ast[1])
+                        analyzer.analyzeIndependently(ast[1].value)
                     } catch (_: UnrecoverableError) {
                     }
                     analyzer.collectedReports.shouldNotBeEmpty()

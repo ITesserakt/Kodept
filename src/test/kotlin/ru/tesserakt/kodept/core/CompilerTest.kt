@@ -1,7 +1,6 @@
 package ru.tesserakt.kodept.core
 
 import io.kotest.assertions.arrow.core.shouldBeRight
-import io.kotest.assertions.assertSoftly
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.inspectors.forAll
 import io.kotest.matchers.sequences.shouldContainAll
@@ -14,16 +13,16 @@ class CompilerTest : DescribeSpec({
                 loader = MemoryLoader.singleSnippet("module Test =>")
             }
 
-            assertSoftly(compilationContext) {
-                val source = acquireContent()
-                val tokens = source.tokenize()
-                val parse = tokens.parse()
+            compilationContext flow {
+                val source = readSources().bind()
+                val tokens = source.tokenize().bind()
+                val parse = tokens.parse().bind()
 
-                source.result shouldHaveSize 1
-                tokens.result shouldHaveSize 1
-                tokens.result.first().value shouldHaveSize 5
-                parse.result shouldHaveSize 1
-                parse.result.forAll { it.value.shouldBeRight() }
+                source.source shouldHaveSize 1
+                tokens.tokens shouldHaveSize 1
+                tokens.tokens.first().value shouldHaveSize 5
+                parse.ast shouldHaveSize 1
+                parse.ast.forAll { it.value.toEither().shouldBeRight() }
             }
         }
 
@@ -33,16 +32,16 @@ class CompilerTest : DescribeSpec({
                     loader = MemoryLoader.fromText("module A => struct B", "module B =>")
                 }
 
-            assertSoftly(compilationContext) {
-                val source = acquireContent()
-                val tokens = source.tokenize()
-                val parse = tokens.parse()
+            compilationContext flow {
+                val source = readSources().bind()
+                val tokens = source.tokenize().bind()
+                val parse = tokens.parse().bind()
 
-                source.result shouldHaveSize 2
-                tokens.result shouldHaveSize 2
-                tokens.result.map { it.value.count() } shouldContainAll sequenceOf(9, 5)
-                parse.result shouldHaveSize 2
-                parse.result.forAll { it.value.shouldBeRight() }
+                source.source shouldHaveSize 2
+                tokens.tokens shouldHaveSize 2
+                tokens.tokens.map { it.value.count() } shouldContainAll sequenceOf(9, 5)
+                parse.ast shouldHaveSize 2
+                parse.ast.forAll { it.value.toEither().shouldBeRight() }
             }
         }
     }

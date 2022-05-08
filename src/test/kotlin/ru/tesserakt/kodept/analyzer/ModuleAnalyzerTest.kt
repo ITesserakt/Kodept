@@ -4,7 +4,10 @@ import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.inspectors.forAll
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
-import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.core.CompilationContext
+import ru.tesserakt.kodept.core.FileRelative
+import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.mapWithFilename
 import ru.tesserakt.kodept.error.Report
 
 class ModuleAnalyzerTest : DescribeSpec({
@@ -25,8 +28,13 @@ class ModuleAnalyzerTest : DescribeSpec({
         }
 
         describe("it flow") {
-            val flow = with(compilationContext) {
-                acquireContent().tokenize().parse().transform().analyze().result
+            val flow = compilationContext flow {
+                readSources()
+                    .then { tokenize() }
+                    .then { parse() }
+                    .then { applyTransformations() }
+                    .then { analyze() }
+                    .bind().ast
             }
             val reports = flow.mapWithFilename {
                 it.fold({ it.toList() }, { emptyList() }, { a, b -> a.toList() })

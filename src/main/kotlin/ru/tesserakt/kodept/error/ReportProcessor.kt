@@ -1,8 +1,6 @@
 package ru.tesserakt.kodept.error
 
-import ru.tesserakt.kodept.core.FileRelative
-import ru.tesserakt.kodept.core.StringContent
-import ru.tesserakt.kodept.core.mapWithFilename
+import ru.tesserakt.kodept.core.ProgramCodeHolder
 import kotlin.math.log10
 
 class ReportProcessor private constructor(private val surrounding: Int, private val pointer: String) {
@@ -17,22 +15,14 @@ class ReportProcessor private constructor(private val surrounding: Int, private 
         operator fun invoke(block: Builder.() -> Unit = {}) = Builder().apply(block).build()
     }
 
-    private var linesMap: Sequence<FileRelative<Sequence<String>>>? = null
-
-    context (StringContent)
-    fun cacheText() {
-        linesMap = text.mapWithFilename { it.lineSequence() }
-    }
-
-    context (StringContent)
+    context (ProgramCodeHolder)
     fun processReport(report: Report): String {
         val maxIndexLength = report.point?.maxOf { log10(it.line.toFloat()).toInt() + 1 } ?: 0
-        val linesMap = linesMap ?: text.mapWithFilename { it.lineSequence() }
         val codeWindows = report.point.orEmpty().map { point ->
-            val stream = linesMap.first { it.filename == report.file }.value
             val from = (point.line - surrounding).coerceAtLeast(0)
+            val stream = get(report.file).linesRange(from..surrounding)
 
-            stream.drop(from).take(surrounding).withIndex().joinToString("\n") { (index, str) ->
+            stream.withIndex().joinToString("\n") { (index, str) ->
                 val realIndex = index + from + 1
                 val lineNumber = "    %${maxIndexLength}d | ".format(realIndex)
                 lineNumber + if (realIndex == point.line)

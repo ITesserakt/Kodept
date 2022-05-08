@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.core
 
+import arrow.core.rightIor
 import com.github.h0tk3y.betterParse.lexer.Tokenizer
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.analyzer.Analyzer
@@ -24,7 +25,47 @@ class CompilationContext private constructor(
         fun build() = CompilationContext(loader, lexer, rootParser, transformers, analyzers)
     }
 
-    infix fun <T> flow(scope: CompilationContext.() -> Flowable<T>) = this.scope().result
+    inner class Scope {
+        fun <T : Flowable.Data, F : Flowable<T>> F.bind() = result
+        fun <U : Flowable.Data, T : Flowable.Data, FT : Flowable<T>, FU : Flowable<U>> FT.then(f: T.() -> FU) =
+            result.f()
+
+        context (Flowable.Data.Holder)
+        fun <U : Flowable.Data.UnprocessedAST, FU : Flowable<U>, T : Flowable.Data.Forest, FT : Flowable<T>> FU.fallback(
+            f: FT,
+        ): Flowable<Flowable.Data.ErroneousAST> {
+            val unboxed = f.bind()
+            val ready = bind().unprocessedAST.mapWithFilename {
+                when (it) {
+                    null -> unboxed.forest.value()[this] ?: throw IllegalStateException("Unknown file passed: $this")
+                    else -> it.rightIor()
+                }
+            }
+            return object : Flowable<Flowable.Data.ErroneousAST> {
+                override val result = object : Flowable.Data.ErroneousAST {
+                    override val ast = ready
+                }
+            }
+        }
+
+        fun <U : Flowable.Data.UnprocessedAST, FU : Flowable<U>> FU.onlyGoodFiles() =
+            object : Flowable<Flowable.Data.ErroneousAST> {
+                override val result = object : Flowable.Data.ErroneousAST {
+                    override val ast = this@onlyGoodFiles.result.unprocessedAST.mapNotNull {
+                        it.value?.run { FileRelative(rightIor(), it.filename) }
+                    }
+                }
+            }
+
+        fun readSources() = StringContent()
+        fun Flowable.Data.Holder.tokenize() = TokenContent(this)
+        fun Flowable.Data.Tokens.parse() = ParsedContent(this)
+        fun Flowable.Data.Source.retrieveFromCache() = HintASTContent(this)
+        fun Flowable.Data.ErroneousAST.applyTransformations() = TransformedContent(this)
+        fun Flowable.Data.ErroneousAST.analyze() = AnalyzedContent(this)
+    }
+
+    inline infix fun <T> flow(scope: CompilationContext.Scope.() -> T) = Scope().run(scope)
 
     companion object {
         operator fun invoke(block: Builder.() -> Unit = {}) =
