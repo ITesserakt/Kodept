@@ -3,20 +3,7 @@ module Prelude {
         True, False
     }
 
-    fun not(self: Bool) =>
-        if self == Bool::True => Bool::False
-        else => Bool::True
-
-    fun and(self: Bool, other: Bool) =>
-        if self == Bool::True && other == Bool::True => Bool::True
-        else => Bool::False
-
-    fun or(self: Bool, other: Bool) =>
-        if self == Bool::False && other == Bool::False => Bool::False
-        else => Bool::True
-
-    fun xor(self: Bool, other: Bool) =>
-        if self == Bool::False && other == Bool::True => Bool::True
-        elif self == Bool::True && other == Bool::False => Bool::True
-        else => Bool::False
+    fun main {
+        println("Hello world!").call()
+    }
 }

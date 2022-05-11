@@ -1,6 +1,7 @@
 package ru.tesserakt.kodept.core
 
 import arrow.core.rightIor
+import com.github.h0tk3y.betterParse.combinators.map
 import com.github.h0tk3y.betterParse.lexer.Tokenizer
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.analyzer.Analyzer
@@ -18,7 +19,7 @@ class CompilationContext private constructor(
     class Builder {
         var lexer: Tokenizer = Lexer()
         lateinit var loader: Loader
-        var rootParser: Parser<AST.Node> = FileGrammar
+        var rootParser: Parser<AST.Node> = FileGrammar.map { it.convert() }
         var transformers = listOf<() -> Transformer>()
         var analyzers = listOf<Analyzer>()
 

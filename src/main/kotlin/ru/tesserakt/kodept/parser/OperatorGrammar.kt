@@ -1,112 +1,62 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.NonEmptyList
+import arrow.core.None
+import arrow.core.Some
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.grammar.parser
 import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple2
-import ru.tesserakt.kodept.core.AST.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
-import ru.tesserakt.kodept.lexer.toCodePoint
 
-object OperatorGrammar : Grammar<Expression>() {
-    private fun resolveMathOperation(op: TokenMatch) = when (op.type) {
-        TIMES.token -> Mathematical.Kind.Mul
-        DIV.token -> Mathematical.Kind.Div
-        MOD.token -> Mathematical.Kind.Mod
-        PLUS.token -> Mathematical.Kind.Add
-        SUB.token -> Mathematical.Kind.Sub
-        POW.token -> Mathematical.Kind.Pow
-        else -> throw IllegalArgumentException("Impossible")
-    }
-
-    private fun resolveCmpOperation(op: TokenMatch) = when (op.type) {
-        SPACESHIP.token -> Comparison.Kind.Complex
-        LESS_EQUALS.token -> Comparison.Kind.LessEqual
-        GREATER_EQUALS.token -> Comparison.Kind.GreaterEqual
-        EQUIV.token -> Comparison.Kind.Equal
-        NOT_EQUIV.token -> Comparison.Kind.NonEqual
-        LESS.token -> Comparison.Kind.Less
-        GREATER.token -> Comparison.Kind.Greater
-        else -> throw IllegalArgumentException("Impossible")
-    }
-
-    private fun resolveBinaryOperation(op: TokenMatch) = when (op.type) {
-        AND_BIT.token -> Binary.Kind.And
-        XOR_BIT.token -> Binary.Kind.Xor
-        OR_BIT.token -> Binary.Kind.Or
-        else -> throw IllegalArgumentException("Impossible")
-    }
-
-    private fun resolveLogicalOperation(op: TokenMatch) = when (op.type) {
-        AND_LOGIC.token -> Logical.Kind.Conjunction
-        OR_LOGIC.token -> Logical.Kind.Disjunction
-        else -> throw IllegalArgumentException("Impossible")
-    }
-
-    private infix fun <E, A : E, B : E, R : E> Parser<Tuple2<A, List<Tuple2<TokenMatch, B>>>>.leftFold(construct: (E, TokenMatch, B) -> R) =
+object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
+    private infix fun <E, A : E, B : E, R : E> Parser<Tuple2<A, List<Tuple2<TokenMatch, B>>>>.leftFold(construct: (E, RLT.Symbol, B) -> R) =
         map { (a, tail) ->
-            if (tail.isEmpty())
-                a
-            else {
-                val (head, rest) = tail.first() to tail.drop(1)
-                val (op, b) = head
-                rest.fold(construct(a, op, b)) { acc, (ops, bs) ->
-                    construct(acc, ops, bs)
+            when (val rest = NonEmptyList.fromList(tail)) {
+                None -> a
+                is Some -> {
+                    val (op, b) = rest.value.head
+                    rest.value.tail.fold(construct(a, RLT.Symbol(op), b)) { acc, (ops, bs) ->
+                        construct(acc, RLT.Symbol(ops), bs)
+                    }
                 }
             }
         }
 
+    private infix fun <E, A : E, B : E, R : E> Parser<Tuple2<A, Tuple2<TokenMatch, B>?>>.rightFold(construct: (E, RLT.Symbol, B) -> R) =
+        map { (a, tail) ->
+            when (tail) {
+                null -> a
+                else -> construct(a, RLT.Symbol(tail.t1), tail.t2)
+            }
+        }
+
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
-
-    val topExpr: Parser<Expression> by (SUB * parser { topExpr } use { Negation(t2, t1.toCodePoint()) }) or
-            (NOT_LOGIC * parser { topExpr } use { Inversion(t2, t1.toCodePoint()) }) or
-            (NOT_BIT * parser { topExpr } use { BitInversion(t2, t1.toCodePoint()) }) or
-            (PLUS * parser { topExpr } use { Absolution(t2, t1.toCodePoint()) }) or
-            atom
-
-    val powExpr: Parser<Expression> by topExpr * optional(POW * parser { powExpr }) map { (a, rest) ->
-        when (rest) {
-            null -> a
-            else -> Mathematical(a, rest.t2, Mathematical.Kind.Pow, rest.t1.toCodePoint())
+    val application: Parser<RLT.ExpressionNode> by
+    atom * zeroOrMore(LPAREN * trailing(this, COMMA) * RPAREN) map { (head, tail) ->
+        when (tail.isEmpty()) {
+            true -> head
+            false -> RLT.Application(head, tail.map { (lp, p, rp) ->
+                RLT.ParameterTuple(RLT.Symbol(lp), p.map(RLT::Parameter), RLT.Symbol(rp))
+            })
         }
     }
+    val access by application * zeroOrMore(DOT * application) leftFold RLT::BinaryOperation
+    val topExpr: Parser<RLT.ExpressionNode> by (SUB or NOT_LOGIC or NOT_BIT or PLUS) * parser { topExpr } map {
+        RLT.UnaryOperation(it.t2, RLT.Symbol(it.t1))
+    } or access
 
-    val mulExpr by powExpr * zeroOrMore((TIMES or DIV or MOD) * powExpr) leftFold { a, op, b ->
-        Mathematical(a, b, resolveMathOperation(op), op.toCodePoint())
-    }
-
-    val addExpr by mulExpr * zeroOrMore((PLUS or SUB) * mulExpr) leftFold { a, op, b ->
-        Mathematical(a, b, resolveMathOperation(op), op.toCodePoint())
-    }
-
-    val complexCmpExpr = addExpr * zeroOrMore(SPACESHIP * addExpr) leftFold { a, op, b ->
-        Comparison(a, b, resolveCmpOperation(op), op.toCodePoint())
-    }
-
-    val compoundCmpExpr by complexCmpExpr * zeroOrMore((LESS_EQUALS or EQUIV or NOT_EQUIV or GREATER_EQUALS) * complexCmpExpr) leftFold { a, op, b ->
-        Comparison(a, b, resolveCmpOperation(op), op.toCodePoint())
-    }
-
-    val cmpExpr by compoundCmpExpr * zeroOrMore((LESS or GREATER) * compoundCmpExpr) leftFold { a, op, b ->
-        Comparison(a, b, resolveCmpOperation(op), op.toCodePoint())
-    }
-
-    val bitExpr by cmpExpr * zeroOrMore((AND_BIT or XOR_BIT or OR_BIT) * cmpExpr) leftFold { a, op, b ->
-        Binary(a, b, resolveBinaryOperation(op), op.toCodePoint())
-    }
-
-    val logicExpr by bitExpr * zeroOrMore((AND_LOGIC or OR_LOGIC) * bitExpr) leftFold { a, op, b ->
-        Logical(a, b, resolveLogicalOperation(op), op.toCodePoint())
-    }
-
-    val elvis: Parser<Expression> by logicExpr * optional(ELVIS * parser { elvis }) map { (a, rest) ->
-        when (rest) {
-            null -> a
-            else -> Elvis(a, rest.t2, rest.t1.toCodePoint())
-        }
-    }
+    val powExpr: Parser<RLT.ExpressionNode> by topExpr * optional(POW * parser { powExpr }) rightFold RLT::BinaryOperation
+    val mulExpr by powExpr * zeroOrMore((TIMES or DIV or MOD) * powExpr) leftFold RLT::BinaryOperation
+    val addExpr by mulExpr * zeroOrMore((PLUS or SUB) * mulExpr) leftFold RLT::BinaryOperation
+    val complexCmpExpr = addExpr * zeroOrMore(SPACESHIP * addExpr) leftFold RLT::BinaryOperation
+    val compoundCmpExpr by complexCmpExpr * zeroOrMore((LESS_EQUALS or EQUIV or NOT_EQUIV or GREATER_EQUALS) * complexCmpExpr) leftFold RLT::BinaryOperation
+    val cmpExpr by compoundCmpExpr * zeroOrMore((LESS or GREATER) * compoundCmpExpr) leftFold RLT::BinaryOperation
+    val bitExpr by cmpExpr * zeroOrMore((AND_BIT or XOR_BIT or OR_BIT) * cmpExpr) leftFold RLT::BinaryOperation
+    val logicExpr by bitExpr * zeroOrMore((AND_LOGIC or OR_LOGIC) * bitExpr) leftFold RLT::BinaryOperation
+    val elvis: Parser<RLT.ExpressionNode> by logicExpr * optional(ELVIS * parser { elvis }) rightFold RLT::BinaryOperation
 
     override val rootParser by elvis
 }

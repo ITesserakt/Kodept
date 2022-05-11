@@ -35,7 +35,7 @@ abstract class NodeProcessor<T> : ReportCollector() {
     open fun visit(node: Reference) = default(node)
     open fun visit(node: TypeExpression) = default(node)
     open fun visit(node: FunctionDecl) = default(node)
-    open fun visit(node: FunctionDecl.Parameter) = default(node)
+    open fun visit(node: Parameter) = default(node)
     open fun visit(node: InitializedVar) = default(node)
     open fun visit(node: VariableDecl) = default(node)
     open fun visit(node: FileDecl) = default(node)
@@ -43,11 +43,13 @@ abstract class NodeProcessor<T> : ReportCollector() {
     open fun visit(node: EnumDecl.Entry) = default(node)
     open fun visit(node: ModuleDecl) = default(node)
     open fun visit(node: StructDecl) = default(node)
-    open fun visit(node: StructDecl.Parameter) = default(node)
     open fun visit(node: TraitDecl) = default(node)
     open fun visit(node: IfExpr.ElifExpr) = default(node)
     open fun visit(node: IfExpr.ElseExpr) = default(node)
     open fun visit(node: TypeReference) = default(node)
+    open fun visit(node: TupleLiteral) = default(node)
+    open fun visit(node: InferredParameter) = default(node)
+    open fun visit(node: AbstractFunctionDecl) = default(node)
 }
 
 abstract class NodeVisitor : NodeProcessor<Unit>() {
@@ -139,13 +141,15 @@ fun <T> Node.accept(visitor: NodeProcessor<T>) = when (this) {
     is EnumDecl.Entry -> visitor.visit(this)
     is EnumDecl -> visitor.visit(this)
     is ModuleDecl -> visitor.visit(this)
-    is StructDecl.Parameter -> visitor.visit(this)
-    is FunctionDecl.Parameter -> visitor.visit(this)
+    is Parameter -> visitor.visit(this)
     is StructDecl -> visitor.visit(this)
     is TraitDecl -> visitor.visit(this)
     is IfExpr.ElifExpr -> visitor.visit(this)
     is IfExpr.ElseExpr -> visitor.visit(this)
     is TypeReference -> visitor.visit(this)
+    is TupleLiteral -> visitor.visit(this)
+    is InferredParameter -> visitor.visit(this)
+    is AbstractFunctionDecl -> visitor.visit(this)
 }
 
 fun <T> Node.acceptRecursively(visitor: NodeProcessor<T>): NonEmptyList<T> =

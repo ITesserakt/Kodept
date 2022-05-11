@@ -101,43 +101,7 @@ class NodeVisitorTest : DescribeSpec({
             }
 
             val trueVisitor = object : NodeProcessor<Int>() {
-                override fun visit(node: AST.WhileExpr): Int = 1
-                override fun visit(node: AST.IfExpr): Int = 1
-                override fun visit(node: AST.ExpressionList): Int = 1
-                override fun visit(node: AST.CharLiteral): Int = 1
-                override fun visit(node: AST.BinaryLiteral): Int = 1
-                override fun visit(node: AST.DecimalLiteral): Int = 1
-                override fun visit(node: AST.FloatingLiteral): Int = 1
-                override fun visit(node: AST.HexLiteral): Int = 1
-                override fun visit(node: AST.OctalLiteral): Int = 1
-                override fun visit(node: AST.StringLiteral): Int = 1
-                override fun visit(node: AST.Assignment): Int = 1
-                override fun visit(node: AST.Binary): Int = 1
-                override fun visit(node: AST.Comparison): Int = 1
-                override fun visit(node: AST.Elvis): Int = 1
-                override fun visit(node: AST.Logical): Int = 1
-                override fun visit(node: AST.Mathematical): Int = 1
-                override fun visit(node: AST.Absolution): Int = 1
-                override fun visit(node: AST.BitInversion): Int = 1
-                override fun visit(node: AST.Inversion): Int = 1
-                override fun visit(node: AST.Negation): Int = 1
-                override fun visit(node: AST.TermChain): Int = 1
-                override fun visit(node: AST.FunctionCall): Int = 1
-                override fun visit(node: AST.Reference): Int = 1
-                override fun visit(node: AST.TypeExpression): Int = 1
-                override fun visit(node: AST.FunctionDecl): Int = 1
-                override fun visit(node: AST.FunctionDecl.Parameter): Int = 1
-                override fun visit(node: AST.InitializedVar): Int = 1
-                override fun visit(node: AST.VariableDecl): Int = 1
-                override fun visit(node: AST.FileDecl): Int = 1
-                override fun visit(node: AST.EnumDecl): Int = 1
-                override fun visit(node: AST.EnumDecl.Entry): Int = 1
-                override fun visit(node: AST.ModuleDecl): Int = 1
-                override fun visit(node: AST.StructDecl): Int = 1
-                override fun visit(node: AST.StructDecl.Parameter): Int = 1
-                override fun visit(node: AST.TraitDecl): Int = 1
-                override fun visit(node: AST.IfExpr.ElifExpr): Int = 1
-                override fun visit(node: AST.IfExpr.ElseExpr): Int = 1
+                override fun default(node: AST.Node) = 1
             }
 
             ast.value.root.acceptRecursively(visitor).flatten().sum() shouldBe ast.value.root.acceptRecursively(

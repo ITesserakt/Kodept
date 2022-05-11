@@ -101,9 +101,11 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
         |${node.expr.accept(this).prependIndent(ident)}
     """.trimMargin()
 
-    override fun visit(node: AST.TermChain): String = node.terms.joinToString("\n") { it.accept(this) }
+    override fun visit(node: AST.TermChain): String = node.terms.joinToString(",\n") { it.accept(this) }
 
-    override fun visit(node: AST.FunctionCall): String = """Function(${node.reference})
+    override fun visit(node: AST.FunctionCall): String = """Function call
+        |   receiver:
+        |${node.reference.accept(this).prependIndent(ident)}
         |   params:
         |${node.params.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
     """.trimMargin()
@@ -111,6 +113,27 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
     override fun visit(node: AST.Reference): String = """Reference(${node.name})"""
 
     override fun visit(node: AST.TypeExpression): String = """Type(${node.type})"""
+
+    override fun visit(node: AST.TupleLiteral) = """Tuple
+        |   arity: 
+        |${node.arity.toString().prependIndent(ident)}
+        |   items:
+        |${node.items.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
+    """.trimMargin()
+
+    override fun visit(node: AST.InferredParameter) = """Parameter
+        |   name:
+        |${node.name.prependIndent(ident)}
+        |   type:
+        |${(node.type?.type ?: "inferred").prependIndent(ident)}
+    """.trimMargin()
+
+    override fun visit(node: AST.AbstractFunctionDecl) = """Abstract function(${node.name})
+        |   params:
+        |${node.params.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
+        |   returns:
+        |${node.returns?.accept(this).orEmpty().prependIndent(ident)}
+    """.trimMargin()
 
     override fun visit(node: AST.FunctionDecl): String = """Function(${node.name})
         |   params:
@@ -121,7 +144,7 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
         |${node.rest.accept(this).prependIndent(ident)}
     """.trimMargin()
 
-    override fun visit(node: AST.FunctionDecl.Parameter): String = """Parameter
+    override fun visit(node: AST.Parameter): String = """Parameter
         |   name:
         |${node.name.prependIndent(ident)}
         |   type:
@@ -165,13 +188,6 @@ class DrawProcessor(private val ident: String = "      ") : NodeProcessor<String
         |${node.alloc.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
         |   body:
         |${node.rest.joinToString("\n") { it.accept(this) }.prependIndent(ident)}
-    """.trimMargin()
-
-    override fun visit(node: AST.StructDecl.Parameter): String = """Parameter
-        |   name:
-        |${node.name.prependIndent(ident)}
-        |   type:
-        |${node.type.accept(this).prependIndent(ident)}
     """.trimMargin()
 
     override fun visit(node: AST.TraitDecl): String = """Trait(${node.name})

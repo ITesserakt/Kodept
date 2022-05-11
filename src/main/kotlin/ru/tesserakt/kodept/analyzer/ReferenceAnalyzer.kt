@@ -61,10 +61,10 @@ class ReferenceAnalyzer : Analyzer() {
 
     private fun ScopedDecls.findFunction(term: AST.FunctionCall) = when (first) {
         is Scope.Global -> second.findAny(
-            { it.decl is AST.FunctionDecl && it.name == term.name }
+            { it.decl is AST.FunctionDecl }
         ).orFail()
         is Scope.Inner<*> -> second.findAny(
-            { it.decl is AST.FunctionDecl && it.name == term.name }
+            { it.decl is AST.FunctionDecl }
         ).orRecurseFurther()
     }
 
@@ -107,13 +107,13 @@ class ReferenceAnalyzer : Analyzer() {
         erroneous.reportEach { (descriptors, term) ->
             when (descriptors.size) {
                 0 -> Report(ast.fileName,
-                    term.coordinates.nel(),
+                    term.metadata.retrieveRequired<MetadataStore.Key.RLTReference>().value.position.nel(),
                     Report.Severity.ERROR,
-                    SemanticError.UndeclaredUsage(term.name))
+                    SemanticError.UndeclaredUsage("TODO"))
                 else -> Report(ast.fileName,
-                    term.coordinates.nel(),
+                    term.metadata.retrieveRequired<MetadataStore.Key.RLTReference>().value.position.nel(),
                     Report.Severity.ERROR,
-                    SemanticError.AmbitiousReference(term.name))
+                    SemanticError.AmbitiousReference("TODO"))
             }
         }
 

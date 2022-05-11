@@ -20,13 +20,13 @@ class ReportProcessor private constructor(private val surrounding: Int, private 
         val maxIndexLength = report.point?.maxOf { log10(it.line.toFloat()).toInt() + 1 } ?: 0
         val codeWindows = report.point.orEmpty().map { point ->
             val from = (point.line - surrounding).coerceAtLeast(0)
-            val stream = get(report.file).linesRange(from..surrounding)
+            val stream = get(report.file).linesRange(from - 1..from + surrounding)
 
             stream.withIndex().joinToString("\n") { (index, str) ->
-                val realIndex = index + from + 1
+                val realIndex = index + from
                 val lineNumber = "    %${maxIndexLength}d | ".format(realIndex)
                 lineNumber + if (realIndex == point.line)
-                    "$str\n${" ".repeat(point.position + lineNumber.length - 1)}^--- ${report.message.additionalMessage}"
+                    "$str\n${" ".repeat(point.position + lineNumber.length - 1)}${pointer} ${report.message.additionalMessage}"
                 else str
             }
         }

@@ -4,64 +4,36 @@ import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.lexer.toCodePoint
 
 class TermGrammarTest : WordSpec({
     val grammar = TermGrammar
 
     "var ref" should {
-        test(grammar.variableReference, "id", AST.Reference("id", (1 to 1).toCodePoint()))
+        test(grammar.variableReference, "id", AST.Reference("id"))
         test(grammar.variableReference, "123", null)
     }
 
     "fun ref" should {
-        test(grammar.functionCall,
-            "id()",
-            AST.FunctionCall(AST.Reference("id", (1 to 1).toCodePoint()), listOf()))
-        test(
-            grammar.functionCall,
+        test(OperatorGrammar.application, "id()", AST.FunctionCall(AST.Reference("id"), listOf()))
+        test(OperatorGrammar.application,
             """println("Hello, world!")""",
-            AST.FunctionCall(AST.Reference("println", (1 to 1).toCodePoint()),
-                listOf(AST.StringLiteral("Hello, world!", (1 to 9).toCodePoint())))
-        )
-        test(
-            grammar.functionCall,
+            AST.FunctionCall(AST.Reference("println"),
+                listOf(AST.TupleLiteral(listOf(AST.StringLiteral("Hello, world!"))))))
+        test(OperatorGrammar.application,
             "test((123), 10.2, foobar)",
-            AST.FunctionCall(
-                AST.Reference("test", (1 to 1).toCodePoint()),
-                listOf(
-                    AST.DecimalLiteral(123.toBigInteger(), (1 to 7).toCodePoint()),
-                    AST.FloatingLiteral(10.2.toBigDecimal(), (1 to 13).toCodePoint()),
-                    AST.Reference("foobar", (1 to 19).toCodePoint())
-                )
-            )
-        )
+            AST.FunctionCall(AST.Reference("test"),
+                listOf(AST.TupleLiteral(listOf(AST.DecimalLiteral(123.toBigInteger()),
+                    AST.FloatingLiteral(10.2.toBigDecimal()),
+                    AST.Reference("foobar"))))))
     }
 
     "chain" should {
-        test(
-            grammar,
+        test(OperatorGrammar.access,
             "key.on()",
-            AST.TermChain(
-                nonEmptyListOf(
-                    AST.Reference("key", (1 to 1).toCodePoint()),
-                    AST.FunctionCall(AST.Reference("on", (1 to 5).toCodePoint()), listOf())
-                )
-            )
-        )
-        test(
-            grammar,
-            "id(x).id(x).id(x)",
-            AST.TermChain(NonEmptyList.fromListUnsafe(List(3) {
-                AST.FunctionCall(
-                    AST.Reference("id", (1 to 1 + it * 6).toCodePoint()),
-                    listOf(AST.Reference("x", (1 to 4 + it * 6).toCodePoint()))
-                )
-            }))
-        )
-        test(
-            grammar, "id().id().",
-            null
-        )
+            AST.TermChain(nonEmptyListOf(AST.Reference("key"), AST.FunctionCall(AST.Reference("on"), listOf()))))
+        test(OperatorGrammar.access, "id(x).id(x).id(x)", AST.TermChain(NonEmptyList.fromListUnsafe(List(3) {
+            AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x")))))
+        })))
+        test(OperatorGrammar.access, "id().id().", null)
     }
 })

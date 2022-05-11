@@ -1,11 +1,13 @@
 package ru.tesserakt.kodept.analyzer
 
 import arrow.core.NonEmptyList
-import arrow.core.nel
+import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.rlt
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.SemanticError
 import ru.tesserakt.kodept.error.SemanticWarning
+import ru.tesserakt.kodept.parser.RLT
 import ru.tesserakt.kodept.visitor.ModuleCollector
 
 class ModuleAnalyzer : Analyzer() {
@@ -18,8 +20,9 @@ class ModuleAnalyzer : Analyzer() {
         val module = moduleDecls.firstOrNull()
         if (moduleDecls.size == 1 && module != null && !module.global)
             Report(ast.fileName,
-                module.coordinates.shiftHorizontally(6 + module.name.length + 2).nel(),
-                Report.Severity.WARNING,
+                (module.rlt as RLT.Module.Ordinary).let {
+                    nonEmptyListOf(it.lbrace.position, it.rbrace.position)
+                }, Report.Severity.WARNING,
                 SemanticWarning.NonGlobalSingleModule(module.name)).report()
 
         moduleDecls.groupBy { it.name }.values
@@ -27,7 +30,7 @@ class ModuleAnalyzer : Analyzer() {
             .map { NonEmptyList.fromListUnsafe(it) }
             .reportEach { modules ->
                 Report(ast.fileName,
-                    modules.map { it.coordinates },
+                    modules.map { it.rlt.id.position },
                     Report.Severity.ERROR,
                     SemanticError.DuplicatedModules(modules.head.name))
             }

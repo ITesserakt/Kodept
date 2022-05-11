@@ -1,11 +1,11 @@
-import arrow.core.identity
-import io.arrow.core.fst
+import arrow.core.nel
 import ru.tesserakt.kodept.analyzer.ModuleAnalyzer
 import ru.tesserakt.kodept.core.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.transformer.ASTScopeTagger
-import kotlin.system.measureTimeMillis
+import ru.tesserakt.kodept.visitor.DrawProcessor
+import ru.tesserakt.kodept.visitor.accept
 
 fun main() {
     val context = CompilationContext {
@@ -24,23 +24,15 @@ fun main() {
             .bind()
     }
 
-    val processor = ReportProcessor()
+    val pr = ReportProcessor {
+        surrounding = 0
+    }
 
-    measureTimeMillis {
-        result.ast.flatMap {
-            it.value.fold(::identity, { emptyList() }, ::fst).map {
-                with(code) { processor.processReport(it) }
+    result.ast.forEach { it ->
+        println(it.value.toEither().fold({
+            it.map {
+                with(code) { pr.processReport(it) }
             }
-        }.forEach(::println)
-    }.let(::println)
-
-    List(1000) {
-        measureTimeMillis {
-            result.ast.flatMap {
-                it.value.fold(::identity, { emptyList() }, ::fst).map {
-                    with(code) { processor.processReport(it) }
-                }
-            }.count()
-        }
-    }.minOf { it }.let(::println)
+        }) { it.root.accept(DrawProcessor()).nel() }.joinToString("\n"))
+    }
 }

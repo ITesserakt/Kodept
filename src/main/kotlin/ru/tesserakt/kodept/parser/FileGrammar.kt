@@ -5,21 +5,19 @@ import arrow.core.nonEmptyListOf
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
-import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.AST.FileDecl
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
-import ru.tesserakt.kodept.lexer.toCodePoint
+import ru.tesserakt.kodept.parser.RLT.File
 
-object FileGrammar : Grammar<FileDecl>() {
-    val moduleStatement by MODULE * TYPE * -LBRACE * zeroOrMore(TopLevelGrammar) * -RBRACE map { (moduleToken, name, rest) ->
-        AST.ModuleDecl(name.text, false, rest, moduleToken.toCodePoint())
+object FileGrammar : Grammar<File>() {
+    val moduleStatement by MODULE * TYPE * LBRACE * zeroOrMore(TopLevelGrammar) * RBRACE map { (moduleToken, name, lb, rest, rb) ->
+        RLT.Module.Ordinary(RLT.Keyword(moduleToken), RLT.UserSymbol.Type(name), RLT.Symbol(lb), rest, RLT.Symbol(rb))
     }
 
-    val globalModuleStatement by MODULE * TYPE * -FLOW * zeroOrMore(TopLevelGrammar) map { (moduleToken, name, rest) ->
-        AST.ModuleDecl(name.text, true, rest, moduleToken.toCodePoint())
+    val globalModuleStatement by MODULE * TYPE * FLOW * zeroOrMore(TopLevelGrammar) map { (moduleToken, name, f, rest) ->
+        RLT.Module.Global(RLT.Keyword(moduleToken), RLT.UserSymbol.Type(name), RLT.Symbol(f), rest)
     }
 
-    override val rootParser: Parser<FileDecl> by
-    (oneOrMore(moduleStatement) map { NonEmptyList.fromListUnsafe(it) } use ::FileDecl) or
-            (globalModuleStatement map { FileDecl(nonEmptyListOf(it)) })
+    override val rootParser: Parser<File> by
+    (oneOrMore(moduleStatement) map { NonEmptyList.fromListUnsafe(it) } use ::File) or
+            (globalModuleStatement map { File(nonEmptyListOf(it)) })
 }

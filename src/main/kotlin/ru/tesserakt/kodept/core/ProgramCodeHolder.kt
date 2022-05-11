@@ -18,7 +18,8 @@ class ProgramCodeHolder(private val text: Map<Filename, Eval<String>>) {
 
         fun specificLine(lineIdx: Int) = lines.value().elementAt(lineIdx)
 
-        fun linesRange(range: IntRange) = lines.value().subList(range.first, range.last + 1)
+        fun linesRange(range: IntRange) =
+            lines.value().subList(range.first.coerceAtLeast(0), range.last.coerceAtMost(lines.value().size))
     }
 
     override fun toString() = "ProgramCodeHolder(size = ${text.size})"
