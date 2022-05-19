@@ -307,4 +307,17 @@ Workflows and e-Science: An overview of workflow system features and
 \newblock {№}~4.
 \newblock {С.}~26--34.{}
 
+\bibitem{HDFOffCite}
+\selectlanguageifdefined{russian}
+The HDF Group [Электронный ресурс] [Оф. сайт].
+\newblock 2022.
+\newblock Дата обращения: 17.05.2022.{}
+
+\bibitem{JSONvsXML}
+\selectlanguageifdefined{russian}
+JSON vs XML: What's the difference? | Guru99 [Электронный
+  ресурс].
+\newblock 2022.
+\newblock Дата обращения: 18.05.2022.{}
+
 \end{thebibliography}
