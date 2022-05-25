@@ -7,6 +7,7 @@ import com.github.h0tk3y.betterParse.lexer.TokenMatchesSequence
 import com.github.h0tk3y.betterParse.parser.tryParseToEnd
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.toReport
+import ru.tesserakt.kodept.parser.RLT
 import ru.tesserakt.kodept.traversal.skipOrTransform
 import ru.tesserakt.kodept.traversal.unwrap
 import java.io.Reader
@@ -35,6 +36,10 @@ interface Flowable<T : Flowable.Data> {
 
         interface Tokens : Data {
             val tokens: Sequence<FileRelative<TokenMatchesSequence>>
+        }
+
+        interface ErroneousRawTree : Data {
+            val rlt: Sequence<FileRelative<IorNel<Report, RLT>>>
         }
 
         interface Forest : Data {
@@ -76,16 +81,24 @@ class TokenContent(flowable: Flowable.Data.Holder) : Flowable<TokenContent.Data>
 }
 
 context (CompilationContext)
-class ParsedContent(flowable: Flowable.Data.Tokens) : Flowable<ParsedContent.Data> {
+class PreParsedContent(flowable: Flowable.Data.Tokens) : Flowable<PreParsedContent.Data> {
+    data class Data(override val rlt: Sequence<FileRelative<IorNel<Report, RLT>>>) : Flowable.Data.ErroneousRawTree
+
+    override val result = Data(flowable.tokens.mapWithFilename {
+        rootParser.tryParseToEnd(it, 0).toEither()
+            .mapLeft { res -> res.toReport(this) }.toIor()
+    })
+}
+
+context (CompilationContext)
+class ParsedContent(flowable: Flowable.Data.ErroneousRawTree) : Flowable<ParsedContent.Data> {
     data class Data(
         override val forest: Eval<Map<Filename, ParseResult>>,
         override val ast: Sequence<FileRelative<IorNel<Report, AST>>>,
     ) : Flowable.Data.ErroneousAST, Flowable.Data.Forest
 
-    private val trees = flowable.tokens.mapWithFilename {
-        rootParser
-            .tryParseToEnd(it, 0).toEither().map { node -> AST(node, this) }
-            .mapLeft { res -> res.toReport(this) }.toIor()
+    private val trees = flowable.rlt.mapWithFilename { ior ->
+        ior.map { AST(it.root.convert(), this) }
     }
     private val forest = Eval.later {
         trees.associate { it.filename to it.value }
@@ -110,11 +123,11 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
 
     private val transformed = flowable.ast.mapWithFilename { either ->
         either.flatMap(Semigroup.nonEmptyList()) { ast ->
-            transformers.foldAST(ast) { ctor, acc ->
-                val transformer = ctor()
+            transformers.foldAST(ast) { transformer, acc ->
                 unwrap {
                     eagerEffect {
-                        val head = acc.walkThrough { transformer.skipOrTransform(it) }.first().bind()
+                        val head = acc.walkThrough { transformer.skipOrTransform(it) }.traverse { it.toEither() }.bind()
+                            .first()
                         AST(head, this@mapWithFilename)
                     }
                 }

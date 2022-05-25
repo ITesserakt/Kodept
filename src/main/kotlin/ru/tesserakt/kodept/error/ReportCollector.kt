@@ -13,9 +13,13 @@ class ReportCollector {
         reports += this
     }
 
-    fun <T> Iterable<T>.reportEach(f: (T) -> Report) {
-        map(f).report()
+    inline fun <T> Iterable<T>.reportEach(f: (T) -> Report) = map(f).report()
+
+    fun Sequence<Report>.report() {
+        reports += this
     }
+
+    fun <T> Sequence<T>.reportEach(f: (T) -> Report) = map(f).report()
 
     val collectedReports get() = reports.toList()
 

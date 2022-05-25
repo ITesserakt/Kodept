@@ -66,20 +66,30 @@ class BlockLevelGrammarTest : WordSpec({
 
                     ),
 
-                ))
-        test(BlockLevelGrammar,
+                )
+        )
+        test(
+            BlockLevelGrammar,
             """val x = { 5 }""",
-            AST.InitializedVar(AST.VariableDecl("x", false, null),
-                AST.DecimalLiteral(5.toBigInteger())))
-        test(BlockLevelGrammar, """val x: Int""", AST.VariableDecl("x", false, AST.TypeExpression("Int")))
-        test(BlockLevelGrammar,
+            AST.InitializedVar(
+                AST.VariableDecl("x", false, null),
+                AST.DecimalLiteral(5.toBigInteger())
+            )
+        )
+        test(BlockLevelGrammar, """val x: Int""", AST.VariableDecl("x", false, AST.Type("Int")))
+        test(
+            BlockLevelGrammar,
             """val x: String = {}""",
-            AST.InitializedVar(AST.VariableDecl(
-                "x",
-                false,
-                AST.TypeExpression("String"),
-            ), AST.TupleLiteral.unit))
-        test(BlockLevelGrammar,
+            AST.InitializedVar(
+                AST.VariableDecl(
+                    "x",
+                    false,
+                    AST.Type("String"),
+                ), AST.TupleLiteral.unit
+            )
+        )
+        test(
+            BlockLevelGrammar,
             """val result = 
             |   test(blockLevelGrammar, "val x: String = {}", null)
         """.trimMargin(),

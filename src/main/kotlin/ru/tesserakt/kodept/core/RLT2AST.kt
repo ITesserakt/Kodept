@@ -69,7 +69,7 @@ private fun RLT.Context.convert(): AST.ResolutionContext = when (this) {
     RLT.Context.Local -> AST.ResolutionContext(false, emptyList())
 }
 
-private fun RLT.UserSymbol.Type.convert() = AST.TypeExpression(text.value()).also { it.metadata += wrap() }
+private fun RLT.UserSymbol.Type.convert() = AST.Type(text.value()).also { it.metadata += wrap() }
 
 private fun RLT.Variable.convert() = when (this) {
     is RLT.Variable.Immutable -> AST::VariableDecl.partially2(false)
@@ -94,6 +94,7 @@ private fun RLT.Literal.convert(): Node = when (this) {
         '"' -> AST.StringLiteral(text.value().removeSurrounding("\""))
         else -> throw IllegalStateException("Impossible")
     }
+    is RLT.Literal.Tuple -> AST.TupleLiteral(expressions.map(RLT.ExpressionNode::convert))
 }.also { it.metadata += wrap() }
 
 private fun RLT.Module.convert(): AST.ModuleDecl = when (this) {
@@ -162,8 +163,8 @@ private fun RLT.BlockLevelNode.convert() = when (this) {
 }
 
 private fun RLT.StatementNode.convert() = when (this) {
-    is RLT.Assignment -> when (lvalue) {
-        is RLT.Variable -> AST.InitializedVar(lvalue.convert(), expression.convert())
+    is RLT.Assignment -> when (this) {
+        is RLT.InitializedAssignment -> AST.InitializedVar(lvalue.convert(), expression.convert())
         else -> expandCompound(
             lvalue.convert(),
             expression.convert(),
@@ -240,21 +241,29 @@ private fun RLT.TermNode.convert(): Node = when (this) {
     }
 }.also { it.metadata += wrap() }
 
-fun RLT.File.convert(): AST.FileDecl = AST.FileDecl(moduleList.map { it.convert() }).also { it.metadata += wrap() }
+fun RLT.TypeNode.convert(): AST.TypeExpression = when (this) {
+    is RLT.TupleType -> AST.TupleType(types.map { it.convert() }).also { it.metadata += wrap() }
+    is RLT.UserSymbol.Type -> convert()
+    is RLT.UnionType -> AST.UnionType(types.map { it.convert() }).also { it.metadata += wrap() }
+}
+
+fun RLT.File.convert(): AST.FileDecl = AST.FileDecl(moduleList.map(RLT.Module::convert)).also { it.metadata += wrap() }
 
 @TestOnly
 fun RLT.Node.convert() = when (this) {
     is RLT.TopLevelNode -> convert()
     is RLT.ObjectLevelNode -> convert()
     is RLT.BlockLevelNode -> convert()
+    is RLT.TypeNode -> convert()
     is RLT.If.Elif -> convert()
     is RLT.If.Else -> convert()
     is RLT.File -> convert()
     is RLT.Module -> convert()
     is RLT.MaybeTypedParameter -> convert()
     is RLT.ParameterTuple -> convert()
-    is RLT.UserSymbol.Type -> convert()
     is RLT.UserSymbol.Identifier -> throw IllegalStateException("Thrown out")
     is RLT.Keyword -> throw IllegalStateException("Thrown out")
     is RLT.Symbol -> throw IllegalStateException("Thrown out")
+    is RLT.TypedParameter -> convert()
+    is RLT.InitializedAssignment -> convert()
 }

@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.NonEmptyList
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
@@ -9,15 +10,16 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     private val functionStatement by FunctionGrammar
 
-    val enumStatement by ENUM * -(STRUCT or CLASS) * TYPE * optional(LBRACE * trailing(
+    val enumStatement by ENUM * -(STRUCT or CLASS) * TYPE * LBRACE * trailing(
         TYPE, COMMA, atLeast = 1
-    ) * RBRACE) map { (enumToken, name, entries) ->
-        val (lb, entries, rb) = entries ?: Tuple3(null, emptyList(), null)
-        RLT.Enum.Stack(RLT.Keyword(enumToken),
+    ) * RBRACE map { (enumToken, name, lb, entries, rb) ->
+        RLT.Enum.Stack(
+            RLT.Keyword(enumToken),
             RLT.UserSymbol.Type(name),
-            lb?.let(RLT::Symbol),
-            entries.map(RLT.UserSymbol::Type),
-            rb?.let(RLT::Symbol))
+            lb.let(RLT::Symbol),
+            NonEmptyList.fromListUnsafe(entries.map(RLT.UserSymbol::Type)),
+            rb.let(RLT::Symbol)
+        )
     }
 
     val traitStatement by TRAIT * TYPE * optional(LBRACE * trailing(ObjectLevelGrammar.traitLevel or FunctionGrammar) * RBRACE) map { (traitToken, name, rest) ->

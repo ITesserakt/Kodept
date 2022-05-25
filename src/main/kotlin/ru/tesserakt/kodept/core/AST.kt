@@ -73,7 +73,7 @@ data class AST(val root: Node, val filename: Filename) {
         var returns: TypeExpression?,
         var rest: Node,
     ) : Node() {
-        override fun children() = params + listOf(rest) + listOfNotNull(returns)
+        override fun children() = params + listOfNotNull(returns) + listOf(rest)
     }
 
     data class VariableDecl(
@@ -164,7 +164,6 @@ data class AST(val root: Node, val filename: Filename) {
         var type: TypeExpression, var resolutionContext: ResolutionContext? = null,
     ) : Node() {
         override fun children() = listOf(type)
-        var name: String = type.type
     }
 
     data class FunctionCall(
@@ -183,7 +182,29 @@ data class AST(val root: Node, val filename: Filename) {
         override fun children() = expressions
     }
 
-    data class TypeExpression(var type: String) : Leaf()
+    sealed class TypeExpression : Node()
+
+    data class Type(var name: String) : TypeExpression() {
+        override fun children() = emptyList<Node>()
+
+        override fun toString() = name
+    }
+
+    data class TupleType(var items: List<TypeExpression>) : TypeExpression() {
+        override fun children() = items
+
+        override fun toString() = items.joinToString(prefix = "(", postfix = ")")
+
+        companion object {
+            val unit = TupleType(emptyList())
+        }
+    }
+
+    data class UnionType(var items: NonEmptyList<TypeExpression>) : TypeExpression() {
+        override fun children() = items
+
+        override fun toString() = items.joinToString(" | ", "(", ")")
+    }
 
     data class IfExpr(
         var condition: Node, var body: Node, var elifs: List<ElifExpr>, var el: ElseExpr?,

@@ -6,21 +6,22 @@ import com.github.h0tk3y.betterParse.lexer.Tokenizer
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.lexer.Lexer
 import ru.tesserakt.kodept.parser.FileGrammar
+import ru.tesserakt.kodept.parser.RLT
 import ru.tesserakt.kodept.traversal.Analyzer
 import ru.tesserakt.kodept.traversal.Transformer
 
 class CompilationContext private constructor(
     val loader: Loader,
     val lexer: Tokenizer,
-    val rootParser: Parser<AST.Node>,
-    val transformers: List<() -> Transformer<*>>,
+    val rootParser: Parser<RLT>,
+    val transformers: List<Transformer<*>>,
     val analyzers: List<Analyzer>,
 ) {
     class Builder {
         var lexer: Tokenizer = Lexer()
         lateinit var loader: Loader
-        var rootParser: Parser<AST.Node> = FileGrammar.map { it.convert() }
-        var transformers = listOf<() -> Transformer<*>>()
+        var rootParser = FileGrammar.map { RLT(it) }
+        var transformers = listOf<Transformer<*>>()
         var analyzers = listOf<Analyzer>()
 
         fun build() = CompilationContext(loader, lexer, rootParser, transformers, analyzers)
@@ -61,7 +62,8 @@ class CompilationContext private constructor(
 
         fun readSources() = StringContent()
         fun Flowable.Data.Holder.tokenize() = TokenContent(this)
-        fun Flowable.Data.Tokens.parse() = ParsedContent(this)
+        fun Flowable.Data.Tokens.parse() = PreParsedContent(this)
+        fun Flowable.Data.ErroneousRawTree.abstract() = ParsedContent(this)
         fun Flowable.Data.Source.retrieveFromCache() = HintASTContent(this)
         fun Flowable.Data.ErroneousAST.applyTransformations() = TransformedContent(this)
         fun Flowable.Data.ErroneousAST.analyze() = AnalyzedContent(this)

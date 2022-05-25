@@ -29,7 +29,7 @@ object BlockLevelGrammar : Grammar<RLT.BlockLevelNode>() {
     }
 
     val initialization by varDecl * EQUALS * (block or OperatorGrammar) map { (decl, op, expr) ->
-        RLT.Assignment(decl, RLT.Symbol(op), expr)
+        RLT.InitializedAssignment(decl, RLT.Symbol(op), expr)
     }
 
     val assignment by TermGrammar *

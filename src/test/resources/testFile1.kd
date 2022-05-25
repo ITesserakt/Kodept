@@ -1,9 +1,8 @@
-module Prelude {
-    enum struct Bool {
-        True, False
-    }
+module Prelude =>
 
-    fun main {
-        println("Hello world!").call()
-    }
+fun println(y: (String | String)): (Unit | (Unit)) { }
+
+fun main {
+    val x = "Hello world"
+    println(x)
 }
