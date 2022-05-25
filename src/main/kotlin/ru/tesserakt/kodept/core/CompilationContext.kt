@@ -4,28 +4,29 @@ import arrow.core.rightIor
 import com.github.h0tk3y.betterParse.combinators.map
 import com.github.h0tk3y.betterParse.lexer.Tokenizer
 import com.github.h0tk3y.betterParse.parser.Parser
-import ru.tesserakt.kodept.analyzer.Analyzer
 import ru.tesserakt.kodept.lexer.Lexer
 import ru.tesserakt.kodept.parser.FileGrammar
-import ru.tesserakt.kodept.transformer.Transformer
+import ru.tesserakt.kodept.traversal.Analyzer
+import ru.tesserakt.kodept.traversal.Transformer
 
 class CompilationContext private constructor(
     val loader: Loader,
     val lexer: Tokenizer,
     val rootParser: Parser<AST.Node>,
-    val transformers: List<() -> Transformer>,
+    val transformers: List<() -> Transformer<*>>,
     val analyzers: List<Analyzer>,
 ) {
     class Builder {
         var lexer: Tokenizer = Lexer()
         lateinit var loader: Loader
         var rootParser: Parser<AST.Node> = FileGrammar.map { it.convert() }
-        var transformers = listOf<() -> Transformer>()
+        var transformers = listOf<() -> Transformer<*>>()
         var analyzers = listOf<Analyzer>()
 
         fun build() = CompilationContext(loader, lexer, rootParser, transformers, analyzers)
     }
 
+    @Suppress("unused")
     inner class Scope {
         fun <T : Flowable.Data, F : Flowable<T>> F.bind() = result
         fun <U : Flowable.Data, T : Flowable.Data, FT : Flowable<T>, FU : Flowable<U>> FT.then(f: T.() -> FU) =

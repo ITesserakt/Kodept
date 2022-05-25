@@ -1,22 +1,22 @@
 package ru.tesserakt.kodept.core
 
 import arrow.core.*
+import arrow.core.continuations.eagerEffect
 import arrow.typeclasses.Semigroup
 import com.github.h0tk3y.betterParse.lexer.TokenMatchesSequence
 import com.github.h0tk3y.betterParse.parser.tryParseToEnd
 import ru.tesserakt.kodept.error.Report
-import ru.tesserakt.kodept.error.UnrecoverableError
 import ru.tesserakt.kodept.error.toReport
-import ru.tesserakt.kodept.transformer.acceptTransform
+import ru.tesserakt.kodept.traversal.skipOrTransform
+import ru.tesserakt.kodept.traversal.unwrap
 import java.io.Reader
 
 typealias ParseResult = IorNel<Report, AST>
 
-private inline fun <T> Iterable<T>.foldAST(ast: AST, f: MutableList<Report>.(T, AST) -> AST): ParseResult {
-    val reports = mutableListOf<Report>()
-    val newAST = fold(ast) { acc, next -> reports.f(next, acc) }
-    return NonEmptyList.fromList(reports).fold({ newAST.rightIor() }) { it.leftIor() }
-}
+private inline fun <T> Iterable<T>.foldAST(ast: AST, f: (T, AST) -> ParseResult): ParseResult =
+    fold(ast.rightIor() as ParseResult) { acc, next ->
+        f(next, acc.orNull()!!)
+    }
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun <A, B> Either<A, B>.toIor() = fold({ it.leftIor() }) { it.rightIor() }
@@ -112,12 +112,11 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
         either.flatMap(Semigroup.nonEmptyList()) { ast ->
             transformers.foldAST(ast) { ctor, acc ->
                 val transformer = ctor()
-                try {
-                    AST(acc.root.acceptTransform(transformer), this@mapWithFilename)
-                } catch (e: UnrecoverableError) {
-                    return@flatMap NonEmptyList.fromListUnsafe(this@foldAST).leftIor()
-                } finally {
-                    this += transformer.collectedReports
+                unwrap {
+                    eagerEffect {
+                        val head = acc.walkThrough { transformer.skipOrTransform(it) }.first().bind()
+                        AST(head, this@mapWithFilename)
+                    }
                 }
             }
         }
@@ -132,14 +131,7 @@ class AnalyzedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<AnalyzedC
     private val analyzed = flowable.ast.mapWithFilename {
         it.flatMap(Semigroup.nonEmptyList()) {
             analyzers.foldAST(it) { analyzer, acc ->
-                try {
-                    analyzer.analyzeIndependently(acc)
-                    acc
-                } catch (e: UnrecoverableError) {
-                    return@flatMap NonEmptyList.fromListUnsafe(this).leftIor()
-                } finally {
-                    this += analyzer.collectedReports
-                }
+                unwrap { analyzer.analyze(acc).map { acc } }
             }
         }
     }

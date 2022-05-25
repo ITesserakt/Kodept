@@ -1,8 +1,8 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.curry
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
-import io.arrow.core.curry
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object TermGrammar : Grammar<RLT.TermNode>() {

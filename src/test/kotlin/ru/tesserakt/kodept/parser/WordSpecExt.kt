@@ -43,7 +43,7 @@ suspend fun <T : RLT.Node, V : AST.Node> WordSpecShouldContainerScope.test(
         val nodeList = ArrayDeque(listOf(this))
         while (nodeList.isNotEmpty()) {
             val current = nodeList.removeFirst()
-            current.children.forEach { nodeList.addFirst(it) }
+            current.children().forEach { nodeList.addFirst(it) }
             f(current)
         }
     }

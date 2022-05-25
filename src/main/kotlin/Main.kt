@@ -1,17 +1,14 @@
-import arrow.core.nel
-import ru.tesserakt.kodept.analyzer.ModuleAnalyzer
 import ru.tesserakt.kodept.core.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
+import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.ReportProcessor
-import ru.tesserakt.kodept.transformer.ASTScopeTagger
-import ru.tesserakt.kodept.visitor.DrawProcessor
-import ru.tesserakt.kodept.visitor.accept
+import ru.tesserakt.kodept.traversal.moduleNameAnalyzer
+import ru.tesserakt.kodept.traversal.moduleUniquenessAnalyzer
 
 fun main() {
     val context = CompilationContext {
         loader = FileLoader()
-        transformers = listOf(::ASTScopeTagger)
-        analyzers = listOf(ModuleAnalyzer())
+        analyzers = listOf(moduleNameAnalyzer, moduleUniquenessAnalyzer)
     }
 
     val (code, result) = context flow {
@@ -29,10 +26,9 @@ fun main() {
     }
 
     result.ast.forEach { it ->
-        println(it.value.toEither().fold({
-            it.map {
-                with(code) { pr.processReport(it) }
-            }
-        }) { it.root.accept(DrawProcessor()).nel() }.joinToString("\n"))
+        it.value.toEither().fold(
+            { it.map { with(code) { pr.processReport(it) } }.asSequence() },
+            { it.flatten(Tree.SearchMode.LevelOrder).map { it::class.simpleName } }
+        ).joinToString("\n") { it.toString() }.let(::println)
     }
 }

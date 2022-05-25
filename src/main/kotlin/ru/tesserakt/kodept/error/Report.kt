@@ -19,6 +19,3 @@ interface ReportMessage {
     val message: String
     val additionalMessage: String get() = "here"
 }
-
-data class UnrecoverableError(val thing: Any) :
-    Exception("Unrecoverable error in $thing happened. Check collected reports")
