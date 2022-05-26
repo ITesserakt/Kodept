@@ -1,5 +1,6 @@
 import ru.tesserakt.kodept.core.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
+import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.emptyBlockAnalyzer
 import ru.tesserakt.kodept.traversal.moduleNameAnalyzer
@@ -31,9 +32,10 @@ fun main() {
     result.ast.forEach { it ->
         it.value.fold(
             { it.map { with(code) { pr.processReport(it) } }.asSequence() },
-            { it.walkThrough { node -> node::class.simpleName } },
+            { it.walkThrough(Tree.SearchMode.Preorder) { node -> node::class.simpleName } },
             { it, ast ->
-                it.map { with(code) { pr.processReport(it) } }.asSequence() + ast.walkThrough { it::class.simpleName }
+                it.map { with(code) { pr.processReport(it) } }
+                    .asSequence() + ast.walkThrough(Tree.SearchMode.Preorder) { it::class.simpleName }
             }
         ).joinToString("\n").let(::println)
     }

@@ -3,19 +3,18 @@
 package ru.tesserakt.kodept.core
 
 import arrow.core.NonEmptyList
-import arrow.core.identity
 import arrow.core.prependTo
 import ru.tesserakt.kodept.core.Tree.SearchMode
 import java.math.BigDecimal
 import java.math.BigInteger
+import kotlin.reflect.KMutableProperty0
 
 data class AST(val root: Node, val filename: Filename) {
     init {
         walkThrough { node -> node.children().forEach { it.parent = node } }.forEach { _ -> }
     }
 
-    fun <T> walkThrough(mode: SearchMode = SearchMode.LevelOrder, f: (Node) -> T) =
-        root.walkTopDown(mode, f)
+    fun <T> walkThrough(mode: SearchMode = SearchMode.LevelOrder, f: (Node) -> T) = root.walkTopDown(mode, f)
 
     fun flatten(mode: SearchMode = SearchMode.LevelOrder) = root.gatherChildren(mode)
 
@@ -28,7 +27,8 @@ data class AST(val root: Node, val filename: Filename) {
         protected inline fun <reified T : Node> MutableList<T>.replace(old: Node?, new: Node?) =
             old is T && remove(old) && new is T && add(new)
 
-        fun gatherChildren(mode: SearchMode = SearchMode.LevelOrder) = walkTopDown(mode, ::identity)
+        protected inline fun <reified T : Node?> KMutableProperty0<T>.replace(old: Node?, new: Node?) =
+            new is T && get() == old && true.apply { set(new) }
     }
 
     sealed class Leaf : Node() {
@@ -43,8 +43,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children() = listOf(type)
 
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            type == old && new is TypeExpression && true.apply { type = new }
+        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         override fun toString(): String {
             return "Parameter(name='$name', type=$type)"
@@ -79,8 +78,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         fun copy(name: String = this.name, type: TypeExpression? = this.type) = InferredParameter(name, type)
 
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            type == old && new is TypeExpression? && true.apply { type = new }
+        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -172,8 +170,7 @@ data class AST(val root: Node, val filename: Filename) {
         val params get() = _params.toList()
         override fun children() = params + listOfNotNull(returns)
 
-        override fun <A : Node?> replaceChild(old: A, new: A) =
-            _params.replace(old, new) || new is TypeExpression && returns == old && true.apply { returns = new }
+        override fun <A : Node?> replaceChild(old: A, new: A) = ::returns.replace(old, new) || _params.replace(old, new)
 
         fun copy(
             name: String = this.name,
@@ -222,9 +219,7 @@ data class AST(val root: Node, val filename: Filename) {
         override fun children() = params + listOfNotNull(returns) + listOf(rest)
 
         override fun <A : Node?> replaceChild(old: A, new: A) =
-            _params.replace(old, new) || new is TypeExpression? && returns == old && true.apply {
-                returns = new
-            } || new != null && rest == old && true.apply { rest = new }
+            ::returns.replace(old, new) || ::rest.replace(old, new) || _params.replace(old, new)
 
         fun copy(
             name: String = this.name,
@@ -273,8 +268,7 @@ data class AST(val root: Node, val filename: Filename) {
         var type = type
             private set
 
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            new is TypeExpression? && type == old && true.apply { type = new }
+        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         override fun children() = listOfNotNull(type)
 
@@ -313,9 +307,7 @@ data class AST(val root: Node, val filename: Filename) {
             private set
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            new is VariableDecl && decl == old && true.apply {
-                decl = new
-            } || new != null && expr == old && true.apply { expr = new }
+            ::decl.replace(old, new) || ::expr.replace(old, new)
 
         override fun children() = listOf(decl, expr)
 
@@ -377,9 +369,10 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children(): List<Node> = listOf(left, right)
 
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = new != null && left == old && true.apply {
-            left = new
-        } || new != null && right == old && true.apply { right = new }
+        override fun <A : Node?> replaceChild(old: A, new: A) =
+            (::left as KMutableProperty0<Node>).replace(old, new) || (::right as KMutableProperty0<Node>).replace(
+                old, new
+            )
     }
 
     data class Mathematical(override var left: Node, override var right: Node, val kind: Kind) : BinaryOperator() {
@@ -403,7 +396,7 @@ data class AST(val root: Node, val filename: Filename) {
             protected set
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            new != null && expr == old && true.apply { expr = new }
+            (::expr as KMutableProperty0<Node>).replace(old, new)
 
         override fun children(): List<Node> = listOf(expr)
     }
@@ -421,8 +414,7 @@ data class AST(val root: Node, val filename: Filename) {
             private set
 
         override fun children() = listOf(type)
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            new is TypeExpression && type == old && true.apply { type = new }
+        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         fun copy(type: TypeExpression = this.type, resolutionContext: ResolutionContext? = this.resolutionContext) =
             TypeReference(type, resolutionContext)
@@ -545,9 +537,9 @@ data class AST(val root: Node, val filename: Filename) {
         val elifs get() = _elifs.toList()
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            new != null && (condition == old && true.apply { condition = new } || body == old && true.apply {
-                body = new
-            }) || new is ElseExpr? && el == old && true.apply { el = new } || _elifs.replace(old, new)
+            ::condition.replace(old, new) || ::body.replace(old, new) || _elifs.replace(old, new) || ::el.replace(
+                old, new
+            )
 
         override fun children() = listOf(condition, body) + elifs + listOfNotNull(el)
 
@@ -584,9 +576,7 @@ data class AST(val root: Node, val filename: Filename) {
                 private set
 
             override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-                new != null && (condition == old && true.apply { condition = new } || body == old && true.apply {
-                    body = new
-                })
+                ::condition.replace(old, new) || ::body.replace(old, new)
 
             override fun children() = listOf(condition, body)
 
@@ -619,8 +609,7 @@ data class AST(val root: Node, val filename: Filename) {
             var body = body
                 private set
 
-            override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-                new != null && body == old && true.apply { body = new }
+            override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::body.replace(old, new)
 
             override fun children() = listOf(body)
 
@@ -656,9 +645,7 @@ data class AST(val root: Node, val filename: Filename) {
         fun copy(condition: Node = this.condition, body: Node = this.body) = WhileExpr(condition, body)
 
         override fun <A : Node?> replaceChild(old: A, new: A) =
-            new != null && (condition == old && true.apply { condition = new } || body == old && true.apply {
-                body = new
-            })
+            ::condition.replace(old, new) || ::body.replace(old, new)
 
         override fun children() = listOf(condition, body)
 

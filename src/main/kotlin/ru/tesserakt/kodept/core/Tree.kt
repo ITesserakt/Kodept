@@ -1,12 +1,6 @@
 package ru.tesserakt.kodept.core
 
-import java.util.*
-import kotlin.collections.ArrayDeque
-import kotlin.collections.List
-import kotlin.collections.asReversed
-import kotlin.collections.forEach
-import kotlin.collections.isNotEmpty
-import kotlin.collections.plusAssign
+import arrow.core.identity
 
 @Suppress("unused", "UNCHECKED_CAST")
 interface Tree<Self : Tree<Self>> {
@@ -25,10 +19,9 @@ interface Tree<Self : Tree<Self>> {
         },
         Preorder {
             override suspend fun <T : Tree<T>> SequenceScope<T>.acquire(initial: T) {
-                val stack = Stack<T>()
-                stack += initial
+                val stack = ArrayDeque(arrayListOf(initial))
                 while (stack.isNotEmpty()) {
-                    val current = stack.pop()
+                    val current = stack.removeLast()
                     stack += current.children().asReversed()
                     yield(current)
                 }
@@ -36,8 +29,7 @@ interface Tree<Self : Tree<Self>> {
         },
         LevelOrder {
             override suspend fun <T : Tree<T>> SequenceScope<T>.acquire(initial: T) {
-                val queue = ArrayDeque<T>(1)
-                queue += initial
+                val queue = ArrayDeque(arrayListOf(initial))
                 while (queue.isNotEmpty()) {
                     val current = queue.removeFirst()
                     queue += current.children()
@@ -52,6 +44,8 @@ interface Tree<Self : Tree<Self>> {
     fun <T> walkTopDown(mode: SearchMode = SearchMode.LevelOrder, f: (Self) -> T) = with(mode) {
         sequence { acquire(this@Tree as Self) }.map(f)
     }
+
+    fun gatherChildren(mode: SearchMode = SearchMode.LevelOrder) = walkTopDown(mode, ::identity)
 }
 
 inline fun <Self : Tree<Self>, T> Self.walkDownTop(crossinline f: (Self) -> T) = sequence {
