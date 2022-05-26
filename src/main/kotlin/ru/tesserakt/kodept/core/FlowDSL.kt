@@ -8,7 +8,7 @@ import com.github.h0tk3y.betterParse.parser.tryParseToEnd
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.toReport
 import ru.tesserakt.kodept.parser.RLT
-import ru.tesserakt.kodept.traversal.skipOrTransform
+import ru.tesserakt.kodept.traversal.transformOrSkip
 import ru.tesserakt.kodept.traversal.unwrap
 import java.io.Reader
 
@@ -126,9 +126,16 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
             transformers.foldAST(ast) { transformer, acc ->
                 unwrap {
                     eagerEffect {
-                        val head = acc.walkThrough { transformer.skipOrTransform(it) }.traverse { it.toEither() }.bind()
-                            .first()
-                        AST(head, this@mapWithFilename)
+                        val (head, tail) = acc.flatten(mode = Tree.SearchMode.Postorder)
+                            .run { first { it.parent == null } to filter { it.parent != null } }
+                        tail.forEach {
+                            val parent = it.parent!!
+                            val transformed = transformer.transformOrSkip(it).bind()
+                            if (transformed != it)
+                                parent.replaceChild(it, transformed)
+                        }
+                        val root = transformer.transformOrSkip(head).bind()
+                        AST(root, this@mapWithFilename)
                     }
                 }
             }
@@ -141,8 +148,8 @@ context (CompilationContext)
 class AnalyzedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<AnalyzedContent.Data> {
     data class Data(override val ast: Sequence<FileRelative<IorNel<Report, AST>>>) : Flowable.Data.ErroneousAST
 
-    private val analyzed = flowable.ast.mapWithFilename {
-        it.flatMap(Semigroup.nonEmptyList()) {
+    private val analyzed = flowable.ast.mapWithFilename { result ->
+        result.flatMap(Semigroup.nonEmptyList()) {
             analyzers.foldAST(it) { analyzer, acc ->
                 unwrap { analyzer.analyze(acc).map { acc } }
             }

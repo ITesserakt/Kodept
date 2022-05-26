@@ -100,7 +100,7 @@ private fun RLT.Literal.convert(): Node = when (this) {
 private fun RLT.Module.convert(): AST.ModuleDecl = when (this) {
     is RLT.Module.Global -> AST::ModuleDecl.partially2(true)
     is RLT.Module.Ordinary -> AST::ModuleDecl.partially2(false)
-}.invoke(id.text.value(), rest.map(RLT.TopLevelNode::convert)).also { it.metadata += wrap() }
+}.invoke(id.text.value(), rest.map(RLT.TopLevelNode::convert).toMutableList()).also { it.metadata += wrap() }
 
 private fun RLT.ParameterTuple.convert(): AST.TupleLiteral =
     AST.TupleLiteral(params.map(RLT.Parameter::convert)).also { it.metadata += wrap() }
@@ -133,7 +133,7 @@ private fun RLT.Enum.convert() = when (this) {
     AST.EnumDecl.Entry(it.text.value()).also { entry ->
         entry.metadata += it.wrap()
     }
-}).also { it.metadata += wrap() }
+}.toMutableList()).also { it.metadata += wrap() }
 
 private fun RLT.TopLevelNode.convert() = when (this) {
     is RLT.Function.Bodied -> convert()
@@ -264,6 +264,7 @@ fun RLT.Node.convert() = when (this) {
     is RLT.UserSymbol.Identifier -> throw IllegalStateException("Thrown out")
     is RLT.Keyword -> throw IllegalStateException("Thrown out")
     is RLT.Symbol -> throw IllegalStateException("Thrown out")
+    is RLT.MaybeTypedParameterTuple -> throw IllegalStateException("Thrown out")
     is RLT.TypedParameter -> convert()
     is RLT.InitializedAssignment -> convert()
 }

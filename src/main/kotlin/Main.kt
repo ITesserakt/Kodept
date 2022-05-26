@@ -31,8 +31,10 @@ fun main() {
     result.ast.forEach { it ->
         it.value.fold(
             { it.map { with(code) { pr.processReport(it) } }.asSequence() },
-            { "Nothing special".split(" ").asSequence() },
-            { it, _ -> it.map { with(code) { pr.processReport(it) } }.asSequence() }
+            { it.walkThrough { node -> node::class.simpleName } },
+            { it, ast ->
+                it.map { with(code) { pr.processReport(it) } }.asSequence() + ast.walkThrough { it::class.simpleName }
+            }
         ).joinToString("\n").let(::println)
     }
 }

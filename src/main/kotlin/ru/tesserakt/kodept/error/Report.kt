@@ -9,7 +9,7 @@ data class Report(
     val severity: Severity,
     val message: ReportMessage,
 ) {
-    enum class Severity { NOTE, WARNING, ERROR }
+    enum class Severity { NOTE, WARNING, ERROR, CRASH }
 
     override fun toString() = "$severity[${message.code}]: ${message.message}\n$file:${point?.head}:"
 }
