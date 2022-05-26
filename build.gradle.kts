@@ -6,12 +6,12 @@ val arrowVersion: String by extra
 val serializationVersion: String by extra
 
 plugins {
-    kotlin("jvm") version "1.6.21"
+    kotlin("jvm") version "1.7.0-RC"
     application
 }
 
 group = "ru.tesserakt"
-version = "0.0.1"
+version = "0.2.1"
 
 repositories {
     mavenCentral()
