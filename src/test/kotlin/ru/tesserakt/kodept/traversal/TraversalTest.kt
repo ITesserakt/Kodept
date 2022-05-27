@@ -8,6 +8,7 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import ru.tesserakt.kodept.error.Report
+import ru.tesserakt.kodept.error.SemanticWarning
 import ru.tesserakt.kodept.error.SyntaxError
 import ru.tesserakt.kodept.lexer.CodePoint
 
@@ -28,15 +29,15 @@ class TraversalTest : BehaviorSpec({
                         Report(
                             "Hi!",
                             nonEmptyListOf(CodePoint(0, 0)),
-                            Report.Severity.ERROR,
-                            SyntaxError.UnparsedRemainder
+                            Report.Severity.WARNING,
+                            SemanticWarning.AlignWithType("A")
                         ).report()
                         3
                     }
                 }
                 value.shouldBeTypeOf<Ior.Both<Nel<Report>, Int>>()
                 val (left, right) = value.run { leftValue to rightValue }
-                left.head.severity shouldBe Report.Severity.ERROR
+                left.head.severity shouldBe Report.Severity.WARNING
                 right shouldBe 3
             }
         }

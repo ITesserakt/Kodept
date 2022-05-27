@@ -16,4 +16,7 @@ sealed class SemanticError(final override val code: String, override val message
 
     data class AmbitiousReference(val name: String) :
         SemanticError("KSeE4", "Ambitious usage of $name")
+
+    data class DuplicatedVariable(val name: String) :
+        SemanticError("KSeE5", "Variable `$name` has duplicates in one block")
 }

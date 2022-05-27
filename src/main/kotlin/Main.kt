@@ -2,21 +2,23 @@ import ru.tesserakt.kodept.core.CompilationContext
 import ru.tesserakt.kodept.core.MemoryLoader
 import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.ReportProcessor
-import ru.tesserakt.kodept.traversal.emptyBlockAnalyzer
-import ru.tesserakt.kodept.traversal.moduleNameAnalyzer
-import ru.tesserakt.kodept.traversal.moduleUniquenessAnalyzer
-import ru.tesserakt.kodept.traversal.typeSimplifier
+import ru.tesserakt.kodept.traversal.*
 
 fun main() {
     val context = CompilationContext {
         loader = MemoryLoader.fromText(
             """
             module Main =>
-            fun main { println("Hello world") # it }
+            fun main { 
+                val a
+                val b
+                val a
+                var b
+            }
         """.trimIndent()
         )
         transformers = listOf(typeSimplifier)
-        analyzers = listOf(moduleNameAnalyzer, moduleUniquenessAnalyzer, emptyBlockAnalyzer)
+        analyzers = listOf(moduleNameAnalyzer, moduleUniquenessAnalyzer, emptyBlockAnalyzer, variableUniqueness)
     }
 
     val (code, result) = context flow {

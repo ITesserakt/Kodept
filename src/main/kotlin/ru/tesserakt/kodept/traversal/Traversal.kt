@@ -1,8 +1,11 @@
 package ru.tesserakt.kodept.traversal
 
-import arrow.core.*
+import arrow.core.Ior
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
+import arrow.core.leftIor
+import arrow.core.nel
+import arrow.core.rightIor
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filename
 import ru.tesserakt.kodept.error.Report
@@ -30,22 +33,10 @@ fun interface Analyzer {
     fun analyze(ast: AST): EagerEffect<UnrecoverableError, Unit>
 }
 
-@Suppress("unused")
-inline fun <T> unwrapNullable(f: ReportCollector.() -> EagerEffect<out ControlSwitching, out T>) =
-    with(ReportCollector()) {
-        f(this).fold({
-            when (it) {
-                Skip -> NonEmptyList.fromList(collectedReports).fold({ null.rightIor() }, { Ior.Both(it, null) })
-                is UnrecoverableError -> definitelyCollected.leftIor()
-            }
-        }, {
-            NonEmptyList.fromList(collectedReports).fold({ it.rightIor() }, { list -> Ior.Both(list, it) })
-        })
-    }
-
 fun <T> unwrap(f: ReportCollector.() -> EagerEffect<out UnrecoverableError, T>) = with(ReportCollector()) {
     f(this).fold({ (it.crashReport.nel() + collectedReports).leftIor() }, {
         if (collectedReports.isEmpty()) it.rightIor()
+        else if (collectedReports.any { report -> report.severity == Report.Severity.ERROR }) definitelyCollected.leftIor()
         else Ior.Both(definitelyCollected, it)
     })
 }
