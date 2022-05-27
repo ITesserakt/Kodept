@@ -5,11 +5,10 @@ import arrow.core.partially2
 import arrow.core.partially3
 import com.github.h0tk3y.betterParse.lexer.Token
 import org.jetbrains.annotations.TestOnly
-import ru.tesserakt.kodept.core.AST.Node
 import ru.tesserakt.kodept.lexer.ExpressionToken
 import ru.tesserakt.kodept.parser.RLT
 
-private fun expandCompound(left: Node, right: Node, token: Token) = when (token) {
+private fun expandCompound(left: AST.Lvalue, right: AST.Expression, token: Token) = when (token) {
     ExpressionToken.PLUS_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
     ExpressionToken.SUB_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
     ExpressionToken.TIMES_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
@@ -27,7 +26,7 @@ private fun expandCompound(left: Node, right: Node, token: Token) = when (token)
     AST.Assignment(left, it(left, right))
 }
 
-private fun expandBinary(left: Node, right: Node, token: Token) = when (token) {
+private fun expandBinary(left: AST.Expression, right: AST.Expression, token: Token): AST.Expression = when (token) {
     ExpressionToken.DOT.token -> { l, r ->
         when (l) {
             is AST.TermChain -> AST.TermChain(l.terms + r)
@@ -56,7 +55,7 @@ private fun expandBinary(left: Node, right: Node, token: Token) = when (token) {
     else -> throw IllegalStateException("Impossible")
 }(left, right)
 
-private fun expandUnary(expression: Node, token: Token) = when (token) {
+private fun expandUnary(expression: AST.Expression, token: Token) = when (token) {
     ExpressionToken.PLUS.token -> AST.Absolution(expression)
     ExpressionToken.SUB.token -> AST.Negation(expression)
     ExpressionToken.NOT_BIT.token -> AST.BitInversion(expression)
@@ -75,9 +74,9 @@ private fun RLT.UserSymbol.Type.convert() = AST.Type(text.value()).also { it.met
 private fun RLT.Variable.convert() = when (this) {
     is RLT.Variable.Immutable -> AST::VariableDecl.partially2(false)
     is RLT.Variable.Mutable -> AST::VariableDecl.partially2(true)
-}.invoke(id.text.value(), type?.convert()).also { it.metadata += wrap() }
+}.invoke(AST.Reference(id.text.value()), type?.convert()).also { it.metadata += wrap() }
 
-private fun RLT.Literal.convert(): Node = when (this) {
+private fun RLT.Literal.convert(): AST.Literal = when (this) {
     is RLT.Literal.Floating -> when {
         '.' in text.value() || text.value().contains('e', true) -> AST.FloatingLiteral(text.value().toBigDecimal())
         else -> AST.DecimalLiteral(text.value().toBigInteger())
@@ -137,7 +136,7 @@ private fun RLT.Enum.convert() = when (this) {
     }
 }.toMutableList()).also { it.metadata += wrap() }
 
-private fun RLT.TopLevelNode.convert() = when (this) {
+private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
     is RLT.Function.Bodied -> convert()
 
     is RLT.Enum -> convert()
@@ -149,7 +148,11 @@ private fun RLT.TopLevelNode.convert() = when (this) {
     is RLT.Trait -> AST.TraitDecl(id.text.value(), rest.map { it.convert() }).also { it.metadata += wrap() }
 }
 
-private fun RLT.ObjectLevelNode.convert() = when (this) {
+private fun RLT.StructLevelNode.convert() = when (this) {
+    is RLT.Function.Bodied -> convert()
+}
+
+private fun RLT.ObjectLevelNode.convert(): AST.TraitLevel = when (this) {
     is RLT.Function.Bodied -> convert()
 
     is RLT.Function.Abstract -> AST.AbstractFunctionDecl(
@@ -159,12 +162,12 @@ private fun RLT.ObjectLevelNode.convert() = when (this) {
     ).also { it.metadata += wrap() }
 }
 
-private fun RLT.BlockLevelNode.convert() = when (this) {
+private fun RLT.BlockLevelNode.convert(): AST.BlockLevel = when (this) {
     is RLT.StatementNode -> convert()
     is RLT.ExpressionNode -> convert()
 }
 
-private fun RLT.StatementNode.convert() = when (this) {
+private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
     is RLT.Assignment -> when (this) {
         is RLT.InitializedAssignment -> AST.InitializedVar(lvalue.convert(), expression.convert())
         else -> expandCompound(
@@ -185,23 +188,24 @@ private fun RLT.StatementNode.convert() = when (this) {
     is RLT.Variable -> convert()
 }
 
-private fun RLT.ExpressionNode.convert(): Node = when (this) {
+private fun RLT.Body.Block.convert(): AST.Expression = when (block.size) {
+    0 -> AST.TupleLiteral.unit
+    1 -> {
+        val head = block.first()
+        if (head is RLT.ExpressionNode)
+            head.convert()
+        else
+            AST.ExpressionList(listOf(head.convert(), AST.TupleLiteral.unit)).also { it.metadata += wrap() }
+    }
+
+    else -> AST.ExpressionList(block.map { it.convert() }).also { it.metadata += wrap() }
+}
+
+private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
     is RLT.BinaryOperation -> expandBinary(left.convert(), right.convert(), op.tokenType)
         .also { it.metadata += wrap() }
 
-    is RLT.Body.Block -> when (block.size) {
-        0 -> AST.TupleLiteral.unit
-        1 -> {
-            val head = block.first()
-            val converted = head.convert()
-            if (head is RLT.ExpressionNode)
-                converted
-            else
-                AST.ExpressionList(listOf(converted, AST.TupleLiteral.unit)).also { it.metadata += wrap() }
-        }
-
-        else -> AST.ExpressionList(block.map { it.convert() }).also { it.metadata += wrap() }
-    }
+    is RLT.Body.Block -> convert()
 
     is RLT.Body.Expression -> expression.convert()
 
@@ -224,12 +228,12 @@ private fun RLT.ExpressionNode.convert(): Node = when (this) {
     is RLT.Literal -> convert()
 }
 
-private fun RLT.Lvalue.convert() = when (this) {
-    is RLT.Variable -> convert()
+private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
+    is RLT.Variable -> convert().name
     is RLT.TermNode -> convert()
 }
 
-private fun RLT.TermNode.convert(): Node = when (this) {
+private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
     is RLT.Application -> AST.FunctionCall(expr.convert(),
         params.map(RLT.ParameterTuple::convert).filterNot { it.items.isEmpty() })
 

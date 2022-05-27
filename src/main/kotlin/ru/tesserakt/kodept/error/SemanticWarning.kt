@@ -15,6 +15,10 @@ sealed class SemanticWarning(final override val code: String, override val messa
         "Remove empty parentheses or add some parameters"
     )
 
+    data class EmptyBlock(val parentNodeName: String) : SemanticWarning(
+        "KSeW6", "Remove empty brackets"
+    )
+
     data class ZeroEnumEntries(val enumName: String) : SemanticWarning(
         "KSeW3",
         "No enum entries declared, remove brackets"

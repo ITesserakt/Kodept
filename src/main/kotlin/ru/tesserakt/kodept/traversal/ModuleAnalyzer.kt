@@ -1,18 +1,20 @@
 package ru.tesserakt.kodept.traversal
 
 import arrow.core.NonEmptyList
+import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.rlt
 import ru.tesserakt.kodept.error.Report
+import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
 import ru.tesserakt.kodept.error.SemanticWarning
 import ru.tesserakt.kodept.parser.RLT
 
-val moduleNameAnalyzer = Analyzer { ast ->
-    eagerEffect {
-        ast.flatten().filterIsInstance<AST.ModuleDecl>()
+val moduleNameAnalyzer = object : Analyzer() {
+    override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
+        ast.fastFlatten().filterIsInstance<AST.ModuleDecl>()
             .groupBy { it.name }
             .values
             .filter { it.size > 1 }
@@ -28,9 +30,9 @@ val moduleNameAnalyzer = Analyzer { ast ->
     }
 }
 
-val moduleUniquenessAnalyzer = Analyzer { ast ->
-    eagerEffect {
-        val modules = ast.flatten().filterIsInstance<AST.ModuleDecl>().filter { !it.global }.toList()
+val moduleUniquenessAnalyzer = object : Analyzer() {
+    override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
+        val modules = ast.fastFlatten().filterIsInstance<AST.ModuleDecl>().filter { !it.global }.toList()
         if (modules.size != 1) return@eagerEffect
         val head = modules.first()
         val rlt = head.rlt as RLT.Module.Ordinary

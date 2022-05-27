@@ -1,24 +1,20 @@
 import ru.tesserakt.kodept.core.CompilationContext
-import ru.tesserakt.kodept.core.MemoryLoader
+import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
 
 fun main() {
     val context = CompilationContext {
-        loader = MemoryLoader.fromText(
-            """
-            module Main =>
-            fun main: (A | ((A | B) | B) | B) { 
-                val a
-                val b
-                val a
-                var b
-            }
-        """.trimIndent()
-        )
+        loader = FileLoader()
         transformers = listOf(TypeSimplifier)
-        analyzers = listOf(moduleNameAnalyzer, moduleUniquenessAnalyzer, emptyBlockAnalyzer, variableUniqueness)
+        analyzers = listOf(
+            moduleNameAnalyzer,
+            moduleUniquenessAnalyzer,
+            emptyBlockAnalyzer,
+            variableUniqueness,
+            objectUniqueness
+        )
     }
 
     val (code, result) = context flow {

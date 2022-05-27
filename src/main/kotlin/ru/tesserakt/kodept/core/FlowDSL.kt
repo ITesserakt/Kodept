@@ -15,8 +15,8 @@ import java.io.Reader
 typealias ParseResult = IorNel<Report, AST>
 
 private inline fun <T> Iterable<T>.foldAST(ast: AST, f: (T, AST) -> ParseResult): ParseResult =
-    fold(ast.rightIor() as ParseResult) { acc, next ->
-        f(next, acc.orNull()!!)
+    fold(ast.rightIor() as ParseResult) { acc: ParseResult, t: T ->
+        acc.flatMap(Semigroup.nonEmptyList()) { f(t, it) }
     }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -151,7 +151,7 @@ class AnalyzedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<AnalyzedC
     private val analyzed = flowable.ast.mapWithFilename { result ->
         result.flatMap(Semigroup.nonEmptyList()) {
             analyzers.foldAST(it) { analyzer, acc ->
-                unwrap { with(analyzer) { analyze(acc) }.map { acc } }
+                unwrap { with(analyzer) { analyzeWithCaching(acc) }.map { acc } }
             }
         }
     }

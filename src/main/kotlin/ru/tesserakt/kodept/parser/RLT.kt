@@ -24,11 +24,11 @@ data class RLT(val root: File) {
 
     data class Keyword(override val match: TokenMatch) : Node {
         init {
-            require(match.type is LiteralToken)
+            require(match.type is LiteralToken || match.type is SoftKeyword)
         }
 
-        override val tokenType = match.type as LiteralToken
-        override val text = Eval.now(tokenType.text)
+        override val tokenType = match.type
+        override val text = Eval.now((tokenType as? LiteralToken)?.text ?: (tokenType as SoftKeyword).name!!)
         override val description = text.value()
     }
 

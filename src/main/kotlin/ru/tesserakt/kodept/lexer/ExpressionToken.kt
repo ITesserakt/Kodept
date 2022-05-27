@@ -5,6 +5,7 @@ import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.lexer.literalToken
 import com.github.h0tk3y.betterParse.lexer.regexToken
 import com.github.h0tk3y.betterParse.parser.Parser
+import ru.tesserakt.kodept.parser.softKeyword
 
 enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     // Ignore
@@ -17,15 +18,11 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     FUN(literalToken("fun")),
     VAL(literalToken("val")),
     VAR(literalToken("var")),
-    TRAIT(literalToken("trait")),
-    STRUCT(literalToken("struct")),
     IF(literalToken("if")),
     ELIF(literalToken("elif")),
     ELSE(literalToken("else")),
     MATCH(literalToken("match")),
     WHILE(literalToken("while")),
-    CLASS(literalToken("class")), // stack only
-    ENUM(literalToken("enum")),
     MODULE(literalToken("module")),
     EXTENSION(literalToken("extension")),
 
@@ -99,5 +96,14 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
 
     init {
         token.name = this.name
+    }
+
+    companion object {
+        // Soft keywords
+        val ABSTRACT = softKeyword("abstract")
+        val TRAIT = softKeyword("trait")
+        val STRUCT = softKeyword("struct")
+        val CLASS = softKeyword("class") // stack only
+        val ENUM = softKeyword("enum")
     }
 }

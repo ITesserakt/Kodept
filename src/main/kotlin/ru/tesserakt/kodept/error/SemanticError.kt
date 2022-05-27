@@ -19,4 +19,6 @@ sealed class SemanticError(final override val code: String, override val message
 
     data class DuplicatedVariable(val name: String) :
         SemanticError("KSeE5", "Variable `$name` has duplicates in one block")
+
+    object Duplicated : SemanticError("KSeE6", "Declaration has duplicates across block")
 }

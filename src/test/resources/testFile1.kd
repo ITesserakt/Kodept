@@ -1,3 +1,13 @@
 module Prelude =>
 
-fun main => println("Hello world")
+enum struct Bool { True, False }
+
+struct BoolLike {
+    fun xor(self: Bool, other: Bool) {}
+
+    fun not(trait: Bool) => xor(trait, True)
+}
+
+struct Int
+
+fun main => println(not(True))
