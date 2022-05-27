@@ -95,48 +95,47 @@
 % #1 - current \doctype
 % #2 - destination document
 % #3 - text
-\newcommand{\myconditionaltext}[3]
-{%
-	\ifthenelse{\equal{#1}{kr}\AND\equal{#2}{kr}}{#3}{}
-	\ifthenelse{\equal{#1}{kp}\AND\equal{#2}{kp}}{#3}{}
-	\ifthenelse{\equal{#1}{vkr}\AND\equal{#2}{vkr}}{#3}{}
-	\ifthenelse{\equal{#1}{nirs}\AND\equal{#2}{nirs}}{#3}{}
-	\ifthenelse{\equal{#1}{nkr}\AND\equal{#2}{nkr}}{#3}{}
+\newcommand{\myconditionaltext}[3]{%
+\ifthenelse{\equal{#1}{kr}\AND\equal{#2}{kr}}{#3}{}%
+\ifthenelse{\equal{#1}{kp}\AND\equal{#2}{kp}}{#3}{}%
+\ifthenelse{\equal{#1}{vkr}\AND\equal{#2}{vkr}}{#3}{}%
+\ifthenelse{\equal{#1}{nirs}\AND\equal{#2}{nirs}}{#3}{}%
+\ifthenelse{\equal{#1}{nkr}\AND\equal{#2}{nkr}}{#3}{}%
 }
 % использование
 %\myconditionaltext{\doctypesid}{kp}{XXXXXXX} % вставится только при сборке КП
 %-------------------------
 % к \doctypeb
 \newcommand{\doctypeb}{%
-	\ifthenelse{\equal{\doctypesid}{vkr}}{выпускной квалификационной работе}{}
-	\ifthenelse{\equal{\doctypesid}{kr}}{курсовой работе}{}
-	\ifthenelse{\equal{\doctypesid}{kp}}{курсовому проекту}{}
-	\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательской работе студента}{}
-	\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационной работе}{}
+\ifthenelse{\equal{\doctypesid}{vkr}}{выпускной квалификационной работе}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{курсовой работе}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{курсовому проекту}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательской работе студента}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационной работе}{}%
 } 
 % на выполнение \doctypec
 \newcommand{\doctypec}{%
-	\ifthenelse{\equal{\doctypesid}{vkr}}{выпускной квалификационной работы}{}
-	\ifthenelse{\equal{\doctypesid}{kr}}{курсовой работы}{}
-	\ifthenelse{\equal{\doctypesid}{kp}}{курсового проекта}{}
-	\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательской работы студента}{}
-	\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационной работы}{}
-} 
+\ifthenelse{\equal{\doctypesid}{vkr}}{выпускной квалификационной работы}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{курсовой работы}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{курсового проекта}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательской работы студента}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационной работы}{}%
+}
 % \doctype (в именительном падеже)
 \newcommand{\doctype}{%
-	\ifthenelse{\equal{\doctypesid}{vkr}}{выпускная квалификационная работа}{}
-	\ifthenelse{\equal{\doctypesid}{kr}}{курсовая работа}{}
-	\ifthenelse{\equal{\doctypesid}{kp}}{курсовой проект}{}
-	\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательская работа студента}{}
-	\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационная работа}{}
+\ifthenelse{\equal{\doctypesid}{vkr}}{выпускная квалификационная работа}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{курсовая работа}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{курсовой проект}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательская работа студента}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационная работа}{}%
 } 
 % \doctypeshort (сокращение)
 \newcommand{\doctypeshort}{%
-	\ifthenelse{\equal{\doctypesid}{vkr}}{ВКР}{}
-	\ifthenelse{\equal{\doctypesid}{kr}}{КР}{}
-	\ifthenelse{\equal{\doctypesid}{kp}}{КП}{}
-	\ifthenelse{\equal{\doctypesid}{nirs}}{НИРС}{}
-	\ifthenelse{\equal{\doctypesid}{nkr}}{НКР}{}
+\ifthenelse{\equal{\doctypesid}{vkr}}{ВКР}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{КР}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{КП}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{НИРС}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{НКР}{}%
 } 
 %-------------------------
 
