@@ -6,8 +6,6 @@ import com.github.h0tk3y.betterParse.parser.ParseResult
 import com.github.h0tk3y.betterParse.parser.Parsed
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple2
-import ru.tesserakt.kodept.core.map
-import ru.tesserakt.kodept.core.parsed
 
 class OptionalWithoutStartingParser<A, B>(
     private val startParser: Parser<A>,

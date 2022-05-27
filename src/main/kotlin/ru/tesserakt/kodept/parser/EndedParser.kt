@@ -9,8 +9,6 @@ import com.github.h0tk3y.betterParse.utils.Tuple2
 import com.github.h0tk3y.betterParse.utils.Tuple3
 import com.github.h0tk3y.betterParse.utils.Tuple4
 import com.github.h0tk3y.betterParse.utils.Tuple5
-import ru.tesserakt.kodept.core.map
-import ru.tesserakt.kodept.core.parsed
 import ru.tesserakt.kodept.lexer.ExpressionToken
 
 class EndedParser<T, U>(
