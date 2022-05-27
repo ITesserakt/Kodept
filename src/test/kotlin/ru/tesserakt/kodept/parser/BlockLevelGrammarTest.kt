@@ -23,9 +23,15 @@ class BlockLevelGrammarTest : WordSpec({
                 "println", listOf(), null,
                 AST.ExpressionList(
                     listOf(
-                        AST.InitializedVar(AST.VariableDecl("foo", false, null), AST.DecimalLiteral(5.toBigInteger())),
+                        AST.InitializedVar(
+                            AST.VariableDecl(AST.Reference("foo"), false, null),
+                            AST.DecimalLiteral(5.toBigInteger())
+                        ),
                         AST.StringLiteral("term"),
-                        AST.InitializedVar(AST.VariableDecl("baz", false, null), AST.DecimalLiteral(4.toBigInteger())),
+                        AST.InitializedVar(
+                            AST.VariableDecl(AST.Reference("baz"), false, null),
+                            AST.DecimalLiteral(4.toBigInteger())
+                        ),
                     ),
                 ),
             ))
@@ -42,9 +48,15 @@ class BlockLevelGrammarTest : WordSpec({
                 "println", listOf(), null,
                 AST.ExpressionList(
                     listOf(
-                        AST.InitializedVar(AST.VariableDecl("foo", false, null), AST.DecimalLiteral(5.toBigInteger())),
+                        AST.InitializedVar(
+                            AST.VariableDecl(AST.Reference("foo"), false, null),
+                            AST.DecimalLiteral(5.toBigInteger())
+                        ),
                         AST.StringLiteral("term"),
-                        AST.InitializedVar(AST.VariableDecl("baz", false, null), AST.DecimalLiteral(4.toBigInteger())),
+                        AST.InitializedVar(
+                            AST.VariableDecl(AST.Reference("baz"), false, null),
+                            AST.DecimalLiteral(4.toBigInteger())
+                        ),
                     ),
                 ),
             ))
@@ -52,9 +64,11 @@ class BlockLevelGrammarTest : WordSpec({
 
     "var decls" should {
         test(BlockLevelGrammar, """var x += 5""", null)
-        test(BlockLevelGrammar,
+        test(
+            BlockLevelGrammar,
             """var x = 5""",
-            AST.InitializedVar(AST.VariableDecl("x", true, null), AST.DecimalLiteral(5.toBigInteger())))
+            AST.InitializedVar(AST.VariableDecl(AST.Reference("x"), true, null), AST.DecimalLiteral(5.toBigInteger()))
+        )
         test(BlockLevelGrammar,
             """x += 5""",
             AST.Assignment(
@@ -72,17 +86,17 @@ class BlockLevelGrammarTest : WordSpec({
             BlockLevelGrammar,
             """val x = { 5 }""",
             AST.InitializedVar(
-                AST.VariableDecl("x", false, null),
+                AST.VariableDecl(AST.Reference("x"), false, null),
                 AST.DecimalLiteral(5.toBigInteger())
             )
         )
-        test(BlockLevelGrammar, """val x: Int""", AST.VariableDecl("x", false, AST.Type("Int")))
+        test(BlockLevelGrammar, """val x: Int""", AST.VariableDecl(AST.Reference("x"), false, AST.Type("Int")))
         test(
             BlockLevelGrammar,
             """val x: String = {}""",
             AST.InitializedVar(
                 AST.VariableDecl(
-                    "x",
+                    AST.Reference("x"),
                     false,
                     AST.Type("String"),
                 ), AST.TupleLiteral.unit
@@ -93,10 +107,20 @@ class BlockLevelGrammarTest : WordSpec({
             """val result = 
             |   test(blockLevelGrammar, "val x: String = {}", null)
         """.trimMargin(),
-            AST.InitializedVar(AST.VariableDecl("result", false, null),
-                AST.FunctionCall(AST.Reference("test"),
-                    listOf(AST.TupleLiteral(listOf(AST.Reference("blockLevelGrammar"),
-                        AST.StringLiteral("val x: String = {}"),
-                        AST.Reference("null")))))))
+            AST.InitializedVar(
+                AST.VariableDecl(AST.Reference("result"), false, null),
+                AST.FunctionCall(
+                    AST.Reference("test"),
+                    listOf(
+                        AST.TupleLiteral(
+                            listOf(
+                                AST.Reference("blockLevelGrammar"),
+                                AST.StringLiteral("val x: String = {}"),
+                                AST.Reference("null")
+                            )
+                        )
+                    )
+                )
+            ))
     }
 })

@@ -3,12 +3,17 @@ package ru.tesserakt.kodept.error
 import ru.tesserakt.kodept.core.ProgramCodeHolder
 import kotlin.math.log10
 
-class ReportProcessor private constructor(private val surrounding: Int, private val pointer: String) {
+class ReportProcessor private constructor(
+    private val surrounding: Int,
+    private val pointer: String,
+    private val longPointer: String,
+) {
     class Builder {
         var surrounding: Int = 3
         var defaultErrorPointer = "^---"
+        var defaultLongErrorPointer = "^"
 
-        fun build() = ReportProcessor(surrounding, defaultErrorPointer)
+        fun build() = ReportProcessor(surrounding, defaultErrorPointer, defaultLongErrorPointer)
     }
 
     companion object {
@@ -25,9 +30,15 @@ class ReportProcessor private constructor(private val surrounding: Int, private 
             stream.withIndex().joinToString("\n") { (index, str) ->
                 val realIndex = index + from
                 val lineNumber = "    %${maxIndexLength}d | ".format(realIndex)
-                lineNumber + if (realIndex == point.line)
-                    "$str\n${" ".repeat(point.position + lineNumber.length - 1)}${pointer} ${report.message.additionalMessage}"
-                else str
+                lineNumber + if (realIndex == point.line) {
+                    val ident = " ".repeat(point.position + lineNumber.length - 1)
+                    val repetitions = point.length / longPointer.length
+                    val useLongPointer = repetitions != 1
+                    val pointee =
+                        if (useLongPointer) longPointer.repeat(repetitions) + " -"
+                        else pointer
+                    "$str\n${ident}${pointee} ${report.message.additionalMessage}"
+                } else str
             }
         }
 

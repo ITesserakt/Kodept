@@ -4,6 +4,8 @@ import arrow.core.*
 import arrow.core.continuations.eagerEffect
 import arrow.typeclasses.Semigroup
 import com.github.h0tk3y.betterParse.lexer.TokenMatchesSequence
+import com.github.h0tk3y.betterParse.parser.ErrorResult
+import com.github.h0tk3y.betterParse.parser.Parsed
 import com.github.h0tk3y.betterParse.parser.tryParseToEnd
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.toReport
@@ -85,8 +87,10 @@ class PreParsedContent(flowable: Flowable.Data.Tokens) : Flowable<PreParsedConte
     data class Data(override val rlt: Sequence<FileRelative<IorNel<Report, RLT>>>) : Flowable.Data.ErroneousRawTree
 
     override val result = Data(flowable.tokens.mapWithFilename {
-        rootParser.tryParseToEnd(it, 0).toEither()
-            .mapLeft { res -> res.toReport(this) }.toIor()
+        when (val parsed = rootParser.tryParseToEnd(it, 0)) {
+            is Parsed -> parsed.value.rightIor()
+            is ErrorResult -> parsed.toReport(this).leftIor()
+        }
     })
 }
 
