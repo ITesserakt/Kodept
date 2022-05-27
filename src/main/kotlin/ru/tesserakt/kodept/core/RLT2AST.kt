@@ -34,6 +34,7 @@ private fun expandBinary(left: Node, right: Node, token: Token) = when (token) {
             else -> AST.TermChain(nonEmptyListOf(l, r))
         }
     }
+
     ExpressionToken.PLUS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
     ExpressionToken.SUB.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
     ExpressionToken.TIMES.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
@@ -94,6 +95,7 @@ private fun RLT.Literal.convert(): Node = when (this) {
         '"' -> AST.StringLiteral(text.value().removeSurrounding("\""))
         else -> throw IllegalStateException("Impossible")
     }
+
     is RLT.Literal.Tuple -> AST.TupleLiteral(expressions.map(RLT.ExpressionNode::convert))
 }.also { it.metadata += wrap() }
 
@@ -197,6 +199,7 @@ private fun RLT.ExpressionNode.convert(): Node = when (this) {
             else
                 AST.ExpressionList(listOf(converted, AST.TupleLiteral.unit)).also { it.metadata += wrap() }
         }
+
         else -> AST.ExpressionList(block.map { it.convert() }).also { it.metadata += wrap() }
     }
 

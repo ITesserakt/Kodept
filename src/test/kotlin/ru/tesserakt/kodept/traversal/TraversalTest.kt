@@ -4,7 +4,6 @@ import arrow.core.Ior
 import arrow.core.Nel
 import arrow.core.continuations.eagerEffect
 import arrow.core.nonEmptyListOf
-import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -44,30 +43,20 @@ class TraversalTest : BehaviorSpec({
     }
 
     given("effect with shifts") {
-        `when`("shifted without any write to sink") {
-            then("it fails") {
-                shouldThrowAny {
-                    unwrap {
-                        eagerEffect {
-                            val i: Int = shift(UnrecoverableError)
-                            i
-                        }
-                    }
-                }
-            }
-        }
-
         `when`("shifted with writes") {
             then("Ior.Left will be returned") {
                 val value = unwrap {
                     eagerEffect {
-                        Report(
-                            "Hi!",
-                            nonEmptyListOf(CodePoint(0, 0)),
-                            Report.Severity.NOTE,
-                            SyntaxError.UnparsedRemainder
-                        ).report()
-                        val i: Int = shift(UnrecoverableError)
+                        val i: Int = shift(
+                            UnrecoverableError(
+                                Report(
+                                    "Hi!",
+                                    nonEmptyListOf(CodePoint(0, 0)),
+                                    Report.Severity.NOTE,
+                                    SyntaxError.UnparsedRemainder
+                                )
+                            )
+                        )
                         i
                     }
                 }

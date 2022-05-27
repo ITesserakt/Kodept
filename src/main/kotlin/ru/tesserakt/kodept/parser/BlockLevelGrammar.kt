@@ -11,7 +11,7 @@ object BlockLevelGrammar : Grammar<RLT.BlockLevelNode>() {
     private val expression by OperatorGrammar
     private val functionStatement by FunctionGrammar
 
-    val block = LBRACE * trailing(this) * RBRACE map {
+    val block = LBRACE and strictTrailing(this) * RBRACE map {
         RLT.Body.Block(RLT.Symbol(it.t1), it.t2, RLT.Symbol(it.t3))
     }
     val simple = FLOW * OperatorGrammar map {
@@ -22,10 +22,12 @@ object BlockLevelGrammar : Grammar<RLT.BlockLevelNode>() {
     val varDecl by (VAL or VAR) * IDENTIFIER * optional(COLON) * optional(TYPE) map {
         val ctor = if (it.t1.type == VAL.token) RLT.Variable::Immutable
         else RLT.Variable::Mutable
-        ctor(it.t1.keyword(),
+        ctor(
+            it.t1.keyword(),
             RLT.UserSymbol.Identifier(it.t2),
             it.t3?.let(RLT::Symbol),
-            it.t4?.let(RLT.UserSymbol::Type))
+            it.t4?.let(RLT.UserSymbol::Type)
+        )
     }
 
     val initialization by varDecl * EQUALS * (block or OperatorGrammar) map { (decl, op, expr) ->

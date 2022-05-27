@@ -1,5 +1,5 @@
 import ru.tesserakt.kodept.core.CompilationContext
-import ru.tesserakt.kodept.core.FileLoader
+import ru.tesserakt.kodept.core.MemoryLoader
 import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.emptyBlockAnalyzer
@@ -9,7 +9,12 @@ import ru.tesserakt.kodept.traversal.typeSimplifier
 
 fun main() {
     val context = CompilationContext {
-        loader = FileLoader()
+        loader = MemoryLoader.fromText(
+            """
+            module Main =>
+            fun main { println("Hello world") # it }
+        """.trimIndent()
+        )
         transformers = listOf(typeSimplifier)
         analyzers = listOf(moduleNameAnalyzer, moduleUniquenessAnalyzer, emptyBlockAnalyzer)
     }

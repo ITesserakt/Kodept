@@ -19,7 +19,7 @@ import ru.tesserakt.kodept.lexer.Lexer
 
 suspend fun <T : Any, U : T> WordSpecShouldContainerScope.test(parser: Parser<T>, element: String, shouldParse: U?) =
     element.let {
-        if (it.length > 20) "${it.take(20)}..." else it
+        if (it.length > 20) "${it.take(20)}..." else if (it.isEmpty() || it.isBlank()) "<empty string>" else it
     }.invoke {
         val lexer = Lexer()
 

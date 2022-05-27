@@ -14,11 +14,11 @@ object FunctionGrammar : Grammar<RLT.Function.Bodied>() {
         RLT.MaybeTypedParameter(RLT.UserSymbol.Identifier(name), type)
     }
 
-    val strictParameterList by LPAREN * trailing(strictlyTyped, COMMA) * RPAREN map {
+    val strictParameterList by LPAREN and strictTrailing(strictlyTyped, COMMA) * RPAREN map {
         RLT.TypedParameterTuple(RLT.Symbol(it.t1), it.t2, RLT.Symbol(it.t3))
     }
 
-    val parameterList by LPAREN * trailing(nonStrictlyTyped, COMMA) * RPAREN map {
+    val parameterList by LPAREN and strictTrailing(nonStrictlyTyped, COMMA) * RPAREN map {
         RLT.MaybeTypedParameterTuple(RLT.Symbol(it.t1), it.t2, RLT.Symbol(it.t3))
     }
 

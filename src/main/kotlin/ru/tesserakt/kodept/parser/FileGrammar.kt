@@ -9,11 +9,11 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.parser.RLT.File
 
 object FileGrammar : Grammar<File>() {
-    val moduleStatement by MODULE * TYPE * LBRACE * zeroOrMore(TopLevelGrammar) * RBRACE map { (moduleToken, name, lb, rest, rb) ->
+    val moduleStatement by (MODULE * TYPE * LBRACE) and strictTrailing(TopLevelGrammar) * RBRACE map { (moduleToken, name, lb, rest, rb) ->
         RLT.Module.Ordinary(RLT.Keyword(moduleToken), RLT.UserSymbol.Type(name), RLT.Symbol(lb), rest, RLT.Symbol(rb))
     }
 
-    val globalModuleStatement by MODULE * TYPE * FLOW * zeroOrMore(TopLevelGrammar) map { (moduleToken, name, f, rest) ->
+    val globalModuleStatement by MODULE * TYPE * FLOW * trailingUntilEOF(TopLevelGrammar) map { (moduleToken, name, f, rest) ->
         RLT.Module.Global(RLT.Keyword(moduleToken), RLT.UserSymbol.Type(name), RLT.Symbol(f), rest)
     }
 

@@ -78,6 +78,7 @@ class Infer {
                         is RLT.Enum -> node.beginObjectScope {
                             node.rest.bindAll()
                         }
+
                         is RLT.Struct -> node.beginObjectScope {
                             node.varsToAlloc.bindAll()
                             node.rest.forEach {
@@ -86,6 +87,7 @@ class Infer {
                                 }
                             }
                         }
+
                         is RLT.Trait -> node.beginObjectScope {
                             node.rest.forEach {
                                 when (it) {
@@ -148,6 +150,7 @@ class Infer {
         is RLT.Enum -> KnownType.Union(node.rest.map { KnownType.T(it.text.value()) })
         is RLT.Function -> KnownType.Fn(node.params.flatMap { it.params }
             .map { it.type?.known() ?: generateUniqueType() }, node.returnType?.known() ?: generateUniqueType())
+
         is RLT.MaybeTypedParameter -> node.type?.known() ?: generateUniqueType()
         is RLT.Module -> throw IllegalStateException()
         is RLT.Struct -> KnownType.Tuple(node.varsToAlloc.map { it.type.known() })
@@ -164,15 +167,18 @@ class Infer {
             op,
             generateUniqueType()
         )
+
         is RLT.Body.Block -> when (block.size) {
             0 -> Block(nonEmptyListOf(TupleLiteral.unit.right()), generateUniqueType())
             else -> when (val last = block.last()) {
                 is RLT.ExpressionNode ->
                     Block(nonEmptyListOf(last.annotateInScope().right()), generateUniqueType())
+
                 is RLT.StatementNode ->
                     Block(nonEmptyListOf(last.left(), TupleLiteral.unit.right()), generateUniqueType())
             }
         }
+
         is RLT.Body.Expression -> expression.annotateInScope()
         is RLT.If -> If(
             condition.annotateInScope(),
@@ -181,6 +187,7 @@ class Infer {
             el?.body?.annotateInScope() ?: BottomTypeLiteral,
             generateUniqueType()
         )
+
         is RLT.Literal.Floating -> FloatingLiteral(this, KnownType.Floating)
         is RLT.Literal.Number -> NumberLiteral(this, KnownType.Number)
         is RLT.Literal.Text -> when {
@@ -188,12 +195,14 @@ class Infer {
             isString() -> TextLiteral(this, KnownType.String)
             else -> TextLiteral(this, KnownType.BottomType)
         }
+
         is RLT.Parameter -> id.annotateInScope()
         is RLT.Application -> Application(
             expr.annotateInScope(),
             params.map { tuple -> TupleLiteral(tuple.params.map { it.annotateInScope() }, generateUniqueType()) },
             generateUniqueType()
         )
+
         is RLT.Reference -> Reference(ref, getType(findByReference(this)!!))
         is RLT.ContextualReference -> TODO()
         is RLT.UnaryOperation -> UnaryOperation(expression.annotateInScope(), op, generateUniqueType())

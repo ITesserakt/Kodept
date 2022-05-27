@@ -21,9 +21,11 @@ class MetadataStore(private val delegate: MutableSet<Key> = mutableSetOf()) :
     }
 
     inline fun <reified K : Key.Required> retrieveRequired() = retrieve<K>()
-        ?: throw IllegalStateException("Tried to get required data ${
-            K::class.simpleName
-        } from store, but corresponding processor was not fulfilled")
+        ?: throw IllegalStateException(
+            "Tried to get required data ${
+                K::class.simpleName
+            } from store, but corresponding processor was not fulfilled"
+        )
 
     inline fun <reified K : Key.Unique> retrieve() = retrieveMany<K>().firstOrNull()
 

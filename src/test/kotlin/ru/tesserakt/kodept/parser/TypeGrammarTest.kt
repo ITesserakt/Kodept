@@ -13,7 +13,7 @@ class TypeGrammarTest : WordSpec({
 
     "simple tuple types" should {
         test(TypeGrammar, "()", AST.TupleType.unit)
-        test(TypeGrammar, "(A)", AST.Type("A"))
+        test(TypeGrammar, "(A)", AST.TupleType(listOf("A").map(AST::Type)))
         test(TypeGrammar, "(A, B)", AST.TupleType(listOf("A", "B").map(AST::Type)))
     }
 

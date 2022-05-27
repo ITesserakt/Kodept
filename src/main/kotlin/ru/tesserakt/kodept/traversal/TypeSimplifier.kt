@@ -44,6 +44,7 @@ val typeSimplifier = object : Transformer<AST.TypeExpression> {
                     )
                 )
             )
+
             1 -> items.first()
             else -> copy(_items = items.toMutableList())
         }

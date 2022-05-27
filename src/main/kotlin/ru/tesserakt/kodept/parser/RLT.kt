@@ -51,11 +51,13 @@ data class RLT(val root: File) {
             require(match.type is LiteralToken || match.type is CharToken)
         }
 
-        override val text = Eval.now(when (val type = tokenType) {
-            is LiteralToken -> type.text
-            is CharToken -> type.text.toString()
-            else -> throw IllegalStateException("Impossible")
-        })
+        override val text = Eval.now(
+            when (val type = tokenType) {
+                is LiteralToken -> type.text
+                is CharToken -> type.text.toString()
+                else -> throw IllegalStateException("Impossible")
+            }
+        )
         override val description = text.value()
     }
 

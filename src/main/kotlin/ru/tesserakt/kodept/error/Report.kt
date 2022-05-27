@@ -11,7 +11,7 @@ data class Report(
 ) {
     enum class Severity { NOTE, WARNING, ERROR, CRASH }
 
-    override fun toString() = "$severity[${message.code}]: ${message.message}\n$file:${point?.head}:"
+    override fun toString() = "$severity[${message.code}]: ${message.message}\n$file:${point?.head ?: CodePoint(0, 0)}:"
 }
 
 interface ReportMessage {

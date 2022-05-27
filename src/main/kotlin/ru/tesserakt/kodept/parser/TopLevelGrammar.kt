@@ -10,7 +10,7 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     private val functionStatement by FunctionGrammar
 
-    val enumStatement by ENUM * -(STRUCT or CLASS) * TYPE * LBRACE * trailing(
+    val enumStatement by (ENUM * -(STRUCT or CLASS) * TYPE * LBRACE) and strictTrailing(
         TYPE, COMMA, atLeast = 1
     ) * RBRACE map { (enumToken, name, lb, entries, rb) ->
         RLT.Enum.Stack(
@@ -22,7 +22,7 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
         )
     }
 
-    val traitStatement by TRAIT * TYPE * optional(LBRACE * trailing(ObjectLevelGrammar.traitLevel or FunctionGrammar) * RBRACE) map { (traitToken, name, rest) ->
+    val traitStatement by TRAIT * TYPE * optional(LBRACE and strictTrailing(ObjectLevelGrammar.traitLevel or FunctionGrammar) * RBRACE) map { (traitToken, name, rest) ->
         val (lb, rest, rb) = rest ?: Tuple3(null, emptyList(), null)
         RLT.Trait(
             RLT.Keyword(traitToken),
@@ -34,9 +34,9 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     }
 
     val structStatement by STRUCT * TYPE * optional(
-        LPAREN * trailing(IDENTIFIER * -COLON * TYPE, COMMA) * RPAREN
+        LPAREN and strictTrailing(IDENTIFIER * -COLON * TYPE, COMMA) * RPAREN
     ) * optional(
-        LBRACE * trailing(FunctionGrammar) * RBRACE
+        LBRACE and strictTrailing(FunctionGrammar) * RBRACE
     ) map { (structToken, name, allocated, rest) ->
         val (lp, alloc, rp) = allocated ?: Tuple3(null, emptyList(), null)
         val (lb, rest, rb) = rest ?: Tuple3(null, emptyList(), null)
