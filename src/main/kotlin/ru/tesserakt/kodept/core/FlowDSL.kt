@@ -151,7 +151,7 @@ class AnalyzedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<AnalyzedC
     private val analyzed = flowable.ast.mapWithFilename { result ->
         result.flatMap(Semigroup.nonEmptyList()) {
             analyzers.foldAST(it) { analyzer, acc ->
-                unwrap { analyzer.analyze(acc).map { acc } }
+                unwrap { with(analyzer) { analyze(acc) }.map { acc } }
             }
         }
     }

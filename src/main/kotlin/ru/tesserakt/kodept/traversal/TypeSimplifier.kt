@@ -3,15 +3,17 @@ package ru.tesserakt.kodept.traversal
 import arrow.core.continuations.EagerEffectScope
 import arrow.core.continuations.eagerEffect
 import arrow.core.nel
+import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filename
 import ru.tesserakt.kodept.core.rlt
+import ru.tesserakt.kodept.core.wrap
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticWarning
 
-val typeSimplifier = object : Transformer<AST.TypeExpression> {
+object TypeSimplifier : Transformer<AST.TypeExpression> {
     override val type = AST.TypeExpression::class
 
     context (ReportCollector, Filename)
@@ -25,7 +27,34 @@ val typeSimplifier = object : Transformer<AST.TypeExpression> {
 
     context(AST.UnionType, ReportCollector, Filename)
             private suspend fun EagerEffectScope<UnrecoverableError>.transformUnion(): AST.TypeExpression {
-        val (unique, repeating) = items.groupBy { it }.values.partition { it.size == 1 }
+        ensure(items.size >= 2) {
+            UnrecoverableError(
+                Report(
+                    this@Filename,
+                    this@UnionType.rlt.position.nel(),
+                    Report.Severity.CRASH,
+                    CompilerCrash("Union type behaves like ordinary type: $items")
+                )
+            )
+        }
+
+        items.filterIsInstance<AST.UnionType>().reportEach {
+            Report(
+                this@Filename,
+                it.rlt.position.nel(),
+                Report.Severity.WARNING,
+                SemanticWarning.AlignWithType(it.toString())
+            )
+        }
+
+        val flattenedItems = items.flatMap {
+            when (it) {
+                is AST.UnionType -> it.items
+                else -> nonEmptyListOf(it)
+            }
+        }
+
+        val (unique, repeating) = flattenedItems.groupBy { it }.values.partition { it.size == 1 }
         repeating.reportEach {
             Report(
                 this@Filename, this@UnionType.rlt.position.nel(), Report.Severity.WARNING,
@@ -46,7 +75,7 @@ val typeSimplifier = object : Transformer<AST.TypeExpression> {
             )
 
             1 -> items.first()
-            else -> copy(_items = items.toMutableList())
+            else -> copy(_items = items.toMutableList()).also { it.metadata += this@UnionType.rlt.wrap() }
         }
     }
 

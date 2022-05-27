@@ -10,18 +10,18 @@ import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticNote
 import ru.tesserakt.kodept.error.SemanticWarning
 
-val emptyBlockAnalyzer = object : Analyzer {
-    private inline fun <reified N : AST.Node> Sequence<AST.Node>.generateReports(
-        reportSink: ReportCollector,
-        noinline predicate: (N) -> Boolean,
-        noinline action: (N) -> Report,
-    ) = with(reportSink) {
-        filterIsInstance<N>()
-            .filter(predicate)
-            .reportEach(action)
-    }
+private inline fun <reified N : AST.Node> Sequence<AST.Node>.generateReports(
+    reportSink: ReportCollector,
+    noinline predicate: (N) -> Boolean,
+    noinline action: (N) -> Report,
+) = with(reportSink) {
+    filterIsInstance<N>()
+        .filter(predicate)
+        .reportEach(action)
+}
 
-    context(ReportCollector) override fun analyze(ast: AST) = eagerEffect<UnrecoverableError, Unit> {
+val emptyBlockAnalyzer = Analyzer { ast ->
+    eagerEffect {
         val emptyStructures = ast.walkThrough {
             if ((it is AST.StructDecl && it.alloc.isEmpty()) ||
                 (it is AST.EnumDecl && it.enumEntries.isEmpty()) ||
@@ -31,7 +31,7 @@ val emptyBlockAnalyzer = object : Analyzer {
             ) it else null
         }.filterNotNull()
 
-        emptyStructures.generateReports<AST.StructDecl>(this@ReportCollector, { it.rlt.lparen != null }, {
+        emptyStructures.generateReports<AST.StructDecl>(this@Analyzer, { it.rlt.lparen != null }, {
             Report(
                 ast.filename,
                 it.rlt.lparen!!.position.nel(),
@@ -40,7 +40,7 @@ val emptyBlockAnalyzer = object : Analyzer {
             )
         })
 
-        emptyStructures.generateReports<AST.EnumDecl>(this@ReportCollector, { it.rlt.lbrace != null }) {
+        emptyStructures.generateReports<AST.EnumDecl>(this@Analyzer, { it.rlt.lbrace != null }) {
             Report(
                 ast.filename,
                 it.rlt.lbrace!!.position.nel(),
@@ -50,7 +50,7 @@ val emptyBlockAnalyzer = object : Analyzer {
         }
 
         emptyStructures.generateReports<AST.AbstractFunctionDecl>(
-            this@ReportCollector,
+            this@Analyzer,
             { decl -> decl.rlt.params.any { it.params.isEmpty() } }) {
             Report(
                 ast.filename,
@@ -61,7 +61,7 @@ val emptyBlockAnalyzer = object : Analyzer {
         }
 
         emptyStructures.generateReports<AST.FunctionDecl>(
-            this@ReportCollector,
+            this@Analyzer,
             { decl -> decl.rlt.params.any { it.params.isEmpty() } }) {
             Report(
                 ast.filename,
@@ -71,7 +71,7 @@ val emptyBlockAnalyzer = object : Analyzer {
             )
         }
 
-        emptyStructures.generateReports<AST.ExpressionList>(this@ReportCollector, { true }) {
+        emptyStructures.generateReports<AST.ExpressionList>(this@Analyzer, { true }) {
             Report(
                 ast.filename,
                 it.rlt.lbrace.position.nel(),

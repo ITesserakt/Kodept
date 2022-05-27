@@ -9,7 +9,7 @@ fun main() {
         loader = MemoryLoader.fromText(
             """
             module Main =>
-            fun main { 
+            fun main: (A | ((A | B) | B) | B) { 
                 val a
                 val b
                 val a
@@ -17,7 +17,7 @@ fun main() {
             }
         """.trimIndent()
         )
-        transformers = listOf(typeSimplifier)
+        transformers = listOf(TypeSimplifier)
         analyzers = listOf(moduleNameAnalyzer, moduleUniquenessAnalyzer, emptyBlockAnalyzer, variableUniqueness)
     }
 

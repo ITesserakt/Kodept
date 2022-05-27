@@ -496,6 +496,11 @@ data class AST(val root: Node, val filename: Filename) {
         }
 
         constructor(items: Iterable<TypeExpression>) : this(items.toMutableList())
+
+        override fun equals(other: Any?): Boolean =
+            other is TupleType && _items.containsAll(other._items) && other._items.containsAll(_items)
+
+        override fun hashCode() = _items.hashCode()
     }
 
     data class UnionType(private val _items: MutableList<TypeExpression>) : TypeExpression() {
@@ -508,6 +513,11 @@ data class AST(val root: Node, val filename: Filename) {
         override fun toString() = items.joinToString(" | ", "(", ")")
 
         constructor(items: NonEmptyList<TypeExpression>) : this(items.toMutableList())
+
+        override fun equals(other: Any?): Boolean =
+            other is UnionType && _items.containsAll(other._items) && other._items.containsAll(_items)
+
+        override fun hashCode(): Int = _items.hashCode()
     }
 
     class IfExpr(

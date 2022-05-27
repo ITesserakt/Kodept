@@ -55,8 +55,7 @@ fun emptyStore() = MetadataStore()
 
 fun RLT.Node.wrap() = MetadataStore.Key.RLTReference(this)
 
-@Suppress("UNCHECKED_CAST")
-private fun <R : RLT.Node> AST.Node.retrieveRLTNode() =
+private inline fun <reified R : RLT.Node> AST.Node.retrieveRLTNode() =
     metadata.retrieveRequired<MetadataStore.Key.RLTReference>().value as R
 
 val AST.FileDecl.rlt get() = retrieveRLTNode<RLT.File>()

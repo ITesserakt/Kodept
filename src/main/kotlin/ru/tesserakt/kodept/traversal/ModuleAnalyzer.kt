@@ -6,13 +6,12 @@ import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.rlt
 import ru.tesserakt.kodept.error.Report
-import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
 import ru.tesserakt.kodept.error.SemanticWarning
 import ru.tesserakt.kodept.parser.RLT
 
-val moduleNameAnalyzer = object : Analyzer {
-    context(ReportCollector) override fun analyze(ast: AST) = eagerEffect<UnrecoverableError, Unit> {
+val moduleNameAnalyzer = Analyzer { ast ->
+    eagerEffect {
         ast.flatten().filterIsInstance<AST.ModuleDecl>()
             .groupBy { it.name }
             .values
@@ -29,8 +28,8 @@ val moduleNameAnalyzer = object : Analyzer {
     }
 }
 
-val moduleUniquenessAnalyzer = object : Analyzer {
-    context(ReportCollector) override fun analyze(ast: AST) = eagerEffect<UnrecoverableError, Unit> {
+val moduleUniquenessAnalyzer = Analyzer { ast ->
+    eagerEffect {
         val modules = ast.flatten().filterIsInstance<AST.ModuleDecl>().filter { !it.global }.toList()
         if (modules.size != 1) return@eagerEffect
         val head = modules.first()

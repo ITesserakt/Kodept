@@ -29,14 +29,13 @@ fun <A : AST.Node> Transformer<A>.transformOrSkip(node: AST.Node) =
     type.safeCast(node)?.let { transform(it) } ?: eagerEffect { node }
 
 fun interface Analyzer {
-    context(ReportCollector)
-    fun analyze(ast: AST): EagerEffect<UnrecoverableError, Unit>
+    fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit>
 }
 
 fun <T> unwrap(f: ReportCollector.() -> EagerEffect<out UnrecoverableError, T>) = with(ReportCollector()) {
     f(this).fold({ (it.crashReport.nel() + collectedReports).leftIor() }, {
-        if (collectedReports.isEmpty()) it.rightIor()
-        else if (collectedReports.any { report -> report.severity == Report.Severity.ERROR }) definitelyCollected.leftIor()
+        if (!hasReports) it.rightIor()
+        else if (hasErrors) definitelyCollected.leftIor()
         else Ior.Both(definitelyCollected, it)
     })
 }
