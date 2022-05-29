@@ -34,6 +34,8 @@ class CompilationContext private constructor(
         fun <U : Flowable.Data, T : Flowable.Data, FT : Flowable<T>, FU : Flowable<U>> FT.then(f: T.() -> FU) =
             result.f()
 
+        fun <T : Flowable.Data, FT : Flowable<T>, U> FT.also(f: T.() -> U) = result to result.f()
+
         context (Flowable.Data.Holder)
         fun <U : Flowable.Data.UnprocessedAST, FU : Flowable<U>, T : Flowable.Data.Forest, FT : Flowable<T>> FU.fallback(
             f: FT,

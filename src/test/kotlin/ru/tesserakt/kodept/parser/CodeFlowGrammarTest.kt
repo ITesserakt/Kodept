@@ -1,6 +1,5 @@
 package ru.tesserakt.kodept.parser
 
-import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 import ru.tesserakt.kodept.core.AST
 
@@ -27,10 +26,13 @@ class CodeFlowGrammarTest : WordSpec({
             CodeFlowGrammar,
             """while s.isEmpty() { doA() }""",
             AST.WhileExpr(
-                AST.TermChain(nonEmptyListOf(AST.Reference("s"), AST.FunctionCall(AST.Reference("isEmpty"), listOf()))),
-                AST.FunctionCall(AST.Reference(
-                    "doA",
-                ), listOf())),
+                AST.Dereference(AST.Reference("s"), AST.FunctionCall(AST.Reference("isEmpty"), listOf())),
+                AST.FunctionCall(
+                    AST.Reference(
+                        "doA",
+                    ), listOf()
+                )
+            ),
         )
     }
 
@@ -63,10 +65,10 @@ class CodeFlowGrammarTest : WordSpec({
                     AST.Comparison.Kind.Equal,
 
                     ),
-                AST.TermChain(nonEmptyListOf(AST.Reference("opcode"), AST.Reference("foreignKey"))),
+                AST.Dereference(AST.Reference("opcode"), AST.Reference("foreignKey")),
                 listOf(),
                 AST.IfExpr.ElseExpr(
-                    AST.TermChain(nonEmptyListOf(AST.Reference("opcode"), AST.Reference("primaryKey"))),
+                    AST.Dereference(AST.Reference("opcode"), AST.Reference("primaryKey")),
 
                     ),
 

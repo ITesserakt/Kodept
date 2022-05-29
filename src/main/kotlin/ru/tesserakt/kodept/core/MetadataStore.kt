@@ -18,6 +18,11 @@ class MetadataStore(private val delegate: MutableSet<Key> = mutableSetOf()) :
             @Suppress("UNCHECKED_CAST")
             operator fun <T : RLT.Node> invoke() = value as T
         }
+
+        @JvmInline
+        value class Referral(val value: AST.Referable) : Unique {
+            operator fun invoke() = value
+        }
     }
 
     inline fun <reified K : Key.Required> retrieveRequired() = retrieve<K>()
@@ -54,6 +59,7 @@ class MetadataStore(private val delegate: MutableSet<Key> = mutableSetOf()) :
 fun emptyStore() = MetadataStore()
 
 fun RLT.Node.wrap() = MetadataStore.Key.RLTReference(this)
+fun AST.Referable.wrap() = MetadataStore.Key.Referral(this)
 
 private inline fun <reified R : RLT.Node> AST.Node.retrieveRLTNode() =
     metadata.retrieveRequired<MetadataStore.Key.RLTReference>().value as R
@@ -79,7 +85,7 @@ val AST.Assignment.rlt get() = retrieveRLTNode<RLT.Assignment>()
 val AST.Reference.rlt get() = retrieveRLTNode<RLT.Reference>()
 val AST.TypeReference.rlt get() = retrieveRLTNode<RLT.Reference>()
 val AST.FunctionCall.rlt get() = retrieveRLTNode<RLT.Application>()
-val AST.TermChain.rlt get() = retrieveRLTNode<RLT.BinaryOperation>()
+val AST.Dereference.rlt get() = retrieveRLTNode<RLT.BinaryOperation>()
 val AST.ExpressionList.rlt get() = retrieveRLTNode<RLT.Body.Block>()
 val AST.TypeExpression.rlt get() = retrieveRLTNode<RLT.TypeNode>()
 val AST.Type.rlt get() = retrieveRLTNode<RLT.UserSymbol.Type>()
@@ -90,3 +96,5 @@ val AST.IfExpr.ElifExpr.rlt get() = retrieveRLTNode<RLT.If.Elif>()
 val AST.IfExpr.ElseExpr.rlt get() = retrieveRLTNode<RLT.If.Else>()
 val AST.WhileExpr.rlt get() = retrieveRLTNode<RLT.While>()
 val AST.Node.rlt get() = retrieveRLTNode<RLT.Node>()
+
+val AST.Reference.referral get() = metadata.retrieve<MetadataStore.Key.Referral>()

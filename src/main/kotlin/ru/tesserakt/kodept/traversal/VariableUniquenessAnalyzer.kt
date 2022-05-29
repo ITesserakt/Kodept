@@ -13,14 +13,14 @@ val variableUniqueness = object : Analyzer() {
     override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
         val blocks = ast.fastFlatten { it is AST.ExpressionList }
 
-        blocks.flatMap {
-            it.children().filterIsInstance<AST.VariableDecl>().groupBy(AST.VariableDecl::name).values
+        blocks.flatMap { node ->
+            node.children().filterIsInstance<AST.VariableDecl>().groupBy { it.reference }.values
         }.filter { it.size != 1 }.reportEach { vars ->
             Report(
                 ast.filename,
                 NonEmptyList.fromListUnsafe(vars.map { it.rlt.id.position }),
                 Report.Severity.ERROR,
-                SemanticError.DuplicatedVariable(vars.first().name.name)
+                SemanticError.DuplicatedVariable(vars.first().reference.name)
             )
         }
     }

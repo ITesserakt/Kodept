@@ -1,13 +1,9 @@
 module Prelude =>
 
-enum struct Bool { True, False }
+fun println {}
 
-struct BoolLike {
-    fun xor(self: Bool, other: Bool) {}
+fun printFrom(x): () =>
+    if x > 0 => println(x, printFrom(x - 1))
+    else => ()
 
-    fun not(trait: Bool) => xor(trait, True)
-}
-
-struct Int
-
-fun main => println(not(True))
+fun main => True

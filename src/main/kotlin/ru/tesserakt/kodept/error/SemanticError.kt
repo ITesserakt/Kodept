@@ -15,10 +15,15 @@ sealed class SemanticError(final override val code: String, override val message
         SemanticError("KSeE3", "Usage of undeclared $name")
 
     data class AmbitiousReference(val name: String) :
-        SemanticError("KSeE4", "Ambitious usage of $name")
+        SemanticError("KSeE4", "Ambitious usage of $name") {
+        override val additionalMessage = "matches"
+    }
 
     data class DuplicatedVariable(val name: String) :
         SemanticError("KSeE5", "Variable `$name` has duplicates in one block")
 
     object Duplicated : SemanticError("KSeE6", "Declaration has duplicates across block")
+
+    data class UninitializedUsage(val name: String) :
+        SemanticError("KSeE6", "Variable `$name` should be initialized before use")
 }

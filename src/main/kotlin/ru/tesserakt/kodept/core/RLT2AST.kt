@@ -1,6 +1,5 @@
 package ru.tesserakt.kodept.core
 
-import arrow.core.nonEmptyListOf
 import arrow.core.partially2
 import arrow.core.partially3
 import com.github.h0tk3y.betterParse.lexer.Token
@@ -23,17 +22,18 @@ private fun expandCompound(left: AST.Lvalue, right: AST.Expression, token: Token
     ExpressionToken.EQUALS.token -> { _, r -> r }
     else -> throw IllegalStateException("Impossible")
 }.let {
-    AST.Assignment(left, it(left, right))
+    fun copyLvalue(value: AST.Lvalue) = when (value) {
+        is AST.Dereference -> value.copy()
+        is AST.FunctionCall -> value.copy()
+        is AST.Reference -> value.copy()
+        is AST.TypeReference -> value.copy()
+    }
+
+    AST.Assignment(left, it(copyLvalue(left), right))
 }
 
 private fun expandBinary(left: AST.Expression, right: AST.Expression, token: Token): AST.Expression = when (token) {
-    ExpressionToken.DOT.token -> { l, r ->
-        when (l) {
-            is AST.TermChain -> AST.TermChain(l.terms + r)
-            else -> AST.TermChain(nonEmptyListOf(l, r))
-        }
-    }
-
+    ExpressionToken.DOT.token -> AST::Dereference
     ExpressionToken.PLUS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
     ExpressionToken.SUB.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
     ExpressionToken.TIMES.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
@@ -65,7 +65,7 @@ private fun expandUnary(expression: AST.Expression, token: Token) = when (token)
 
 private fun RLT.Context.convert(): AST.ResolutionContext = when (this) {
     is RLT.Context.Global -> AST.ResolutionContext(true, emptyList())
-    is RLT.Context.Inner -> AST.ResolutionContext(global, parent.convert().chain + type.convert() as AST.TypeReference)
+    is RLT.Context.Inner -> AST.ResolutionContext(global, parent.convert().chain + AST.Type(type.ref.text.value()))
     RLT.Context.Local -> AST.ResolutionContext(false, emptyList())
 }
 
@@ -229,7 +229,7 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
 }
 
 private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
-    is RLT.Variable -> convert().name
+    is RLT.Variable -> convert().reference
     is RLT.TermNode -> convert()
 }
 

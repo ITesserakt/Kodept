@@ -42,6 +42,9 @@ class ReportProcessor private constructor(
             }
         }
 
-        return "$report\n${codeWindows.joinToString("\n")}"
+        val str = "$report\n${codeWindows.joinToString("\n")}"
+        return if (report.message is CompilerCrash)
+            str + "\n" + report.message.stackTraceToString()
+        else str
     }
 }

@@ -28,7 +28,6 @@ data class AST(val root: Node, val filename: Filename) {
     sealed interface Named : Node {
         val name: String
     }
-
     sealed interface TopLevel : Named
     sealed interface ObjectLevel : Named
     sealed interface StructLevel : ObjectLevel
@@ -39,6 +38,7 @@ data class AST(val root: Node, val filename: Filename) {
     sealed interface Statement : BlockLevel
     sealed interface Literal : Expression
     sealed interface Lvalue : Expression
+    sealed interface Referable : Statement, Named
 
     sealed class NodeBase : Node {
         final override var parent: Node? = null
@@ -58,7 +58,9 @@ data class AST(val root: Node, val filename: Filename) {
         final override val metadata = emptyStore()
     }
 
-    class Parameter(val name: String, type: TypeExpression) : NodeBase() {
+    object Stub : Leaf(), Literal, Statement
+
+    class Parameter(override val name: String, type: TypeExpression) : NodeBase(), Referable {
         var type = type
             private set
 
@@ -91,7 +93,7 @@ data class AST(val root: Node, val filename: Filename) {
         }
     }
 
-    class InferredParameter(val name: String, type: TypeExpression?) : NodeBase() {
+    class InferredParameter(override val name: String, type: TypeExpression?) : NodeBase(), Referable {
         var type = type
             private set
 
@@ -134,8 +136,8 @@ data class AST(val root: Node, val filename: Filename) {
         constructor(modules: NonEmptyList<ModuleDecl>) : this(modules.toMutableList())
     }
 
-    data class ModuleDecl(val name: String, val global: Boolean, private val _rest: MutableList<TopLevel>) :
-        NodeBase() {
+    data class ModuleDecl(override val name: String, val global: Boolean, private val _rest: MutableList<TopLevel>) :
+        NodeBase(), Named {
         val rest get() = _rest.toList()
 
         override fun children() = rest
@@ -240,7 +242,7 @@ data class AST(val root: Node, val filename: Filename) {
     class FunctionDecl(
         override val name: String,
         private val _params: MutableList<InferredParameter>, returns: TypeExpression?, rest: Expression,
-    ) : NodeBase(), TopLevel, StructLevel, TraitLevel, Statement {
+    ) : NodeBase(), TopLevel, StructLevel, TraitLevel, Referable {
         var returns = returns
             private set
         var rest = rest
@@ -292,17 +294,18 @@ data class AST(val root: Node, val filename: Filename) {
         ) : this(name, params.toMutableList(), returns, rest)
     }
 
-    class VariableDecl(
-        val name: Reference, val mutable: Boolean, type: TypeExpression?,
-    ) : NodeBase(), Statement {
+    open class VariableDecl(
+        val reference: Reference, val mutable: Boolean, type: TypeExpression?,
+    ) : NodeBase(), Referable {
         var type = type
             private set
+        override val name = reference.name
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
-        override fun children() = listOf(name) + listOfNotNull(type)
+        override fun children() = listOf(reference) + listOfNotNull(type)
 
-        fun copy(name: Reference = this.name, mutable: Boolean = this.mutable, type: TypeExpression? = this.type) =
+        fun copy(name: Reference = this.reference, mutable: Boolean = this.mutable, type: TypeExpression? = this.type) =
             VariableDecl(name, mutable, type)
 
         override fun equals(other: Any?): Boolean {
@@ -311,7 +314,7 @@ data class AST(val root: Node, val filename: Filename) {
 
             other as VariableDecl
 
-            if (name != other.name) return false
+            if (reference != other.reference) return false
             if (mutable != other.mutable) return false
             if (type != other.type) return false
 
@@ -319,51 +322,53 @@ data class AST(val root: Node, val filename: Filename) {
         }
 
         override fun hashCode(): Int {
-            var result = name.hashCode()
+            var result = reference.hashCode()
             result = 31 * result + mutable.hashCode()
             result = 31 * result + (type?.hashCode() ?: 0)
             return result
         }
 
         override fun toString(): String {
-            return "VariableDecl(name='$name', mutable=$mutable, type=$type)"
+            return "VariableDecl(name='$reference', mutable=$mutable, type=$type)"
         }
     }
 
-    class InitializedVar(decl: VariableDecl, expr: Node) : NodeBase(), Statement {
-        var decl = decl
-            private set
+    class InitializedVar(reference: Reference, mutable: Boolean, type: TypeExpression?, expr: Expression) :
+        VariableDecl(reference, mutable, type) {
         var expr = expr
             private set
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            ::decl.replace(old, new) || ::expr.replace(old, new)
+            super.replaceChild(old, new) || ::expr.replace(old, new)
 
-        override fun children() = listOf(decl, expr)
+        override fun children() = super.children() + expr
 
-        fun copy(decl: VariableDecl = this.decl, expr: Node = this.expr) = InitializedVar(decl, expr)
+        fun copy(reference: Reference, mutable: Boolean, type: TypeExpression?, expr: Expression) =
+            InitializedVar(reference, mutable, type, expr)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
+            if (!super.equals(other)) return false
 
             other as InitializedVar
 
-            if (decl != other.decl) return false
             if (expr != other.expr) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = decl.hashCode()
+            var result = super.hashCode()
             result = 31 * result + expr.hashCode()
             return result
         }
 
         override fun toString(): String {
-            return "InitializedVar(decl=$decl, expr=$expr)"
+            return "InitializedVar(reference=$reference, mutable=$mutable, type=$type expr=$expr)"
         }
+
+        constructor(decl: VariableDecl, expr: Expression) : this(decl.reference, decl.mutable, decl.type, expr)
     }
 
     data class DecimalLiteral(val value: BigInteger) : Leaf(), Literal
@@ -400,12 +405,8 @@ data class AST(val root: Node, val filename: Filename) {
         override fun children(): List<Node> = listOf(left, right)
 
         override fun <A : Node?> replaceChild(old: A, new: A) =
-            (::left as KMutableProperty0<Expression>).replace(
-                old,
-                new
-            ) || (::right as KMutableProperty0<Expression>).replace(
-                old, new
-            )
+            new is Expression && (left == old && true.apply { left = new } ||
+                    right == old && true.apply { right = new })
     }
 
     data class Mathematical(override var left: Expression, override var right: Expression, val kind: Kind) :
@@ -443,8 +444,39 @@ data class AST(val root: Node, val filename: Filename) {
     data class BitInversion(override var expr: Expression) : UnaryOperator()
     data class Absolution(override var expr: Expression) : UnaryOperator()
     data class Elvis(override var left: Expression, override var right: Expression) : BinaryOperator()
-    data class Assignment(override var left: Expression, override var right: Expression) : BinaryOperator()
-    data class ResolutionContext(val fromRoot: Boolean, val chain: List<TypeReference>)
+    class Assignment(left: Lvalue, right: Expression) : NodeBase(), Expression {
+        var left = left
+            private set
+        var right = right
+            private set
+
+        override fun children() = listOf(left, right)
+        override fun <A : Node?> replaceChild(old: A, new: A) = ::left.replace(old, new) || ::right.replace(old, new)
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Assignment
+
+            if (left != other.left) return false
+            if (right != other.right) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = left.hashCode()
+            result = 31 * result + right.hashCode()
+            return result
+        }
+
+        override fun toString(): String {
+            return "Assignment(left=$left, right=$right)"
+        }
+    }
+
+    data class ResolutionContext(val fromRoot: Boolean, val chain: List<Type>)
     data class Reference(override val name: String, val resolutionContext: ResolutionContext? = null) : Leaf(), Lvalue,
         Named
 
@@ -495,13 +527,7 @@ data class AST(val root: Node, val filename: Filename) {
         )
     }
 
-    data class TermChain(private val _terms: MutableList<Node>) : NodeBase(), Lvalue {
-        val terms get() = _terms.toList()
-        override fun children() = terms
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _terms.replace(old, new)
-
-        constructor(terms: Iterable<Node>) : this(terms.toMutableList())
-    }
+    data class Dereference(override var left: Expression, override var right: Expression) : BinaryOperator(), Lvalue
 
     data class ExpressionList(private val _expressions: MutableList<BlockLevel>) : NodeBase(), Expression {
         val expressions get() = _expressions.toList()

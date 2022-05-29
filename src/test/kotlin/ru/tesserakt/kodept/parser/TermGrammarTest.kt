@@ -1,7 +1,5 @@
 package ru.tesserakt.kodept.parser
 
-import arrow.core.NonEmptyList
-import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 import ru.tesserakt.kodept.core.AST
 
@@ -28,12 +26,20 @@ class TermGrammarTest : WordSpec({
     }
 
     "chain" should {
-        test(OperatorGrammar.access,
+        test(
+            OperatorGrammar.access,
             "key.on()",
-            AST.TermChain(nonEmptyListOf(AST.Reference("key"), AST.FunctionCall(AST.Reference("on"), listOf()))))
-        test(OperatorGrammar.access, "id(x).id(x).id(x)", AST.TermChain(NonEmptyList.fromListUnsafe(List(3) {
-            AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x")))))
-        })))
+            AST.Dereference(AST.Reference("key"), AST.FunctionCall(AST.Reference("on"), listOf()))
+        )
+        test(
+            OperatorGrammar.access, "id(x).id(x).id(x)", AST.Dereference(
+                AST.Dereference(
+                    AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x"))))),
+                    AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x")))))
+                ),
+                AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x")))))
+            )
+        )
         test(OperatorGrammar.access, "id().id().", null)
     }
 })

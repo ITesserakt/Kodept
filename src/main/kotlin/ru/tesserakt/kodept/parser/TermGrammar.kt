@@ -12,11 +12,17 @@ object TermGrammar : Grammar<RLT.TermNode>() {
 
     val reference by variableReference or typeReference
 
-    val contextual by optional(DOUBLE_COLON) * oneOrMore(typeReference * DOUBLE_COLON) map { (global, rest) ->
-        rest.fold(if (global != null) RLT.Context.Global(RLT.Symbol(global)) else RLT.Context.Local) { acc, next ->
-            RLT.Context.Inner(next.t1, acc)
+    val contextual by (DOUBLE_COLON map {
+        RLT.Context.Global(RLT.Symbol(it))
+    }) or (DOUBLE_COLON * oneOrMore(typeReference * DOUBLE_COLON) map { (global, rest) ->
+        rest.fold(RLT.Context.Global(RLT.Symbol(global)) as RLT.Context) { acc, (type, _) ->
+            RLT.Context.Inner(type, acc)
         }
-    }
+    } or (oneOrMore(typeReference * DOUBLE_COLON) map {
+        it.fold(RLT.Context.Local as RLT.Context) { acc, (next, _) ->
+            RLT.Context.Inner(next, acc)
+        }
+    }))
 
 
     override val rootParser = contextual * reference map (RLT::ContextualReference.curry()) or

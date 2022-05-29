@@ -1,6 +1,5 @@
 package ru.tesserakt.kodept.parser
 
-import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 import ru.tesserakt.kodept.core.AST
 
@@ -107,13 +106,26 @@ class OperatorGrammarTest : WordSpec({
                     AST.DecimalLiteral(2.toBigInteger()),
                     AST.DecimalLiteral(2.toBigInteger()),
                     AST.Mathematical.Kind.Add))))))
-        test(OperatorGrammar,
+        test(
+            OperatorGrammar,
             """core.println("Hello, " + "world!")""",
-            AST.TermChain(nonEmptyListOf(AST.Reference("core"),
-                AST.FunctionCall(AST.Reference("println"),
-                    listOf(AST.TupleLiteral(listOf(AST.Mathematical(
-                        AST.StringLiteral("Hello, "),
-                        AST.StringLiteral("world!"),
-                        AST.Mathematical.Kind.Add))))))))
+            AST.Dereference(
+                AST.Reference("core"),
+                AST.FunctionCall(
+                    AST.Reference("println"),
+                    listOf(
+                        AST.TupleLiteral(
+                            listOf(
+                                AST.Mathematical(
+                                    AST.StringLiteral("Hello, "),
+                                    AST.StringLiteral("world!"),
+                                    AST.Mathematical.Kind.Add
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
     }
 })
