@@ -2448,6 +2448,16 @@ INPUT ./rndhpc_kr_2021_GBSEBusinessLogic_rk6_71b_TrishinIV.out
 INPUT ./rndhpc_kr_2021_GBSEBusinessLogic_rk6_71b_TrishinIV.out
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t2a.enc
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb

@@ -39,28 +39,28 @@
 \usepackage{hyperxmp}
 \usepackage{hyperref}
 \hypersetup{%
-    bookmarks=false,        % show bookmarks bar?
-    pdftoolbar=true,        % show Acrobat’s toolbar?
-    pdfmenubar=true,        % show Acrobat’s menu?
-    pdffitwindow=false,     % window fit to page when opened
-    pdfstartview={FitH},    % fits the width of the page to the window
-    pdftitle={\Title},    	% title
-    pdfauthor={\Author},    % author
-%		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
-		pdfcopyright={CC BY 4.0, \Year, \Author.},
-		pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
-    pdfsubject={\SubjectOfResearch},   % subject of the document
-    pdfcreator={\pdftexbanner},   % creator of the document
-%		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
-		pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
-    pdfproducer={\Author(\gitAuthorEmail), \group, \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
-    pdfkeywords={\keywordsru, \keywordsen}, % producer of the document
-    pdfnewwindow=true,      % links in new window
-    colorlinks=true,
-    citecolor=purple,
-    linkcolor=red,      % color of internal links (change box color with linkbordercolor)
-    urlcolor=green,
-    filecolor=black      % color of file links
+  bookmarks=false,        % show bookmarks bar?
+  pdftoolbar=true,        % show Acrobat’s toolbar?
+  pdfmenubar=true,        % show Acrobat’s menu?
+  pdffitwindow=false,     % window fit to page when opened
+  pdfstartview={FitH},    % fits the width of the page to the window
+  pdftitle={\Title},    	% title
+  pdfauthor={\Author},    % author
+  %		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
+  pdfcopyright={CC BY 4.0, \Year, \Author.},
+  pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
+  pdfsubject={\SubjectOfResearch},   % subject of the document
+  pdfcreator={\pdftexbanner},   % creator of the document
+  %		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
+  pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
+  pdfproducer={\Author(\gitAuthorEmail), \group, \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
+  pdfkeywords={\keywordsru, \keywordsen}, % producer of the document
+  pdfnewwindow=true,      % links in new window
+  colorlinks=true,
+  citecolor=purple,
+  linkcolor=red,      % color of internal links (change box color with linkbordercolor)
+  urlcolor=green,
+  filecolor=black      % color of file links
 }
 %----------------------------------------------------------------
 \usepackage{xspace}
@@ -71,7 +71,7 @@
 \makeglossaries
 %----------------------------------------------------------
 % поддержка inparaenum
-\usepackage{paralist} 
+\usepackage{paralist}
 %----------------------------------------------------------
 % нужно для определения окружения description
 %\usepackage{enumitem} 
@@ -126,7 +126,7 @@
 \fancyhf{} % clear all headers and footers - equivalent to %\fancyhead{} and \fancyfoot{}
 \renewcommand{\headrulewidth}{0.0pt}
 \renewcommand{\footrulewidth}{0.0pt}
-\renewcommand{\chaptermark}[1]{\markboth{ \chaptername\ \thechapter }{}} 
+\renewcommand{\chaptermark}[1]{\markboth{ \chaptername\ \thechapter }{}}
 %\renewcommand{\chaptermark}[1]{\markboth{ \chaptername\ \thechapter ~ \ #1}{}} 
 %\renewcommand{\sectionmark}[1]{\markright{\thesection ~ \ #1}}
 
@@ -139,11 +139,11 @@
 %----------------------------------------%
 %Необходимо для того, чтобы при использовании команды \thispagestyle{plain} стиль plain был переопределён на этот
 \fancypagestyle{plain}{%
-\fancyhf{}% clear all header and footer fields
-\renewcommand{\headrulewidth}{0pt}%
-\renewcommand{\footrulewidth}{0pt}%
-\fancyhead[C]{\thepage}
-\fancyfoot[C]{}
+  \fancyhf{}% clear all header and footer fields
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+  \fancyhead[C]{\thepage}
+  \fancyfoot[C]{}
 }
 %----------------------------------------%
 %Необходимо для того, чтобы при использовании команды \thispagestyle{tocpage} стиль tocpage был переопределён на этот
@@ -157,8 +157,8 @@
 
 %----------------------------------------------------------
 \usepackage[hpos=0.98\paperwidth, % .98 to prevent bleed
-            vpos=0.7\paperwidth,
-            angle=90]{draftwatermark}
+  vpos=0.7\paperwidth,
+  angle=90]{draftwatermark}
 
 \SetWatermarkText{\authorSIDright}
 %\SetWatermarkColor[gray]{0.1}
@@ -208,10 +208,10 @@
 %\DeclareAssociatedCounters{chapter}{cchapter,apxchapters}
 %
 %\preto\appendix{%
-  %% save the number of true chapters
-  %%\setcounter{truechapters}{\value{chapter}}%
-  %% reset the number of chapters
-  %\setcounter{apxchapters}{0}%
+%% save the number of true chapters
+%%\setcounter{truechapters}{\value{chapter}}%
+%% reset the number of chapters
+%\setcounter{apxchapters}{0}%
 %}
 %----------------------------------------------------------
 % необходимо для работы команды \xspace (умный пробел после замены, осуществляемой некоторой командой в тексте)
@@ -243,33 +243,33 @@
 
 \lstset
 {%
-		extendedchars=\true, % включаем не латиницу
-		frame=tb, % рамка сверху и снизу
-		escapechar=|, % |«выпадаем» в LATEX|
-		xleftmargin=0.5cm,
-		xrightmargin=0.5cm,
-		columns=fullflexible,
-%		aboveskip=5pt,
-		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-		numbersep=4pt,                   % how far the line-numbers are from the code
-		showspaces=false,
-		showstringspaces=false,
-		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
-		breaklines=true,                 % sets automatic line breaking
-		basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
-		commentstyle=\color{gray}\itshape, % шрифт для комментариев
-		stringstyle=\color{orange},
-%		stringstyle=\bfseries, % шрифт для строк
-		numberstyle=\footnotesize\color{gray},
-%		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
-		keywordstyle=\color{blue}\bfseries,
-%		directivestyle=\color{red},
-%		emph={int,char,double,float,unsigned,bool,string},
-		emphstyle={\color{blue}\bfseries},
-		tabsize=2,
-%		morecomment=[l]{//},
-%		otherkeywords={=,==,:,&},
-		texcl=true,
+  extendedchars=\true, % включаем не латиницу
+  frame=tb, % рамка сверху и снизу
+  escapechar=|, % |«выпадаем» в LATEX|
+  xleftmargin=0.5cm,
+  xrightmargin=0.5cm,
+  columns=fullflexible,
+  %		aboveskip=5pt,
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=4pt,                   % how far the line-numbers are from the code
+  showspaces=false,
+  showstringspaces=false,
+  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
+  commentstyle=\color{gray}\itshape, % шрифт для комментариев
+  stringstyle=\color{orange},
+  %		stringstyle=\bfseries, % шрифт для строк
+  numberstyle=\footnotesize\color{gray},
+  %		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
+  keywordstyle=\color{blue}\bfseries,
+  %		directivestyle=\color{red},
+  %		emph={int,char,double,float,unsigned,bool,string},
+  emphstyle={\color{blue}\bfseries},
+  tabsize=2,
+  %		morecomment=[l]{//},
+  %		otherkeywords={=,==,:,&},
+  texcl=true,
 }
 
 \lstloadlanguages{Python, C++}
@@ -291,8 +291,8 @@
 \makeatother
 \def\textunderset#1#2{\leavevmode
   \vtop{\offinterlineskip\halign{%
-    \hfil##\hfil\cr\strut#2\cr\noalign{\kern-.3ex}
-    \hidewidth\dynscriptsize\strut#1\hidewidth\cr}}}
+      \hfil##\hfil\cr\strut#2\cr\noalign{\kern-.3ex}
+      \hidewidth\dynscriptsize\strut#1\hidewidth\cr}}}
 
 \newcommand\executer[1]{\textunderset{\scriptsize{подпись, дата}}{\signvrule} #1}
 %----------------------------------------------------------
@@ -319,39 +319,39 @@
 \theoremstyle{theoremstyle}
 
 %\declaretheoremstyle[
-  %headfont=\normalfont\bfseries,
+%headfont=\normalfont\bfseries,
 %%	numberwithin=section,
-  %bodyfont=\normalfont,
-  %spaceabove=1em plus 0.75em minus 0.25em,
-  %spacebelow=1em plus 0.75em minus 0.25em,
-  %qed={$\blacksquare$},
-	%headpunct={\newline},
+%bodyfont=\normalfont,
+%spaceabove=1em plus 0.75em minus 0.25em,
+%spacebelow=1em plus 0.75em minus 0.25em,
+%qed={$\blacksquare$},
+%headpunct={\newline},
 %%  qed={$\square$},
 %]{taskstyle}
 %
 %\declaretheorem[
-  %style=taskstyle,
-  %title=Задача,
-  %refname={задача,задачи},
-  %Refname={Задача,Задачи}
+%style=taskstyle,
+%title=Задача,
+%refname={задача,задачи},
+%Refname={Задача,Задачи}
 %]{task}
 %
 %\declaretheoremstyle[
-  %headfont=\normalfont\bfseries,
-	%numberwithin=task,
-  %bodyfont=\normalfont,
-  %spaceabove=1em plus 0.75em minus 0.25em,
-  %spacebelow=1em plus 0.75em minus 0.25em,
-	%headpunct={\newline},
+%headfont=\normalfont\bfseries,
+%numberwithin=task,
+%bodyfont=\normalfont,
+%spaceabove=1em plus 0.75em minus 0.25em,
+%spacebelow=1em plus 0.75em minus 0.25em,
+%headpunct={\newline},
 %%  qed={$\blacksquare$},
-  %qed={$\square$},
+%qed={$\square$},
 %]{variantstyle}
 %
 %\declaretheorem[
-  %style=variantstyle,
-  %title=Вариант,
-  %refname={вариант,варианты},
-  %Refname={Зариант,Варианты}
+%style=variantstyle,
+%title=Вариант,
+%refname={вариант,варианты},
+%Refname={Зариант,Варианты}
 %]{variant}
 
 %----------------------------------------------------------
@@ -361,28 +361,29 @@
 \newtheorem{statement}{Утверждение}
 \newtheorem{remark}{Замечание}
 \newtheorem{dexcription}{Описание}
+\newtheorem{definition}{Определение}
 %%----------------------------------------------------------
 % атрибуты
 \newcommand{\docattributes}[6]{%
-\def\tempempty{}
-\def\tempa{#1}
-\def\tempb{#2}
-\def\tempc{#3}
-\def\tempd{#4}
+  \def\tempempty{}
+  \def\tempa{#1}
+  \def\tempb{#2}
+  \def\tempc{#3}
+  \def\tempd{#4}
   \ifx\tempempty\tempa \def\tempa{\ScientificAdviserPosition, \ScientificAdviser}\fi
   \ifx\tempempty\tempb \def\tempb{Решение и вёрстка:}\fi
   \ifx\tempempty\tempc \def\tempc{}\fi
   \ifx\tempempty\tempd \def\tempd{}\else \def\tempd{{\textnormal\copyright}~#4}\fi
 
-\vspace{0.5cm}
-\begin{flushright}
-		\begin{tabular}{p{0.25\textwidth}p{0.7\textwidth}}
-		\hfill Постановка: & \doclicense~\textit{\tempa} \\
-		\hfill \tempb & \doclicense~\textit{#5} \\
-		\hfill \tempc & \textit{\tempd} \\
-		\hfill & \textit{#6}\\
-		\end{tabular}
-\end{flushright}
+  \vspace{0.5cm}
+  \begin{flushright}
+    \begin{tabular}{p{0.25\textwidth}p{0.7\textwidth}}
+      \hfill Постановка: & \doclicense~\textit{\tempa} \\
+      \hfill \tempb      & \doclicense~\textit{#5}     \\
+      \hfill \tempc      & \textit{\tempd}             \\
+      \hfill             & \textit{#6}                 \\
+    \end{tabular}
+  \end{flushright}
 }
 %----------------------------------------------------------
 % Изменяем метод нумерации subsection
