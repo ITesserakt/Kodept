@@ -2073,9 +2073,6 @@ INPUT intro.aux
 INPUT ./chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
-INPUT ./chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
 INPUT ./chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
@@ -2308,6 +2305,12 @@ INPUT ./intro.tex
 INPUT intro.tex
 INPUT ./intro.tex
 INPUT intro.tex
+INPUT ./figures/structure.visualizationSystem.png
+INPUT ./figures/structure.visualizationSystem.png
+INPUT figures/structure.visualizationSystem.png
+INPUT ./figures/structure.visualizationSystem.png
+INPUT ./figures/structure.visualizationSystem.png
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm1095.tfm
 INPUT ./chapters.tex
 INPUT chapters.tex
 INPUT ./chapters.tex
@@ -2322,16 +2325,6 @@ INPUT ./chapters/chap1_task_statement.tex
 INPUT chapters/chap1_task_statement.tex
 INPUT ./chapters/chap1_task_statement.tex
 INPUT chapters/chap1_task_statement.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-OUTPUT chapters/chap2_comp_method.aux
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT chapters/chap2_comp_method.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
@@ -2352,7 +2345,6 @@ INPUT ./figures/UML.datatype.png
 INPUT figures/UML.datatype.png
 INPUT ./figures/UML.datatype.png
 INPUT ./figures/UML.datatype.png
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm1095.tfm
 INPUT ./figures/UML.element.png
 INPUT ./figures/UML.element.png
 INPUT figures/UML.element.png
@@ -2441,9 +2433,6 @@ INPUT intro.aux
 INPUT ./chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
-INPUT ./chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
 INPUT ./chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
