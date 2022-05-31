@@ -237,9 +237,9 @@ private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
     is RLT.Application -> AST.FunctionCall(expr.convert(),
         params.map(RLT.ParameterTuple::convert).filterNot { it.items.isEmpty() })
 
-    is RLT.ContextualReference -> when (reference.ref) {
-        is RLT.UserSymbol.Identifier -> AST.Reference(reference.ref.text.value(), context.convert())
-        is RLT.UserSymbol.Type -> AST.TypeReference(reference.ref.convert(), context.convert())
+    is RLT.ContextualReference -> when (ref) {
+        is RLT.UserSymbol.Identifier -> AST.Reference(ref.text.value(), context.convert())
+        is RLT.UserSymbol.Type -> AST.TypeReference(ref.convert(), context.convert())
     }
 
     is RLT.Reference -> when (ref) {

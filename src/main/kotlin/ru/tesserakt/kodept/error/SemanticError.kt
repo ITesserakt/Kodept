@@ -14,8 +14,8 @@ sealed class SemanticError(final override val code: String, override val message
     data class UndeclaredUsage(val name: String) :
         SemanticError("KSeE3", "Usage of undeclared $name")
 
-    data class AmbitiousReference(val name: String) :
-        SemanticError("KSeE4", "Ambitious usage of $name") {
+    data class UndefinedUsage(val name: String) :
+        SemanticError("KSeE4", "Undefined usage of $name") {
         override val additionalMessage = "matches"
     }
 

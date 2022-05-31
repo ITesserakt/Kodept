@@ -13,7 +13,7 @@ import kotlin.reflect.KClass
 private sealed interface FlowControl
 private sealed interface FlowError : FlowControl
 private object NotFound : FlowError
-private data class Ambitious(val list: List<AST.Named>) : FlowError
+private data class Multiple(val list: List<AST.Named>) : FlowError
 private object RecurseUp : FlowControl
 
 object DereferenceTransformer : Transformer<AST.Reference> {
@@ -27,7 +27,7 @@ object DereferenceTransformer : Transformer<AST.Reference> {
     private fun <T : AST.Named> List<T>.onlyUnique(onEmpty: () -> FlowControl) = when (size) {
         0 -> onEmpty().left()
         1 -> this[0].right()
-        else -> Ambitious(this).left()
+        else -> Multiple(this).left()
     }
 
     private fun AST.Reference.handleBlock(block: AST.ExpressionList) = block.expressions
@@ -49,14 +49,10 @@ object DereferenceTransformer : Transformer<AST.Reference> {
         .onlyUnique { NotFound }
         .mapLeft { it as FlowError }
 
-    private fun AST.Reference.handleStruct(struct: AST.StructDecl) =
-        struct.alloc.filter { it.name == this.name }.let {
-            when (it.size) {
-                0 -> RecurseUp.left()
-                1 -> it[0].right()
-                else -> Ambitious(it).left()
-            }
-        }
+    private fun AST.Reference.handleStruct(struct: AST.StructDecl) = struct.children()
+        .filterIsInstance<AST.Referable>()
+        .filter { it.name == this.name }
+        .onlyUnique { RecurseUp }
 
     private fun AST.Reference.handle(node: AST.Node) = when (node) {
         is AST.ExpressionList -> handleBlock(node)
@@ -70,7 +66,7 @@ object DereferenceTransformer : Transformer<AST.Reference> {
     private fun AST.Reference.handleOrRecurseUp(node: AST.Node): Either<FlowError, AST.Referable> =
         handle(node).handleErrorWith { control ->
             when (control) {
-                is Ambitious -> control.left()
+                is Multiple -> control.left()
                 NotFound -> NotFound.left()
                 RecurseUp -> node.parent.rightIfNotNull { NotFound }.flatMap { handleOrRecurseUp(it) }
             }
@@ -84,10 +80,10 @@ object DereferenceTransformer : Transformer<AST.Reference> {
                 SemanticError.UndeclaredUsage(node.name)
             )
 
-            is Ambitious -> UnrecoverableError(
+            is Multiple -> UnrecoverableError(
                 node.rlt.position.nel() + control.list.map { it.rlt.position },
                 Report.Severity.ERROR,
-                SemanticError.AmbitiousReference(node.name)
+                SemanticError.UndefinedUsage(node.name)
             )
         }
     }
@@ -95,6 +91,7 @@ object DereferenceTransformer : Transformer<AST.Reference> {
     private fun AST.Type.findTypeIn(scope: AST.Node) = when (scope) {
         is AST.ModuleDecl -> scope.rest.filter { it.name == this.name }.onlyUnique { NotFound }
         is AST.EnumDecl -> scope.enumEntries.filter { it.name == this.name }.onlyUnique { NotFound }
+        is AST.StructDecl -> scope.rest.filter { it.name == this.name }.onlyUnique { NotFound }
         else -> NotFound.left()
     }.mapLeft { it as FlowError }
 
@@ -132,7 +129,7 @@ object DereferenceTransformer : Transformer<AST.Reference> {
                     CompilerCrash("Dot access operator is unsupported")
                 )
             )
-            ensureNotNull(node.parent) {
+            val parent = ensureNotNull(node.parent) {
                 UnrecoverableError(
                     node.rlt.position.nel(),
                     Report.Severity.CRASH,
@@ -141,7 +138,7 @@ object DereferenceTransformer : Transformer<AST.Reference> {
             }
 
             val referral = if (node.resolutionContext == null) {
-                node.handleOrRecurseUp(node.parent!!).mapError(node).bind()
+                node.handleOrRecurseUp(parent).mapError(node).bind()
             } else {
                 val start = if (node.resolutionContext.fromRoot)
                     node.walkDownTop(::identity).filterIsInstance<AST.ModuleDecl>().first()

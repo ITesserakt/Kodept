@@ -189,7 +189,7 @@ data class RLT(val root: File) {
         ) : Function(keyword, id, params, colon, returnType), TopLevelNode, StructLevelNode, StatementNode, Scoping
     }
 
-    data class Reference(val ref: UserSymbol) : TermNode, Node by ref
+    open class Reference(val ref: UserSymbol) : TermNode, Node by ref
 
     data class Application(val expr: ExpressionNode, val params: List<ParameterTuple>) : TermNode, Node by expr
 
@@ -209,7 +209,7 @@ data class RLT(val root: File) {
         }
     }
 
-    data class ContextualReference(val context: Context, val reference: Reference) : TermNode, Node by reference
+    class ContextualReference(val context: Context, reference: Reference) : Reference(reference.ref)
 
     sealed class Variable(
         val keyword: Keyword,

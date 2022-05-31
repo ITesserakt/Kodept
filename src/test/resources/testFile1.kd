@@ -1,9 +1,6 @@
 module Prelude =>
 
-fun println {}
-
-fun printFrom(x): () =>
-    if x > 0 => println(x, printFrom(x - 1))
-    else => ()
-
-fun main => True
+fun main {
+    val x
+    x
+}
