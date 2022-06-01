@@ -38,15 +38,4 @@ suspend fun <T : RLT.Node, V : AST.Node> WordSpecShouldContainerScope.test(
     parser: Parser<T>,
     element: String,
     shouldParse: V?,
-) = test(parser.map(RLT.Node::convert).map { node ->
-    fun AST.Node.dfs(f: (AST.Node) -> Unit) {
-        val nodeList = ArrayDeque(listOf(this))
-        while (nodeList.isNotEmpty()) {
-            val current = nodeList.removeFirst()
-            current.children().forEach { nodeList.addFirst(it) }
-            f(current)
-        }
-    }
-    node.dfs { it.metadata.clear() }
-    node
-}, element, shouldParse)
+) = test(parser.map(RLT.Node::convert), element, shouldParse)

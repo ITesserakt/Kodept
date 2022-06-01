@@ -6,8 +6,6 @@ import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filename
-import ru.tesserakt.kodept.core.rlt
-import ru.tesserakt.kodept.core.wrap
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -19,7 +17,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression> {
     context (ReportCollector, Filename)
             private fun AST.TupleType.transformTuple() = if (items.size == 1) {
         Report(
-            this@Filename, rlt.position.nel(), Report.Severity.WARNING,
+            this@Filename, _rlt.position.nel(), Report.Severity.WARNING,
             SemanticWarning.AlignWithType(items.first().toString())
         ).report()
         items.first()
@@ -31,7 +29,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression> {
             UnrecoverableError(
                 Report(
                     this@Filename,
-                    this@UnionType.rlt.position.nel(),
+                    this@UnionType._rlt.position.nel(),
                     Report.Severity.CRASH,
                     CompilerCrash("Union type behaves like ordinary type: $items")
                 )
@@ -41,7 +39,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression> {
         items.filterIsInstance<AST.UnionType>().reportEach {
             Report(
                 this@Filename,
-                it.rlt.position.nel(),
+                it._rlt.position.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.AlignWithType(it.toString())
             )
@@ -57,7 +55,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression> {
         val (unique, repeating) = flattenedItems.groupBy { it }.values.partition { it.size == 1 }
         repeating.reportEach {
             Report(
-                this@Filename, this@UnionType.rlt.position.nel(), Report.Severity.WARNING,
+                this@Filename, this@UnionType._rlt.position.nel(), Report.Severity.WARNING,
                 SemanticWarning.NonUniqueUnionItems(this@UnionType.toString())
             )
         }
@@ -67,7 +65,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression> {
                 UnrecoverableError(
                     Report(
                         this@Filename,
-                        this@UnionType.rlt.position.nel(),
+                        this@UnionType._rlt.position.nel(),
                         Report.Severity.CRASH,
                         CompilerCrash("Search for repeating elements failed")
                     )
@@ -75,7 +73,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression> {
             )
 
             1 -> items.first()
-            else -> copy(_items = items.toMutableList()).also { it.metadata += this@UnionType.rlt.wrap() }
+            else -> copy(_items = items.toMutableList()).apply { _rlt = this@UnionType._rlt }
         }
     }
 

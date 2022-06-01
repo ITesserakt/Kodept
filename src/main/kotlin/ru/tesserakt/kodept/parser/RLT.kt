@@ -65,7 +65,7 @@ data class RLT(val root: File) {
         val lparen: Symbol,
         val params: List<Parameter>,
         val rparen: Symbol,
-    ) : Node by lparen
+    ) : ExpressionNode, Node by lparen
 
     open class MaybeTypedParameterTuple(
         val lparen: Symbol,

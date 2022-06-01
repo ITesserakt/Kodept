@@ -4,10 +4,10 @@ import arrow.core.NonEmptyList
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.rlt
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
+import ru.tesserakt.kodept.parser.RLT
 
 val variableUniqueness = object : Analyzer() {
     override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
@@ -16,9 +16,16 @@ val variableUniqueness = object : Analyzer() {
         blocks.flatMap { node ->
             node.children().filterIsInstance<AST.VariableDecl>().groupBy { it.reference }.values
         }.filter { it.size != 1 }.reportEach { vars ->
+            val points = vars.map {
+                when (it) {
+                    is AST.InitializedVar -> it.rlt.id.position
+                    else -> (it.rlt as RLT.Variable).id.position
+                }
+            }
+
             Report(
                 ast.filename,
-                NonEmptyList.fromListUnsafe(vars.map { it.rlt.id.position }),
+                NonEmptyList.fromListUnsafe(points),
                 Report.Severity.ERROR,
                 SemanticError.DuplicatedVariable(vars.first().reference.name)
             )

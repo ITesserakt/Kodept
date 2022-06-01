@@ -208,6 +208,7 @@ class Infer {
         is RLT.UnaryOperation -> UnaryOperation(expression.annotateInScope(), op, generateUniqueType())
         is RLT.While -> While(condition.annotateInScope(), body.annotateInScope(), generateUniqueType())
         is RLT.Literal.Tuple -> TupleLiteral(expressions.map { it.annotateInScope() }, generateUniqueType())
+        is RLT.ParameterTuple -> TODO()
     }
 
     fun annotate() = scopes.flatMap {

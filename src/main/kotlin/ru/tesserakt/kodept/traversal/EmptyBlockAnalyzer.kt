@@ -5,7 +5,6 @@ import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import arrow.core.nel
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.rlt
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticNote

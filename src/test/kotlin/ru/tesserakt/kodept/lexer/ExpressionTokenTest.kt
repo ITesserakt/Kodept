@@ -31,16 +31,16 @@ class ExpressionTokenTest : StringSpec({
     "Keywords" {
         table(
             headers("keyword", "input", "matches"),
-            *keywordSpecificCases(FUN, "fun"),
-            *keywordSpecificCases(VAL, "val"),
-            *keywordSpecificCases(VAR, "var"),
-            *keywordSpecificCases(IF, "if"),
-            *keywordSpecificCases(ELIF, "elif"),
-            *keywordSpecificCases(ELSE, "else"),
-            *keywordSpecificCases(MATCH, "match"),
-            *keywordSpecificCases(WHILE, "while"),
-            *keywordSpecificCases(MODULE, "module"),
-            *keywordSpecificCases(EXTENSION, "extension"),
+            *keywordSpecificCases(FUN, "fun "),
+            *keywordSpecificCases(VAL, "val "),
+            *keywordSpecificCases(VAR, "var "),
+            *keywordSpecificCases(IF, "if "),
+            *keywordSpecificCases(ELIF, "elif "),
+            *keywordSpecificCases(ELSE, "else "),
+            *keywordSpecificCases(MATCH, "match "),
+            *keywordSpecificCases(WHILE, "while "),
+            *keywordSpecificCases(MODULE, "module "),
+            *keywordSpecificCases(EXTENSION, "extension "),
             row(VAR, "val", false),
         ).forAll(::impliesData)
     }

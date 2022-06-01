@@ -3,7 +3,9 @@ package ru.tesserakt.kodept.traversal
 import arrow.core.*
 import arrow.core.continuations.eagerEffect
 import arrow.core.continuations.ensureNotNull
-import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -152,7 +154,6 @@ object DereferenceTransformer : Transformer<AST.Reference> {
                 node.handle(resolved)
                     .mapLeft { if (it is RecurseUp) NotFound else it as FlowError }.mapError(node).bind()
             }
-            node.metadata += referral.wrap()
-            node
+            AST.ResolvedReference(node, referral)
         }
 }

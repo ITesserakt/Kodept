@@ -8,26 +8,23 @@ import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filename
-import ru.tesserakt.kodept.core.rlt
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.lexer.CodePoint
 import ru.tesserakt.kodept.parser.RLT
 
 class TypeSimplifierTest : StringSpec({
-    beforeSpec {
-        val tupleRLT = mockk<RLT.TupleType> {
+    lateinit var tupleRLT: RLT.TupleType
+    lateinit var unionRLT: RLT.UnionType
+
+    beforeTest {
+        tupleRLT = mockk {
             every { position } returns CodePoint(0, 0)
         }
-        val unionRLT = mockk<RLT.UnionType> {
+        unionRLT = mockk {
             every { position } returns CodePoint(0, 0)
         }
-        mockkStatic(AST.TupleType::rlt)
-        mockkStatic(AST.UnionType::rlt)
-        every { any<AST.TupleType>().rlt } returns tupleRLT
-        every { any<AST.UnionType>().rlt } returns unionRLT
     }
 
     with("TEST FILE" as Filename) {
@@ -44,27 +41,27 @@ class TypeSimplifierTest : StringSpec({
         }
 
         "Proper union types should not change" {
-            val type = AST.UnionType(nonEmptyListOf("A", "B").map(AST::Type))
+            val type = AST.UnionType(nonEmptyListOf("A", "B").map(AST::Type)).apply { _rlt = unionRLT }
             unwrap { transformer.transform(type) }.toEither().shouldBeRight(type)
         }
 
         "Single type in tuple should be aligned with it" {
             val inner = AST.TupleType(listOf("A", "B").map(AST::Type))
-            val type = AST.TupleType(listOf(inner))
+            val type = AST.TupleType(listOf(inner)).apply { _rlt = tupleRLT }
             unwrap { transformer.transform(type) }.unwrap().shouldBeRight().second shouldBe inner
         }
 
         "Single union types should cause crash" {
-            val union = AST.UnionType(nonEmptyListOf("A").map(AST::Type))
+            val union = AST.UnionType(nonEmptyListOf("A").map(AST::Type)).apply { _rlt = unionRLT }
             unwrap { transformer.transform(union) }.toEither()
                 .shouldBeLeft().head.severity shouldBe Report.Severity.CRASH
         }
 
         "Identical items in union should be aligned and flattened" {
             val a = AST.Type("A")
-            val b = AST.TupleType(listOf("B", "C").map(AST::Type))
-            val c = AST.UnionType(nonEmptyListOf(AST.Type("C"), a))
-            val type = AST.UnionType(nonEmptyListOf(a, b, c, b, a))
+            val b = AST.TupleType(listOf("B", "C").map(AST::Type)).apply { _rlt = tupleRLT }
+            val c = AST.UnionType(nonEmptyListOf(AST.Type("C"), a)).apply { _rlt = unionRLT }
+            val type = AST.UnionType(nonEmptyListOf(a, b, c, b, a)).apply { _rlt = unionRLT }
             unwrap { transformer.transform(type) }.unwrap()
                 .shouldBeRight().second shouldBe AST.UnionType(nonEmptyListOf(AST.Type("C"), b, a))
         }
