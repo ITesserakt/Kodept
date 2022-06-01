@@ -1,4 +1,4 @@
-import ru.tesserakt.kodept.core.CompilationContext
+import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*

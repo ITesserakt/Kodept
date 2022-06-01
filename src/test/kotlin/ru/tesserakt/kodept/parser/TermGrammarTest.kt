@@ -7,22 +7,40 @@ class TermGrammarTest : WordSpec({
     val grammar = TermGrammar
 
     "var ref" should {
-        test(grammar.variableReference, "id", AST.Reference("id"))
-        test(grammar.variableReference, "123", null)
+        test(TermGrammar.variableReference, "id", AST.Reference("id"))
+        test(TermGrammar.variableReference, "123", null)
     }
 
     "fun ref" should {
-        test(OperatorGrammar.application, "id()", AST.FunctionCall(AST.Reference("id"), listOf()))
-        test(OperatorGrammar.application,
+        test(
+            OperatorGrammar.application,
+            "id()",
+            AST.FunctionCall(AST.Reference("id"), listOf())
+        )
+        test(
+            OperatorGrammar.application,
             """println("Hello, world!")""",
-            AST.FunctionCall(AST.Reference("println"),
-                listOf(AST.TupleLiteral(listOf(AST.StringLiteral("Hello, world!"))))))
-        test(OperatorGrammar.application,
+            AST.FunctionCall(
+                AST.Reference("println"),
+                listOf(AST.TupleLiteral(listOf(AST.StringLiteral("Hello, world!"))))
+            )
+        )
+        test(
+            OperatorGrammar.application,
             "test((123), 10.2, foobar)",
-            AST.FunctionCall(AST.Reference("test"),
-                listOf(AST.TupleLiteral(listOf(AST.DecimalLiteral(123.toBigInteger()),
-                    AST.FloatingLiteral(10.2.toBigDecimal()),
-                    AST.Reference("foobar"))))))
+            AST.FunctionCall(
+                AST.Reference("test"),
+                listOf(
+                    AST.TupleLiteral(
+                        listOf(
+                            AST.DecimalLiteral(123.toBigInteger()),
+                            AST.FloatingLiteral(10.2.toBigDecimal()),
+                            AST.Reference("foobar")
+                        )
+                    )
+                )
+            )
+        )
     }
 
     "chain" should {

@@ -18,27 +18,25 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
-    implementation("io.arrow-kt:arrow-core:$arrowVersion")
-    implementation("com.google.code.gson:gson:2.9.0")
-    implementation("io.github.microutils:kotlin-logging-jvm:2.1.21")
+    implementation(project(":Core"))
+    implementation(project(":Misc"))
+    implementation(project(":Traversal"))
 
-    implementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
+    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
-    testImplementation("io.kotest:kotest-property:$kotestVersion")
-    testImplementation("io.kotest:kotest-framework-datatest:$kotestVersion")
-    testImplementation("io.mockk:mockk:1.12.4")
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
-    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
-}
+allprojects {
+    tasks.withType<KotlinCompile> {
+        kotlinOptions.jvmTarget = "15"
+        kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+    }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-    systemProperties = System.getProperties().map { it.key.toString() to it.value }.toMap()
+    tasks.withType<Test> {
+        useJUnitPlatform()
+        systemProperties = System.getProperties().map { it.key.toString() to it.value }.toMap()
+    }
 }
 
 application {

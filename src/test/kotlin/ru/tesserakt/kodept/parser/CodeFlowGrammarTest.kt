@@ -5,7 +5,8 @@ import ru.tesserakt.kodept.core.AST
 
 class CodeFlowGrammarTest : WordSpec({
     "if expressions" should {
-        test(CodeFlowGrammar,
+        test(
+            CodeFlowGrammar,
             """if a > b { a } else { b }""",
             AST.IfExpr(
                 AST.Comparison(
@@ -18,7 +19,8 @@ class CodeFlowGrammarTest : WordSpec({
                 AST.IfExpr.ElseExpr(
                     AST.Reference("b"),
                 ),
-            ))
+            )
+        )
     }
 
     "while expression" should {
@@ -37,21 +39,31 @@ class CodeFlowGrammarTest : WordSpec({
     }
 
     "if expression in parentheses" should {
-        test(CodeFlowGrammar,
+        test(
+            CodeFlowGrammar,
             """if (x != 0) { j = 0 }""",
             AST.IfExpr(
                 AST.Comparison(
                     AST.Reference("x"),
                     AST.DecimalLiteral(0.toBigInteger()),
-                    AST.Comparison.Kind.NonEqual),
-                AST.ExpressionList(listOf(AST.Assignment(
-                    AST.Reference("j"),
-                    AST.DecimalLiteral(0.toBigInteger())), AST.TupleLiteral.unit)),
-                listOf(), null))
+                    AST.Comparison.Kind.NonEqual
+                ),
+                AST.ExpressionList(
+                    listOf(
+                        AST.Assignment(
+                            AST.Reference("j"),
+                            AST.DecimalLiteral(0.toBigInteger())
+                        ), AST.TupleLiteral.unit
+                    )
+                ),
+                listOf(), null
+            )
+        )
     }
 
     "if expr with flow operator" should {
-        test(CodeFlowGrammar,
+        test(
+            CodeFlowGrammar,
             """if i % 2 == 0 => opcode.foreignKey else => opcode.primaryKey""",
             AST.IfExpr(
                 AST.Comparison(
@@ -72,11 +84,13 @@ class CodeFlowGrammarTest : WordSpec({
 
                     ),
 
-                ))
+                )
+        )
     }
 
     "nested if" should {
-        test(CodeFlowGrammar,
+        test(
+            CodeFlowGrammar,
             """
                 if a => b
                 elif b => v
@@ -87,18 +101,22 @@ class CodeFlowGrammarTest : WordSpec({
             AST.IfExpr(
                 AST.Reference("a"),
                 AST.Reference("b"),
-                listOf(AST.IfExpr.ElifExpr(
-                    AST.Reference("b"),
-                    AST.Reference("v"),
-                )),
+                listOf(
+                    AST.IfExpr.ElifExpr(
+                        AST.Reference("b"),
+                        AST.Reference("v"),
+                    )
+                ),
                 AST.IfExpr.ElseExpr(
                     AST.IfExpr(
                         AST.Reference("c"),
                         AST.Reference("a"),
-                        listOf(AST.IfExpr.ElifExpr(
-                            AST.Reference("v"),
-                            AST.Reference("c"),
-                        )),
+                        listOf(
+                            AST.IfExpr.ElifExpr(
+                                AST.Reference("v"),
+                                AST.Reference("c"),
+                            )
+                        ),
                         AST.IfExpr.ElseExpr(
                             AST.Reference("b"),
                         ),
@@ -107,6 +125,7 @@ class CodeFlowGrammarTest : WordSpec({
 
                     ),
 
-                ))
+                )
+        )
     }
 })

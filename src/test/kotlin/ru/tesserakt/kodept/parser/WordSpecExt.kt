@@ -13,8 +13,10 @@ import io.kotest.matchers.equalityMatcher
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotHave
+import ru.tesserakt.kodept.convert
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.convert
+import ru.tesserakt.kodept.core.Internal
+import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.lexer.Lexer
 
 suspend fun <T : Any, U : T> WordSpecShouldContainerScope.test(parser: Parser<T>, element: String, shouldParse: U?) =
@@ -34,6 +36,7 @@ suspend fun <T : Any, U : T> WordSpecShouldContainerScope.test(parser: Parser<T>
         }
     }
 
+@OptIn(Internal::class)
 suspend fun <T : RLT.Node, V : AST.Node> WordSpecShouldContainerScope.test(
     parser: Parser<T>,
     element: String,

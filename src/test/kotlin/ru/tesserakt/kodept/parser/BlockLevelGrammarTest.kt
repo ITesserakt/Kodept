@@ -5,15 +5,18 @@ import ru.tesserakt.kodept.core.AST
 
 class BlockLevelGrammarTest : WordSpec({
     "function decls" should {
-        test(BlockLevelGrammar,
+        test(
+            BlockLevelGrammar,
             """fun println() {}""",
             AST.FunctionDecl(
                 "println",
                 listOf(),
                 null,
                 AST.TupleLiteral.unit,
-            ))
-        test(BlockLevelGrammar,
+            )
+        )
+        test(
+            BlockLevelGrammar,
             """fun println() {
                 |val foo = 5
                 |"term"
@@ -34,12 +37,16 @@ class BlockLevelGrammarTest : WordSpec({
                         ),
                     ),
                 ),
-            ))
-        test(BlockLevelGrammar, """fun println() {
+            )
+        )
+        test(
+            BlockLevelGrammar, """fun println() {
                 |val foo = 5
                 |"term" val baz = 4
-            }""".trimMargin(), null)
-        test(BlockLevelGrammar,
+            }""".trimMargin(), null
+        )
+        test(
+            BlockLevelGrammar,
             """fun println() {
                 |val foo = 5
                 |"term"; val baz = 4
@@ -59,7 +66,8 @@ class BlockLevelGrammarTest : WordSpec({
                         ),
                     ),
                 ),
-            ))
+            )
+        )
     }
 
     "var decls" should {
@@ -69,7 +77,8 @@ class BlockLevelGrammarTest : WordSpec({
             """var x = 5""",
             AST.InitializedVar(AST.VariableDecl(AST.Reference("x"), true, null), AST.DecimalLiteral(5.toBigInteger()))
         )
-        test(BlockLevelGrammar,
+        test(
+            BlockLevelGrammar,
             """x += 5""",
             AST.Assignment(
                 AST.Reference("x"),
@@ -90,7 +99,11 @@ class BlockLevelGrammarTest : WordSpec({
                 AST.DecimalLiteral(5.toBigInteger())
             )
         )
-        test(BlockLevelGrammar, """val x: Int""", AST.VariableDecl(AST.Reference("x"), false, AST.Type("Int")))
+        test(
+            BlockLevelGrammar,
+            """val x: Int""",
+            AST.VariableDecl(AST.Reference("x"), false, AST.Type("Int"))
+        )
         test(
             BlockLevelGrammar,
             """val x: String = {}""",
@@ -121,6 +134,7 @@ class BlockLevelGrammarTest : WordSpec({
                         )
                     )
                 )
-            ))
+            )
+        )
     }
 })
