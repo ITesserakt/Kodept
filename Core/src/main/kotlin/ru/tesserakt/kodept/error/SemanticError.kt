@@ -12,10 +12,10 @@ sealed class SemanticError(final override val code: String, override val message
         )
 
     data class UndeclaredUsage(val name: String) :
-        SemanticError("KSeE3", "Usage of undeclared $name")
+        SemanticError("KSeE3", "Usage of undeclared `$name`")
 
     data class UndefinedUsage(val name: String) :
-        SemanticError("KSeE4", "Undefined usage of $name") {
+        SemanticError("KSeE4", "Undefined usage of `$name`") {
         override val additionalMessage = "matches"
     }
 
@@ -26,4 +26,10 @@ sealed class SemanticError(final override val code: String, override val message
 
     data class UninitializedUsage(val name: String) :
         SemanticError("KSeE6", "Variable `$name` should be initialized before use")
+
+    data class ImmutableConstruct(val name: String) :
+        SemanticError("KSeE7", "Cannot assign to non-assignable structure `$name`")
+
+    data class ImmutableVariable(val name: String) :
+        SemanticError("KSeE8", "Cannot assign twice to immutable variable `$name`")
 }

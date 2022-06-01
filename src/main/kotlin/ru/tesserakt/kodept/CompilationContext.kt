@@ -18,15 +18,15 @@ class CompilationContext private constructor(
     val loader: Loader,
     val lexer: Tokenizer,
     val rootParser: Parser<RLT>,
-    val transformers: List<Transformer<*>>,
-    val analyzers: List<Analyzer>,
+    val transformers: Set<Transformer<*>>,
+    val analyzers: Set<Analyzer>,
 ) {
     class Builder {
         var lexer: Tokenizer = Lexer()
         lateinit var loader: Loader
         var rootParser = FileGrammar.map { RLT(it) }
-        var transformers = listOf<Transformer<*>>()
-        var analyzers = listOf<Analyzer>()
+        var transformers = setOf<Transformer<*>>()
+        var analyzers = setOf<Analyzer>()
 
         fun build() = CompilationContext(loader, lexer, rootParser, transformers, analyzers)
     }
@@ -71,8 +71,7 @@ class CompilationContext private constructor(
         fun Flowable.Data.Tokens.parse() = PreParsedContent(this)
         fun Flowable.Data.ErroneousRawTree.abstract() = ParsedContent(this)
         fun Flowable.Data.Source.retrieveFromCache() = HintASTContent(this)
-        fun Flowable.Data.ErroneousAST.applyTransformations() = TransformedContent(this)
-        fun Flowable.Data.ErroneousAST.analyze() = AnalyzedContent(this)
+        fun Flowable.Data.ErroneousAST.analyze() = TransformedContent(this)
     }
 
     inline infix fun <T> flow(scope: Scope.() -> T) = Scope().run(scope)

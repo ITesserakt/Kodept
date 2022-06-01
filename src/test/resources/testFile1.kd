@@ -1,6 +1,5 @@
 module Prelude =>
 
 fun main {
-    val x
-    x
+
 }

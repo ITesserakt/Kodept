@@ -18,8 +18,12 @@ private object NotFound : FlowError
 private data class Multiple(val list: List<AST.Named>) : FlowError
 private object RecurseUp : FlowControl
 
-object DereferenceTransformer : Transformer<AST.Reference> {
+object DereferenceTransformer : Transformer<AST.Reference>() {
     override val type: KClass<AST.Reference> = AST.Reference::class
+
+    init {
+        dependsOn(VariableScope)
+    }
 
     private fun isInDereference(node: AST.Reference) = node.walkDownTop(::identity).any {
         if (it is AST.ObjectLevel) return false

@@ -3,9 +3,8 @@ package ru.tesserakt.kodept.core
 import arrow.core.identity
 
 @Suppress("unused", "UNCHECKED_CAST")
-interface Tree<Self : Tree<Self>> {
+interface Tree<Self : Tree<Self>> : OrientedGraph.Node<Self> {
     val parent: Self?
-    fun children(): List<Self>
 
     enum class SearchMode {
         Postorder {

@@ -6,13 +6,14 @@ import ru.tesserakt.kodept.traversal.*
 fun main() {
     val context = CompilationContext {
         loader = FileLoader()
-        transformers = listOf(TypeSimplifier, DereferenceTransformer)
-        analyzers = listOf(
+        transformers = setOf(TypeSimplifier, InitializationTransformer, DereferenceTransformer, VariableScope)
+        analyzers = setOf(
             moduleNameAnalyzer,
             moduleUniquenessAnalyzer,
             emptyBlockAnalyzer,
             variableUniqueness,
-            objectUniqueness
+            objectUniqueness,
+            InitializationAnalyzer
         )
     }
 
@@ -22,7 +23,6 @@ fun main() {
             .then { tokenize() }
             .then { parse() }
             .then { abstract() }
-            .then { applyTransformations() }
             .then { analyze() }
             .also { sources.bind().holder }
     }
@@ -31,7 +31,7 @@ fun main() {
         surrounding = 0
     }
 
-    result.ast.forEach { it ->
+    result.ast.take(1).forEach { it ->
         it.value.fold(
             { it.map { with(code) { pr.processReport(it) + "\n" } }.asSequence() },
             { "".asSequence() },

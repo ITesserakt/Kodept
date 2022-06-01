@@ -12,7 +12,7 @@ import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticWarning
 
-object TypeSimplifier : Transformer<AST.TypeExpression> {
+object TypeSimplifier : Transformer<AST.TypeExpression>() {
     override val type = AST.TypeExpression::class
 
     context (ReportCollector, Filename)
