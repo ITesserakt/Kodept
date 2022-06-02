@@ -1,5 +1,8 @@
 module Prelude =>
 
 fun main {
-
+	var factorial = 1
+	var i = i
+	factorial
 }
+

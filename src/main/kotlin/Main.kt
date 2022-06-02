@@ -12,8 +12,7 @@ fun main() {
             moduleUniquenessAnalyzer,
             emptyBlockAnalyzer,
             variableUniqueness,
-            objectUniqueness,
-            InitializationAnalyzer
+            objectUniqueness
         )
     }
 

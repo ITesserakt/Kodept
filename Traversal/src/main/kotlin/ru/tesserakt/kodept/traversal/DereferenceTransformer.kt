@@ -46,7 +46,7 @@ object DereferenceTransformer : Transformer<AST.Reference>() {
             fn.right()
         else fn.params.filter { it.name == this.name }.onlyUnique { RecurseUp }
 
-    private fun AST.Reference.handleInitializedVariable(v: AST.VariableDecl) =
+    private fun AST.Reference.handleVariable(v: AST.InitializedVar) =
         if (v.reference.name == this.name) v.right() else RecurseUp.left()
 
     private fun AST.Reference.handleModule(module: AST.ModuleDecl) = module.rest
@@ -63,7 +63,7 @@ object DereferenceTransformer : Transformer<AST.Reference>() {
     private fun AST.Reference.handle(node: AST.Node) = when (node) {
         is AST.ExpressionList -> handleBlock(node)
         is AST.FunctionDecl -> handleFunction(node)
-        is AST.VariableDecl -> handleInitializedVariable(node)
+        is AST.InitializedVar -> handleVariable(node)
         is AST.ModuleDecl -> handleModule(node)
         is AST.StructDecl -> handleStruct(node)
         else -> RecurseUp.left()

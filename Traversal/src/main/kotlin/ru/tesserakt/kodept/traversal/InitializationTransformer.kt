@@ -2,12 +2,10 @@ package ru.tesserakt.kodept.traversal
 
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
-import arrow.core.identity
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filename
-import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -37,7 +35,7 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                             )
                         )
 
-                        is AST.InitializedVar -> if (!referral.mutable) shift<Unit>(
+                        is AST.InitializedVar -> if (!referral.mutable) shift<AST.Expression>(
                             UnrecoverableError(
                                 nonEmptyListOf(
                                     left.referral.rlt.position,
@@ -45,14 +43,8 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                                 ),
                                 Report.Severity.ERROR, SemanticError.ImmutableVariable(referral.name)
                             )
-                        )
-
-                        is AST.VariableDecl -> referral.parent!!.replaceChild(
-                            referral,
-                            AST.InitializedVar(referral, node.right)
-                        )
+                        ) else node
                     }
-                    AST.Stub(node)
                 }
 
                 is AST.TypeReference -> node
@@ -67,19 +59,3 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
         }
 }
 
-object VariableScope : Transformer<AST.VariableDecl>() {
-    override val type: KClass<AST.VariableDecl> = AST.VariableDecl::class
-
-    init {
-        dependsOn(objectUniqueness)
-    }
-
-    context(ReportCollector, Filename) override fun transform(node: AST.VariableDecl): EagerEffect<UnrecoverableError, out AST.Node> {
-        val nearestBlock = node.walkDownTop(::identity).filterIsInstance<AST.ExpressionList>().first()
-        val varIndex = nearestBlock.expressions.indexOf(node)
-        val (outer, inner) = nearestBlock.expressions.withIndex().partition { it.index < varIndex }
-        val scope = AST.ExpressionList(inner.map { it.value })
-        nearestBlock.parent!!.replaceChild(nearestBlock, AST.ExpressionList(outer.map { it.value } + scope))
-        return eagerEffect { node }
-    }
-}

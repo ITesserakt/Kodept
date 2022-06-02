@@ -317,12 +317,13 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt: RLT.Function.Bodied get() = _rlt as RLT.Function.Bodied
     }
 
+    @Deprecated("No uninitialized")
     open class VariableDecl(
         val reference: Reference, val mutable: Boolean, type: TypeExpression?,
-    ) : NodeBase(), Referable {
+    ) : NodeBase() {
         var type = type
             private set
-        override val name = reference.name
+        val name = reference.name
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
@@ -358,18 +359,27 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt get() = _rlt as RLT.StatementNode
     }
 
-    class InitializedVar(reference: Reference, mutable: Boolean, type: TypeExpression?, expr: Expression) :
-        VariableDecl(reference, mutable, type) {
-        var expr = expr
+    class InitializedVar(reference: Reference, val mutable: Boolean, type: TypeExpression?, expr: Expression) :
+        NodeBase(), Referable {
+        var reference: Reference = reference
             private set
+        var type: TypeExpression? = type
+            private set
+        var expr: Expression = expr
+            private set
+        override val name: String = reference.name
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            super.replaceChild(old, new) || ::expr.replace(old, new)
+            ::reference.replace(old, new) || ::type.replace(old, new) || ::expr.replace(old, new)
 
-        override fun children() = super.children() + expr
+        override fun children() = listOfNotNull(type) + listOf(expr)
 
-        fun copy(reference: Reference, mutable: Boolean, type: TypeExpression?, expr: Expression) =
-            InitializedVar(reference, mutable, type, expr)
+        fun copy(
+            reference: Reference = this.reference,
+            mutable: Boolean = this.mutable,
+            type: TypeExpression? = this.type,
+            expr: Expression = this.expr,
+        ) = InitializedVar(reference, mutable, type, expr)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -393,6 +403,7 @@ data class AST(val root: Node, val filename: Filename) {
             return "InitializedVar(reference=$reference, mutable=$mutable, type=$type expr=$expr)"
         }
 
+        @Deprecated("no uninitialized")
         constructor(decl: VariableDecl, expr: Expression) : this(decl.reference, decl.mutable, decl.type, expr)
 
         override val rlt: RLT.InitializedAssignment get() = _rlt as RLT.InitializedAssignment

@@ -12,7 +12,8 @@ import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.lexer.ExpressionToken
 
-private fun expandCompound(left: AST.Lvalue, right: AST.Expression, token: Token) = when (token) {
+@OptIn(Internal::class)
+private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expression, token: Token) = when (token) {
     ExpressionToken.PLUS_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
     ExpressionToken.SUB_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
     ExpressionToken.TIMES_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
@@ -27,14 +28,14 @@ private fun expandCompound(left: AST.Lvalue, right: AST.Expression, token: Token
     ExpressionToken.EQUALS.token -> { _, r -> r }
     else -> throw IllegalStateException("Impossible")
 }.let {
-    fun copyLvalue(value: AST.Lvalue) = when (value) {
-        is AST.Dereference -> value.copy()
-        is AST.FunctionCall -> value.copy()
-        is AST.Reference -> value.copy()
-        is AST.TypeReference -> value.copy()
+    fun RLT.Lvalue.copyLvalue(value: AST.Lvalue) = when (value) {
+        is AST.Dereference -> value.copy().withRLT()
+        is AST.FunctionCall -> value.copy().withRLT()
+        is AST.Reference -> value.copy().withRLT()
+        is AST.TypeReference -> value.copy().withRLT()
     }
 
-    AST.Assignment(left, it(copyLvalue(left), right))
+    AST.Assignment(left, it(lvalue.copyLvalue(left), right)).withRLT()
 }
 
 context (RLT.BinaryOperation)
@@ -84,10 +85,7 @@ private fun RLT.Context.convert(): AST.ResolutionContext = when (this) {
 private fun RLT.UserSymbol.Type.convert() = AST.Type(text.value()).withRLT()
 
 @OptIn(Internal::class)
-private fun RLT.Variable.convert() = when (this) {
-    is RLT.Variable.Immutable -> AST::VariableDecl.partially2(false)
-    is RLT.Variable.Mutable -> AST::VariableDecl.partially2(true)
-}.invoke(with(RLT.Reference(id)) { AST.Reference(id.text.value()).withRLT() }, type?.convert()).withRLT()
+private fun RLT.UserSymbol.Identifier.convert() = AST.Reference(text.value()).withRLT()
 
 @OptIn(Internal::class)
 private fun RLT.Literal.convert(): AST.Literal = when (this) {
@@ -195,8 +193,16 @@ private fun RLT.BlockLevelNode.convert(): AST.BlockLevel = when (this) {
 @OptIn(Internal::class)
 private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
     is RLT.Assignment -> when (this) {
-        is RLT.InitializedAssignment -> AST.InitializedVar(
+        is RLT.CompoundAssignment -> expandCompound(
             lvalue.convert(),
+            expression.convert(),
+            compoundOperator.tokenType
+        )
+
+        is RLT.InitializedAssignment -> AST.InitializedVar(
+            lvalue.id.convert(),
+            lvalue is RLT.Variable.Mutable,
+            lvalue.type?.convert(),
             expression.convert()
         )
 
@@ -205,17 +211,11 @@ private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
             expression.convert(),
             equals.tokenType
         )
-    }.withRLT()
+    }
 
     is RLT.Function.Bodied -> convert()
 
-    is RLT.CompoundAssignment -> expandCompound(
-        lvalue.convert(),
-        expression.convert(),
-        compoundOperator.tokenType
-    ).withRLT()
-
-    is RLT.Variable -> convert()
+    is RLT.Variable -> throw IllegalStateException("Thrown out")
 }
 
 @OptIn(Internal::class)
@@ -260,7 +260,7 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
 }
 
 private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
-    is RLT.Variable -> convert().reference
+    is RLT.Variable -> id.convert()
     is RLT.TermNode -> convert()
 }
 

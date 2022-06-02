@@ -228,8 +228,8 @@ data class RLT(val root: File) {
         override val id: UserSymbol = lvalue.id
     }
 
-    data class CompoundAssignment(val lvalue: Lvalue, val compoundOperator: Symbol, val expression: ExpressionNode) :
-        StatementNode, Node by compoundOperator
+    class CompoundAssignment(lvalue: Lvalue, val compoundOperator: Symbol, expression: ExpressionNode) :
+        Assignment(lvalue, compoundOperator, expression)
 
     data class BinaryOperation(val left: ExpressionNode, val op: Symbol, val right: ExpressionNode) : ExpressionNode,
         Node by op
