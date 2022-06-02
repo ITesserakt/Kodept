@@ -17,7 +17,7 @@ class CompilerTest : DescribeSpec({
             compilationContext flow {
                 val source = readSources().bind()
                 val tokens = source.tokenize().bind()
-                val parse = tokens.parse().then { abstract() }.bind()
+                val parse = tokens.parse().then { dropUnusedInfo() }.bind()
 
                 source.source shouldHaveSize 1
                 tokens.tokens shouldHaveSize 1
@@ -36,7 +36,7 @@ class CompilerTest : DescribeSpec({
             compilationContext flow {
                 val source = readSources().bind()
                 val tokens = source.tokenize().bind()
-                val parse = tokens.parse().then { abstract() }.bind()
+                val parse = tokens.parse().then { dropUnusedInfo() }.bind()
 
                 source.source shouldHaveSize 2
                 tokens.tokens shouldHaveSize 2

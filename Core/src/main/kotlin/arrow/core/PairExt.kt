@@ -19,3 +19,6 @@ inline fun <A, B> ((A) -> B).curry(): (Tuple1<A>) -> B = { this(it.t1) }
 inline fun <A, B, C> ((A, B) -> C).curry(): (Tuple2<A, B>) -> C = { this(it.t1, it.t2) }
 inline fun <A, B, C, D> ((A, B, C) -> D).curry(): (Tuple3<A, B, C>) -> D = { this(it.t1, it.t2, it.t3) }
 inline fun <A, B, C, D, E> ((A, B, C, D) -> E).curry(): (Tuple4<A, B, C, D>) -> E = { this(it.t1, it.t2, it.t3, it.t4) }
+
+inline fun <A, B, C> ((A, B) -> C).curryPair(): (Pair<A, B>) -> C = { this(it.first, it.second) }
+inline fun <A, B, C, D> ((A, B, C) -> D).curryPair(): (Triple<A, B, C>) -> D = { this(it.first, it.second, it.third) }

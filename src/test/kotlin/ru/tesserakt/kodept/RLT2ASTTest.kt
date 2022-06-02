@@ -34,7 +34,7 @@ class RLT2ASTTest : FunSpec({
             readSources()
                 .then { tokenize() }
                 .then { parse() }
-                .then { abstract() }
+                .then { dropUnusedInfo() }
                 .bind().shouldBeValid()
         }.first()
 

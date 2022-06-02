@@ -1,8 +1,11 @@
-module Prelude =>
+module Prelude {
+    struct Int
 
-fun main {
-	var factorial = 1
-	var i = i
-	factorial
+    fun main {
+        val x = ::B
+    }
 }
 
+module B {
+    fun y => 2
+}

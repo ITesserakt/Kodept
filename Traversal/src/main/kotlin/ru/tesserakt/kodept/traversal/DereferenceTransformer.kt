@@ -102,9 +102,9 @@ object DereferenceTransformer : Transformer<AST.Reference>() {
     }.mapLeft { it as FlowError }
 
     /**
-     * > This works except for Dereference: we should know type of the left branch to find proper reference for the right branch
+     * > This works except for [AST.Dereference]: we should know type of the left branch to find proper reference for the right branch
      *
-     * Every reference is in block: ExpressionList or FunctionDecl or VariableDecl or ModuleDecl
+     * Every reference is in block: [AST.ExpressionList] or [AST.FunctionDecl] or [AST.VariableDecl] or [AST.ModuleDecl]
      *
      * 1) reference without context:
      *     1) in expression list - `{ x }` - find initialized vars in this block or function with this name or recurse upper

@@ -8,8 +8,16 @@ import com.github.h0tk3y.betterParse.parser.*
 import ru.tesserakt.kodept.core.toCodePoint
 import ru.tesserakt.kodept.parser.RefinementError
 
-private fun AlternativesFailure.expand(): NonEmptyList<ErrorResult> =
-    NonEmptyList.fromListUnsafe(errors).flatMap { (it as? AlternativesFailure)?.expand() ?: it.nel() }
+private fun AlternativesFailure.expand(onlyLeaves: Boolean): NonEmptyList<ErrorResult> =
+    if (!onlyLeaves) NonEmptyList.fromListUnsafe(errors).flatMap {
+        if (it is AlternativesFailure) it.expand(false) else it.nel()
+    } else {
+        val alternatives = errors.filterIsInstance<AlternativesFailure>()
+        (if (alternatives.isNotEmpty())
+            NonEmptyList.fromListUnsafe(alternatives).flatMap { it.expand(true) }
+        else
+            NonEmptyList.fromListUnsafe(errors))
+    }
 
 private fun NonEmptyList<ErrorResult>.findSimilarMismatches() =
     filter { it is MismatchedToken || it is RefinementError }
@@ -29,6 +37,44 @@ private fun NonEmptyList<ErrorResult>.findSimilarMismatches() =
             })
         }
 
+context (ErrorResultConfig)
+        private fun AlternativesFailure.expandFlatten(filename: String): NonEmptyList<Report> {
+    val expanded = expand(onlyLeaves)
+    val reports =
+        expanded.map {
+            it.takeIf { it !is MismatchedToken && it !is UnexpectedEof && it !is RefinementError }?.toReport(filename)
+                .orEmpty()
+        }.flatten()
+    val mismatchedOrRefined = expanded.findSimilarMismatches().map { mismatchedTokens ->
+        val (found, expected) = mismatchedTokens.map {
+            when (it) {
+                is MismatchedToken -> (it.found to it.expected)
+                is RefinementError -> (it.actual to it.expected)
+                else -> throw IllegalStateException("Impossible")
+            }
+        }.unzip()
+        Report(
+            filename,
+            found.head.toCodePoint().nel(),
+            Report.Severity.ERROR,
+            SyntaxError.MismatchedToken(expected, found.head)
+        )
+    }
+    val eofReport =
+        NonEmptyList.fromList(expanded.filterIsInstance<UnexpectedEof>()).orNull()?.let { unexpectedEoves ->
+            Report(
+                filename,
+                null,
+                Report.Severity.ERROR,
+                SyntaxError.UnexpectedEOF(unexpectedEoves.map { it.expected })
+            )
+        }
+    return NonEmptyList.fromListUnsafe(reports + mismatchedOrRefined + listOfNotNull(eofReport))
+}
+
+data class ErrorResultConfig(val onlyLeaves: Boolean)
+
+context (ErrorResultConfig)
 fun ErrorResult.toReport(filename: String): NonEmptyList<Report> = when (this) {
     is UnexpectedEof -> Report(filename, null, Report.Severity.ERROR, SyntaxError.UnexpectedEOF(expected.nel())).nel()
     is MismatchedToken -> Report(
@@ -61,38 +107,4 @@ fun ErrorResult.toReport(filename: String): NonEmptyList<Report> = when (this) {
     ).nel()
 
     else -> Report(filename, null, Report.Severity.ERROR, SyntaxError.Common(this)).nel()
-}
-
-private fun AlternativesFailure.expandFlatten(filename: String): NonEmptyList<Report> {
-    val expanded = expand()
-    val reports =
-        expanded.map {
-            it.takeIf { it !is MismatchedToken && it !is UnexpectedEof && it !is RefinementError }?.toReport(filename)
-                .orEmpty()
-        }.flatten()
-    val mismatchedOrRefined = expanded.findSimilarMismatches().map { mismatchedTokens ->
-        val (found, expected) = mismatchedTokens.map {
-            when (it) {
-                is MismatchedToken -> (it.found to it.expected)
-                is RefinementError -> (it.actual to it.expected)
-                else -> throw IllegalStateException("Impossible")
-            }
-        }.unzip()
-        Report(
-            filename,
-            found.head.toCodePoint().nel(),
-            Report.Severity.ERROR,
-            SyntaxError.MismatchedToken(expected, found.head)
-        )
-    }
-    val eofReport =
-        NonEmptyList.fromList(expanded.filterIsInstance<UnexpectedEof>()).orNull()?.let { unexpectedEoves ->
-            Report(
-                filename,
-                null,
-                Report.Severity.ERROR,
-                SyntaxError.UnexpectedEOF(unexpectedEoves.map { it.expected })
-            )
-        }
-    return NonEmptyList.fromListUnsafe(reports + mismatchedOrRefined + listOfNotNull(eofReport))
 }

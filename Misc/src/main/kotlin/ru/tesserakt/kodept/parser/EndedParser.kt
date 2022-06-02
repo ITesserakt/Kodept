@@ -11,7 +11,7 @@ import com.github.h0tk3y.betterParse.utils.Tuple4
 import com.github.h0tk3y.betterParse.utils.Tuple5
 import ru.tesserakt.kodept.lexer.ExpressionToken
 
-class EndedParser<T, U>(
+private class EndedParser<T, U>(
     private val elementParser: Parser<T>,
     private val separator: Parser<*>,
     private val end: Parser<U>,
@@ -53,14 +53,13 @@ class EndedParser<T, U>(
     }
 }
 
-class UntilEOFParser<T>(
+private class UntilEOFParser<T>(
     private val elementParser: Parser<T>,
     private val separator: Parser<*>,
     private val atLeast: Int,
     private val atMost: Int,
 ) : Parser<List<T>> {
     private fun List<T>.checkEOF(
-        tokens: TokenMatchesSequence,
         nextPosition: Int,
         maxPosition: Int,
         failure: ErrorResult,
@@ -75,13 +74,13 @@ class UntilEOFParser<T>(
         var nextPosition = fromPosition
         while (atMost == -1 || results.size < atMost) {
             when (val element = elementParser.tryParse(tokens, nextPosition)) {
-                is ErrorResult -> return results.checkEOF(tokens, nextPosition, maxPosition, element)
+                is ErrorResult -> return results.checkEOF(nextPosition, maxPosition, element)
                 is Parsed -> {
                     nextPosition = element.nextPosition
                     results.add(element.value)
                     when (val sep = separator.tryParse(tokens, nextPosition)) {
                         is Parsed -> nextPosition = sep.nextPosition
-                        is ErrorResult -> return results.checkEOF(tokens, nextPosition, maxPosition, sep)
+                        is ErrorResult -> return results.checkEOF(nextPosition, maxPosition, sep)
                     }
                 }
             }
@@ -120,7 +119,8 @@ fun <T> strictTrailing(
     atMost: Int = -1,
 ) = Tuple4(elementParser, separator, atLeast, atMost)
 
-operator fun <T, U> Tuple4<Parser<T>, Parser<*>, Int, Int>.times(end: Parser<U>) = EndedParser(t1, t2, end, t3, t4)
+operator fun <T, U> Tuple4<Parser<T>, Parser<*>, Int, Int>.times(end: Parser<U>): Parser<Tuple2<List<T>, U>> =
+    EndedParser(t1, t2, end, t3, t4)
 
 inline infix fun <reified T, U, V> Parser<T>.and(other: Parser<Tuple2<U, V>>) =
     this.and(other).map { Tuple3(it.t1, it.t2.t1, it.t2.t2) }

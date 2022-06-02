@@ -10,17 +10,18 @@ import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.FileRelative
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.mapWithFilename
+import ru.tesserakt.kodept.error.ErrorResultConfig
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.toReport
 
 context (CompilationContext)
-class PreParsedContent(flowable: Flowable.Data.Tokens) : Flowable<PreParsedContent.Data> {
+class PreParsedContent(config: ErrorResultConfig, flowable: Flowable.Data.Tokens) : Flowable<PreParsedContent.Data> {
     data class Data(override val rlt: Sequence<FileRelative<IorNel<Report, RLT>>>) : Flowable.Data.ErroneousRawTree
 
     override val result = Data(flowable.tokens.mapWithFilename {
         when (val parsed = rootParser.tryParseToEnd(it, 0)) {
             is Parsed -> parsed.value.rightIor()
-            is ErrorResult -> parsed.toReport(this).leftIor()
+            is ErrorResult -> with(config) { parsed.toReport(this@mapWithFilename).leftIor() }
         }
     })
 }

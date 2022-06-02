@@ -20,8 +20,8 @@ fun main() {
         val sources = readSources()
         sources
             .then { tokenize() }
-            .then { parse() }
-            .then { abstract() }
+            .then { parse(true) }
+            .then { dropUnusedInfo() }
             .then { analyze() }
             .also { sources.bind().holder }
     }

@@ -8,6 +8,7 @@ import ru.tesserakt.kodept.core.FileRelative
 import ru.tesserakt.kodept.core.Loader
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.mapWithFilename
+import ru.tesserakt.kodept.error.ErrorResultConfig
 import ru.tesserakt.kodept.flowable.*
 import ru.tesserakt.kodept.lexer.Lexer
 import ru.tesserakt.kodept.parser.FileGrammar
@@ -68,8 +69,10 @@ class CompilationContext private constructor(
 
         fun readSources() = StringContent()
         fun Flowable.Data.Holder.tokenize() = TokenContent(this)
-        fun Flowable.Data.Tokens.parse() = PreParsedContent(this)
-        fun Flowable.Data.ErroneousRawTree.abstract() = ParsedContent(this)
+        fun Flowable.Data.Tokens.parse(onlyLatestErrors: Boolean = true) =
+            PreParsedContent(ErrorResultConfig(onlyLatestErrors), this)
+
+        fun Flowable.Data.ErroneousRawTree.dropUnusedInfo() = ParsedContent(this)
         fun Flowable.Data.Source.retrieveFromCache() = HintASTContent(this)
         fun Flowable.Data.ErroneousAST.analyze() = TransformedContent(this)
     }
