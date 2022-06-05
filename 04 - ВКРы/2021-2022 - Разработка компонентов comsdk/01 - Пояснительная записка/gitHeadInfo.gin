@@ -1,0 +1,17 @@
+\usepackage[%
+        shash={aa6dae6},
+        lhash={aa6dae6aba8cb3f4595401259e109f122fb9a28a},
+        authname={Alexandr Sokolov},
+        authemail={alsokolo@sa2systems.ru},
+        authsdate={2021-07-24},
+        authidate={2021-07-24 15:01:32 +0300},
+        authudate={1627128092},
+        commname={Alexandr Sokolov},
+        commemail={alsokolo@sa2systems.ru},
+        commsdate={2021-07-24},
+        commidate={2021-07-24 15:01:32 +0300},
+        commudate={1627128092},
+        refnames={ (HEAD -> master)},
+        firsttagdescribe={aa6dae6},
+        reltag={aa6dae6}
+    ]{gitexinfo}
