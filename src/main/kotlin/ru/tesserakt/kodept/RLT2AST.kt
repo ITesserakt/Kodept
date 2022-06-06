@@ -85,7 +85,9 @@ private fun RLT.Context.convert(): AST.ResolutionContext = when (this) {
 private fun RLT.UserSymbol.Type.convert() = AST.Type(text.value()).withRLT()
 
 @OptIn(Internal::class)
-private fun RLT.UserSymbol.Identifier.convert() = AST.Reference(text.value()).withRLT()
+private fun RLT.UserSymbol.Identifier.convert() = with(RLT.Reference(this)) {
+    AST.Reference(text.value()).withRLT()
+}
 
 @OptIn(Internal::class)
 private fun RLT.Literal.convert(): AST.Literal = when (this) {
@@ -204,7 +206,7 @@ private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
             lvalue is RLT.Variable.Mutable,
             lvalue.type?.convert(),
             expression.convert()
-        )
+        ).withRLT()
 
         else -> expandCompound(
             lvalue.convert(),

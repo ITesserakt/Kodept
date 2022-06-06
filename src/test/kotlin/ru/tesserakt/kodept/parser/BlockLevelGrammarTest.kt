@@ -27,12 +27,12 @@ class BlockLevelGrammarTest : WordSpec({
                 AST.ExpressionList(
                     listOf(
                         AST.InitializedVar(
-                            AST.VariableDecl(AST.Reference("foo"), false, null),
+                            AST.Reference("foo"), false, null,
                             AST.DecimalLiteral(5.toBigInteger())
                         ),
                         AST.StringLiteral("term"),
                         AST.InitializedVar(
-                            AST.VariableDecl(AST.Reference("baz"), false, null),
+                            AST.Reference("baz"), false, null,
                             AST.DecimalLiteral(4.toBigInteger())
                         ),
                     ),
@@ -56,12 +56,12 @@ class BlockLevelGrammarTest : WordSpec({
                 AST.ExpressionList(
                     listOf(
                         AST.InitializedVar(
-                            AST.VariableDecl(AST.Reference("foo"), false, null),
+                            AST.Reference("foo"), false, null,
                             AST.DecimalLiteral(5.toBigInteger())
                         ),
                         AST.StringLiteral("term"),
                         AST.InitializedVar(
-                            AST.VariableDecl(AST.Reference("baz"), false, null),
+                            AST.Reference("baz"), false, null,
                             AST.DecimalLiteral(4.toBigInteger())
                         ),
                     ),
@@ -75,7 +75,7 @@ class BlockLevelGrammarTest : WordSpec({
         test(
             BlockLevelGrammar,
             """var x = 5""",
-            AST.InitializedVar(AST.VariableDecl(AST.Reference("x"), true, null), AST.DecimalLiteral(5.toBigInteger()))
+            AST.InitializedVar(AST.Reference("x"), true, null, AST.DecimalLiteral(5.toBigInteger()))
         )
         test(
             BlockLevelGrammar,
@@ -95,25 +95,19 @@ class BlockLevelGrammarTest : WordSpec({
             BlockLevelGrammar,
             """val x = { 5 }""",
             AST.InitializedVar(
-                AST.VariableDecl(AST.Reference("x"), false, null),
+                AST.Reference("x"), false, null,
                 AST.DecimalLiteral(5.toBigInteger())
             )
         )
         test(
             BlockLevelGrammar,
-            """val x: Int""",
-            AST.VariableDecl(AST.Reference("x"), false, AST.Type("Int"))
+            """val x: Int = 3""",
+            AST.InitializedVar(AST.Reference("x"), false, AST.Type("Int"), AST.DecimalLiteral(3.toBigInteger()))
         )
         test(
             BlockLevelGrammar,
             """val x: String = {}""",
-            AST.InitializedVar(
-                AST.VariableDecl(
-                    AST.Reference("x"),
-                    false,
-                    AST.Type("String"),
-                ), AST.TupleLiteral.unit
-            )
+            AST.InitializedVar(AST.Reference("x"), false, AST.Type("String"), AST.TupleLiteral.unit)
         )
         test(
             BlockLevelGrammar,
@@ -121,7 +115,7 @@ class BlockLevelGrammarTest : WordSpec({
             |   test(blockLevelGrammar, "val x: String = {}", null)
         """.trimMargin(),
             AST.InitializedVar(
-                AST.VariableDecl(AST.Reference("result"), false, null),
+                AST.Reference("result"), false, null,
                 AST.FunctionCall(
                     AST.Reference("test"),
                     listOf(

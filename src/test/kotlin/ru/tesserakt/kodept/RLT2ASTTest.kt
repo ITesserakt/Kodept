@@ -21,7 +21,7 @@ class RLT2ASTTest : FunSpec({
         |   fun println(value: String) {
         |       val some = 1 + 2 - 5 * 4 / 0.1 % 0b1
         |       ::W::testImpl
-        |       var foo
+        |       var foo = "HI!"
         |   }
     """.trimMargin()
 

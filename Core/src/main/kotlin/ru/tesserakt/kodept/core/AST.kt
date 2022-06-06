@@ -317,48 +317,6 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt: RLT.Function.Bodied get() = _rlt as RLT.Function.Bodied
     }
 
-    @Deprecated("No uninitialized")
-    open class VariableDecl(
-        val reference: Reference, val mutable: Boolean, type: TypeExpression?,
-    ) : NodeBase() {
-        var type = type
-            private set
-        val name = reference.name
-
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
-
-        override fun children() = listOf(reference) + listOfNotNull(type)
-
-        fun copy(name: Reference = this.reference, mutable: Boolean = this.mutable, type: TypeExpression? = this.type) =
-            VariableDecl(name, mutable, type)
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as VariableDecl
-
-            if (reference != other.reference) return false
-            if (mutable != other.mutable) return false
-            if (type != other.type) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = reference.hashCode()
-            result = 31 * result + mutable.hashCode()
-            result = 31 * result + (type?.hashCode() ?: 0)
-            return result
-        }
-
-        override fun toString(): String {
-            return "VariableDecl(name='$reference', mutable=$mutable, type=$type)"
-        }
-
-        override val rlt get() = _rlt as RLT.StatementNode
-    }
-
     class InitializedVar(reference: Reference, val mutable: Boolean, type: TypeExpression?, expr: Expression) :
         NodeBase(), Referable {
         var reference: Reference = reference
@@ -372,7 +330,7 @@ data class AST(val root: Node, val filename: Filename) {
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
             ::reference.replace(old, new) || ::type.replace(old, new) || ::expr.replace(old, new)
 
-        override fun children() = listOfNotNull(type) + listOf(expr)
+        override fun children() = listOf(reference) + listOfNotNull(type) + listOf(expr)
 
         fun copy(
             reference: Reference = this.reference,
@@ -381,30 +339,33 @@ data class AST(val root: Node, val filename: Filename) {
             expr: Expression = this.expr,
         ) = InitializedVar(reference, mutable, type, expr)
 
+        override fun toString(): String {
+            return "InitializedVar(reference=$reference, mutable=$mutable, type=$type expr=$expr)"
+        }
+
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
-            if (!super.equals(other)) return false
 
             other as InitializedVar
 
+            if (mutable != other.mutable) return false
+            if (reference != other.reference) return false
+            if (type != other.type) return false
             if (expr != other.expr) return false
+            if (name != other.name) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = super.hashCode()
+            var result = mutable.hashCode()
+            result = 31 * result + reference.hashCode()
+            result = 31 * result + (type?.hashCode() ?: 0)
             result = 31 * result + expr.hashCode()
+            result = 31 * result + name.hashCode()
             return result
         }
-
-        override fun toString(): String {
-            return "InitializedVar(reference=$reference, mutable=$mutable, type=$type expr=$expr)"
-        }
-
-        @Deprecated("no uninitialized")
-        constructor(decl: VariableDecl, expr: Expression) : this(decl.reference, decl.mutable, decl.type, expr)
 
         override val rlt: RLT.InitializedAssignment get() = _rlt as RLT.InitializedAssignment
     }

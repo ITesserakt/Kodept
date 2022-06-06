@@ -5,18 +5,19 @@ import com.github.h0tk3y.betterParse.combinators.optional
 import com.github.h0tk3y.betterParse.combinators.or
 import com.github.h0tk3y.betterParse.combinators.times
 import com.github.h0tk3y.betterParse.grammar.Grammar
+import com.github.h0tk3y.betterParse.grammar.parser
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.keyword
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object BlockLevelGrammar : Grammar<RLT.BlockLevelNode>() {
     private val expression by OperatorGrammar
-    private val functionStatement by FunctionGrammar
+    private val functionStatement by parser { FunctionGrammar }
 
-    val block = LBRACE and strictTrailing(this) * RBRACE map {
+    val block by LBRACE and strictTrailing(this) * RBRACE map {
         RLT.Body.Block(RLT.Symbol(it.t1), it.t2, RLT.Symbol(it.t3))
     }
-    val simple = FLOW * OperatorGrammar map {
+    val simple by FLOW * OperatorGrammar map {
         RLT.Body.Expression(RLT.Symbol(it.t1), it.t2)
     }
     val body = simple or block
