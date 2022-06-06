@@ -2351,6 +2351,29 @@ INPUT ./intro.tex
 INPUT intro.tex
 INPUT ./intro.tex
 INPUT intro.tex
+INPUT ./figures/screenshot.KeplerWorkflow.jpg
+INPUT ./figures/screenshot.KeplerWorkflow.jpg
+INPUT figures/screenshot.KeplerWorkflow.jpg
+INPUT ./figures/screenshot.KeplerWorkflow.jpg
+INPUT ./figures/screenshot.KeplerWorkflow.jpg
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lass1440.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm0500.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
 INPUT ./chapters.tex
 INPUT chapters.tex
 INPUT ./chapters.tex
@@ -2429,11 +2452,6 @@ INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
 INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lait1440.tfm
 INPUT ./doc-spec/by.eps
 INPUT ./doc-spec/by.eps
@@ -2569,12 +2587,14 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfit1440.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfss1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfti1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb
