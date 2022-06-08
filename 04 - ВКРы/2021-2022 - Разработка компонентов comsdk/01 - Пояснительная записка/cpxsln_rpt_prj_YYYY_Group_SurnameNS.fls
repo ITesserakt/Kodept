@@ -2046,18 +2046,12 @@ INPUT intro.aux
 INPUT ./chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
-INPUT ./chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
 INPUT ./chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
 INPUT ./chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
-INPUT ./chapters/chap5_comp_experiment.aux
-INPUT chapters/chap5_comp_experiment.aux
-INPUT chapters/chap5_comp_experiment.aux
 INPUT ./chapters/chap6_results_analysis.aux
 INPUT chapters/chap6_results_analysis.aux
 INPUT chapters/chap6_results_analysis.aux
@@ -2388,16 +2382,6 @@ INPUT ./chapters/chap1_task_statement.tex
 INPUT chapters/chap1_task_statement.tex
 INPUT ./chapters/chap1_task_statement.tex
 INPUT chapters/chap1_task_statement.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-OUTPUT chapters/chap2_comp_method.aux
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT chapters/chap2_comp_method.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
@@ -2408,6 +2392,41 @@ INPUT ./chapters/chap3_soft_architecture.tex
 INPUT chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT chapters/chap3_soft_architecture.tex
+INPUT ./figures/fileStructure.png
+INPUT ./figures/fileStructure.png
+INPUT figures/fileStructure.png
+INPUT ./figures/fileStructure.png
+INPUT ./figures/fileStructure.png
+INPUT ./figures/example.parallel.png
+INPUT ./figures/example.parallel.png
+INPUT figures/example.parallel.png
+INPUT ./figures/example.parallel.png
+INPUT ./figures/example.parallel.png
+INPUT ./figures/example.parallel_then_linear.png
+INPUT ./figures/example.parallel_then_linear.png
+INPUT figures/example.parallel_then_linear.png
+INPUT ./figures/example.parallel_then_linear.png
+INPUT ./figures/example.parallel_then_linear.png
+INPUT ./figures/example.selector.png
+INPUT ./figures/example.selector.png
+INPUT figures/example.selector.png
+INPUT ./figures/example.selector.png
+INPUT ./figures/example.selector.png
+INPUT ./figures/UML.actionItem.png
+INPUT ./figures/UML.actionItem.png
+INPUT figures/UML.actionItem.png
+INPUT ./figures/UML.actionItem.png
+INPUT ./figures/UML.actionItem.png
+INPUT ./figures/class.node_v2.png
+INPUT ./figures/class.node_v2.png
+INPUT figures/class.node_v2.png
+INPUT ./figures/class.node_v2.png
+INPUT ./figures/class.node_v2.png
+INPUT ./figures/UML.all.png
+INPUT ./figures/UML.all.png
+INPUT figures/UML.all.png
+INPUT ./figures/UML.all.png
+INPUT ./figures/UML.all.png
 INPUT ./chapters/chap4_soft_testing.tex
 INPUT ./chapters/chap4_soft_testing.tex
 INPUT ./chapters/chap4_soft_testing.tex
@@ -2418,16 +2437,21 @@ INPUT ./chapters/chap4_soft_testing.tex
 INPUT chapters/chap4_soft_testing.tex
 INPUT ./chapters/chap4_soft_testing.tex
 INPUT chapters/chap4_soft_testing.tex
-INPUT ./chapters/chap5_comp_experiment.tex
-INPUT ./chapters/chap5_comp_experiment.tex
-INPUT ./chapters/chap5_comp_experiment.tex
-OUTPUT chapters/chap5_comp_experiment.aux
-INPUT ./chapters/chap5_comp_experiment.tex
-INPUT ./chapters/chap5_comp_experiment.tex
-INPUT ./chapters/chap5_comp_experiment.tex
-INPUT chapters/chap5_comp_experiment.tex
-INPUT ./chapters/chap5_comp_experiment.tex
-INPUT chapters/chap5_comp_experiment.tex
+INPUT ./figures/flowchart.graphRunning1.png
+INPUT ./figures/flowchart.graphRunning1.png
+INPUT figures/flowchart.graphRunning1.png
+INPUT ./figures/flowchart.graphRunning1.png
+INPUT ./figures/flowchart.graphRunning1.png
+INPUT ./figures/flowchart.executionContainer.png
+INPUT ./figures/flowchart.executionContainer.png
+INPUT figures/flowchart.executionContainer.png
+INPUT ./figures/flowchart.executionContainer.png
+INPUT ./figures/flowchart.executionContainer.png
+INPUT ./figures/flowchart.executionBranch.png
+INPUT ./figures/flowchart.executionBranch.png
+INPUT figures/flowchart.executionBranch.png
+INPUT ./figures/flowchart.executionBranch.png
+INPUT ./figures/flowchart.executionBranch.png
 INPUT ./chapters/chap6_results_analysis.tex
 INPUT ./chapters/chap6_results_analysis.tex
 INPUT ./chapters/chap6_results_analysis.tex
@@ -2558,18 +2582,12 @@ INPUT intro.aux
 INPUT ./chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
-INPUT ./chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
-INPUT chapters/chap2_comp_method.aux
 INPUT ./chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
 INPUT chapters/chap3_soft_architecture.aux
 INPUT ./chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
-INPUT ./chapters/chap5_comp_experiment.aux
-INPUT chapters/chap5_comp_experiment.aux
-INPUT chapters/chap5_comp_experiment.aux
 INPUT ./chapters/chap6_results_analysis.aux
 INPUT chapters/chap6_results_analysis.aux
 INPUT chapters/chap6_results_analysis.aux
@@ -2582,6 +2600,11 @@ INPUT additionals.aux
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.out
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.out
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t2a.enc
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb
