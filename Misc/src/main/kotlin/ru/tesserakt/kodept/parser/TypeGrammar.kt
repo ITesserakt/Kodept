@@ -11,7 +11,7 @@ import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object TypeGrammar : Grammar<RLT.TypeNode>() {
-    val type = TYPE map { RLT.UserSymbol.Type(it) }
+    val type = TermGrammar.contextualType or TermGrammar.typeReference
 
     val tuple = LPAREN and strictTrailing(parser { rootParser }, COMMA) * RPAREN map {
         RLT.TupleType(RLT.Symbol(it.t1), it.t2, RLT.Symbol(it.t3))

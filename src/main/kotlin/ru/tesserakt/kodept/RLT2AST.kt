@@ -170,6 +170,14 @@ private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
         rest.map { it.convert() }).withRLT()
 
     is RLT.Trait -> AST.TraitDecl(id.text.value(), rest.map { it.convert() }).withRLT()
+
+    is RLT.ForeignType -> AST.ForeignStructDecl(id.text.value(), type.text.value()).withRLT()
+
+    is RLT.Function.Foreign -> AST.ForeignFunctionDecl(
+        id.text.value(),
+        params.flatMap { it.convert() },
+        returnType?.convert()
+    ).withRLT()
 }
 
 private fun RLT.StructLevelNode.convert() = when (this) {
@@ -283,10 +291,15 @@ private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
 }
 
 @OptIn(Internal::class)
-fun RLT.TypeNode.convert(): AST.TypeExpression = when (this) {
-    is RLT.TupleType -> AST.TupleType(types.map { it.convert() }).withRLT()
-    is RLT.UserSymbol.Type -> convert()
-    is RLT.UnionType -> AST.UnionType(types.map { it.convert() }).withRLT()
+fun RLT.TypeNode.convert(): AST.TypeReference = when (this) {
+    is RLT.TupleType -> AST.TypeReference(AST.TupleType(types.map { it.convert() }).withRLT(), null).withRLT()
+    is RLT.UnionType -> AST.TypeReference(AST.UnionType(types.map { it.convert() }).withRLT(), null).withRLT()
+    is RLT.ContextualReference -> AST.TypeReference(
+        with(ref) { AST.Type(ref.text.value()).withRLT() },
+        context.convert()
+    ).withRLT()
+
+    is RLT.Reference -> AST.TypeReference(with(ref) { AST.Type(ref.text.value()).withRLT() }, null).withRLT()
 }
 
 @OptIn(Internal::class)
@@ -304,9 +317,8 @@ fun RLT.Node.convert() = when (this) {
     is RLT.File -> convert()
     is RLT.Module -> convert()
     is RLT.MaybeTypedParameter -> convert()
-    is RLT.UserSymbol.Identifier -> throw IllegalStateException("Thrown out")
-    is RLT.Keyword -> throw IllegalStateException("Thrown out")
-    is RLT.Symbol -> throw IllegalStateException("Thrown out")
-    is RLT.MaybeTypedParameterTuple -> throw IllegalStateException("Thrown out")
+    is RLT.UserSymbol.Type, is RLT.MaybeTypedParameterTuple, is RLT.Symbol, is RLT.Keyword, is RLT.UserSymbol.Identifier ->
+        throw IllegalStateException("Thrown out")
+
     is RLT.InitializedAssignment -> convert()
 }

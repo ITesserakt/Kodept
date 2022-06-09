@@ -63,11 +63,23 @@ object DereferenceTransformer : Transformer<AST.Reference>() {
     private fun AST.Reference.handle(node: AST.Node) = when (node) {
         is AST.ExpressionList -> handleBlock(node)
         is AST.FunctionDecl -> handleFunction(node)
+        is AST.ForeignFunctionDecl -> handleForeignFunction(node)
+        is AST.AbstractFunctionDecl -> handleAbstractFunction(node)
         is AST.InitializedVar -> handleVariable(node)
         is AST.ModuleDecl -> handleModule(node)
         is AST.StructDecl -> handleStruct(node)
         else -> RecurseUp.left()
     }
+
+    private fun AST.Reference.handleAbstractFunction(node: AST.AbstractFunctionDecl): Either<FlowControl, AST.Referable> =
+        if (node.name == this.name)
+            node.right()
+        else node.params.filter { it.name == this.name }.onlyUnique { RecurseUp }
+
+    private fun AST.Reference.handleForeignFunction(node: AST.ForeignFunctionDecl): Either<FlowControl, AST.Referable> =
+        if (node.name == this.name)
+            node.right()
+        else node.params.filter { it.name == this.name }.onlyUnique { RecurseUp }
 
     private fun AST.Reference.handleOrRecurseUp(node: AST.Node): Either<FlowError, AST.Referable> =
         handle(node).handleErrorWith { control ->

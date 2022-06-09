@@ -26,7 +26,7 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                 is AST.FunctionCall -> node
                 is AST.ResolvedReference -> {
                     when (val referral = left.referral) {
-                        is AST.FunctionDecl, is AST.Parameter, is AST.InferredParameter -> shift(
+                        is AST.FunctionDecl, is AST.Parameter, is AST.InferredParameter, is AST.ForeignFunctionDecl, is AST.AbstractFunctionDecl -> shift(
                             UnrecoverableError(
                                 nonEmptyListOf(
                                     left.referral.rlt.position,

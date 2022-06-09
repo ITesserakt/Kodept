@@ -1,6 +1,7 @@
 package ru.tesserakt.kodept.traversal
 
 import arrow.core.NonEmptyList
+import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.EagerEffectScope
 import arrow.core.continuations.eagerEffect
 import arrow.core.nel
@@ -21,7 +22,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
             this@Filename, rlt.position.nel(), Report.Severity.WARNING,
             SemanticWarning.AlignWithType(items.first().toString())
         ).report()
-        items.first()
+        items.first().type
     } else this
 
     context(AST.UnionType, ReportCollector, Filename)
@@ -47,8 +48,8 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         }
 
         val flattenedItems = items.flatMap {
-            when (it) {
-                is AST.UnionType -> it.items
+            when (val type = it.type) {
+                is AST.UnionType -> type.items
                 else -> nonEmptyListOf(it)
             }
         }
@@ -73,13 +74,13 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
                 )
             )
 
-            1 -> items.first()
+            1 -> items.first().type
             else -> copy(_items = NonEmptyList.fromListUnsafe(items))
         }
     }
 
-    context(ReportCollector, Filename) override fun transform(node: AST.TypeExpression) =
-        eagerEffect<UnrecoverableError, AST.Node> {
+    context(ReportCollector, Filename) override fun transform(node: AST.TypeExpression): EagerEffect<UnrecoverableError, AST.TypeExpression> =
+        eagerEffect {
             when (node) {
                 is AST.TupleType -> node.transformTuple()
                 is AST.Type -> node

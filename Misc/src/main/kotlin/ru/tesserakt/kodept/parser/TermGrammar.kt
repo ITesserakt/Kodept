@@ -51,5 +51,8 @@ object TermGrammar : Grammar<RLT.TermNode>() {
 
     val contextual by (t_cc__v or t_cc_t_ or cc_t_cc__v or cc_t_cc_) map (RLT::ContextualReference.curryPair())
 
+    val contextualType by (cc_t_cc_ or t_cc_t_) map (RLT::ContextualReference.curryPair())
+    val contextualReference by (t_cc__v or cc_t_cc__v) map (RLT::ContextualReference.curryPair())
+
     override val rootParser = contextual or reference
 }

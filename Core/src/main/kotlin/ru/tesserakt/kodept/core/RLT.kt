@@ -35,7 +35,7 @@ data class RLT(val root: File) {
             override fun equals(other: Any?) = other is Identifier && text.value() == other.text.value()
         }
 
-        class Type(match: TokenMatch) : UserSymbol(match), TypeNode, Bind {
+        class Type(match: TokenMatch) : UserSymbol(match), Bind {
             override val description = "type"
 
             override fun equals(other: Any?) = other is Type && text.value() == other.text.value()
@@ -112,6 +112,14 @@ data class RLT(val root: File) {
         ) : Module(keyword, id, rest)
     }
 
+    data class ForeignType(
+        val fKeyword: Keyword,
+        val tKeyword: Keyword,
+        val id: UserSymbol.Type,
+        val flow: Symbol,
+        val type: Literal.Text,
+    ) : TopLevelNode, Node by id
+
     data class Struct(
         val keyword: Keyword,
         override val id: UserSymbol.Type,
@@ -166,14 +174,14 @@ data class RLT(val root: File) {
         open val params: List<MaybeTypedParameterTuple>,
         val colon: Symbol?,
         val returnType: TypeNode?,
-    ) : TraitLevelNode, Named, Node by keyword {
+    ) : Named, Node by keyword {
         class Abstract(
             keyword: Keyword,
             id: UserSymbol.Identifier,
             override val params: List<TypedParameterTuple>,
             colon: Symbol?,
             returnType: TypeNode?,
-        ) : Function(keyword, id, params, colon, returnType), Bind
+        ) : Function(keyword, id, params, colon, returnType), Bind, TraitLevelNode
 
         class Bodied(
             keyword: Keyword,
@@ -182,10 +190,19 @@ data class RLT(val root: File) {
             colon: Symbol?,
             returnType: TypeNode?,
             val body: Body,
-        ) : Function(keyword, id, params, colon, returnType), TopLevelNode, StructLevelNode, StatementNode, Scoping
+        ) : Function(keyword, id, params, colon, returnType), TopLevelNode, StructLevelNode, StatementNode, Scoping,
+            TraitLevelNode
+
+        class Foreign(
+            keyword: Keyword,
+            id: UserSymbol.Identifier,
+            override val params: List<TypedParameterTuple>,
+            colon: Symbol?,
+            returnType: TypeNode?,
+        ) : Function(keyword, id, params, colon, returnType), TopLevelNode
     }
 
-    open class Reference(val ref: UserSymbol) : TermNode, Node by ref
+    open class Reference(val ref: UserSymbol) : TermNode, TypeNode, Node by ref
 
     data class Application(val expr: ExpressionNode, val params: List<ParameterTuple>) : TermNode, Node by expr
 

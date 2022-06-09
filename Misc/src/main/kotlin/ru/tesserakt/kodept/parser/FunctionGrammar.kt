@@ -7,6 +7,7 @@ import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.keyword
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.ABSTRACT
+import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.FOREIGN
 
 object FunctionGrammar : Grammar<RLT.Function.Bodied>() {
     val strictlyTyped by IDENTIFIER * -COLON * TypeGrammar map { (name, type) ->
@@ -69,6 +70,18 @@ object FunctionGrammar : Grammar<RLT.Function.Bodied>() {
             returnType,
             tuple.t2
         )
+    }
+
+    val foreignFun by -FOREIGN * FUN * IDENTIFIER * optionalWithStart(
+        LPAREN,
+        strictTrailing(strictlyTyped, COMMA) * RPAREN
+    ) * zeroOrMore(strictParameterList) * optional(
+        COLON * TypeGrammar
+    ) map { (token, id, first, rest, type) ->
+        val (colon, ret) = type ?: Tuple2(null, null)
+        RLT.Function.Foreign(token.keyword(), RLT.UserSymbol.Identifier(id), listOfNotNull(first?.let {
+            RLT.TypedParameterTuple(RLT.Symbol(it.t1), it.t2.t1, RLT.Symbol(it.t2.t2))
+        }) + rest, colon?.let(RLT::Symbol), ret)
     }
 
     override val rootParser by function

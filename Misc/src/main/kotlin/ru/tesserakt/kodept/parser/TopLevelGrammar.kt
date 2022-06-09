@@ -9,11 +9,14 @@ import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple3
 import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.keyword
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.CLASS
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.ENUM
+import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.FOREIGN
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.STRUCT
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.TRAIT
+import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.TYPE_ALIAS
 
 object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     private val functionStatement by FunctionGrammar
@@ -44,7 +47,7 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     }
 
     val structStatement by STRUCT * TYPE * optionalWithStart(
-        LPAREN, strictTrailing(IDENTIFIER * -COLON * TYPE, COMMA) * RPAREN
+        LPAREN, strictTrailing(IDENTIFIER * -COLON * TypeGrammar, COMMA) * RPAREN
     ) * optionalWithStart(
         LBRACE, strictTrailing(FunctionGrammar) * RBRACE
     ) map { (structToken, name, allocated, rest) ->
@@ -54,7 +57,7 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
             RLT.Keyword(structToken),
             RLT.UserSymbol.Type(name),
             lp?.let(RLT::Symbol),
-            alloc.map { RLT.TypedParameter(RLT.UserSymbol.Identifier(it.t1), RLT.UserSymbol.Type(it.t2)) },
+            alloc.map { RLT.TypedParameter(RLT.UserSymbol.Identifier(it.t1), it.t2) },
             rp?.let(RLT::Symbol),
             lb?.let(RLT::Symbol),
             rest,
@@ -62,5 +65,15 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
         )
     }
 
-    override val rootParser: Parser<RLT.TopLevelNode> by structStatement or traitStatement or enumStatement or functionStatement
+    val foreignType by FOREIGN * TYPE_ALIAS * TYPE * FLOW * STRING map { (f, t, type, arrow, refersTo) ->
+        RLT.ForeignType(
+            f.keyword(),
+            t.keyword(),
+            RLT.UserSymbol.Type(type),
+            RLT.Symbol(arrow),
+            RLT.Literal.Text(refersTo)
+        )
+    }
+
+    override val rootParser: Parser<RLT.TopLevelNode> by structStatement or traitStatement or enumStatement or functionStatement or foreignType or FunctionGrammar.foreignFun
 }

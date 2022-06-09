@@ -63,7 +63,7 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt: RLT.Node get() = prototype.rlt
     }
 
-    class Parameter(override val name: String, type: TypeExpression) : NodeBase(), Referable {
+    class Parameter(override val name: String, type: TypeReference) : NodeBase(), Referable {
         var type = type
             private set
 
@@ -75,7 +75,7 @@ data class AST(val root: Node, val filename: Filename) {
             return "Parameter(name='$name', type=$type)"
         }
 
-        fun copy(name: String = this.name, type: TypeExpression = this.type) = Parameter(name, type)
+        fun copy(name: String = this.name, type: TypeReference = this.type) = Parameter(name, type)
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -98,13 +98,13 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt get() = _rlt as RLT.TypedParameter
     }
 
-    class InferredParameter(override val name: String, type: TypeExpression?) : NodeBase(), Referable {
+    class InferredParameter(override val name: String, type: TypeReference?) : NodeBase(), Referable {
         var type = type
             private set
 
         override fun children() = listOfNotNull(type)
 
-        fun copy(name: String = this.name, type: TypeExpression? = this.type) = InferredParameter(name, type)
+        fun copy(name: String = this.name, type: TypeReference? = this.type) = InferredParameter(name, type)
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
@@ -162,8 +162,7 @@ data class AST(val root: Node, val filename: Filename) {
         override val name: String,
         private val _alloc: MutableList<Parameter>,
         private val _rest: MutableList<StructLevel>,
-    ) :
-        NodeBase(), TopLevel {
+    ) : NodeBase(), TopLevel {
         val alloc get() = _alloc.toList()
         val rest get() = _rest.toList()
 
@@ -177,6 +176,10 @@ data class AST(val root: Node, val filename: Filename) {
         )
 
         override val rlt: RLT.Struct get() = _rlt as RLT.Struct
+    }
+
+    data class ForeignStructDecl(override val name: String, private val relatedWith: String) : Leaf(), TopLevel, Named {
+        override val rlt: RLT.Node get() = _rlt as RLT.ForeignType
     }
 
     data class EnumDecl(
@@ -214,8 +217,8 @@ data class AST(val root: Node, val filename: Filename) {
 
     class AbstractFunctionDecl(
         override val name: String,
-        private val _params: MutableList<Parameter>, returns: TypeExpression?,
-    ) : NodeBase(), TraitLevel {
+        private val _params: MutableList<Parameter>, returns: TypeReference?,
+    ) : NodeBase(), TraitLevel, Referable {
         var returns = returns
             private set
         val params get() = _params.toList()
@@ -226,7 +229,7 @@ data class AST(val root: Node, val filename: Filename) {
         fun copy(
             name: String = this.name,
             params: Iterable<Parameter> = this._params,
-            returns: TypeExpression? = this.returns,
+            returns: TypeReference? = this.returns,
         ) = AbstractFunctionDecl(name, params, returns)
 
         override fun equals(other: Any?): Boolean {
@@ -253,16 +256,65 @@ data class AST(val root: Node, val filename: Filename) {
             return "AbstractFunctionDecl(name='$name', params=$_params, returns=$returns)"
         }
 
-        constructor(name: String, params: Iterable<Parameter>, returns: TypeExpression?) : this(
+        constructor(name: String, params: Iterable<Parameter>, returns: TypeReference?) : this(
             name, params.toMutableList(), returns
         )
 
         override val rlt: RLT.Function.Abstract get() = _rlt as RLT.Function.Abstract
     }
 
+    class ForeignFunctionDecl(
+        override val name: String,
+        private val _params: MutableList<Parameter>, returns: TypeReference?,
+    ) : NodeBase(), TopLevel, Referable {
+        var returns = returns
+            private set
+        val params get() = _params.toList()
+        lateinit var action: (List<Any?>) -> Any?
+        override fun children() = params + listOfNotNull(returns)
+
+        override fun <A : Node?> replaceChild(old: A, new: A) = ::returns.replace(old, new) || _params.replace(old, new)
+
+        fun copy(
+            name: String = this.name,
+            params: Iterable<Parameter> = this._params,
+            returns: TypeReference? = this.returns,
+        ) = AbstractFunctionDecl(name, params, returns)
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as ForeignFunctionDecl
+
+            if (name != other.name) return false
+            if (_params != other._params) return false
+            if (returns != other.returns) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = name.hashCode()
+            result = 31 * result + _params.hashCode()
+            result = 31 * result + (returns?.hashCode() ?: 0)
+            return result
+        }
+
+        override fun toString(): String {
+            return "AbstractFunctionDecl(name='$name', params=$_params, returns=$returns)"
+        }
+
+        constructor(name: String, params: Iterable<Parameter>, returns: TypeReference?) : this(
+            name, params.toMutableList(), returns
+        )
+
+        override val rlt get() = _rlt as RLT.Function.Foreign
+    }
+
     class FunctionDecl(
         override val name: String,
-        private val _params: MutableList<InferredParameter>, returns: TypeExpression?, rest: Expression,
+        private val _params: MutableList<InferredParameter>, returns: TypeReference?, rest: Expression,
     ) : NodeBase(), TopLevel, StructLevel, TraitLevel, Referable {
         var returns = returns
             private set
@@ -277,7 +329,7 @@ data class AST(val root: Node, val filename: Filename) {
         fun copy(
             name: String = this.name,
             params: Iterable<InferredParameter> = this._params,
-            returns: TypeExpression? = this.returns,
+            returns: TypeReference? = this.returns,
             rest: Expression = this.rest,
         ) = FunctionDecl(name, params, returns, rest)
 
@@ -310,7 +362,7 @@ data class AST(val root: Node, val filename: Filename) {
         constructor(
             name: String,
             params: Iterable<InferredParameter>,
-            returns: TypeExpression?,
+            returns: TypeReference?,
             rest: Expression,
         ) : this(name, params.toMutableList(), returns, rest)
 
@@ -398,7 +450,7 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt get() = _rlt as RLT.Literal.Floating
     }
 
-    data class TupleLiteral(private val _items: MutableList<Node>) : NodeBase(), Literal {
+    data class TupleLiteral(private val _items: MutableList<Expression>) : NodeBase(), Literal {
         val items get() = _items.toList()
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _items.replace(old, new)
@@ -412,7 +464,7 @@ data class AST(val root: Node, val filename: Filename) {
             val unit = TupleLiteral(mutableListOf())
         }
 
-        constructor(items: Iterable<Node>) : this(items.toMutableList())
+        constructor(items: Iterable<Expression>) : this(items.toMutableList())
 
         override val rlt get() = _rlt as RLT.ExpressionNode
     }
@@ -430,26 +482,30 @@ data class AST(val root: Node, val filename: Filename) {
                     right == old && true.apply { right = new })
 
         override val rlt: RLT.BinaryOperation get() = _rlt as RLT.BinaryOperation
+
+        abstract val kind: OperatorKind
+
+        sealed interface OperatorKind
     }
 
-    data class Mathematical(override var left: Expression, override var right: Expression, val kind: Kind) :
+    data class Mathematical(override var left: Expression, override var right: Expression, override val kind: Kind) :
         BinaryOperator() {
-        enum class Kind { Add, Sub, Mul, Div, Mod, Pow }
+        enum class Kind : OperatorKind { Add, Sub, Mul, Div, Mod, Pow }
     }
 
-    data class Logical(override var left: Expression, override var right: Expression, val kind: Kind) :
+    data class Logical(override var left: Expression, override var right: Expression, override val kind: Kind) :
         BinaryOperator() {
-        enum class Kind { Conjunction, Disjunction }
+        enum class Kind : OperatorKind { Conjunction, Disjunction }
     }
 
-    data class Comparison(override var left: Expression, override var right: Expression, val kind: Kind) :
+    data class Comparison(override var left: Expression, override var right: Expression, override val kind: Kind) :
         BinaryOperator() {
-        enum class Kind { Less, LessEqual, Equal, NonEqual, GreaterEqual, Greater, Complex }
+        enum class Kind : OperatorKind { Less, LessEqual, Equal, NonEqual, GreaterEqual, Greater, Complex }
     }
 
-    data class Binary(override var left: Expression, override var right: Expression, val kind: Kind) :
+    data class Binary(override var left: Expression, override var right: Expression, override val kind: Kind) :
         BinaryOperator() {
-        enum class Kind { And, Or, Xor }
+        enum class Kind : OperatorKind { And, Or, Xor }
     }
 
     sealed class UnaryOperator : NodeBase(), Expression {
@@ -468,8 +524,13 @@ data class AST(val root: Node, val filename: Filename) {
     data class Inversion(override var expr: Expression) : UnaryOperator()
     data class BitInversion(override var expr: Expression) : UnaryOperator()
     data class Absolution(override var expr: Expression) : UnaryOperator()
-    data class Elvis(override var left: Expression, override var right: Expression) : BinaryOperator()
-    class Assignment(left: Lvalue, right: Expression) : NodeBase(), Expression {
+    data class Elvis(override var left: Expression, override var right: Expression) : BinaryOperator() {
+        override val kind: OperatorKind = Kind
+
+        private object Kind : OperatorKind
+    }
+
+    class Assignment(left: Lvalue, right: Expression) : NodeBase(), Statement {
         var left = left
             private set
         var right = right
@@ -508,9 +569,7 @@ data class AST(val root: Node, val filename: Filename) {
         Leaf(), Lvalue, Named {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Reference
+            if (other !is Reference) return false
 
             if (name != other.name) return false
             if (resolutionContext != other.resolutionContext) return false
@@ -542,20 +601,12 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (javaClass != other?.javaClass) return false
+            if (other !is ResolvedReference) return false
             if (!super.equals(other)) return false
-
-            other as ResolvedReference
 
             if (referral != other.referral) return false
 
             return true
-        }
-
-        override fun hashCode(): Int {
-            var result = super.hashCode()
-            result = 31 * result + referral.hashCode()
-            return result
         }
 
         override fun toString(): String {
@@ -595,26 +646,34 @@ data class AST(val root: Node, val filename: Filename) {
             return "TypeReference(resolutionContext=$resolutionContext, type=$type)"
         }
 
-        override val rlt get() = _rlt as RLT.UserSymbol.Type
+        override val rlt get() = _rlt
     }
 
     data class FunctionCall(
-        val reference: Node,
-        private val _params: MutableList<Node>,
+        val reference: Expression,
+        private val _params: MutableList<Expression>,
         val resolutionContext: ResolutionContext? = null,
     ) : NodeBase(), Lvalue {
         val params get() = _params.toList()
         override fun children() = reference.prependTo(params)
         override fun <A : Node?> replaceChild(old: A, new: A) = _params.replace(old, new)
 
-        constructor(reference: Node, params: Iterable<Node>, resolutionContext: ResolutionContext? = null) : this(
+        constructor(
+            reference: Expression,
+            params: Iterable<Expression>,
+            resolutionContext: ResolutionContext? = null,
+        ) : this(
             reference, params.toMutableList(), resolutionContext
         )
 
         override val rlt get() = _rlt as RLT.Application
     }
 
-    data class Dereference(override var left: Expression, override var right: Expression) : BinaryOperator(), Lvalue
+    data class Dereference(override var left: Expression, override var right: Expression) : BinaryOperator(), Lvalue {
+        override val kind: OperatorKind = Kind
+
+        object Kind : OperatorKind
+    }
 
     data class ExpressionList(private val _expressions: MutableList<BlockLevel>) : NodeBase(), Expression {
         val expressions get() = _expressions.toList()
@@ -638,7 +697,7 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt get() = _rlt as RLT.UserSymbol.Type
     }
 
-    data class TupleType(private val _items: MutableList<TypeExpression>) : TypeExpression() {
+    data class TupleType(private val _items: MutableList<TypeReference>) : TypeExpression() {
         val items get() = _items.toList()
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _items.replace(old, new)
@@ -651,7 +710,7 @@ data class AST(val root: Node, val filename: Filename) {
             val unit = TupleType(mutableListOf())
         }
 
-        constructor(items: Iterable<TypeExpression>) : this(items.toMutableList())
+        constructor(items: Iterable<TypeReference>) : this(items.toMutableList())
 
         override fun equals(other: Any?): Boolean =
             other is TupleType && _items.containsAll(other._items) && other._items.containsAll(_items)
@@ -661,7 +720,7 @@ data class AST(val root: Node, val filename: Filename) {
         override val rlt get() = _rlt as RLT.TupleType
     }
 
-    data class UnionType(private val _items: MutableList<TypeExpression>) : TypeExpression() {
+    data class UnionType(private val _items: MutableList<TypeReference>) : TypeExpression() {
         val items get() = NonEmptyList.fromListUnsafe(_items)
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _items.replace(old, new)
@@ -670,7 +729,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun toString() = items.joinToString(" | ", "(", ")")
 
-        constructor(items: NonEmptyList<TypeExpression>) : this(items.toMutableList())
+        constructor(items: NonEmptyList<TypeReference>) : this(items.toMutableList())
 
         override fun equals(other: Any?): Boolean =
             other is UnionType && _items.containsAll(other._items) && other._items.containsAll(_items)
@@ -679,12 +738,12 @@ data class AST(val root: Node, val filename: Filename) {
 
         override val rlt get() = _rlt as RLT.UnionType
 
-        fun copy(_items: NonEmptyList<TypeExpression> = this.items) = UnionType(_items).also { it._rlt = rlt }
+        fun copy(_items: NonEmptyList<TypeReference> = this.items) = UnionType(_items).also { it._rlt = rlt }
     }
 
     class IfExpr(
-        condition: Node,
-        body: Node,
+        condition: Expression,
+        body: Expression,
         private val _elifs: MutableList<ElifExpr>,
         el: ElseExpr?,
     ) : NodeBase(), Expression {
@@ -695,13 +754,13 @@ data class AST(val root: Node, val filename: Filename) {
         var el = el
             private set
 
-        constructor(condition: Node, body: Node, elifs: Iterable<ElifExpr>, el: ElseExpr?) : this(
+        constructor(condition: Expression, body: Expression, elifs: Iterable<ElifExpr>, el: ElseExpr?) : this(
             condition, body, elifs.toMutableList(), el
         )
 
         fun copy(
-            condition: Node = this.condition,
-            body: Node = this.body,
+            condition: Expression = this.condition,
+            body: Expression = this.body,
             elifs: Iterable<ElifExpr> = this.elifs,
             el: ElseExpr? = this.el,
         ) = IfExpr(condition, body, elifs, el)
@@ -743,7 +802,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override val rlt get() = _rlt as RLT.If
 
-        class ElifExpr(condition: Node, body: Node) : NodeBase() {
+        class ElifExpr(condition: Expression, body: Expression) : NodeBase() {
             var condition = condition
                 private set
             var body = body
@@ -754,7 +813,7 @@ data class AST(val root: Node, val filename: Filename) {
 
             override fun children() = listOf(condition, body)
 
-            fun copy(condition: Node = this.condition, body: Node = this.body) = ElifExpr(condition, body)
+            fun copy(condition: Expression = this.condition, body: Expression = this.body) = ElifExpr(condition, body)
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -781,7 +840,7 @@ data class AST(val root: Node, val filename: Filename) {
             override val rlt get() = _rlt as RLT.If.Elif
         }
 
-        class ElseExpr(body: Node) : NodeBase() {
+        class ElseExpr(body: Expression) : NodeBase() {
             var body = body
                 private set
 
@@ -789,7 +848,7 @@ data class AST(val root: Node, val filename: Filename) {
 
             override fun children() = listOf(body)
 
-            fun copy(body: Node = this.body) = ElseExpr(body)
+            fun copy(body: Expression = this.body) = ElseExpr(body)
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -814,13 +873,13 @@ data class AST(val root: Node, val filename: Filename) {
         }
     }
 
-    class WhileExpr(condition: Node, body: Node) : NodeBase(), Expression {
+    class WhileExpr(condition: Expression, body: Expression) : NodeBase(), Expression {
         var condition = condition
             private set
         var body = body
             private set
 
-        fun copy(condition: Node = this.condition, body: Node = this.body) = WhileExpr(condition, body)
+        fun copy(condition: Expression = this.condition, body: Expression = this.body) = WhileExpr(condition, body)
 
         override fun <A : Node?> replaceChild(old: A, new: A) =
             ::condition.replace(old, new) || ::body.replace(old, new)

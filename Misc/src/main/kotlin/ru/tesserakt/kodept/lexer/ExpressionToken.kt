@@ -105,5 +105,7 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
         val STRUCT = softKeyword("struct")
         val CLASS = softKeyword("class") // stack only
         val ENUM = softKeyword("enum")
+        val FOREIGN = softKeyword("foreign")
+        val TYPE_ALIAS = softKeyword("type")
     }
 }
