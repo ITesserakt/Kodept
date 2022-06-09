@@ -1,0 +1,79 @@
+%-------------------------
+\thispagestyle{empty}
+
+\vspace*{-\baselineskip}
+\vspace*{-\headheight}
+\vspace*{-\headsep}
+\vspace*{-2pt}
+
+\begin{center}
+
+	\begin{textblock}{1}(0,0)
+		\rotatebox{90}{\textcolor{gray!20.}{МГТУ им. Н.Э.Баумана, кафедра <<Системы автоматизированного проектирования>> (РК-6), шаблон RPT (размещение sa2tml)}}
+	\end{textblock}
+
+	{\centering%
+	\begin{tabular}{P{0.15\textwidth}P{0.75\textwidth}}
+		\smash{%
+			\raisebox{-0.7\height}{%
+				\includegraphics[width=0.15\textwidth]{doc-spec/bmstu.pdf}
+			}}
+		 & \smaller[1] \UpperFullOrganisationName\newline \FullOrganisationName \\
+	\end{tabular}}
+
+	\headerruleseparator
+
+	\vspace{-40pt}
+	\begin{flushleft}
+		\begin{tabular}{P{0.15\textwidth}P{0.75\textwidth}}
+			\multicolumn{1}{p{0.15\textwidth}}{}          & \multicolumn{1}{p{0.85\textwidth}}{}                        \\
+			\multicolumn{1}{p{0.15\textwidth}}{ФАКУЛЬТЕТ} & \multicolumn{1}{p{0.85\textwidth}}{\underline{\faculty}}    \\[5pt]
+			\multicolumn{1}{p{0.15\textwidth}}{КАФЕДРА}   & \multicolumn{1}{p{0.85\textwidth}}{\underline{\department}} \\
+		\end{tabular}
+	\end{flushleft}
+
+	\vspace{2.5cm}
+
+	\begin{center}
+		\Large
+		\MakeUppercase{Расчётно-пояснительная записка}
+
+		\vspace{0.35cm}
+
+		% Почему-то не работает
+		%К~\expandafter\uppercase\expandafter{\doctypeb}
+		к\xspace\doctypeb
+
+		\vspace{0.4cm}
+
+		\myconditionaltext{\doctypesid}{kp}{%
+			\SubTitle
+		}
+
+		%\vspace{0.35cm}
+
+		{\smaller[1]
+			на тему
+
+			<<\Title>>}
+	\end{center}
+
+	\vspace{3.0cm}
+
+	\large
+
+	\begin{tabular}{p{0.45\textwidth}P{0.25\textwidth}P{0.25\textwidth}}
+		\signerline{Студент \textunderset{группа}{\underline{\group}}}{\Author} \\[10pt]
+		\signerline{Руководитель \doctypeshort}{\ScientificAdviser}             \\[10pt]
+	\end{tabular}
+
+	\vspace{4.5cm}
+
+	\City, \Year
+
+\end{center}
+%-------------------------
+
+
+
+
