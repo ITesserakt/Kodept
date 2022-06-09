@@ -9,11 +9,18 @@ interface Tree<Self : Tree<Self>> : OrientedGraph.Node<Self> {
     enum class SearchMode {
         Postorder {
             override suspend fun <T : Tree<T>> SequenceScope<T>.acquire(initial: T) {
-                fun step(current: T): Sequence<T> = sequence {
-                    current.children().forEach { yieldAll(step(it)) }
-                    yield(current)
+                val stack = ArrayDeque(arrayListOf(initial))
+                var root = initial
+                while (stack.isNotEmpty()) {
+                    val current = stack.last()
+                    val children = current.children()
+                    if (children.isEmpty() || children.any { it == root }) {
+                        yield(stack.removeLast())
+                        root = current
+                    } else {
+                        stack += children.asReversed()
+                    }
                 }
-                yieldAll(step(initial))
             }
         },
         Preorder {

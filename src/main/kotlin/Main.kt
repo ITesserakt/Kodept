@@ -1,5 +1,5 @@
 import ru.tesserakt.kodept.CompilationContext
-import ru.tesserakt.kodept.FileInterpreter
+import ru.tesserakt.kodept.ProgramState
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
@@ -51,7 +51,7 @@ fun main() {
         it.value.fold(
             { it.map { with(code) { pr.processReport(it) + "\n" } }.asSequence() },
             {
-                val state = FileInterpreter().run(it.root, emptyList())
+                val state = ProgramState(emptyList(), 0, emptyMap(), null)
                 sequenceOf(
                     "Last expression in main: ${state.result}",
                     "Program exited with exit code: ${state.output}"
