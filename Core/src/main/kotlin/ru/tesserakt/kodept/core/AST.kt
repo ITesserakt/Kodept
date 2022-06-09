@@ -21,8 +21,6 @@ data class AST(val root: Node, val filename: Filename) {
     sealed interface Node : Tree<Node> {
         override var parent: Node?
         val rlt: RLT.Node
-
-        fun <A : Node?> replaceChild(old: A, new: A): Boolean
     }
 
     sealed interface Named : Node {
@@ -45,6 +43,9 @@ data class AST(val root: Node, val filename: Filename) {
         final override var parent: Node? = null
         internal lateinit var _rlt: RLT.Node
 
+        @Internal
+        abstract fun <A : Node?> replaceChild(old: A, new: A): Boolean
+
         protected inline fun <reified T : Node> MutableList<T>.replace(old: Node?, new: Node?) =
             old is T && remove(old) && new is T && add(new)
 
@@ -55,7 +56,6 @@ data class AST(val root: Node, val filename: Filename) {
     sealed class Leaf : Node {
         final override var parent: Node? = null
         final override fun children() = emptyList<Node>()
-        final override fun <A : Node?> replaceChild(old: A, new: A): Boolean = false
         internal lateinit var _rlt: RLT.Node
     }
 
@@ -69,6 +69,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children() = listOf(type)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         override fun toString(): String {
@@ -106,6 +107,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         fun copy(name: String = this.name, type: TypeReference? = this.type) = InferredParameter(name, type)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         override fun equals(other: Any?): Boolean {
@@ -138,6 +140,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children() = modules
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _modules.replace(old, new)
 
         constructor(modules: NonEmptyList<ModuleDecl>) : this(modules.toMutableList())
@@ -151,6 +154,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children() = rest
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _rest.replace(old, new)
 
         constructor(name: String, global: Boolean, rest: Iterable<TopLevel>) : this(name, global, rest.toMutableList())
@@ -168,6 +172,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children() = alloc + rest
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
             _alloc.replace(old, new) || _rest.replace(old, new)
 
@@ -195,6 +200,7 @@ data class AST(val root: Node, val filename: Filename) {
             override val rlt: RLT.UserSymbol.Type get() = _rlt as RLT.UserSymbol.Type
         }
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _enumEntries.replace(old, new)
 
         constructor(name: String, stackBased: Boolean, enumEntries: Iterable<EnumLevel>) : this(
@@ -208,6 +214,7 @@ data class AST(val root: Node, val filename: Filename) {
         val rest get() = _rest.toList()
         override fun children() = rest
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _rest.replace(old, new)
 
         constructor(name: String, rest: Iterable<TraitLevel>) : this(name, rest.toMutableList())
@@ -224,6 +231,7 @@ data class AST(val root: Node, val filename: Filename) {
         val params get() = _params.toList()
         override fun children() = params + listOfNotNull(returns)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) = ::returns.replace(old, new) || _params.replace(old, new)
 
         fun copy(
@@ -273,6 +281,7 @@ data class AST(val root: Node, val filename: Filename) {
         lateinit var action: (List<Any?>) -> Any?
         override fun children() = params + listOfNotNull(returns)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) = ::returns.replace(old, new) || _params.replace(old, new)
 
         fun copy(
@@ -323,6 +332,7 @@ data class AST(val root: Node, val filename: Filename) {
         val params get() = _params.toList()
         override fun children() = params + listOfNotNull(returns) + listOf(rest)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) =
             ::returns.replace(old, new) || ::rest.replace(old, new) || _params.replace(old, new)
 
@@ -379,6 +389,7 @@ data class AST(val root: Node, val filename: Filename) {
             private set
         override val name: String = reference.name
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
             ::reference.replace(old, new) || ::type.replace(old, new) || ::expr.replace(old, new)
 
@@ -392,7 +403,7 @@ data class AST(val root: Node, val filename: Filename) {
         ) = InitializedVar(reference, mutable, type, expr)
 
         override fun toString(): String {
-            return "InitializedVar(reference=$reference, mutable=$mutable, type=$type expr=$expr)"
+            return "InitializedVar(reference=${reference.name}, mutable=$mutable, type=$type expr=$expr)"
         }
 
         override fun equals(other: Any?): Boolean {
@@ -453,6 +464,7 @@ data class AST(val root: Node, val filename: Filename) {
     data class TupleLiteral(private val _items: MutableList<Expression>) : NodeBase(), Literal {
         val items get() = _items.toList()
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _items.replace(old, new)
 
         override fun children() = items
@@ -477,6 +489,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         override fun children(): List<Node> = listOf(left, right)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) =
             new is Expression && (left == old && true.apply { left = new } ||
                     right == old && true.apply { right = new })
@@ -512,8 +525,9 @@ data class AST(val root: Node, val filename: Filename) {
         abstract var expr: Expression
             protected set
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
-            (::expr as KMutableProperty0<Expression>).replace(old, new)
+            new is Expression && expr == old && true.apply { expr = new }
 
         override fun children(): List<Node> = listOf(expr)
 
@@ -537,6 +551,8 @@ data class AST(val root: Node, val filename: Filename) {
             private set
 
         override fun children() = listOf(left, right)
+
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) = ::left.replace(old, new) || ::right.replace(old, new)
 
         override fun equals(other: Any?): Boolean {
@@ -609,6 +625,10 @@ data class AST(val root: Node, val filename: Filename) {
             return true
         }
 
+        override fun hashCode(): Int {
+            return super.hashCode()
+        }
+
         override fun toString(): String {
             return "ResolvedReference(name='$name', referral=$referral, resolutionContext=$resolutionContext)"
         }
@@ -619,6 +639,8 @@ data class AST(val root: Node, val filename: Filename) {
             private set
 
         override fun children() = listOf(type)
+
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
         fun copy(type: TypeExpression = this.type, resolutionContext: ResolutionContext? = this.resolutionContext) =
@@ -656,6 +678,8 @@ data class AST(val root: Node, val filename: Filename) {
     ) : NodeBase(), Lvalue {
         val params get() = _params.toList()
         override fun children() = reference.prependTo(params)
+
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) = _params.replace(old, new)
 
         constructor(
@@ -678,6 +702,8 @@ data class AST(val root: Node, val filename: Filename) {
     data class ExpressionList(private val _expressions: MutableList<BlockLevel>) : NodeBase(), Expression {
         val expressions get() = _expressions.toList()
         override fun children() = expressions
+
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _expressions.replace(old, new)
 
         constructor(expressions: Iterable<BlockLevel>) : this(expressions.toMutableList())
@@ -688,6 +714,7 @@ data class AST(val root: Node, val filename: Filename) {
     sealed class TypeExpression : NodeBase()
 
     data class Type(val name: String) : TypeExpression() {
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) = false
 
         override fun children() = emptyList<Node>()
@@ -700,6 +727,7 @@ data class AST(val root: Node, val filename: Filename) {
     data class TupleType(private val _items: MutableList<TypeReference>) : TypeExpression() {
         val items get() = _items.toList()
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _items.replace(old, new)
 
         override fun children() = items
@@ -723,6 +751,7 @@ data class AST(val root: Node, val filename: Filename) {
     data class UnionType(private val _items: MutableList<TypeReference>) : TypeExpression() {
         val items get() = NonEmptyList.fromListUnsafe(_items)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _items.replace(old, new)
 
         override fun children() = items
@@ -767,6 +796,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         val elifs get() = _elifs.toList()
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
             ::condition.replace(old, new) || ::body.replace(old, new) || _elifs.replace(old, new) || ::el.replace(
                 old, new
@@ -808,6 +838,7 @@ data class AST(val root: Node, val filename: Filename) {
             var body = body
                 private set
 
+            @Internal
             override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
                 ::condition.replace(old, new) || ::body.replace(old, new)
 
@@ -844,6 +875,7 @@ data class AST(val root: Node, val filename: Filename) {
             var body = body
                 private set
 
+            @Internal
             override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::body.replace(old, new)
 
             override fun children() = listOf(body)
@@ -881,6 +913,7 @@ data class AST(val root: Node, val filename: Filename) {
 
         fun copy(condition: Expression = this.condition, body: Expression = this.body) = WhileExpr(condition, body)
 
+        @Internal
         override fun <A : Node?> replaceChild(old: A, new: A) =
             ::condition.replace(old, new) || ::body.replace(old, new)
 

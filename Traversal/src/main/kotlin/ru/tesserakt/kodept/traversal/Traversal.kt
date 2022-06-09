@@ -24,8 +24,8 @@ data class UnrecoverableError(val crashReport: Report) {
 }
 
 context (ReportCollector, Filename)
-fun <A : AST.Node> Transformer<A>.transformOrSkip(node: AST.Node) =
-    type.safeCast(node)?.let { transform(it) } ?: eagerEffect { node }
+fun <A : AST.Node> SpecificTransformer<A>.transformOrSkip(node: AST.Node) =
+    type.safeCast(node)?.let { transformTo(it) } ?: eagerEffect { node to node }
 
 fun <T> unwrap(f: ReportCollector.() -> EagerEffect<out UnrecoverableError, T>) = with(ReportCollector()) {
     f(this).fold({ (it.crashReport.nel() + collectedReports).leftIor() }, {

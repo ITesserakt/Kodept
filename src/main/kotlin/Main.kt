@@ -3,23 +3,24 @@ import ru.tesserakt.kodept.FileInterpreter
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.thread
 
-fun memoryStats() {
-    val mb = 1024 * 1024
-    // get Runtime instance
-    val instance = Runtime.getRuntime()
-    println("***** Heap utilization statistics [MB] *****\n")
-    // available memory
-    println("Total Memory: " + instance.totalMemory() / mb)
-    // free memory
-    println("Free Memory: " + instance.freeMemory() / mb)
-    // used memory
-    println("Used Memory: " + (instance.totalMemory() - instance.freeMemory()) / mb)
-    // Maximum available memory
-    println("Max Memory: " + instance.maxMemory() / mb)
+val megabytes = ConcurrentHashMap<Instant, Double>()
+
+fun memoryStatThread() = thread(isDaemon = true) {
+    val runtime = Runtime.getRuntime()
+    val mb = 1024 * 1024.0
+
+    while (true) {
+        megabytes += Instant.now() to (runtime.totalMemory() - runtime.freeMemory()) / mb
+        Thread.sleep(2)
+    }
 }
 
 fun main() {
+    memoryStatThread()
     val context = CompilationContext {
         loader = FileLoader()
         transformers = setOf(TypeSimplifier, InitializationTransformer, DereferenceTransformer, VariableScope)
@@ -50,9 +51,19 @@ fun main() {
         it.value.fold(
             { it.map { with(code) { pr.processReport(it) + "\n" } }.asSequence() },
             {
-                sequenceOf(FileInterpreter().run(it.root, emptyList()).output.toString())
+                val state = FileInterpreter().run(it.root, emptyList())
+                sequenceOf(
+                    "Last expression in main: ${state.result}",
+                    "Program exited with exit code: ${state.output}"
+                )
             },
             { it, _ -> it.map { with(code) { pr.processReport(it) } }.asSequence() }
         ).joinToString("\n").let(::println)
     }
+
+    println(
+        "Maximum memory consumed: ${megabytes.maxBy { it.value }.value}\nAverage was: ${
+            megabytes.map { it.value }.average()
+        }"
+    )
 }

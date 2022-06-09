@@ -36,7 +36,7 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
 
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
     val application: Parser<RLT.ExpressionNode> by
-    atom * zeroOrMore(LPAREN and strictTrailing(this, COMMA) * RPAREN) map { (head, tail) ->
+    atom * zeroOrMore(-!NEWLINE * LPAREN and strictTrailing(this, COMMA) * RPAREN) map { (head, tail) ->
         when (tail.isEmpty()) {
             true -> head
             false -> RLT.Application(head, tail.map { (lp, p, rp) ->

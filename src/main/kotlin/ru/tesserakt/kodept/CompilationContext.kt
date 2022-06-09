@@ -13,20 +13,20 @@ import ru.tesserakt.kodept.flowable.*
 import ru.tesserakt.kodept.lexer.Lexer
 import ru.tesserakt.kodept.parser.FileGrammar
 import ru.tesserakt.kodept.traversal.Analyzer
-import ru.tesserakt.kodept.traversal.Transformer
+import ru.tesserakt.kodept.traversal.SpecificTransformer
 
 class CompilationContext private constructor(
     val loader: Loader,
     val lexer: Tokenizer,
     val rootParser: Parser<RLT>,
-    val transformers: Set<Transformer<*>>,
+    val transformers: Set<SpecificTransformer<*>>,
     val analyzers: Set<Analyzer>,
 ) {
     class Builder {
         var lexer: Tokenizer = Lexer()
         lateinit var loader: Loader
         var rootParser = FileGrammar.map { RLT(it) }
-        var transformers = setOf<Transformer<*>>()
+        var transformers = setOf<SpecificTransformer<*>>()
         var analyzers = setOf<Analyzer>()
 
         fun build() = CompilationContext(loader, lexer, rootParser, transformers, analyzers)

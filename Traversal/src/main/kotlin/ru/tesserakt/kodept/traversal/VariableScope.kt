@@ -9,19 +9,18 @@ import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.ReportCollector
 import kotlin.reflect.KClass
 
-object VariableScope : Transformer<AST.InitializedVar>() {
+object VariableScope : SpecificTransformer<AST.InitializedVar>() {
     override val type: KClass<AST.InitializedVar> = AST.InitializedVar::class
 
     init {
         dependsOn(objectUniqueness)
     }
 
-    context(ReportCollector, Filename) override fun transform(node: AST.InitializedVar): EagerEffect<UnrecoverableError, out AST.Node> {
+    context(ReportCollector, Filename) override fun transformTo(node: AST.InitializedVar): EagerEffect<UnrecoverableError, Pair<AST.Node, AST.Node>> {
         val nearestBlock = node.walkDownTop(::identity).filterIsInstance<AST.ExpressionList>().first()
         val varIndex = nearestBlock.expressions.indexOf(node)
         val (outer, inner) = nearestBlock.expressions.withIndex().partition { it.index < varIndex }
         val scope = AST.ExpressionList(inner.map { it.value })
-        nearestBlock.parent!!.replaceChild(nearestBlock, AST.ExpressionList(outer.map { it.value } + scope))
-        return eagerEffect { node }
+        return eagerEffect { nearestBlock to AST.ExpressionList(outer.map { it.value } + scope) }
     }
 }

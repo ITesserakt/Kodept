@@ -1,17 +1,13 @@
 package ru.tesserakt.kodept.flowable
 
-import arrow.core.IorNel
+import arrow.core.*
 import arrow.core.continuations.eagerEffect
-import arrow.core.flatMap
-import arrow.core.getOrHandle
 import arrow.typeclasses.Semigroup
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.error.Report
-import ru.tesserakt.kodept.traversal.Analyzer
-import ru.tesserakt.kodept.traversal.Transformer
-import ru.tesserakt.kodept.traversal.transformOrSkip
-import ru.tesserakt.kodept.traversal.unwrap
+import ru.tesserakt.kodept.traversal.*
+import kotlin.collections.flatten
 
 context (CompilationContext)
 class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<TransformedContent.Data> {
@@ -24,28 +20,29 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
         either.flatMap(Semigroup.nonEmptyList()) { ast ->
             sorted.foldAST(ast) { value, acc ->
                 when (value) {
-                    is Transformer<*> -> executeTransformer(acc, value)
+                    is SpecificTransformer<*> -> executeTransformer(acc, value)
                     is Analyzer -> unwrap { with(value) { analyzeWithCaching(acc) }.map { acc } }
                 }
             }
         }
     }
 
+    @OptIn(Internal::class)
     private fun Filename.executeTransformer(
         acc: AST,
-        transformer: Transformer<*>,
-    ) = unwrap {
+        transformer: SpecificTransformer<*>,
+    ): Ior<NonEmptyList<Report>, AST> = unwrap {
         eagerEffect {
             val (head, tail) = acc.flatten(mode = Tree.SearchMode.Postorder)
                 .run { first { it.parent == null } to filter { it.parent != null } }
             tail.forEach {
-                val parent = it.parent!!
-                val transformed = transformer.transformOrSkip(it).bind()
+                val (old, new) = transformer.transformOrSkip(it).bind()
+                val parent = old.parent as AST.NodeBase
                 if (transformed != it)
-                    parent.replaceChild(it, transformed)
+                    parent.replaceChild(old, new)
             }
-            val root = transformer.transformOrSkip(head).bind()
-            AST(root, this@executeTransformer)
+            val (_, newRoot) = transformer.transformOrSkip(head).bind()
+            AST(newRoot, this@executeTransformer)
         }
     }
 

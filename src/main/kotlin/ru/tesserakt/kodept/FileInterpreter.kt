@@ -84,7 +84,8 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.TupleLiteral -> if (this == AST.TupleLiteral.unit) state.copy(result = Unit) else state.copy(
             result = this.items.runningFold(
                 state
-            ) { acc, expr -> expr.eval(acc) })
+            ) { acc, expr -> expr.eval(acc) }.map { it.result }.drop(1)
+        )
 
         is AST.FunctionCall -> TODO()
         is AST.ResolvedReference -> state.copy(result = state.state.getValue(this))
