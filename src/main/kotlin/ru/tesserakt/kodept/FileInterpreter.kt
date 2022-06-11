@@ -10,6 +10,7 @@ data class ProgramState(
     val state: Map<AST.ResolvedReference, Any>,
     val result: Any?,
     val functionParameters: Map<AST.ParameterLike, Any?>,
+    val mainFound: Boolean,
 )
 
 class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
@@ -137,16 +138,18 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         }
     }
 
-    override fun initialState(input: List<String>) = ProgramState(input, 0, emptyMap(), null, emptyMap())
+    override fun initialState(input: List<String>) = ProgramState(input, 0, emptyMap(), null, emptyMap(), false)
 
     override fun join(state: ProgramState, program: AST.Node): ProgramState = when (program) {
         is AST.Expression -> program.eval(state)
         is AST.AbstractFunctionDecl -> state
         is AST.ForeignFunctionDecl -> state
         is AST.FunctionDecl -> {
-            if (program.name == "main")
-                program.rest.eval(state).let { it.copy(output = (it.result as? BigInteger)?.toInt() ?: 0) }
-            else state
+            if (program.name == "main") {
+                program.rest.eval(state).let {
+                    it.copy(output = (it.result as? BigInteger)?.toInt() ?: 0, mainFound = true)
+                }
+            } else state
         }
 
         is AST.InferredParameter -> state

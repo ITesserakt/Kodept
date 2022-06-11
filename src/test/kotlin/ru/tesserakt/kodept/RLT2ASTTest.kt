@@ -30,7 +30,7 @@ class RLT2ASTTest : FunSpec({
     }
 
     context("workflow should be valid") {
-        val workflow = compiler.flow {
+        val workflow = compiler.workflow {
             readSources()
                 .then { tokenize() }
                 .then { parse() }

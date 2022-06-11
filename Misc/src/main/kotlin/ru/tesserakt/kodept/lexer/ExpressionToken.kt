@@ -51,7 +51,7 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
 
     //    DECIMAL(regexToken("""[-+]?([1-9][\d_]*\d|\d)""")),
     CHAR(regexToken("""'([^'\\]|\\'|\\\\)'""")),
-    STRING(regexToken(""""(?:\\\\"|[^"])*"""")),
+    STRING(regexToken(""""(?:\\\\|\\"|[^"\n])*"""")),
 
     // Operators
     DOT(literalToken(".")),

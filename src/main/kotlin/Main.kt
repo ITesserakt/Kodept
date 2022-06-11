@@ -1,11 +1,11 @@
 import ru.tesserakt.kodept.CompilationContext
-import ru.tesserakt.kodept.FileInterpreter
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
+import kotlin.io.path.Path
 
 val megabytes = ConcurrentHashMap<Instant, Double>()
 var alive = true
@@ -23,7 +23,9 @@ fun memoryStatThread() = thread(isDaemon = true) {
 fun main() {
     memoryStatThread()
     val context = CompilationContext {
-        loader = FileLoader()
+        loader = FileLoader {
+            this.path = Path("/home/tesserakt/IdeaProjects/Kodept/src/test/")
+        }
         transformers = setOf(
             TypeSimplifier,
             InitializationTransformer,
@@ -41,13 +43,14 @@ fun main() {
         )
     }
 
-    val (result, code) = context flow {
+    val (result, code) = context workflow {
         val sources = readSources()
         sources
             .then { tokenize() }
             .then { parse(true) }
             .then { dropUnusedInfo() }
             .then { analyze() }
+            .then { interpret() }
             .also { sources.bind().holder }
     }
 
@@ -55,26 +58,14 @@ fun main() {
         surrounding = 0
     }
 
+    ForeignFunctionResolver.exportFunction({ println(it[0]) }, "kotlin.io.println", listOf(String::class), Unit::class)
     ForeignFunctionResolver.exportFunction<Unit>("kotlin.io.println") { println() }
-    ForeignFunctionResolver.exportFunction<String, Unit>("kotlin.io.println") { println(it) }
 
-    result.ast.forEach { it ->
-        println("Processing ${it.filename}...")
-
-        it.value.fold(
-            { it.map { with(code) { pr.processReport(it) + "\n" } }.asSequence() },
-            {
-                val state = FileInterpreter().run(it.root, emptyList())
-                sequenceOf(
-                    "Last expression in main: ${state.result}",
-                    "Program exited with exit code: ${state.output}"
-                )
-            },
-            { it, _ -> it.map { with(code) { pr.processReport(it) } }.asSequence() }
-        ).joinToString("\n").let(::println)
-    }
-
+    result.programOutput.value().toEither().fold({
+        with(code) { it.map { pr.processReport(it) } }
+    }, { emptyList() }).joinToString("\n").let(::println)
     alive = false
+
     println(
         """Maximum memory consumed: ${megabytes.values.maxOrNull()}
            |Average was: ${megabytes.map { it.value }.average()}

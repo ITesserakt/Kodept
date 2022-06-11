@@ -25,7 +25,7 @@ class ReportProcessor private constructor(
         val maxIndexLength = report.point?.maxOf { log10(it.line.toFloat()).toInt() + 1 } ?: 0
         val codeWindows = report.point.orEmpty().map { point ->
             val from = (point.line - surrounding).coerceAtLeast(0)
-            val stream = get(report.file).linesRange(from - 1..from + surrounding)
+            val stream = get(report.file ?: return "").linesRange(from - 1..from + surrounding)
 
             stream.withIndex().joinToString("\n") { (index, str) ->
                 val realIndex = index + from

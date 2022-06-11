@@ -42,6 +42,10 @@ interface Flowable<T : Flowable.Data> {
         interface ErroneousAST : Data {
             val ast: Sequence<FileRelative<ParseResult>>
         }
+
+        interface Program : Data {
+            val programOutput: Eval<IorNel<Report, Pair<Any?, Int>>>
+        }
     }
 }
 

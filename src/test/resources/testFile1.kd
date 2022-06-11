@@ -1,3 +1,7 @@
+module Main {
+    fun main => ::Prelude::println(::Math::factorial(5))
+}
+
 module Prelude {
     foreign type Int => "Int"
     foreign type String => "kotlin.String"
@@ -8,16 +12,8 @@ module Prelude {
     fun println(value: String) => prim_println(value)
 }
 
-module Hello_world {
-    fun factorial(n) {
-        var current = n
-        var result = 1
-        while current > 0 {
-            result *= current
-            current -= 1
-        }
-        result
-    }
-
-    fun main => factorial(10000)
+module Math {
+    fun factorial(n) =>
+        if n == 0 => 1
+        else      => n * factorial(n - 1)
 }

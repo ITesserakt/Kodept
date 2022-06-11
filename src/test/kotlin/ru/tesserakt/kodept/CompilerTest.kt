@@ -14,7 +14,7 @@ class CompilerTest : DescribeSpec({
                 loader = MemoryLoader.singleSnippet("module Test =>")
             }
 
-            compilationContext flow {
+            compilationContext workflow {
                 val source = readSources().bind()
                 val tokens = source.tokenize().bind()
                 val parse = tokens.parse().then { dropUnusedInfo() }.bind()
@@ -33,7 +33,7 @@ class CompilerTest : DescribeSpec({
                     loader = MemoryLoader.fromText("module A => struct B", "module B =>")
                 }
 
-            compilationContext flow {
+            compilationContext workflow {
                 val source = readSources().bind()
                 val tokens = source.tokenize().bind()
                 val parse = tokens.parse().then { dropUnusedInfo() }.bind()

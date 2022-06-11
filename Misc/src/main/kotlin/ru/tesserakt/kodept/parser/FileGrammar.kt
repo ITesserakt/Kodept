@@ -2,7 +2,10 @@ package ru.tesserakt.kodept.parser
 
 import arrow.core.NonEmptyList
 import arrow.core.nonEmptyListOf
-import com.github.h0tk3y.betterParse.combinators.*
+import com.github.h0tk3y.betterParse.combinators.map
+import com.github.h0tk3y.betterParse.combinators.or
+import com.github.h0tk3y.betterParse.combinators.times
+import com.github.h0tk3y.betterParse.combinators.use
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.core.RLT
@@ -18,6 +21,6 @@ object FileGrammar : Grammar<RLT.File>() {
     }
 
     override val rootParser: Parser<RLT.File> by
-    (oneOrMore(moduleStatement) map { NonEmptyList.fromListUnsafe(it) } use RLT::File) or
+    (trailingUntilEOF(moduleStatement) map { NonEmptyList.fromListUnsafe(it) } use RLT::File) or
             (globalModuleStatement map { RLT.File(nonEmptyListOf(it)) })
 }

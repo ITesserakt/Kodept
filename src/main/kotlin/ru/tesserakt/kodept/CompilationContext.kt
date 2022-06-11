@@ -75,9 +75,10 @@ class CompilationContext private constructor(
         fun Flowable.Data.ErroneousRawTree.dropUnusedInfo() = ParsedContent(this)
         fun Flowable.Data.Source.retrieveFromCache() = HintASTContent(this)
         fun Flowable.Data.ErroneousAST.analyze() = TransformedContent(this)
+        fun Flowable.Data.ErroneousAST.interpret(args: List<String> = emptyList()) = InterpretedContent(this, args)
     }
 
-    inline infix fun <T> flow(scope: Scope.() -> T) = Scope().run(scope)
+    inline infix fun <T> workflow(scope: Scope.() -> T) = Scope().run(scope)
 
     companion object {
         operator fun invoke(block: Builder.() -> Unit = {}) =

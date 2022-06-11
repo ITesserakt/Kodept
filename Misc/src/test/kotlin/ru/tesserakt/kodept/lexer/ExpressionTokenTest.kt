@@ -140,8 +140,9 @@ class ExpressionTokenTest : StringSpec({
             row(CHAR, """'\\'""", true),
 
             row(STRING, """"test"""", true),
-            row(STRING, """"te\\"st"""", true),
-            row(STRING, """"te\"st"""", false),
+            row(STRING, """"te\\"st"""", false),
+            row(STRING, """"te\\st"""", true),
+            row(STRING, """"te\"st"""", true),
             row(STRING, """"test""", false),
         ).forAll(::impliesData)
     }

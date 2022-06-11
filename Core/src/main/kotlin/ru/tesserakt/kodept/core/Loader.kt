@@ -36,6 +36,7 @@ class FileLoader private constructor(private val files: Sequence<File>, caches: 
                 .filter { it.extension == cacheExtension }
 
             require(path.isDirectory()) { "Provided path should be directory" }
+            require(path.isAbsolute) { "Provided path should be absolute" }
             val files = path.toFile()
                 .walkTopDown()
                 .filter { it.isFile }
