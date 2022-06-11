@@ -22,14 +22,14 @@ object BlockLevelGrammar : Grammar<RLT.BlockLevelNode>() {
     }
     val body = simple or block
 
-    val varDecl by (VAL or VAR) * IDENTIFIER * optional(COLON) * optional(TYPE) map {
+    val varDecl by (VAL or VAR) * IDENTIFIER * optional(COLON) * optional(TypeGrammar) map {
         val ctor = if (it.t1.type == VAL.token) RLT.Variable::Immutable
         else RLT.Variable::Mutable
         ctor(
             it.t1.keyword(),
             RLT.UserSymbol.Identifier(it.t2),
             it.t3?.let(RLT::Symbol),
-            it.t4?.let(RLT.UserSymbol::Type)
+            it.t4
         )
     }
 

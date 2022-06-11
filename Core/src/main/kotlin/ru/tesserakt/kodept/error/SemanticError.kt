@@ -32,4 +32,13 @@ sealed class SemanticError(final override val code: String, override val message
 
     data class ImmutableVariable(val name: String) :
         SemanticError("KSeE8", "Cannot assign twice to immutable variable `$name`")
+
+    data class ForeignFunctionParametersTypeMismatch(val name: String) :
+        SemanticError("KSeE9", "Function `$name` is foreign, so all its parameters should be foreign too")
+
+    data class ForeignFunctionReturnType(val name: String) :
+        SemanticError("KSeE10", "Function `$name` is foreign, so its return type should be foreign or absent")
+
+    data class ForeignFunctionLinkage(val name: String) :
+        SemanticError("KSeE11", "There is no known implementation for function `$name`")
 }

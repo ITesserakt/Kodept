@@ -15,7 +15,7 @@ data class UnrecoverableError(val crashReport: Report) {
     companion object {
         context (Filename)
                 operator fun invoke(
-            position: NonEmptyList<CodePoint>,
+            position: NonEmptyList<CodePoint>?,
             severity: Report.Severity,
             message: ReportMessage,
         ) =

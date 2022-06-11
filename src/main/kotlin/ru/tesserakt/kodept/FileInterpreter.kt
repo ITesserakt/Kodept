@@ -9,6 +9,7 @@ data class ProgramState(
     val output: Int,
     val state: Map<AST.ResolvedReference, Any>,
     val result: Any?,
+    val functionParameters: Map<AST.ParameterLike, Any?>,
 )
 
 class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
@@ -87,9 +88,38 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
             ) { acc, expr -> expr.eval(acc) }.map { it.result }.drop(1)
         )
 
-        is AST.FunctionCall -> TODO()
-        is AST.ResolvedReference -> state.copy(result = state.state.getValue(this))
-        is AST.Reference -> throw IllegalStateException()
+        is AST.FunctionCall -> {
+            val r = reference as AST.ResolvedReference
+            when (val ref = r.referral) {
+                is AST.AbstractFunctionDecl -> TODO()
+                is AST.ForeignFunctionDecl -> {
+                    val newState = params.runningFold(state) { acc, next -> next.eval(acc) }.drop(1)
+                    val value = ref.action.action(newState.flatMap { it.result as List<*> })
+                    (newState.lastOrNull() ?: state).copy(result = value)
+                }
+
+                is AST.FunctionDecl -> {
+                    val newState = params.runningFold(state) { acc, next -> next.eval(acc) }.drop(1)
+                    val stateWithParams = newState.last()
+                        .copy(functionParameters = ref.params.zip(newState.flatMap { it.result as List<*> }).toMap())
+                    ref.rest.eval(stateWithParams).copy(functionParameters = emptyMap())
+                }
+
+                is AST.InferredParameter -> TODO()
+                is AST.InitializedVar -> TODO()
+                is AST.Parameter -> TODO()
+            }
+        }
+
+        is AST.ResolvedReference -> when (val r = referral) {
+            is AST.AbstractFunctionDecl -> TODO()
+            is AST.ForeignFunctionDecl -> TODO()
+            is AST.FunctionDecl -> TODO()
+            is AST.InitializedVar -> state.copy(result = state.state.getValue(this))
+            is AST.ParameterLike -> state.copy(result = state.functionParameters.getValue(r))
+        }
+
+        is AST.Reference -> throw IllegalStateException(name)
         is AST.TypeReference -> TODO()
         is AST.Absolution -> state.copy(result = expr.eval(state).result)
         is AST.BitInversion -> state.copy(result = (expr.eval(state).result as BigInteger).inv())
@@ -107,7 +137,7 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         }
     }
 
-    override fun initialState(input: List<String>) = ProgramState(input, 0, emptyMap(), null)
+    override fun initialState(input: List<String>) = ProgramState(input, 0, emptyMap(), null, emptyMap())
 
     override fun join(state: ProgramState, program: AST.Node): ProgramState = when (program) {
         is AST.Expression -> program.eval(state)
@@ -116,8 +146,7 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.FunctionDecl -> {
             if (program.name == "main")
                 program.rest.eval(state).let { it.copy(output = (it.result as? BigInteger)?.toInt() ?: 0) }
-            else
-                program.rest.eval(state).copy(result = null)
+            else state
         }
 
         is AST.InferredParameter -> state

@@ -1,5 +1,5 @@
 import ru.tesserakt.kodept.CompilationContext
-import ru.tesserakt.kodept.ProgramState
+import ru.tesserakt.kodept.FileInterpreter
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
@@ -8,14 +8,15 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 
 val megabytes = ConcurrentHashMap<Instant, Double>()
+var alive = true
 
 fun memoryStatThread() = thread(isDaemon = true) {
     val runtime = Runtime.getRuntime()
     val mb = 1024 * 1024.0
 
-    while (true) {
+    while (alive) {
         megabytes += Instant.now() to (runtime.totalMemory() - runtime.freeMemory()) / mb
-        Thread.sleep(2)
+        Thread.sleep(1)
     }
 }
 
@@ -23,7 +24,14 @@ fun main() {
     memoryStatThread()
     val context = CompilationContext {
         loader = FileLoader()
-        transformers = setOf(TypeSimplifier, InitializationTransformer, DereferenceTransformer, VariableScope)
+        transformers = setOf(
+            TypeSimplifier,
+            InitializationTransformer,
+            DereferenceTransformer,
+            VariableScope,
+            TypeDereferenceTransformer,
+            ForeignFunctionResolver
+        )
         analyzers = setOf(
             moduleNameAnalyzer,
             moduleUniquenessAnalyzer,
@@ -47,11 +55,16 @@ fun main() {
         surrounding = 0
     }
 
+    ForeignFunctionResolver.exportFunction<Unit>("kotlin.io.println") { println() }
+    ForeignFunctionResolver.exportFunction<String, Unit>("kotlin.io.println") { println(it) }
+
     result.ast.forEach { it ->
+        println("Processing ${it.filename}...")
+
         it.value.fold(
             { it.map { with(code) { pr.processReport(it) + "\n" } }.asSequence() },
             {
-                val state = ProgramState(emptyList(), 0, emptyMap(), null)
+                val state = FileInterpreter().run(it.root, emptyList())
                 sequenceOf(
                     "Last expression in main: ${state.result}",
                     "Program exited with exit code: ${state.output}"
@@ -61,9 +74,11 @@ fun main() {
         ).joinToString("\n").let(::println)
     }
 
+    alive = false
     println(
-        "Maximum memory consumed: ${megabytes.maxBy { it.value }.value}\nAverage was: ${
-            megabytes.map { it.value }.average()
-        }"
+        """Maximum memory consumed: ${megabytes.values.maxOrNull()}
+           |Average was: ${megabytes.map { it.value }.average()}
+           |Total consumed: ${megabytes.map { it.value }.zipWithNext(Double::minus).sum()}
+        """.trimMargin()
     )
 }

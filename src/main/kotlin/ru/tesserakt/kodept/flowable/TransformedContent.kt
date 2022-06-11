@@ -5,6 +5,7 @@ import arrow.core.continuations.eagerEffect
 import arrow.typeclasses.Semigroup
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.traversal.*
 import kotlin.collections.flatten
@@ -38,8 +39,13 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
             tail.forEach {
                 val (old, new) = transformer.transformOrSkip(it).bind()
                 val parent = old.parent as AST.NodeBase
-                if (transformed != it)
-                    parent.replaceChild(old, new)
+                if (!(old == new || parent.replaceChild(old, new) || transformer !is Transformer<*>)) shift<Unit>(
+                    UnrecoverableError(
+                        nonEmptyListOf(parent.rlt.position, new.rlt.position),
+                        Report.Severity.CRASH,
+                        CompilerCrash("After applying $transformer the AST didn't change")
+                    )
+                )
             }
             val (_, newRoot) = transformer.transformOrSkip(head).bind()
             AST(newRoot, this@executeTransformer)

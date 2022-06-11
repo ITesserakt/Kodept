@@ -28,7 +28,7 @@ private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expressio
     ExpressionToken.EQUALS.token -> { _, r -> r }
     else -> throw IllegalStateException("Impossible")
 }.let {
-    fun RLT.Lvalue.copyLvalue(value: AST.Lvalue) = when (value) {
+    fun RLT.Lvalue.copyLvalue(value: AST.Lvalue): AST.Expression = when (value) {
         is AST.Dereference -> value.copy().withRLT()
         is AST.FunctionCall -> value.copy().withRLT()
         is AST.Reference -> value.copy().withRLT()
@@ -171,12 +171,13 @@ private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
 
     is RLT.Trait -> AST.TraitDecl(id.text.value(), rest.map { it.convert() }).withRLT()
 
-    is RLT.ForeignType -> AST.ForeignStructDecl(id.text.value(), type.text.value()).withRLT()
+    is RLT.ForeignType -> AST.ForeignStructDecl(id.text.value(), type.text.value().removeSurrounding("\"")).withRLT()
 
     is RLT.Function.Foreign -> AST.ForeignFunctionDecl(
         id.text.value(),
         params.flatMap { it.convert() },
-        returnType?.convert()
+        returnType?.convert() as? AST.TypeReference,
+        descriptor.text.value().removeSurrounding("\"")
     ).withRLT()
 }
 
@@ -275,8 +276,21 @@ private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
 }
 
 @OptIn(Internal::class)
+private fun RLT.Reference.convert(): AST.Lvalue = when (this) {
+    is RLT.ContextualReference -> when (val r = ref) {
+        is RLT.UserSymbol.Identifier -> AST.Reference(ref.text.value(), context.convert()).withRLT()
+        is RLT.UserSymbol.Type -> AST.TypeReference(r.convert(), context.convert()).withRLT()
+    }
+
+    else -> when (val r = ref) {
+        is RLT.UserSymbol.Identifier -> AST.Reference(ref.text.value()).withRLT()
+        is RLT.UserSymbol.Type -> AST.TypeReference(r.convert()).withRLT()
+    }
+}
+
+@OptIn(Internal::class)
 private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
-    is RLT.Application -> AST.FunctionCall(expr.convert(),
+    is RLT.Application -> AST.FunctionCall(expr.convert() as AST.Reference,
         params.map(RLT.ParameterTuple::convert).filterNot { it.items.isEmpty() }).withRLT()
 
     is RLT.ContextualReference -> when (val r = ref) {
@@ -284,16 +298,13 @@ private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
         is RLT.UserSymbol.Type -> AST.TypeReference(r.convert(), context.convert()).withRLT()
     }
 
-    is RLT.Reference -> when (val r = ref) {
-        is RLT.UserSymbol.Identifier -> AST.Reference(ref.text.value()).withRLT()
-        is RLT.UserSymbol.Type -> AST.TypeReference(r.convert()).withRLT()
-    }
+    is RLT.Reference -> convert()
 }
 
 @OptIn(Internal::class)
-fun RLT.TypeNode.convert(): AST.TypeReference = when (this) {
-    is RLT.TupleType -> AST.TypeReference(AST.TupleType(types.map { it.convert() }).withRLT(), null).withRLT()
-    is RLT.UnionType -> AST.TypeReference(AST.UnionType(types.map { it.convert() }).withRLT(), null).withRLT()
+fun RLT.TypeNode.convert(): AST.TypeLike = when (this) {
+    is RLT.TupleType -> AST.TupleType(types.map { it.convert() }).withRLT()
+    is RLT.UnionType -> AST.UnionType(types.map { it.convert() }).withRLT()
     is RLT.ContextualReference -> AST.TypeReference(
         with(ref) { AST.Type(ref.text.value()).withRLT() },
         context.convert()

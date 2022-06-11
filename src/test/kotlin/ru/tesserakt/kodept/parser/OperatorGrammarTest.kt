@@ -114,7 +114,7 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            OperatorGrammar,
+            ExpressionGrammar,
             """id(2 + 2)""",
             AST.FunctionCall(
                 AST.Reference("id"),

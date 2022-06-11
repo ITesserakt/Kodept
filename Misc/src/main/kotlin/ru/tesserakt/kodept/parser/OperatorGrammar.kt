@@ -35,16 +35,7 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
         }
 
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
-    val application: Parser<RLT.ExpressionNode> by
-    atom * zeroOrMore(-!NEWLINE * LPAREN and strictTrailing(this, COMMA) * RPAREN) map { (head, tail) ->
-        when (tail.isEmpty()) {
-            true -> head
-            false -> RLT.Application(head, tail.map { (lp, p, rp) ->
-                RLT.ParameterTuple(RLT.Symbol(lp), p.map(RLT::Parameter), RLT.Symbol(rp))
-            })
-        }
-    }
-    val access by application * zeroOrMore(DOT * application) leftFold RLT::BinaryOperation
+    val access by atom * zeroOrMore(DOT * atom) leftFold RLT::BinaryOperation
     val topExpr: Parser<RLT.ExpressionNode> by (SUB or NOT_LOGIC or NOT_BIT or PLUS) * parser { topExpr } map {
         RLT.UnaryOperation(it.t2, RLT.Symbol(it.t1))
     } or access

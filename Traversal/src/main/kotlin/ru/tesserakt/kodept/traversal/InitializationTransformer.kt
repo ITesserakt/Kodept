@@ -29,16 +29,16 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                         is AST.FunctionDecl, is AST.Parameter, is AST.InferredParameter, is AST.ForeignFunctionDecl, is AST.AbstractFunctionDecl -> shift(
                             UnrecoverableError(
                                 nonEmptyListOf(
-                                    left.referral.rlt.position,
+                                    referral.rlt.position,
                                     node.rlt.position
-                                ), Report.Severity.ERROR, SemanticError.ImmutableConstruct(left.referral.name)
+                                ), Report.Severity.ERROR, SemanticError.ImmutableConstruct(referral.name)
                             )
                         )
 
                         is AST.InitializedVar -> if (!referral.mutable) shift<AST.Expression>(
                             UnrecoverableError(
                                 nonEmptyListOf(
-                                    left.referral.rlt.position,
+                                    referral.rlt.position,
                                     node.rlt.position
                                 ),
                                 Report.Severity.ERROR, SemanticError.ImmutableVariable(referral.name)

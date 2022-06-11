@@ -31,7 +31,7 @@ class DereferenceTransformerTest : StringSpec() {
                 buildAST(initVar)
 
                 unwrap { DereferenceTransformer.transform(ref) }.toEither()
-                    .shouldBeRight(AST.ResolvedReference(ref, initVar))
+                    .shouldBeRight(AST.ResolvedReference(ref.name, initVar, ref.resolutionContext))
             }
 
             "reference by variable declaration somewhere in a block" {
@@ -48,8 +48,9 @@ class DereferenceTransformerTest : StringSpec() {
                 unwrap { DereferenceTransformer.transform(ref) }.toEither()
                     .shouldBeRight(
                         AST.ResolvedReference(
-                            ref,
-                            AST.InitializedVar(ref, false, null, AST.CharLiteral('y'))
+                            ref.name,
+                            AST.InitializedVar(ref, false, null, AST.CharLiteral('y')),
+                            ref.resolutionContext
                         )
                     )
             }

@@ -1,18 +1,19 @@
 package ru.tesserakt.kodept.traversal
 
 import arrow.core.NonEmptyList
-import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.EagerEffectScope
 import arrow.core.continuations.eagerEffect
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticWarning
 
+@OptIn(Internal::class)
 object TypeSimplifier : Transformer<AST.TypeExpression>() {
     override val type = AST.TypeExpression::class
 
@@ -22,11 +23,11 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
             this@Filename, rlt.position.nel(), Report.Severity.WARNING,
             SemanticWarning.AlignWithType(items.first().toString())
         ).report()
-        items.first().type
+        items.first()
     } else this
 
     context(AST.UnionType, ReportCollector, Filename)
-            private suspend fun EagerEffectScope<UnrecoverableError>.transformUnion(): AST.TypeExpression {
+            private suspend fun EagerEffectScope<UnrecoverableError>.transformUnion(): AST.TypeLike {
         ensure(items.size >= 2) {
             UnrecoverableError(
                 Report(
@@ -48,8 +49,8 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         }
 
         val flattenedItems = items.flatMap {
-            when (val type = it.type) {
-                is AST.UnionType -> type.items
+            when (it) {
+                is AST.UnionType -> it.items
                 else -> nonEmptyListOf(it)
             }
         }
@@ -74,13 +75,14 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
                 )
             )
 
-            1 -> items.first().type
+            1 -> items.first()
             else -> copy(_items = NonEmptyList.fromListUnsafe(items))
         }
     }
 
-    context(ReportCollector, Filename) override fun transform(node: AST.TypeExpression): EagerEffect<UnrecoverableError, AST.TypeExpression> =
-        eagerEffect {
+    context(ReportCollector, Filename)
+            override fun transform(node: AST.TypeExpression) =
+        eagerEffect<UnrecoverableError, AST.Node> {
             when (node) {
                 is AST.TupleType -> node.transformTuple()
                 is AST.Type -> node

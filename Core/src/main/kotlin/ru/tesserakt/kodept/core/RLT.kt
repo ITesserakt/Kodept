@@ -173,7 +173,7 @@ data class RLT(val root: File) {
         override val id: UserSymbol.Identifier,
         open val params: List<MaybeTypedParameterTuple>,
         val colon: Symbol?,
-        val returnType: TypeNode?,
+        open val returnType: TypeNode?,
     ) : Named, Node by keyword {
         class Abstract(
             keyword: Keyword,
@@ -198,13 +198,14 @@ data class RLT(val root: File) {
             id: UserSymbol.Identifier,
             override val params: List<TypedParameterTuple>,
             colon: Symbol?,
-            returnType: TypeNode?,
+            override val returnType: Reference?,
+            val descriptor: Literal.Text,
         ) : Function(keyword, id, params, colon, returnType), TopLevelNode
     }
 
     open class Reference(val ref: UserSymbol) : TermNode, TypeNode, Node by ref
 
-    data class Application(val expr: ExpressionNode, val params: List<ParameterTuple>) : TermNode, Node by expr
+    data class Application(val expr: Reference, val params: List<ParameterTuple>) : TermNode, Node by expr
 
     sealed interface Context {
         val global: Boolean
@@ -228,12 +229,12 @@ data class RLT(val root: File) {
         val keyword: Keyword,
         override val id: UserSymbol.Identifier,
         val colon: Symbol?,
-        val type: UserSymbol.Type?,
+        val type: TypeNode?,
     ) : StatementNode, Lvalue, Named, Node by keyword {
-        class Immutable(keyword: Keyword, id: UserSymbol.Identifier, colon: Symbol?, type: UserSymbol.Type?) :
+        class Immutable(keyword: Keyword, id: UserSymbol.Identifier, colon: Symbol?, type: TypeNode?) :
             Variable(keyword, id, colon, type)
 
-        class Mutable(keyword: Keyword, id: UserSymbol.Identifier, colon: Symbol?, type: UserSymbol.Type?) :
+        class Mutable(keyword: Keyword, id: UserSymbol.Identifier, colon: Symbol?, type: TypeNode?) :
             Variable(keyword, id, colon, type)
     }
 

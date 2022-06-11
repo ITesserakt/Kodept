@@ -14,26 +14,25 @@ import ru.tesserakt.kodept.error.Report
 
 @OptIn(Internal::class)
 class TypeSimplifierTest : StringSpec({
-    lateinit var tupleRLT: RLT.TupleType
-    lateinit var unionRLT: RLT.UnionType
+    val tupleRLT: RLT.TupleType = mockk {
+        every { position } returns CodePoint(0, 0)
+    }
+    val unionRLT: RLT.UnionType = mockk {
+        every { position } returns CodePoint(0, 0)
+    }
+    val typeRLT: RLT.UserSymbol.Type = mockk {
+        every { position } returns CodePoint(0, 0)
+    }
 
     fun AST.UnionType.pushRLT() = with(unionRLT) { withRLT() }
     fun AST.TupleType.pushRLT() = with(tupleRLT) { withRLT() }
-
-    beforeTest {
-        tupleRLT = mockk {
-            every { position } returns CodePoint(0, 0)
-        }
-        unionRLT = mockk {
-            every { position } returns CodePoint(0, 0)
-        }
-    }
+    fun AST.Type.pushRLT() = with(typeRLT) { withRLT() }
 
     with("TEST FILE" as Filename) {
         val transformer = TypeSimplifier
 
         "simple type should not change" {
-            val type = AST.Type("A")
+            val type = AST.Type("A").pushRLT()
             unwrap { transformer.transform(type) }.toEither().shouldBeRight(type)
         }
 
@@ -49,7 +48,7 @@ class TypeSimplifierTest : StringSpec({
 
         "Single type in tuple should be aligned with it" {
             val inner = AST.TupleType(listOf("A", "B").map(AST::Type).map(AST::TypeReference)).pushRLT()
-            val type = AST.TupleType(listOf(inner).map(AST::TypeReference)).pushRLT()
+            val type = AST.TupleType(listOf(inner)).pushRLT()
             unwrap { transformer.transform(type) }.unwrap().shouldBeRight().second shouldBe inner
         }
 
@@ -60,17 +59,12 @@ class TypeSimplifierTest : StringSpec({
         }
 
         "Identical items in union should be aligned and flattened" {
-            val a = AST.Type("A")
+            val a = AST.Type("A").let(AST::TypeReference)
             val b = AST.TupleType(listOf("B", "C").map(AST::Type).map(AST::TypeReference)).pushRLT()
-            val c = AST.UnionType(nonEmptyListOf(AST.Type("C"), a).map(AST::TypeReference)).pushRLT()
-            val type = AST.UnionType(nonEmptyListOf(a, b, c, b, a).map(AST::TypeReference)).pushRLT()
-            unwrap { transformer.transform(type) }.unwrap()
-                .shouldBeRight().second shouldBe AST.UnionType(
-                nonEmptyListOf(
-                    AST.Type("C"),
-                    b,
-                    a
-                ).map(AST::TypeReference)
+            val c = AST.UnionType(nonEmptyListOf(AST.Type("C").let(AST::TypeReference), a)).pushRLT()
+            val type = AST.UnionType(nonEmptyListOf(a, b, c, b, a)).pushRLT()
+            unwrap { transformer.transform(type) }.unwrap().shouldBeRight().second shouldBe AST.UnionType(
+                nonEmptyListOf(AST.Type("C").let(AST::TypeReference), b, a)
             )
         }
     }

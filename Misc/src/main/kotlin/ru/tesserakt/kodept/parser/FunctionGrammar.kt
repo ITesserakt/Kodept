@@ -76,12 +76,12 @@ object FunctionGrammar : Grammar<RLT.Function.Bodied>() {
         LPAREN,
         strictTrailing(strictlyTyped, COMMA) * RPAREN
     ) * zeroOrMore(strictParameterList) * optional(
-        COLON * TypeGrammar
-    ) map { (token, id, first, rest, type) ->
+        COLON * TypeGrammar.type
+    ) * -FLOW * STRING map { (token, id, first, rest, type, descriptor) ->
         val (colon, ret) = type ?: Tuple2(null, null)
         RLT.Function.Foreign(token.keyword(), RLT.UserSymbol.Identifier(id), listOfNotNull(first?.let {
             RLT.TypedParameterTuple(RLT.Symbol(it.t1), it.t2.t1, RLT.Symbol(it.t2.t2))
-        }) + rest, colon?.let(RLT::Symbol), ret)
+        }) + rest, colon?.let(RLT::Symbol), ret, RLT.Literal.Text(descriptor))
     }
 
     override val rootParser by function

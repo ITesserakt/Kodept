@@ -102,12 +102,22 @@ class BlockLevelGrammarTest : WordSpec({
         test(
             BlockLevelGrammar,
             """val x: Int = 3""",
-            AST.InitializedVar(AST.Reference("x"), false, AST.Type("Int"), AST.DecimalLiteral(3.toBigInteger()))
+            AST.InitializedVar(
+                AST.Reference("x"),
+                false,
+                AST.Type("Int").let(AST::TypeReference),
+                AST.DecimalLiteral(3.toBigInteger())
+            )
         )
         test(
             BlockLevelGrammar,
             """val x: String = {}""",
-            AST.InitializedVar(AST.Reference("x"), false, AST.Type("String"), AST.TupleLiteral.unit)
+            AST.InitializedVar(
+                AST.Reference("x"),
+                false,
+                AST.Type("String").let(AST::TypeReference),
+                AST.TupleLiteral.unit
+            )
         )
         test(
             BlockLevelGrammar,

@@ -12,16 +12,16 @@ class TypeGrammarTest : WordSpec({
     }
 
     "simple tuple types" should {
-        test(TypeGrammar, "()", AST.TupleType.unit.let(AST::TypeReference))
+        test(TypeGrammar, "()", AST.TupleType.unit)
         test(
             TypeGrammar,
             "(A)",
-            AST.TupleType(listOf("A").map(AST::Type).map(AST::TypeReference)).let(AST::TypeReference)
+            AST.TupleType(listOf("A").map(AST::Type).map(AST::TypeReference))
         )
         test(
             TypeGrammar,
             "(A, B)",
-            AST.TupleType(listOf("A", "B").map(AST::Type).map(AST::TypeReference)).let(AST::TypeReference)
+            AST.TupleType(listOf("A", "B").map(AST::Type).map(AST::TypeReference))
         )
     }
 
@@ -31,7 +31,7 @@ class TypeGrammarTest : WordSpec({
         test(
             TypeGrammar,
             "(A | B)",
-            AST.UnionType(nonEmptyListOf("A", "B").map(AST::Type).map(AST::TypeReference)).let(AST::TypeReference)
+            AST.UnionType(nonEmptyListOf("A", "B").map(AST::Type).map(AST::TypeReference))
         )
     }
 
@@ -41,11 +41,11 @@ class TypeGrammarTest : WordSpec({
             "(A | (X, Y) | M)",
             AST.UnionType(
                 nonEmptyListOf(
-                    AST.Type("A"),
+                    AST.Type("A").let(AST::TypeReference),
                     AST.TupleType(listOf("X", "Y").map(AST::Type).map(AST::TypeReference)),
-                    AST.Type("M")
-                ).map(AST::TypeReference)
-            ).let(AST::TypeReference)
+                    AST.Type("M").let(AST::TypeReference)
+                )
+            )
         )
 
         test(
@@ -53,26 +53,26 @@ class TypeGrammarTest : WordSpec({
             "(A, (C | D), B)",
             AST.TupleType(
                 listOf(
-                    AST.Type("A"),
+                    AST.Type("A").let(AST::TypeReference),
                     AST.UnionType(nonEmptyListOf("C", "D").map(AST::Type).map(AST::TypeReference)),
-                    AST.Type("B")
-                ).map(AST::TypeReference)
-            ).let(AST::TypeReference)
+                    AST.Type("B").let(AST::TypeReference)
+                )
+            )
         )
         test(
             TypeGrammar,
             "(A, (() | B))",
             AST.TupleType(
                 listOf(
-                    AST.Type("A"),
+                    AST.Type("A").let(AST::TypeReference),
                     AST.UnionType(
                         nonEmptyListOf(
                             AST.TupleType.unit,
-                            AST.Type("B")
-                        ).map(AST::TypeReference)
+                            AST.Type("B").let(AST::TypeReference)
+                        )
                     )
-                ).map(AST::TypeReference)
-            ).let(AST::TypeReference)
+                )
+            )
         )
     }
 })

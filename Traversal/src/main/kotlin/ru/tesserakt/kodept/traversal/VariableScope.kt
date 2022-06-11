@@ -19,8 +19,12 @@ object VariableScope : SpecificTransformer<AST.InitializedVar>() {
     context(ReportCollector, Filename) override fun transformTo(node: AST.InitializedVar): EagerEffect<UnrecoverableError, Pair<AST.Node, AST.Node>> {
         val nearestBlock = node.walkDownTop(::identity).filterIsInstance<AST.ExpressionList>().first()
         val varIndex = nearestBlock.expressions.indexOf(node)
+        if (varIndex == -1) println("Warn: var not found")
         val (outer, inner) = nearestBlock.expressions.withIndex().partition { it.index < varIndex }
-        val scope = AST.ExpressionList(inner.map { it.value })
-        return eagerEffect { nearestBlock to AST.ExpressionList(outer.map { it.value } + scope) }
+
+        if (outer.isEmpty()) return eagerEffect { nearestBlock to nearestBlock }
+
+        val scope = nearestBlock.copy(inner.map { it.value })
+        return eagerEffect { nearestBlock to nearestBlock.copy(outer.map { it.value } + scope) }
     }
 }

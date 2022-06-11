@@ -13,12 +13,12 @@ class TermGrammarTest : WordSpec({
 
     "fun ref" should {
         test(
-            OperatorGrammar.application,
+            ExpressionGrammar.application,
             "id()",
             AST.FunctionCall(AST.Reference("id"), listOf())
         )
         test(
-            OperatorGrammar.application,
+            ExpressionGrammar.application,
             """println("Hello, world!")""",
             AST.FunctionCall(
                 AST.Reference("println"),
@@ -26,7 +26,7 @@ class TermGrammarTest : WordSpec({
             )
         )
         test(
-            OperatorGrammar.application,
+            ExpressionGrammar.application,
             "test((123), 10.2, foobar)",
             AST.FunctionCall(
                 AST.Reference("test"),
