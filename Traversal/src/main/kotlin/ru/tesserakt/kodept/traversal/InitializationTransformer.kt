@@ -5,7 +5,7 @@ import arrow.core.continuations.eagerEffect
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -19,7 +19,7 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
         dependsOn(DereferenceTransformer)
     }
 
-    context(ReportCollector, Filename) override fun transform(node: AST.Assignment): EagerEffect<UnrecoverableError, out AST.Node> =
+    context(ReportCollector, Filepath) override fun transform(node: AST.Assignment): EagerEffect<UnrecoverableError, out AST.Node> =
         eagerEffect {
             when (val left = node.left) {
                 is AST.Dereference -> node

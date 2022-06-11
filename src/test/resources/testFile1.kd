@@ -3,7 +3,7 @@ module Main {
 }
 
 module Prelude {
-    foreign type Int => "Int"
+    foreign type Int => "Int
     foreign type String => "kotlin.String"
 
     foreign fun prim_println (value: String) => "kotlin.io.println"

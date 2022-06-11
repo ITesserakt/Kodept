@@ -6,14 +6,12 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
-import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.core.RLT
 
 class DereferenceTransformerTest : StringSpec() {
-    context(Filename) @OptIn(Internal::class)
-    private fun buildAST(root: AST.Node) = AST(root, this@Filename).apply {
+    private fun Filepath.buildAST(root: AST.Node) = AST(root, this).apply {
         walkThrough {
             when (it) {
                 is AST.Reference -> with(mockk<RLT.Reference>(relaxed = true)) { it.withRLT() }
@@ -24,7 +22,7 @@ class DereferenceTransformerTest : StringSpec() {
     }
 
     init {
-        with("TEST FILE" as Filename) {
+        with(Filepath("TEST FILE")) {
             "reference by initialized variable declaration" {
                 val ref = AST.Reference("x")
                 val initVar = AST.InitializedVar(ref, false, null, AST.DecimalLiteral(5.toBigInteger()))

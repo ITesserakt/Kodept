@@ -5,7 +5,7 @@ import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import arrow.core.continuations.ensureNotNull
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
@@ -31,7 +31,7 @@ private interface Resolver<T : AST.Named, R : AST.Node> {
         }
     }
 
-    context (Filename)
+    context (Filepath)
     fun followContext(context: AST.ResolutionContext, node: T) =
         if (context.fromRoot && context.chain.isNotEmpty()) {
             node.walkDownTop(::identity).filterIsInstance<AST.FileDecl>()
@@ -63,7 +63,7 @@ private fun <T : AST.Named> List<T>.onlyUnique(onEmpty: () -> FlowControl) = whe
     else -> Multiple(this).left()
 }
 
-context (Filename) private fun <T, N : AST.Node> Either<FlowError, T>.mapError(node: N, getName: (N) -> String) =
+context (Filepath) private fun <T, N : AST.Node> Either<FlowError, T>.mapError(node: N, getName: (N) -> String) =
     mapLeft { control ->
         when (control) {
             NotFound -> UnrecoverableError(
@@ -78,7 +78,7 @@ context (Filename) private fun <T, N : AST.Node> Either<FlowError, T>.mapError(n
         }
     }
 
-context (Filename) private fun <T, N : AST.Named> Either<FlowError, T>.mapError(node: N) = mapError(node) { node.name }
+context (Filepath) private fun <T, N : AST.Named> Either<FlowError, T>.mapError(node: N) = mapError(node) { node.name }
 
 object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Reference, AST.Referable> {
     override val type: KClass<AST.Reference> = AST.Reference::class
@@ -148,7 +148,7 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
      *
      *     3) context - `x::y::...::z` - 1.x) without recursion upper
      */
-    context(ReportCollector, Filename) override fun transform(node: AST.Reference) =
+    context(ReportCollector, Filepath) override fun transform(node: AST.Reference) =
         eagerEffect<UnrecoverableError, AST.Node> {
             // FIXME think about dereferences
             if (isInDereference(node)) shift<Unit>(
@@ -178,7 +178,7 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
 object TypeDereferenceTransformer : Transformer<AST.TypeReference>(), Resolver<AST.Type, AST.TypeReferable> {
     override val type: KClass<AST.TypeReference> = AST.TypeReference::class
 
-    context(ReportCollector, Filename) override fun transform(node: AST.TypeReference): EagerEffect<UnrecoverableError, AST.Node> =
+    context(ReportCollector, Filepath) override fun transform(node: AST.TypeReference): EagerEffect<UnrecoverableError, AST.Node> =
         eagerEffect {
             val parent = ensureNotNull(node.parent) {
                 UnrecoverableError(

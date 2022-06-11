@@ -29,7 +29,7 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
     }
 
     @OptIn(Internal::class)
-    private fun Filename.executeTransformer(
+    private fun Filepath.executeTransformer(
         acc: AST,
         transformer: SpecificTransformer<*>,
     ): Ior<NonEmptyList<Report>, AST> = unwrap {

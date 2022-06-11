@@ -34,7 +34,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.StructDecl>(this@analyze, { it.rlt.lparen != null && it.alloc.isEmpty() }, {
             Report(
-                ast.filename,
+                ast.filepath,
                 it.rlt.lparen!!.position.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)
@@ -43,7 +43,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.TraitDecl>(this@analyze, { it.rlt.lbrace != null }) {
             Report(
-                ast.filename,
+                ast.filepath,
                 it.rlt.lbrace!!.position.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyBlock(it.name)
@@ -52,7 +52,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.StructDecl>(this@analyze, { it.rlt.lbrace != null && it.rest.isEmpty() }) {
             Report(
-                ast.filename,
+                ast.filepath,
                 it.rlt.lbrace!!.position.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyBlock(it.name)
@@ -61,7 +61,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.EnumDecl>(this@analyze, { it.rlt.lbrace != null }) {
             Report(
-                ast.filename,
+                ast.filepath,
                 it.rlt.lbrace!!.position.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.ZeroEnumEntries(it.name)
@@ -72,7 +72,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
             this@analyze,
             { decl -> decl.rlt.params.any { it.params.isEmpty() } }) {
             Report(
-                ast.filename,
+                ast.filepath,
                 NonEmptyList.fromListUnsafe(it.rlt.params.filter { it.params.isEmpty() }).map { it.lparen.position },
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)
@@ -83,7 +83,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
             this@analyze,
             { decl -> decl.rlt.params.any { it.params.isEmpty() } }) {
             Report(
-                ast.filename,
+                ast.filepath,
                 NonEmptyList.fromListUnsafe(it.rlt.params.filter { it.params.isEmpty() }).map { it.lparen.position },
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)
@@ -92,7 +92,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.ExpressionList>(this@analyze, { true }) {
             Report(
-                ast.filename,
+                ast.filepath,
                 it.rlt.lbrace.position.nel(),
                 Report.Severity.NOTE,
                 SemanticNote.EmptyComputationBLock

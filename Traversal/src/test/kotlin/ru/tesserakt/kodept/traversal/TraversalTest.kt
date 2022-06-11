@@ -8,6 +8,7 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import ru.tesserakt.kodept.core.CodePoint
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.SemanticWarning
 import ru.tesserakt.kodept.error.SyntaxError
@@ -27,7 +28,7 @@ class TraversalTest : BehaviorSpec({
                 val value = unwrap {
                     eagerEffect {
                         Report(
-                            "Hi!",
+                            Filepath("Hi!"),
                             nonEmptyListOf(CodePoint(0, 0)),
                             Report.Severity.WARNING,
                             SemanticWarning.AlignWithType("A")
@@ -51,7 +52,7 @@ class TraversalTest : BehaviorSpec({
                         val i: Int = shift(
                             UnrecoverableError(
                                 Report(
-                                    "Hi!",
+                                    Filepath("Hi!"),
                                     nonEmptyListOf(CodePoint(0, 0)),
                                     Report.Severity.NOTE,
                                     SyntaxError.UnparsedRemainder

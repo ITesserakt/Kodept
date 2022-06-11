@@ -20,7 +20,7 @@ val moduleNameAnalyzer = object : Analyzer() {
             .map { NonEmptyList.fromListUnsafe(it) }
             .reportEach { modules ->
                 Report(
-                    ast.filename,
+                    ast.filepath,
                     modules.map { it.rlt.id.position },
                     Report.Severity.ERROR,
                     SemanticError.DuplicatedModules(modules.head.name)
@@ -37,7 +37,7 @@ val moduleUniquenessAnalyzer = object : Analyzer() {
         val rlt = head.rlt as RLT.Module.Ordinary
 
         Report(
-            ast.filename,
+            ast.filepath,
             nonEmptyListOf(rlt.lbrace, rlt.rbrace).map { it.position },
             Report.Severity.WARNING,
             SemanticWarning.NonGlobalSingleModule(head.name)

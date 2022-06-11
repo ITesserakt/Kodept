@@ -7,7 +7,7 @@ import arrow.core.identity
 import arrow.core.nel
 import arrow.core.padZip
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
@@ -34,7 +34,7 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
             ref to ref.referral as AST.ForeignStructDecl
         }
 
-    context(ReportCollector, Filename) @OptIn(Internal::class)
+    context(ReportCollector, Filepath) @OptIn(Internal::class)
     override fun transform(node: AST.ForeignFunctionDecl): EagerEffect<UnrecoverableError, out AST.Node> =
         eagerEffect {
             val wrong = node.params.filterNot {

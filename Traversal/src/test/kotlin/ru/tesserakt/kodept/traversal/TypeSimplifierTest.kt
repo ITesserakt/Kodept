@@ -28,7 +28,7 @@ class TypeSimplifierTest : StringSpec({
     fun AST.TupleType.pushRLT() = with(tupleRLT) { withRLT() }
     fun AST.Type.pushRLT() = with(typeRLT) { withRLT() }
 
-    with("TEST FILE" as Filename) {
+    with(Filepath("TEST FILE")) {
         val transformer = TypeSimplifier
 
         "simple type should not change" {

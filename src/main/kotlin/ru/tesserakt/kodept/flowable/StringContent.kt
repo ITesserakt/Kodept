@@ -18,7 +18,7 @@ class StringContent : Flowable<StringContent.Data> {
     private val text = sources.map {
         it.withFilename { Eval.later { contents.bufferedReader().use(Reader::readText) } }
     }
-    private val holder = ProgramCodeHolder(text.associate { it.filename to it.value })
+    private val holder = ProgramCodeHolder(text.associate { it.filepath to it.value })
 
     override val result = Data(sources, holder)
 }

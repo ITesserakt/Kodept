@@ -2,11 +2,11 @@ package ru.tesserakt.kodept.core
 
 import arrow.core.Eval
 
-class ProgramCodeHolder(private val text: Map<Filename, Eval<String>>) {
-    operator fun get(filename: Filename) = Accessor(filename)
+class ProgramCodeHolder(private val text: Map<Filepath, Eval<String>>) {
+    operator fun get(filepath: Filepath) = Accessor(filepath)
     fun <T> walkThoughAll(f: (Accessor) -> T) = text.map { Accessor(it.key) }.asSequence().map(f)
 
-    inner class Accessor(accessToken: Filename) {
+    inner class Accessor(accessToken: Filepath) {
         private val cached = text[accessToken] ?: throw IllegalArgumentException("Unknown file passed: $accessToken")
         private val lines = cached.map { it.lines() }
 

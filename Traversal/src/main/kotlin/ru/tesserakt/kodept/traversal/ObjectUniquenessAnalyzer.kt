@@ -39,7 +39,7 @@ val objectUniqueness = object : Analyzer() {
         }.filter { it.size > 1 }.map { NonEmptyList.fromListUnsafe(it) }
 
         duplicates.reportEach { dups ->
-            Report(ast.filename, dups.map { it.rlt.position }, Report.Severity.ERROR, SemanticError.Duplicated)
+            Report(ast.filepath, dups.map { it.rlt.position }, Report.Severity.ERROR, SemanticError.Duplicated)
         }
     }
 }

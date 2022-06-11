@@ -1,12 +1,18 @@
 package ru.tesserakt.kodept.core
 
-typealias Filename = String
+import java.io.File
 
-data class FileRelative<out T>(val value: T, val filename: Filename)
+@JvmInline
+value class Filepath(val name: String) {
+    val asFile get() = File(name)
+    val extension get() = asFile.extension
+}
 
-inline fun <T> CodeSource.withFilename(f: CodeSource.() -> T) = FileRelative(this.f(), name)
+data class FileRelative<out T>(val value: T, val filepath: Filepath)
 
-inline fun <T, V> FileRelative<T>.map(f: (T) -> V) = FileRelative(f(value), filename)
+inline fun <T> CodeSource.withFilename(f: CodeSource.() -> T) = FileRelative(this.f(), Filepath(name))
 
-inline fun <T, U> Sequence<FileRelative<T>>.mapWithFilename(crossinline f: Filename.(T) -> U) =
-    map { rel -> rel.map { rel.filename.f(it) } }
+inline fun <T, V> FileRelative<T>.map(f: (T) -> V) = FileRelative(f(value), filepath)
+
+inline fun <T, U> Sequence<FileRelative<T>>.mapWithFilename(crossinline f: Filepath.(T) -> U) =
+    map { rel -> rel.map { rel.filepath.f(it) } }

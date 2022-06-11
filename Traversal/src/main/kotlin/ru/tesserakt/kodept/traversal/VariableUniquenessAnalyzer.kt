@@ -18,7 +18,7 @@ val variableUniqueness = object : Analyzer() {
             val points = vars.map { it.rlt.id.position }
 
             Report(
-                ast.filename,
+                ast.filepath,
                 NonEmptyList.fromListUnsafe(points),
                 Report.Severity.ERROR,
                 SemanticError.DuplicatedVariable(vars.first().reference.name)

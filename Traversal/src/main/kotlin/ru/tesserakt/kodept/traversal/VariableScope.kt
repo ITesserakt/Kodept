@@ -4,7 +4,7 @@ import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import arrow.core.identity
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.ReportCollector
 import kotlin.reflect.KClass
@@ -16,7 +16,7 @@ object VariableScope : SpecificTransformer<AST.InitializedVar>() {
         dependsOn(objectUniqueness)
     }
 
-    context(ReportCollector, Filename) override fun transformTo(node: AST.InitializedVar): EagerEffect<UnrecoverableError, Pair<AST.Node, AST.Node>> {
+    context(ReportCollector, Filepath) override fun transformTo(node: AST.InitializedVar): EagerEffect<UnrecoverableError, Pair<AST.Node, AST.Node>> {
         val nearestBlock = node.walkDownTop(::identity).filterIsInstance<AST.ExpressionList>().first()
         val varIndex = nearestBlock.expressions.indexOf(node)
         if (varIndex == -1) println("Warn: var not found")

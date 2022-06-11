@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept
 
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.error.ReportMessage
 
 interface Interpreter<State, Program, Input> {
@@ -20,9 +20,9 @@ sealed class InterpretationError(final override val code: String) : ReportMessag
             cause.message ?: cause.localizedMessage ?: "Unknown error happened while interpreting"
     }
 
-    data class MultipleMain(val files: List<Filename>) : InterpretationError("KIE2") {
+    data class MultipleMain(val files: List<Filepath>) : InterpretationError("KIE2") {
         override val message: String = "Multiple main functions found in files:\n${
-            files.joinToString("\n") { it.prependIndent("    ") }
+            files.joinToString("\n") { it.name.prependIndent("    ") }
         }"
     }
 

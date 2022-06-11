@@ -5,6 +5,7 @@ import arrow.core.flatten
 import arrow.core.nel
 import arrow.core.unzip
 import com.github.h0tk3y.betterParse.parser.*
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.toCodePoint
 import ru.tesserakt.kodept.parser.RefinementError
 
@@ -38,7 +39,7 @@ private fun NonEmptyList<ErrorResult>.findSimilarMismatches() =
         }
 
 context (ErrorResultConfig)
-        private fun AlternativesFailure.expandFlatten(filename: String): NonEmptyList<Report> {
+        private fun AlternativesFailure.expandFlatten(filename: Filepath): NonEmptyList<Report> {
     val expanded = expand(onlyLeaves)
     val reports =
         expanded.map {
@@ -75,7 +76,7 @@ context (ErrorResultConfig)
 data class ErrorResultConfig(val onlyLeaves: Boolean)
 
 context (ErrorResultConfig)
-fun ErrorResult.toReport(filename: String): NonEmptyList<Report> = when (this) {
+fun ErrorResult.toReport(filename: Filepath): NonEmptyList<Report> = when (this) {
     is UnexpectedEof -> Report(filename, null, Report.Severity.ERROR, SyntaxError.UnexpectedEOF(expected.nel())).nel()
     is MismatchedToken -> Report(
         filename,

@@ -10,7 +10,7 @@ import java.math.BigInteger
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty0
 
-data class AST(val root: Node, val filename: Filename) {
+data class AST(val root: Node, val filepath: Filepath) {
     init {
         walkThrough { node -> node.children().forEach { it.parent = node } }.forEach { _ -> }
     }

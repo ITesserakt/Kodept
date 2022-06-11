@@ -32,7 +32,7 @@ interface Flowable<T : Flowable.Data> {
         }
 
         interface Forest : Data {
-            val forest: Eval<Map<Filename, ParseResult>>
+            val forest: Eval<Map<Filepath, ParseResult>>
         }
 
         interface UnprocessedAST : Data {

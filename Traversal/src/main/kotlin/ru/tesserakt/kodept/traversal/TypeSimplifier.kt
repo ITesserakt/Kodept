@@ -6,7 +6,7 @@ import arrow.core.continuations.eagerEffect
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filename
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
@@ -17,31 +17,27 @@ import ru.tesserakt.kodept.error.SemanticWarning
 object TypeSimplifier : Transformer<AST.TypeExpression>() {
     override val type = AST.TypeExpression::class
 
-    context (ReportCollector, Filename)
+    context (ReportCollector, Filepath)
             private fun AST.TupleType.transformTuple() = if (items.size == 1) {
         Report(
-            this@Filename, rlt.position.nel(), Report.Severity.WARNING,
+            rlt.position.nel(), Report.Severity.WARNING,
             SemanticWarning.AlignWithType(items.first().toString())
         ).report()
         items.first()
     } else this
 
-    context(AST.UnionType, ReportCollector, Filename)
+    context(AST.UnionType, ReportCollector, Filepath)
             private suspend fun EagerEffectScope<UnrecoverableError>.transformUnion(): AST.TypeLike {
         ensure(items.size >= 2) {
             UnrecoverableError(
-                Report(
-                    this@Filename,
-                    this@UnionType.rlt.position.nel(),
-                    Report.Severity.CRASH,
-                    CompilerCrash("Union type behaves like ordinary type: $items")
-                )
+                this@UnionType.rlt.position.nel(),
+                Report.Severity.CRASH,
+                CompilerCrash("Union type behaves like ordinary type: $items")
             )
         }
 
         items.filterIsInstance<AST.UnionType>().reportEach {
             Report(
-                this@Filename,
                 it.rlt.position.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.AlignWithType(it.toString())
@@ -58,7 +54,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         val (unique, repeating) = flattenedItems.groupBy { it }.values.partition { it.size == 1 }
         repeating.reportEach {
             Report(
-                this@Filename, this@UnionType.rlt.position.nel(), Report.Severity.WARNING,
+                this@UnionType.rlt.position.nel(), Report.Severity.WARNING,
                 SemanticWarning.NonUniqueUnionItems(this@UnionType.toString())
             )
         }
@@ -66,12 +62,9 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         return when (items.size) {
             0 -> shift(
                 UnrecoverableError(
-                    Report(
-                        this@Filename,
-                        this@UnionType.rlt.position.nel(),
-                        Report.Severity.CRASH,
-                        CompilerCrash("Search for repeating elements failed")
-                    )
+                    this@UnionType.rlt.position.nel(),
+                    Report.Severity.CRASH,
+                    CompilerCrash("Search for repeating elements failed")
                 )
             )
 
@@ -80,7 +73,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         }
     }
 
-    context(ReportCollector, Filename)
+    context(ReportCollector, Filepath)
             override fun transform(node: AST.TypeExpression) =
         eagerEffect<UnrecoverableError, AST.Node> {
             when (node) {

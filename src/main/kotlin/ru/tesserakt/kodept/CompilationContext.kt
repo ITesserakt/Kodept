@@ -62,7 +62,7 @@ class CompilationContext private constructor(
             object : Flowable<Flowable.Data.ErroneousAST> {
                 override val result = object : Flowable.Data.ErroneousAST {
                     override val ast = this@onlyGoodFiles.result.unprocessedAST.mapNotNull {
-                        it.value?.run { FileRelative(rightIor(), it.filename) }
+                        it.value?.run { FileRelative(rightIor(), it.filepath) }
                     }
                 }
             }
