@@ -151,7 +151,7 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
     context(ReportCollector, Filepath) override fun transform(node: AST.Reference) =
         eagerEffect<UnrecoverableError, AST.Node> {
             // FIXME think about dereferences
-            if (isInDereference(node)) shift<Unit>(
+            if (isInDereference(node)) shift<Nothing>(
                 UnrecoverableError(
                     node.rlt.position.nel(), Report.Severity.CRASH, CompilerCrash("Dot access operator is unsupported")
                 )

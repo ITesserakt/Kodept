@@ -17,7 +17,8 @@ sealed class InterpretationError(final override val code: String) : ReportMessag
 
     data class RuntimeException(val cause: Throwable) : InterpretationError("KIE1") {
         override val message: String =
-            cause.message ?: cause.localizedMessage ?: "Unknown error happened while interpreting"
+            (cause.message ?: cause.localizedMessage
+            ?: "Unknown error happened while interpreting") + "\n" + cause.stackTraceToString()
     }
 
     data class MultipleMain(val files: List<Filepath>) : InterpretationError("KIE2") {

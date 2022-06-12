@@ -2,16 +2,21 @@ package ru.tesserakt.kodept.flowable
 
 import arrow.core.*
 import arrow.typeclasses.Semigroup
+import mu.KotlinLogging
 import ru.tesserakt.kodept.FileInterpreter
 import ru.tesserakt.kodept.InterpretationError.*
 import ru.tesserakt.kodept.core.FileRelative
 import ru.tesserakt.kodept.core.mapWithFilename
 import ru.tesserakt.kodept.error.Report
 
+private val logger = KotlinLogging.logger("[Compiler]")
+
 class InterpretedContent(data: Flowable.Data.ErroneousAST, input: List<String>) : Flowable<InterpretedContent.Data> {
     data class Data(override val programOutput: Eval<IorNel<Report, Pair<Any?, Int>>>) : Flowable.Data.Program
 
     private val run = data.ast.mapWithFilename { parsed ->
+        logger.info("Running ${this.name}...")
+
         kotlin.runCatching {
             parsed.map { FileInterpreter().run(it.root, input) }
         }.fold({ it }, { Report(this, null, Report.Severity.ERROR, RuntimeException(it)).nel().leftIor() })

@@ -5,6 +5,7 @@ import java.nio.file.Path
 import java.time.Instant
 import kotlin.io.path.Path
 import kotlin.io.path.absolute
+import kotlin.io.path.extension
 import kotlin.io.path.isDirectory
 
 interface Loader {
@@ -35,12 +36,17 @@ class FileLoader private constructor(private val files: Sequence<File>, caches: 
                 .filter { it.isFile }
                 .filter { it.extension == cacheExtension }
 
-            require(path.isDirectory()) { "Provided path should be directory" }
-            require(path.isAbsolute) { "Provided path should be absolute" }
-            val files = path.toFile()
-                .walkTopDown()
-                .filter { it.isFile }
-                .filter { anySourceExtension || it.extension == extension }
+            val files = if (path.isDirectory()) {
+                require(path.isAbsolute) { "Provided path should be absolute" }
+                path.toFile()
+                    .walkTopDown()
+                    .filter { it.isFile }
+                    .filter { anySourceExtension || it.extension == extension }
+            } else if (path.toFile().isFile && (anySourceExtension || path.extension == extension)) {
+                sequenceOf(path.toFile())
+            } else {
+                emptySequence()
+            }
 
             return FileLoader(files, caches)
         }

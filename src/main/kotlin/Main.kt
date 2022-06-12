@@ -2,26 +2,10 @@ import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.thread
+import java.math.BigInteger
 import kotlin.io.path.Path
 
-val megabytes = ConcurrentHashMap<Instant, Double>()
-var alive = true
-
-fun memoryStatThread() = thread(isDaemon = true) {
-    val runtime = Runtime.getRuntime()
-    val mb = 1024 * 1024.0
-
-    while (alive) {
-        megabytes += Instant.now() to (runtime.totalMemory() - runtime.freeMemory()) / mb
-        Thread.sleep(1)
-    }
-}
-
 fun main() {
-    memoryStatThread()
     val context = CompilationContext {
         loader = FileLoader {
             path = Path("/home/tesserakt/IdeaProjects/Kodept/src/")
@@ -60,16 +44,9 @@ fun main() {
 
     ForeignFunctionResolver.exportFunction({ println(it[0]) }, "kotlin.io.println", listOf(String::class), Unit::class)
     ForeignFunctionResolver.exportFunction<Unit>("kotlin.io.println") { println() }
+    ForeignFunctionResolver.exportFunction<BigInteger>("kotlin.io.readInt") { readln().toBigInteger() }
 
     result.programOutput.value().toEither().fold({
         with(code) { it.map { pr.processReport(it) } }
     }, { emptyList() }).joinToString("\n").let(::println)
-    alive = false
-
-    println(
-        """Maximum memory consumed: ${megabytes.values.maxOrNull()}
-           |Average was: ${megabytes.map { it.value }.average()}
-           |Total consumed: ${megabytes.map { it.value }.zipWithNext(Double::minus).sum()}
-        """.trimMargin()
-    )
 }

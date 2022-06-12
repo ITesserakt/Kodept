@@ -1,15 +1,17 @@
 module Main {
-    fun main => ::Prelude::println(::Math::factorial(5))
+    fun main => ::Prelude::println(::Math::factorial(::Prelude::readInt()))
 }
 
 module Prelude {
-    foreign type Int => "Int"
+    foreign type Int => "java.math.BigInteger"
     foreign type String => "kotlin.String"
 
     foreign fun prim_println (value: String) => "kotlin.io.println"
     foreign fun prim_println_0 => "kotlin.io.println"
+    foreign fun prim_read_int: Int => "kotlin.io.readInt"
 
     fun println(value: String) => prim_println(value)
+    fun readInt => prim_read_int()
 }
 
 module Math {

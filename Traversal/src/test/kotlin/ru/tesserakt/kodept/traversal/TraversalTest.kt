@@ -49,7 +49,7 @@ class TraversalTest : BehaviorSpec({
             then("Ior.Left will be returned") {
                 val value = unwrap {
                     eagerEffect {
-                        val i: Int = shift(
+                        val i: Int = shift<Nothing>(
                             UnrecoverableError(
                                 Report(
                                     Filepath("Hi!"),

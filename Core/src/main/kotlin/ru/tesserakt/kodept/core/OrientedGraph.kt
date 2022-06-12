@@ -72,7 +72,7 @@ class OrientedGraph<T> private constructor() {
             matrix[from].withIndex().filter { it.value }.forEach { (j, _) ->
                 when (visitMap.getOrDefault(j, Color.NotVisited)) {
                     Color.NotVisited -> step(j)
-                    Color.Visited -> shift(Cycle)
+                    Color.Visited -> shift<Nothing>(Cycle)
                     Color.Processed -> Unit
                 }
             }
@@ -101,14 +101,14 @@ class OrientedGraph<T> private constructor() {
         buildList {
             while (!sums.all { it.value == NonExisting }) {
                 val layer = sums.filterValues { it == Free }.keys
-                if (layer.isEmpty()) shift<Unit>(Cycle)
-                add(layer.map { nodes[it] ?: shift(NotFound) })
+                if (layer.isEmpty()) shift<Nothing>(Cycle)
+                add(layer.map { nodes[it] ?: shift<Nothing>(NotFound) })
 
                 val impacts = layer.flatMap { node -> matrix[node].withIndex().filter { it.value }.map { it.index } }
                 for (i in impacts)
                     when (val link = sums[i]) {
                         is Existing -> sums[i] = link - 1
-                        else -> shift(NotFound)
+                        else -> shift<Nothing>(NotFound)
                     }
                 layer.forEach { sums[it] = NonExisting }
             }
@@ -116,7 +116,7 @@ class OrientedGraph<T> private constructor() {
     }
 
     fun topSort(start: T) = either.eager<Errors, List<T>> {
-        val (i, _) = nodes.entries.find { it.value == start } ?: shift(NotFound)
+        val (i, _) = nodes.entries.find { it.value == start } ?: shift<Nothing>(NotFound)
         val stack = ArrayDeque<T>(nodes.size)
         dfs(i) { stack.addLast(it) }.bind()
         stack.asReversed()

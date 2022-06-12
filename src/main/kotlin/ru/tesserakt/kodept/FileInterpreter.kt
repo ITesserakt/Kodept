@@ -95,14 +95,16 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
                 is AST.AbstractFunctionDecl -> TODO()
                 is AST.ForeignFunctionDecl -> {
                     val newState = params.runningFold(state) { acc, next -> next.eval(acc) }.drop(1)
-                    val value = ref.action.action(newState.flatMap { it.result as List<*> })
+                    val value = ref.action.action(newState.flatMap { it.result as? List<*> ?: emptyList() })
                     (newState.lastOrNull() ?: state).copy(result = value)
                 }
 
                 is AST.FunctionDecl -> {
-                    val newState = params.runningFold(state) { acc, next -> next.eval(acc) }.drop(1)
+                    val newState = params.runningFold(state) { acc, next -> next.eval(acc) }
                     val stateWithParams = newState.last()
-                        .copy(functionParameters = ref.params.zip(newState.flatMap { it.result as List<*> }).toMap())
+                        .copy(functionParameters = ref.params.zip(newState.flatMap {
+                            it.result as? List<*> ?: emptyList()
+                        }).toMap())
                     ref.rest.eval(stateWithParams).copy(functionParameters = emptyMap())
                 }
 

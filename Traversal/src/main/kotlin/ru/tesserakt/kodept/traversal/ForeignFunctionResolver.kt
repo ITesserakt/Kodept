@@ -8,7 +8,6 @@ import arrow.core.nel
 import arrow.core.padZip
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
-import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -34,32 +33,34 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
             ref to ref.referral as AST.ForeignStructDecl
         }
 
-    context(ReportCollector, Filepath) @OptIn(Internal::class)
-    override fun transform(node: AST.ForeignFunctionDecl): EagerEffect<UnrecoverableError, out AST.Node> =
+    private val AST.ForeignFunctionDecl.safeForeignRelation
+        get() = ((returns as? AST.ResolvedTypeReference)?.referral as? AST.ForeignStructDecl)?.relatedWith
+
+    context(ReportCollector, Filepath)
+            override fun transform(node: AST.ForeignFunctionDecl): EagerEffect<UnrecoverableError, out AST.Node> =
         eagerEffect {
             val wrong = node.params.filterNot {
                 it.type is AST.ResolvedTypeReference && (it.type as AST.ResolvedTypeReference).referral is AST.ForeignStructDecl
             }
             if (wrong.isNotEmpty())
-                shift<Unit>(
+                shift<Nothing>(
                     UnrecoverableError(
                         NonEmptyList.fromListUnsafe(wrong).map { it.rlt.type.position },
                         Report.Severity.ERROR,
                         SemanticError.ForeignFunctionParametersTypeMismatch(node.name)
                     )
                 )
-            if (node.returns != null)
-                if (node.returns !is AST.ResolvedTypeReference || (node.returns as AST.ResolvedTypeReference).referral !is AST.ForeignStructDecl)
-                    shift<Unit>(
-                        UnrecoverableError(
-                            node.returns?.rlt?.position?.nel(),
-                            Report.Severity.ERROR,
-                            SemanticError.ForeignFunctionReturnType(node.name)
-                        )
+            if (node.returns != null && node.safeForeignRelation == null)
+                shift<Nothing>(
+                    UnrecoverableError(
+                        node.returns?.rlt?.position?.nel(),
+                        Report.Severity.ERROR,
+                        SemanticError.ForeignFunctionReturnType(node.name)
                     )
+                )
 
             val selected = functionList[node.descriptor].orEmpty()
-                .filter { (node.returns == null && it.returns == Unit::class) || it.returns.qualifiedName == node.returns!!.type.name }
+                .filter { (node.returns == null && it.returns == Unit::class) || it.returns.qualifiedName == node.safeForeignRelation }
                 .filter { function ->
                     val left = node.safeParams.map { it.second.relatedWith }
                     val right = function.params.map { it.qualifiedName }
@@ -67,7 +68,7 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
                 }
 
             val function = when (selected.size) {
-                0 -> shift(
+                0 -> shift<Nothing>(
                     UnrecoverableError(
                         node.rlt.position.nel(),
                         Report.Severity.ERROR,
@@ -76,7 +77,7 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
                 )
 
                 1 -> selected[0]
-                else -> shift(
+                else -> shift<Nothing>(
                     UnrecoverableError(
                         node.rlt.position.nel(),
                         Report.Severity.CRASH,
