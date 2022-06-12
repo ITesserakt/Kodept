@@ -21,7 +21,7 @@ class LoaderTest : StringSpec({
         loader.loadSources().first().bufferedReader().readText() shouldBe text
     }
 
-    "!load from file in linux".config(tags = setOf(Tags.Linux)) {
+    "load from file in linux".config(tags = setOf(Tags.Linux)) {
         val file = tempfile(testCase.descriptor.id.value, ".kd")
         val loader = FileLoader {
             path = Path("/tmp")

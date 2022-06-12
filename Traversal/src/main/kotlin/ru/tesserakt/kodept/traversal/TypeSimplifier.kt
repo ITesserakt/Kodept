@@ -60,12 +60,10 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         }
         val items = (unique + repeating).map { it[0] }
         return when (items.size) {
-            0 -> shift<Nothing>(
-                UnrecoverableError(
-                    this@UnionType.rlt.position.nel(),
-                    Report.Severity.CRASH,
-                    CompilerCrash("Search for repeating elements failed")
-                )
+            0 -> failWithReport(
+                this@UnionType.rlt.position.nel(),
+                Report.Severity.CRASH,
+                CompilerCrash("Search for repeating elements failed")
             )
 
             1 -> items.first()

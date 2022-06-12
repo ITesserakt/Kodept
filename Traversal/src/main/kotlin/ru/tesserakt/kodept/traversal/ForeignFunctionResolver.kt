@@ -21,9 +21,7 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
 
     fun exportFunction(f: (List<Any?>) -> Any?, name: String, params: List<KClass<*>>, returns: KClass<*>) {
         functionList.computeIfAbsent(name) { mutableListOf() } += AST.ForeignFunctionDecl.ExportedFunction(
-            f,
-            params,
-            returns
+            f, params, returns
         )
     }
 
@@ -42,22 +40,16 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
             val wrong = node.params.filterNot {
                 it.type is AST.ResolvedTypeReference && (it.type as AST.ResolvedTypeReference).referral is AST.ForeignStructDecl
             }
-            if (wrong.isNotEmpty())
-                shift<Nothing>(
-                    UnrecoverableError(
-                        NonEmptyList.fromListUnsafe(wrong).map { it.rlt.type.position },
-                        Report.Severity.ERROR,
-                        SemanticError.ForeignFunctionParametersTypeMismatch(node.name)
-                    )
-                )
-            if (node.returns != null && node.safeForeignRelation == null)
-                shift<Nothing>(
-                    UnrecoverableError(
-                        node.returns?.rlt?.position?.nel(),
-                        Report.Severity.ERROR,
-                        SemanticError.ForeignFunctionReturnType(node.name)
-                    )
-                )
+            if (wrong.isNotEmpty()) failWithReport(
+                NonEmptyList.fromListUnsafe(wrong).map { it.rlt.type.position },
+                Report.Severity.ERROR,
+                SemanticError.ForeignFunctionParametersTypeMismatch(node.name)
+            )
+            if (node.returns != null && node.safeForeignRelation == null) failWithReport(
+                node.returns?.rlt?.position?.nel(),
+                Report.Severity.ERROR,
+                SemanticError.ForeignFunctionReturnType(node.name)
+            )
 
             val selected = functionList[node.descriptor].orEmpty()
                 .filter { (node.returns == null && it.returns == Unit::class) || it.returns.qualifiedName == node.safeForeignRelation }
@@ -68,21 +60,13 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
                 }
 
             val function = when (selected.size) {
-                0 -> shift<Nothing>(
-                    UnrecoverableError(
-                        node.rlt.position.nel(),
-                        Report.Severity.ERROR,
-                        SemanticError.ForeignFunctionLinkage(node.name)
-                    )
+                0 -> failWithReport(
+                    node.rlt.position.nel(), Report.Severity.ERROR, SemanticError.ForeignFunctionLinkage(node.name)
                 )
 
                 1 -> selected[0]
-                else -> shift<Nothing>(
-                    UnrecoverableError(
-                        node.rlt.position.nel(),
-                        Report.Severity.CRASH,
-                        CompilerCrash("Multiple implementations found")
-                    )
+                else -> failWithReport(
+                    node.rlt.position.nel(), Report.Severity.CRASH, CompilerCrash("Multiple implementations found")
                 )
             }
 

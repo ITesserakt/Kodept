@@ -2,6 +2,7 @@ package ru.tesserakt.kodept.traversal
 
 import arrow.core.*
 import arrow.core.continuations.EagerEffect
+import arrow.core.continuations.EagerEffectScope
 import arrow.core.continuations.eagerEffect
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.CodePoint
@@ -34,3 +35,10 @@ fun <T> unwrap(f: ReportCollector.() -> EagerEffect<out UnrecoverableError, T>) 
         else Ior.Both(definitelyCollected, it)
     })
 }
+
+context (Filepath)
+        suspend fun EagerEffectScope<UnrecoverableError>.failWithReport(
+    point: NonEmptyList<CodePoint>?,
+    severity: Report.Severity,
+    message: ReportMessage,
+): Nothing = shift(UnrecoverableError(point, severity, message))

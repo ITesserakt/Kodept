@@ -45,12 +45,10 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
             tail.forEach {
                 val (old, new) = transformer.transformOrSkip(it).bind()
                 val parent = old.parent as AST.NodeBase
-                if (!(old == new || parent.replaceChild(old, new) || transformer !is Transformer<*>)) shift<Nothing>(
-                    UnrecoverableError(
-                        nonEmptyListOf(parent.rlt.position, new.rlt.position),
-                        Report.Severity.CRASH,
-                        CompilerCrash("After applying $transformer the AST didn't change")
-                    )
+                if (!(old == new || parent.replaceChild(old, new) || transformer !is Transformer<*>)) failWithReport(
+                    nonEmptyListOf(parent.rlt.position, new.rlt.position),
+                    Report.Severity.CRASH,
+                    CompilerCrash("After applying $transformer the AST didn't change")
                 )
             }
             val (_, newRoot) = transformer.transformOrSkip(head).bind()

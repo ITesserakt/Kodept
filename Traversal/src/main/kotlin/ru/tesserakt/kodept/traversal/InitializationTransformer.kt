@@ -26,34 +26,28 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                 is AST.FunctionCall -> node
                 is AST.ResolvedReference -> {
                     when (val referral = left.referral) {
-                        is AST.FunctionDecl, is AST.Parameter, is AST.InferredParameter, is AST.ForeignFunctionDecl, is AST.AbstractFunctionDecl -> shift<Nothing>(
-                            UnrecoverableError(
-                                nonEmptyListOf(
-                                    referral.rlt.position,
-                                    node.rlt.position
-                                ), Report.Severity.ERROR, SemanticError.ImmutableConstruct(referral.name)
-                            )
+                        is AST.FunctionDecl, is AST.Parameter, is AST.InferredParameter, is AST.ForeignFunctionDecl, is AST.AbstractFunctionDecl -> failWithReport(
+                            nonEmptyListOf(
+                                referral.rlt.position,
+                                node.rlt.position
+                            ), Report.Severity.ERROR, SemanticError.ImmutableConstruct(referral.name)
                         )
 
-                        is AST.InitializedVar -> if (!referral.mutable) shift<AST.Expression>(
-                            UnrecoverableError(
-                                nonEmptyListOf(
-                                    referral.rlt.position,
-                                    node.rlt.position
-                                ),
-                                Report.Severity.ERROR, SemanticError.ImmutableVariable(referral.name)
-                            )
+                        is AST.InitializedVar -> if (!referral.mutable) failWithReport(
+                            nonEmptyListOf(
+                                referral.rlt.position,
+                                node.rlt.position
+                            ),
+                            Report.Severity.ERROR, SemanticError.ImmutableVariable(referral.name)
                         ) else node
                     }
                 }
 
                 is AST.TypeReference -> node
-                is AST.Reference -> shift<AST.Node>(
-                    UnrecoverableError(
-                        node.rlt.position.nel(),
-                        Report.Severity.CRASH,
-                        CompilerCrash("All references should be resolved")
-                    )
+                is AST.Reference -> failWithReport(
+                    node.rlt.position.nel(),
+                    Report.Severity.CRASH,
+                    CompilerCrash("All references should be resolved")
                 )
             }
         }
