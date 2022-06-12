@@ -15,6 +15,16 @@ module Prelude {
 }
 
 module Math {
+    foreign type Boolean => "kotlin.Boolean"
+
+    foreign fun eq(self: ::Prelude::Int, b: ::Prelude::Int): Boolean => "kotlin.math.eq"
+    foreign fun times(self: ::Prelude::Int, b: ::Prelude::Int): ::Prelude::Int => "kotlin.math.times"
+    foreign fun minus(self: ::Prelude::Int, b: ::Prelude::Int): ::Prelude::Int => "kotlin.math.minus"
+
+    fun dec2Self(self) => self - 1 - 1
+
+    fun dec2(x: ::Prelude::Int) => x.dec2Self()
+
     fun factorial(n) =>
         if n == 0 => 1
         else      => n * factorial(n - 1)

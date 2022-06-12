@@ -59,7 +59,17 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
     private fun AST.Expression.eval(state: ProgramState): ProgramState = when (this) {
         is AST.Binary -> evalBinaryOperatorUsing(binaryOps, state)
         is AST.Comparison -> evalBinaryOperatorUsing(comparisonOps, state)
-        is AST.Dereference -> TODO()
+        is AST.Dereference -> {
+            val evalLeft = left.eval(state)
+            val newState = evalLeft.copy(
+                functionParameters = evalLeft.functionParameters + (AST.InferredParameter(
+                    "self",
+                    null
+                ) to evalLeft.result)
+            )
+            right.eval(newState).copy(functionParameters = evalLeft.functionParameters)
+        }
+
         is AST.Elvis -> TODO()
         is AST.Logical -> evalBinaryOperatorUsing(logicalOps, state)
         is AST.Mathematical -> evalBinaryOperatorUsing(mathOps, state)
@@ -67,10 +77,10 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.IfExpr -> {
             val condition = condition.eval(state)
             if (condition.result as Boolean)
-                body.eval(state)
+                body.eval(condition)
             else {
-                val passing = elifs.map { it to it.condition.eval(state) }
-                    .firstNotNullOfOrNull { (node, s) -> node.takeIf { s.result as Boolean } }
+                val passing = elifs.map { it to it.condition.eval(condition) }
+                    .firstNotNullOfOrNull { (node, s) -> node.takeIf { s.result as? Boolean == true } }
                 passing?.body?.eval(state) ?: el?.body?.eval(state) ?: state.copy(result = null)
             }
         }
@@ -94,18 +104,20 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
             when (val ref = r.referral) {
                 is AST.AbstractFunctionDecl -> TODO()
                 is AST.ForeignFunctionDecl -> {
-                    val newState = params.runningFold(state) { acc, next -> next.eval(acc) }.drop(1)
-                    val value = ref.action.action(newState.flatMap { it.result as? List<*> ?: emptyList() })
-                    (newState.lastOrNull() ?: state).copy(result = value)
+                    val newState = params.runningFold(state) { acc, next -> next.eval(acc) }
+                    require(ref.hasAction) { "Declaration `${ref.name}` has no action" }
+                    val value =
+                        ref.action.action(newState.flatMap { it.result as? List<*> ?: listOfNotNull(it.result) })
+                    newState.last().copy(result = value)
                 }
 
                 is AST.FunctionDecl -> {
                     val newState = params.runningFold(state) { acc, next -> next.eval(acc) }
-                    val stateWithParams = newState.last()
-                        .copy(functionParameters = ref.params.zip(newState.flatMap {
+                    val stateWithParams = state
+                        .copy(functionParameters = newState.last().functionParameters + ref.params.zip(newState.flatMap {
                             it.result as? List<*> ?: emptyList()
                         }).toMap())
-                    ref.rest.eval(stateWithParams).copy(functionParameters = emptyMap())
+                    ref.rest.eval(stateWithParams).copy(functionParameters = newState.last().functionParameters)
                 }
 
                 is AST.InferredParameter -> TODO()

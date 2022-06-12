@@ -84,7 +84,7 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
     override val type: KClass<AST.Reference> = AST.Reference::class
 
     init {
-        dependsOn(VariableScope)
+        dependsOn(VariableScope, OperatorDesugaring, ForeignFunctionResolver)
     }
 
     private fun AST.Reference.handleBlock(block: AST.ExpressionList) =
@@ -151,9 +151,9 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
     context(ReportCollector, Filepath) override fun transform(node: AST.Reference) =
         eagerEffect<UnrecoverableError, AST.Node> {
             // FIXME think about dereferences
-            if (isInDereference(node)) failWithReport(
-                node.rlt.position.nel(), Report.Severity.CRASH, CompilerCrash("Dot access operator is unsupported")
-            )
+//            if (isInDereference(node)) failWithReport(
+//                node.rlt.position.nel(), Report.Severity.CRASH, CompilerCrash("Dot access operator is unsupported")
+//            )
             val parent = ensureNotNull(node.parent) {
                 UnrecoverableError(
                     node.rlt.position.nel(),
@@ -175,6 +175,10 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
 
 object TypeDereferenceTransformer : Transformer<AST.TypeReference>(), Resolver<AST.Type, AST.TypeReferable> {
     override val type: KClass<AST.TypeReference> = AST.TypeReference::class
+
+    init {
+        dependsOn(OperatorDesugaring)
+    }
 
     context(ReportCollector, Filepath) override fun transform(node: AST.TypeReference): EagerEffect<UnrecoverableError, AST.Node> =
         eagerEffect {

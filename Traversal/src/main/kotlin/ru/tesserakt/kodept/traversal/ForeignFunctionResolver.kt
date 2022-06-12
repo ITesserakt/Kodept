@@ -8,6 +8,8 @@ import arrow.core.nel
 import arrow.core.padZip
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
+import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.accessRLT
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -15,6 +17,10 @@ import ru.tesserakt.kodept.error.SemanticError
 import kotlin.reflect.KClass
 
 object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
+    init {
+        dependsOn(TypeDereferenceTransformer)
+    }
+
     override val type: KClass<AST.ForeignFunctionDecl> = AST.ForeignFunctionDecl::class
 
     private val functionList = mutableMapOf<String, MutableList<AST.ForeignFunctionDecl.ExportedFunction>>()
@@ -41,7 +47,8 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
                 it.type is AST.ResolvedTypeReference && (it.type as AST.ResolvedTypeReference).referral is AST.ForeignStructDecl
             }
             if (wrong.isNotEmpty()) failWithReport(
-                NonEmptyList.fromListUnsafe(wrong).map { it.rlt.type.position },
+                NonEmptyList.fromList(wrong.mapNotNull { it.accessRLT<RLT.MaybeTypedParameter>()?.type?.position })
+                    .orNull(),
                 Report.Severity.ERROR,
                 SemanticError.ForeignFunctionParametersTypeMismatch(node.name)
             )

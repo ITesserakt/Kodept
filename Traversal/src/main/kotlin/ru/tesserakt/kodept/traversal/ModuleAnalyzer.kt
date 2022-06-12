@@ -6,6 +6,7 @@ import arrow.core.continuations.eagerEffect
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.accessRLT
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
@@ -21,7 +22,7 @@ val moduleNameAnalyzer = object : Analyzer() {
             .reportEach { modules ->
                 Report(
                     ast.filepath,
-                    modules.map { it.rlt.id.position },
+                    modules.map { it.accessRLT<RLT.Module>()!!.id.position },
                     Report.Severity.ERROR,
                     SemanticError.DuplicatedModules(modules.head.name)
                 )

@@ -49,7 +49,7 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
     val cmpExpr by compoundCmpExpr * zeroOrMore((LESS or GREATER) * compoundCmpExpr) leftFold RLT::BinaryOperation
     val bitExpr by cmpExpr * zeroOrMore((AND_BIT or XOR_BIT or OR_BIT) * cmpExpr) leftFold RLT::BinaryOperation
     val logicExpr by bitExpr * zeroOrMore((AND_LOGIC or OR_LOGIC) * bitExpr) leftFold RLT::BinaryOperation
-    val elvis: Parser<RLT.ExpressionNode> by logicExpr * optional(ELVIS * parser { elvis }) rightFold RLT::BinaryOperation
+//    val elvis: Parser<RLT.ExpressionNode> by logicExpr * optional(ELVIS * parser { elvis }) rightFold RLT::BinaryOperation
 
-    override val rootParser by elvis
+    override val rootParser by logicExpr
 }

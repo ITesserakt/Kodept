@@ -63,10 +63,10 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     POW_EQUALS(literalToken("**=")),
     PLUS(literalToken("+")),
     SUB(literalToken("-")),
-    TIMES(literalToken("*")),
     DIV(literalToken("/")),
     MOD(literalToken("%")),
     POW(literalToken("**")),
+    TIMES(literalToken("*")),
 
     FLOW(literalToken("=>")),
     ELVIS(literalToken("?:")),

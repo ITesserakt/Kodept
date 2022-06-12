@@ -32,21 +32,21 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            OperatorGrammar.elvis,
-            "a ?: b ?: c ?: d",
-            AST.Elvis(
+            OperatorGrammar.powExpr,
+            "a ** b ** c ** d",
+            AST.Mathematical(
                 AST.Reference("a"),
-                AST.Elvis(
+                AST.Mathematical(
                     AST.Reference("b"),
-                    AST.Elvis(
+                    AST.Mathematical(
                         AST.Reference("c"),
                         AST.Reference("d"),
-
-                        ),
-
+                        AST.Mathematical.Kind.Pow
                     ),
-
-                )
+                    AST.Mathematical.Kind.Pow
+                ),
+                AST.Mathematical.Kind.Pow
+            )
         )
     }
 

@@ -5,6 +5,8 @@ import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import arrow.core.nel
 import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.accessRLT
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticNote
@@ -28,41 +30,46 @@ val emptyBlockAnalyzer = object : Analyzer() {
                     it is AST.EnumDecl && it.enumEntries.isEmpty() ||
                     it is AST.AbstractFunctionDecl && it.params.isEmpty() ||
                     it is AST.FunctionDecl && it.params.isEmpty() ||
-                    it is AST.ExpressionList && it.expressions.isEmpty() ||
+                    it is AST.ExpressionList && AST.TupleLiteral.unit in it.expressions ||
                     it is AST.TraitDecl && it.rest.isEmpty()
         }
 
-        emptyStructures.generateReports<AST.StructDecl>(this@analyze, { it.rlt.lparen != null && it.alloc.isEmpty() }, {
-            Report(
-                ast.filepath,
-                it.rlt.lparen!!.position.nel(),
-                Report.Severity.WARNING,
-                SemanticWarning.EmptyParameterList(it.name)
-            )
-        })
+        emptyStructures.generateReports<AST.StructDecl>(
+            this@analyze,
+            { it.accessRLT<RLT.Struct>()?.lparen != null && it.alloc.isEmpty() },
+            {
+                Report(
+                    ast.filepath,
+                    it.accessRLT<RLT.Struct>()?.lparen?.position?.nel(),
+                    Report.Severity.WARNING,
+                    SemanticWarning.EmptyParameterList(it.name)
+                )
+            })
 
-        emptyStructures.generateReports<AST.TraitDecl>(this@analyze, { it.rlt.lbrace != null }) {
+        emptyStructures.generateReports<AST.TraitDecl>(this@analyze, { it.accessRLT<RLT.Trait>()?.lbrace != null }) {
             Report(
                 ast.filepath,
-                it.rlt.lbrace!!.position.nel(),
-                Report.Severity.WARNING,
-                SemanticWarning.EmptyBlock(it.name)
-            )
-        }
-
-        emptyStructures.generateReports<AST.StructDecl>(this@analyze, { it.rlt.lbrace != null && it.rest.isEmpty() }) {
-            Report(
-                ast.filepath,
-                it.rlt.lbrace!!.position.nel(),
+                it.accessRLT<RLT.Trait>()?.lbrace?.position?.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyBlock(it.name)
             )
         }
 
-        emptyStructures.generateReports<AST.EnumDecl>(this@analyze, { it.rlt.lbrace != null }) {
+        emptyStructures.generateReports<AST.StructDecl>(
+            this@analyze,
+            { it.accessRLT<RLT.Struct>()?.lbrace != null && it.rest.isEmpty() }) {
             Report(
                 ast.filepath,
-                it.rlt.lbrace!!.position.nel(),
+                it.accessRLT<RLT.Struct>()?.lbrace?.position?.nel(),
+                Report.Severity.WARNING,
+                SemanticWarning.EmptyBlock(it.name)
+            )
+        }
+
+        emptyStructures.generateReports<AST.EnumDecl>(this@analyze, { it.accessRLT<RLT.Enum>()?.lbrace != null }) {
+            Report(
+                ast.filepath,
+                it.accessRLT<RLT.Enum>()?.lbrace?.position?.nel(),
                 Report.Severity.WARNING,
                 SemanticWarning.ZeroEnumEntries(it.name)
             )
@@ -70,10 +77,13 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.AbstractFunctionDecl>(
             this@analyze,
-            { decl -> decl.rlt.params.any { it.params.isEmpty() } }) {
+            { decl -> decl.accessRLT<RLT.Function.Abstract>()?.params.orEmpty().any { it.params.isEmpty() } }) {
             Report(
                 ast.filepath,
-                NonEmptyList.fromListUnsafe(it.rlt.params.filter { it.params.isEmpty() }).map { it.lparen.position },
+                NonEmptyList.fromListUnsafe(
+                    it.accessRLT<RLT.Function.Abstract>()?.params.orEmpty()
+                        .filter { it.params.isEmpty() }
+                        .map { it.lparen.position }),
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)
             )
@@ -81,10 +91,12 @@ val emptyBlockAnalyzer = object : Analyzer() {
 
         emptyStructures.generateReports<AST.FunctionDecl>(
             this@analyze,
-            { decl -> decl.rlt.params.any { it.params.isEmpty() } }) {
+            { decl -> decl.accessRLT<RLT.Function.Bodied>()?.params.orEmpty().any { it.params.isEmpty() } }) {
             Report(
                 ast.filepath,
-                NonEmptyList.fromListUnsafe(it.rlt.params.filter { it.params.isEmpty() }).map { it.lparen.position },
+                NonEmptyList.fromListUnsafe(
+                    it.accessRLT<RLT.Function.Bodied>()?.params.orEmpty().filter { it.params.isEmpty() })
+                    .map { it.lparen.position },
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)
             )
@@ -93,7 +105,7 @@ val emptyBlockAnalyzer = object : Analyzer() {
         emptyStructures.generateReports<AST.ExpressionList>(this@analyze, { true }) {
             Report(
                 ast.filepath,
-                it.rlt.lbrace.position.nel(),
+                it.rlt.position.nel(),
                 Report.Severity.NOTE,
                 SemanticNote.EmptyComputationBLock
             )
