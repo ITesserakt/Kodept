@@ -8,17 +8,18 @@ import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.grammar.parser
 import com.github.h0tk3y.betterParse.parser.Parser
 import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.symbol
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object TypeGrammar : Grammar<RLT.TypeNode>() {
     val type = TermGrammar.contextualType or TermGrammar.typeReference
 
     val tuple = LPAREN and strictTrailing(parser { rootParser }, COMMA) * RPAREN map {
-        RLT.TupleType(RLT.Symbol(it.t1), it.t2, RLT.Symbol(it.t3))
+        RLT.TupleType(it.t1.symbol(), it.t2, it.t3.symbol())
     }
 
     val union = LPAREN and strictTrailing(parser { rootParser }, OR_BIT, atLeast = 2) * RPAREN map {
-        RLT.UnionType(RLT.Symbol(it.t1), NonEmptyList.fromListUnsafe(it.t2), RLT.Symbol(it.t3))
+        RLT.UnionType(it.t1.symbol(), NonEmptyList.fromListUnsafe(it.t2), it.t3.symbol())
     }
 
     override val rootParser: Parser<RLT.TypeNode> by type or union or tuple

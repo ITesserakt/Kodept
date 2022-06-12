@@ -2,58 +2,39 @@ package ru.tesserakt.kodept.core
 
 import arrow.core.Eval
 import arrow.core.NonEmptyList
-import com.github.h0tk3y.betterParse.lexer.CharToken
-import com.github.h0tk3y.betterParse.lexer.LiteralToken
-import com.github.h0tk3y.betterParse.lexer.Token
-import com.github.h0tk3y.betterParse.lexer.TokenMatch
-
-fun TokenMatch.keyword() = RLT.Keyword(this)
 
 /**
  * Raw lexem tree - it has all information about tokenized lexems
  */
 data class RLT(val root: File) {
     sealed interface Node {
-        val match: TokenMatch
         val description: String
 
-        val position: CodePoint get() = match.toCodePoint()
-        val tokenType: Token get() = match.type
-        val text: Eval<String> get() = Eval.later(match::text)
+        val position: CodePoint
+        val text: Eval<String>
     }
 
-    data class Keyword(override val match: TokenMatch) : Node {
-        override val tokenType = match.type
-        override val text = (tokenType as? LiteralToken)?.text?.let(Eval.Companion::now) ?: Eval.later(match::text)
+    data class Keyword(override val text: Eval<String>, override val position: CodePoint) : Node {
         override val description = text.value()
     }
 
-    sealed class UserSymbol(override val match: TokenMatch) : Node {
-        class Identifier(match: TokenMatch) : UserSymbol(match) {
+    sealed class UserSymbol : Node {
+        class Identifier(override val text: Eval<String>, override val position: CodePoint) : UserSymbol() {
             override val description = "identifier"
 
             override fun equals(other: Any?) = other is Identifier && text.value() == other.text.value()
+            override fun hashCode(): Int = text.value().hashCode()
         }
 
-        class Type(match: TokenMatch) : UserSymbol(match), Bind {
+        class Type(override val text: Eval<String>, override val position: CodePoint) : UserSymbol(), Bind {
             override val description = "type"
 
             override fun equals(other: Any?) = other is Type && text.value() == other.text.value()
+            override fun hashCode(): Int = text.value().hashCode()
         }
     }
 
-    data class Symbol(override val match: TokenMatch) : Node {
-        init {
-            require(match.type is LiteralToken || match.type is CharToken)
-        }
-
-        override val text = Eval.now(
-            when (val type = tokenType) {
-                is LiteralToken -> type.text
-                is CharToken -> type.text.toString()
-                else -> throw IllegalStateException("Impossible")
-            }
-        )
+    data class Symbol(override val text: Eval<String>, override val position: CodePoint, val type: String) : Node {
         override val description = text.value()
     }
 
@@ -254,18 +235,18 @@ data class RLT(val root: File) {
 
     data class UnaryOperation(val expression: ExpressionNode, val op: Symbol) : ExpressionNode, Node by op
 
-    sealed class Literal(override val match: TokenMatch) : ExpressionNode {
-        override val description get() = match.text
+    sealed class Literal(override val text: Eval<String>, override val position: CodePoint) : ExpressionNode {
+        override val description get() = text.value()
 
-        class Number(match: TokenMatch) : Literal(match)
-        class Floating(match: TokenMatch) : Literal(match)
-        class Text(match: TokenMatch) : Literal(match) {
+        class Number(text: Eval<String>, position: CodePoint) : Literal(text, position)
+        class Floating(text: Eval<String>, position: CodePoint) : Literal(text, position)
+        class Text(text: Eval<String>, position: CodePoint) : Literal(text, position) {
             fun isChar() = text.value().first() == '\''
             fun isString() = text.value().first() == '"'
         }
 
         data class Tuple(val lparen: Symbol, val expressions: List<ExpressionNode>, val rparen: Symbol) :
-            Literal(lparen.match)
+            Literal(lparen.text, lparen.position)
     }
 
     data class If(

@@ -22,6 +22,8 @@ dependencies {
     implementation(project(":Misc"))
     implementation(project(":Traversal"))
 
+    implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
+
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")

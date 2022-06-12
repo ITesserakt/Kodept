@@ -4,7 +4,6 @@ package ru.tesserakt.kodept
 
 import arrow.core.partially2
 import arrow.core.partially3
-import com.github.h0tk3y.betterParse.lexer.Token
 import org.jetbrains.annotations.TestOnly
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
@@ -13,19 +12,19 @@ import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.lexer.ExpressionToken
 
 @OptIn(Internal::class)
-private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expression, token: Token) = when (token) {
-    ExpressionToken.PLUS_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
-    ExpressionToken.SUB_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
-    ExpressionToken.TIMES_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
-    ExpressionToken.DIV_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Div)
-    ExpressionToken.MOD_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mod)
-    ExpressionToken.POW_EQUALS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Pow)
-    ExpressionToken.OR_LOGIC_EQUALS.token -> AST::Logical.partially3(AST.Logical.Kind.Disjunction)
-    ExpressionToken.AND_LOGIC_EQUALS.token -> AST::Logical.partially3(AST.Logical.Kind.Conjunction)
-    ExpressionToken.OR_BIT_EQUALS.token -> AST::Binary.partially3(AST.Binary.Kind.Or)
-    ExpressionToken.AND_BIT_EQUALS.token -> AST::Binary.partially3(AST.Binary.Kind.And)
-    ExpressionToken.XOR_BIT_EQUALS.token -> AST::Binary.partially3(AST.Binary.Kind.Xor)
-    ExpressionToken.EQUALS.token -> { _, r -> r }
+private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expression, token: String) = when (token) {
+    ExpressionToken.PLUS_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
+    ExpressionToken.SUB_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
+    ExpressionToken.TIMES_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
+    ExpressionToken.DIV_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Div)
+    ExpressionToken.MOD_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mod)
+    ExpressionToken.POW_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Pow)
+    ExpressionToken.OR_LOGIC_EQUALS.name -> AST::Logical.partially3(AST.Logical.Kind.Disjunction)
+    ExpressionToken.AND_LOGIC_EQUALS.name -> AST::Logical.partially3(AST.Logical.Kind.Conjunction)
+    ExpressionToken.OR_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.Or)
+    ExpressionToken.AND_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.And)
+    ExpressionToken.XOR_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.Xor)
+    ExpressionToken.EQUALS.name -> { _, r -> r }
     else -> throw IllegalStateException("Impossible")
 }.let {
     fun RLT.Lvalue.copyLvalue(value: AST.Lvalue): AST.Expression = when (value) {
@@ -40,34 +39,34 @@ private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expressio
 
 context (RLT.BinaryOperation)
         @OptIn(Internal::class)
-        private fun expandBinary(left: AST.Expression, right: AST.Expression, token: Token) = when (token) {
-    ExpressionToken.DOT.token -> AST::Dereference
-    ExpressionToken.PLUS.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
-    ExpressionToken.SUB.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
-    ExpressionToken.TIMES.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
-    ExpressionToken.DIV.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Div)
-    ExpressionToken.MOD.token -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mod)
-    ExpressionToken.OR_BIT.token -> AST::Binary.partially3(AST.Binary.Kind.Or)
-    ExpressionToken.AND_BIT.token -> AST::Binary.partially3(AST.Binary.Kind.And)
-    ExpressionToken.XOR_BIT.token -> AST::Binary.partially3(AST.Binary.Kind.Xor)
-    ExpressionToken.OR_LOGIC.token -> AST::Logical.partially3(AST.Logical.Kind.Disjunction)
-    ExpressionToken.AND_LOGIC.token -> AST::Logical.partially3(AST.Logical.Kind.Conjunction)
-    ExpressionToken.LESS.token -> AST::Comparison.partially3(AST.Comparison.Kind.Less)
-    ExpressionToken.LESS_EQUALS.token -> AST::Comparison.partially3(AST.Comparison.Kind.LessEqual)
-    ExpressionToken.EQUIV.token -> AST::Comparison.partially3(AST.Comparison.Kind.Equal)
-    ExpressionToken.NOT_EQUIV.token -> AST::Comparison.partially3(AST.Comparison.Kind.NonEqual)
-    ExpressionToken.GREATER_EQUALS.token -> AST::Comparison.partially3(AST.Comparison.Kind.GreaterEqual)
-    ExpressionToken.GREATER.token -> AST::Comparison.partially3(AST.Comparison.Kind.Greater)
-    ExpressionToken.SPACESHIP.token -> AST::Comparison.partially3(AST.Comparison.Kind.Complex)
-    ExpressionToken.ELVIS.token -> AST::Elvis
+        private fun expandBinary(left: AST.Expression, right: AST.Expression, token: String) = when (token) {
+    ExpressionToken.DOT.name -> AST::Dereference
+    ExpressionToken.PLUS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
+    ExpressionToken.SUB.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
+    ExpressionToken.TIMES.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
+    ExpressionToken.DIV.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Div)
+    ExpressionToken.MOD.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mod)
+    ExpressionToken.OR_BIT.name -> AST::Binary.partially3(AST.Binary.Kind.Or)
+    ExpressionToken.AND_BIT.name -> AST::Binary.partially3(AST.Binary.Kind.And)
+    ExpressionToken.XOR_BIT.name -> AST::Binary.partially3(AST.Binary.Kind.Xor)
+    ExpressionToken.OR_LOGIC.name -> AST::Logical.partially3(AST.Logical.Kind.Disjunction)
+    ExpressionToken.AND_LOGIC.name -> AST::Logical.partially3(AST.Logical.Kind.Conjunction)
+    ExpressionToken.LESS.name -> AST::Comparison.partially3(AST.Comparison.Kind.Less)
+    ExpressionToken.LESS_EQUALS.name -> AST::Comparison.partially3(AST.Comparison.Kind.LessEqual)
+    ExpressionToken.EQUIV.name -> AST::Comparison.partially3(AST.Comparison.Kind.Equal)
+    ExpressionToken.NOT_EQUIV.name -> AST::Comparison.partially3(AST.Comparison.Kind.NonEqual)
+    ExpressionToken.GREATER_EQUALS.name -> AST::Comparison.partially3(AST.Comparison.Kind.GreaterEqual)
+    ExpressionToken.GREATER.name -> AST::Comparison.partially3(AST.Comparison.Kind.Greater)
+    ExpressionToken.SPACESHIP.name -> AST::Comparison.partially3(AST.Comparison.Kind.Complex)
+    ExpressionToken.ELVIS.name -> AST::Elvis
     else -> throw IllegalStateException("Impossible")
 }(left, right).withRLT()
 
-private fun expandUnary(expression: AST.Expression, token: Token) = when (token) {
-    ExpressionToken.PLUS.token -> AST.Absolution(expression)
-    ExpressionToken.SUB.token -> AST.Negation(expression)
-    ExpressionToken.NOT_BIT.token -> AST.BitInversion(expression)
-    ExpressionToken.NOT_LOGIC.token -> AST.Inversion(expression)
+private fun expandUnary(expression: AST.Expression, token: String) = when (token) {
+    ExpressionToken.PLUS.name -> AST.Absolution(expression)
+    ExpressionToken.SUB.name -> AST.Negation(expression)
+    ExpressionToken.NOT_BIT.name -> AST.BitInversion(expression)
+    ExpressionToken.NOT_LOGIC.name -> AST.Inversion(expression)
     else -> throw IllegalStateException("Impossible")
 }
 
@@ -207,7 +206,7 @@ private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
         is RLT.CompoundAssignment -> expandCompound(
             lvalue.convert(),
             expression.convert(),
-            compoundOperator.tokenType
+            compoundOperator.type
         )
 
         is RLT.InitializedAssignment -> AST.InitializedVar(
@@ -220,7 +219,7 @@ private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
         else -> expandCompound(
             lvalue.convert(),
             expression.convert(),
-            equals.tokenType
+            equals.type
         )
     }
 
@@ -245,7 +244,7 @@ private fun RLT.Body.Block.convert(): AST.Expression = when (block.size) {
 
 @OptIn(Internal::class)
 private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
-    is RLT.BinaryOperation -> expandBinary(left.convert(), right.convert(), op.tokenType)
+    is RLT.BinaryOperation -> expandBinary(left.convert(), right.convert(), op.type)
 
     is RLT.Body.Block -> convert()
 
@@ -258,7 +257,7 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
         el?.convert()
     ).withRLT()
 
-    is RLT.UnaryOperation -> expandUnary(expression.convert(), op.tokenType).withRLT()
+    is RLT.UnaryOperation -> expandUnary(expression.convert(), op.type).withRLT()
 
     is RLT.While -> AST.WhileExpr(condition.convert(), body.convert()).withRLT()
 

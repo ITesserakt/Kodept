@@ -24,7 +24,7 @@ fun main() {
     memoryStatThread()
     val context = CompilationContext {
         loader = FileLoader {
-            this.path = Path("/home/tesserakt/IdeaProjects/Kodept/src/test/")
+            path = Path("/home/tesserakt/IdeaProjects/Kodept/src/")
         }
         transformers = setOf(
             TypeSimplifier,

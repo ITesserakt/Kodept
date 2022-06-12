@@ -10,6 +10,7 @@ import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple2
 import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.symbol
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
@@ -19,8 +20,8 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
                 None -> a
                 is Some -> {
                     val (op, b) = rest.value.head
-                    rest.value.tail.fold(construct(a, RLT.Symbol(op), b)) { acc, (ops, bs) ->
-                        construct(acc, RLT.Symbol(ops), bs)
+                    rest.value.tail.fold(construct(a, op.symbol(), b)) { acc, (ops, bs) ->
+                        construct(acc, ops.symbol(), bs)
                     }
                 }
             }
@@ -30,14 +31,14 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
         map { (a, tail) ->
             when (tail) {
                 null -> a
-                else -> construct(a, RLT.Symbol(tail.t1), tail.t2)
+                else -> construct(a, tail.t1.symbol(), tail.t2)
             }
         }
 
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
     val access by atom * zeroOrMore(DOT * atom) leftFold RLT::BinaryOperation
     val topExpr: Parser<RLT.ExpressionNode> by (SUB or NOT_LOGIC or NOT_BIT or PLUS) * parser { topExpr } map {
-        RLT.UnaryOperation(it.t2, RLT.Symbol(it.t1))
+        RLT.UnaryOperation(it.t2, it.t1.symbol())
     } or access
 
     val powExpr: Parser<RLT.ExpressionNode> by topExpr * optional(POW * parser { powExpr }) rightFold RLT::BinaryOperation

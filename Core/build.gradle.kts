@@ -7,15 +7,15 @@ val betterParseVersion: String by extra
 val kotestVersion: String by extra
 
 group = "ru.tesserakt.kodept"
-version = "0.2.1"
+version = "0.4.0"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    api("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
     api("io.arrow-kt:arrow-core:$arrowVersion")
+    api("io.github.microutils:kotlin-logging-jvm:2.1.20")
 
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")

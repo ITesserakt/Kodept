@@ -8,8 +8,7 @@ import com.github.h0tk3y.betterParse.combinators.unaryMinus
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
 import com.github.h0tk3y.betterParse.utils.Tuple3
-import ru.tesserakt.kodept.core.RLT
-import ru.tesserakt.kodept.core.keyword
+import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.CLASS
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.ENUM
@@ -25,11 +24,11 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
         TYPE, COMMA, atLeast = 1
     ) * RBRACE map { (enumToken, name, lb, entries, rb) ->
         RLT.Enum.Stack(
-            RLT.Keyword(enumToken),
-            RLT.UserSymbol.Type(name),
-            lb.let(RLT::Symbol),
-            NonEmptyList.fromListUnsafe(entries.map(RLT.UserSymbol::Type)),
-            rb.let(RLT::Symbol)
+            enumToken.keyword(),
+            name.type(),
+            lb.symbol(),
+            NonEmptyList.fromListUnsafe(entries.map { it.type() }),
+            rb.symbol()
         )
     }
 
@@ -37,13 +36,7 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
         LBRACE, strictTrailing(ObjectLevelGrammar.traitLevel or FunctionGrammar) * RBRACE
     ) map { (traitToken, name, rest) ->
         val (lb, rest, rb) = rest?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
-        RLT.Trait(
-            RLT.Keyword(traitToken),
-            RLT.UserSymbol.Type(name),
-            lb?.let(RLT::Symbol),
-            rest,
-            rb?.let(RLT::Symbol)
-        )
+        RLT.Trait(traitToken.keyword(), name.type(), lb?.symbol(), rest, rb?.symbol())
     }
 
     val structStatement by STRUCT * TYPE * optionalWithStart(
@@ -54,25 +47,19 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
         val (lp, alloc, rp) = allocated?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
         val (lb, rest, rb) = rest?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
         RLT.Struct(
-            RLT.Keyword(structToken),
-            RLT.UserSymbol.Type(name),
-            lp?.let(RLT::Symbol),
-            alloc.map { RLT.TypedParameter(RLT.UserSymbol.Identifier(it.t1), it.t2) },
-            rp?.let(RLT::Symbol),
-            lb?.let(RLT::Symbol),
+            structToken.keyword(),
+            name.type(),
+            lp?.symbol(),
+            alloc.map { RLT.TypedParameter(it.t1.identifier(), it.t2) },
+            rp?.symbol(),
+            lb?.symbol(),
             rest,
-            rb?.let(RLT::Symbol)
+            rb?.symbol()
         )
     }
 
-    val foreignType by FOREIGN * TYPE_ALIAS * TYPE * FLOW * STRING map { (f, t, type, arrow, refersTo) ->
-        RLT.ForeignType(
-            f.keyword(),
-            t.keyword(),
-            RLT.UserSymbol.Type(type),
-            RLT.Symbol(arrow),
-            RLT.Literal.Text(refersTo)
-        )
+    val foreignType by FOREIGN * TYPE_ALIAS * TYPE * FLOW * LiteralGrammar.string map { (f, t, type, arrow, refersTo) ->
+        RLT.ForeignType(f.keyword(), t.keyword(), type.type(), arrow.symbol(), refersTo)
     }
 
     override val rootParser: Parser<RLT.TopLevelNode> by structStatement or traitStatement or enumStatement or functionStatement or foreignType or FunctionGrammar.foreignFun

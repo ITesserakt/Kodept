@@ -6,12 +6,15 @@ import arrow.core.prependTo
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.identifier
+import ru.tesserakt.kodept.core.symbol
+import ru.tesserakt.kodept.core.type
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object TermGrammar : Grammar<RLT.TermNode>() {
-    val variableReference by IDENTIFIER use { RLT.Reference(RLT.UserSymbol.Identifier(this)) }
+    val variableReference by IDENTIFIER use { RLT.Reference(identifier()) }
 
-    val typeReference by TYPE use { RLT.Reference(RLT.UserSymbol.Type(this)) }
+    val typeReference by TYPE use { RLT.Reference(type()) }
 
     val reference by typeReference or variableReference
 
@@ -19,7 +22,7 @@ object TermGrammar : Grammar<RLT.TermNode>() {
     private val cc_t_cc_ by DOUBLE_COLON and trailing(
         typeReference, DOUBLE_COLON, atLeast = 1
     ) map { (global, context) ->
-        val start: RLT.Context = RLT.Context.Global(RLT.Symbol(global))
+        val start: RLT.Context = RLT.Context.Global(global.symbol())
         context.dropLast(1).fold(start, RLT.Context::Inner.flip()) to context.last()
     }
 
@@ -45,7 +48,7 @@ object TermGrammar : Grammar<RLT.TermNode>() {
         typeReference,
         DOUBLE_COLON
     ) * variableReference map { (global, context, ref) ->
-        val start: RLT.Context = RLT.Context.Global(RLT.Symbol(global))
+        val start: RLT.Context = RLT.Context.Global(global.symbol())
         context.fold(start, RLT.Context::Inner.flip()) to ref
     }
 
