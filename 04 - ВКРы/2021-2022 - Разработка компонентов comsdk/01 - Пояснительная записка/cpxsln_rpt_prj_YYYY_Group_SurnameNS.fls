@@ -2447,6 +2447,16 @@ INPUT ./figures/class.graph.png
 INPUT figures/class.graph.png
 INPUT ./figures/class.graph.png
 INPUT ./figures/class.graph.png
+INPUT ./figures/UML.topologyOperations.png
+INPUT ./figures/UML.topologyOperations.png
+INPUT figures/UML.topologyOperations.png
+INPUT ./figures/UML.topologyOperations.png
+INPUT ./figures/UML.topologyOperations.png
+INPUT ./figures/UML.everything.png
+INPUT ./figures/UML.everything.png
+INPUT figures/UML.everything.png
+INPUT ./figures/UML.everything.png
+INPUT ./figures/UML.everything.png
 INPUT ./figures/UML.all.png
 INPUT ./figures/UML.all.png
 INPUT figures/UML.all.png
@@ -2477,6 +2487,16 @@ INPUT ./figures/flowchart.executionBranch.png
 INPUT figures/flowchart.executionBranch.png
 INPUT ./figures/flowchart.executionBranch.png
 INPUT ./figures/flowchart.executionBranch.png
+INPUT ./figures/flowchart.graphRunning2.png
+INPUT ./figures/flowchart.graphRunning2.png
+INPUT figures/flowchart.graphRunning2.png
+INPUT ./figures/flowchart.graphRunning2.png
+INPUT ./figures/flowchart.graphRunning2.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
 INPUT ./chapters/chap6_results_analysis.tex
 INPUT ./chapters/chap6_results_analysis.tex
 INPUT ./chapters/chap6_results_analysis.tex
@@ -2501,11 +2521,6 @@ INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
 INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lait1440.tfm
 INPUT ./doc-spec/by.eps
 INPUT ./doc-spec/by.eps
