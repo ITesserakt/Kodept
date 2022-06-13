@@ -2350,11 +2350,11 @@ INPUT ./figures/screenshot.KeplerWorkflow.jpg
 INPUT figures/screenshot.KeplerWorkflow.jpg
 INPUT ./figures/screenshot.KeplerWorkflow.jpg
 INPUT ./figures/screenshot.KeplerWorkflow.jpg
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
+INPUT ./figures/example.dataflow.png
+INPUT ./figures/example.dataflow.png
+INPUT figures/example.dataflow.png
+INPUT ./figures/example.dataflow.png
+INPUT ./figures/example.dataflow.png
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
@@ -2422,6 +2422,11 @@ INPUT ./figures/UML.graphFunctions.png
 INPUT figures/UML.graphFunctions.png
 INPUT ./figures/UML.graphFunctions.png
 INPUT ./figures/UML.graphFunctions.png
+INPUT ./figures/flowchart.Transfer.png
+INPUT ./figures/flowchart.Transfer.png
+INPUT figures/flowchart.Transfer.png
+INPUT ./figures/flowchart.Transfer.png
+INPUT ./figures/flowchart.Transfer.png
 INPUT ./figures/UML.transfer.png
 INPUT ./figures/UML.transfer.png
 INPUT figures/UML.transfer.png
@@ -2437,6 +2442,11 @@ INPUT ./figures/UML.edge.png
 INPUT figures/UML.edge.png
 INPUT ./figures/UML.edge.png
 INPUT ./figures/UML.edge.png
+INPUT ./figures/class.graph.png
+INPUT ./figures/class.graph.png
+INPUT figures/class.graph.png
+INPUT ./figures/class.graph.png
+INPUT ./figures/class.graph.png
 INPUT ./figures/UML.all.png
 INPUT ./figures/UML.all.png
 INPUT figures/UML.all.png
@@ -2491,6 +2501,11 @@ INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
 INPUT cpxsln_rpt_prj_YYYY_Group_SurnameNS.bbl
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
 INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lait1440.tfm
 INPUT ./doc-spec/by.eps
 INPUT ./doc-spec/by.eps
