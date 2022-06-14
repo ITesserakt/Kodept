@@ -25,7 +25,7 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
 
         either.flatMap(Semigroup.nonEmptyList()) { ast ->
             sorted.foldAST(ast) { value, acc ->
-                logger.trace("Executing $value")
+                println("Executing $value")
                 when (value) {
                     is SpecificTransformer<*> -> executeTransformer(acc, value)
                     is Analyzer -> unwrap { with(value) { analyzeWithCaching(acc) }.map { acc } }
