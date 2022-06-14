@@ -51,26 +51,33 @@
 % Титульная страница (включается всегда, поэтому командой input)
 \input{doc-spec/title_common}
 %----------------------------------------------------------
+% !!! ВНИМАНИЕ! Документы ниже нужно включить перед печатью всего документа !!! %
 % Задание (включается для КП и ВКР)
 % Вставится только при сборке КП
-\myconditionaltext{\doctypesid}{kp}{%
-    \input{doc-additional/official_statement}
-}
-% Вставится только при сборке ВКР
-\myconditionaltext{\doctypesid}{vkr}{%
-    \input{doc-additional/official_statement}
-}
+% \myconditionaltext{\doctypesid}{kp}{%
+%     \input{doc-additional/official_statement}
+% }
+% % Вставится только при сборке ВКР
+% \myconditionaltext{\doctypesid}{vkr}{%
+%     \input{doc-additional/official_statement}
+% }
+% %----------------------------------------------------------
+% % Календарный план, только для ВКР (для НИРС и КП этот документ не включается) 
+% \myconditionaltext{\doctypesid}{vkr}{%
+%     \input{doc-additional/calendar_plan}
+% }
+% %----------------------------------------------------------
+% % Направление на защиту (включается только для ВКР, для НИРС и КП не нужно)
+% \myconditionaltext{\doctypesid}{vkr}{%
+%     \input{doc-additional/referral_for_defense}
+% }
 %----------------------------------------------------------
-% Календарный план, только для ВКР (для НИРС и КП этот документ не включается) 
-\myconditionaltext{\doctypesid}{vkr}{%
-    \input{doc-additional/calendar_plan}
-}
-%----------------------------------------------------------
-% Направление на защиту (включается только для ВКР, для НИРС и КП не нужно)
-\myconditionaltext{\doctypesid}{vkr}{%
-    \input{doc-additional/referral_for_defense}
-}
-%----------------------------------------------------------
+
+% !!! ВНИМАНИЕ! Строчку ниже нужно закомментировать перед печатью всего документа !!! %
+% |
+% V
+\setcounter{page}{7}
+
 % Реферат
 \include{referat}
 %----------------------------------------------------------
@@ -83,7 +90,7 @@
 %----------------------------------------------------------
 % Содержание
 % Глубина содержания должна быть не более, чем глава (chapter), раздел (section) и подраздел (subsection) 
-\setcounter{tocdepth}{2}
+\setcounter{tocdepth}{3}
 % Добавление в оглавление сверху Стр.
 %\makeatletter
 %\addtocontents{toc}{\string\pagestyle{TOC}}
