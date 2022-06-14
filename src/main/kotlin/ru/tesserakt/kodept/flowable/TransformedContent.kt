@@ -36,10 +36,11 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
 
     @OptIn(Internal::class)
     private fun Filepath.executeTransformer(acc: AST, transformer: SpecificTransformer<*>) = unwrap {
-        val (head, tail) = acc.flatten(transformer.traverseMode).toList()
-            .run { filterIsInstance<AST.NodeWithoutParent>().first() to filterIsInstance<AST.NodeWithParent>() }
+        val (head, tail) = acc.flatten(transformer.traverseMode)
+            .run { filterIsInstance<AST.NodeWithoutParent>().first() to filterIsInstance<AST.NodeWithParent>().toList() }
         eagerEffect {
-            tail.map { transformer.transformOrSkip(it).bind() }.forEach { (old, new) ->
+            tail.forEach {
+                val (old, new) = transformer.transformOrSkip(it).bind()
                 if (!(old === new || (old.parent as AST.NodeBase).replaceChild(old, new))) failWithReport(
                     nonEmptyListOf((old.parent as AST.NodeBase).rlt.position, new.rlt.position),
                     Report.Severity.CRASH,

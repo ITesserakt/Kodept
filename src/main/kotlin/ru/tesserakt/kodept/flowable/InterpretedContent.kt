@@ -11,7 +11,12 @@ import ru.tesserakt.kodept.error.Report
 
 private val logger = KotlinLogging.logger("[Compiler]")
 
-class InterpretedContent(data: Flowable.Data.ErroneousAST, input: List<String>) : Flowable<InterpretedContent.Data> {
+class InterpretedContent(
+    data: Flowable.Data.ErroneousAST,
+    input: List<String>,
+    private val computeLazy: Boolean = true,
+) :
+    Flowable<InterpretedContent.Data> {
     data class Data(override val programOutput: Eval<IorNel<Report, Pair<Any?, Int>>>) : Flowable.Data.Program
 
     private val run = data.ast.mapWithFilename { parsed ->
@@ -38,8 +43,12 @@ class InterpretedContent(data: Flowable.Data.ErroneousAST, input: List<String>) 
         }
     }
 
-    //TODO fix laziness
-    private val traverseForMain = run {
+    private fun <T> ctor(): (() -> IorNel<Report, T>) -> Eval<IorNel<Report, T>> =
+        if (computeLazy)
+            { it -> Eval.later { it() } }
+        else { it -> Eval.now(it()) }
+
+    private val traverseForMain = {
         mainAnalyze.reduce { (acc, accFile), (next, nextFile) ->
             if (acc.anyInLeft { it.message == NoMainFunction }) FileRelative(
                 acc.flatMap({ b -> this + b.filter { it.message == NoMainFunction } }) { next },
@@ -58,8 +67,10 @@ class InterpretedContent(data: Flowable.Data.ErroneousAST, input: List<String>) 
                 Report(null, null, Report.Severity.ERROR, MultipleMain(listOf(accFile, nextFile))).nel()
                     .leftIor()
             }, nextFile)
-        }
+        }.value
     }
 
-    override val result: Data = Data(traverseForMain.let { (ior, _) -> Eval.now(ior.map { it.result to it.output }) })
+    override val result: Data = Data(ctor<Pair<Any?, Int>>().invoke(traverseForMain andThen {
+        it.map { state -> state.result to state.output }
+    }))
 }

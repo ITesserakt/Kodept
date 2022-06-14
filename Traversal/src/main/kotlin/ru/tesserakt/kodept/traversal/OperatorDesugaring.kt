@@ -13,13 +13,13 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
     private fun AST.BinaryOperator.replaceWith(functionName: String, traitName: String): AST.Dereference =
         with(accessRLT<RLT.BinaryOperation>()?.op ?: accessRLT<RLT.CompoundAssignment>()!!.compoundOperator) {
             AST.Dereference(
-                (left as? AST.BinaryOperator)?.expand() ?: left,
+                left,
                 AST.FunctionCall(
                     AST.Reference(
                         functionName,
                         AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
                     ).withRLT(),
-                    listOf((right as? AST.BinaryOperator)?.expand() ?: right)
+                    listOf(right)
                 ).withRLT()
             ).withRLT()
         }
