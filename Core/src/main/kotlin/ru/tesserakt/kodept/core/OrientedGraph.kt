@@ -6,7 +6,6 @@ import arrow.core.continuations.either
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
-import kotlin.experimental.ExperimentalTypeInference
 
 class OrientedGraph<T> private constructor() {
     sealed interface Errors
@@ -127,8 +126,7 @@ class OrientedGraph<T> private constructor() {
     }
 
     companion object {
-        @OptIn(ExperimentalTypeInference::class)
-        operator fun <T> invoke(@BuilderInference scope: OrientedGraph<T>.() -> Unit) = OrientedGraph<T>().also(scope)
+        operator fun <T> invoke(scope: OrientedGraph<T>.() -> Unit) = OrientedGraph<T>().also(scope)
 
         inline fun <reified T : Node<T>> fromNodes(nodes: Iterable<T>) = invoke {
             nodes.forEach { it.addChildren(*it.children().toTypedArray()) }

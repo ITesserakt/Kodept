@@ -1,4 +1,4 @@
-@file:Suppress("unused", "DuplicatedCode") @file:OptIn(Internal::class)
+@file:Suppress("unused") @file:OptIn(Internal::class)
 
 package ru.tesserakt.kodept.core
 

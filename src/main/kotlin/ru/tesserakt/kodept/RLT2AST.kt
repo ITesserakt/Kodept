@@ -1,5 +1,3 @@
-@file:Suppress("UnnecessaryOptInAnnotation", "OPT_IN_IS_NOT_ENABLED")
-
 package ru.tesserakt.kodept
 
 import arrow.core.*
@@ -10,7 +8,6 @@ import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.lexer.ExpressionToken
 
-@OptIn(Internal::class)
 private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expression, token: String) = when (token) {
     ExpressionToken.PLUS_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add).andThen { it.withRLT() }
     ExpressionToken.SUB_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub).andThen { it.withRLT() }
@@ -40,7 +37,6 @@ private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expressio
 }
 
 context (RLT.BinaryOperation)
-        @OptIn(Internal::class)
         private fun expandBinary(left: AST.Expression, right: AST.Expression, token: String) = when (token) {
     ExpressionToken.DOT.name -> AST::Dereference
     ExpressionToken.PLUS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
@@ -77,15 +73,12 @@ private fun RLT.Context.convert(): AST.ResolutionContext = unfold().let { (fromR
     AST.ResolutionContext(fromRoot != null, chain.map { (it.convert() as AST.TypeReference).type })
 }
 
-@OptIn(Internal::class)
 private fun RLT.UserSymbol.Type.convert() = AST.Type(text.value()).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.UserSymbol.Identifier.convert() = with(RLT.Reference(this)) {
     AST.Reference(text.value()).withRLT()
 }
 
-@OptIn(Internal::class)
 private fun RLT.Literal.convert(): AST.Literal = when (this) {
     is RLT.Literal.Floating -> when {
         '.' in text.value() || text.value().contains('e', true) -> AST.FloatingLiteral(
@@ -111,38 +104,30 @@ private fun RLT.Literal.convert(): AST.Literal = when (this) {
     is RLT.Literal.Tuple -> AST.TupleLiteral(expressions.map(RLT.ExpressionNode::convert)).withRLT()
 }
 
-@OptIn(Internal::class)
 private fun RLT.Module.convert(): AST.ModuleDecl = when (this) {
     is RLT.Module.Global -> AST::ModuleDecl.partially2(true)
     is RLT.Module.Ordinary -> AST::ModuleDecl.partially2(false)
 }.invoke(id.text.value(), rest.map(RLT.TopLevelNode::convert).toMutableList()).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.ParameterTuple.convert(): AST.TupleLiteral =
     AST.TupleLiteral(params.map(RLT.Parameter::convert)).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.MaybeTypedParameter.convert() = AST.InferredParameter(id.text.value(), type?.convert()).withRLT()
 
 private fun RLT.MaybeTypedParameterTuple.convert() = params.map { it.convert() }
 
-@OptIn(Internal::class)
 private fun RLT.TypedParameter.convert() = AST.Parameter(id.text.value(), type.convert()).withRLT()
 
 private fun RLT.TypedParameterTuple.convert() = params.map { it.convert() }
 
-@OptIn(Internal::class)
 private fun RLT.If.Else.convert() = AST.IfExpr.ElseExpr(body.convert()).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.If.Elif.convert() = AST.IfExpr.ElifExpr(condition.convert(), body.convert()).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.Function.Bodied.convert() = AST.FunctionDecl(
     id.text.value(), params.flatMap { it.convert() }, returnType?.convert(), body.convert()
 ).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.Enum.convert() = when (this) {
     is RLT.Enum.Heap -> AST::EnumDecl.partially2(false)
     is RLT.Enum.Stack -> AST::EnumDecl.partially2(true)
@@ -150,7 +135,6 @@ private fun RLT.Enum.convert() = when (this) {
     with(it) { AST.EnumDecl.Entry(it.text.value()).withRLT() }
 }.toMutableList()).withRLT()
 
-@OptIn(Internal::class)
 private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
     is RLT.Function.Bodied -> convert()
 
@@ -175,7 +159,6 @@ private fun RLT.StructLevelNode.convert() = when (this) {
     is RLT.Function.Bodied -> convert()
 }
 
-@OptIn(Internal::class)
 private fun RLT.ObjectLevelNode.convert(): AST.TraitLevel = when (this) {
     is RLT.Function.Bodied -> convert()
 
@@ -189,7 +172,6 @@ private fun RLT.BlockLevelNode.convert(): AST.BlockLevel = when (this) {
     is RLT.ExpressionNode -> convert()
 }
 
-@OptIn(Internal::class)
 private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
     is RLT.Assignment -> when (this) {
         is RLT.CompoundAssignment -> expandCompound(
@@ -210,7 +192,6 @@ private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
     is RLT.Variable -> throw IllegalStateException("Thrown out")
 }
 
-@OptIn(Internal::class)
 private fun RLT.Body.Block.convert(): AST.Expression = when (block.size) {
     0 -> AST.ExpressionList(nonEmptyListOf(AST.TupleLiteral.unit.withRLT())).withRLT()
     1 -> {
@@ -222,7 +203,6 @@ private fun RLT.Body.Block.convert(): AST.Expression = when (block.size) {
     else -> AST.ExpressionList(NonEmptyList.fromListUnsafe(block.map { it.convert() })).withRLT()
 }
 
-@OptIn(Internal::class)
 private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
     is RLT.BinaryOperation -> expandBinary(left.convert(), right.convert(), op.type)
 
@@ -251,7 +231,6 @@ private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
     is RLT.TermNode -> convert()
 }
 
-@OptIn(Internal::class)
 private fun RLT.Reference.convert(): AST.Lvalue = when (this) {
     is RLT.ContextualReference -> when (val r = ref) {
         is RLT.UserSymbol.Identifier -> AST.Reference(ref.text.value(), context.convert()).withRLT()
@@ -264,7 +243,6 @@ private fun RLT.Reference.convert(): AST.Lvalue = when (this) {
     }
 }
 
-@OptIn(Internal::class)
 private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
     is RLT.Application -> AST.FunctionCall(
         expr.convert() as AST.Reference,
@@ -278,7 +256,6 @@ private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
     is RLT.Reference -> convert()
 }
 
-@OptIn(Internal::class)
 fun RLT.TypeNode.convert(): AST.TypeLike = when (this) {
     is RLT.TupleType -> AST.TupleType(types.map { it.convert() }).withRLT()
     is RLT.UnionType -> AST.UnionType(types.map { it.convert() }).withRLT()
@@ -292,6 +269,7 @@ fun RLT.TypeNode.convert(): AST.TypeLike = when (this) {
 @OptIn(Internal::class)
 fun RLT.File.convert(): AST.FileDecl = AST.FileDecl(moduleList.map(RLT.Module::convert)).withRLT()
 
+@Suppress("KotlinConstantConditions")
 @Internal
 @TestOnly
 fun RLT.Node.convert() = when (this) {
