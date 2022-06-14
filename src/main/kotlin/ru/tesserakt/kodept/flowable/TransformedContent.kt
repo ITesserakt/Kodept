@@ -1,7 +1,10 @@
 package ru.tesserakt.kodept.flowable
 
-import arrow.core.*
+import arrow.core.IorNel
 import arrow.core.continuations.eagerEffect
+import arrow.core.flatMap
+import arrow.core.getOrHandle
+import arrow.core.nonEmptyListOf
 import arrow.typeclasses.Semigroup
 import mu.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
@@ -9,7 +12,6 @@ import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.traversal.*
-import kotlin.collections.flatten
 
 private val logger = KotlinLogging.logger("[Compiler]")
 
@@ -18,7 +20,16 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
     data class Data(override val ast: Sequence<FileRelative<IorNel<Report, AST>>>) : Flowable.Data.ErroneousAST
 
     private val sorted = OrientedGraph.fromNodes(analyzers + transformers).sortedLayers()
-        .getOrHandle { throw IllegalStateException("Found cycles in processors") }.flatten()
+        .getOrHandle {
+            throw IllegalStateException(
+                "Found errors in processors: ${
+                    when (it) {
+                        is OrientedGraph.Cycle<*> -> "cycle of:\n${it.inside.joinToString("\n")}"
+                        OrientedGraph.NotFound -> "common error"
+                    }
+                }"
+            )
+        }.flatten()
 
     private val transformed = flowable.ast.mapWithFilename { either ->
         logger.info("Analyzing ${this.name}...")

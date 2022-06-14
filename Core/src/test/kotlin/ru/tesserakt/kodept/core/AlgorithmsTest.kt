@@ -25,11 +25,11 @@ class AlgorithmsTest : StringSpec({
             'v'.addChildren('a')
             'a'.addChildren('u')
         }
-        graph.sortedLayers() shouldBeLeft OrientedGraph.Cycle
+        graph.sortedLayers() shouldBeLeft OrientedGraph.Cycle('a', 'b', 'c', 'u', 'v')
     }
 
     "topSort with root node" {
-        graph.topSort('v') shouldBeLeft OrientedGraph.Cycle
+        graph.topSort('v') shouldBeLeft OrientedGraph.Cycle('v')
 
         graph.topSort('c') shouldBeRight "cde".toList()
 

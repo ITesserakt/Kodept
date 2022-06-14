@@ -1,10 +1,8 @@
 package ru.tesserakt.kodept.core
 
-import arrow.core.Either
+import arrow.core.*
 import arrow.core.continuations.EagerEffectScope
 import arrow.core.continuations.either
-import arrow.core.identity
-import arrow.core.prependTo
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
@@ -12,7 +10,10 @@ import kotlin.experimental.ExperimentalTypeInference
 
 class OrientedGraph<T> private constructor() {
     sealed interface Errors
-    object Cycle : Exception(), Errors
+    data class Cycle<T>(val inside: NonEmptyList<T>) : Errors {
+        constructor(item: T, vararg items: T) : this(nonEmptyListOf(item, *items))
+    }
+
     object NotFound : Errors
 
     interface Node<Self : Node<Self>> {
@@ -72,7 +73,7 @@ class OrientedGraph<T> private constructor() {
             matrix[from].withIndex().filter { it.value }.forEach { (j, _) ->
                 when (visitMap.getOrDefault(j, Color.NotVisited)) {
                     Color.NotVisited -> step(j)
-                    Color.Visited -> shift<Nothing>(Cycle)
+                    Color.Visited -> shift<Nothing>(Cycle(nonEmptyListOf(nodes[j])))
                     Color.Processed -> Unit
                 }
             }
@@ -84,7 +85,7 @@ class OrientedGraph<T> private constructor() {
     }
 
     private fun Array<BooleanArray>.transpose(): Array<BooleanArray> {
-        val cols = this[0].size
+        val cols = this.firstOrNull()?.size ?: return emptyArray()
         val rows = this.size
         return Array(cols) { j ->
             BooleanArray(rows) { i -> this[i][j] }
@@ -101,7 +102,10 @@ class OrientedGraph<T> private constructor() {
         buildList {
             while (!sums.all { it.value == NonExisting }) {
                 val layer = sums.filterValues { it == Free }.keys
-                if (layer.isEmpty()) shift<Nothing>(Cycle)
+                if (layer.isEmpty()) shift<Nothing>(Cycle(NonEmptyList.fromListUnsafe(
+                    sums.filterValues { it is Existing && it.value == 1 }.map { nodes[it.key] })
+                )
+                )
                 add(layer.map { nodes[it] ?: shift<Nothing>(NotFound) })
 
                 val impacts = layer.flatMap { node -> matrix[node].withIndex().filter { it.value }.map { it.index } }
