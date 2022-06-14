@@ -20,7 +20,7 @@
 ,referat															% Реферат
 ,intro																% Введение
 ,chapters/chap1_task_statement				% Постановка задачи
-,chapters/chap2_comp_method						% Вычислительный метод (включается в зависимости от задачи)
+,chapters/chap0_methods_comparison						% Вычислительный метод (включается в зависимости от задачи)
 ,chapters/chap3_soft_architecture			% Программная реализация (включается в зависимости от задачи)
 ,chapters/chap4_soft_testing					% Тестирование и отладка (включается в зависимости от задачи)
 ,chapters/chap5_comp_experiment				% Вычислительный эксперимент (включается в зависимости от задачи)
@@ -54,21 +54,21 @@
 % Задание (включается для КП и ВКР)
 % Вставится только при сборке КП
 \myconditionaltext{\doctypesid}{kp}{%
-	\input{doc-additional/official_statement}
+    \input{doc-additional/official_statement}
 }
 % Вставится только при сборке ВКР
 \myconditionaltext{\doctypesid}{vkr}{%
-	\input{doc-additional/official_statement}
+    \input{doc-additional/official_statement}
 }
 %----------------------------------------------------------
 % Календарный план, только для ВКР (для НИРС и КП этот документ не включается) 
 \myconditionaltext{\doctypesid}{vkr}{%
-	\input{doc-additional/calendar_plan}
+    \input{doc-additional/calendar_plan}
 }
 %----------------------------------------------------------
 % Направление на защиту (включается только для ВКР, для НИРС и КП не нужно)
 \myconditionaltext{\doctypesid}{vkr}{%
-	\input{doc-additional/referral_for_defense}
+    \input{doc-additional/referral_for_defense}
 }
 %----------------------------------------------------------
 % Реферат
@@ -104,10 +104,10 @@
 %----------------------------------------------------------
 % Введение
 {%
-	\def\thesection{В.\arabic{section}}
-	\def\thefigure{В.\arabic{figure}}
-	\def\thetable{В.\arabic{table}}
-	\include{intro}
+    \def\thesection{В.\arabic{section}}
+    \def\thefigure{В.\arabic{figure}}
+    \def\thetable{В.\arabic{table}}
+    \include{intro}
 }
 %----------------------------------------------------------
 \mainmatter %% это включает нумерацию глав и секций в документе ниже
@@ -133,7 +133,7 @@
 % Акт об отсутствии заимствования (включается только для ВКР, для НИРС и КП не нужно)
 % Вставится только при сборке ВКР
 \myconditionaltext{\doctypesid}{vkr}{%
-	\input{doc-additional/plagiarism_check}
+    \input{doc-additional/plagiarism_check}
 }
 %----------------------------------------------------------
 \include{additionals}

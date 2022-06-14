@@ -39,28 +39,28 @@
 \usepackage{hyperxmp}
 \usepackage{hyperref}
 \hypersetup{%
-  bookmarks=false,        % show bookmarks bar?
-  pdftoolbar=true,        % show Acrobat’s toolbar?
-  pdfmenubar=true,        % show Acrobat’s menu?
-  pdffitwindow=false,     % window fit to page when opened
-  pdfstartview={FitH},    % fits the width of the page to the window
-  pdftitle={\Title},    	% title
-  pdfauthor={\Author},    % author
-  %		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
-  pdfcopyright={CC BY 4.0, \Year, \Author.},
-  pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
-  pdfsubject={\SubjectOfResearch},   % subject of the document
-  pdfcreator={\pdftexbanner},   % creator of the document
-  %		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
-  pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
-  pdfproducer={\Author(\gitAuthorEmail), \group, \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
-  pdfkeywords={\keywordsru, \keywordsen}, % producer of the document
-  pdfnewwindow=true,      % links in new window
-  colorlinks=true,
-  citecolor=black,
-  linkcolor=black,      % color of internal links (change box color with linkbordercolor)
-  urlcolor=black,
-  filecolor=black      % color of file links
+    bookmarks=false,        % show bookmarks bar?
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={\Title},    	% title
+    pdfauthor={\Author},    % author
+    %		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
+    pdfcopyright={CC BY 4.0, \Year, \Author.},
+    pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
+    pdfsubject={\SubjectOfResearch},   % subject of the document
+    pdfcreator={\pdftexbanner},   % creator of the document
+    %		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
+    pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
+    pdfproducer={\Author(\gitAuthorEmail), \group, \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
+    pdfkeywords={\keywordsru, \keywordsen}, % producer of the document
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,
+    citecolor=black,
+    linkcolor=black,      % color of internal links (change box color with linkbordercolor)
+    urlcolor=black,
+    filecolor=black      % color of file links
 }
 %----------------------------------------------------------------
 \usepackage{xspace}
@@ -135,11 +135,11 @@
 %----------------------------------------%
 %Необходимо для того, чтобы при использовании команды \thispagestyle{plain} стиль plain был переопределён на этот
 \fancypagestyle{plain}{%
-  \fancyhf{}% clear all header and footer fields
-  \renewcommand{\headrulewidth}{0pt}%
-  \renewcommand{\footrulewidth}{0pt}%
-  \fancyhead[C]{}
-  \fancyfoot[C]{\authorSIDheader}%[white]}
+    \fancyhf{}% clear all header and footer fields
+    \renewcommand{\headrulewidth}{0pt}%
+    \renewcommand{\footrulewidth}{0pt}%
+    \fancyhead[C]{}
+    \fancyfoot[C]{\authorSIDheader}%[white]}
 }
 %----------------------------------------------------------
 % \usepackage[hpos=0.98\paperwidth, % .98 to prevent bleed
@@ -204,33 +204,33 @@
 
 \lstset
 {%
-  extendedchars=\true, % включаем не латиницу
-  frame=tb, % рамка сверху и снизу
-  escapechar=|, % |«выпадаем» в LATEX|
-  xleftmargin=0.5cm,
-  xrightmargin=0.5cm,
-  columns=fullflexible,
-  %		aboveskip=5pt,
-  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-  numbersep=4pt,                   % how far the line-numbers are from the code
-  showspaces=false,
-  showstringspaces=false,
-  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
-  breaklines=true,                 % sets automatic line breaking
-  basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
-  commentstyle=\color{gray}\itshape, % шрифт для комментариев
-  stringstyle=\color{orange},
-  %		stringstyle=\bfseries, % шрифт для строк
-  numberstyle=\footnotesize\color{gray},
-  %		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
-  keywordstyle=\color{blue}\bfseries,
-  %		directivestyle=\color{red},
-  %		emph={int,char,double,float,unsigned,bool,string},
-  emphstyle={\color{blue}\bfseries},
-  tabsize=2,
-  %		morecomment=[l]{//},
-  %		otherkeywords={=,==,:,&},
-  texcl=true,
+    extendedchars=\true, % включаем не латиницу
+    frame=tb, % рамка сверху и снизу
+    escapechar=|, % |«выпадаем» в LATEX|
+    xleftmargin=0.5cm,
+    xrightmargin=0.5cm,
+    columns=fullflexible,
+    %		aboveskip=5pt,
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,                   % how far the line-numbers are from the code
+    showspaces=false,
+    showstringspaces=false,
+    breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    breaklines=true,                 % sets automatic line breaking
+    basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
+    commentstyle=\color{gray}\itshape, % шрифт для комментариев
+    stringstyle=\color{orange},
+    %		stringstyle=\bfseries, % шрифт для строк
+    numberstyle=\footnotesize\color{gray},
+    %		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
+    keywordstyle=\color{blue}\bfseries,
+    %		directivestyle=\color{red},
+    %		emph={int,char,double,float,unsigned,bool,string},
+    emphstyle={\color{blue}\bfseries},
+    tabsize=2,
+    %		morecomment=[l]{//},
+    %		otherkeywords={=,==,:,&},
+    texcl=true,
 }
 
 \lstloadlanguages{Python, C++}
@@ -251,9 +251,9 @@
 \def\dynscriptsize{\check@mathfonts\fontsize{\sf@size}{\z@}\selectfont}
 \makeatother
 \def\textunderset#1#2{\leavevmode
-  \vtop{\offinterlineskip\halign{%
-      \hfil##\hfil\cr\strut#2\cr\noalign{\kern-.3ex}
-      \hidewidth\dynscriptsize\strut#1\hidewidth\cr}}}
+    \vtop{\offinterlineskip\halign{%
+            \hfil##\hfil\cr\strut#2\cr\noalign{\kern-.3ex}
+            \hidewidth\dynscriptsize\strut#1\hidewidth\cr}}}
 
 \newcommand\executer[1]{\textunderset{\scriptsize{подпись, дата}}{\signvrule} #1}
 %----------------------------------------------------------
@@ -319,6 +319,7 @@
 %\newtheorem{question}{Вопрос}
 %\newtheorem{task}{Задача}
 %\newtheorem{solution}{Решение}
+\newtheorem{definition}{Определение}
 \newtheorem{remark}{Замечание}
 \newtheorem{description}{Описание}
 %%----------------------------------------------------------

@@ -2019,8 +2019,8 @@ INPUT ./intro.tex
 INPUT ./intro.tex
 INPUT ./chapters/chap1_task_statement.tex
 INPUT ./chapters/chap1_task_statement.tex
-INPUT ./chapters/chap2_comp_method.tex
-INPUT ./chapters/chap2_comp_method.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT ./chapters/chap0_methods_comparison.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap4_soft_testing.tex
@@ -2043,6 +2043,9 @@ INPUT referat.aux
 INPUT ./intro.aux
 INPUT intro.aux
 INPUT intro.aux
+INPUT ./chapters/chap0_methods_comparison.aux
+INPUT chapters/chap0_methods_comparison.aux
+INPUT chapters/chap0_methods_comparison.aux
 INPUT ./chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
@@ -2052,9 +2055,6 @@ INPUT chapters/chap3_soft_architecture.aux
 INPUT ./chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
-INPUT ./chapters/chap6_results_analysis.aux
-INPUT chapters/chap6_results_analysis.aux
-INPUT chapters/chap6_results_analysis.aux
 INPUT ./conclusion.aux
 INPUT conclusion.aux
 INPUT conclusion.aux
@@ -2355,6 +2355,20 @@ INPUT ./figures/example.dataflow.png
 INPUT figures/example.dataflow.png
 INPUT ./figures/example.dataflow.png
 INPUT ./figures/example.dataflow.png
+INPUT ./chapters.tex
+INPUT chapters.tex
+INPUT ./chapters.tex
+INPUT chapters.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+OUTPUT chapters/chap0_methods_comparison.aux
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT chapters/chap0_methods_comparison.tex
+INPUT ./chapters/chap0_methods_comparison.tex
+INPUT chapters/chap0_methods_comparison.tex
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmss.fd
@@ -2368,10 +2382,6 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx5.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib5.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
-INPUT ./chapters.tex
-INPUT chapters.tex
-INPUT ./chapters.tex
-INPUT chapters.tex
 INPUT ./chapters/chap1_task_statement.tex
 INPUT ./chapters/chap1_task_statement.tex
 INPUT ./chapters/chap1_task_statement.tex
@@ -2382,6 +2392,11 @@ INPUT ./chapters/chap1_task_statement.tex
 INPUT chapters/chap1_task_statement.tex
 INPUT ./chapters/chap1_task_statement.tex
 INPUT chapters/chap1_task_statement.tex
+INPUT ./figures/example.selector.png
+INPUT ./figures/example.selector.png
+INPUT figures/example.selector.png
+INPUT ./figures/example.selector.png
+INPUT ./figures/example.selector.png
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
 INPUT ./chapters/chap3_soft_architecture.tex
@@ -2407,11 +2422,6 @@ INPUT ./figures/example.parallel_then_linear.png
 INPUT figures/example.parallel_then_linear.png
 INPUT ./figures/example.parallel_then_linear.png
 INPUT ./figures/example.parallel_then_linear.png
-INPUT ./figures/example.selector.png
-INPUT ./figures/example.selector.png
-INPUT figures/example.selector.png
-INPUT ./figures/example.selector.png
-INPUT ./figures/example.selector.png
 INPUT ./figures/UML.actionItem.png
 INPUT ./figures/UML.actionItem.png
 INPUT figures/UML.actionItem.png
@@ -2497,16 +2507,6 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
 INPUT c:/Program Files/TexLive/2021/texmf-dist/tex/latex/cyrillic/t2acmtt.fd
 INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/latt1440.tfm
-INPUT ./chapters/chap6_results_analysis.tex
-INPUT ./chapters/chap6_results_analysis.tex
-INPUT ./chapters/chap6_results_analysis.tex
-OUTPUT chapters/chap6_results_analysis.aux
-INPUT ./chapters/chap6_results_analysis.tex
-INPUT ./chapters/chap6_results_analysis.tex
-INPUT ./chapters/chap6_results_analysis.tex
-INPUT chapters/chap6_results_analysis.tex
-INPUT ./chapters/chap6_results_analysis.tex
-INPUT chapters/chap6_results_analysis.tex
 INPUT ./conclusion.tex
 INPUT ./conclusion.tex
 INPUT ./conclusion.tex
@@ -2624,6 +2624,9 @@ INPUT referat.aux
 INPUT ./intro.aux
 INPUT intro.aux
 INPUT intro.aux
+INPUT ./chapters/chap0_methods_comparison.aux
+INPUT chapters/chap0_methods_comparison.aux
+INPUT chapters/chap0_methods_comparison.aux
 INPUT ./chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
 INPUT chapters/chap1_task_statement.aux
@@ -2633,9 +2636,6 @@ INPUT chapters/chap3_soft_architecture.aux
 INPUT ./chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
 INPUT chapters/chap4_soft_testing.aux
-INPUT ./chapters/chap6_results_analysis.aux
-INPUT chapters/chap6_results_analysis.aux
-INPUT chapters/chap6_results_analysis.aux
 INPUT ./conclusion.aux
 INPUT conclusion.aux
 INPUT conclusion.aux
@@ -2645,11 +2645,16 @@ INPUT additionals.aux
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.out
 INPUT ./cpxsln_rpt_prj_YYYY_Group_SurnameNS.out
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t2a.enc
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb
