@@ -6,7 +6,6 @@ import arrow.core.left
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.Tree
-import ru.tesserakt.kodept.core.asString
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.traversal.*
 import ru.tesserakt.kodept.traversal.inference.KnownType.*
@@ -134,12 +133,9 @@ object TypeAssigner : Analyzer() {
         } else types[this]!!
 
     override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> {
-        println(ast.asString())
-
         val expressions = ast.fastFlatten(Tree.SearchMode.Preorder).filterIsInstance<AST.Expression>()
 
         with(ast.filepath) { expressions.forEach { it.annotate() } }
-        println(types.map { "${it.key::class.simpleName} -> ${it.value}" }.joinToString("\n"))
         return eagerEffect { }
     }
 }

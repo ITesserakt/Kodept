@@ -26,7 +26,7 @@ data class RLT(val root: File) {
             override fun hashCode(): Int = text.value().hashCode()
         }
 
-        class Type(override val text: Eval<String>, override val position: CodePoint) : UserSymbol(), Bind {
+        class Type(override val text: Eval<String>, override val position: CodePoint) : UserSymbol() {
             override val description = "type"
 
             override fun equals(other: Any?) = other is Type && text.value() == other.text.value()
@@ -54,8 +54,7 @@ data class RLT(val root: File) {
         MaybeTypedParameterTuple(lparen, params, rparen)
 
     class Parameter(val id: ExpressionNode) : ExpressionNode, Node by id
-    open class MaybeTypedParameter(override val id: UserSymbol.Identifier, open val type: TypeNode?) : Bind,
-        Named, Node by id
+    open class MaybeTypedParameter(override val id: UserSymbol.Identifier, open val type: TypeNode?) : Named, Node by id
 
     class TypedParameter(id: UserSymbol.Identifier, override val type: TypeNode) : MaybeTypedParameter(id, type)
 
@@ -67,21 +66,19 @@ data class RLT(val root: File) {
     sealed interface ObjectLevelNode : Node
     sealed interface StructLevelNode : ObjectLevelNode
     sealed interface TraitLevelNode : ObjectLevelNode
-    sealed interface BlockLevelNode : Node, Bind
+    sealed interface BlockLevelNode : Node
     sealed interface ExpressionNode : BlockLevelNode
     sealed interface StatementNode : BlockLevelNode
     sealed interface Lvalue : Node
     sealed interface TermNode : ExpressionNode, Lvalue
     sealed interface TypeNode : Node
-    sealed interface Bind : Node
-    sealed interface Scoping : Bind
     sealed interface Named : Node {
         val id: UserSymbol
     }
 
-    sealed class Module(val keyword: Keyword, override val id: UserSymbol.Type, val rest: List<TopLevelNode>) : Scoping,
-        Named, Node by keyword {
-        class Global(keyword: Keyword, id: UserSymbol.Type, flow: Symbol, rest: List<TopLevelNode>) :
+    sealed class Module(val keyword: Keyword, override val id: UserSymbol.Type, val rest: List<TopLevelNode>) : Named,
+        Node by id {
+        class Global(keyword: Keyword, id: UserSymbol.Type, val flow: Symbol, rest: List<TopLevelNode>) :
             Module(keyword, id, rest)
 
         class Ordinary(
@@ -110,7 +107,7 @@ data class RLT(val root: File) {
         val lbrace: Symbol?,
         val rest: List<StructLevelNode>,
         val rbrace: Symbol?,
-    ) : TopLevelNode, Scoping, Named, Node by keyword
+    ) : TopLevelNode, Named, Node by id
 
     data class Trait(
         val keyword: Keyword,
@@ -118,7 +115,7 @@ data class RLT(val root: File) {
         val lbrace: Symbol?,
         val rest: List<TraitLevelNode>,
         val rbrace: Symbol?,
-    ) : TopLevelNode, Scoping, Named, Node by keyword
+    ) : TopLevelNode, Named, Node by id
 
     sealed class Enum(
         val keyword: Keyword,
@@ -126,7 +123,7 @@ data class RLT(val root: File) {
         val lbrace: Symbol?,
         val rest: NonEmptyList<UserSymbol.Type>,
         val rbrace: Symbol?,
-    ) : TopLevelNode, Scoping, Named, Node by keyword {
+    ) : TopLevelNode, Named, Node by id {
         class Stack(
             keyword: Keyword,
             id: UserSymbol.Type,
@@ -144,7 +141,7 @@ data class RLT(val root: File) {
         ) : Enum(keyword, id, lbrace, rest, rbrace)
     }
 
-    sealed interface Body : ExpressionNode, Scoping {
+    sealed interface Body : ExpressionNode {
         data class Expression(val flow: Symbol, val expression: ExpressionNode) : Body, ExpressionNode by expression
         data class Block(val lbrace: Symbol, val block: List<BlockLevelNode>, val rbrace: Symbol) : Body, Node by lbrace
     }
@@ -155,14 +152,14 @@ data class RLT(val root: File) {
         open val params: List<MaybeTypedParameterTuple>,
         val colon: Symbol?,
         open val returnType: TypeNode?,
-    ) : Named, Node by keyword {
+    ) : Named, Node by id {
         class Abstract(
             keyword: Keyword,
             id: UserSymbol.Identifier,
             override val params: List<TypedParameterTuple>,
             colon: Symbol?,
             returnType: TypeNode?,
-        ) : Function(keyword, id, params, colon, returnType), Bind, TraitLevelNode
+        ) : Function(keyword, id, params, colon, returnType), TraitLevelNode
 
         class Bodied(
             keyword: Keyword,
@@ -171,7 +168,7 @@ data class RLT(val root: File) {
             colon: Symbol?,
             returnType: TypeNode?,
             val body: Body,
-        ) : Function(keyword, id, params, colon, returnType), TopLevelNode, StructLevelNode, StatementNode, Scoping,
+        ) : Function(keyword, id, params, colon, returnType), TopLevelNode, StructLevelNode, StatementNode,
             TraitLevelNode
 
         class Foreign(
@@ -189,19 +186,29 @@ data class RLT(val root: File) {
     data class Application(val expr: Reference, val params: List<ParameterTuple>) : TermNode, Node by expr
 
     sealed interface Context {
+        object StartsFromRoot
+
         val global: Boolean
 
         data class Global(val colon: Symbol) : Context {
             override val global = true
+
+            override fun unfold() = StartsFromRoot to emptyList<Reference>()
         }
 
         object Local : Context {
             override val global = false
+
+            override fun unfold() = null to emptyList<Reference>()
         }
 
         data class Inner(val type: Reference, val parent: Context) : Context {
             override val global = parent.global
+
+            override fun unfold() = parent.unfold().let { it.first to it.second + type }
         }
+
+        fun unfold(): Pair<StartsFromRoot?, List<Reference>>
     }
 
     class ContextualReference(val context: Context, reference: Reference) : Reference(reference.ref)
@@ -211,7 +218,7 @@ data class RLT(val root: File) {
         override val id: UserSymbol.Identifier,
         val colon: Symbol?,
         val type: TypeNode?,
-    ) : StatementNode, Lvalue, Named, Node by keyword {
+    ) : StatementNode, Lvalue, Named, Node by id {
         class Immutable(keyword: Keyword, id: UserSymbol.Identifier, colon: Symbol?, type: TypeNode?) :
             Variable(keyword, id, colon, type)
 

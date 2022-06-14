@@ -73,14 +73,8 @@ private fun expandUnary(expression: AST.Expression, token: String) = when (token
     else -> throw IllegalStateException("Impossible")
 }
 
-private fun RLT.Context.convert(): AST.ResolutionContext = when (this) {
-    is RLT.Context.Global -> AST.ResolutionContext(true, emptyList())
-    is RLT.Context.Inner -> AST.ResolutionContext(
-        global,
-        parent.convert().chain + AST.Type(type.ref.text.value())
-    )
-
-    RLT.Context.Local -> AST.ResolutionContext(false, emptyList())
+private fun RLT.Context.convert(): AST.ResolutionContext = unfold().let { (fromRoot, chain) ->
+    AST.ResolutionContext(fromRoot != null, chain.map { (it.convert() as AST.TypeReference).type })
 }
 
 @OptIn(Internal::class)
@@ -128,8 +122,7 @@ private fun RLT.ParameterTuple.convert(): AST.TupleLiteral =
     AST.TupleLiteral(params.map(RLT.Parameter::convert)).withRLT()
 
 @OptIn(Internal::class)
-private fun RLT.MaybeTypedParameter.convert() =
-    AST.InferredParameter(id.text.value(), type?.convert()).withRLT()
+private fun RLT.MaybeTypedParameter.convert() = AST.InferredParameter(id.text.value(), type?.convert()).withRLT()
 
 private fun RLT.MaybeTypedParameterTuple.convert() = params.map { it.convert() }
 
@@ -142,15 +135,11 @@ private fun RLT.TypedParameterTuple.convert() = params.map { it.convert() }
 private fun RLT.If.Else.convert() = AST.IfExpr.ElseExpr(body.convert()).withRLT()
 
 @OptIn(Internal::class)
-private fun RLT.If.Elif.convert() =
-    AST.IfExpr.ElifExpr(condition.convert(), body.convert()).withRLT()
+private fun RLT.If.Elif.convert() = AST.IfExpr.ElifExpr(condition.convert(), body.convert()).withRLT()
 
 @OptIn(Internal::class)
 private fun RLT.Function.Bodied.convert() = AST.FunctionDecl(
-    id.text.value(),
-    params.flatMap { it.convert() },
-    returnType?.convert(),
-    body.convert()
+    id.text.value(), params.flatMap { it.convert() }, returnType?.convert(), body.convert()
 ).withRLT()
 
 @OptIn(Internal::class)
@@ -167,9 +156,8 @@ private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
 
     is RLT.Enum -> convert()
 
-    is RLT.Struct -> AST.StructDecl(id.text.value(),
-        varsToAlloc.map { it.convert() },
-        rest.map { it.convert() }).withRLT()
+    is RLT.Struct -> AST.StructDecl(id.text.value(), varsToAlloc.map { it.convert() }, rest.map { it.convert() })
+        .withRLT()
 
     is RLT.Trait -> AST.TraitDecl(id.text.value(), rest.map { it.convert() }).withRLT()
 
@@ -192,9 +180,7 @@ private fun RLT.ObjectLevelNode.convert(): AST.TraitLevel = when (this) {
     is RLT.Function.Bodied -> convert()
 
     is RLT.Function.Abstract -> AST.AbstractFunctionDecl(
-        id.text.value(),
-        params.flatMap { it.convert() },
-        returnType?.convert()
+        id.text.value(), params.flatMap { it.convert() }, returnType?.convert()
     ).withRLT()
 }
 
@@ -207,22 +193,15 @@ private fun RLT.BlockLevelNode.convert(): AST.BlockLevel = when (this) {
 private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
     is RLT.Assignment -> when (this) {
         is RLT.CompoundAssignment -> expandCompound(
-            lvalue.convert(),
-            expression.convert(),
-            compoundOperator.type
+            lvalue.convert(), expression.convert(), compoundOperator.type
         )
 
         is RLT.InitializedAssignment -> AST.InitializedVar(
-            lvalue.id.convert(),
-            lvalue is RLT.Variable.Mutable,
-            lvalue.type?.convert(),
-            expression.convert()
+            lvalue.id.convert(), lvalue is RLT.Variable.Mutable, lvalue.type?.convert(), expression.convert()
         ).withRLT()
 
         else -> expandCompound(
-            lvalue.convert(),
-            expression.convert(),
-            equals.type
+            lvalue.convert(), expression.convert(), equals.type
         )
     }
 
@@ -236,10 +215,8 @@ private fun RLT.Body.Block.convert(): AST.Expression = when (block.size) {
     0 -> AST.ExpressionList(nonEmptyListOf(AST.TupleLiteral.unit.withRLT())).withRLT()
     1 -> {
         val head = block.first()
-        if (head is RLT.ExpressionNode)
-            head.convert()
-        else
-            AST.ExpressionList(nonEmptyListOf(head.convert(), AST.TupleLiteral.unit.withRLT())).withRLT()
+        if (head is RLT.ExpressionNode) head.convert()
+        else AST.ExpressionList(nonEmptyListOf(head.convert(), AST.TupleLiteral.unit.withRLT())).withRLT()
     }
 
     else -> AST.ExpressionList(NonEmptyList.fromListUnsafe(block.map { it.convert() })).withRLT()
@@ -254,10 +231,7 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
     is RLT.Body.Expression -> AST.ExpressionList(nonEmptyListOf(expression.convert())).withRLT()
 
     is RLT.If -> AST.IfExpr(
-        condition.convert(),
-        body.convert(),
-        elifs.map { it.convert() },
-        el?.convert()
+        condition.convert(), body.convert(), elifs.map { it.convert() }, el?.convert()
     ).withRLT()
 
     is RLT.UnaryOperation -> expandUnary(expression.convert(), op.type).withRLT()
@@ -292,7 +266,8 @@ private fun RLT.Reference.convert(): AST.Lvalue = when (this) {
 
 @OptIn(Internal::class)
 private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
-    is RLT.Application -> AST.FunctionCall(expr.convert() as AST.Reference,
+    is RLT.Application -> AST.FunctionCall(
+        expr.convert() as AST.Reference,
         params.map(RLT.ParameterTuple::convert).filterNot { it.items.isEmpty() }).withRLT()
 
     is RLT.ContextualReference -> when (val r = ref) {
@@ -308,8 +283,7 @@ fun RLT.TypeNode.convert(): AST.TypeLike = when (this) {
     is RLT.TupleType -> AST.TupleType(types.map { it.convert() }).withRLT()
     is RLT.UnionType -> AST.UnionType(types.map { it.convert() }).withRLT()
     is RLT.ContextualReference -> AST.TypeReference(
-        with(ref) { AST.Type(ref.text.value()).withRLT() },
-        context.convert()
+        with(ref) { AST.Type(ref.text.value()).withRLT() }, context.convert()
     ).withRLT()
 
     is RLT.Reference -> AST.TypeReference(with(ref) { AST.Type(ref.text.value()).withRLT() }, null).withRLT()
@@ -330,8 +304,9 @@ fun RLT.Node.convert() = when (this) {
     is RLT.File -> convert()
     is RLT.Module -> convert()
     is RLT.MaybeTypedParameter -> convert()
-    is RLT.UserSymbol.Type, is RLT.MaybeTypedParameterTuple, is RLT.Symbol, is RLT.Keyword, is RLT.UserSymbol.Identifier ->
-        throw IllegalStateException("Thrown out")
+    is RLT.UserSymbol.Type, is RLT.MaybeTypedParameterTuple, is RLT.Symbol, is RLT.Keyword, is RLT.UserSymbol.Identifier -> throw IllegalStateException(
+        "Thrown out"
+    )
 
     is RLT.InitializedAssignment -> convert()
 }
