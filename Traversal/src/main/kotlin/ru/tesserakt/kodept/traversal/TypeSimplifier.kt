@@ -7,13 +7,11 @@ import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
-import ru.tesserakt.kodept.core.Internal
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticWarning
 
-@OptIn(Internal::class)
 object TypeSimplifier : Transformer<AST.TypeExpression>() {
     override val type = AST.TypeExpression::class
 
@@ -72,12 +70,11 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
     }
 
     context(ReportCollector, Filepath)
-            override fun transform(node: AST.TypeExpression) =
-        eagerEffect<UnrecoverableError, AST.Node> {
-            when (node) {
-                is AST.TupleType -> node.transformTuple()
-                is AST.Type -> node
-                is AST.UnionType -> with(node) { transformUnion() }
-            }
+            override fun transform(node: AST.TypeExpression) = eagerEffect {
+        when (node) {
+            is AST.TupleType -> node.transformTuple()
+            is AST.Type -> node
+            is AST.UnionType -> with(node) { transformUnion() }
         }
+    }
 }

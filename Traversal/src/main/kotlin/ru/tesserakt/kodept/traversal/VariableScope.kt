@@ -1,8 +1,10 @@
 package ru.tesserakt.kodept.traversal
 
+import arrow.core.NonEmptyList
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
 import arrow.core.identity
+import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.walkDownTop
@@ -24,7 +26,10 @@ object VariableScope : SpecificTransformer<AST.InitializedVar>() {
 
         if (outer.isEmpty()) return eagerEffect { nearestBlock to nearestBlock }
 
-        val scope = nearestBlock.copy(inner.map { it.value })
-        return eagerEffect { nearestBlock to nearestBlock.copy(outer.map { it.value } + scope) }
+        val scope = nearestBlock.copy(inner.map { it.value }.toMutableList())
+        val union = if (outer.isEmpty()) nonEmptyListOf(scope)
+        else NonEmptyList.fromListUnsafe(outer.map { it.value }) + scope
+
+        return eagerEffect { nearestBlock to nearestBlock.copy(union) }
     }
 }

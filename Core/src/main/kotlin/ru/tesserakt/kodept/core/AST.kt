@@ -7,12 +7,20 @@ import arrow.core.prependTo
 import ru.tesserakt.kodept.core.Tree.SearchMode
 import java.math.BigDecimal
 import java.math.BigInteger
+import kotlin.properties.Delegates
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty0
 
 data class AST(val root: Node, val filepath: Filepath) {
     init {
-        walkThrough { node -> node.children().forEach { it.parent = node } }.forEach { _ -> }
+        root.gatherChildren().toList().forEach { node ->
+            node.children().forEach {
+                when (it) {
+                    is NodeBase -> it._parent = node
+                    is Leaf -> it._parent = node
+                }
+            }
+        }
     }
 
     fun <T> walkThrough(mode: SearchMode = SearchMode.LevelOrder, f: (Node) -> T) = root.walkTopDown(mode, f)
@@ -20,7 +28,8 @@ data class AST(val root: Node, val filepath: Filepath) {
     fun flatten(mode: SearchMode = SearchMode.LevelOrder) = root.gatherChildren(mode)
 
     sealed interface Node : Tree<Node> {
-        override var parent: Node?
+        override val parent: Node?
+        override fun children(): List<NodeWithParent>
         val rlt: RLT.Node
 
         override fun equals(other: Any?): Boolean
@@ -28,8 +37,30 @@ data class AST(val root: Node, val filepath: Filepath) {
         override fun toString(): String
     }
 
-    sealed interface Named : Node {
+    sealed interface NodeWithParent : Node {
+        override val parent: Node
+
+        companion object {
+            val contract = Contract<Node, Any?> {
+                "node $this should always has a parent"
+            }
+        }
+    }
+
+    sealed interface NodeWithoutParent : Node {
+        override val parent: Nothing? get() = null
+    }
+
+    sealed interface Named : NodeWithParent {
         val name: String
+    }
+
+    sealed interface ParameterLike : Named {
+        val type: TypeLike?
+    }
+
+    sealed interface WithResolutionContext : Node {
+        val context: ResolutionContext?
     }
 
     sealed interface TopLevel : Named
@@ -37,21 +68,19 @@ data class AST(val root: Node, val filepath: Filepath) {
     sealed interface StructLevel : ObjectLevel
     sealed interface TraitLevel : ObjectLevel
     sealed interface EnumLevel : ObjectLevel
-    sealed interface BlockLevel : Node
+    sealed interface BlockLevel : NodeWithParent
     sealed interface Expression : BlockLevel
     sealed interface Statement : BlockLevel
     sealed interface Literal : Expression
     sealed interface Lvalue : Expression
     sealed interface Referable : Statement, Named
     sealed interface TypeReferable : Named
-    sealed interface TypeLike : Node
-    sealed interface ParameterLike : Named {
-        val type: TypeLike?
-    }
+    sealed interface TypeLike : NodeWithParent
 
-    sealed class NodeBase : Node {
-        final override var parent: Node? = null
+    sealed class NodeBase : NodeWithParent {
+        final override val parent: Node get() = _parent ?: NodeWithParent.contract()
         internal lateinit var _rlt: RLT.Node
+        internal var _parent: Node? = null
 
         override val rlt: RLT.Node get() = _rlt
 
@@ -65,16 +94,13 @@ data class AST(val root: Node, val filepath: Filepath) {
             new is T && get() == old && true.apply { set(new) }
     }
 
-    sealed class Leaf : Node {
-        final override var parent: Node? = null
-        final override fun children() = emptyList<Node>()
+    sealed class Leaf : NodeWithParent {
+        final override val parent get() = _parent ?: NodeWithParent.contract()
+        final override fun children() = emptyList<NodeWithParent>()
         internal lateinit var _rlt: RLT.Node
+        internal var _parent: Node? = null
 
         override val rlt: RLT.Node get() = _rlt
-    }
-
-    data class Stub(private val prototype: Node) : Leaf(), Literal, Statement {
-        override val rlt: RLT.Node get() = prototype.rlt
     }
 
     class Parameter(override val name: String, type: TypeLike) : NodeBase(), Referable, ParameterLike {
@@ -141,15 +167,16 @@ data class AST(val root: Node, val filepath: Filepath) {
 
     }
 
-    data class FileDecl(private val _modules: MutableList<ModuleDecl>) : NodeBase() {
+    data class FileDecl(private val _modules: NonEmptyList<ModuleDecl>) : NodeWithoutParent {
+        override var rlt: RLT.Node by Delegates.notNull()
+            private set
+
         val modules get() = NonEmptyList.fromListUnsafe(_modules)
 
         override fun children() = modules
 
-        override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _modules.replace(old, new)
-
-        constructor(modules: NonEmptyList<ModuleDecl>) : this(modules.toMutableList())
-
+        context (RLT.File) @Internal
+        fun withRLT() = apply { this.rlt = this@File }
     }
 
     data class ModuleDecl(override val name: String, val global: Boolean, private val _rest: MutableList<TopLevel>) :
@@ -471,7 +498,7 @@ data class AST(val root: Node, val filepath: Filepath) {
         abstract var right: Expression
             protected set
 
-        override fun children(): List<Node> = listOf(left, right)
+        override fun children() = listOf(left, right)
 
         override fun <A : Node?> replaceChild(old: A, new: A) =
             new is Expression && (left == old && true.apply { left = new } || right == old && true.apply {
@@ -510,8 +537,7 @@ data class AST(val root: Node, val filepath: Filepath) {
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean =
             new is Expression && expr == old && true.apply { expr = new }
 
-        override fun children(): List<Node> = listOf(expr)
-
+        override fun children() = listOf(expr)
     }
 
     data class Negation(override var expr: Expression) : UnaryOperator()
@@ -538,7 +564,6 @@ data class AST(val root: Node, val filepath: Filepath) {
             return "Assignment(left=$left, right=$right)"
         }
 
-
         fun copy(left: Lvalue = this.left, right: Expression = this.right) =
             Assignment(left, right).also { it._rlt = _rlt }
 
@@ -561,13 +586,13 @@ data class AST(val root: Node, val filepath: Filepath) {
 
     data class ResolutionContext(val fromRoot: Boolean, val chain: List<Type>)
 
-    open class Reference(override val name: String, val resolutionContext: ResolutionContext? = null) : Leaf(), Lvalue,
-        Named {
+    open class Reference(override val name: String, override val context: ResolutionContext? = null) : Leaf(), Lvalue,
+        Named, WithResolutionContext {
         override fun toString(): String {
-            return "Reference(name='$name', resolutionContext=$resolutionContext)"
+            return "Reference(name='$name', resolutionContext=$context)"
         }
 
-        fun copy(name: String = this.name, resolutionContext: ResolutionContext? = this.resolutionContext) =
+        fun copy(name: String = this.name, resolutionContext: ResolutionContext? = this.context) =
             Reference(name, resolutionContext).also { it._rlt = _rlt }
 
         override fun equals(other: Any?): Boolean {
@@ -577,14 +602,14 @@ data class AST(val root: Node, val filepath: Filepath) {
             other as Reference
 
             if (name != other.name) return false
-            if (resolutionContext != other.resolutionContext) return false
+            if (context != other.context) return false
 
             return true
         }
 
         override fun hashCode(): Int {
             var result = name.hashCode()
-            result = 31 * result + (resolutionContext?.hashCode() ?: 0)
+            result = 31 * result + (context?.hashCode() ?: 0)
             return result
         }
 
@@ -593,13 +618,13 @@ data class AST(val root: Node, val filepath: Filepath) {
     class ResolvedReference(name: String, val referral: Referable, resolutionContext: ResolutionContext? = null) :
         Reference(name, resolutionContext) {
         override fun toString(): String {
-            return "ResolvedReference(name='$name', referral=${referral.name}, resolutionContext=$resolutionContext)"
+            return "ResolvedReference(name='$name', referral=${referral.name}, resolutionContext=$context)"
         }
 
         fun copy(
             name: String = this.name,
             referral: Referable = this.referral,
-            resolutionContext: ResolutionContext? = this.resolutionContext,
+            resolutionContext: ResolutionContext? = this.context,
         ) = ResolvedReference(name, referral, resolutionContext).also { it._rlt = _rlt }
 
         override fun equals(other: Any?): Boolean {
@@ -619,20 +644,21 @@ data class AST(val root: Node, val filepath: Filepath) {
         }
     }
 
-    open class TypeReference(type: Type, val resolutionContext: ResolutionContext? = null) : NodeBase(), Lvalue,
-        TypeLike {
+    open class TypeReference(type: Type, override val context: ResolutionContext? = null) : NodeBase(), Lvalue,
+        TypeLike, WithResolutionContext, Named {
         var type = type
             private set
+        override val name: String = type.name
 
-        override fun children(): List<Node> = listOf(type)
+        override fun children() = listOf(type)
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = ::type.replace(old, new)
 
-        fun copy(type: Type = this.type, resolutionContext: ResolutionContext? = this.resolutionContext) =
+        fun copy(type: Type = this.type, resolutionContext: ResolutionContext? = this.context) =
             TypeReference(type, resolutionContext).also { it._rlt = _rlt }
 
         override fun toString(): String {
-            return "TypeReference(resolutionContext=$resolutionContext, type=$type)"
+            return "TypeReference(resolutionContext=$context, type=$type)"
         }
 
         override fun equals(other: Any?): Boolean {
@@ -641,14 +667,14 @@ data class AST(val root: Node, val filepath: Filepath) {
 
             other as TypeReference
 
-            if (resolutionContext != other.resolutionContext) return false
+            if (context != other.context) return false
             if (type != other.type) return false
 
             return true
         }
 
         override fun hashCode(): Int {
-            var result = resolutionContext?.hashCode() ?: 0
+            var result = context?.hashCode() ?: 0
             result = 31 * result + type.hashCode()
             return result
         }
@@ -658,13 +684,13 @@ data class AST(val root: Node, val filepath: Filepath) {
     class ResolvedTypeReference(type: Type, val referral: TypeReferable, context: ResolutionContext? = null) :
         TypeReference(type, context) {
         override fun toString(): String {
-            return "ResolvedTypeReference(type=$type, context=$resolutionContext, referral=${referral.name})"
+            return "ResolvedTypeReference(type=$type, context=$context, referral=${referral.name})"
         }
 
         fun copy(
             type: Type = this.type,
             referral: TypeReferable = this.referral,
-            context: ResolutionContext? = this.resolutionContext,
+            context: ResolutionContext? = this.context,
         ) = ResolvedTypeReference(type, referral, context).also { it._rlt = _rlt }
 
         override fun equals(other: Any?): Boolean {
@@ -687,7 +713,6 @@ data class AST(val root: Node, val filepath: Filepath) {
     class FunctionCall(
         reference: Reference,
         private val _params: MutableList<Expression>,
-        val resolutionContext: ResolutionContext? = null,
     ) : NodeBase(), Lvalue {
         private var _reference = reference
         val reference get() = _reference
@@ -698,21 +723,19 @@ data class AST(val root: Node, val filepath: Filepath) {
             ::_reference.replace(old, new) || _params.replace(old, new)
 
         override fun toString(): String {
-            return "FunctionCall(params=$_params, resolutionContext=$resolutionContext, reference=$_reference)"
+            return "FunctionCall(params=$_params, reference=$_reference)"
         }
 
         fun copy(
             reference: Reference = this._reference,
             params: Iterable<Expression> = this._params,
-            resolutionContext: ResolutionContext? = this.resolutionContext,
-        ) = FunctionCall(reference, params, resolutionContext).also { it._rlt = _rlt }
+        ) = FunctionCall(reference, params).also { it._rlt = _rlt }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is FunctionCall) return false
 
             if (_params != other._params) return false
-            if (resolutionContext != other.resolutionContext) return false
             if (_reference != other._reference) return false
 
             return true
@@ -720,19 +743,11 @@ data class AST(val root: Node, val filepath: Filepath) {
 
         override fun hashCode(): Int {
             var result = _params.hashCode()
-            result = 31 * result + (resolutionContext?.hashCode() ?: 0)
             result = 31 * result + _reference.hashCode()
             return result
         }
 
-        constructor(
-            reference: Reference,
-            params: Iterable<Expression>,
-            resolutionContext: ResolutionContext? = null,
-        ) : this(
-            reference, params.toMutableList(), resolutionContext
-        )
-
+        constructor(reference: Reference, params: Iterable<Expression>) : this(reference, params.toMutableList())
     }
 
     data class Dereference(override var left: Expression, override var right: Expression) : BinaryOperator(), Lvalue {
@@ -742,14 +757,14 @@ data class AST(val root: Node, val filepath: Filepath) {
     }
 
     data class ExpressionList(private val _expressions: MutableList<BlockLevel>) : NodeBase(), Expression {
-        val expressions get() = _expressions.toList()
+        val expressions get() = NonEmptyList.fromListUnsafe(_expressions)
         override fun children() = expressions
 
         override fun <A : Node?> replaceChild(old: A, new: A): Boolean = _expressions.replace(old, new)
 
-        constructor(expressions: Iterable<BlockLevel>) : this(expressions.toMutableList())
+        constructor(expressions: NonEmptyList<BlockLevel>) : this(expressions.toMutableList())
 
-        fun copy(expressions: Iterable<BlockLevel> = this._expressions) =
+        fun copy(expressions: NonEmptyList<BlockLevel> = this.expressions) =
             ExpressionList(expressions).also { it._rlt = _rlt }
 
     }
@@ -759,7 +774,7 @@ data class AST(val root: Node, val filepath: Filepath) {
     data class Type(override val name: String) : TypeExpression(), Named {
         override fun <A : Node?> replaceChild(old: A, new: A) = false
 
-        override fun children() = emptyList<Node>()
+        override fun children() = emptyList<NodeWithParent>()
 
         override fun toString() = name
 
@@ -863,7 +878,6 @@ data class AST(val root: Node, val filepath: Filepath) {
             result = 31 * result + (el?.hashCode() ?: 0)
             return result
         }
-
 
         class ElifExpr(condition: Expression, body: Expression) : NodeBase() {
             var condition = condition

@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.traversal
 
+import arrow.core.nonEmptyListOf
 import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -29,13 +30,13 @@ class DereferenceTransformerTest : StringSpec() {
                 buildAST(initVar)
 
                 unwrap { DereferenceTransformer.transform(ref) }.toEither()
-                    .shouldBeRight(AST.ResolvedReference(ref.name, initVar, ref.resolutionContext))
+                    .shouldBeRight(AST.ResolvedReference(ref.name, initVar, ref.context))
             }
 
             "reference by variable declaration somewhere in a block" {
                 val ref = AST.Reference("x")
                 val block = AST.ExpressionList(
-                    listOf(
+                    nonEmptyListOf(
                         AST.InitializedVar(AST.Reference("y"), true, null, AST.StringLiteral("test")),
                         AST.InitializedVar(AST.Reference("x"), false, null, AST.CharLiteral('y')),
                         ref
@@ -48,7 +49,7 @@ class DereferenceTransformerTest : StringSpec() {
                         AST.ResolvedReference(
                             ref.name,
                             AST.InitializedVar(ref, false, null, AST.CharLiteral('y')),
-                            ref.resolutionContext
+                            ref.context
                         )
                     )
             }
@@ -56,8 +57,8 @@ class DereferenceTransformerTest : StringSpec() {
             "reference by function name somewhere in a block" {
                 val ref = AST.Reference("x")
                 val block = AST.ExpressionList(
-                    listOf(
-                        AST.ExpressionList(listOf(ref)),
+                    nonEmptyListOf(
+                        AST.ExpressionList(nonEmptyListOf(ref)),
                         AST.FunctionDecl("x", emptyList(), null, AST.TupleLiteral.unit)
                     )
                 )

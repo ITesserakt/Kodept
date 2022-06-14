@@ -10,7 +10,7 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.Logical -> "${left.asString()} ${kind.name} ${right.asString()}"
     is AST.Mathematical -> "${left.asString()} ${kind.name} ${right.asString()}"
     is AST.ExpressionList -> """{
-        |${expressions.joinToString { it.asString() }.prependIndent(indent)}
+        |${expressions.joinToString("\n") { it.asString() }.prependIndent(indent)}
         |}
     """.trimMargin()
     is AST.IfExpr -> """if ${condition.asString()} ${body.asString()}
@@ -24,17 +24,16 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.HexLiteral -> value.toString()
     is AST.OctalLiteral -> value.toString()
     is AST.StringLiteral -> value
-    is AST.Stub -> ""
     is AST.TupleLiteral -> items.joinToString(prefix = "(", postfix = ")") { it.asString() }
     is AST.FunctionCall -> """${reference.asString()}(${this.params.joinToString { it.asString() }})"""
-    is AST.Reference -> "${if (resolutionContext?.fromRoot == true) "::" else ""}${
-        resolutionContext?.chain?.joinToString(
+    is AST.Reference -> "${if (context?.fromRoot == true) "::" else ""}${
+        context?.chain?.joinToString(
             "::",
             postfix = "::"
         ) { it.asString() } ?: ""
     }${name}"
-    is AST.TypeReference -> "${if (resolutionContext?.fromRoot == true) "::" else ""}${
-        resolutionContext?.chain?.joinToString(
+    is AST.TypeReference -> "${if (context?.fromRoot == true) "::" else ""}${
+        context?.chain?.joinToString(
             "::",
             postfix = "::"
         ) { it.asString() } ?: ""
@@ -63,11 +62,11 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
         |}
     """.trimMargin()
     is AST.StructDecl -> """struct $name(${alloc.joinToString { it.asString() }}) {
-        |${rest.joinToString("\n") { it.asString() }}
+        |${rest.joinToString("\n") { it.asString() }.prependIndent(indent)}
         |}
     """.trimMargin()
     is AST.TraitDecl -> """trait $name {
-        |${rest.joinToString("\n") { it.asString() }}
+        |${rest.joinToString("\n") { it.asString() }.prependIndent(indent)}
         |}
     """.trimMargin()
     is AST.Type -> toString()

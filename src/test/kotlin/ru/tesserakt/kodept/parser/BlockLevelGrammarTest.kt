@@ -1,5 +1,6 @@
 package ru.tesserakt.kodept.parser
 
+import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.WordSpec
 import ru.tesserakt.kodept.core.AST
 
@@ -12,7 +13,7 @@ class BlockLevelGrammarTest : WordSpec({
                 "println",
                 listOf(),
                 null,
-                AST.TupleLiteral.unit,
+                AST.ExpressionList(nonEmptyListOf(AST.TupleLiteral.unit)),
             )
         )
         test(
@@ -25,7 +26,7 @@ class BlockLevelGrammarTest : WordSpec({
             AST.FunctionDecl(
                 "println", listOf(), null,
                 AST.ExpressionList(
-                    listOf(
+                    nonEmptyListOf(
                         AST.InitializedVar(
                             AST.Reference("foo"), false, null,
                             AST.DecimalLiteral(5.toBigInteger())
@@ -54,7 +55,7 @@ class BlockLevelGrammarTest : WordSpec({
             AST.FunctionDecl(
                 "println", listOf(), null,
                 AST.ExpressionList(
-                    listOf(
+                    nonEmptyListOf(
                         AST.InitializedVar(
                             AST.Reference("foo"), false, null,
                             AST.DecimalLiteral(5.toBigInteger())
@@ -116,7 +117,7 @@ class BlockLevelGrammarTest : WordSpec({
                 AST.Reference("x"),
                 false,
                 AST.Type("String").let(AST::TypeReference),
-                AST.TupleLiteral.unit
+                AST.ExpressionList(nonEmptyListOf(AST.TupleLiteral.unit))
             )
         )
         test(

@@ -3,11 +3,7 @@ package ru.tesserakt.kodept.traversal
 import arrow.core.*
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
-import arrow.core.continuations.ensureNotNull
-import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filepath
-import ru.tesserakt.kodept.core.walkDownTop
-import ru.tesserakt.kodept.error.CompilerCrash
+import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
@@ -36,9 +32,12 @@ private interface Resolver<T : AST.Named, R : AST.Node> {
         if (context.fromRoot && context.chain.isNotEmpty()) {
             node.walkDownTop(::identity).filterIsInstance<AST.FileDecl>()
                 .first().modules.filter { it.name == context.chain.first().name }.onlyUnique { NotFound }
-                .flatMap { m ->
-                    val module: Either<FlowControl, AST.Named> = m.right()
-                    context.chain.drop(1).fold(module) { acc, next ->
+                .let { m ->
+                    val module = m.handleError {
+                        node.walkDownTop(::identity)
+                            .filterIsInstance<AST.ModuleDecl>().first()
+                    }.widen<_, AST.Named, _>()
+                    context.chain.drop(if (m.isRight()) 1 else 0).fold(module) { acc, next ->
                         acc.flatMap { next.handle(it) }
                     }
                 }
@@ -63,7 +62,7 @@ private fun <T : AST.Named> List<T>.onlyUnique(onEmpty: () -> FlowControl) = whe
     else -> Multiple(this).left()
 }
 
-context (Filepath) private fun <T, N : AST.Node> Either<FlowError, T>.mapError(node: N, getName: (N) -> String) =
+context (Filepath) private inline fun <T, N : AST.Node> Either<FlowError, T>.mapError(node: N, getName: (N) -> String) =
     mapLeft { control ->
         when (control) {
             NotFound -> UnrecoverableError(
@@ -78,13 +77,19 @@ context (Filepath) private fun <T, N : AST.Node> Either<FlowError, T>.mapError(n
         }
     }
 
-context (Filepath) private fun <T, N : AST.Named> Either<FlowError, T>.mapError(node: N) = mapError(node) { node.name }
+context (Filepath) private fun <T, N> Either<FlowError, T>.mapError(node: N)
+        where N : AST.WithResolutionContext, N : AST.Named = mapError(node) {
+    val ctx = node.context
+    if (ctx != null)
+        (if (ctx.fromRoot) "::" else "") + "${ctx.chain.joinToString("::", postfix = "::") { it.name }}${node.name}"
+    else node.name
+}
 
 object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Reference, AST.Referable> {
     override val type: KClass<AST.Reference> = AST.Reference::class
 
     init {
-        dependsOn(VariableScope, OperatorDesugaring, ForeignFunctionResolver)
+        dependsOn(VariableScope, BinaryOperatorDesugaring, ForeignFunctionResolver, UnaryOperatorDesugaring)
     }
 
     private fun AST.Reference.handleBlock(block: AST.ExpressionList) =
@@ -113,8 +118,12 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
         is AST.InitializedVar -> handleVariable(node)
         is AST.ModuleDecl -> handleModule(node)
         is AST.StructDecl -> handleStruct(node)
+        is AST.TraitDecl -> handleTrait(node)
         else -> RecurseUp.left()
     }
+
+    private fun AST.Reference.handleTrait(node: AST.TraitDecl): Either<FlowControl, AST.Referable> =
+        node.children().filterIsInstance<AST.Referable>().filter { it.name == this.name }.onlyUnique { RecurseUp }
 
     private fun AST.Reference.handleAbstractFunction(node: AST.AbstractFunctionDecl): Either<FlowControl, AST.Referable> =
         if (node.name == this.name) node.right()
@@ -148,57 +157,50 @@ object DereferenceTransformer : Transformer<AST.Reference>(), Resolver<AST.Refer
      *
      *     3) context - `x::y::...::z` - 1.x) without recursion upper
      */
-    context(ReportCollector, Filepath) override fun transform(node: AST.Reference) =
-        eagerEffect<UnrecoverableError, AST.Node> {
-            // FIXME think about dereferences
-//            if (isInDereference(node)) failWithReport(
-//                node.rlt.position.nel(), Report.Severity.CRASH, CompilerCrash("Dot access operator is unsupported")
-//            )
-            val parent = ensureNotNull(node.parent) {
-                UnrecoverableError(
-                    node.rlt.position.nel(),
-                    Report.Severity.CRASH,
-                    CompilerCrash("Invalid AST generated. Every reference should has parent")
-                )
-            }
+    context(ReportCollector, Filepath) override fun transform(node: AST.Reference): EagerEffect<UnrecoverableError, AST.Node> {
+        // FIXME think about dereferences
 
-            val referral = when (val context = node.resolutionContext) {
-                null -> node.handleOrRecurseUp(parent).mapError(node)
-                else -> followContext(context, node)
-                    .flatMap { point -> node.handle(point) }
-                    .mapLeft { if (it !is FlowError) NotFound else it }
-                    .mapError(node)
-            }.bind()
-            AST.ResolvedReference(node.name, referral, node.resolutionContext)
+        val referral = when (val context = node.context) {
+            null -> node.handleOrRecurseUp(node.parent).mapError(node)
+            else -> followContext(context, node)
+                .flatMap { point -> node.handle(point) }
+                .mapLeft { if (it !is FlowError) NotFound else it }
+                .mapError(node)
         }
+        return eagerEffect {
+            AST.ResolvedReference(node.name, referral.bind(), node.context)
+        }
+    }
+
+    override val traverseMode: Tree.SearchMode = Tree.SearchMode.Preorder
+
+    val contract = Contract<AST.Reference, Depended> {
+        require(this !is AST.ResolvedReference)
+        "$this should not be in AST. Try adding $DereferenceTransformer as a dependency in $it"
+    }
 }
 
 object TypeDereferenceTransformer : Transformer<AST.TypeReference>(), Resolver<AST.Type, AST.TypeReferable> {
     override val type: KClass<AST.TypeReference> = AST.TypeReference::class
 
     init {
-        dependsOn(OperatorDesugaring)
+        dependsOn(BinaryOperatorDesugaring, UnaryOperatorDesugaring)
     }
 
-    context(ReportCollector, Filepath) override fun transform(node: AST.TypeReference): EagerEffect<UnrecoverableError, AST.Node> =
-        eagerEffect {
-            val parent = ensureNotNull(node.parent) {
-                UnrecoverableError(
-                    node.rlt.position.nel(),
-                    Report.Severity.CRASH,
-                    CompilerCrash("Every type reference should has parent")
-                )
-            }
+    context(ReportCollector, Filepath) override fun transform(node: AST.TypeReference): EagerEffect<UnrecoverableError, AST.Node> {
+        val parent = node.parent
 
-            val referral = when (val context = node.resolutionContext) {
-                null -> node.type.handleOrRecurseUp(parent).mapError(node.type)
-                else -> followContext(context, node.type)
-                    .flatMap { point -> node.type.handle(point) }
-                    .mapLeft { if (it !is FlowError) NotFound else it }
-                    .mapError(node.type)
-            }.bind()
-            AST.ResolvedTypeReference(node.type, referral, node.resolutionContext)
+        val referral = when (val context = node.context) {
+            null -> node.type.handleOrRecurseUp(parent).mapError(node)
+            else -> followContext(context, node.type)
+                .flatMap { point -> node.type.handle(point) }
+                .mapLeft { if (it !is FlowError) NotFound else it }
+                .mapError(node)
         }
+        return eagerEffect {
+            AST.ResolvedTypeReference(node.type, referral.bind(), node.context)
+        }
+    }
 
     override fun AST.Type.handle(node: AST.Node): Either<FlowControl, AST.TypeReferable> = when (node) {
         is AST.ModuleDecl -> node.rest.filterIsInstance<AST.TypeReferable>().filter { it.name == this.name }
@@ -210,5 +212,10 @@ object TypeDereferenceTransformer : Transformer<AST.TypeReference>(), Resolver<A
         is AST.TraitDecl, is AST.StructDecl -> if ((node as AST.TypeReferable).name == this.name) node.right() else RecurseUp.left()
 
         else -> RecurseUp.left()
+    }
+
+    val contract = Contract<AST.TypeReference, Depended> {
+        require(this !is AST.ResolvedTypeReference)
+        "$this should not be in AST. Try adding $TypeDereferenceTransformer as a dependency in $it"
     }
 }

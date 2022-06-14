@@ -92,7 +92,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.HexLiteral -> state.copy(result = value)
         is AST.OctalLiteral -> state.copy(result = value)
         is AST.StringLiteral -> state.copy(result = value)
-        is AST.Stub -> state
         is AST.TupleLiteral -> if (this == AST.TupleLiteral.unit) state.copy(result = Unit) else state.copy(
             result = this.items.runningFold(
                 state

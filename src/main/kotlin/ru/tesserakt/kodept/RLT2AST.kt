@@ -2,8 +2,7 @@
 
 package ru.tesserakt.kodept
 
-import arrow.core.partially2
-import arrow.core.partially3
+import arrow.core.*
 import org.jetbrains.annotations.TestOnly
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
@@ -13,17 +12,20 @@ import ru.tesserakt.kodept.lexer.ExpressionToken
 
 @OptIn(Internal::class)
 private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expression, token: String) = when (token) {
-    ExpressionToken.PLUS_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add)
-    ExpressionToken.SUB_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub)
+    ExpressionToken.PLUS_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Add).andThen { it.withRLT() }
+    ExpressionToken.SUB_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Sub).andThen { it.withRLT() }
     ExpressionToken.TIMES_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mul)
-    ExpressionToken.DIV_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Div)
-    ExpressionToken.MOD_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mod)
-    ExpressionToken.POW_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Pow)
+        .andThen { it.withRLT() }
+    ExpressionToken.DIV_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Div).andThen { it.withRLT() }
+    ExpressionToken.MOD_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Mod).andThen { it.withRLT() }
+    ExpressionToken.POW_EQUALS.name -> AST::Mathematical.partially3(AST.Mathematical.Kind.Pow).andThen { it.withRLT() }
     ExpressionToken.OR_LOGIC_EQUALS.name -> AST::Logical.partially3(AST.Logical.Kind.Disjunction)
+        .andThen { it.withRLT() }
     ExpressionToken.AND_LOGIC_EQUALS.name -> AST::Logical.partially3(AST.Logical.Kind.Conjunction)
-    ExpressionToken.OR_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.Or)
-    ExpressionToken.AND_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.And)
-    ExpressionToken.XOR_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.Xor)
+        .andThen { it.withRLT() }
+    ExpressionToken.OR_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.Or).andThen { it.withRLT() }
+    ExpressionToken.AND_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.And).andThen { it.withRLT() }
+    ExpressionToken.XOR_BIT_EQUALS.name -> AST::Binary.partially3(AST.Binary.Kind.Xor).andThen { it.withRLT() }
     ExpressionToken.EQUALS.name -> { _, r -> r }
     else -> throw IllegalStateException("Impossible")
 }.let {
@@ -231,16 +233,16 @@ private fun RLT.StatementNode.convert(): AST.BlockLevel = when (this) {
 
 @OptIn(Internal::class)
 private fun RLT.Body.Block.convert(): AST.Expression = when (block.size) {
-    0 -> AST.TupleLiteral.unit.withRLT()
+    0 -> AST.ExpressionList(nonEmptyListOf(AST.TupleLiteral.unit.withRLT())).withRLT()
     1 -> {
         val head = block.first()
         if (head is RLT.ExpressionNode)
             head.convert()
         else
-            AST.ExpressionList(listOf(head.convert(), AST.TupleLiteral.unit.withRLT())).withRLT()
+            AST.ExpressionList(nonEmptyListOf(head.convert(), AST.TupleLiteral.unit.withRLT())).withRLT()
     }
 
-    else -> AST.ExpressionList(block.map { it.convert() }).withRLT()
+    else -> AST.ExpressionList(NonEmptyList.fromListUnsafe(block.map { it.convert() })).withRLT()
 }
 
 @OptIn(Internal::class)
@@ -249,7 +251,7 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
 
     is RLT.Body.Block -> convert()
 
-    is RLT.Body.Expression -> expression.convert()
+    is RLT.Body.Expression -> AST.ExpressionList(nonEmptyListOf(expression.convert())).withRLT()
 
     is RLT.If -> AST.IfExpr(
         condition.convert(),

@@ -2,11 +2,9 @@ package ru.tesserakt.kodept.traversal
 
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
-import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
-import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
@@ -44,11 +42,7 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                 }
 
                 is AST.TypeReference -> node
-                is AST.Reference -> failWithReport(
-                    node.rlt.position.nel(),
-                    Report.Severity.CRASH,
-                    CompilerCrash("All references should be resolved")
-                )
+                is AST.Reference -> with(left) { DereferenceTransformer.contract() }
             }
         }
 }

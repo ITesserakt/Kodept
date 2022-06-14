@@ -38,7 +38,8 @@ class InterpretedContent(data: Flowable.Data.ErroneousAST, input: List<String>) 
         }
     }
 
-    private val traverseForMain = Eval.later {
+    //TODO fix laziness
+    private val traverseForMain = run {
         mainAnalyze.reduce { (acc, accFile), (next, nextFile) ->
             if (acc.anyInLeft { it.message == NoMainFunction }) FileRelative(
                 acc.flatMap({ b -> this + b.filter { it.message == NoMainFunction } }) { next },
@@ -60,5 +61,5 @@ class InterpretedContent(data: Flowable.Data.ErroneousAST, input: List<String>) 
         }
     }
 
-    override val result: Data = Data(traverseForMain.map { (ior, _) -> ior.map { it.result to it.output } })
+    override val result: Data = Data(traverseForMain.let { (ior, _) -> Eval.now(ior.map { it.result to it.output }) })
 }
