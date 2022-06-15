@@ -54,29 +54,29 @@
 % !!! ВНИМАНИЕ! Документы ниже нужно включить перед печатью всего документа !!! %
 % Задание (включается для КП и ВКР)
 % Вставится только при сборке КП
-% \myconditionaltext{\doctypesid}{kp}{%
-%     \input{doc-additional/official_statement}
-% }
-% % Вставится только при сборке ВКР
-% \myconditionaltext{\doctypesid}{vkr}{%
-%     \input{doc-additional/official_statement}
-% }
-% %----------------------------------------------------------
-% % Календарный план, только для ВКР (для НИРС и КП этот документ не включается) 
-% \myconditionaltext{\doctypesid}{vkr}{%
-%     \input{doc-additional/calendar_plan}
-% }
-% %----------------------------------------------------------
-% % Направление на защиту (включается только для ВКР, для НИРС и КП не нужно)
-% \myconditionaltext{\doctypesid}{vkr}{%
-%     \input{doc-additional/referral_for_defense}
-% }
+\myconditionaltext{\doctypesid}{kp}{%
+    \input{doc-additional/official_statement}
+}
+% Вставится только при сборке ВКР
+\myconditionaltext{\doctypesid}{vkr}{%
+    \input{doc-additional/official_statement}
+}
+%----------------------------------------------------------
+% Календарный план, только для ВКР (для НИРС и КП этот документ не включается) 
+\myconditionaltext{\doctypesid}{vkr}{%
+    \input{doc-additional/calendar_plan}
+}
+%----------------------------------------------------------
+% Направление на защиту (включается только для ВКР, для НИРС и КП не нужно)
+\myconditionaltext{\doctypesid}{vkr}{%
+    \input{doc-additional/referral_for_defense}
+}
 %----------------------------------------------------------
 
 % !!! ВНИМАНИЕ! Строчку ниже нужно закомментировать перед печатью всего документа !!! %
 % |
 % V
-\setcounter{page}{7}
+%\setcounter{page}{7}
 
 % Реферат
 \include{referat}
@@ -135,7 +135,7 @@
 \textit{\DocOutReference}
 %----------------------------------------------------------
 % Атрибуты задачи
-\docattributes{}{}{}{}{студент группы \group, \Author}{\Year, \Semestr}
+% \docattributes{}{}{}{}{студент группы \group, \Author}{\Year, \Semestr}
 %----------------------------------------------------------
 % Акт об отсутствии заимствования (включается только для ВКР, для НИРС и КП не нужно)
 % Вставится только при сборке ВКР

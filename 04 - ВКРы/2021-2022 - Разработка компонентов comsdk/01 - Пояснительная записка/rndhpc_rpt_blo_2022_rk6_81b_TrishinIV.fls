@@ -2230,12 +2230,94 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbsy10.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbsy10.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
-INPUT ./referat.tex
-INPUT ./referat.tex
-INPUT ./referat.tex
+INPUT ./doc-additional/official_statement.tex
+INPUT ./doc-additional/official_statement.tex
+INPUT ./doc-additional/official_statement.tex
+INPUT doc-additional/official_statement.tex
+INPUT ./doc-additional/official_statement.tex
+INPUT ./doc-additional/official_statement.tex
+INPUT doc-additional/official_statement.tex
 OUTPUT rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.ist
 OUTPUT rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.upa
 INPUT c:/Program Files/TexLive/2021/texmf-var/fonts/map/pdftex/updmap/pdftex.map
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lati1440.tfm
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/labx1728.tfm
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/labx1440.tfm
+INPUT ./doc-additional/calendar_plan.tex
+INPUT ./doc-additional/calendar_plan.tex
+INPUT ./doc-additional/calendar_plan.tex
+INPUT doc-additional/calendar_plan.tex
+INPUT ./doc-additional/calendar_plan.tex
+INPUT ./doc-additional/calendar_plan.tex
+INPUT doc-additional/calendar_plan.tex
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/labx1200.tfm
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/labx1000.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmmi8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm0800.tfm
+INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm0600.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx6.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib6.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy8.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
+INPUT ./doc-additional/referral_for_defense.tex
+INPUT ./doc-additional/referral_for_defense.tex
+INPUT ./doc-additional/referral_for_defense.tex
+INPUT doc-additional/referral_for_defense.tex
+INPUT ./doc-additional/referral_for_defense.tex
+INPUT ./doc-additional/referral_for_defense.tex
+INPUT doc-additional/referral_for_defense.tex
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./doc-additional/cpxsln_vkr_20YY_ShortTitle_group_SurnameNF_referral_for_defense.pdf
+INPUT ./referat.tex
+INPUT ./referat.tex
+INPUT ./referat.tex
 OUTPUT referat.aux
 INPUT ./referat.tex
 INPUT ./referat.tex
@@ -2243,9 +2325,6 @@ INPUT ./referat.tex
 INPUT referat.tex
 INPUT ./referat.tex
 INPUT referat.tex
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/labx1440.tfm
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/labx1728.tfm
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lati1440.tfm
 INPUT ./rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.toc
 INPUT rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.toc
 INPUT rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.toc
@@ -2437,50 +2516,6 @@ INPUT rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.bbl
 INPUT ./rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.bbl
 INPUT rndhpc_rpt_blo_2022_rk6_81b_TrishinIV.bbl
 INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lait1440.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmmi8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm0800.tfm
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/larm0600.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam7.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmbx6.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmmib6.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy8.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy6.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by.eps
-INPUT doc-spec/by.eps
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT c:/Users/primu/.texlive2021/texmf-var/fonts/tfm/lh/lh-t2a/lati1200.tfm
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by.eps
-INPUT doc-spec/by.eps
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by.eps
-INPUT ./doc-spec/by-eps-converted-to.pdf
-INPUT ./doc-spec/by-eps-converted-to.pdf
 INPUT ./doc-additional/plagiarism_check.tex
 INPUT ./doc-additional/plagiarism_check.tex
 INPUT ./doc-additional/plagiarism_check.tex
@@ -2592,16 +2627,18 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfit1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm0700.pfb
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfss1440.pfb
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sfti1440.pfb
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/type1/public/cm-super/sftt1440.pfb

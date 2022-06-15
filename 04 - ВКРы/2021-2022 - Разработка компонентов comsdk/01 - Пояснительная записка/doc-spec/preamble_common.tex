@@ -196,7 +196,8 @@
 %\usepackage{enumitem}
 %----------------------------------------------------------
 %Необходимо для сокращения размера шрифта подписей и сокращения отступов между рисунком и подписью к нему
-\usepackage[margin=5pt,font={small, singlespacing}, labelfont={small}, justification=centering, labelsep=period]{caption}
+\DeclareCaptionLabelSeparator{dash}{ --- }
+\usepackage[margin=5pt,font={small, singlespacing}, labelfont={small}, justification=centering, labelsep=dash]{caption}
 \captionsetup{belowskip=0pt}
 %----------------------------------------------------------
 % подключение листингов и определение языков
@@ -323,3 +324,4 @@
 \newtheorem{remark}{Замечание}
 \newtheorem{description}{Описание}
 %%----------------------------------------------------------
+
