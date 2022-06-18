@@ -1,0 +1,89 @@
+\mode<presentation>
+%----------------------------------------------------------
+% Frame title
+\defbeamertemplate*{frametitle}{bmstu}[1][]
+{
+  \vskip0.3cm%
+	
+  \begin{beamercolorbox}[wd=\paperwidth,leftskip=1.0cm]{frametitle}
+    \ifx\insertframetitle\@empty%\relax%
+    \else%
+				\ifx\insertframesubtitle\@empty%
+					\usebeamerfont{frametitle}\insertframetitle\par%
+				\else%
+					\usebeamerfont{frametitle}\insertframetitle\par%
+					\usebeamerfont{framesubtitle}~~\raisebox{2pt}{$\drsh$}~\insertframesubtitle\par%
+				\fi
+    \fi
+  \end{beamercolorbox}
+
+  \ifx\insertframetitle\@empty%
+  \else%
+			\vspace{-0.2cm}
+  \begin{beamercolorbox}[wd=\paperwidth,leftskip=0.9cm]{frametitle}
+    \textcolor{bblue}{\rule{\textwidth}{2pt}}
+  \end{beamercolorbox}%
+  \fi
+
+  \vskip0.1cm%
+}
+%----------------------------------------------------------
+% Автоматизация формирования заголовков слайдов на основе секций и подсекций
+\addtobeamertemplate{frametitle}{
+   \let\insertframetitle\secname}{}
+\addtobeamertemplate{frametitle}{
+   \let\insertframesubtitle\subsecname}{}
+
+\let\oldsection=\section
+\def\section{\gdef\subsecname{}\oldsection}
+
+%----------------------------------------------------------
+\makeatletter
+  \CheckCommand*\beamer@checkframetitle{\@ifnextchar\bgroup\beamer@inlineframetitle{}}
+  \renewcommand*\beamer@checkframetitle{\global\let\beamer@frametitle\relax\@ifnextchar\bgroup\beamer@inlineframetitle{}}
+\makeatother
+%----------------------------------------------------------
+
+% Section slide
+%\AtBeginSection[]{
+  %\begin{frame}
+  %\vfill
+  %\centering
+  %\begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title page header}
+    %\Large\usebeamerfont{title page header}\insertsectionhead\par%
+  %\end{beamercolorbox}
+  %\vfill
+  %\end{frame}
+%}
+
+% Footer
+\defbeamertemplate*{footline}{bmstu}
+{
+  \ifnum \insertpagenumber=1
+    \leavevmode%
+    \hbox{%
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.25ex,dp=1ex,center]{}%
+      % empty environment to raise height
+    \end{beamercolorbox}}%
+    \vskip0pt%
+  \else
+    \leavevmode%
+    \hbox{%
+    %%\fontsize{9}{13}\selectfont
+     \fontseries{m}\selectfont % see this for options: https://tex.stackexchange.com/questions/68745/possible-values-for-fontseries-and-fontshape
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,left]{date in head/foot}%
+      \usebeamerfont{date in head/foot}%\insertshortdate{}\hspace*{2em}
+      \hspace*{2ex}\insertframenumber{} / \inserttotalframenumber 
+      %\usebeamerfont{author in head/foot}\insertsection
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+      %\usebeamerfont{title in head/foot}\insertsubsection
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{author in head/foot}%
+    \includegraphics[width=0.07\textwidth]{images/bmstu_logo-eps-converted-to.pdf}\hspace*{2ex}
+    \end{beamercolorbox}}%
+    \vskip2pt%
+  \fi
+}
+%----------------------------------------------------------
+\mode<all>

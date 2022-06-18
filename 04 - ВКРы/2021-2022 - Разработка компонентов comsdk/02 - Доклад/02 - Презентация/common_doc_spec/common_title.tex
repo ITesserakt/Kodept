@@ -1,0 +1,23 @@
+%----------------------------------------------------------
+% Определение значений параметров для формирования титульной страницы
+\title{\presentationtitle} 
+\subtitle{\small
+\SubTitle \hfill\break
+\raggedright\noindent  \textit{\eventplace} \hfill\break
+\raggedright\noindent  \textit{\eventduration}
+} 
+\date[\city\enskip\year]{\scriptsize\conferenceperiod} 
+\author[\Author]{%
+\raggedright \AuthorFull \\
+\href{mailto:\AuthorEmail}{\AuthorEmail}
+}
+\institute{\ShortOrganisationName}
+
+%----------------------------------------------------------
+% Создание заглавной страницы
+\frame{%
+\nobibliography{bibliography}
+%\nocite{*}
+\titlepage} 
+\setcounter{framenumber}{0}
+%----------------------------------------------------------
