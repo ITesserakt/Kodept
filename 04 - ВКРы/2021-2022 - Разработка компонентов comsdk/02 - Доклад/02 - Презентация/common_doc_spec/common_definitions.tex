@@ -18,7 +18,7 @@
 %----------------------------------------------------------
 \newcommand{\multirowbox}[2]
 {
-   \parbox{#1}{\smallskip #2 \smallskip}
+  \parbox{#1}{\smallskip #2 \smallskip}
 }
 %----------------------------------------------------------
 \usepackage{amsthm}
@@ -26,13 +26,13 @@
 
 \declaretheoremstyle[
   headfont=\normalfont\bfseries,
-	numberwithin=section,
+  numberwithin=section,
   bodyfont=\normalfont,
   spaceabove=1em plus 0.75em minus 0.25em,
   spacebelow=0em plus 0.75em minus 0.25em,
-%  qed={$\blacksquare$},
-%  qed={$\natural$},%\sharp},%$\square$},
-	headpunct={\newline},%Punctuation after theorem head
+  %  qed={$\blacksquare$},
+  %  qed={$\natural$},%\sharp},%$\square$},
+  headpunct={\newline},%Punctuation after theorem head
 ]{thrmstyle}
 \declaretheorem[
   style=thrmstyle,
@@ -60,57 +60,57 @@
 %----------------------------------------------------------
 \newcommand\MyProcess[3]
 {
-%\begin{tabular}{p{0.1\textwidth}p{0.9\textwidth}}
-%&
-\begin{lstlisting}[caption={#1}, label={#2}, language=ALGO, basicstyle=\small]
+  %\begin{tabular}{p{0.1\textwidth}p{0.9\textwidth}}
+  %&
+  \begin{lstlisting}[caption={#1}, label={#2}, language=ALGO, basicstyle=\small]
 #3
-\end{lstlisting}			
-%\end{tabular}
+\end{lstlisting}
+  %\end{tabular}
 }
 %----------------------------------------------------------
 \newcommand\myquote[2]{%
-\textit{``#1''}
-\begin{flushright}
-\textcolor{gray}{#2}
-\end{flushright}
+  \textit{``#1''}
+  \begin{flushright}
+    \textcolor{gray}{#2}
+  \end{flushright}
 }
 %----------------------------------------------------------
 \newcommand{\mydescr}[1]{%
 
-\colorbox{black!5}{\parbox{0.7\textwidth}{\smaller[1]\textit{#1}}}
+  \colorbox{black!5}{\parbox{0.7\textwidth}{\smaller[1]\textit{#1}}}
 }
 %----------------------------------------------------------
 % вёрстка в две колонки
 \newcommand\cols[4]
 {\smaller[1]%
-		\begin{columns}
-		\begin{column}{#1}
-    #2
-		\end{column}
-		\begin{column}{#3}
-		#4
-		\end{column}
-		\end{columns}}
+  \begin{columns}
+    \begin{column}{#1}
+      #2
+    \end{column}
+    \begin{column}{#3}
+      #4
+    \end{column}
+  \end{columns}}
 %----------------------------------------------------------
 % вёрстка в две колонки двух блоков с itemize
 \newcommand\colsblocks[4]
 {\smaller[1]%
-		\begin{columns}
-		\begin{column}{0.5\textwidth}
-		\begin{block}{#1}
-		\begin{itemize}
-			#2
-		\end{itemize}
-		\end{block}
-		\end{column}
-		\begin{column}{0.5\textwidth}
-		\begin{block}{#3}
-		\begin{itemize}
-			#4
-		\end{itemize}
-		\end{block}
-		\end{column}
-		\end{columns}}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{#1}
+        \begin{itemize}
+          #2
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{#3}
+        \begin{itemize}
+          #4
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}}
 %----------------------------------------------------------
 %\usepackage{ifthen}
 %%----------------------------------------------------------
@@ -122,13 +122,13 @@
 %% #3 - text
 %\newcommand{\myconditionaltext}[3]%
 %{%
-	%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{avtoreferat}}{#3}{}% short version
-	%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{thesis}}{}{}% short version
-	%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{presentation}}{}{}% short version
-	%\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{presentation}}{}{}% short version
-	%\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{thesis}}{#3}{}% short version
-	%\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{presentation}}{#3}{}% short version
-	%\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{thesis}}{\pdfcomment{#3}}{}% short version
+%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{avtoreferat}}{#3}{}% short version
+%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{thesis}}{}{}% short version
+%\ifthenelse{\equal{#1}{avtoreferat}\AND\equal{#2}{presentation}}{}{}% short version
+%\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{presentation}}{}{}% short version
+%\ifthenelse{\equal{#1}{thesis}\AND\equal{#2}{thesis}}{#3}{}% short version
+%\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{presentation}}{#3}{}% short version
+%\ifthenelse{\equal{#1}{presentation}\AND\equal{#2}{thesis}}{\pdfcomment{#3}}{}% short version
 %}
 
 %----------------------------------------------------------
@@ -137,41 +137,41 @@
 % #3 - Назначение в форме itemize
 % #4 - LaTeX код
 \newcommand{\bestpractice}[4]{%
-\subsection{#1}
-\begin{frame}%[fragile]
+  \subsection{#1}
+  \begin{frame}%[fragile]
 
-{\smaller[1]
-#2}
+    {\smaller[1]
+      #2}
 
-\begin{columns}[t]
+    \begin{columns}[t]
 
-\begin{column}{0.5\textwidth}
-\begin{block}{Назначение}
-{\smaller[1]%
-#3}
-\end{block}
-\end{column}
+      \begin{column}{0.5\textwidth}
+        \begin{block}{Назначение}
+          {\smaller[1]%
+            #3}
+        \end{block}
+      \end{column}
 
-\begin{column}{0.5\textwidth}
-\begin{lstlisting}[language={TeX}, basicstyle=\scriptsize]
+      \begin{column}{0.5\textwidth}
+        \begin{lstlisting}[language={TeX}, basicstyle=\scriptsize]
 #4
 \end{lstlisting}
-\end{column}
-\end{columns}
+      \end{column}
+    \end{columns}
 
-\end{frame}}
+  \end{frame}}
 %----------------------------------------------------------
 \newenvironment{arreqn}[2]
-    {\smaller[1]
-		\begin{block}{\smaller[1] #1}
+{\smaller[1]
+  \begin{block}{\smaller[1] #1}
     \begin{equation}\label{#2}
-    \begin{array}{l}
-    }
-		{
-    \end{array}
+      \begin{array}{l}
+        }
+        {
+      \end{array}
     \end{equation}
-		\end{block}
-    }
+  \end{block}
+}
 %----------------------------------------------------------
 
 
