@@ -35,6 +35,22 @@
 
 \begin{frame}
 
+    \smaller[1]
+
+    \begin{itemize}
+        \item За программное представление графовых моделей отвечает класс Graph.
+        \item Для объединения возможностей взаимодействия с вершинами и рёбрами и обращения к топологии графа спроектированы вспомогательные структуры данных NodeOp (операция с вершиной) и EdgeOp (операция с ребром).
+    \end{itemize}
+
+    \begin{figure}
+        \begin{minipage}{0.38\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{images/class.graph.png}
+        \end{minipage}\hfill\begin{minipage}{0.62\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{images/UML.topologyOperations.png}
+        \end{minipage}
+    \end{figure}
 
 
 \end{frame}
@@ -58,4 +74,29 @@
 \end{frame}
 % --------------------------------------------------------------------------- %
 \subsection{Алгоритм обхода графовой модели}
+\begin{frame}
+    Приведённый алгоритм реализован в методе run() класса Graph.
 
+    \begin{figure}
+        \centering
+        \includegraphics[height=0.7\textheight]{images/flowchart.graphRunning2.png}
+        \caption{Общий алгоритм обхода графовой модели}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    Приведённые ниже алгоритмы реализованы в методах run() классов ExecutionContainer и ExecutionBranch соответственно.
+
+    \begin{figure}
+        \begin{minipage}{0.35\textwidth}
+            \centering
+            \includegraphics[height=0.6\textheight]{images/flowchart.executionContainer.png}
+            \caption{Блок-схема алгоритма следящей структуры данных ``контейнер выполнения''}
+        \end{minipage}\hfill\begin{minipage}{0.645\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{images/flowchart.executionBranch.png}
+            \caption{Блок-схема алгоритма обхода одной ветви графовой модели}
+        \end{minipage}
+    \end{figure}
+
+\end{frame}
