@@ -2,14 +2,16 @@
 \subsection{Функциональные структуры данных}
 % --------------------------------------------------------------------------- %
 \begin{frame}
+    \smaller[1]
     \begin{itemize}
-        \item Были разработаны структуры данных, представляющие функции-предикаты, обработчики и селекторы.
+        \item Были разработаны классы, представляющие функции-предикаты (Predicate), обработчики (Processor), селекторы (Selector) и функции перехода (Transfer).
+        \item Для хранения данных был использован универсальный ассоциативный массив Anymap.
     \end{itemize}
 
     \begin{figure}
         \smaller[1]
         \centering
-        \includegraphics[height=0.67\textheight]{images/UML.graphFunctions.png}
+        \includegraphics[height=0.64\textheight]{images/UML.graph_functions.pdf}
         \caption{UML-диаграмма разработанных функциональных структур данных}
     \end{figure}
 
@@ -19,28 +21,38 @@
 % --------------------------------------------------------------------------- %
 \begin{frame}
 
-\end{frame}
-% --------------------------------------------------------------------------- %
-\subsection{Требования к алгоритму обхода}
-% --------------------------------------------------------------------------- %
-\begin{frame}
-
+    \begin{itemize}
+        \item Вершины графовой модели реализованы в классе Node.
+        \item Рёбра графовой модели реализованы в классе Edge.
+    \end{itemize}
 
     \begin{figure}
         \centering
-        \includegraphics[width=0.6\textwidth]{images/illustration.parallel_run.png}
-        \caption{Пример графовой модели, подразумевающей паралельный обход ветвей}
+        \includegraphics[height=0.6\textheight]{images/UML.graphElements.png}
+        \caption{Разработанные структуры данных, представляющие элементы графовой модели}
     \end{figure}
-
-    \begin{itemize}
-        \item Режим параллельного исполнения в вершине $S_1$ определяет, какие ресурсы будут задействованы для выполнения ветвей $S_1 \to S_2 \to S_4$ и $S_1 \to S_3 \to S_4$
-    \end{itemize}
 \end{frame}
 
+\begin{frame}
+
+
+
+\end{frame}
 % --------------------------------------------------------------------------- %
 \subsection{Управляющие структуры данных}
 % --------------------------------------------------------------------------- %
 \begin{frame}
+    \begin{itemize}
+        \item Интерфейс ExecutionContainer отвечает за отслеживание выполнения параллельных ветвей графовой модели.
+        \item Интерфейс ExecutionBranch отвечает за обход одной ветви графа и хранение вспомогательной информации о нём.
+        \item ExecutionBranch уведомляет контейнер по завершении каждой функции перехода в обходимой ветви.
+    \end{itemize}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.75\textwidth]{images/UML.all.png}
+        \caption{UML-диаграмма управляющих структур данных}
+    \end{figure}
 
 
 \end{frame}
