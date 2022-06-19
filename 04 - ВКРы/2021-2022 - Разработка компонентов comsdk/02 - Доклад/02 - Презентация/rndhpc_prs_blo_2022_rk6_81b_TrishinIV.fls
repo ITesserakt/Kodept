@@ -2603,6 +2603,11 @@ INPUT ./chapters/00_intro.tex
 INPUT chapters/00_intro.tex
 INPUT ./chapters/00_intro.tex
 INPUT chapters/00_intro.tex
+INPUT ./images/flowchart.fem.png
+INPUT ./images/flowchart.fem.png
+INPUT images/flowchart.fem.png
+INPUT ./images/flowchart.fem.png
+INPUT ./images/flowchart.fem.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2621,6 +2626,12 @@ INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-R
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a--base.tfm
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Regular-tlf-t2a.vf
 INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a--base.tfm
+INPUT ./images/illustration.teamwork.png
+INPUT ./images/illustration.teamwork.png
+INPUT images/illustration.teamwork.png
+INPUT ./images/illustration.teamwork.png
+INPUT ./images/illustration.teamwork.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a.tfm
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2633,6 +2644,8 @@ INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/vf/paratype/ptsans/PTSans-Regular-tlf-t2a.vf
+INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a--base.tfm
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT ./images/bmstu_rk6_logo3.png
 INPUT images/bmstu_rk6_logo3.png
@@ -2872,7 +2885,6 @@ INPUT ./chapters/03_software.tex
 INPUT chapters/03_software.tex
 INPUT ./chapters/03_software.tex
 INPUT chapters/03_software.tex
-INPUT c:/Program Files/TexLive/2021/texmf-dist/fonts/tfm/paratype/ptsans/PTSans-Regular-tlf-t2a.tfm
 INPUT ./images/UML.graphFunctions.png
 INPUT ./images/UML.graphFunctions.png
 INPUT images/UML.graphFunctions.png
