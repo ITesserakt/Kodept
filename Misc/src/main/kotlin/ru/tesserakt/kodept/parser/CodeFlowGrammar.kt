@@ -1,9 +1,6 @@
 package ru.tesserakt.kodept.parser
 
-import com.github.h0tk3y.betterParse.combinators.map
-import com.github.h0tk3y.betterParse.combinators.optional
-import com.github.h0tk3y.betterParse.combinators.times
-import com.github.h0tk3y.betterParse.combinators.zeroOrMore
+import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.keyword
@@ -30,5 +27,5 @@ object CodeFlowGrammar : Grammar<RLT.ExpressionNode>() {
         }
     }
 
-    override val rootParser by lazy { ifExpr }
+    override val rootParser by lazy { ifExpr or MatchGrammar }
 }

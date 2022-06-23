@@ -13,7 +13,8 @@ class ExpressionTokenTest : StringSpec({
         row(keyword, representation, true),
         row(keyword, "${representation}x", false),
         row(keyword, "x$representation", false),
-        row(keyword, representation.uppercase(), false)
+        row(keyword, representation.uppercase(), false),
+        row(keyword, "it's_somewhere${representation}_in_word", false)
     )
 
     fun symbolSpecificCases(symbol: ExpressionToken, representation: String) = arrayOf(
@@ -31,16 +32,16 @@ class ExpressionTokenTest : StringSpec({
     "Keywords" {
         table(
             headers("keyword", "input", "matches"),
-            *keywordSpecificCases(FUN, "fun "),
-            *keywordSpecificCases(VAL, "val "),
-            *keywordSpecificCases(VAR, "var "),
-            *keywordSpecificCases(IF, "if "),
-            *keywordSpecificCases(ELIF, "elif "),
-            *keywordSpecificCases(ELSE, "else "),
-            *keywordSpecificCases(MATCH, "match "),
-            *keywordSpecificCases(WHILE, "while "),
-            *keywordSpecificCases(MODULE, "module "),
-            *keywordSpecificCases(EXTENSION, "extension "),
+            *keywordSpecificCases(FUN, "fun"),
+            *keywordSpecificCases(VAL, "val"),
+            *keywordSpecificCases(VAR, "var"),
+            *keywordSpecificCases(IF, "if"),
+            *keywordSpecificCases(ELIF, "elif"),
+            *keywordSpecificCases(ELSE, "else"),
+            *keywordSpecificCases(MATCH, "match"),
+            *keywordSpecificCases(WHILE, "while"),
+            *keywordSpecificCases(MODULE, "module"),
+            *keywordSpecificCases(EXTENSION, "extension"),
             row(VAR, "val", false),
         ).forAll(::impliesData)
     }

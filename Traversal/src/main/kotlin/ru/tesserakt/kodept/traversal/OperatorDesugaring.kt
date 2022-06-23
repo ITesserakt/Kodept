@@ -11,7 +11,7 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
     override val type: KClass<AST.BinaryOperator> = AST.BinaryOperator::class
 
     private fun AST.BinaryOperator.replaceWith(functionName: String, traitName: String) =
-        with(accessRLT<RLT.BinaryOperation>()?.op ?: accessRLT<RLT.CompoundAssignment>()!!.compoundOperator) {
+        with(accessRLT<RLT.BinaryOperation>()?.op ?: accessRLT<RLT.CompoundAssignment>()?.compoundOperator ?: rlt) {
             AST.FunctionCall(
                 AST.Reference(
                     functionName,

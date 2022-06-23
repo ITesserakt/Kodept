@@ -3,4 +3,6 @@ package ru.tesserakt.kodept.lexer
 import com.github.h0tk3y.betterParse.lexer.DefaultTokenizer
 import com.github.h0tk3y.betterParse.lexer.Tokenizer
 
-class Lexer : Tokenizer by DefaultTokenizer(ExpressionToken.values().map { it.token })
+private val default = DefaultTokenizer(ExpressionToken.values().map { it.token })
+
+class Lexer : Tokenizer by default

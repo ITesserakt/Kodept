@@ -2,9 +2,14 @@ module Main =>
 
 struct Int
 
-fun absurd(x, y) => 1
+enum struct Bool { True, False }
 
-fun selfish(self: Int) => self
+fun otherwise => ::Bool::True
+
+fun and(self: Bool, other) => match self {
+    ::Bool::False => ::Bool::False,
+    otherwise()   => other
+}
 
 fun main {
     val t = \x, y => x
@@ -19,7 +24,4 @@ fun main {
     val add = \a, b => a(succ)(b)
 
     fun inner => add(one, one)
-
-    val x = 1
-    x.selfish()
 }

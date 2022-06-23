@@ -11,9 +11,7 @@ import ru.tesserakt.kodept.lexer.ExpressionToken
 private fun RLT.Assignment.expandCompound(left: AST.Lvalue, right: AST.Expression, token: String) = when (token) {
     ExpressionToken.PLUS_EQUALS.name -> { l: AST.Cell<AST.Expression>, r: AST.Cell<AST.Expression> ->
         AST.Mathematical(
-            l,
-            r,
-            AST.Mathematical.Kind.Add
+            l, r, AST.Mathematical.Kind.Add
         ).withRLT()
     }
     ExpressionToken.SUB_EQUALS.name -> { l, r -> AST.Mathematical(l, r, AST.Mathematical.Kind.Sub).withRLT() }
@@ -37,9 +35,7 @@ context (RLT.BinaryOperation)
         private fun expandBinary(left: AST.Expression, right: AST.Expression, token: String) = when (token) {
     ExpressionToken.PLUS.name -> { l: AST.Cell<AST.Expression>, r: AST.Cell<AST.Expression> ->
         AST.Mathematical(
-            l,
-            r,
-            AST.Mathematical.Kind.Add
+            l, r, AST.Mathematical.Kind.Add
         ).withRLT()
     }
     ExpressionToken.SUB.name -> { l, r -> AST.Mathematical(l, r, AST.Mathematical.Kind.Sub) }
@@ -126,6 +122,26 @@ private fun RLT.If.Else.convert() = AST.IfExpr.ElseExpr(body.convert().move()).w
 
 private fun RLT.If.Elif.convert() = AST.IfExpr.ElifExpr(condition.convert().move(), body.convert().move()).withRLT()
 
+private fun RLT.Match.Branch.convert() = AST.IfExpr.ElifExpr(condition.convert(), body.convert()).withRLT()
+
+private fun RLT.Match.convert(): AST.IfExpr {
+    fun transformReceiver(receiver: AST.Expression, pattern: AST.Expression) = with(pattern.rlt) {
+        AST.Comparison(receiver, pattern, AST.Comparison.Kind.Equal).withRLT()
+    }
+
+    return if (receiver == null) AST.IfExpr(
+        branches.head.condition.convert(), branches.head.body.convert(), branches.tail.map { it.convert() }, null
+    ).withRLT()
+    else AST.IfExpr(
+        transformReceiver(receiver!!.convert(), branches.head.condition.convert()),
+        branches.head.body.convert(),
+        branches.tail.map {
+            it.convert().run { copy(conditionCell = transformReceiver(receiver!!.convert(), condition).move()) }
+        },
+        null
+    ).withRLT()
+}
+
 private fun RLT.Function.Bodied.convert() = AST.FunctionDecl(
     id.text.value(), params.flatMap { it.convert() }.move(), returnType?.convert()?.move(), body.convert().move()
 ).withRLT()
@@ -146,8 +162,7 @@ private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
         id.text.value(),
         varsToAlloc.map { it.convert() }.move(),
         rest.map { it.convert() }.move()
-    )
-        .withRLT()
+    ).withRLT()
 
     is RLT.Trait -> AST.TraitDecl(id.text.value(), rest.map { it.convert() }.move()).withRLT()
 
@@ -238,6 +253,8 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
     is RLT.Lambda -> AST.LambdaExpr(params.map {
         with(it) { AST.InferredParameter(it.text.value()).withRLT().move() }
     }, body.convert().move(), null).withRLT()
+
+    is RLT.Match -> convert()
 }
 
 private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
@@ -294,6 +311,7 @@ fun RLT.Node.convert() = when (this) {
     is RLT.TypeNode -> convert()
     is RLT.If.Elif -> convert()
     is RLT.If.Else -> convert()
+    is RLT.Match.Branch -> convert()
     is RLT.File -> convert()
     is RLT.Module -> convert()
     is RLT.MaybeTypedParameter -> convert()

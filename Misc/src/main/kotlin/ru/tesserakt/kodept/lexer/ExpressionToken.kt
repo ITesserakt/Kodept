@@ -15,16 +15,16 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     WHITESPACE(regexToken("""\s+""", ignore = true)),
 
     // Keywords
-    FUN(literalToken("fun ")),
-    VAL(literalToken("val ")),
-    VAR(literalToken("var ")),
-    IF(literalToken("if ")),
-    ELIF(literalToken("elif ")),
-    ELSE(literalToken("else ")),
-    MATCH(literalToken("match ")),
-    WHILE(literalToken("while ")),
-    MODULE(literalToken("module ")),
-    EXTENSION(literalToken("extension ")),
+    FUN(exactLiteralToken("fun")),
+    VAL(exactLiteralToken("val")),
+    VAR(exactLiteralToken("var")),
+    IF(exactLiteralToken("if")),
+    ELIF(exactLiteralToken("elif")),
+    ELSE(exactLiteralToken("else")),
+    MATCH(exactLiteralToken("match")),
+    WHILE(exactLiteralToken("while")),
+    MODULE(exactLiteralToken("module")),
+    EXTENSION(exactLiteralToken("extension")),
     LAMBDA(literalToken("\\")),
 
     // Symbols

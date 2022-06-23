@@ -21,7 +21,7 @@ class CompilerTest : DescribeSpec({
 
                 source.source shouldHaveSize 1
                 tokens.tokens shouldHaveSize 1
-                tokens.tokens.first().value shouldHaveSize 4
+                tokens.tokens.first().value shouldHaveSize 5
                 parse.ast shouldHaveSize 1
                 parse.ast.forAll { it.value.toEither().shouldBeRight() }
             }
@@ -40,7 +40,7 @@ class CompilerTest : DescribeSpec({
 
                 source.source shouldHaveSize 2
                 tokens.tokens shouldHaveSize 2
-                tokens.tokens.map { it.value.count() } shouldContainAll sequenceOf(8, 4)
+                tokens.tokens.map { it.value.count() } shouldContainAll sequenceOf(9, 5)
                 parse.ast shouldHaveSize 2
                 parse.ast.forAll { it.value.toEither().shouldBeRight() }
             }

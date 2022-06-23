@@ -10,7 +10,6 @@ import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
 import ru.tesserakt.kodept.traversal.inference.Function2LambdaTransformer
 import ru.tesserakt.kodept.traversal.inference.TypeInferenceAnalyzer
-import java.math.BigInteger
 import kotlin.io.path.Path
 
 fun main() {
@@ -54,20 +53,6 @@ fun main() {
 //            .then { interpret() }
             .also { sources.bind().holder }
     }
-
-    ForeignFunctionResolver.exportFunction(
-        { println(it[0]) },
-        "kotlin.io.println",
-        listOf(BigInteger::class),
-        Unit::class
-    )
-    ForeignFunctionResolver.exportFunction<Unit>("kotlin.io.println") { println() }
-    ForeignFunctionResolver.exportFunction<BigInteger>("kotlin.io.readInt") { readln().toBigInteger() }
-    ForeignFunctionResolver.exportFunction("kotlin.math.plus", BigInteger::plus)
-    ForeignFunctionResolver.exportFunction<BigInteger, BigInteger, Boolean>("kotlin.math.eq") { a, b -> a == b }
-    ForeignFunctionResolver.exportFunction("kotlin.math.times", BigInteger::times)
-    ForeignFunctionResolver.exportFunction("kotlin.math.minus", BigInteger::minus)
-    ForeignFunctionResolver.exportFunction<BigInteger, BigInteger, Boolean>("kotlin.math.less") { a, b -> a < b }
 
     val pr = ReportProcessor {
         surrounding = 0

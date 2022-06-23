@@ -275,6 +275,11 @@ data class RLT(val root: File) {
         val body: Body,
     ) : StatementNode, Node by keyword
 
+    data class Match(val match: Keyword, val receiver: ExpressionNode?, val branches: NonEmptyList<Branch>) :
+        ExpressionNode, Node by match {
+        data class Branch(val condition: ExpressionNode, val body: Body.Expression) : Node by condition
+    }
+
     data class TupleType(val lparen: Symbol, val types: List<TypeNode>, val rparen: Symbol) : TypeNode, Node by lparen
 
     data class UnionType(val lparen: Symbol, val types: NonEmptyList<TypeNode>, val rparen: Symbol) : TypeNode,
