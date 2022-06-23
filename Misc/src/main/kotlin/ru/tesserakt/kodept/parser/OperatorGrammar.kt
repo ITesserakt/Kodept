@@ -35,8 +35,10 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
             }
         }
 
+    val term by ExpressionGrammar.application or TermGrammar
+
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
-    val access by atom * zeroOrMore(DOT * atom) leftFold RLT::BinaryOperation
+    val access by atom * zeroOrMore(DOT * term) leftFold RLT::Access
     val topExpr: Parser<RLT.ExpressionNode> by (SUB or NOT_LOGIC or NOT_BIT or PLUS) * parser { topExpr } map {
         RLT.UnaryOperation(it.t2, it.t1.symbol())
     } or access

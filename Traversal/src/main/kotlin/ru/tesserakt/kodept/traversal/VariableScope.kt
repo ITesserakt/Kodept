@@ -3,33 +3,49 @@ package ru.tesserakt.kodept.traversal
 import arrow.core.NonEmptyList
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
-import arrow.core.identity
-import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
-import ru.tesserakt.kodept.core.walkDownTop
+import ru.tesserakt.kodept.core.InsecureModifications.withRLT
+import ru.tesserakt.kodept.core.Tree
+import ru.tesserakt.kodept.core.move
 import ru.tesserakt.kodept.error.ReportCollector
 import kotlin.reflect.KClass
 
-object VariableScope : SpecificTransformer<AST.InitializedVar>() {
-    override val type: KClass<AST.InitializedVar> = AST.InitializedVar::class
+object VariableScope : Transformer<AST.ExpressionList>() {
+    override val type: KClass<AST.ExpressionList> = AST.ExpressionList::class
 
     init {
         dependsOn(objectUniqueness)
     }
 
-    context(ReportCollector, Filepath) override fun transformTo(node: AST.InitializedVar): EagerEffect<UnrecoverableError, Pair<AST.Node, AST.Node>> {
-        val nearestBlock = node.walkDownTop(::identity).filterIsInstance<AST.ExpressionList>().first()
-        val varIndex = nearestBlock.expressions.indexOf(node)
-        if (varIndex == -1) println("Warn: var not found")
-        val (outer, inner) = nearestBlock.expressions.withIndex().partition { it.index < varIndex }
+    override val traverseMode: Tree.SearchMode = Tree.SearchMode.LevelOrder
 
-        if (outer.isEmpty()) return eagerEffect { nearestBlock to nearestBlock }
+    private fun AST.ExpressionList.splitBlock(varIndex: Int): Pair<NonEmptyList<AST.BlockLevel>, AST.ExpressionList>? {
+        val (outerI, innerI) = expressions.withIndex().partition { it.index < varIndex }
+        val (outer, inner) = outerI.map { it.value } to innerI.map { it.value }
 
-        val scope = nearestBlock.copy(inner.map { it.value }.toMutableList())
-        val union = if (outer.isEmpty()) nonEmptyListOf(scope)
-        else NonEmptyList.fromListUnsafe(outer.map { it.value }) + scope
+        if (outer.isEmpty()) return null
+        if (inner.size == 1) return null
 
-        return eagerEffect { nearestBlock to nearestBlock.copy(union) }
+        return with(rlt) {
+            NonEmptyList.fromListUnsafe(outer) to
+                    AST.ExpressionList(NonEmptyList.fromListUnsafe(inner.move())).withRLT()
+        }
+    }
+
+    private tailrec fun step(currentBlock: AST.ExpressionList, skips: List<Int>): AST.ExpressionList {
+        val varIndex = currentBlock.expressions.withIndex()
+            .indexOfFirst { it.value is AST.InitializedVar && it.index !in skips }
+        if (varIndex == -1) return currentBlock
+        val split = currentBlock.splitBlock(varIndex)
+
+        return if (split == null) step(currentBlock, skips + varIndex)
+        else with(currentBlock.rlt) {
+            AST.ExpressionList(split.first.map { it.move() } + step(split.second, emptyList()).move()).withRLT()
+        }
+    }
+
+    context(ReportCollector, Filepath) override fun transform(node: AST.ExpressionList): EagerEffect<UnrecoverableError, out AST.Node> {
+        return eagerEffect { step(node, emptyList()) }
     }
 }

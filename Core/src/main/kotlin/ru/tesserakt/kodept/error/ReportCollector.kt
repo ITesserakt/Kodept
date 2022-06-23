@@ -1,6 +1,8 @@
 package ru.tesserakt.kodept.error
 
 import arrow.core.NonEmptyList
+import ru.tesserakt.kodept.core.CodePoint
+import ru.tesserakt.kodept.core.Filepath
 
 class ReportCollector {
     private val reports = mutableListOf<Report>()
@@ -12,6 +14,10 @@ class ReportCollector {
         errors = errors || isError()
         reports += this
     }
+
+    context (Filepath)
+    fun report(point: NonEmptyList<CodePoint>? = null, severity: Report.Severity, message: ReportMessage) =
+        Report(point, severity, message).report()
 
     fun Iterable<Report>.report() {
         errors = errors || any { it.isError() }

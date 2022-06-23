@@ -23,8 +23,9 @@ dependencies {
     implementation(project(":Traversal"))
 
     implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
-    implementation("org.slf4j:slf4j-simple:1.7.26")
+    implementation("org.slf4j:slf4j-simple:1.7.36")
 
+    testImplementation(project(":kotest-extensions"))
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")

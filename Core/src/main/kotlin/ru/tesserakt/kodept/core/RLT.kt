@@ -240,6 +240,8 @@ data class RLT(val root: File) {
     data class BinaryOperation(val left: ExpressionNode, val op: Symbol, val right: ExpressionNode) : ExpressionNode,
         Node by op
 
+    data class Access(val left: ExpressionNode, val dot: Symbol, val right: TermNode) : ExpressionNode, Node by dot
+
     data class UnaryOperation(val expression: ExpressionNode, val op: Symbol) : ExpressionNode, Node by op
 
     sealed class Literal(override val text: Eval<String>, override val position: CodePoint) : ExpressionNode {
@@ -271,10 +273,13 @@ data class RLT(val root: File) {
         val keyword: Keyword,
         val condition: ExpressionNode,
         val body: Body,
-    ) : ExpressionNode, Node by keyword
+    ) : StatementNode, Node by keyword
 
     data class TupleType(val lparen: Symbol, val types: List<TypeNode>, val rparen: Symbol) : TypeNode, Node by lparen
 
     data class UnionType(val lparen: Symbol, val types: NonEmptyList<TypeNode>, val rparen: Symbol) : TypeNode,
         Node by lparen
+
+    data class Lambda(val params: List<Reference>, val flow: Symbol, val body: ExpressionNode) : ExpressionNode,
+        Node by flow
 }

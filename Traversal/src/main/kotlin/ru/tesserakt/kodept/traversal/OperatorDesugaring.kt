@@ -10,17 +10,14 @@ import kotlin.reflect.KClass
 object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
     override val type: KClass<AST.BinaryOperator> = AST.BinaryOperator::class
 
-    private fun AST.BinaryOperator.replaceWith(functionName: String, traitName: String): AST.Dereference =
+    private fun AST.BinaryOperator.replaceWith(functionName: String, traitName: String) =
         with(accessRLT<RLT.BinaryOperation>()?.op ?: accessRLT<RLT.CompoundAssignment>()!!.compoundOperator) {
-            AST.Dereference(
-                left,
-                AST.FunctionCall(
-                    AST.Reference(
-                        functionName,
-                        AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
-                    ).withRLT(),
-                    listOf(right)
-                ).withRLT()
+            AST.FunctionCall(
+                AST.Reference(
+                    functionName,
+                    AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
+                ).withRLT().new(),
+                listOf(left, right).new()
             ).withRLT()
         }
 
@@ -40,7 +37,6 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
             AST.Comparison.Kind.GreaterEqual -> replaceWith("greaterEq", "Ord")
             AST.Comparison.Kind.Greater -> replaceWith("greater", "Ord")
         }
-        is AST.Dereference -> this
         is AST.Elvis -> this
         is AST.Logical -> when (kind) {
             AST.Logical.Kind.Conjunction -> replaceWith("and", "BoolLike")
@@ -61,34 +57,35 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
         return eagerEffect { node.expand() }
     }
 
-    val contract = Contract<AST.BinaryOperator, Depended> {
-        require(this !is AST.Dereference)
-        "binary operator $this should not be in AST. Try adding $BinaryOperatorDesugaring as a dependency in $it"
+    val contract = Contract<AST.BinaryOperator> {
+        "binary operator $this should not be in AST."
     }
 }
 
 object UnaryOperatorDesugaring : Transformer<AST.UnaryOperator>() {
     override val type: KClass<AST.UnaryOperator> = AST.UnaryOperator::class
 
-    private fun AST.UnaryOperator.replaceWith(functionName: String) =
+    private fun AST.UnaryOperator.replaceWith(functionName: String, traitName: String) =
         with(accessRLT<RLT.UnaryOperation>()!!.op) {
-            AST.Dereference(
-                expr,
-                AST.FunctionCall(AST.Reference(functionName, null).withRLT(), emptyList()).withRLT()
+            AST.FunctionCall(
+                AST.Reference(
+                    functionName,
+                    AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
+                ).withRLT().new(), listOf(expr.new())
             ).withRLT()
         }
 
     context(ReportCollector, Filepath) override fun transform(node: AST.UnaryOperator): EagerEffect<UnrecoverableError, out AST.Node> =
         eagerEffect {
             when (node) {
-                is AST.Absolution -> node.replaceWith("unaryPlus")
-                is AST.BitInversion -> node.replaceWith("bitNot")
-                is AST.Inversion -> node.replaceWith("not")
-                is AST.Negation -> node.replaceWith("unaryMinus")
+                is AST.Absolution -> node.replaceWith("unaryPlus", "Num")
+                is AST.BitInversion -> node.replaceWith("bitNot", "Integral")
+                is AST.Inversion -> node.replaceWith("not", "BoolLike")
+                is AST.Negation -> node.replaceWith("unaryMinus", "Num")
             }
         }
 
-    val contract = Contract<AST.UnaryOperator, Depended> {
-        "unary operator $this should not be in AST. Try adding $UnaryOperatorDesugaring as a dependency in $it"
+    val contract = Contract<AST.UnaryOperator> {
+        "unary operator $this should not be in AST."
     }
 }

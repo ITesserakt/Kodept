@@ -1,62 +1,25 @@
-module Main {
-    fun main => ::Prelude::println(::Math::factorial(::Prelude::readInt()))
-}
+module Main =>
 
-module Prelude {
-    foreign type Int => "java.math.BigInteger"
-    foreign type String => "kotlin.String"
+struct Int
 
-    foreign fun prim_println (value: String) => "kotlin.io.println"
-    foreign fun prim_println_0 => "kotlin.io.println"
-    foreign fun prim_read_int: Int => "kotlin.io.readInt"
+fun absurd(x, y) => 1
 
-    fun println(value: String) => prim_println(value)
-    fun readInt => prim_read_int()
+fun selfish(self: Int) => self
 
-    enum struct Ordering {
-        Less, Greater, Equal
-    }
+fun main {
+    val t = \x, y => x
+    val f = \x, y => y
+    val if_ = \b, t, f => b(t, f)
+    val and = \a, b => if_(a, b, f)
+    val or = \a, b => if_(a, t, b)
+    val not = \a => if_(a, f, t)
+    val zero = \f, x => x
+    val one = \f, x => f(x)
+    val succ = \n, f, x => f(n(f), x)
+    val add = \a, b => a(succ)(b)
 
-    enum struct Bool {
-        True, False
-    }
+    fun inner => add(one, one)
 
-    trait Num {
-        abstract fun plus(self: Int, b: Int): Int
-        abstract fun times(self: Int, b: Int): Int
-
-        fun minus(self, b) => self + (-1 * b)
-    }
-
-    trait Eq {
-        abstract fun eq(self: Int, b: Int): Bool
-    }
-
-    trait Ord {
-        abstract fun compare(self: Int, b: Int): Ordering
-
-        fun lessEq(self, b) => self == b || self.compare(b) == ::Prelude::Ordering::Less
-    }
-
-    trait BoolLike {
-        fun or(self, b) =>
-            if self == ::Bool::True => ::Bool::True
-            else => b
-    }
-}
-
-module Math {
-    fun dec2Self(self) => self - 1 - 1
-
-    fun dec2(x: ::Prelude::Int) => x.dec2Self()
-
-    fun factorial(n) {
-        var result = 1
-        var i = 1
-        while i <= n {
-            result *= i
-            i += 1
-        }
-        result
-    }
+    val x = 1
+    x.selfish()
 }

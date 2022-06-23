@@ -7,6 +7,8 @@ import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
+import ru.tesserakt.kodept.core.InsecureModifications.withRLT
+import ru.tesserakt.kodept.core.move
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -65,7 +67,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
             )
 
             1 -> items.first()
-            else -> copy(_items = NonEmptyList.fromListUnsafe(items))
+            else -> with(rlt) { AST.UnionType(NonEmptyList.fromListUnsafe(items.move())).withRLT() }
         }
     }
 

@@ -41,5 +41,6 @@ object BlockLevelGrammar : Grammar<RLT.BlockLevelNode>() {
         RLT.CompoundAssignment(decl, op.symbol(), expr)
     } or (TermGrammar * EQUALS * (block or OperatorGrammar) map { RLT.Assignment(it.t1, it.t2.symbol(), it.t3) })
 
-    override val rootParser by functionStatement or initialization or assignment or expression or block
+    override val rootParser by
+    functionStatement or CodeFlowGrammar.whileStatement or initialization or assignment or expression or block
 }

@@ -24,7 +24,7 @@ class CodeFlowGrammarTest : WordSpec({
 
     "while expression" should {
         test(
-            CodeFlowGrammar,
+            CodeFlowGrammar.whileStatement,
             """while s.isEmpty() { doA() }""",
             AST.WhileExpr(
                 AST.Dereference(AST.Reference("s"), AST.FunctionCall(AST.Reference("isEmpty"), listOf())),
@@ -93,27 +93,21 @@ class CodeFlowGrammarTest : WordSpec({
                         elif v => c 
                         else => b
             """.trimIndent(), AST.IfExpr(
-                AST.Reference("a"),
-                AST.ExpressionList(nonEmptyListOf(AST.Reference("b"))),
-                listOf(
+                AST.Reference("a"), AST.ExpressionList(nonEmptyListOf(AST.Reference("b"))), listOf(
                     AST.IfExpr.ElifExpr(
                         AST.Reference("b"),
                         AST.ExpressionList(nonEmptyListOf(AST.Reference("v"))),
                     )
-                ),
-                AST.IfExpr.ElseExpr(
+                ), AST.IfExpr.ElseExpr(
                     AST.ExpressionList(
                         nonEmptyListOf(
                             AST.IfExpr(
-                                AST.Reference("c"),
-                                AST.ExpressionList(nonEmptyListOf(AST.Reference("a"))),
-                                listOf(
+                                AST.Reference("c"), AST.ExpressionList(nonEmptyListOf(AST.Reference("a"))), listOf(
                                     AST.IfExpr.ElifExpr(
                                         AST.Reference("v"),
                                         AST.ExpressionList(nonEmptyListOf(AST.Reference("c"))),
                                     )
-                                ),
-                                AST.IfExpr.ElseExpr(
+                                ), AST.IfExpr.ElseExpr(
                                     AST.ExpressionList(nonEmptyListOf(AST.Reference("b"))),
                                 )
                             )

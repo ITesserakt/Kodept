@@ -47,9 +47,9 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.AbstractFunctionDecl -> """abstract fun $name(${params.joinToString { it.asString() }}): ${returns?.asString() ?: AST.TupleType.unit.asString()}"""
     is AST.ForeignFunctionDecl -> """foreign fun $name(${params.joinToString { it.asString() }}): ${returns?.asString() ?: AST.TupleType.unit.asString()} => $descriptor"""
     is AST.FunctionDecl -> """fun $name(${params.joinToString { it.asString() }})${if (returns != null) ": ${returns!!.asString()}" else ""} ${rest.asString()}"""
+    is AST.Parameter -> """$name: ${type.asString()}"""
     is AST.InferredParameter -> """$name${if (type != null) ": ${type!!.asString()}" else ""}"""
     is AST.InitializedVar -> """${if (mutable) "var" else "val"} $name${if (type != null) ": ${type!!.asString()}" else ""} = ${expr.asString()}"""
-    is AST.Parameter -> """$name: ${type.asString()}"""
     is AST.EnumDecl.Entry -> name
     is AST.ForeignStructDecl -> """foreign type $name => "$relatedWith""""
     is AST.ModuleDecl -> """module $name ${if (global) "=>" else "{"}
@@ -75,4 +75,6 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.FileDecl -> modules.joinToString("\n") { it.asString() }
     is AST.TupleType -> toString()
     is AST.UnionType -> toString()
+    is AST.LambdaExpr -> """\(${params.joinToString { it.asString() }}) -> ${body.asString()}"""
+    is AST.Cell<*> -> value.asString()
 }

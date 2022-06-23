@@ -8,18 +8,14 @@ class OperatorGrammarTest : WordSpec({
 
     "math operators" should {
         test(
-            OperatorGrammar.addExpr,
-            "123 + 321",
-            AST.Mathematical(
+            OperatorGrammar.addExpr, "123 + 321", AST.Mathematical(
                 AST.DecimalLiteral(123.toBigInteger()),
                 AST.DecimalLiteral(321.toBigInteger()),
                 AST.Mathematical.Kind.Add,
             )
         )
         test(
-            OperatorGrammar.addExpr,
-            "123 - 321 - 0.5",
-            AST.Mathematical(
+            OperatorGrammar.addExpr, "123 - 321 - 0.5", AST.Mathematical(
                 AST.Mathematical(
                     AST.DecimalLiteral(123.toBigInteger()),
                     AST.DecimalLiteral(321.toBigInteger()),
@@ -32,29 +28,19 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            OperatorGrammar.powExpr,
-            "a ** b ** c ** d",
-            AST.Mathematical(
-                AST.Reference("a"),
-                AST.Mathematical(
-                    AST.Reference("b"),
-                    AST.Mathematical(
-                        AST.Reference("c"),
-                        AST.Reference("d"),
-                        AST.Mathematical.Kind.Pow
-                    ),
-                    AST.Mathematical.Kind.Pow
-                ),
-                AST.Mathematical.Kind.Pow
+            OperatorGrammar.powExpr, "a ** b ** c ** d", AST.Mathematical(
+                AST.Reference("a"), AST.Mathematical(
+                    AST.Reference("b"), AST.Mathematical(
+                        AST.Reference("c"), AST.Reference("d"), AST.Mathematical.Kind.Pow
+                    ), AST.Mathematical.Kind.Pow
+                ), AST.Mathematical.Kind.Pow
             )
         )
     }
 
     "complex operators" should {
         test(
-            OperatorGrammar,
-            """7 & "test" + ~1.2""",
-            AST.Binary(
+            OperatorGrammar, """7 & "test" + ~1.2""", AST.Binary(
                 AST.DecimalLiteral(7.toBigInteger()),
                 AST.Mathematical(
                     AST.StringLiteral("test"),
@@ -69,9 +55,7 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            OperatorGrammar,
-            """2 * (2 + 2)""",
-            AST.Mathematical(
+            OperatorGrammar, """2 * (2 + 2)""", AST.Mathematical(
                 AST.DecimalLiteral(2.toBigInteger()),
                 AST.Mathematical(
                     AST.DecimalLiteral(2.toBigInteger()),
@@ -84,9 +68,7 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            OperatorGrammar,
-            """2 * (2 + -"αβοβα")""",
-            AST.Mathematical(
+            OperatorGrammar, """2 * (2 + -"αβοβα")""", AST.Mathematical(
                 AST.DecimalLiteral(2.toBigInteger()),
                 AST.Mathematical(
                     AST.DecimalLiteral(2.toBigInteger()),
@@ -99,9 +81,7 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            OperatorGrammar,
-            """2 * 2 + 2""",
-            AST.Mathematical(
+            OperatorGrammar, """2 * 2 + 2""", AST.Mathematical(
                 AST.Mathematical(
                     AST.DecimalLiteral(2.toBigInteger()),
                     AST.DecimalLiteral(2.toBigInteger()),
@@ -114,39 +94,22 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            ExpressionGrammar,
-            """id(2 + 2)""",
-            AST.FunctionCall(
-                AST.Reference("id"),
-                listOf(
-                    AST.TupleLiteral(
-                        listOf(
-                            AST.Mathematical(
-                                AST.DecimalLiteral(2.toBigInteger()),
-                                AST.DecimalLiteral(2.toBigInteger()),
-                                AST.Mathematical.Kind.Add
-                            )
-                        )
+            ExpressionGrammar, """id(2 + 2)""", AST.FunctionCall(
+                AST.Reference("id"), listOf(
+                    AST.Mathematical(
+                        AST.DecimalLiteral(2.toBigInteger()),
+                        AST.DecimalLiteral(2.toBigInteger()),
+                        AST.Mathematical.Kind.Add
                     )
                 )
             )
         )
         test(
-            OperatorGrammar,
-            """core.println("Hello, " + "world!")""",
-            AST.Dereference(
-                AST.Reference("core"),
-                AST.FunctionCall(
-                    AST.Reference("println"),
-                    listOf(
-                        AST.TupleLiteral(
-                            listOf(
-                                AST.Mathematical(
-                                    AST.StringLiteral("Hello, "),
-                                    AST.StringLiteral("world!"),
-                                    AST.Mathematical.Kind.Add
-                                )
-                            )
+            OperatorGrammar, """core.println("Hello, " + "world!")""", AST.Dereference(
+                AST.Reference("core"), AST.FunctionCall(
+                    AST.Reference("println"), listOf(
+                        AST.Mathematical(
+                            AST.StringLiteral("Hello, "), AST.StringLiteral("world!"), AST.Mathematical.Kind.Add
                         )
                     )
                 )

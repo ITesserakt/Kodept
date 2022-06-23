@@ -18,7 +18,7 @@ import kotlin.reflect.KClass
 
 object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
     init {
-        dependsOn(TypeDereferenceTransformer)
+        dependsOn(TypeReferenceResolver)
     }
 
     override val type: KClass<AST.ForeignFunctionDecl> = AST.ForeignFunctionDecl::class

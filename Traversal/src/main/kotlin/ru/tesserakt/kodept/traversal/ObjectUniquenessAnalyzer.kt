@@ -23,9 +23,9 @@ val objectUniqueness = object : Analyzer() {
 
         val duplicates = blocks.flatMap {
             when (it) {
-                is AST.ModuleDecl -> it.children().groupBy(AST.Named::name).values
+                is AST.ModuleDecl -> it.rest.groupBy(AST.Named::name).values
                 is AST.StructDecl -> it.rest.groupBy(AST.Named::name).values
-                is AST.TraitDecl -> it.children().groupBy(AST.Named::name).values
+                is AST.TraitDecl -> it.rest.groupBy(AST.Named::name).values
                 is AST.EnumDecl -> it.enumEntries.groupBy(AST.Named::name).values
                 is AST.ExpressionList -> it.expressions.filterIsInstance<AST.FunctionDecl>()
                     .groupBy(AST.Named::name).values

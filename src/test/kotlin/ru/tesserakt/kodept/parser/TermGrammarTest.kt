@@ -13,31 +13,19 @@ class TermGrammarTest : WordSpec({
 
     "fun ref" should {
         test(
-            ExpressionGrammar.application,
-            "id()",
-            AST.FunctionCall(AST.Reference("id"), listOf())
+            ExpressionGrammar.application, "id()", AST.FunctionCall(AST.Reference("id"), listOf())
         )
         test(
-            ExpressionGrammar.application,
-            """println("Hello, world!")""",
-            AST.FunctionCall(
-                AST.Reference("println"),
-                listOf(AST.TupleLiteral(listOf(AST.StringLiteral("Hello, world!"))))
+            ExpressionGrammar.application, """println("Hello, world!")""", AST.FunctionCall(
+                AST.Reference("println"), listOf(AST.StringLiteral("Hello, world!"))
             )
         )
         test(
-            ExpressionGrammar.application,
-            "test((123), 10.2, foobar)",
-            AST.FunctionCall(
-                AST.Reference("test"),
-                listOf(
-                    AST.TupleLiteral(
-                        listOf(
-                            AST.DecimalLiteral(123.toBigInteger()),
-                            AST.FloatingLiteral(10.2.toBigDecimal()),
-                            AST.Reference("foobar")
-                        )
-                    )
+            ExpressionGrammar.application, "test((123), 10.2, foobar)", AST.FunctionCall(
+                AST.Reference("test"), listOf(
+                    AST.DecimalLiteral(123.toBigInteger()),
+                    AST.FloatingLiteral(10.2.toBigDecimal()),
+                    AST.Reference("foobar")
                 )
             )
         )
@@ -52,10 +40,9 @@ class TermGrammarTest : WordSpec({
         test(
             OperatorGrammar.access, "id(x).id(x).id(x)", AST.Dereference(
                 AST.Dereference(
-                    AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x"))))),
-                    AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x")))))
-                ),
-                AST.FunctionCall(AST.Reference("id"), listOf(AST.TupleLiteral(listOf(AST.Reference("x")))))
+                    AST.FunctionCall(AST.Reference("id"), listOf(AST.Reference("x"))),
+                    AST.FunctionCall(AST.Reference("id"), listOf(AST.Reference("x")))
+                ), AST.FunctionCall(AST.Reference("id"), listOf(AST.Reference("x")))
             )
         )
         test(OperatorGrammar.access, "id().id().", null)

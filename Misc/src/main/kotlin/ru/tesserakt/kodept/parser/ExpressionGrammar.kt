@@ -15,5 +15,14 @@ object ExpressionGrammar : Grammar<RLT.ExpressionNode>() {
         })
     }
 
-    override val rootParser by application or LiteralGrammar or TermGrammar or CodeFlowGrammar
+    val lambda by -LAMBDA and strictTrailing(
+        TermGrammar.reference,
+        COMMA
+    ) * FLOW * OperatorGrammar map { (params, expr) ->
+        val (params, flow) = params
+        RLT.Lambda(params, flow.symbol(), expr)
+    }
+
+    override val rootParser by
+    lambda or application or LiteralGrammar or TermGrammar or CodeFlowGrammar
 }

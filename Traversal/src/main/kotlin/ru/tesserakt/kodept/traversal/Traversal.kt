@@ -10,7 +10,6 @@ import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.ReportMessage
-import kotlin.reflect.safeCast
 
 @JvmInline
 value class UnrecoverableError(val crashReport: Report) {
@@ -25,8 +24,9 @@ value class UnrecoverableError(val crashReport: Report) {
 }
 
 context (ReportCollector, Filepath)
-fun <A : AST.Node> SpecificTransformer<A>.transformOrSkip(node: AST.Node) =
-    type.safeCast(node)?.let { transformTo(it) } ?: eagerEffect { node to node }
+fun <A : AST.Node> Transformer<A>.transformOrSkip(node: AST.Node) = eagerEffect {
+    filterCandidatesBy(node)?.let { transform(it) }?.bind()
+}
 
 fun <T> unwrap(f: ReportCollector.() -> EagerEffect<out UnrecoverableError, T>) = with(ReportCollector()) {
     f(this).fold({ (it.crashReport.nel() + collectedReports).leftIor() }, {

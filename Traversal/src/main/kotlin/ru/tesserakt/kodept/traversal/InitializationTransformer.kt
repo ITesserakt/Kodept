@@ -14,13 +14,12 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
     override val type: KClass<AST.Assignment> = AST.Assignment::class
 
     init {
-        dependsOn(DereferenceTransformer)
+        dependsOn(ReferenceResolver)
     }
 
     context(ReportCollector, Filepath) override fun transform(node: AST.Assignment): EagerEffect<UnrecoverableError, out AST.Node> =
         eagerEffect {
             when (val left = node.left) {
-                is AST.Dereference -> node
                 is AST.FunctionCall -> node
                 is AST.ResolvedReference -> {
                     when (val referral = left.referral) {
@@ -42,7 +41,7 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                 }
 
                 is AST.TypeReference -> node
-                is AST.Reference -> with(left) { DereferenceTransformer.contract() }
+                is AST.Reference -> with(left) { ReferenceResolver.contract() }
             }
         }
 }

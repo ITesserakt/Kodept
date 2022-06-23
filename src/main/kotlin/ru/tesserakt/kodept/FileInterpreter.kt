@@ -2,6 +2,7 @@ package ru.tesserakt.kodept
 
 import arrow.core.andThen
 import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.traversal.DereferenceEliminator
 import java.math.BigInteger
 
 data class ProgramState(
@@ -9,7 +10,7 @@ data class ProgramState(
     val output: Int,
     val state: Map<AST.ResolvedReference, Any>,
     val result: Any?,
-    val functionParameters: Map<AST.ParameterLike, Any?>,
+    val functionParameters: Map<AST.InferredParameter, Any?>,
     val mainFound: Boolean,
 )
 
@@ -59,17 +60,7 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
     private fun AST.Expression.eval(state: ProgramState): ProgramState = when (this) {
         is AST.Binary -> evalBinaryOperatorUsing(binaryOps, state)
         is AST.Comparison -> evalBinaryOperatorUsing(comparisonOps, state)
-        is AST.Dereference -> {
-            val evalLeft = left.eval(state)
-            val newState = evalLeft.copy(
-                functionParameters = evalLeft.functionParameters + (AST.InferredParameter(
-                    "self",
-                    null
-                ) to evalLeft.result)
-            )
-            right.eval(newState).copy(functionParameters = evalLeft.functionParameters)
-        }
-
+        is AST.Dereference -> DereferenceEliminator.contract()
         is AST.Elvis -> TODO()
         is AST.Logical -> evalBinaryOperatorUsing(logicalOps, state)
         is AST.Mathematical -> evalBinaryOperatorUsing(mathOps, state)
@@ -114,7 +105,7 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
                     val newState = params.runningFold(state) { acc, next -> next.eval(acc) }
                     val stateWithParams = state
                         .copy(functionParameters = newState.last().functionParameters + ref.params.zip(newState.flatMap {
-                            it.result as? List<*> ?: emptyList()
+                            it.result as? List<*> ?: listOfNotNull(it.result)
                         }).toMap())
                     ref.rest.eval(stateWithParams).copy(functionParameters = newState.last().functionParameters)
                 }
@@ -130,7 +121,8 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
             is AST.ForeignFunctionDecl -> TODO()
             is AST.FunctionDecl -> TODO()
             is AST.InitializedVar -> state.copy(result = state.state.getValue(this))
-            is AST.ParameterLike -> state.copy(result = state.functionParameters.getValue(r))
+            is AST.InferredParameter -> state.copy(result = state.functionParameters.getValue(r))
+            is AST.Parameter -> state.copy(result = state.functionParameters.getValue(r))
         }
 
         is AST.Reference -> throw IllegalStateException(name)
@@ -139,16 +131,7 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.BitInversion -> state.copy(result = (expr.eval(state).result as BigInteger).inv())
         is AST.Inversion -> state.copy(result = !(expr.eval(state).result as Boolean))
         is AST.Negation -> state.copy(result = (expr.eval(state).result as BigInteger).negate())
-        is AST.WhileExpr -> {
-            var s = state
-            val list = buildList {
-                while (condition.eval(s).result as Boolean) {
-                    s = body.eval(s)
-                    add(s.result)
-                }
-            }
-            s.copy(result = list)
-        }
+        is AST.LambdaExpr -> TODO()
     }
 
     override fun initialState(input: List<String>) = ProgramState(input, 0, emptyMap(), null, emptyMap(), false)
@@ -179,7 +162,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.StructDecl -> program.rest.fold(state, ::join)
         is AST.TraitDecl -> program.rest.fold(state, ::join)
         is AST.Assignment -> when (val left = program.left) {
-            is AST.Dereference -> TODO()
             is AST.FunctionCall -> TODO()
             is AST.ResolvedReference -> {
                 val expr = program.right.eval(state)
@@ -196,5 +178,16 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.TupleType -> state
         is AST.Type -> state
         is AST.UnionType -> state
+        is AST.WhileExpr -> {
+            var s = state
+            val list = buildList {
+                while (program.condition.eval(s).result as Boolean) {
+                    s = program.body.eval(s)
+                    add(s.result)
+                }
+            }
+            s.copy(result = list)
+        }
+        is AST.Cell<*> -> join(state, program.value)
     }
 }

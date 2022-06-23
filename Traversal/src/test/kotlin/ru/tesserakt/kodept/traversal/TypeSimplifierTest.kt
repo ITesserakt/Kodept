@@ -8,11 +8,14 @@ import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import ru.tesserakt.kodept.core.*
+import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.CodePoint
+import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
+import ru.tesserakt.kodept.core.RLT
+import ru.tesserakt.kodept.core.shouldBe
 import ru.tesserakt.kodept.error.Report
 
-@OptIn(Internal::class)
 class TypeSimplifierTest : StringSpec({
     val tupleRLT: RLT.TupleType = mockk {
         every { position } returns CodePoint(0, 0)
@@ -33,17 +36,17 @@ class TypeSimplifierTest : StringSpec({
 
         "simple type should not change" {
             val type = AST.Type("A").pushRLT()
-            unwrap { transformer.transform(type) }.toEither().shouldBeRight(type)
+            unwrap { transformer.transform(type) }.toEither().shouldBeRight() shouldBe type
         }
 
         "Compound tuple types should not change" {
             val type = AST.TupleType(listOf("A", "B").map(AST::Type).map(AST::TypeReference)).pushRLT()
-            unwrap { transformer.transform(type) }.toEither().shouldBeRight(type)
+            unwrap { transformer.transform(type) }.toEither().shouldBeRight() shouldBe type
         }
 
         "Proper union types should not change" {
             val type = AST.UnionType(nonEmptyListOf("A", "B").map(AST::Type).map(AST::TypeReference)).pushRLT()
-            unwrap { transformer.transform(type) }.toEither().shouldBeRight(type)
+            unwrap { transformer.transform(type) }.toEither().shouldBeRight() shouldBe type
         }
 
         "Single type in tuple should be aligned with it" {
@@ -64,7 +67,7 @@ class TypeSimplifierTest : StringSpec({
             val c = AST.UnionType(nonEmptyListOf(AST.Type("C").let(AST::TypeReference), a)).pushRLT()
             val type = AST.UnionType(nonEmptyListOf(a, b, c, b, a)).pushRLT()
             unwrap { transformer.transform(type) }.unwrap().shouldBeRight().second shouldBe AST.UnionType(
-                nonEmptyListOf(AST.Type("C").let(AST::TypeReference), b, a)
+                nonEmptyListOf(AST.Type("C").let(AST::TypeReference), a, b)
             )
         }
     }

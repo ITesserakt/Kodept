@@ -25,6 +25,7 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     WHILE(literalToken("while ")),
     MODULE(literalToken("module ")),
     EXTENSION(literalToken("extension ")),
+    LAMBDA(literalToken("\\")),
 
     // Symbols
     COMMA(literalToken(",")),

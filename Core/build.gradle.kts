@@ -15,8 +15,10 @@ repositories {
 
 dependencies {
     api("io.arrow-kt:arrow-core:$arrowVersion")
-    api("io.github.microutils:kotlin-logging-jvm:2.1.20")
+    api("io.github.microutils:kotlin-logging-jvm:2.1.23")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
 
+    testImplementation(kotlin("reflect"))
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")

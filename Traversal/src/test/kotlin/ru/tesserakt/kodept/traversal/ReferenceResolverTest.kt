@@ -6,12 +6,11 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.clearAllMocks
 import io.mockk.mockk
-import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.core.Filepath
+import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
-import ru.tesserakt.kodept.core.RLT
 
-class DereferenceTransformerTest : StringSpec() {
+@OptIn(Internal::class)
+class ReferenceResolverTest : StringSpec() {
     private fun Filepath.buildAST(root: AST.Node) = AST(root, this).apply {
         walkThrough {
             when (it) {
@@ -23,14 +22,21 @@ class DereferenceTransformerTest : StringSpec() {
     }
 
     init {
+        beforeTest {
+            AST.anyRoot = true
+        }
+
         with(Filepath("TEST FILE")) {
             "reference by initialized variable declaration" {
                 val ref = AST.Reference("x")
                 val initVar = AST.InitializedVar(ref, false, null, AST.DecimalLiteral(5.toBigInteger()))
                 buildAST(initVar)
 
-                unwrap { DereferenceTransformer.transform(ref) }.toEither()
-                    .shouldBeRight(AST.ResolvedReference(ref.name, initVar, ref.context))
+                unwrap { ReferenceResolver.transform(ref) }.toEither().shouldBeRight() shouldBe AST.ResolvedReference(
+                    ref.name,
+                    initVar,
+                    ref.context
+                )
             }
 
             "reference by variable declaration somewhere in a block" {
@@ -44,33 +50,32 @@ class DereferenceTransformerTest : StringSpec() {
                 )
                 buildAST(block)
 
-                unwrap { DereferenceTransformer.transform(ref) }.toEither()
-                    .shouldBeRight(
-                        AST.ResolvedReference(
-                            ref.name,
-                            AST.InitializedVar(ref, false, null, AST.CharLiteral('y')),
-                            ref.context
-                        )
-                    )
+                unwrap { ReferenceResolver.transform(ref) }.toEither()
+                    .shouldBeRight() shouldBe AST.ResolvedReference(
+                    ref.name,
+                    AST.InitializedVar(ref, false, null, AST.CharLiteral('y')),
+                    ref.context
+                )
             }
 
             "reference by function name somewhere in a block" {
                 val ref = AST.Reference("x")
                 val block = AST.ExpressionList(
                     nonEmptyListOf(
-                        AST.ExpressionList(nonEmptyListOf(ref)),
+                        AST.ExpressionList(nonEmptyListOf(ref.move())),
                         AST.FunctionDecl("x", emptyList(), null, AST.TupleLiteral.unit)
                     )
                 )
                 buildAST(block)
 
-                unwrap { DereferenceTransformer.transform(ref) }
+                unwrap { ReferenceResolver.transform(ref) }
                     .toEither().shouldBeRight()
                     .shouldBeTypeOf<AST.ResolvedReference>()
                     .referral.shouldBeTypeOf<AST.FunctionDecl>()
             }
         }
 
+        afterTest { AST.anyRoot = false }
         afterSpec { clearAllMocks() }
     }
 }

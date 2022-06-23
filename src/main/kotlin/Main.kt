@@ -3,11 +3,13 @@ import arrow.core.right
 import mu.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
+import ru.tesserakt.kodept.core.asString
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportProcessor
 import ru.tesserakt.kodept.traversal.*
-import ru.tesserakt.kodept.traversal.inference.TypeAssigner
+import ru.tesserakt.kodept.traversal.inference.Function2LambdaTransformer
+import ru.tesserakt.kodept.traversal.inference.TypeInferenceAnalyzer
 import java.math.BigInteger
 import kotlin.io.path.Path
 
@@ -23,12 +25,14 @@ fun main() {
         transformers = setOf(
             TypeSimplifier,
             InitializationTransformer,
-            DereferenceTransformer,
+            ReferenceResolver,
             VariableScope,
-            TypeDereferenceTransformer,
+            TypeReferenceResolver,
             ForeignFunctionResolver,
             BinaryOperatorDesugaring,
-            UnaryOperatorDesugaring
+            UnaryOperatorDesugaring,
+            DereferenceEliminator,
+            Function2LambdaTransformer
         )
         analyzers = setOf(
             moduleNameAnalyzer,
@@ -36,7 +40,7 @@ fun main() {
             emptyBlockAnalyzer,
             variableUniqueness,
             objectUniqueness,
-            TypeAssigner,
+            TypeInferenceAnalyzer,
         )
     }
 
@@ -51,12 +55,18 @@ fun main() {
             .also { sources.bind().holder }
     }
 
-    ForeignFunctionResolver.exportFunction({ println(it[0]) }, "kotlin.io.println", listOf(String::class), Unit::class)
+    ForeignFunctionResolver.exportFunction(
+        { println(it[0]) },
+        "kotlin.io.println",
+        listOf(BigInteger::class),
+        Unit::class
+    )
     ForeignFunctionResolver.exportFunction<Unit>("kotlin.io.println") { println() }
     ForeignFunctionResolver.exportFunction<BigInteger>("kotlin.io.readInt") { readln().toBigInteger() }
     ForeignFunctionResolver.exportFunction("kotlin.math.plus", BigInteger::plus)
     ForeignFunctionResolver.exportFunction<BigInteger, BigInteger, Boolean>("kotlin.math.eq") { a, b -> a == b }
     ForeignFunctionResolver.exportFunction("kotlin.math.times", BigInteger::times)
+    ForeignFunctionResolver.exportFunction("kotlin.math.minus", BigInteger::minus)
     ForeignFunctionResolver.exportFunction<BigInteger, BigInteger, Boolean>("kotlin.math.less") { a, b -> a < b }
 
     val pr = ReportProcessor {
@@ -77,7 +87,7 @@ fun main() {
                     }
                 }
             }
-        }, { logger.debug("Competed successfully") })
+        }, { logger.debug("Competed successfully: ${it.asString()}") })
     }
 
 //    result.programOutput.value().let(::println)

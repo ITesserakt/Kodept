@@ -41,4 +41,18 @@ sealed class SemanticError(final override val code: String, override val message
 
     data class ForeignFunctionLinkage(val name: String) :
         SemanticError("KSeE11", "There is no known implementation for function `$name`")
+
+    data class TypeInDereference(val type: String) :
+        SemanticError("KSeE12", "Cannot access to type `$type` via `.` operator")
+
+    data class MismatchedType(val expected: String, val actual: String) :
+        SemanticError("KSeE13", "Cannot align types: expected $expected, but received $actual")
+
+    object TypeInferenceFailed : SemanticError("KSeE14", "There are errors while aligning types")
+
+    data class ReferenceCannotBeTyped(val refName: String) :
+        SemanticError("KSeE15", "Type inference fails to type `$refName`. Consider type in manually")
+
+    data class InfiniteType(val name: String) :
+        SemanticError("KSeE16", "Cannot construct infinite type $name")
 }

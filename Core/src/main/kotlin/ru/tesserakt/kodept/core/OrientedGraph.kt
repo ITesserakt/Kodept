@@ -91,7 +91,7 @@ class OrientedGraph<T> private constructor() {
         }
     }
 
-    fun sortedLayers() = either.eager<Errors, List<List<T>>> {
+    fun sortedLayers() = either.eager<_, List<List<T>>> {
         val sums = matrix.transpose().mapIndexed { index, it ->
             val cnt = it.count(::identity)
             if (cnt == 0) IndexedValue(index, Free)
@@ -101,9 +101,11 @@ class OrientedGraph<T> private constructor() {
         buildList {
             while (!sums.all { it.value == NonExisting }) {
                 val layer = sums.filterValues { it == Free }.keys
-                if (layer.isEmpty()) shift<Nothing>(Cycle(NonEmptyList.fromListUnsafe(
-                    sums.filterValues { it is Existing && it.value == 1 }.map { nodes[it.key] })
-                )
+                if (layer.isEmpty()) shift<Nothing>(
+                    Cycle(
+                        NonEmptyList.fromListUnsafe(
+                            sums.filterValues { it is Existing && it.value == 1 }.map { nodes[it.key] })
+                    )
                 )
                 add(layer.map { nodes[it] ?: shift<Nothing>(NotFound) })
 
@@ -118,12 +120,17 @@ class OrientedGraph<T> private constructor() {
         }
     }
 
-    fun topSort(start: T) = either.eager<Errors, List<T>> {
+    fun topSort(start: T) = either.eager {
         val (i, _) = nodes.entries.find { it.value == start } ?: shift<Nothing>(NotFound)
         val stack = ArrayDeque<T>(nodes.size)
         dfs(i) { stack.addLast(it) }.bind()
         stack.asReversed()
     }
+
+    fun hasCycles(start: T) = either.eager {
+        val (i, _) = nodes.entries.find { it.value == start } ?: shift<Nothing>(NotFound)
+        dfs(i) { }.bind()
+    }.fold({ if (it is Cycle<*>) true else error(it) }, { false })
 
     companion object {
         operator fun <T> invoke(scope: OrientedGraph<T>.() -> Unit) = OrientedGraph<T>().also(scope)

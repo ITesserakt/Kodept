@@ -130,13 +130,9 @@ class BlockLevelGrammarTest : WordSpec({
                 AST.FunctionCall(
                     AST.Reference("test"),
                     listOf(
-                        AST.TupleLiteral(
-                            listOf(
-                                AST.Reference("blockLevelGrammar"),
-                                AST.StringLiteral("val x: String = {}"),
-                                AST.Reference("null")
-                            )
-                        )
+                        AST.Reference("blockLevelGrammar"),
+                        AST.StringLiteral("val x: String = {}"),
+                        AST.Reference("null")
                     )
                 )
             )
