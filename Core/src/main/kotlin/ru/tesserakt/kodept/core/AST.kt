@@ -572,16 +572,6 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
         constructor(expr: Expression) : this(expr.move())
     }
 
-    @Deprecated("Not used")
-    data class Elvis(override val leftCell: Cell<Expression>, override val rightCell: Cell<Expression>) :
-        BinaryOperator() {
-        override val kind: OperatorKind = Kind
-
-        private object Kind : OperatorKind
-
-        override fun deepCopy() = with(rlt) { Elvis(leftCell.deepCopy(), rightCell.deepCopy()).withRLT() }
-    }
-
     data class Assignment(private val leftCell: Cell<Lvalue>, val rightCell: Cell<Expression>) : NodeBase(), Statement {
         val left by leftCell
         val right by rightCell

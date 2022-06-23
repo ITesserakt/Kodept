@@ -61,7 +61,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
         is AST.Binary -> evalBinaryOperatorUsing(binaryOps, state)
         is AST.Comparison -> evalBinaryOperatorUsing(comparisonOps, state)
         is AST.Dereference -> DereferenceEliminator.contract()
-        is AST.Elvis -> TODO()
         is AST.Logical -> evalBinaryOperatorUsing(logicalOps, state)
         is AST.Mathematical -> evalBinaryOperatorUsing(mathOps, state)
         is AST.ExpressionList -> expressions.fold(state) { acc, next -> join(acc, next) }
@@ -112,7 +111,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
 
                 is AST.InferredParameter -> TODO()
                 is AST.InitializedVar -> TODO()
-                is AST.Parameter -> TODO()
             }
         }
 
@@ -122,7 +120,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
             is AST.FunctionDecl -> TODO()
             is AST.InitializedVar -> state.copy(result = state.state.getValue(this))
             is AST.InferredParameter -> state.copy(result = state.functionParameters.getValue(r))
-            is AST.Parameter -> state.copy(result = state.functionParameters.getValue(r))
         }
 
         is AST.Reference -> throw IllegalStateException(name)

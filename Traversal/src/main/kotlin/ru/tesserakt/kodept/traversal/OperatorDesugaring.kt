@@ -37,7 +37,6 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
             AST.Comparison.Kind.GreaterEqual -> replaceWith("greaterEq", "Ord")
             AST.Comparison.Kind.Greater -> replaceWith("greater", "Ord")
         }
-        is AST.Elvis -> this
         is AST.Logical -> when (kind) {
             AST.Logical.Kind.Conjunction -> replaceWith("and", "BoolLike")
             AST.Logical.Kind.Disjunction -> replaceWith("or", "BoolLike")

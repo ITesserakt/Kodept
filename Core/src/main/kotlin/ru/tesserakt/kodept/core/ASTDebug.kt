@@ -6,7 +6,6 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.Binary -> "${left.asString()} ${kind.name} ${right.asString()}"
     is AST.Comparison -> "${left.asString()} ${kind.name} ${right.asString()}"
     is AST.Dereference -> "${left.asString()}.${right.asString()}"
-    is AST.Elvis -> "${left.asString()} ?: ${right.asString()}"
     is AST.Logical -> "${left.asString()} ${kind.name} ${right.asString()}"
     is AST.Mathematical -> "${left.asString()} ${kind.name} ${right.asString()}"
     is AST.ExpressionList -> """{

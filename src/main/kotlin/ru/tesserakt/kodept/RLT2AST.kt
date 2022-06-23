@@ -59,7 +59,6 @@ context (RLT.BinaryOperation)
     ExpressionToken.GREATER_EQUALS.name -> { l, r -> AST.Comparison(l, r, AST.Comparison.Kind.GreaterEqual) }
     ExpressionToken.GREATER.name -> { l, r -> AST.Comparison(l, r, AST.Comparison.Kind.Greater) }
     ExpressionToken.SPACESHIP.name -> { l, r -> AST.Comparison(l, r, AST.Comparison.Kind.Complex) }
-    ExpressionToken.ELVIS.name -> AST::Elvis
     else -> throw IllegalStateException("Impossible")
 }(left.move(), right.move()).withRLT()
 
