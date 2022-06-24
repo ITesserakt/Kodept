@@ -35,7 +35,7 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
         .flatten()
 
     private val transformed = flowable.ast.mapWithFilename { either ->
-        logger.info("Running ${this.name}...")
+        logger.info("Analyzing ${this.name}...")
 
         either.flatMap(Semigroup.nonEmptyList()) { ast ->
             sorted.foldAST(ast) { value, acc ->

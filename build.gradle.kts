@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "ru.tesserakt"
-version = "0.2.1"
+version = "0.4.0"
 
 repositories {
     mavenCentral()
@@ -24,6 +24,7 @@ dependencies {
 
     implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
     implementation("org.slf4j:slf4j-simple:1.7.36")
+    implementation("com.github.ajalt.clikt:clikt:3.5.0")
 
     testImplementation(project(":kotest-extensions"))
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")

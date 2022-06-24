@@ -26,7 +26,7 @@ object TypeInference {
         }
 
     context (ReportCollector, Filepath)
-    fun AST.Literal.inferLiteral(context: TypeContext) = when (this) {
+            private fun AST.Literal.inferLiteral(context: TypeContext) = when (this) {
         is AST.BinaryLiteral -> Type.number.withoutSubstitutions()
         is AST.CharLiteral -> Type.char.withoutSubstitutions()
         is AST.DecimalLiteral -> Type.number.withoutSubstitutions()

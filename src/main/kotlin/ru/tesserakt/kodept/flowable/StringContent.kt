@@ -19,8 +19,12 @@ class StringContent : Flowable<StringContent.Data> {
 
     private val sources = loader.getSources()
     private val text = sources.map {
-        logger.info("Loading ${it.name}...")
-        it.withFilename { Eval.later { contents.bufferedReader().use(Reader::readText) } }
+        it.withFilename {
+            Eval.later {
+                logger.info("Loading ${it.name}...")
+                contents.bufferedReader().use(Reader::readText)
+            }
+        }
     }
     private val holder = ProgramCodeHolder(text.associate { it.filepath to it.value })
 

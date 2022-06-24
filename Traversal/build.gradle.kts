@@ -2,12 +2,12 @@ plugins {
     kotlin("jvm")
 }
 
-group = "ru.tesserakt.kodept"
-version = "0.2.1"
-
 val arrowVersion: String by extra
 val betterParseVersion: String by extra
 val kotestVersion: String by extra
+
+group = rootProject.group
+version = rootProject.version
 
 repositories {
     mavenCentral()

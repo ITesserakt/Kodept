@@ -6,7 +6,6 @@ import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Tree
-import ru.tesserakt.kodept.core.asString
 import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
@@ -95,7 +94,6 @@ object TypeInferenceAnalyzer : Analyzer() {
             else null
         is AST.InferredParameter -> type?.type()
         is AST.InitializedVar -> type?.type()
-        is AST.Parameter -> type.type()
     }
 
     private fun generateEquations(aexpr: AnnotatedExpression) = with(aexpr.expr) {
@@ -160,7 +158,6 @@ object TypeInferenceAnalyzer : Analyzer() {
                     context = context.mapValues { it.value.applySubstitutions(subst) }.toMutableMap()
                     type
                 }.bind {
-                    println(ast.asString())
                     if (it is UnboundReference) UnrecoverableError(
                         it.ref.rlt.position.nel(),
                         Report.Severity.ERROR,

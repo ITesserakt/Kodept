@@ -46,7 +46,7 @@ sealed class SemanticError(final override val code: String, override val message
         SemanticError("KSeE12", "Cannot access to type `$type` via `.` operator")
 
     data class MismatchedType(val expected: String, val actual: String) :
-        SemanticError("KSeE13", "Cannot align types: expected $expected, but received $actual")
+        SemanticError("KSeE13", "Cannot align types: $expected and $actual")
 
     object TypeInferenceFailed : SemanticError("KSeE14", "There are errors while aligning types")
 

@@ -1,16 +1,5 @@
 module Main =>
 
-struct Int
-
-enum struct Bool { True, False }
-
-fun otherwise => ::Bool::True
-
-fun and(self: Bool, other) => match self {
-    ::Bool::False => ::Bool::False,
-    otherwise()   => other
-}
-
 fun main {
     val t = \x, y => x
     val f = \x, y => y
