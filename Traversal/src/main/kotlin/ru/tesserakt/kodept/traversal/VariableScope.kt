@@ -33,6 +33,7 @@ object VariableScope : Transformer<AST.ExpressionList>() {
         }
     }
 
+    @Suppress("NON_TAIL_RECURSIVE_CALL")
     private tailrec fun step(currentBlock: AST.ExpressionList, skips: List<Int>): AST.ExpressionList {
         val varIndex = currentBlock.expressions.withIndex()
             .indexOfFirst { it.value is AST.InitializedVar && it.index !in skips }

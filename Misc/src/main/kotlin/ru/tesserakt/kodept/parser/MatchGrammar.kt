@@ -16,7 +16,7 @@ object MatchGrammar : Grammar<RLT.Match>() {
 
     override val rootParser by MATCH * optional(OperatorGrammar) * LBRACE and strictTrailing(
         branch, atLeast = 1, separator = COMMA
-    ) * RBRACE map { (matchToken, variable, lb, branches, rb) ->
+    ) * RBRACE map { (matchToken, variable, _, branches, _) ->
         RLT.Match(matchToken.keyword(), variable, NonEmptyList.fromListUnsafe(branches))
     }
 }

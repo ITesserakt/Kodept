@@ -18,8 +18,8 @@ object ExpressionGrammar : Grammar<RLT.ExpressionNode>() {
     val lambda by -LAMBDA and strictTrailing(
         TermGrammar.reference,
         COMMA
-    ) * FLOW * OperatorGrammar map { (params, expr) ->
-        val (params, flow) = params
+    ) * FLOW * OperatorGrammar map { (it, expr) ->
+        val (params, flow) = it
         RLT.Lambda(params, flow.symbol(), expr)
     }
 

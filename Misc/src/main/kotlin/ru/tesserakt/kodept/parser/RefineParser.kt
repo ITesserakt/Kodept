@@ -48,6 +48,3 @@ class RefineParser(
 
 fun softKeyword(value: String, prototype: Token = ExpressionToken.IDENTIFIER.token): Parser<TokenMatch> =
     RefineParser(SoftKeyword(value, prototype)) { it.text == value }
-
-fun Token.refine(message: (TokenMatch) -> String = { it.text }, using: (TokenMatch) -> Boolean) =
-    RefineParser(this, using)

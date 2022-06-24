@@ -33,8 +33,8 @@ object FunctionGrammar : Grammar<RLT.Function.Bodied>() {
         strictTrailing(strictlyTyped, COMMA) * RPAREN
     ) * zeroOrMore(strictParameterList) * optional(
         COLON * TypeGrammar
-    ) map { (token, name, firstTuple, tuples, returnType) ->
-        val (colon, returnType) = returnType ?: Tuple2(null, null)
+    ) map { (token, name, firstTuple, tuples, it) ->
+        val (colon, returnType) = it ?: Tuple2(null, null)
         RLT.Function.Abstract(
             token.keyword(), name.identifier(), listOfNotNull(firstTuple?.let {
                 RLT.TypedParameterTuple(

@@ -34,8 +34,8 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
 
     val traitStatement by TRAIT * TYPE * optionalWithStart(
         LBRACE, strictTrailing(ObjectLevelGrammar.traitLevel or FunctionGrammar) * RBRACE
-    ) map { (traitToken, name, rest) ->
-        val (lb, rest, rb) = rest?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
+    ) map { (traitToken, name, it) ->
+        val (lb, rest, rb) = it?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
         RLT.Trait(traitToken.keyword(), name.type(), lb?.symbol(), rest, rb?.symbol())
     }
 

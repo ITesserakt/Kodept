@@ -250,7 +250,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
         override fun deepCopy() = with(rlt) { InferredParameter(name, typeCell?.deepCopy()).withRLT().withRLT() }
 
         constructor(name: String, type: TypeLike?) : this(name, type?.move())
-        constructor(name: String) : this(name, null as? Cell<TypeLike>)
+        constructor(name: String) : this(name, null as? Cell<TypeLike>?)
     }
 
     data class FileDecl(private val moduleCells: NonEmptyList<Cell<ModuleDecl>>) : NodeWithoutParent {

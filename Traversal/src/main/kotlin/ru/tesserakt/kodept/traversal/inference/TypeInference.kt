@@ -46,7 +46,7 @@ object TypeInference {
         is AST.Literal -> inferLiteral(context)
 
         is AST.ExpressionList ->
-            expressions.fold(Triple(context, emptySet<Substitution>(), null as? Type)) { (ctx, s0, _), next ->
+            expressions.fold(Triple(context, emptySet<Substitution>(), null as? Type?)) { (ctx, s0, _), next ->
                 when (next) {
                     is AST.InitializedVar -> {
                         val (s1, tRef) = next.expr.infer(context)
