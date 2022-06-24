@@ -24,6 +24,6 @@ object FileGrammar : Grammar<RLT.File>() {
     }
 
     override val rootParser: Parser<RLT.File> by
-    (trailingUntilEOF(moduleStatement) map { NonEmptyList.fromListUnsafe(it) } use RLT::File) or
+    (trailingUntilEOF(moduleStatement, atLeast = 1) map { NonEmptyList.fromListUnsafe(it) } use RLT::File) or
             (globalModuleStatement map { RLT.File(nonEmptyListOf(it)) })
 }

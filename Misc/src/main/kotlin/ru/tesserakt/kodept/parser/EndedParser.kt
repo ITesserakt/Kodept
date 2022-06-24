@@ -69,7 +69,7 @@ private class UntilEOFParser<T>(
         else failure
 
     override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<List<T>> {
-        val maxPosition = tokens.last().nextPosition
+        val maxPosition = tokens.lastOrNull()?.nextPosition ?: fromPosition
         val results = arrayListOf<T>()
         var nextPosition = fromPosition
         while (atMost == -1 || results.size < atMost) {

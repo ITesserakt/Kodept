@@ -17,7 +17,7 @@ private val logger = KotlinLogging.logger("[Compiler]")
 class Typecheck : CliktCommand(help = "- typecheck programs and show inferred types of functions") {
     private val parsed by requireObject<Triple<CompilationContext, ParsedContent.Data, ProgramCodeHolder>>()
     private val reportOptions by ReportProcessorOptions()
-    private val printTree by option(help = "Print parsed tree with transformations").flag()
+    private val printTree by option("--tree", "-t", help = "Print parsed tree with transformations").flag()
 
     override fun run() {
         val (context, parsed, code) = parsed

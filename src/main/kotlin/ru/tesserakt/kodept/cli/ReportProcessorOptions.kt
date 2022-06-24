@@ -15,7 +15,8 @@ import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportProcessor
 
 class ReportProcessorOptions : OptionGroup(name = "Options for reports") {
-    private val surrounding by option(help = "Show <n> surrounding lines of code in report").int().restrictTo(0)
+    private val surrounding by option(help = "Show N surrounding lines of code in report", metavar = "N").int()
+        .restrictTo(0)
         .default(0)
     private val pointer by option(help = "Style of pointer in report").choice("^--", "^~~").default("^--")
     private val longPointer by option(help = "Style of long pointer in report").choice("^", "T").default("^")

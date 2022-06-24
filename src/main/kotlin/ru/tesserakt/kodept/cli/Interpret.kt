@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger("[Compiler]")
 class Interpret : CliktCommand(help = "- run programs using interpreter") {
     private val parsed by requireObject<Triple<CompilationContext, ParsedContent.Data, ProgramCodeHolder>>()
     private val reportOptions by ReportProcessorOptions()
-    private val computeLazy by option(help = "Defer computation").flag()
+    private val computeLazy by option("--lazy", "-l", help = "Defer computation").flag()
     private val arguments by argument().multiple()
 
     override fun run() {
