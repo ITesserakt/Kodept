@@ -18,8 +18,8 @@ object Function2LambdaTransformer : Transformer<AST.FunctionDecl>() {
     context(ReportCollector, Filepath) override fun transform(node: AST.FunctionDecl) =
         eagerEffect<UnrecoverableError, _> {
             with(node.rlt) {
-                val lambda = AST.LambdaExpr(node.params.new(), node.rest.move(), node.returns?.new()).withRLT()
-                node.copy(restCell = lambda.move()).withRLT()
+                val lambda = AST.LambdaExpr(node.params.move(), node.rest.move(), node.returns?.new()).withRLT()
+                node.copy(restCell = lambda.move(), paramCells = emptyList()).withRLT()
             }
         }
 }

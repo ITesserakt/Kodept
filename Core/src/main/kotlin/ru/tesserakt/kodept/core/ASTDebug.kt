@@ -31,12 +31,7 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
             postfix = "::"
         ) { it.asString() } ?: ""
     }${name}"
-    is AST.TypeReference -> "${if (context?.fromRoot == true) "::" else ""}${
-        context?.chain?.joinToString(
-            "::",
-            postfix = "::"
-        ) { it.asString() } ?: ""
-    }${type.asString()}"
+    is AST.TypeReference -> fullPath
     is AST.Absolution -> "+${expr.asString()}"
     is AST.BitInversion -> "~${expr.asString()}"
     is AST.Inversion -> """!${expr.asString()}"""
@@ -53,8 +48,7 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.ForeignStructDecl -> """foreign type $name => "$relatedWith""""
     is AST.ModuleDecl -> """module $name ${if (global) "=>" else "{"}
         |${rest.joinToString("\n") { it.asString().prependIndent(indent) }}
-        |${if (global) "}" else ""}
-        |}
+        |${if (global) "}" else ""}${if (global) "" else "\n}"}
     """.trimMargin()
     is AST.EnumDecl -> """enum ${if (stackBased) "struct" else "class"} $name {
         |${enumEntries.joinToString { it.asString() }.prependIndent(indent)}

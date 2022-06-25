@@ -1,16 +1,17 @@
 module Main =>
 
-fun main {
-    val t = \x, y => x
-    val f = \x, y => y
-    val if_ = \b, t, f => b(t, f)
-    val and = \a, b => if_(a, b, f)
-    val or = \a, b => if_(a, t, b)
-    val not = \a => if_(a, f, t)
-    val zero = \f, x => x
-    val one = \f, x => f(x)
-    val succ = \n, f, x => f(n(f), x)
-    val add = \a, b => a(succ)(b)
+struct Int
 
-    fun inner => add(one, one)
-}
+fun t(x, y) => x
+fun f(x, y) => y
+fun if_(b, t, f) => b(t, f)
+fun and(a, b) => if_(a, b, f)
+fun or(a, b) => if_(a, t, b)
+fun not(a) => if_(a, f, t)
+fun zero(f, x) => x
+fun one(f, x) => f(x)
+fun succ(n, f, x) => f(n(f), x)
+fun add(a, b) => a(succ)(b)
+fun inner => add(one, one)
+
+fun main => ()

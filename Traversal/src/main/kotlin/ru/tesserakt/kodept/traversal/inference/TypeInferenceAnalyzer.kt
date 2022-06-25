@@ -4,12 +4,14 @@ import arrow.core.continuations.eagerEffect
 import arrow.core.identity
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
+import mu.KotlinLogging
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.core.walkDownTop
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
+import ru.tesserakt.kodept.error.SemanticNote
 import ru.tesserakt.kodept.traversal.*
 import ru.tesserakt.kodept.traversal.inference.Type.*
 import ru.tesserakt.kodept.traversal.inference.Type.Companion.bool
@@ -21,6 +23,8 @@ import ru.tesserakt.kodept.traversal.inference.Type.Companion.tag
 import ru.tesserakt.kodept.traversal.inference.Type.Companion.unit
 import ru.tesserakt.kodept.traversal.inference.Type.Enum
 import kotlin.properties.Delegates
+
+private val logger = KotlinLogging.logger("[Type inference]")
 
 object TypeInferenceAnalyzer : Analyzer() {
     init {
@@ -169,9 +173,7 @@ object TypeInferenceAnalyzer : Analyzer() {
 
                 if (it.parent is AST.FunctionLike) {
                     val fn = it.parent as AST.FunctionLike
-                    println("Function `${fn.name}` has type $type")
-                } else {
-                    println("Lambda at ${it.rlt.position} has type $type")
+                    report(fn.rlt.position.nel(), Report.Severity.NOTE, SemanticNote.TypeOfFunction(type.toString()))
                 }
             }
         }
