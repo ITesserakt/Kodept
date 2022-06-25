@@ -9,7 +9,6 @@ import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
 
 data class TypeEquation(val where: CodePoint, val a: Type, val b: Type) {
-    constructor(aexpr: AnnotatedExpression, shouldBe: Type) : this(aexpr.expr.rlt.position, aexpr.type, shouldBe)
     constructor(expr: AST.Expression, type: Type, shouldBe: Type) : this(expr.rlt.position, type, shouldBe)
 
     private fun occursCheck(v: Type.T, type: Type): Boolean = if (v == type) true
