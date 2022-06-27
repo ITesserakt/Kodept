@@ -47,7 +47,7 @@ sealed interface Language {
             override fun toString(): String = value.toString()
         }
 
-        data class Tuple(val items: List<Language>) : Language {
+        data class Tuple(val items: List<Language>) : Literal {
             override fun toString(): String = items.joinToString(prefix = "(", postfix = ")")
         }
 

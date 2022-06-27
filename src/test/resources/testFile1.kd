@@ -10,5 +10,5 @@ fun duplicate(x) => (x, x)
 
 fun main {
     val id = \x => x
-    \f => f.curry (1, 1.2)
+    \f => f.curry (1, id(1.2))
 }

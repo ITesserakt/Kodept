@@ -51,18 +51,14 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
 
     fun run() = eagerEffect {
         when (expression) {
-            is Language.App -> expression.run()
-            is Language.Lambda -> expression.run()
-            is Language.Let -> expression.run()
-            is Language.Var -> expression.run()
-            is Language.Literal -> eagerEffect {
-                Substitution.empty() to when (expression) {
-                    is Language.Literal.Floating -> PrimitiveType.Floating
-                    is Language.Literal.Number -> PrimitiveType.Number
-                }
-            }
-            is Language.Literal.Tuple -> expression.run()
-        }.bind()
+            is Language.App -> expression.run().bind()
+            is Language.Lambda -> expression.run().bind()
+            is Language.Let -> expression.run().bind()
+            is Language.Var -> expression.run().bind()
+            is Language.Literal.Tuple -> expression.run().bind()
+            is Language.Literal.Floating -> Substitution.empty() to PrimitiveType.Floating
+            is Language.Literal.Number -> Substitution.empty() to PrimitiveType.Number
+        }
     }
 }
 

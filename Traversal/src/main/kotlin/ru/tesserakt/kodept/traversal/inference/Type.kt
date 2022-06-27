@@ -19,10 +19,6 @@ sealed class PrimitiveType : MonomorphicType() {
     object Floating : PrimitiveType() {
         override fun toString() = ":floating:"
     }
-
-    object Unit : PrimitiveType() {
-        override fun toString() = "()"
-    }
 }
 
 sealed class MonomorphicType : PolymorphicType() {
