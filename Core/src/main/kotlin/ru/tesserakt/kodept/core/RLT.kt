@@ -183,7 +183,7 @@ data class RLT(val root: File) {
 
     open class Reference(val ref: UserSymbol) : TermNode, TypeNode, Node by ref
 
-    data class Application(val expr: Reference, val params: List<ParameterTuple>) : TermNode, Node by expr
+    data class Application(val expr: ExpressionNode, val params: NonEmptyList<Parameter>) : ExpressionNode, Node by expr
 
     sealed interface Context {
         object StartsFromRoot
@@ -240,7 +240,8 @@ data class RLT(val root: File) {
     data class BinaryOperation(val left: ExpressionNode, val op: Symbol, val right: ExpressionNode) : ExpressionNode,
         Node by op
 
-    data class Access(val left: ExpressionNode, val dot: Symbol, val right: TermNode) : ExpressionNode, Node by dot
+    data class Access(val left: ExpressionNode, val dot: Symbol, val right: ExpressionNode) : ExpressionNode,
+        Node by dot
 
     data class UnaryOperation(val expression: ExpressionNode, val op: Symbol) : ExpressionNode, Node by op
 

@@ -255,6 +255,11 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
     }, body.convert().move(), null).withRLT()
 
     is RLT.Match -> convert()
+
+    is RLT.Application -> AST.FunctionCall(
+        expr.convert().move(),
+        params.all.map { it.convert() }.move()
+    ).withRLT()
 }
 
 private fun RLT.Lvalue.convert(): AST.Lvalue = when (this) {
@@ -275,11 +280,6 @@ private fun RLT.Reference.convert(): AST.Lvalue = when (this) {
 }
 
 private fun RLT.TermNode.convert(): AST.Lvalue = when (this) {
-    is RLT.Application -> AST.FunctionCall(
-        (expr.convert() as AST.WithResolutionContext).move(),
-        params.map(RLT.ParameterTuple::convert).flatMap { it.items }.move()
-    ).withRLT()
-
     is RLT.ContextualReference -> when (val r = ref) {
         is RLT.UserSymbol.Identifier -> AST.Reference(ref.text.value(), context.convert()).withRLT()
         is RLT.UserSymbol.Type -> AST.TypeReference(r.convert().move(), context.convert()).withRLT()

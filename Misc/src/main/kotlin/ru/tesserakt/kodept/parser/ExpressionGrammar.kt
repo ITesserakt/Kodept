@@ -7,14 +7,6 @@ import ru.tesserakt.kodept.core.symbol
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 
 object ExpressionGrammar : Grammar<RLT.ExpressionNode>() {
-    val application by (TermGrammar.contextualReference or TermGrammar.reference) * oneOrMore(
-        -!NEWLINE * LPAREN and strictTrailing(OperatorGrammar, COMMA) * RPAREN
-    ) map { (head, tail) ->
-        RLT.Application(head, tail.map { (lp, p, rp) ->
-            RLT.ParameterTuple(lp.symbol(), p.map(RLT::Parameter), rp.symbol())
-        })
-    }
-
     val lambda by -LAMBDA and strictTrailing(
         TermGrammar.reference,
         COMMA
@@ -24,5 +16,5 @@ object ExpressionGrammar : Grammar<RLT.ExpressionNode>() {
     }
 
     override val rootParser by
-    lambda or application or LiteralGrammar or TermGrammar or CodeFlowGrammar
+    lambda or LiteralGrammar or TermGrammar or CodeFlowGrammar
 }

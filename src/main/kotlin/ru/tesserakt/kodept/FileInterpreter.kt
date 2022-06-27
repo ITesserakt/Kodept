@@ -1,7 +1,10 @@
 package ru.tesserakt.kodept
 
 import ru.tesserakt.kodept.core.AST
-import ru.tesserakt.kodept.traversal.*
+import ru.tesserakt.kodept.traversal.BinaryOperatorDesugaring
+import ru.tesserakt.kodept.traversal.ReferenceResolver
+import ru.tesserakt.kodept.traversal.TypeReferenceResolver
+import ru.tesserakt.kodept.traversal.UnaryOperatorDesugaring
 import java.math.BigDecimal
 import java.math.BigInteger
 
@@ -26,7 +29,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
     private fun AST.Expression.eval(state: ProgramState): ProgramState = when (this) {
         is AST.BinaryOperator -> BinaryOperatorDesugaring.contract()
         is AST.UnaryOperator -> UnaryOperatorDesugaring.contract()
-        is AST.Dereference -> DereferenceEliminator.contract()
         is AST.ExpressionList -> expressions.fold(state) { acc, next -> join(acc, next) }
         is AST.IfExpr -> {
             val condition = condition.eval(state)

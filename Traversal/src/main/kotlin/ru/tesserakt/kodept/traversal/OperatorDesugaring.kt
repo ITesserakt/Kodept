@@ -10,14 +10,16 @@ import kotlin.reflect.KClass
 object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
     override val type: KClass<AST.BinaryOperator> = AST.BinaryOperator::class
 
-    private fun AST.BinaryOperator.replaceWith(functionName: String, traitName: String) =
+    private fun AST.BinaryOperator.replaceWith(functionName: String, traitName: String?): AST.FunctionCall =
         with(accessRLT<RLT.BinaryOperation>()?.op ?: accessRLT<RLT.CompoundAssignment>()?.compoundOperator ?: rlt) {
             AST.FunctionCall(
                 AST.Reference(
                     functionName,
-                    AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
-                ).withRLT().new(),
-                listOf(left, right).new()
+                    AST.ResolutionContext(true, (listOf("Prelude") + listOfNotNull(traitName)).map(AST::Type))
+                ).withRLT().move(), listOf(
+                    (left as? AST.BinaryOperator)?.expand() ?: left,
+                    (right as? AST.BinaryOperator)?.expand() ?: right
+                ).move()
             ).withRLT()
         }
 
@@ -50,11 +52,12 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
             AST.Mathematical.Kind.Mod -> replaceWith("modulo", "Integral")
             AST.Mathematical.Kind.Pow -> replaceWith("power", "Integral")
         }
+
+        is AST.Dereference -> replaceWith("compose", null)
     }
 
-    context(ReportCollector, Filepath) override fun transform(node: AST.BinaryOperator): EagerEffect<UnrecoverableError, out AST.Node> {
-        return eagerEffect { node.expand() }
-    }
+    context(ReportCollector, Filepath) override fun transform(node: AST.BinaryOperator): EagerEffect<UnrecoverableError, out AST.Node> =
+        eagerEffect { node.expand() }
 
     val contract = Contract<AST.BinaryOperator> {
         "binary operator $this should not be in AST."
@@ -70,7 +73,7 @@ object UnaryOperatorDesugaring : Transformer<AST.UnaryOperator>() {
                 AST.Reference(
                     functionName,
                     AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
-                ).withRLT().new(), listOf(expr.new())
+                ).withRLT().move(), listOf(expr.move())
             ).withRLT()
         }
 

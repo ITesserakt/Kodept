@@ -11,94 +11,110 @@ private fun Int.expandToString(alphabet: List<Char> = ('a'..'z').toList()): Stri
     return sb.reverse().toString()
 }
 
-sealed interface Type {
-    data class T(val id: Id) : Type {
-        @JvmInline
-        value class Id(private val id: Int) {
-            val name get() = "`${id.expandToString()}"
-        }
-
-        override fun toString() = id.name
-
-        companion object {
-            private var uniqueId = 0
-                get() = field++
-
-            operator fun invoke() = T(Id(uniqueId))
-        }
+sealed class PrimitiveType : MonomorphicType() {
+    object Number : PrimitiveType() {
+        override fun toString() = ":number:"
     }
 
-    data class Tuple(val content: List<Type>) : Type {
-        constructor(vararg items: Type) : this(items.toList())
-
-        override fun toString() = content.joinToString(", ", "(", ")")
+    object Floating : PrimitiveType() {
+        override fun toString() = ":floating:"
     }
 
-    data class Union(val items: List<Type>) : Type {
-        override fun toString() = items.joinToString(" | ", "(", ")")
-    }
-
-    data class Fn(val input: Type, val output: Type) : Type {
-        override fun toString() = "$input -> ($output)"
-
-        companion object {
-            fun fromParams(params: List<Type>, ret: Type) =
-                if (params.isNotEmpty())
-                    params.foldRight(ret) { next, acc -> Fn(next, acc) }
-                else Fn(unit, ret)
-        }
-    }
-
-    data class Struct(val name: String, val items: Lazy<List<Type>>, val inheritFrom: Lazy<Type>? = null) : Type {
-        override fun toString() =
-            "$name${if (items.value.isNotEmpty()) items.value.joinToString(", ", " {", "}") else ""}"
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Struct
-
-            if (name != other.name) return false
-            if (items != other.items) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = name.hashCode()
-            result = 31 * result + items.hashCode()
-            return result
-        }
-    }
-
-    data class Interface(val name: String) : Type {
-        override fun toString() = "Trait $name"
-    }
-
-    data class Enum(val name: String, val entries: List<Type>) : Type {
-        override fun toString(): String = "$name${entries.joinToString(" | ", "{", "}")}"
-    }
-
-    object Bottom : Type {
-        override fun toString(): String = "ꓕ"
-    }
-
-    companion object {
-        fun tag(name: String, inheritFrom: Lazy<Type>? = null) = Struct(name, lazyOf(emptyList()), inheritFrom)
-        val bool = Enum("Bool", listOf(tag("True"), tag("False")))
-        val number = tag("Int")
-        val floating = tag("Double")
-        val string = tag("String")
-        val char = tag("Char")
-        val unit = Tuple(emptyList())
-    }
-
-    fun applySubstitutions(substitutions: Set<Substitution>): Type = when (this) {
-        is T -> substitutions.find { it.type == this }?.replaceWith ?: this
-        is Fn -> Fn(input.applySubstitutions(substitutions), output.applySubstitutions(substitutions))
-        is Struct -> substitutions.find { it.type == this }?.replaceWith ?: this
-        else -> this
+    object Unit : PrimitiveType() {
+        override fun toString() = "()"
     }
 }
 
+sealed class MonomorphicType : PolymorphicType() {
+    data class Var(val id: Int) : MonomorphicType() {
+        companion object {
+            private var unique = 0
+                get() = field++
+        }
+
+        constructor() : this(unique)
+
+        fun new() = Var(unique)
+        override fun toString(): String = id.expandToString()
+    }
+
+    data class Fn(val input: MonomorphicType, val output: MonomorphicType) : MonomorphicType() {
+        override fun toString(): String = when (input) {
+            is Fn -> "($input) -> $output"
+            else -> "$input -> $output"
+        }
+    }
+
+    data class Tuple(val items: List<MonomorphicType>) : MonomorphicType() {
+        override fun toString(): String = items.joinToString(prefix = "(", postfix = ")")
+
+        companion object {
+            val unit = Tuple(emptyList())
+        }
+    }
+
+    fun substitute(subst: Set<Substitution>): MonomorphicType = when (this) {
+        is PrimitiveType -> this
+        is Var -> subst.find { it.substituted == this }?.replacement ?: this
+        is Fn -> Fn(input.substitute(subst), output.substitute(subst))
+        is Tuple -> Tuple(items.map { it.substitute(subst) })
+    }
+
+    fun freeTypes(): Set<Var> = when (this) {
+        is Fn -> input.freeTypes().union(output.freeTypes())
+        is Var -> setOf(this)
+        is PrimitiveType -> emptySet()
+        is Tuple -> items.fold(emptySet()) { acc, next -> acc + next.freeTypes() }
+    }
+
+    fun rename(old: Int, new: Int): MonomorphicType = when (this) {
+        is PrimitiveType -> this
+        is Fn -> Fn(input.rename(old, new), output.rename(old, new))
+        is Var -> if (id == old) Var(new) else this
+        is Tuple -> Tuple(items.map { it.rename(old, new) })
+    }
+}
+
+sealed class PolymorphicType {
+    abstract override fun toString(): String
+
+    data class Binding(val bind: MonomorphicType.Var, val type: PolymorphicType) : PolymorphicType() {
+        override fun toString(): String {
+            val (bindings, t) = collect()
+            val prettyBindings = bindings.asReversed().map { it.id }.zip(0..bindings.size)
+            val renamed = prettyBindings.fold(t) { acc, (old, new) ->
+                acc.rename(old, new)
+            }
+            return "∀${prettyBindings.joinToString { it.second.expandToString() }} => $renamed"
+        }
+
+        tailrec fun collect(
+            acc: List<MonomorphicType.Var> = emptyList(),
+            current: PolymorphicType = this,
+        ): Pair<List<MonomorphicType.Var>, MonomorphicType> = when (current) {
+            is MonomorphicType -> acc to current
+            is Binding -> collect(acc + current.bind, current.type)
+        }
+    }
+
+    fun instantiate(): MonomorphicType = when (this) {
+        is MonomorphicType -> this
+        is Binding -> when (type) {
+            is MonomorphicType -> type.substitute(Substitution(bind, bind.new()).single())
+            else -> type.instantiate()
+        }
+    }
+}
+
+fun PolymorphicType.substitute(subst: Set<Substitution>): PolymorphicType = when (this) {
+    is MonomorphicType -> substitute(subst)
+    is PolymorphicType.Binding -> PolymorphicType.Binding(
+        bind,
+        type.substitute(subst.filter { it.replacement != bind }.toSet())
+    )
+}
+
+fun PolymorphicType.freeTypes(): Set<MonomorphicType.Var> = when (this) {
+    is MonomorphicType -> freeTypes()
+    is PolymorphicType.Binding -> type.freeTypes() subtract setOf(bind)
+}

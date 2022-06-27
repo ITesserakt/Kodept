@@ -1,17 +1,14 @@
-module Main =>
+module Prelude =>
 
-struct Int
+fun const(x) => \y => x
 
-fun t(x, y) => x
-fun f(x, y) => y
-fun if_(b, t, f) => b(t, f)
-fun and(a, b) => if_(a, b, f)
-fun or(a, b) => if_(a, t, b)
-fun not(a) => if_(a, f, t)
-fun zero(f, x) => x
-fun one(f, x) => f(x)
-fun succ(n, f, x) => f(n(f), x)
-fun add(a, b) => a(succ)(b)
-fun inner => add(one, one)
+fun compose(f, g) => \x => g f x
 
-fun main => ()
+fun curry(f, a, b) => f (a, b)
+
+fun duplicate(x) => (x, x)
+
+fun main {
+    val id = \x => x
+    \f => f.curry (1, 1.2)
+}

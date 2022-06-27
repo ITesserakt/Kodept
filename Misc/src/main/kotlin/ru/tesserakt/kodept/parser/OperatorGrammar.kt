@@ -35,10 +35,8 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
             }
         }
 
-    val term by ExpressionGrammar.application or TermGrammar
-
     val atom by (-LPAREN * this * -RPAREN) or ExpressionGrammar
-    val access by atom * zeroOrMore(DOT * term) leftFold RLT::Access
+    val access by atom * zeroOrMore(DOT * atom) leftFold RLT::Access
     val topExpr: Parser<RLT.ExpressionNode> by (SUB or NOT_LOGIC or NOT_BIT or PLUS) * parser { topExpr } map {
         RLT.UnaryOperation(it.t2, it.t1.symbol())
     } or access
@@ -51,7 +49,12 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
     val cmpExpr by compoundCmpExpr * zeroOrMore((LESS or GREATER) * compoundCmpExpr) leftFold RLT::BinaryOperation
     val bitExpr by cmpExpr * zeroOrMore((AND_BIT or XOR_BIT or OR_BIT) * cmpExpr) leftFold RLT::BinaryOperation
     val logicExpr by bitExpr * zeroOrMore((AND_LOGIC or OR_LOGIC) * bitExpr) leftFold RLT::BinaryOperation
-//    val elvis: Parser<RLT.ExpressionNode> by logicExpr * optional(ELVIS * parser { elvis }) rightFold RLT::BinaryOperation
+    val application by logicExpr and zeroOrMore(logicExpr) map { (head, tail) ->
+        when (val rest = NonEmptyList.fromList(tail)) {
+            None -> head
+            is Some -> RLT.Application(head, rest.value.map(RLT::Parameter))
+        }
+    }
 
-    override val rootParser by logicExpr
+    override val rootParser by application
 }

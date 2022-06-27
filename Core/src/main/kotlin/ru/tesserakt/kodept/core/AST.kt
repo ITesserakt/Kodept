@@ -176,7 +176,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     sealed interface Statement : BlockLevel
     sealed interface Literal : Expression
     sealed interface Lvalue : Expression
-    sealed interface Referable : Statement, Named
+    sealed interface Referable : Named
     sealed interface TypeReferable : Named
     sealed interface TypeLike : NodeWithParent
     sealed interface TypeExpression : Node
@@ -402,7 +402,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     data class FunctionDecl(
         override val name: String, private val paramCells: List<Cell<InferredParameter>>,
         private val returnCell: Cell<TypeLike>?, private val restCell: Cell<Expression>,
-    ) : NodeBase(), TopLevel, StructLevel, TraitLevel, Referable, FunctionLike {
+    ) : NodeBase(), TopLevel, StructLevel, TraitLevel, Referable, FunctionLike, Statement {
         override val params by paramCells
         override val returns get() = returnCell?.value
         val rest by restCell
@@ -425,7 +425,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
         val mutable: Boolean,
         private val typeCell: Cell<TypeLike>?,
         private val exprCell: Cell<Expression>,
-    ) : NodeBase(), Referable {
+    ) : NodeBase(), Referable, Statement {
         val reference by referenceCell
         val type get() = typeCell?.value
         val expr by exprCell
@@ -651,7 +651,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     }
 
     data class FunctionCall(
-        private val referenceCell: Cell<WithResolutionContext>,
+        private val referenceCell: Cell<Expression>,
         private val paramCells: List<Cell<Expression>>,
     ) : NodeBase(), Lvalue {
         val reference by referenceCell
@@ -662,20 +662,20 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
             with(rlt) { FunctionCall(referenceCell.deepCopy(), paramCells.map { it.deepCopy() }).withRLT() }
 
         companion object {
-            operator fun invoke(reference: WithResolutionContext, params: List<Expression>) =
+            operator fun invoke(reference: Expression, params: List<Expression>) =
                 FunctionCall(reference.move(), params.move())
         }
     }
 
-    data class Dereference(private var leftCell: Cell<Expression>, private var rightCell: Cell<Lvalue>) : NodeBase(),
+    data class Dereference(override var leftCell: Cell<Expression>, override var rightCell: Cell<Expression>) :
+        BinaryOperator(),
         Expression {
-        val left by leftCell
-        val right by rightCell
+        constructor(left: Expression, right: Expression) : this(left.move(), right.move())
 
-        override fun childCells() = listOf(leftCell, rightCell)
+        private object DereferenceKind : OperatorKind
+
+        override val kind: OperatorKind = DereferenceKind
         override fun deepCopy() = with(rlt) { Dereference(leftCell.deepCopy(), rightCell.deepCopy()).withRLT() }
-
-        constructor(left: Expression, right: Lvalue) : this(left.move(), right.move())
     }
 
     data class ExpressionList(private val expressionCells: NonEmptyList<Cell<BlockLevel>>) : NodeBase(), Expression {
