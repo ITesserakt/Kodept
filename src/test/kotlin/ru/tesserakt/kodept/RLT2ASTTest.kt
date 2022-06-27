@@ -13,7 +13,7 @@ class RLT2ASTTest : FunSpec({
         |   trait W {
         |       abstract fun test(o: K)(m: N)
         |       
-        |       fun testImpl { test(1)(2) }
+        |       fun testImpl { (test(1))(2) }
         |   }
         |   
         |   enum class Bool { True, False }

@@ -27,7 +27,7 @@ class CodeFlowGrammarTest : WordSpec({
             CodeFlowGrammar.whileStatement,
             """while s.isEmpty() { doA() }""",
             AST.WhileExpr(
-                AST.Dereference(AST.Reference("s"), AST.FunctionCall(AST.Reference("isEmpty"), listOf())),
+                AST.FunctionCall(AST.Dereference(AST.Reference("s"), AST.Reference("isEmpty")), listOf()),
                 AST.FunctionCall(
                     AST.Reference(
                         "doA",

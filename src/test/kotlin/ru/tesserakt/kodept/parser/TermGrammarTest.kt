@@ -13,15 +13,15 @@ class TermGrammarTest : WordSpec({
 
     "fun ref" should {
         test(
-            ExpressionGrammar.application, "id()", AST.FunctionCall(AST.Reference("id"), listOf())
+            OperatorGrammar.application, "id()", AST.FunctionCall(AST.Reference("id"), listOf())
         )
         test(
-            ExpressionGrammar.application, """println("Hello, world!")""", AST.FunctionCall(
+            OperatorGrammar.application, """println("Hello, world!")""", AST.FunctionCall(
                 AST.Reference("println"), listOf(AST.StringLiteral("Hello, world!"))
             )
         )
         test(
-            ExpressionGrammar.application, "test((123), 10.2, foobar)", AST.FunctionCall(
+            OperatorGrammar.application, "test((123), 10.2, foobar)", AST.FunctionCall(
                 AST.Reference("test"), listOf(
                     AST.DecimalLiteral(123.toBigInteger()),
                     AST.FloatingLiteral(10.2.toBigDecimal()),
@@ -33,12 +33,12 @@ class TermGrammarTest : WordSpec({
 
     "chain" should {
         test(
-            OperatorGrammar.access,
+            OperatorGrammar,
             "key.on()",
-            AST.Dereference(AST.Reference("key"), AST.FunctionCall(AST.Reference("on"), listOf()))
+            AST.FunctionCall(AST.Dereference(AST.Reference("key"), AST.Reference("on")), listOf())
         )
         test(
-            OperatorGrammar.access, "id(x).id(x).id(x)", AST.Dereference(
+            OperatorGrammar, "(id(x)).(id(x)).(id(x))", AST.Dereference(
                 AST.Dereference(
                     AST.FunctionCall(AST.Reference("id"), listOf(AST.Reference("x"))),
                     AST.FunctionCall(AST.Reference("id"), listOf(AST.Reference("x")))

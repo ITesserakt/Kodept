@@ -1,7 +1,9 @@
 package ru.tesserakt.kodept.core
 
 import io.kotest.assertions.withClue
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beOfType
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
@@ -16,6 +18,8 @@ fun <T : AST.Node> compareNodesByFields(value: T, other: T, exclude: Set<KProper
         .onEach { it.isAccessible = true }
         .subtract(exclude)
         .sortedBy { it.name }
+
+    value should beOfType(other::class)
 
     propsToCompare.forEach {
         val actual = it.call(value)

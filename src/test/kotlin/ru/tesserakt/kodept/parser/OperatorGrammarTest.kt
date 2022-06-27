@@ -94,7 +94,7 @@ class OperatorGrammarTest : WordSpec({
                 )
         )
         test(
-            ExpressionGrammar, """id(2 + 2)""", AST.FunctionCall(
+            OperatorGrammar, """id(2 + 2)""", AST.FunctionCall(
                 AST.Reference("id"), listOf(
                     AST.Mathematical(
                         AST.DecimalLiteral(2.toBigInteger()),
@@ -105,12 +105,13 @@ class OperatorGrammarTest : WordSpec({
             )
         )
         test(
-            OperatorGrammar, """core.println("Hello, " + "world!")""", AST.Dereference(
-                AST.Reference("core"), AST.FunctionCall(
-                    AST.Reference("println"), listOf(
-                        AST.Mathematical(
-                            AST.StringLiteral("Hello, "), AST.StringLiteral("world!"), AST.Mathematical.Kind.Add
-                        )
+            OperatorGrammar, """core.println("Hello, " + "world!")""", AST.FunctionCall(
+                AST.Dereference(
+                    AST.Reference("core"), AST.Reference("println")
+                ),
+                listOf(
+                    AST.Mathematical(
+                        AST.StringLiteral("Hello, "), AST.StringLiteral("world!"), AST.Mathematical.Kind.Add
                     )
                 )
             )

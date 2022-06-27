@@ -183,7 +183,7 @@ data class RLT(val root: File) {
 
     open class Reference(val ref: UserSymbol) : TermNode, TypeNode, Node by ref
 
-    data class Application(val expr: ExpressionNode, val params: NonEmptyList<Parameter>) : ExpressionNode, Node by expr
+    data class Application(val expr: ExpressionNode, val params: List<Parameter>) : ExpressionNode, Node by expr
 
     sealed interface Context {
         object StartsFromRoot

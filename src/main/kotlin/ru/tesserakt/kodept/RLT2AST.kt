@@ -258,7 +258,7 @@ private fun RLT.ExpressionNode.convert(): AST.Expression = when (this) {
 
     is RLT.Application -> AST.FunctionCall(
         expr.convert().move(),
-        params.all.map { it.convert() }.move()
+        params.map { it.convert() }.move()
     ).withRLT()
 }
 

@@ -2,7 +2,7 @@ module Prelude =>
 
 fun const(x) => \y => x
 
-fun compose(f, g) => \x => g f x
+fun compose(f, g) => \x => g(f(x))
 
 fun curry(f, a, b) => f (a, b)
 
