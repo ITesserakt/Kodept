@@ -17,8 +17,8 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
                     functionName,
                     AST.ResolutionContext(true, (listOf("Prelude") + listOfNotNull(traitName)).map(AST::Type))
                 ).withRLT().move(), listOf(
-                    (left as? AST.BinaryOperator)?.expand() ?: left,
-                    (right as? AST.BinaryOperator)?.expand() ?: right
+                    left,
+                    right
                 ).move()
             ).withRLT()
         }

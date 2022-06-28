@@ -16,11 +16,26 @@ import kotlin.properties.Delegates
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
+private val logger = KotlinLogging.logger {}
+
 data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     val root: Node
     private val parents: ImmutableMap<NodeWithParent, Node> = nodes.flatMap { parent ->
         parent.children().map { it to parent }
     }.associate(::identity).toImmutableMap()
+
+    private fun checkStructure() {
+        logger.debug { root.asString() }
+        require(parents.size == nodes.size - 1) {
+            if (parents.size > nodes.size - 1)
+                "Extra unknown nodes:\n${(parents.keys - nodes).joinToString("\n") { "$it {${it.id}}" }}"
+            else
+                "There are missed nodes:\n${(nodes - parents.keys - root).joinToString("\n") { "$it {${it.id}}" }}"
+        }
+
+        val graph = OrientedGraph.fromNodes(nodes)
+        require(!graph.hasCycles(root)) { "Passed nodes don't form a tree" }
+    }
 
     init {
         root = if (!anyRoot) {
@@ -30,14 +45,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
         } else {
             nodes.first()
         }
-        require(parents.size == nodes.size - 1) {
-            if (parents.size > nodes.size - 1)
-                "Extra unknown nodes:\n${(parents.keys - nodes).joinToString("\n") { "$it {${it.id}}" }}"
-            else
-                "There are missed nodes:\n${(nodes - parents.keys - root).joinToString("\n") { "$it {${it.id}}" }}"
-        }
-        val graph = OrientedGraph.fromNodes(nodes)
-        require(!graph.hasCycles(root)) { "Passed nodes don't form a tree" }
+        checkStructure()
 
         nodes.forEach { node ->
             when (node) {

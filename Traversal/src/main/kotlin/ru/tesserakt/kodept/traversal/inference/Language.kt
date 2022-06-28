@@ -18,8 +18,12 @@ sealed interface Language {
         }
 
         override fun toString(): String = when (arg) {
-            is Var, is Literal -> "$func $arg"
-            else -> "$func ($arg)"
+            is Var, is Literal -> when (func) {
+                is Var, is Literal -> "$func $arg"
+                is App -> if (func.func is App) "($func) $arg" else "$func $arg"
+                else -> "($func) $arg"
+            }
+            else -> "($func) ($arg)"
         }
     }
 

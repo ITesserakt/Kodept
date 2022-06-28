@@ -59,8 +59,8 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
                     }
                 }.bind().filterNotNull()
 
-            if (changes.isEmpty()) return@eagerEffect tree
-            tree.copyWith { changes.replaced() }
+            if (changes.isEmpty()) tree
+            else tree.copyWith { changes.replaced() }
         }
     }
 

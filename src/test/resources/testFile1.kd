@@ -8,7 +8,13 @@ fun curry(f, a, b) => f (a, b)
 
 fun duplicate(x) => (x, x)
 
+fun id(x) => x
+
+trait Num {
+    abstract fun plus(self: Int, other: Int): Int
+}
+
+struct Int
+
 fun main {
-    val id = \x => x
-    \f => f.curry (1, id(1.2))
 }
