@@ -174,6 +174,11 @@ private fun RLT.TopLevelNode.convert(): AST.TopLevel = when (this) {
         (returnType?.convert() as? AST.TypeReference)?.move(),
         descriptor.text.value().removeSurrounding("\"")
     ).withRLT()
+
+    is RLT.Extension -> AST.ExtensionDecl(
+        onType.convert() as AST.TypeReference,
+        forTrait.convert() as AST.TypeReference,
+        body.map { it.convert() })
 }
 
 private fun RLT.StructLevelNode.convert() = when (this) {

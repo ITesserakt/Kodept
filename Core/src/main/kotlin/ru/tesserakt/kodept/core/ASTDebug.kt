@@ -70,4 +70,8 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
     is AST.UnionType -> toString()
     is AST.LambdaExpr -> """\(${params.joinToString { it.asString() }}) -> ${body.asString()}"""
     is AST.Cell<*> -> value.asString()
+    is AST.ExtensionDecl -> """extend $type with $forTrait {
+        |${rest.joinToString("\n") { it.asString() }.prependIndent(indent)}
+        |}
+    """.trimMargin()
 }

@@ -29,27 +29,24 @@ private interface Resolver<T : AST.Named, R : AST.Node> {
     }
 
     context (Filepath)
-    fun followContext(context: AST.ResolutionContext, node: T) =
-        if (context.fromRoot && context.chain.isNotEmpty()) {
-            node.walkDownTop(::identity).filterIsInstance<AST.FileDecl>()
-                .first().modules.filter { it.name == context.chain.first().name }.onlyUnique { NotFound }
-                .let { m ->
-                    val module = m.handleError {
-                        node.walkDownTop(::identity)
-                            .filterIsInstance<AST.ModuleDecl>().first()
-                    }.widen<_, AST.Named, _>()
-                    context.chain.drop(if (m.isRight()) 1 else 0).fold(module) { acc, next ->
-                        acc.flatMap { next.handle(it) }
-                    }
+    fun followContext(context: AST.ResolutionContext, node: T) = if (context.fromRoot && context.chain.isNotEmpty()) {
+        node.walkDownTop(::identity).filterIsInstance<AST.FileDecl>()
+            .first().modules.filter { it.name == context.chain.first().name }.onlyUnique { NotFound }.let { m ->
+                val module = m.handleError {
+                    node.walkDownTop(::identity).filterIsInstance<AST.ModuleDecl>().first()
+                }.widen<_, AST.Named, _>()
+                context.chain.drop(if (m.isRight()) 1 else 0).fold(module) { acc, next ->
+                    acc.flatMap { next.handle(it) }
                 }
-        } else if (context.fromRoot) {
-            val m = node.walkDownTop(::identity).filterIsInstance<AST.ModuleDecl>().first()
-            val module: Either<FlowControl, AST.Named> = m.right()
-            context.chain.fold(module) { acc, next -> acc.flatMap { next.handle(it) } }
-        } else {
-            val firstNode: Either<FlowControl, AST.Named> = node.right()
-            context.chain.fold(firstNode) { acc, next -> acc.flatMap { next.handle(it) } }
-        }
+            }
+    } else if (context.fromRoot) {
+        val m = node.walkDownTop(::identity).filterIsInstance<AST.ModuleDecl>().first()
+        val module: Either<FlowControl, AST.Named> = m.right()
+        context.chain.fold(module) { acc, next -> acc.flatMap { next.handle(it) } }
+    } else {
+        val firstNode: Either<FlowControl, AST.Named> = node.right()
+        context.chain.fold(firstNode) { acc, next -> acc.flatMap { next.handle(it) } }
+    }
 }
 
 private fun <T : AST.Node> isInDereference(node: T) = node.walkDownTop(::identity).any {
@@ -78,13 +75,16 @@ context (Filepath) private inline fun <T, N : AST.Node> Either<FlowError, T>.map
         }
     }
 
-context (Filepath) private fun <T, N> Either<FlowError, T>.mapError(node: N)
-        where N : AST.WithResolutionContext, N : AST.Named = mapError(node) {
-    val ctx = node.context
-    if (ctx != null)
-        (if (ctx.fromRoot) "::" else "") + "${ctx.chain.joinToString("::", postfix = "::") { it.name }}${node.name}"
-    else node.name
-}
+context (Filepath) private fun <T, N> Either<FlowError, T>.mapError(node: N) where N : AST.WithResolutionContext, N : AST.Named =
+    mapError(node) {
+        val ctx = node.context
+        if (ctx != null) (if (ctx.fromRoot) "::" else "") + "${
+            ctx.chain.joinToString(
+                "::", postfix = "::"
+            ) { it.name }
+        }${node.name}"
+        else node.name
+    }
 
 object ReferenceResolver : Transformer<AST.Reference>(), Resolver<AST.Reference, AST.Referable> {
     override val type: KClass<AST.Reference> = AST.Reference::class
@@ -97,10 +97,7 @@ object ReferenceResolver : Transformer<AST.Reference>(), Resolver<AST.Reference,
 
     init {
         dependsOn(
-            VariableScope,
-            BinaryOperatorDesugaring,
-            ForeignFunctionResolver,
-            UnaryOperatorDesugaring
+            VariableScope, BinaryOperatorDesugaring, ForeignFunctionResolver, UnaryOperatorDesugaring
         )
     }
 
@@ -176,10 +173,8 @@ object ReferenceResolver : Transformer<AST.Reference>(), Resolver<AST.Reference,
     context(ReportCollector, Filepath) override fun transform(node: AST.Reference): EagerEffect<UnrecoverableError, AST.Node> {
         val referral = when (val context = node.context) {
             null -> node.handleOrRecurseUp(node.parent).mapError(node)
-            else -> followContext(context, node)
-                .flatMap { point -> node.handle(point) }
-                .mapLeft { if (it !is FlowError) NotFound else it }
-                .mapError(node)
+            else -> followContext(context, node).flatMap { point -> node.handle(point) }
+                .mapLeft { if (it !is FlowError) NotFound else it }.mapError(node)
         }
         return eagerEffect {
             with(node.rlt) {
@@ -208,10 +203,8 @@ object TypeReferenceResolver : Transformer<AST.TypeReference>(), Resolver<AST.Ty
 
         val referral = when (val context = node.context) {
             null -> node.type.handleOrRecurseUp(parent).mapError(node)
-            else -> followContext(context, node.type)
-                .flatMap { point -> node.type.handle(point) }
-                .mapLeft { if (it !is FlowError) NotFound else it }
-                .mapError(node)
+            else -> followContext(context, node.type).flatMap { point -> node.type.handle(point) }
+                .mapLeft { if (it !is FlowError) NotFound else it }.mapError(node)
         }
         return eagerEffect {
             with(node.rlt) {
@@ -224,8 +217,7 @@ object TypeReferenceResolver : Transformer<AST.TypeReference>(), Resolver<AST.Ty
         is AST.ModuleDecl -> node.rest.filterIsInstance<AST.TypeReferable>().filter { it.name == this.name }
             .onlyUnique { NotFound }
 
-        is AST.EnumDecl -> node.enumEntries.filter { it.name == this.name }
-            .onlyUnique { RecurseUp }
+        is AST.EnumDecl -> node.enumEntries.filter { it.name == this.name }.onlyUnique { RecurseUp }
 
         is AST.TraitDecl, is AST.StructDecl -> if ((node as AST.TypeReferable).name == this.name) node.right() else RecurseUp.left()
 

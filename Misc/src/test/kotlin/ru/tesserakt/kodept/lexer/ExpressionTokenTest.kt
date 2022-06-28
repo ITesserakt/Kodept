@@ -41,7 +41,7 @@ class ExpressionTokenTest : StringSpec({
             *keywordSpecificCases(MATCH, "match"),
             *keywordSpecificCases(WHILE, "while"),
             *keywordSpecificCases(MODULE, "module"),
-            *keywordSpecificCases(EXTENSION, "extension"),
+            *keywordSpecificCases(EXTEND, "extend"),
             row(VAR, "val", false),
         ).forAll(::impliesData)
     }

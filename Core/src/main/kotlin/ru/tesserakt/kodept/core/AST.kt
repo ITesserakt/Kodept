@@ -27,10 +27,8 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     private fun checkStructure() {
         logger.debug { root.asString() }
         require(parents.size == nodes.size - 1) {
-            if (parents.size > nodes.size - 1)
-                "Extra unknown nodes:\n${(parents.keys - nodes).joinToString("\n") { "$it {${it.id}}" }}"
-            else
-                "There are missed nodes:\n${(nodes - parents.keys - root).joinToString("\n") { "$it {${it.id}}" }}"
+            if (parents.size > nodes.size - 1) "Extra unknown nodes:\n${(parents.keys - nodes).joinToString("\n") { "$it {${it.id}}" }}"
+            else "There are missed nodes:\n${(nodes - parents.keys - root).joinToString("\n") { "$it {${it.id}}" }}"
         }
 
         val graph = OrientedGraph.fromNodes(nodes)
@@ -402,8 +400,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
                 returns: TypeReference?,
                 descriptor: String,
                 action: ExportedFunction,
-            ) =
-                ForeignFunctionDecl(name, params.move(), returns?.move(), descriptor, action)
+            ) = ForeignFunctionDecl(name, params.move(), returns?.move(), descriptor, action)
         }
     }
 
@@ -445,8 +442,12 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
             ).withRLT()
         }
 
-        constructor(reference: Reference, mutable: Boolean, type: TypeLike?, expr: Expression) :
-                this(reference.move(), mutable, type?.move(), expr.move())
+        constructor(reference: Reference, mutable: Boolean, type: TypeLike?, expr: Expression) : this(
+            reference.move(),
+            mutable,
+            type?.move(),
+            expr.move()
+        )
     }
 
     data class DecimalLiteral(val value: BigInteger) : Leaf(), Literal {
@@ -615,9 +616,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
         override fun deepCopy() = with(rlt) { ResolvedReference(name, referralCell.deepCopy(), context).withRLT() }
 
         constructor(name: String, referral: Referable, context: ResolutionContext? = null) : this(
-            name,
-            referral.move(),
-            context
+            name, referral.move(), context
         )
     }
 
@@ -646,15 +645,11 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
             with(rlt) { ResolvedTypeReference(typeCell.deepCopy(), referralCell.deepCopy(), context).withRLT() }
 
         constructor(type: Type, referral: TypeReferable, context: ResolutionContext? = null) : this(
-            type.move(),
-            referral.move(),
-            context
+            type.move(), referral.move(), context
         )
 
         constructor(type: String, referral: TypeReferable, context: ResolutionContext? = null) : this(
-            Type(type),
-            referral,
-            context
+            Type(type), referral, context
         )
     }
 
@@ -676,8 +671,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     }
 
     data class Dereference(override var leftCell: Cell<Expression>, override var rightCell: Cell<Expression>) :
-        BinaryOperator(),
-        Expression {
+        BinaryOperator(), Expression {
         constructor(left: Expression, right: Expression) : this(left.move(), right.move())
 
         private object DereferenceKind : OperatorKind
@@ -802,6 +796,27 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
             operator fun invoke(params: List<InferredParameter>, body: Expression, returns: TypeLike?) =
                 LambdaExpr(params.move(), body.move(), returns?.move())
         }
+    }
+
+    data class ExtensionDecl(
+        val typeCell: Cell<TypeReference>,
+        val forTraitCell: Cell<TypeReference>,
+        val restCell: List<Cell<FunctionDecl>>,
+    ) : NodeBase(), TopLevel {
+        val type by typeCell
+        val forTrait by forTraitCell
+        val rest by restCell
+
+        override fun childCells(): List<Cell<*>> = listOf(typeCell, forTraitCell) + restCell
+        override fun deepCopy() = with(rlt) {
+            ExtensionDecl(typeCell.deepCopy(), forTraitCell.deepCopy(), restCell.map { it.deepCopy() }).withRLT()
+        }
+
+        override val name: String get() = "${type.name}\$${forTrait.name}"
+
+        constructor(type: TypeReference, forTrait: TypeReference, rest: List<FunctionDecl>) : this(
+            type.move(), forTrait.move(), rest.move()
+        )
     }
 }
 

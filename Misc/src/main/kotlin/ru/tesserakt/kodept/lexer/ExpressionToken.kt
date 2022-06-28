@@ -24,7 +24,7 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
     MATCH(exactLiteralToken("match")),
     WHILE(exactLiteralToken("while")),
     MODULE(exactLiteralToken("module")),
-    EXTENSION(exactLiteralToken("extension")),
+    EXTEND(exactLiteralToken("extend")),
     LAMBDA(literalToken("\\")),
 
     // Symbols
@@ -108,5 +108,6 @@ enum class ExpressionToken(val token: Token) : Parser<TokenMatch> by token {
         val ENUM = softKeyword("enum")
         val FOREIGN = softKeyword("foreign")
         val TYPE_ALIAS = softKeyword("type")
+        val WITH = softKeyword("with")
     }
 }

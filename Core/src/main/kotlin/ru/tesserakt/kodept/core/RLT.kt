@@ -288,4 +288,12 @@ data class RLT(val root: File) {
 
     data class Lambda(val params: List<Reference>, val flow: Symbol, val body: ExpressionNode) : ExpressionNode,
         Node by flow
+
+    data class Extension(
+        val extend: Keyword,
+        val onType: Reference,
+        val with: Keyword,
+        val forTrait: Reference,
+        val body: List<Function.Bodied>,
+    ) : TopLevelNode, Node by extend
 }

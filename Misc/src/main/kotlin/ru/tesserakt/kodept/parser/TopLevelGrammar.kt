@@ -16,6 +16,7 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.FOREIGN
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.STRUCT
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.TRAIT
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.TYPE_ALIAS
+import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.WITH
 
 object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     private val functionStatement by FunctionGrammar
@@ -62,5 +63,10 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
         RLT.ForeignType(f.keyword(), t.keyword(), type.type(), arrow.symbol(), refersTo)
     }
 
-    override val rootParser: Parser<RLT.TopLevelNode> by structStatement or traitStatement or enumStatement or functionStatement or foreignType or FunctionGrammar.foreignFun
+    val extension by (EXTEND * TYPE * WITH * TYPE * -LBRACE) and strictTrailing(FunctionGrammar) * RBRACE map { (it, rest, rb) ->
+        val (extend, type, with, trait) = it
+        RLT.Extension(extend.keyword(), RLT.Reference(type.type()), with.keyword(), RLT.Reference(trait.type()), rest)
+    }
+
+    override val rootParser: Parser<RLT.TopLevelNode> by structStatement or traitStatement or enumStatement or functionStatement or foreignType or FunctionGrammar.foreignFun or extension
 }

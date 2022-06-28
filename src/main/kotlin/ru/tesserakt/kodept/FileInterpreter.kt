@@ -147,5 +147,6 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
             s.copy(result = list)
         }
         is AST.Cell<*> -> join(state, program.value)
+        is AST.ExtensionDecl -> program.rest.fold(state, ::join)
     }
 }
