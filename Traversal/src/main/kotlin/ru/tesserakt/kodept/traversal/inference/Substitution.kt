@@ -6,9 +6,12 @@ data class Substitution(val substituted: MonomorphicType, val replacement: Monom
     }
 
     fun single() = setOf(this)
+
+    override fun toString(): String = "$substituted <~ {$replacement}"
 }
 
 typealias Substitutions = Set<Substitution>
 
-operator fun Substitutions.plus(other: Substitutions) =
-    other.map { Substitution(it.substituted, it.replacement.substitute(this)) }.union(this)
+infix fun Substitutions.compose(other: Substitutions) =
+    other.map { Substitution(it.substituted, it.replacement.substitute(this)) }
+        .union(this.map { Substitution(it.substituted, it.replacement.substitute(other)) })

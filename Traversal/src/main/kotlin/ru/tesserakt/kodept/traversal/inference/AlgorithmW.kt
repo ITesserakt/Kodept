@@ -24,7 +24,7 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
         val (s1, t1) = AlgorithmW(context, func).run().bind()
         val (s2, t2) = AlgorithmW(context.substitute(s1), arg).run().bind()
         val s3 = AlgorithmU(t1.substitute(s1), MonomorphicType.Fn(t2, beta)).run().bind()
-        s3 + s2 + s1 to beta.substitute(s3)
+        s3 compose s2 compose s1 to beta.substitute(s3)
     }
 
     fun Language.Lambda.run(): AlgorithmWResult = eagerEffect {
@@ -39,13 +39,13 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
         val newContext = Assumptions(context.filterKeys { it != bind }).substitute(s1)
 
         val (s2, t2) = AlgorithmW(newContext + (bind to polyType), usage).run().bind()
-        s2 + s1 to t2
+        s2 compose s1 to t2
     }
 
     fun Language.Literal.Tuple.run(): AlgorithmWResult = eagerEffect {
         items.fold(emptySet<Substitution>() to MonomorphicType.Tuple.unit) { acc, next ->
             val (s1, t1) = AlgorithmW(context.substitute(acc.first), next).run().bind()
-            acc.first + s1 to MonomorphicType.Tuple(acc.second.items + t1)
+            acc.first.compose(s1) to MonomorphicType.Tuple(acc.second.items + t1)
         }
     }
 

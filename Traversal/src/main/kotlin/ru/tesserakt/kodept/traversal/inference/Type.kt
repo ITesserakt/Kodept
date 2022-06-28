@@ -1,5 +1,8 @@
 package ru.tesserakt.kodept.traversal.inference
 
+import arrow.core.NonEmptyList
+import arrow.core.nonEmptyListOf
+
 private fun Int.expandToString(alphabet: List<Char> = ('a'..'z').toList()): String {
     if (this == 0) return alphabet[0].toString()
     var current = this
@@ -39,6 +42,14 @@ sealed class MonomorphicType : PolymorphicType() {
             is Fn -> "($input) -> $output"
             else -> "$input -> $output"
         }
+
+        companion object {
+            fun uncurry(args: NonEmptyList<MonomorphicType>, out: MonomorphicType) =
+                args.dropLast(1).foldRight(Fn(args.last(), out), ::Fn)
+
+            fun uncurry(head: MonomorphicType, vararg rest: MonomorphicType, out: MonomorphicType) =
+                uncurry(nonEmptyListOf(head, *rest), out)
+        }
     }
 
     data class Tuple(val items: List<MonomorphicType>) : MonomorphicType() {
@@ -49,11 +60,16 @@ sealed class MonomorphicType : PolymorphicType() {
         }
     }
 
+    data class Constant(val id: Int) : MonomorphicType() {
+        override fun toString(): String = id.expandToString(('Z'.downTo('A')).toList())
+    }
+
     fun substitute(subst: Set<Substitution>): MonomorphicType = when (this) {
         is PrimitiveType -> this
         is Var -> subst.find { it.substituted == this }?.replacement ?: this
         is Fn -> Fn(input.substitute(subst), output.substitute(subst))
         is Tuple -> Tuple(items.map { it.substitute(subst) })
+        is Constant -> this
     }
 
     fun freeTypes(): Set<Var> = when (this) {
@@ -61,6 +77,7 @@ sealed class MonomorphicType : PolymorphicType() {
         is Var -> setOf(this)
         is PrimitiveType -> emptySet()
         is Tuple -> items.fold(emptySet()) { acc, next -> acc + next.freeTypes() }
+        is Constant -> emptySet()
     }
 
     fun rename(old: Int, new: Int): MonomorphicType = when (this) {
@@ -68,6 +85,7 @@ sealed class MonomorphicType : PolymorphicType() {
         is Fn -> Fn(input.rename(old, new), output.rename(old, new))
         is Var -> if (id == old) Var(new) else this
         is Tuple -> Tuple(items.map { it.rename(old, new) })
+        is Constant -> this
     }
 }
 

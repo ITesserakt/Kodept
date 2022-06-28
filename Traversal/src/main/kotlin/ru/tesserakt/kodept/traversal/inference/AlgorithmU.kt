@@ -14,6 +14,7 @@ class AlgorithmU(val a: MonomorphicType, val b: MonomorphicType) {
 
     fun run(): AlgorithmUResult = eagerEffect {
         when {
+            a == b -> emptySet()
             a is MonomorphicType.Var && occursCheck(a, b) -> shift(Errors.InfiniteType(a, b))
             b is MonomorphicType.Var && occursCheck(b, a) -> shift(Errors.InfiniteType(b, a))
             a is MonomorphicType.Var -> Substitution(a, b).single()
@@ -21,14 +22,13 @@ class AlgorithmU(val a: MonomorphicType, val b: MonomorphicType) {
             a is MonomorphicType.Fn && b is MonomorphicType.Fn -> {
                 val s1 = (a.input unify b.input).bind()
                 val s2 = (a.output.substitute(s1) unify b.output.substitute(s1)).bind()
-                s1 + s2
+                s1 compose s2
             }
             a is MonomorphicType.Tuple && b is MonomorphicType.Tuple && a.items.size == b.items.size -> {
                 a.items.zip(b.items).fold(emptySet()) { acc, (x, y) ->
-                    acc + (x.substitute(acc) unify y.substitute(acc)).bind()
+                    acc compose (x.substitute(acc) unify y.substitute(acc)).bind()
                 }
             }
-            a == b -> emptySet()
             else -> shift(Errors.CannotUnify(a, b))
         }
     }
