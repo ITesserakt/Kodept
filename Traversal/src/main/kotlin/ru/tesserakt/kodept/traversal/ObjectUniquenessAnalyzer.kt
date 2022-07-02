@@ -8,7 +8,7 @@ import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
 
-val objectUniqueness = object : Analyzer() {
+object ObjectUniqueness : Analyzer() {
     override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
         val blocks = ast.fastFlatten {
             it is AST.ModuleDecl ||

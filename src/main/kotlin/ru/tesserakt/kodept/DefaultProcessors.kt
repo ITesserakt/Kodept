@@ -15,10 +15,10 @@ val defaultTransformers = setOf(
 )
 
 val defaultAnalyzers = setOf(
-    moduleNameAnalyzer,
-    moduleUniquenessAnalyzer,
-    emptyBlockAnalyzer,
-    variableUniqueness,
-    objectUniqueness,
+    ModuleNameAnalyzer,
+    ModuleUniquenessAnalyzer,
+    EmptyBlockAnalyzer,
+    VariableUniqueness,
+    ObjectUniqueness,
     TypeInferenceAnalyzer,
 )

@@ -10,7 +10,7 @@ import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
 
-val variableUniqueness = object : Analyzer() {
+object VariableUniqueness : Analyzer() {
     override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
         val blocks = ast.fastFlatten { it is AST.ExpressionList }
 

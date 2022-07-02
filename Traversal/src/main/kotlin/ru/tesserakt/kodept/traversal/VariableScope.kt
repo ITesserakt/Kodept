@@ -15,7 +15,7 @@ object VariableScope : Transformer<AST.ExpressionList>() {
     override val type: KClass<AST.ExpressionList> = AST.ExpressionList::class
 
     init {
-        dependsOn(objectUniqueness)
+        dependsOn(ObjectUniqueness)
     }
 
     override val traverseMode: Tree.SearchMode = Tree.SearchMode.LevelOrder
