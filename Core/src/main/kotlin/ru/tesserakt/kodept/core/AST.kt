@@ -185,7 +185,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     sealed interface Referable : Named
     sealed interface TypeReferable : Named
     sealed interface TypeLike : NodeWithParent
-    sealed interface TypeExpression : Node
+    sealed interface TypeExpression : NodeWithParent
 
     class Cell<out T : NodeWithParent>(value: T) : NodeWithParent {
         override val parent get() = value.parent
