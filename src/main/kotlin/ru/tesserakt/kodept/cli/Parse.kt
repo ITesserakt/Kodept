@@ -4,13 +4,18 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.groupChoice
+import com.github.ajalt.clikt.parameters.groups.provideDelegate
 import com.github.ajalt.clikt.parameters.groups.required
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.path
+import mu.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.core.Loader
 import ru.tesserakt.kodept.core.MemoryLoader
+import using
+
+private val logger = KotlinLogging.logger("[Compiler]")
 
 sealed class LoadConfig(name: String) : OptionGroup(name) {
     abstract val loader: Loader
@@ -44,7 +49,10 @@ class MemoryConfig : LoadConfig("Options for loading from console") {
     override val loader by lazy { MemoryLoader.singleSnippet(text) }
 }
 
-class Parse : CliktCommand(help = "- parse files and do operations (see available commands)") {
+class Parse : CliktCommand(
+    help = "- parse files and do operations (see available commands)",
+    invokeWithoutSubcommand = true
+) {
     private val allErrors by option("--all", help = "Show all errors while parsing")
         .flag("--less", defaultForHelp = "--less")
     private val loadConfig by option(help = "Config to load programs").groupChoice(
@@ -53,8 +61,11 @@ class Parse : CliktCommand(help = "- parse files and do operations (see availabl
     ).required()
     private val contextFn by requireObject<(Loader) -> CompilationContext>()
     private val context by lazy { contextFn(loadConfig.loader) }
+    private val reportOptions by ReportProcessorOptions()
 
     override fun run() {
+        val subcommand = currentContext.invokedSubcommand
+
         val result = context workflow {
             val sources = readSources()
             sources
@@ -64,6 +75,10 @@ class Parse : CliktCommand(help = "- parse files and do operations (see availabl
                 .also { sources.bind().holder }
         }
 
-        currentContext.findOrSetObject { Triple(context, result.first, result.second) }
+        if (subcommand != null)
+            currentContext.findOrSetObject { Triple(context, result.first, result.second) }
+        else using(reportOptions.processor, result.second, logger) {
+            result.first.ast.forEach { it.value.printReportsOr { "" } }
+        }
     }
 }
