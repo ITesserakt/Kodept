@@ -2,7 +2,7 @@
 \def\notedate{2022.11.04}
 \def\currentauthor{Василян А.Р. (РК6-73Б)}
 %----------------------------------------------------------
-\notestatement{rndhpcgui}{Разработка web-приложения}
+\notestatement{rndhpcdsl}{Разработка web-приложения}
 
 %---------------------------------------------------------
 На рисунке ~\ref{picture1} представлено дерево проекта.
@@ -12,11 +12,13 @@
   \caption{Дерево проекта}
   \label{picture1}
 \end{figure}
-	Была добавлена работа со статическими файлами и возможность загружать фотографию в контейнер и вывести на страницу (рисунок 13).
-	В новом \textsf{Dockerfile.prod} (листинг ~\ref{dockerfile.prod}) используется многоступенчатая сборка (\textsf{multi-stage build}) , чтобы уменьшить конечный размер образа. \textsf{builder} — это временный образ, которое используется для сборки \textsf{Python}. Затем он копируются в конечный производственный образ, а образ \textsf{builder} отбрасывается. Так же мы создали пользователя app без полномочий \textsf{root}. По умолчанию \textsf{Docker} запускает контейнерные процессы как \textsf{root} внутри контейнера, и если кто-то получит доступ на сервер и к контейнеру, то проникший на сервер пользователь тоже станет \textsf{root}, что, очевидно, не желательно. Таким образом увеличивается безопасность. Были созданы папки \textsf{staticfiles} и \textsf{mediafiles}, так как \textsf{docker-compose} монтирует именованные тома как \textsf{root}. И так как используется пользователь \textsf{app} не обладает полномочиями \textsf{root}, таким образом можно получить ошибку отказа в разрешении при запуске команды \textsf{collectstatic}, если каталог еще не существует.
+
+Была добавлена работа со статическими файлами и возможность загружать фотографию в контейнер и вывести на страницу (рисунок 13).
+
+В новом \textsf{Dockerfile.prod} (листинг ~\ref{dockerfile.prod}) используется многоступенчатая сборка (\textsf{multi-stage build}) , чтобы уменьшить конечный размер образа. \textsf{builder} — это временный образ, которое используется для сборки \textsf{Python}. Затем он копируются в конечный производственный образ, а образ \textsf{builder} отбрасывается. Так же мы создали пользователя app без полномочий \textsf{root}. По умолчанию \textsf{Docker} запускает контейнерные процессы как \textsf{root} внутри контейнера, и если кто-то получит доступ на сервер и к контейнеру, то проникший на сервер пользователь тоже станет \textsf{root}, что, очевидно, не желательно. Таким образом увеличивается безопасность. Были созданы папки \textsf{staticfiles} и \textsf{mediafiles}, так как \textsf{docker-compose} монтирует именованные тома как \textsf{root}. И так как используется пользователь \textsf{app} не обладает полномочиями \textsf{root}, таким образом можно получить ошибку отказа в разрешении при запуске команды \textsf{collectstatic}, если каталог еще не существует.
 	Так же был использован \textsf{Guncorn} (сервер промышленного уровня) и также добавлен в файл \textsf{requirements.txt} (версия \textsf{20.0.4}).
 
-\begin{lstlisting}[frame=single, label={dockerfile.prod}, caption={\textsf{Dockerfile.prod}}, language=Dockerfile.prod] 
+\begin{lstlisting}[frame=single, label={dockerfile.prod}, caption={Dockerfile.prod}, language={docker}] 
 # BUILDER
 
 FROM python:3.9.6-alpine as builder
@@ -40,7 +42,6 @@ COPY . .
 # установка зависимостей
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
-
 
 # FINAL
 
@@ -85,7 +86,7 @@ ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
 \end{lstlisting}
 	В \textsf{docker-compose.prod} (листинг ~\ref{docker-compose.prod }) был добавлен новый сервис \textsf{Nginx}, чтобы он действовал как обратный прокси-сервер для \textsf{Gunicorn} для обработки клиентских запросов, а также для обслуживания статических файлов. Для работы \textsf{Nginx} была создана новая директория с соответствующим названием. В данной директории были созданы файлы \textsf{Dockerfile} (листинг ~\ref{dockerfile_nginx}) и \textsf{nginx.conf} (листинг  ~\ref{nginx.conf}).
 
-\begin{lstlisting}[frame=single, label={docker-compose.prod}, caption={\textsf{docker-compose.prod.yml}}, language=docker-compose.prod] 
+\begin{lstlisting}[frame=single, label={docker-compose.prod}, caption={docker-compose.prod.yml}, language={docker-compose}] 
 version: '3.8'
 
 services:
@@ -125,19 +126,18 @@ volumes:
   media_volume:
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={dockerfile_nginx}, caption={\textsf{Dockerfile} в директории \textsf{nginx}}, language=Dockerfile] 
+\begin{lstlisting}[frame=single, label={dockerfile_nginx}, caption={Dockerfile в директории nginx}, language={docker}] 
 FROM nginx:1.21-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={nginx.conf}, caption={\textsf{nginx.conf}}, language=nginx] 
+\begin{lstlisting}[frame=single, label={nginx.conf}, caption={nginx.conf}, language={nginx}] 
 upstream hello_django {
     server web:8000;
 }
 
 server {
-
     listen 80;
 
     location / {
@@ -154,14 +154,13 @@ server {
     location /media/ {
         alias /home/app/web/mediafiles/;
     }
-
 }
 \end{lstlisting}
 
 	Для работы с медиафайлами был создан новый модуль \textsf{Django} под названием \textsf{upload}, то есть была создана новая директория \textsf{upload} (новый модуль создаётся командой в терминале: "\textsf{docker-compose exec web python manage.py startapp upload}") и добавлен новый модуль в \textsf{INSTALLED_APPS} в \textsf{settings.py}.
 	В созданной директории был изменен файл views.py (листинг  ~\ref{views}), была создана папка для шаблонов "templates" и в ней был создан новый шаблон \textsf{upload.html} (листинг ~\ref{upload}). Так же был изменен файл \textsf{app/hello_django/urls.py} (литсинг ~\ref{urls}).
 
-\begin{lstlisting}[frame=single, label={views}, caption={\textsf{views.py}}, language=Python] 
+\begin{lstlisting}[frame=single, label={views}, caption={views.py}, language=Python] 
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 

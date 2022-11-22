@@ -216,36 +216,40 @@
 
 \lstloadlanguages{Python, [LaTeX]TeX, bash, XML, make, C++}
 
-\lstset
-{
-		language=C++,
-		extendedchars=\true, % включаем не латиницу (работает только если указано \true, а не true)
-		frame=tb, % рамка сверху и снизу
-%		escapechar=|, % |«выпадаем» в LATEX|
-		xleftmargin=0.5cm,
-		xrightmargin=0.5cm,
-		columns=fullflexible,
-%		aboveskip=5pt,
-		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-		numbersep=4pt,                   % how far the line-numbers are from the code
-		showspaces=false,
-		showstringspaces=false,
-		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace (работает только если указано true, а не \true)
-		breaklines=true,                 % sets automatic line breaking (работает только если указано true, а не \true)
-		basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
-		commentstyle=\color{gray}\itshape, % шрифт для комментариев
-		stringstyle=\color{orange},
-%		stringstyle=\bfseries, % шрифт для строк
-		numberstyle=\footnotesize\color{gray},
-%		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
-		keywordstyle=\color{black}\bfseries,
-		directivestyle=\color{red},
-		emph={int,char,double,float,unsigned,bool,string},
-		emphstyle={\color{blue}\bfseries},
-		tabsize=2,
-		morecomment=[l]{//},
-		otherkeywords={=,==,:,&},
-		texcl=true,
+\usepackage{xcolor}
+
+\colorlet{punct}{red!60!black}
+\definecolor{background}{HTML}{EEEEEE}
+\definecolor{delim}{RGB}{20,105,176}
+\colorlet{numb}{magenta!60!black}
+
+\lstdefinelanguage{json}{%
+    basicstyle=\normalfont\ttfamily,
+    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{background},
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
 }
 
 \lstdefinelanguage{TmlSyntax}
@@ -294,6 +298,48 @@
 		tabsize=2,
 		literate=
 		{=}{\textcolor{blue}{=}\bfseries}1%
+}
+
+\lstdefinelanguage{nginx}%
+{%
+		extendedchars=\true,
+		escapechar=>, % |«выпадаем» в LATEX|
+		frame=tb, % рамка сверху и снизу
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+		showspaces=\false,
+		showstringspaces=\false,
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+		breaklines=true,                 % sets automatic line breaking
+		basicstyle=\color{black}\small\sffamily,
+    numberstyle=\footnotesize\color{gray}, % the style that is used for the line-numbers
+    keywordstyle={\color{black}\bfseries},
+		commentstyle=\color{gray}\itshape, % шрифт для комментариев
+		stringstyle=\color{orange}, % шрифт для строк
+    morecomment=[s][\color{blue}]{'}{'},
+		keywords={upstream,server,listen,location},%, edge_id, binname, entry_func, strategy, parallelization, branching},
+    morecomment=[l]{//},
+		tabsize=2,
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {;}{{{\color{punct}{;}}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {\$}{{{\color{punct}{\$}}}}{1}
+      {/}{{{\color{punct}{/}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1},
 }
 
 \lstdefinelanguage{aINIExample}%
@@ -354,6 +400,43 @@
 		{=>}{\textcolor{brown}{=>}}1
 		{[}{\textcolor{red}{[}}1
 		{]}{\textcolor{red}{]}}1
+}
+
+\lstdefinelanguage{docker}{
+  keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD,  ENV, ARG, WORKDIR, EXPOSE, LABEL, USER, VOLUME, STOPSIGNAL, ONBUILD, MAINTAINER},
+  keywordstyle=\color{blue}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\lstdefinelanguage{docker-compose}{
+  keywords={image, environment, ports, container_name, ports, volumes, links},
+  keywordstyle=\color{blue}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  morestring=[b]',
+  morestring=[b]"
+}
+\lstdefinelanguage{docker-compose-2}{
+  keywords={version, volumes, services},
+  keywordstyle=\color{blue}\bfseries,
+  keywords=[2]{image, environment, ports, container_name, ports, links, build},
+  keywordstyle=[2]\color{olive}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  morestring=[b]',
+  morestring=[b]"
 }
 
 %--------------------------------------------
@@ -457,6 +540,9 @@
 \newtheorem{solution}{Решение}
 \newtheorem{remark}{Замечание}
 \newtheorem{theorem}{Теорема}
+%--------------------------------------------------
+\def\notedate{}
+\def\currentauthor{}
 %--------------------------------------------------
 % атрибуты задачи
 \newcommand{\noteattributes}[1]{%
