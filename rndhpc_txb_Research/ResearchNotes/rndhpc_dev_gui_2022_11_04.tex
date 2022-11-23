@@ -8,12 +8,12 @@
 На рисунке ~\ref{picture1} представлено дерево проекта.
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.35]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture1.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture1.png}
   \caption{Дерево проекта}
   \label{picture1}
 \end{figure}
 
-Была добавлена работа со статическими файлами и возможность загружать фотографию в контейнер и вывести на страницу (рисунок 13).
+Была добавлена работа со статическими файлами и возможность загружать фотографию в контейнер и вывести на страницу (рисунок ~\ref{picture4}).
 
 В новом \textsf{Dockerfile.prod} (листинг ~\ref{dockerfile.prod}) используется многоступенчатая сборка (\textsf{multi-stage build}) , чтобы уменьшить конечный размер образа. \textsf{builder} — это временный образ, которое используется для сборки \textsf{Python}. Затем он копируются в конечный производственный образ, а образ \textsf{builder} отбрасывается. Так же мы создали пользователя app без полномочий \textsf{root}. По умолчанию \textsf{Docker} запускает контейнерные процессы как \textsf{root} внутри контейнера, и если кто-то получит доступ на сервер и к контейнеру, то проникший на сервер пользователь тоже станет \textsf{root}, что, очевидно, не желательно. Таким образом увеличивается безопасность. Были созданы папки \textsf{staticfiles} и \textsf{mediafiles}, так как \textsf{docker-compose} монтирует именованные тома как \textsf{root}. И так как используется пользователь \textsf{app} не обладает полномочиями \textsf{root}, таким образом можно получить ошибку отказа в разрешении при запуске команды \textsf{collectstatic}, если каталог еще не существует.
 	Так же был использован \textsf{Guncorn} (сервер промышленного уровня) и также добавлен в файл \textsf{requirements.txt} (версия \textsf{20.0.4}).
@@ -218,21 +218,21 @@ if bool(settings.DEBUG):
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.35]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture2.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture2.png}
   \caption{Страница для загрузки фотографии}
   \label{picture2}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.35]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture3.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture3.png}
   \caption{Фотография выбрана}
   \label{picture3}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.35]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture4.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture4.png}
   \caption{Страница после нажатия на submit}
   \label{picture4}
 \end{figure}
@@ -240,4 +240,3 @@ if bool(settings.DEBUG):
 % Атрибуты задачи
 \noteattributes{}
 %----------------------------------------------------------
-
