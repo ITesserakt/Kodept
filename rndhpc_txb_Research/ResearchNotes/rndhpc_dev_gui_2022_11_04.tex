@@ -5,18 +5,19 @@
 \notestatement{rndhpcgui}{Разработка web-приложения}
 
 %---------------------------------------------------------
-На рисунке ~\ref{picture1} представлено дерево проекта.
+На рисунке~\ref{rndhpcgui.2022.11.04.picture1} представлено дерево проекта.
 \begin{figure}[!ht]
   \centering
   \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture1.png}
   \caption{Дерево проекта}
-  \label{picture1}
+  \label{rndhpcgui.2022.11.04.picture1}
 \end{figure}
 
-Была добавлена работа со статическими файлами и возможность загружать фотографию в контейнер и вывести на страницу (рисунок ~\ref{picture4}).
+Была добавлена работа со статическими файлами и возможность загружать фотографию в контейнер и вывести на страницу (рисунок~\ref{rndhpcgui.2022.11.04.picture4}).
 
-В новом \textsf{Dockerfile.prod} (листинг ~\ref{dockerfile.prod}) используется многоступенчатая сборка (\textsf{multi-stage build}) , чтобы уменьшить конечный размер образа. \textsf{builder} — это временный образ, которое используется для сборки \textsf{Python}. Затем он копируются в конечный производственный образ, а образ \textsf{builder} отбрасывается. Так же мы создали пользователя app без полномочий \textsf{root}. По умолчанию \textsf{Docker} запускает контейнерные процессы как \textsf{root} внутри контейнера, и если кто-то получит доступ на сервер и к контейнеру, то проникший на сервер пользователь тоже станет \textsf{root}, что, очевидно, не желательно. Таким образом увеличивается безопасность. Были созданы папки \textsf{staticfiles} и \textsf{mediafiles}, так как \textsf{docker-compose} монтирует именованные тома как \textsf{root}. И так как используется пользователь \textsf{app} не обладает полномочиями \textsf{root}, таким образом можно получить ошибку отказа в разрешении при запуске команды \textsf{collectstatic}, если каталог еще не существует.
-	Так же был использован \textsf{Guncorn} (сервер промышленного уровня) и также добавлен в файл \textsf{requirements.txt} (версия \textsf{20.0.4}).
+В новом \textsf{Dockerfile.prod} (листинг~\ref{rndhpcgui.2022.11.04.dockerfile.prod}) используется многоступенчатая сборка (\textsf{multi-stage build}) , чтобы уменьшить конечный размер образа. \textsf{builder} — это временный образ, которое используется для сборки \textsf{Python}. Затем он копируются в конечный производственный образ, а образ \textsf{builder} отбрасывается. Так же мы создали пользователя app без полномочий \textsf{root}. По умолчанию \textsf{Docker} запускает контейнерные процессы как \textsf{root} внутри контейнера, и если кто-то получит доступ на сервер и к контейнеру, то проникший на сервер пользователь тоже станет \textsf{root}, что, очевидно, не желательно. Таким образом увеличивается безопасность. Были созданы папки \textsf{staticfiles} и \textsf{mediafiles}, так как \textsf{docker-compose} монтирует именованные тома как \textsf{root}. И так как используется пользователь \textsf{app} не обладает полномочиями \textsf{root}, таким образом можно получить ошибку отказа в разрешении при запуске команды \textsf{collectstatic}, если каталог еще не существует.
+	
+Так же был использован \textsf{Guncorn} (сервер промышленного уровня) и также добавлен в файл \textsf{requirements.txt} (версия \textsf{20.0.4}).
 
 \begin{lstlisting}[frame=single, label={dockerfile.prod}, caption={Dockerfile.prod}, language={docker}] 
 # BUILDER
@@ -84,9 +85,10 @@ USER app
 # запуск entrypoint.prod.sh
 ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
 \end{lstlisting}
-	В \textsf{docker-compose.prod} (листинг ~\ref{docker-compose.prod }) был добавлен новый сервис \textsf{Nginx}, чтобы он действовал как обратный прокси-сервер для \textsf{Gunicorn} для обработки клиентских запросов, а также для обслуживания статических файлов. Для работы \textsf{Nginx} была создана новая директория с соответствующим названием. В данной директории были созданы файлы \textsf{Dockerfile} (листинг ~\ref{dockerfile_nginx}) и \textsf{nginx.conf} (листинг  ~\ref{nginx.conf}).
+	
+В \textsf{docker-compose.prod} (листинг~\ref{rndhpcgui.2022.11.04.docker-compose.prod}) был добавлен новый сервис \textsf{Nginx}, чтобы он действовал как обратный прокси-сервер для \textsf{Gunicorn} для обработки клиентских запросов, а также для обслуживания статических файлов. Для работы \textsf{Nginx} была создана новая директория с соответствующим названием. В данной директории были созданы файлы \textsf{Dockerfile} (листинг~\ref{rndhpcgui.2022.11.04.dockerfile_nginx}) и \textsf{nginx.conf} (листинг~\ref{rndhpcgui.2022.11.04.nginx.conf}).
 
-\begin{lstlisting}[frame=single, label={docker-compose.prod}, caption={docker-compose.prod.yml}, language={docker-compose}] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.11.04.docker-compose.prod}, caption={docker-compose.prod.yml}, language={docker-compose}] 
 version: '3.8'
 
 services:
@@ -126,13 +128,13 @@ volumes:
   media_volume:
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={dockerfile_nginx}, caption={Dockerfile в директории nginx}, language={docker}] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.11.04.dockerfile_nginx}, caption={Dockerfile в директории nginx}, language={docker}] 
 FROM nginx:1.21-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={nginx.conf}, caption={nginx.conf}, language={nginx}] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.11.04.nginx.conf}, caption={nginx.conf}, language={nginx}] 
 upstream hello_django {
     server web:8000;
 }
@@ -157,10 +159,11 @@ server {
 }
 \end{lstlisting}
 
-	Для работы с медиафайлами был создан новый модуль \textsf{Django} под названием \textsf{upload}, то есть была создана новая директория \textsf{upload} (новый модуль создаётся командой в терминале: "\textsf{docker-compose exec web python manage.py startapp upload}") и добавлен новый модуль в \textsf{INSTALLED_APPS} в \textsf{settings.py}.
-	В созданной директории был изменен файл views.py (листинг  ~\ref{views}), была создана папка для шаблонов "templates" и в ней был создан новый шаблон \textsf{upload.html} (листинг ~\ref{upload}). Так же был изменен файл \textsf{app/hello_django/urls.py} (литсинг ~\ref{urls}).
+Для работы с медиафайлами был создан новый модуль \textsf{Django} под названием \textsf{upload}, то есть была создана новая директория \textsf{upload} (новый модуль создаётся командой в терминале:<<\textsf{docker-compose exec web python manage.py startapp upload}>>) и добавлен новый модуль в \textsf{INSTALLED_APPS} в \textsf{settings.py}.
+	
+В созданной директории был изменен файл views.py (листинг~\ref{rndhpcgui.2022.11.04.views}), была создана папка для шаблонов <<templates>> и в ней был создан новый шаблон \textsf{upload.html} (листинг~\ref{rndhpcgui.2022.11.04.upload}). Так же был изменен файл \textsf{app/hello_django/urls.py} (литсинг~\ref{rndhpcgui.2022.11.04.urls}).
 
-\begin{lstlisting}[frame=single, label={views}, caption={views.py}, language=Python] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.11.04.views}, caption={views.py}, language=Python] 
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 
@@ -178,7 +181,7 @@ def image_upload(request):
     return render(request, "upload.html")
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={upload}, caption={\textsf{upload.html}}, language=HTML] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.11.04.upload}, caption={\textsf{upload.html}}, language=HTML] 
 {\% block content \%}
   <form action="{\% url "upload" \%}" method="post" enctype="multipart/form-data">
     {\% csrf_token \%}
@@ -194,7 +197,7 @@ def image_upload(request):
 {\% endblock \%}
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={urls}, caption={\textsf{urls.py}}, language=Python] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.11.04.urls}, caption={\textsf{urls.py}}, language=Python] 
 from django.contrib import admin
 from django.urls import path
 from django.conf import settings
@@ -210,31 +213,32 @@ if bool(settings.DEBUG):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 \end{lstlisting}
 
-	Итак, командами представленными ниже запускаются контейнеры:
+Итак, командами представленными ниже запускаются контейнеры:
 \textsf{docker-compose -f docker-compose.prod.yml up -d --build}
 \textsf{docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput}
 \textsf{docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input –clear}
-	После запуска, при переходе по адресу \textsf{http://localhost:1337/}, открывается страница (рис. ~\ref{picture2}). Можно выбрать файл (рис.~\ref{picture3}). И после нажатия на \textsf{submit} страница обновляется, и теперь на ней присутствует ссылка на выбранное изображение, которое теперь сохранено в контейнере, и само изображение (рис. ~\ref{picture4}). Авторизация так же присутствует по адресу \textsf{http://localhost:1337/admin} аналогично тому, что было показано выше.
+	
+После запуска, при переходе по адресу \textsf{http://localhost:1337/}, открывается страница (рис.~\ref{rndhpcgui.2022.11.04.picture2}). Можно выбрать файл (рис.~\ref{rndhpcgui.2022.11.04.picture3}). И после нажатия на \textsf{submit} страница обновляется, и теперь на ней присутствует ссылка на выбранное изображение, которое теперь сохранено в контейнере, и само изображение (рис.~\ref{rndhpcgui.2022.11.04.picture4}). Авторизация так же присутствует по адресу \textsf{http://localhost:1337/admin} аналогично тому, что было показано выше.
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture2.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_11_04/picture2.png}
   \caption{Страница для загрузки фотографии}
-  \label{picture2}
+  \label{rndhpcgui.2022.11.04.picture2}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture3.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_11_04/picture3.png}
   \caption{Фотография выбрана}
-  \label{picture3}
+  \label{rndhpcgui.2022.11.04.picture3}
 \end{figure}
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_11_04/picture4.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_11_04/picture4.png}
   \caption{Страница после нажатия на submit}
-  \label{picture4}
+  \label{rndhpcgui.2022.11.04.picture4}
 \end{figure}
 %----------------------------------------------------------
 % Атрибуты задачи

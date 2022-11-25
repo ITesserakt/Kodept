@@ -5,12 +5,12 @@
 \notestatement{rndhpcgui}{Практическое ознакомление с Django и Docker}
 
 %---------------------------------------------------------
-На рисунке~\ref{picture1} представлено дерево проекта.
+На рисунке~\ref{rndhpcgui.2022.10.29.picture1} представлено дерево проекта.
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_10_29/picture1.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_10_29/picture1.png}
   \caption{Содержание проекта}
-  \label{picture1}
+  \label{rndhpcgui.2022.10.29.picture1}
 \end{figure}
 
 \begin{description}
@@ -20,9 +20,9 @@
 	\item[\textsf{manage.py}] Используется для создания приложений, работы с базами данных и для запуска отладочного сервера.
 \end{description}
 
-	Был создан \textsf{Dockerfile} в каталоге проекта. Содержимое \textsf{Dockerfile} представлено в листинге~\ref{dockerfile}.
+Был создан \textsf{Dockerfile} в каталоге проекта. Содержимое \textsf{Dockerfile} представлено в листинге~\ref{rndhpcgui.2022.10.29.dockerfile}.
 
-\begin{lstlisting}[frame=single,label={dockerfile},caption={Dockerfile},language={docker}] 
+\begin{lstlisting}[frame=single,label={rndhpcgui.2022.10.29.dockerfile},caption={Dockerfile},language={docker}] 
 # pull official base image
 FROM python:3.9.6-alpine
 
@@ -46,7 +46,7 @@ RUN pip install -r requirements.txt
 COPY . .
 \end{lstlisting}
 
-	В \textsf{Dockerfile} описана последовательность команд, которые надо выполнить. На основе этого файла будет создан образ (\textsf{docker image}). Вначале указан образ на котором будем основываться. В нашем случае python 3.9. Устанавливается рабочая директория в контейнере с помощью \textsf{WORKDIR}. Далее устанавливаются переменные окружения:
+В \textsf{Dockerfile} описана последовательность команд, которые надо выполнить. На основе этого файла будет создан образ (\textsf{docker image}). Вначале указан образ на котором будем основываться. В нашем случае \textsf{python 3.9}. Устанавливается рабочая директория в контейнере с помощью \textsf{WORKDIR}. Далее устанавливаются переменные окружения:
 
 \begin{enumerate}
 	\item \textsf{PYTHONDONTWRITEBYTECODE} означает, что \textsf{Python} не будет пытаться создавать файлы \textsf{.pyc};
@@ -55,16 +55,9 @@ COPY . .
 
 Затем команды для установки соответствующих пакетов, необходимых для \textsf{Psycopg2}. Из директории, где находится \textsf{Dockerfile}, копируется файл зависимостей \textsf{requirements.txt} в рабочую директорию контейнера. Далее с помощью команды \textsf{RUN} исполняются перечисленные в ней команды, что приводит к установкам зависимостей. Затем копируется вся дериктория проекта в контейнер. 
 
-Был создан файл \textsf{docker-compose.yml} (листинг ~\ref{docker-compose}). \textsf{docker-compose} позволяет управлять многоконтейнерностью. То есть можно запустить сразу несколько контейнеров, которые будут работать между собой. В нашем случае мы создаем контейнер с базой данных \textsf{db} и наш основной контейнер \textsf{web}.
+Был создан файл \textsf{docker-compose.yml} (листинг~\ref{rndhpcgui.2022.10.29.docker-compose}). \textsf{docker-compose} позволяет управлять многоконтейнерностью. То есть можно запустить сразу несколько контейнеров, которые будут работать между собой. В нашем случае мы создаем контейнер с базой данных \textsf{db} и наш основной контейнер \textsf{web}.
 
-\begin{verbatim}
-
-ываыва
- ываываыва 
-
-\end{verbatim}
-
-\begin{lstlisting}[frame=single, label={docker-compose}, caption={docker-compose.yml}, language={docker-compose}] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.10.29.docker-compose}, caption={docker-compose.yml}, language={docker-compose}] 
 version: '3.8'
 
 services:
@@ -93,14 +86,15 @@ volumes:
   postgres_data:
 \end{lstlisting}
 
-	В самом начале\cite{DimitSokol2008} указывается версия \textsf{docker-compose}. Далее указываются \textsf{services} (контейнеры). 
+В самом начале указывается версия \textsf{docker-compose}. Далее указываются \textsf{services} (контейнеры). 
 \begin{enumerate}
-	\item \textsf{web}. Сбор проекта (\textsf{build}) делается на основе \textsf{Dockerfile} ("\textsf{.}" Значит, что он в той же директории, что и \textsf{docker-compose}). Далее указывается команда для запуска сервера. Указываем \textsf{volumes}, что значит, что всё из директории, где находится \textsf{docker-compose}, используется в контейнере. Далее указываются порты (сервер \textsf{Django} запускается в контейнере на порте \textsf{8000} и этот порт перебрасывается на нашу хост машину). И в конце сервиса \textsf{web} указывается зависимость от сервиса \textsf{db}, то есть \textsf{web} не сможет работать без \textsf{db}.
+	\item \textsf{web}. Сбор проекта (\textsf{build}) делается на основе \textsf{Dockerfile} (<<\textsf{.}>> Значит, что он в той же директории, что и \textsf{docker-compose}). Далее указывается команда для запуска сервера. Указываем \textsf{volumes}, что значит, что всё из директории, где находится \textsf{docker-compose}, используется в контейнере. Далее указываются порты (сервер \textsf{Django} запускается в контейнере на порте \textsf{8000} и этот порт перебрасывается на нашу хост машину). И в конце сервиса \textsf{web} указывается зависимость от сервиса \textsf{db}, то есть \textsf{web} не сможет работать без \textsf{db}.
 	\item \textsf{db}. Выбирается образ \textsf{postgres}. Далее указываются volumes, чтобы сохранять наши данные. Так же настраиваются переменные среды.
 \end{enumerate}
-	Команды, представленные на листинге ~\ref{settings1}, позволяют нам получить переменные окружения записанные в файл \textsf{.env.dev} (листинг ~\ref{.env.dev}) и записать их в переменные в файле проекта \textsf{settings.py}.
+	
+Команды, представленные на листинге~\ref{rndhpcgui.2022.10.29.settings1}, позволяют нам получить переменные окружения записанные в файл \textsf{.env.dev} (листинг~\ref{rndhpcgui.2022.10.29.env.dev}) и записать их в переменные в файле проекта \textsf{settings.py}.
 
-\begin{lstlisting}[frame=single, label={settings1}, caption={Обновлённые переменные в \textsf{settings.py}}, language=Python] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.10.29.settings1}, caption={Обновлённые переменные в \textsf{settings.py}}, language=Python] 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 DEBUG = int(os.environ.get("DEBUG", default=0))
@@ -108,12 +102,15 @@ DEBUG = int(os.environ.get("DEBUG", default=0))
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 \end{lstlisting}
 
-	\textsf{SECRET_KEY} — это секретный ключ, который используется Django для поддержки безопасности сайта.
-	\textsf{DEBUG}. Включает подробные сообщения об ошибках, вместо стандартных \textsf{HTTP} статусов ответов. Должно быть изменено на \textsf{False} на сервере, так как эта информация очень много расскажет взломщикам.
-	\textsf{ALLOWED_HOSTS} — это список хостов/доменов, для которых может работать текущий сайт.
-	Так же в \textsf{setings.py} были обновлены настройки базы данных (листинг ~\ref{settings2}) на основе переменных окружения, определённых в \textsf{.env.dev}.
+\textsf{SECRET_KEY} — это секретный ключ, который используется Django для поддержки безопасности сайта.
 
-\begin{lstlisting}[frame=single, label={settings2}, caption={Обновлённые переменные в \textsf{settings.py}}, language={json}] 
+\textsf{DEBUG}. Включает подробные сообщения об ошибках, вместо стандартных \textsf{HTTP} статусов ответов. Должно быть изменено на \textsf{False} на сервере, так как эта информация очень много расскажет взломщикам.
+
+\textsf{ALLOWED_HOSTS} — это список хостов/доменов, для которых может работать текущий сайт.
+
+Так же в \textsf{setings.py} были обновлены настройки базы данных (листинг ~\ref{rndhpcgui.2022.10.29.settings2}) на основе переменных окружения, определённых в \textsf{rndhpcgui.2022.10.29.env.dev}.
+
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.10.29.settings2}, caption={Обновлённые переменные в \textsf{settings.py}}, language={json}] 
 DATABASES = {
     "default": {
         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
@@ -126,7 +123,7 @@ DATABASES = {
 }
 \end{lstlisting}
 
-\begin{lstlisting}[frame=single, label={.env.dev}, caption={Содержимое файла \textsf{.env.dev}}, language={aINIExample}] 
+\begin{lstlisting}[frame=single, label={rndhpcgui.2022.10.29.env.dev}, caption={Содержимое файла \textsf{.env.dev}}, language={aINIExample}] 
 DEBUG=1
 SECRET_KEY=foo
 DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
@@ -138,37 +135,37 @@ SQL_HOST=db
 SQL_PORT=5432
 \end{lstlisting}
 
-	На рисунке ~\ref{picture2} изображено приветственное окно \textsf{Django}, что свидетельствует о том, что проект \textsf{Django} был успешно настроен.
+На рисунке~\ref{rndhpcgui.2022.10.29.picture2} изображено приветственное окно \textsf{Django}, что свидетельствует о том, что проект \textsf{Django} был успешно настроен.
 
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_10_29/picture2.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_10_29/picture2.png}
   \caption{Окно приветствия}
-  \label{picture2}
+  \label{rndhpcgui.2022.10.29.picture2}
 \end{figure}
 
-	Входим в контейнер и создаём суперпользователя (рисунок ~\ref{picture3}).
+Входим в контейнер и создаём суперпользователя (рисунок~\ref{rndhpcgui.2022.10.29.picture3}).
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_10_29/picture3.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_10_29/picture3.png}
   \caption{Создание суперпользователя}
-  \label{picture3}
+  \label{rndhpcgui.2022.10.29.picture3}
 \end{figure}
 
-	Переходим по адресу \textsf{127.0.0.1:8000/admin/} и вводим имя и пароль суперпользователя. Вход выполнен (рисунок ~\ref{picture4}).
+Переходим по адресу \textsf{127.0.0.1:8000/admin/} и вводим имя и пароль суперпользователя. Вход выполнен (рисунок~\ref{rndhpcgui.2022.10.29.picture4}).
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_10_29/picture4.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_10_29/picture4.png}
   \caption{Вход успешно выполнен}
-  \label{picture4}
+  \label{rndhpcgui.2022.10.29.picture4}
 \end{figure}
 
-	Проверка на создание таблиц по умолчанию на рисунке ~\ref{picture5}.
+Проверка на создание таблиц по умолчанию на рисунке~\ref{rndhpcgui.2022.10.29.picture5}.
 \begin{figure}[!ht]
   \centering
-  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_not_gui_2022_10_29/picture5.png}
+  \includegraphics[scale=0.8]{ResearchNotes/rndhpc_dev_gui_2022_10_29/picture5.png}
   \caption{Проверка таблиц}
-  \label{picture5}
+  \label{rndhpcgui.2022.10.29.picture5}
 \end{figure}
 %----------------------------------------------------------
 % Атрибуты задачи
