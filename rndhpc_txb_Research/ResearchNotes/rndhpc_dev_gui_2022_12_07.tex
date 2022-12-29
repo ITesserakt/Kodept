@@ -12,36 +12,41 @@
 
 \begin{lstlisting}[frame=single, label={rndhpcgui.2022.12.07.docker-compose.prod}, caption={Содержимое файла \textsf{docker-compose.prod.yml}}, language={docker-compose}] 
 	version: '3.8'
-	
+
 	services:
 	  web:
-	    build:
-	      context: ./
-	      dockerfile: Dockerfile.prod
-	    command: gunicorn hello_django.wsgi:application --bind 0.0.0.0:8080
-	    volumes:
-	      - static_volume:/home/app/web/staticfiles
-	      - media_volume:/home/app/web/mediafiles
-	    env_file:
-	      - ./.env.prod
-	    depends_on:
-	      - db
+		build:
+		  context: ./
+		  dockerfile: Dockerfile.prod
+		command: gunicorn hello_django.wsgi:application --bind 0.0.0.0:8080
+		volumes:
+		  - static_volume:/home/app/web/staticfiles
+		  - media_volume:/home/app/web/mediafiles
+		env_file:
+		  - ./.env.prod
+		depends_on:
+		  - db
 	  db:
-	    image: postgres:13.0-alpine
-	    volumes:
-	      - postgres_data:/var/lib/postgresql/data/
-	    env_file:
-	      - ./.env.prod.db
+		image: postgres:13.0-alpine
+		volumes:
+		  - postgres_data:/var/lib/postgresql/data/
+		env_file:
+		  - ./.env.prod.db
 	  nginx:
-	    build: ./nginx
-	    volumes:
-	      - static_volume:/home/app/web/staticfiles
-	      - media_volume:/home/app/web/mediafiles
-	    ports:
-	      - 8084:80
-	      - 443:443
-	    depends_on:
-	      - web
+		build: ./nginx
+		volumes:
+		  - static_volume:/home/app/web/staticfiles
+		  - media_volume:/home/app/web/mediafiles
+		ports:
+		  - 8084:80
+		  - 443:443
+		depends_on:
+		  - web
+	
+	volumes:
+	  postgres_data:
+	  static_volume:
+	  media_volume:	
 \end{lstlisting}
 
 В файле \textsf{.env.prod}~\ref{rndhpcgui.2022.12.07.env.prod} был изменен хост, на котором будет производиться работа на 195.19.40.68 (localhost сервера, на котором будет запущено приложение).
