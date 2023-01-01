@@ -1,6 +1,7 @@
 package ru.tesserakt.kodept.traversal.inference
 
 import arrow.core.continuations.eagerEffect
+import arrow.core.continuations.recover
 import arrow.core.nel
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.error.Report
@@ -37,22 +38,22 @@ object TypeInferenceAnalyzer : Analyzer() {
                 }
             }
         }
-    }.handleErrorWith {
-        eagerEffect {
-            with(ast.filepath) {
-                when (it) {
-                    is Errors.CannotUnify -> failWithReport(
-                        null,
-                        Report.Severity.ERROR,
-                        SemanticError.MismatchedType(it.type.toString(), it.with.toString())
-                    )
-                    is Errors.InfiniteType -> failWithReport(
-                        null, Report.Severity.ERROR, SemanticError.InfiniteType(it.type.toString())
-                    )
-                    is Errors.UnknownVariable -> failWithReport(
-                        null, Report.Severity.CRASH, SemanticError.ReferenceCannotBeTyped(it.variable.name)
-                    )
-                }
+    }.recover {
+        with(ast.filepath) {
+            when (it) {
+                is Errors.CannotUnify -> failWithReport(
+                    null,
+                    Report.Severity.ERROR,
+                    SemanticError.MismatchedType(it.type.toString(), it.with.toString())
+                )
+
+                is Errors.InfiniteType -> failWithReport(
+                    null, Report.Severity.ERROR, SemanticError.InfiniteType(it.type.toString())
+                )
+
+                is Errors.UnknownVariable -> failWithReport(
+                    null, Report.Severity.CRASH, SemanticError.ReferenceCannotBeTyped(it.variable.name)
+                )
             }
         }
     }

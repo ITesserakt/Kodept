@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.core
 
 import arrow.core.*
-import arrow.core.continuations.EagerEffectScope
+import arrow.core.continuations.Raise
 import arrow.core.continuations.either
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -67,12 +67,12 @@ class OrientedGraph<T> private constructor() {
     private fun dfs(start: Int, f: (T) -> Unit): Either<Errors, Unit> {
         val visitMap: MutableMap<Int, Color> = mutableMapOf()
 
-        suspend fun EagerEffectScope<Errors>.step(from: Int) {
+        fun Raise<Errors>.step(from: Int) {
             visitMap[from] = Color.Visited
             matrix[from].withIndex().filter { it.value }.forEach { (j, _) ->
                 when (visitMap.getOrDefault(j, Color.NotVisited)) {
                     Color.NotVisited -> step(j)
-                    Color.Visited -> shift<Nothing>(Cycle(nonEmptyListOf(nodes[j])))
+                    Color.Visited -> raise(Cycle(nonEmptyListOf(nodes[j])))
                     Color.Processed -> Unit
                 }
             }
@@ -80,7 +80,7 @@ class OrientedGraph<T> private constructor() {
             visitMap[from] = Color.Processed
         }
 
-        return either.eager { step(start) }
+        return either { step(start) }
     }
 
     private fun Array<BooleanArray>.transpose(): Array<BooleanArray> {
@@ -91,7 +91,7 @@ class OrientedGraph<T> private constructor() {
         }
     }
 
-    fun sortedLayers() = either.eager<_, List<List<T>>> {
+    fun sortedLayers() = either<_, List<List<T>>> {
         val sums = matrix.transpose().mapIndexed { index, it ->
             val cnt = it.count(::identity)
             if (cnt == 0) IndexedValue(index, Free)
@@ -101,34 +101,34 @@ class OrientedGraph<T> private constructor() {
         buildList {
             while (!sums.all { it.value == NonExisting }) {
                 val layer = sums.filterValues { it == Free }.keys
-                if (layer.isEmpty()) shift<Nothing>(
+                if (layer.isEmpty()) raise(
                     Cycle(
-                        NonEmptyList.fromListUnsafe(
-                            sums.filterValues { it is Existing && it.value == 1 }.map { nodes[it.key] })
+                        sums.filterValues { it is Existing && it.value == 1 }.map { nodes[it.key] }
+                            .toNonEmptyListOrNull() ?: raise(NotFound)
                     )
                 )
-                add(layer.map { nodes[it] ?: shift<Nothing>(NotFound) })
+                add(layer.map { nodes[it] ?: raise(NotFound) })
 
                 val impacts = layer.flatMap { node -> matrix[node].withIndex().filter { it.value }.map { it.index } }
                 for (i in impacts)
                     when (val link = sums[i]) {
                         is Existing -> sums[i] = link - 1
-                        else -> shift<Nothing>(NotFound)
+                        else -> raise(NotFound)
                     }
                 layer.forEach { sums[it] = NonExisting }
             }
         }
     }
 
-    fun topSort(start: T) = either.eager {
-        val (i, _) = nodes.entries.find { it.value == start } ?: shift<Nothing>(NotFound)
+    fun topSort(start: T) = either {
+        val (i, _) = nodes.entries.find { it.value == start } ?: raise(NotFound)
         val stack = ArrayDeque<T>(nodes.size)
         dfs(i) { stack.addLast(it) }.bind()
         stack.asReversed()
     }
 
-    fun hasCycles(start: T) = either.eager {
-        val (i, _) = nodes.entries.find { it.value == start } ?: shift<Nothing>(NotFound)
+    fun hasCycles(start: T) = either {
+        val (i, _) = nodes.entries.find { it.value == start } ?: raise(NotFound)
         dfs(i) { }.bind()
     }.fold({ if (it is Cycle<*>) true else error(it) }, { false })
 

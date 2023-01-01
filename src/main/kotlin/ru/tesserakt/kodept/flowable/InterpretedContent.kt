@@ -51,7 +51,7 @@ class InterpretedContent(
     private val traverseForMain = {
         mainAnalyze.reduce { (acc, accFile), (next, nextFile) ->
             if (acc.anyInLeft { it.message == NoMainFunction }) FileRelative(
-                acc.flatMap({ b -> this + b.filter { it.message == NoMainFunction } }) { next },
+                acc.flatMap({ a, b -> a + b.filter { it.message == NoMainFunction } }) { next },
                 nextFile
             ) else if (next.anyInLeft { it.message == NoMainFunction }) FileRelative(
                 acc.flatMap(Semigroup.nonEmptyList()) { next },

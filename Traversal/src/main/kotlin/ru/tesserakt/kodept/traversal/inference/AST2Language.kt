@@ -7,8 +7,8 @@ import ru.tesserakt.kodept.traversal.TypeReferenceResolver
 import ru.tesserakt.kodept.traversal.UnaryOperatorDesugaring
 
 fun AST.Expression.convert(): Language = when (this) {
-    is AST.BinaryOperator -> BinaryOperatorDesugaring.contract()
-    is AST.UnaryOperator -> UnaryOperatorDesugaring.contract()
+    is AST.BinaryOperator -> BinaryOperatorDesugaring.contract(this)
+    is AST.UnaryOperator -> UnaryOperatorDesugaring.contract(this)
     is AST.ExpressionList -> {
         val list = mutableListOf<Language>()
         var i = 0
@@ -59,8 +59,8 @@ fun AST.Expression.convert(): Language = when (this) {
     is AST.FunctionCall -> Language.App.curry(params.map { it.convert() }, reference.convert())
     is AST.ResolvedReference -> Language.Var(mangle())
     is AST.ResolvedTypeReference -> TODO()
-    is AST.Reference -> ReferenceResolver.contract()
-    is AST.TypeReference -> TypeReferenceResolver.contract()
+    is AST.Reference -> ReferenceResolver.contract(this)
+    is AST.TypeReference -> TypeReferenceResolver.contract(this)
 }
 
 fun AST.FunctionDecl.convert(): Pair<Language, Assumptions> {
@@ -75,15 +75,3 @@ fun AST.InferredParameter.mangle() = name
 
 fun AST.ResolvedReference.mangle() = name
 
-fun AST.TypeLike.convert(): MonomorphicType = when (this) {
-    is AST.TupleType -> TODO()
-    is AST.ResolvedTypeReference -> when (referral) {
-        is AST.EnumDecl.Entry -> TODO()
-        is AST.EnumDecl -> TODO()
-        is AST.ForeignStructDecl -> TODO()
-        is AST.StructDecl -> TODO()
-        is AST.TraitDecl -> TODO()
-    }
-    is AST.TypeReference -> TypeReferenceResolver.contract()
-    is AST.UnionType -> TODO()
-}

@@ -27,8 +27,8 @@ data class ProgramState(
 
 class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
     private fun AST.Expression.eval(state: ProgramState): ProgramState = when (this) {
-        is AST.BinaryOperator -> BinaryOperatorDesugaring.contract()
-        is AST.UnaryOperator -> UnaryOperatorDesugaring.contract()
+        is AST.BinaryOperator -> BinaryOperatorDesugaring.contract(this)
+        is AST.UnaryOperator -> UnaryOperatorDesugaring.contract(this)
         is AST.ExpressionList -> expressions.fold(state) { acc, next -> join(acc, next) }
         is AST.IfExpr -> {
             val condition = condition.eval(state)
@@ -88,8 +88,8 @@ class FileInterpreter : Interpreter<ProgramState, AST.Node, List<String>> {
             is AST.InferredParameter -> state.copy(result = state.functionParameters.getValue(r))
         }
 
-        is AST.Reference -> ReferenceResolver.contract()
-        is AST.TypeReference -> TypeReferenceResolver.contract()
+        is AST.Reference -> ReferenceResolver.contract(this)
+        is AST.TypeReference -> TypeReferenceResolver.contract(this)
         is AST.LambdaExpr -> state
     }
 

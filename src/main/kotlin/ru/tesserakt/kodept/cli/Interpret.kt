@@ -29,9 +29,11 @@ class Interpret : CliktCommand(help = "- run programs using interpreter") {
                 .bind()
         }
 
-        using(reportOptions.processor, code, logger) {
-            output.value().printReportsOr { (_, out) ->
-                "exited with: $out"
+        with(reportOptions.processor) {
+            using(code, logger) {
+                output.value().printReportsOr { (_, out) ->
+                    "exited with: $out"
+                }
             }
         }
     }

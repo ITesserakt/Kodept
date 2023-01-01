@@ -212,7 +212,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     }
 
     sealed class NodeBase : NodeWithParent {
-        final override val parent: Node get() = (ast ?: contract()).parents[this] ?: NodeWithParent.contract()
+        final override val parent: Node get() = (ast ?: contract(this)).parents[this] ?: NodeWithParent.contract(this)
         internal lateinit var rltSpecial: RLT.Node
         internal var ast: AST? = null
         final override val rlt: RLT.Node get() = rltSpecial
@@ -226,7 +226,7 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
     }
 
     sealed class Leaf : NodeWithParent {
-        final override val parent get() = (ast ?: contract()).parents[this] ?: NodeWithParent.contract()
+        final override val parent get() = (ast ?: contract(this)).parents[this] ?: NodeWithParent.contract(this)
         final override fun children() = emptyList<NodeWithParent>()
         internal lateinit var rltSpecial: RLT.Node
         internal var ast: AST? = null

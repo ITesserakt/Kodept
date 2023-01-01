@@ -11,6 +11,7 @@ version = rootProject.version
 
 repositories {
     mavenCentral()
+    maven("https://oss.sonatype.org/content/repositories/snapshots/")
 }
 
 dependencies {
@@ -18,8 +19,8 @@ dependencies {
     implementation(project(":Misc"))
 
     testImplementation(project(":kotest-extensions"))
-    testImplementation("io.mockk:mockk:1.12.4")
-    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
+    testImplementation("io.mockk:mockk:1.13.2")
+    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.3.0")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
 }

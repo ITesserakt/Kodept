@@ -16,7 +16,7 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
     fun Language.Var.run(): AlgorithmWResult = eagerEffect {
         val assumption = context[this@run]
         if (assumption != null) Substitution.empty() to assumption.instantiate()
-        else shift(Errors.UnknownVariable(this@run))
+        else raise(Errors.UnknownVariable(this@run))
     }
 
     fun Language.App.run(): AlgorithmWResult = eagerEffect {

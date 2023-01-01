@@ -41,7 +41,7 @@ object InitializationTransformer : Transformer<AST.Assignment>() {
                 }
 
                 is AST.TypeReference -> node
-                is AST.Reference -> with(left) { ReferenceResolver.contract() }
+                is AST.Reference -> with(left) { ReferenceResolver.contract(this) }
             }
         }
 }

@@ -25,11 +25,13 @@ class Typecheck : CliktCommand(help = "- typecheck programs and show inferred ty
             parsed.analyze().bind()
         }
 
-        using(reportOptions.processor, code, logger) {
-            result.forEach { (it, _) ->
-                it.printReportsOr {
-                    if (printTree) it.asString()
-                    else ""
+        with(logger) {
+            using(reportOptions.processor, code) {
+                result.forEach { (it, _) ->
+                    it.printReportsOr {
+                        if (printTree) it.asString()
+                        else ""
+                    }
                 }
             }
         }

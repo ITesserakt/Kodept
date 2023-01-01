@@ -7,10 +7,7 @@ import mu.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.error.Report
-import ru.tesserakt.kodept.traversal.Analyzer
-import ru.tesserakt.kodept.traversal.Transformer
-import ru.tesserakt.kodept.traversal.transformOrSkip
-import ru.tesserakt.kodept.traversal.unwrap
+import ru.tesserakt.kodept.traversal.*
 import kotlin.collections.flatten
 
 private val logger = KotlinLogging.logger("[Compiler]")
@@ -19,7 +16,7 @@ context (CompilationContext)
 class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<TransformedContent.Data> {
     data class Data(override val ast: Sequence<FileRelative<IorNel<Report, AST>>>) : Flowable.Data.ErroneousAST
 
-    private fun <T> Either<OrientedGraph.Errors, T>.handleErrors() = getOrHandle {
+    private fun <T> Either<OrientedGraph.Errors, T>.handleErrors() = getOrElse {
         throw "Found errors in processors: ${
             when (it) {
                 is OrientedGraph.Cycle<*> -> "cycle of:\n${it.inside.joinToString("\n")}"
@@ -42,7 +39,7 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
                 logger.trace("Executing $value")
                 when (value) {
                     is Transformer<*> -> executeTransformer(acc, value)
-                    is Analyzer -> unwrap { value.analyzeWithCaching(acc).map { acc } }
+                    is Analyzer -> unwrap { value.analyzeWithCaching(acc).andThen { acc }.invoke() }
                 }
             }
         }
@@ -52,16 +49,16 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
         eagerEffect {
             val changes = tree
                 .flatten(transformer.traverseMode)
-                .traverse {
-                    transformer.transformOrSkip(it).map { new ->
+                .traverse<UnrecoverableError, _, _> {
+                    transformer.transformOrSkip(it).andThen { new ->
                         if (new != null && it != new) it to new
                         else null
-                    }
+                    }.bind()
                 }.bind().filterNotNull()
 
             if (changes.isEmpty()) tree
             else tree.copyWith { changes.replaced() }
-        }
+        }()
     }
 
     override val result = Data(transformed)

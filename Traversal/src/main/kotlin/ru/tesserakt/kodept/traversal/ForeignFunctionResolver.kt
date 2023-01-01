@@ -1,11 +1,8 @@
 package ru.tesserakt.kodept.traversal
 
-import arrow.core.NonEmptyList
+import arrow.core.*
 import arrow.core.continuations.EagerEffect
 import arrow.core.continuations.eagerEffect
-import arrow.core.identity
-import arrow.core.nel
-import arrow.core.padZip
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.RLT
@@ -47,8 +44,7 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
                 it.type is AST.ResolvedTypeReference && (it.type as AST.ResolvedTypeReference).referral is AST.ForeignStructDecl
             }
             if (wrong.isNotEmpty()) failWithReport(
-                NonEmptyList.fromList(wrong.mapNotNull { it.accessRLT<RLT.MaybeTypedParameter>()?.type?.position })
-                    .orNull(),
+                wrong.mapNotNull { it.accessRLT<RLT.MaybeTypedParameter>()?.type?.position }.toNonEmptyListOrNull(),
                 Report.Severity.ERROR,
                 SemanticError.ForeignFunctionParametersTypeMismatch(node.name)
             )

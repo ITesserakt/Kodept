@@ -1,10 +1,12 @@
 package ru.tesserakt.kodept.traversal
 
 import arrow.core.NonEmptyList
-import arrow.core.continuations.EagerEffectScope
+import arrow.core.continuations.Raise
 import arrow.core.continuations.eagerEffect
+import arrow.core.continuations.ensure
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
+import arrow.core.toNonEmptyListOrNull
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
@@ -18,16 +20,15 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
     override val type = AST.TypeExpression::class
 
     context (ReportCollector, Filepath)
-            private fun AST.TupleType.transformTuple() = if (items.size == 1) {
+    private fun AST.TupleType.transformTuple() = if (items.size == 1) {
         Report(
-            rlt.position.nel(), Report.Severity.WARNING,
-            SemanticWarning.AlignWithType(items.first().toString())
+            rlt.position.nel(), Report.Severity.WARNING, SemanticWarning.AlignWithType(items.first().toString())
         ).report()
         items.first()
     } else this
 
-    context(AST.UnionType, ReportCollector, Filepath)
-            private suspend fun EagerEffectScope<UnrecoverableError>.transformUnion(): AST.TypeLike {
+    context(AST.UnionType, ReportCollector, Filepath, Raise<UnrecoverableError>)
+    private fun transformUnion(): AST.TypeLike {
         ensure(items.size >= 2) {
             UnrecoverableError(
                 this@UnionType.rlt.position.nel(),
@@ -38,9 +39,7 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
 
         items.filterIsInstance<AST.UnionType>().reportEach {
             Report(
-                it.rlt.position.nel(),
-                Report.Severity.WARNING,
-                SemanticWarning.AlignWithType(it.toString())
+                it.rlt.position.nel(), Report.Severity.WARNING, SemanticWarning.AlignWithType(it.toString())
             )
         }
 
@@ -54,7 +53,8 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
         val (unique, repeating) = flattenedItems.groupBy { it }.values.partition { it.size == 1 }
         repeating.reportEach {
             Report(
-                this@UnionType.rlt.position.nel(), Report.Severity.WARNING,
+                this@UnionType.rlt.position.nel(),
+                Report.Severity.WARNING,
                 SemanticWarning.NonUniqueUnionItems(this@UnionType.toString())
             )
         }
@@ -67,12 +67,12 @@ object TypeSimplifier : Transformer<AST.TypeExpression>() {
             )
 
             1 -> items.first()
-            else -> with(rlt) { AST.UnionType(NonEmptyList.fromListUnsafe(items.move())).withRLT() }
+            else -> with(rlt) { AST.UnionType(items.move().toNonEmptyListOrNull()!!).withRLT() }
         }
     }
 
     context(ReportCollector, Filepath)
-            override fun transform(node: AST.TypeExpression) = eagerEffect {
+    override fun transform(node: AST.TypeExpression) = eagerEffect {
         when (node) {
             is AST.TupleType -> node.transformTuple()
             is AST.Type -> node
