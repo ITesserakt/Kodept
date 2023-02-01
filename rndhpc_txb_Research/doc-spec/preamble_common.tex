@@ -140,7 +140,7 @@
 \SetWatermarkAngle{90}
 \SetWatermarkHorCenter{20cm}
 %----------------------------------------------------------
-% указание 
+% указание
 \setcounter{secnumdepth}{2}
 %----------------------------------------------------------
 % подлкючение пакета для подсчета объектов
@@ -381,7 +381,7 @@
 		xleftmargin=0.5cm,
 		xrightmargin=0.5cm,
     numberstyle=\small\color{gray}, % the style that is used for the line-numbers
-		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace 
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
 		showstringspaces=false,
 		showspaces=false,
 		morestring=[b]{"},
@@ -443,7 +443,7 @@
 % необходимо для команды \cancelto{0}{x}
 \usepackage{cancel}
 %----------------------------------------------------------
-% необходимо для того, чтобы доопределить спецификатор P, для 
+% необходимо для того, чтобы доопределить спецификатор P, для
 % использования в таблицах при форматировании
 \usepackage{array}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
@@ -507,12 +507,12 @@
 %----------------------------------------------------------
 \declaretheoremstyle[
   headfont=\normalfont\bfseries,
-	numberwithin=section,
-  bodyfont=\normalfont\itshape,
+  numberwithin=section,
+  bodyfont=\normalfont,%\itshape,
   spaceabove=1em plus 0.75em minus 0.25em,
   spacebelow=1em plus 0.75em minus 0.25em,
-	headpunct={\newline},
-%  qed={$\natural$},%\sharp
+  headpunct={\newline},
+  qed={$\sharp$},%\natural
 ]{theoremstyle}
 
 \declaretheoremstyle[
