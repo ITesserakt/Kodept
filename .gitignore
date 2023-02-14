@@ -24,3 +24,4 @@
 *.DS_Store*
 *node_modules/*
 *.synctex.gz
+/rndhpc_txb_Research/*.synctex
