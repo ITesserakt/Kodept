@@ -1,0 +1,130 @@
+﻿% --------------------------------------------------------------------------- %
+\subsection{Основные понятия GBSE. Состояния данных}
+% --------------------------------------------------------------------------- %
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=\textwidth]{images/illustration.datastate.png}
+	\end{figure}
+
+	\begin{itemize}
+		\item Состояние данных определяет, какие переменные какого типа должны быть определены на данном этапе алгоритма.
+		\item Данные алгоритма модифицируются по ходу его выполнения.
+	\end{itemize}
+\end{frame}
+
+% --------------------------------------------------------------------------- %
+\subsection{Основные понятия GBSE. Функции-обработчики}
+% --------------------------------------------------------------------------- %
+\begin{frame}
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.7\textwidth]{images/illustration.transfer.png}
+	\end{figure}
+
+	\begin{itemize}
+		\item Функции-обработчики отвечают за обработку данных и их перевод из одного состояния в другое.
+	\end{itemize}
+
+\end{frame}
+
+
+% --------------------------------------------------------------------------- %
+\subsection{Основные понятия GBSE. Функции-предикаты и функции перехода}
+% --------------------------------------------------------------------------- %
+\begin{frame}
+	\begin{figure}
+		\begin{minipage}{0.49\textwidth}
+			\centering
+			\includegraphics[height=0.5\textheight]{images/illustration.predicate.png}
+			\caption{Принцип работы функции-предиката}
+		\end{minipage}\hfill\begin{minipage}{0.49\textwidth}
+			\centering
+			\includegraphics[height=0.5\textheight]{images/flowchart.Transfer.png}
+			\caption{Блок-схема логики функции перехода}
+		\end{minipage}\hfill
+	\end{figure}
+
+	\begin{itemize}
+		\item Функции-предикаты отвечают за предварительную проверку данных перед их обработкой.
+		\item Функция перехода -- составная функция $F=<p,f>$, содержащая в себе функцию-предикат $p$ и функцию-обработчик $f$.
+	\end{itemize}
+\end{frame}
+
+% --------------------------------------------------------------------------- %
+\subsection{Основные понятия GBSE. Функции-селекторы}
+% --------------------------------------------------------------------------- %
+
+\begin{frame}
+	\begin{itemize}
+		\item Функции-селекторы отвечают за проверку условий при ветвлении алгоритма.
+	\end{itemize}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.9\textwidth]{images/illustration.selector.png}
+		\caption{Принцип работы функций-селекторов. $h$ -- функция селектор. Красным показана ветвь алгоритма, которая будет выполнена.}
+	\end{figure}
+\end{frame}
+
+% --------------------------------------------------------------------------- %
+\subsection{Основные понятия GBSE. Графовая модель}
+% --------------------------------------------------------------------------- %
+\begin{frame}
+	\begin{itemize}
+		\item Графовая модель сложного вычислительного метода описывает его логику в виде ориентированного графа.
+		\item Узлам ставятся в соответствие состояния данных.
+		\item Рёбрам ставятся в соответствие функции перехода.
+	\end{itemize}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=\textwidth]{images/illustration.graph.png}
+		\caption{Пример графовой модели, описывающей вычисление среднего арифметического и среднего геометрического двух половин массива целых чисел с последующей записью результатов в файл}
+	\end{figure}
+
+\end{frame}
+
+\begin{frame}
+	\begin{figure}
+		\begin{minipage}{0.49\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{images/illustration.node.png}
+		\end{minipage}\hfill\begin{minipage}{0.49\textwidth}
+			Атрибуты вершины:
+			\begin{enumerate}
+				\item имя;
+				\item состояние данных;
+				\item селектор;
+				\item режим параллельного обхода исходяших ветвей.
+			\end{enumerate}
+			Атрибуты ребра:
+			\begin{enumerate}
+				\item функция перехода.
+			\end{enumerate}
+		\end{minipage}\hfill
+	\end{figure}
+\end{frame}
+
+% --------------------------------------------------------------------------- %
+\subsection{Требования к алгоритму обхода}
+% --------------------------------------------------------------------------- %
+\begin{frame}
+	\smaller[1]
+	\begin{itemize}
+		\item Обход графовой модели -- процесс выполнения функций перехода при движении по графовой модели от начальной вершины к конечной
+		\item Должно быть реализовано условное ветвление с применением функций-селекторов.
+		\item Должна быть предусмотрена возможность использовать различные вычислительные ресурсы для параллельного обхода независимых ветвей модели
+	\end{itemize}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.5\textwidth]{images/illustration.parallel_run.png}
+		\caption{Пример графовой модели, подразумевающей паралельный обход ветвей}
+	\end{figure}
+
+	\begin{itemize}
+		\item Режим параллельного исполнения в вершине $S_1$ определяет, какие ресурсы будут задействованы для выполнения ветвей $S_1 \to S_2 \to S_4$ и $S_1 \to S_3 \to S_4$
+	\end{itemize}
+\end{frame}
+

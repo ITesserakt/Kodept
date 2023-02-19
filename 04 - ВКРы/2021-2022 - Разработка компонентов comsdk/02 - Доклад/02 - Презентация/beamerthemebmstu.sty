@@ -1,0 +1,312 @@
+\mode<presentation>
+
+% Requirement
+\RequirePackage{tikz}
+\RequirePackage{mathabx}
+\RequirePackage{PTSans}
+\RequirePackage[strings]{underscore}
+\RequirePackage{relsize}
+\RequirePackage{xspace}
+
+% Settings
+\useinnertheme{bmstu}
+\useoutertheme{bmstu}
+\usecolortheme{bmstu}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{blocks}[rounded][shadow=true]  
+
+% Base configuration of hyperref
+\RequirePackage{hyperxmp}
+\RequirePackage{hyperref}
+\hypersetup{%
+    bookmarks=false,        % show bookmarks bar?
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,
+    citecolor=purple,
+    linkcolor=red,      % color of internal links (change box color with linkbordercolor)
+    urlcolor=purple,
+    filecolor=black      % color of file links
+}
+%----------------------------------------------------------------
+\RequirePackage[style=long4colheader, translate=babel, section=section]{glossaries}
+\RequirePackage[abbreviations, toc=false, xindy, automake]{glossaries-extra}
+\setglossarystyle{treenoname}%+
+\makeglossaries
+%----------------------------------------------------------
+% добавление поддержки команды вывода текста на полях \marginnote
+\RequirePackage{marginnote}
+% добавление поддержки команды \color
+\RequirePackage{xcolor}
+\newcommand{\messnote}[1]{\marginnote{\color[rgb]{1,0,0}\Huge\textbf{!}\pdfcomment{#1}}[-1.0cm]}
+%--------------------------------------------------
+% Example of text or comment for filling rules
+\newcommand\textexample[1]{\textcolor{gray}{\textit{#1}}}
+
+% Fonts for formulas
+\usefonttheme[onlymath]{serif}
+%\usefonttheme{serif}
+
+% Special label for items using arrows 
+\newcommand*\arrowitem{\item[$\textcolor{bblue}\rightarrow$]}
+
+% Centering text in tabular columns
+\RequirePackage{array}
+\newcolumntype{P}[1]{>{\centering}p{#1}}
+
+%--------------------------------------------------
+% Special graphic objects definition 
+\newcommand*{\vertbar}{\rule[-1ex]{0.3pt}{2.5ex}}
+\newcommand*{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
+
+%--------------------------------------------------
+% команда для вывода ссылки на литературу в виде сноски
+% возможность вставлять ссылки непосредственно на странице, где сослались
+\usepackage{bibentry}
+\newcommand{\footcite}[1]{\footnote{\bibentry{#1}}}
+
+%%***natbib, bibentry***%
+% Следующий код необходим для того, чтобы исправить конфликт между пакетами natbib+bibentry и стилем оформления ссылок согласно российскому ГОСТу cp1251gost705u
+\ifx\undefined\selectlanguageifdefined
+\def\selectlanguageifdefined#1{}\else\fi
+\ifx\undefined\BibEmph
+\def\BibEmph#1{\emph{#1}}\else\fi
+
+%----------------------------------------------------------
+% Выбор стиля оформления источников литературы
+\bibliographystyle{utf8gost705u} 
+
+%----------------------------------------------------------
+\RequirePackage{listings}
+% включаем кириллицу и добавляем некоторые опции
+% подгружаемые языки — подробнее в документации listings
+\lstloadlanguages{[LaTeX]TeX, bash, [ISO]C++, make}
+
+\lstset{language=[LaTeX]TeX,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+}
+
+\lstset{language=[ISO]C++,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		breaklines=true,                 % sets automatic line breaking
+		frame=tb, % рамка сверху и снизу
+    basicstyle=\ttfamily,
+    keywordstyle=\color{blue}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    commentstyle=\color{green}\ttfamily,
+    morecomment=[l][\color{magenta}]{\#}
+}
+
+\lstset{language=bash,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		breaklines=true,                 % sets automatic line breaking
+		frame=tb, % рамка сверху и снизу
+		basicstyle=\ttfamily,
+		keywordstyle=\color{black}\ttfamily,
+		stringstyle=\color{red}\ttfamily,
+		commentstyle=\color{green}\ttfamily,
+		morecomment=[l][\color{magenta}]{\#}
+}
+%----------------------------------------------------------
+
+\lstdefinelanguage{ALGO}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		escapechar=\&,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,                   % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+    xrightmargin=\parindent,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{brown}\bfseries]{[}{]},
+    morecomment=[s][\color{pink}\bfseries]{@}{@},
+%    morecomment=[s][\color{gray}\bfseries]{*}{*},
+    keywordstyle={\color{blue}\bfseries},
+    morecomment=[l]{;},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={>}
+}
+
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstdefinelanguage{aINISyntax}
+{
+		style=mystyle,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		escapeinside=”,
+    basicstyle=\ttfamily\scriptsize,
+		frame=single,
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}]{'}{'},
+		keywords={ID, TEXT}%, edge_id, binname, entry_func, strategy, parallelization, branching},
+    keywordstyle={\color{black}\bfseries},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={|,:},
+%		literate=
+%		{=}{\textcolor{brown}{=}\bfseries}1
+%		{->}{\textcolor{brown}{->}\bfseries}1
+%		{[}{\textcolor{brown}{[}\bfseries}1
+%		{]}{\textcolor{brown}{]}\bfseries}1
+%		{(}{\textcolor{red}{(}\bfseries}1
+%		{)}{\textcolor{red}{)}\bfseries}1
+}
+
+\lstdefinelanguage{aINIFormat}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		%escapeinside=”,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,             % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,            % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    morecomment=[s][\color{black}\bfseries]{[}{]},
+%    morecomment=[s][\color{purple}\bfseries]{=[}{]},
+%    morecomment=[s][\color{pink}\bfseries]{[[}{]]},
+    keywordstyle={\color{red}\bfseries},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={[,]},
+		literate=
+		{\$}{\textcolor{brown}{\$}}1
+		{=}{\textcolor{brown}{=}}1
+		{*}{\textcolor{brown}{*}}1
+		{-}{\textcolor{brown}{-}}1
+}
+
+\lstdefinelanguage{tmlSyntax}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		%escapeinside=”,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,             % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,            % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    keywordstyle={\color{red}\bfseries},
+    morecomment=[l]{},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={[,],AND,OR,:},
+		literate=
+		{\%\#}{\textcolor{brown}{\%\#}}2
+		{\#\%}{\textcolor{brown}{\#\%}}2
+}
+
+\lstdefinelanguage{tmlExample}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		%escapeinside=”,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,             % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,            % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    keywordstyle={\color{red}\bfseries},
+    morecomment=[l]{},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={[,],AND,OR,:},
+		literate=
+		{\%\#}{\textcolor{brown}{\%\#}}2
+		{\#\%}{\textcolor{brown}{\#\%}}2
+}
+
+\lstdefinelanguage{aDOTExample}
+{
+		extendedchars=true,
+		escapechar=\#,
+		%escapeinside=Ф,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{gray}\bfseries]{[}{]},
+    morecomment=[s][\color{blue}\bfseries]{__}{__},
+    morecomment=[l]{//},
+		keywords={digraph, module, entry_func, edge, predicate, function, morphism, morphisms, selector, parallelism, threading, pseudo-parallelism},
+    keywordstyle={\color{black}\bfseries},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={},
+		literate=
+%		{\$}{\textcolor{brown}{\$}}1
+		{=}{\textcolor{brown}{=}}1
+		{->}{\textcolor{brown}{->}}1
+		{[}{\textcolor{red}{[}}1
+		{]}{\textcolor{red}{]}}1
+}
+%--------------------------------------------------
+\mode<all>
