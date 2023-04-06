@@ -1,8 +1,9 @@
 package ru.tesserakt.kodept.traversal
 
 import arrow.core.NonEmptyList
-import arrow.core.continuations.EagerEffect
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.EagerEffect
+import arrow.core.raise.eagerEffect
+import arrow.core.toNonEmptyListOrNull
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT
@@ -28,7 +29,7 @@ object VariableScope : Transformer<AST.ExpressionList>() {
         if (inner.size == 1) return null
 
         return with(rlt) {
-            NonEmptyList.fromListUnsafe(outer) to
+            outer.toNonEmptyListOrNull()!! to
                     AST.ExpressionList(NonEmptyList.fromListUnsafe(inner.move())).withRLT()
         }
     }

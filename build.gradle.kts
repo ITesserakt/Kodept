@@ -6,7 +6,7 @@ val arrowVersion: String by extra
 val serializationVersion: String by extra
 
 plugins {
-    kotlin("jvm") version "1.8.0"
+    kotlin("jvm") version "1.8.20"
     application
 }
 
@@ -25,7 +25,7 @@ dependencies {
 
     implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
     implementation("org.slf4j:slf4j-simple:2.0.5")
-    implementation("com.github.ajalt.clikt:clikt:3.5.0")
+    implementation("com.github.ajalt.clikt:clikt:3.5.2")
 
     testImplementation(project(":kotest-extensions"))
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.3.0")

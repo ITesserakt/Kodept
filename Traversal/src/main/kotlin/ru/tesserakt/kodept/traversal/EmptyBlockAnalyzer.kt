@@ -1,9 +1,9 @@
 package ru.tesserakt.kodept.traversal
 
-import arrow.core.NonEmptyList
-import arrow.core.continuations.EagerEffect
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.EagerEffect
+import arrow.core.raise.eagerEffect
 import arrow.core.nel
+import arrow.core.toNonEmptyListOrNull
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.accessRLT
@@ -80,10 +80,9 @@ val emptyBlockAnalyzer = object : Analyzer() {
             { decl -> decl.accessRLT<RLT.Function.Abstract>()?.params.orEmpty().any { it.params.isEmpty() } }) {
             Report(
                 ast.filepath,
-                NonEmptyList.fromListUnsafe(
-                    it.accessRLT<RLT.Function.Abstract>()?.params.orEmpty()
-                        .filter { it.params.isEmpty() }
-                        .map { it.lparen.position }),
+                it.accessRLT<RLT.Function.Abstract>()?.params.orEmpty()
+                    .filter { it.params.isEmpty() }
+                    .map { it.lparen.position }.toNonEmptyListOrNull()!!,
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)
             )
@@ -94,8 +93,8 @@ val emptyBlockAnalyzer = object : Analyzer() {
             { decl -> decl.accessRLT<RLT.Function.Bodied>()?.params.orEmpty().any { it.params.isEmpty() } }) {
             Report(
                 ast.filepath,
-                NonEmptyList.fromListUnsafe(
-                    it.accessRLT<RLT.Function.Bodied>()?.params.orEmpty().filter { it.params.isEmpty() })
+                it.accessRLT<RLT.Function.Bodied>()?.params.orEmpty().filter { it.params.isEmpty() }
+                    .toNonEmptyListOrNull()!!
                     .map { it.lparen.position },
                 Report.Severity.WARNING,
                 SemanticWarning.EmptyParameterList(it.name)

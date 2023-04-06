@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.traversal.inference
 
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.eagerEffect
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.InsecureModifications.withRLT

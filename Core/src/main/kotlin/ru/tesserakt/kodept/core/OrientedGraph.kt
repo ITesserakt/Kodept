@@ -1,8 +1,10 @@
 package ru.tesserakt.kodept.core
 
 import arrow.core.*
-import arrow.core.continuations.Raise
-import arrow.core.continuations.either
+import arrow.core.raise.eagerEffect
+import arrow.core.raise.Raise
+import arrow.core.raise.fold
+import arrow.core.raise.toEither
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
@@ -80,7 +82,7 @@ class OrientedGraph<T> private constructor() {
             visitMap[from] = Color.Processed
         }
 
-        return either { step(start) }
+        return eagerEffect { step(start) }.toEither()
     }
 
     private fun Array<BooleanArray>.transpose(): Array<BooleanArray> {
@@ -91,7 +93,7 @@ class OrientedGraph<T> private constructor() {
         }
     }
 
-    fun sortedLayers() = either<_, List<List<T>>> {
+    fun sortedLayers() = eagerEffect<_, List<List<T>>> {
         val sums = matrix.transpose().mapIndexed { index, it ->
             val cnt = it.count(::identity)
             if (cnt == 0) IndexedValue(index, Free)
@@ -120,14 +122,14 @@ class OrientedGraph<T> private constructor() {
         }
     }
 
-    fun topSort(start: T) = either {
+    fun topSort(start: T) = eagerEffect {
         val (i, _) = nodes.entries.find { it.value == start } ?: raise(NotFound)
         val stack = ArrayDeque<T>(nodes.size)
         dfs(i) { stack.addLast(it) }.bind()
         stack.asReversed()
     }
 
-    fun hasCycles(start: T) = either {
+    fun hasCycles(start: T) = eagerEffect {
         val (i, _) = nodes.entries.find { it.value == start } ?: raise(NotFound)
         dfs(i) { }.bind()
     }.fold({ if (it is Cycle<*>) true else error(it) }, { false })

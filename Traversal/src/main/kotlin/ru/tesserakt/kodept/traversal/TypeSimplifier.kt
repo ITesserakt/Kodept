@@ -1,9 +1,8 @@
 package ru.tesserakt.kodept.traversal
 
-import arrow.core.NonEmptyList
-import arrow.core.continuations.Raise
-import arrow.core.continuations.eagerEffect
-import arrow.core.continuations.ensure
+import arrow.core.raise.Raise
+import arrow.core.raise.eagerEffect
+import arrow.core.raise.ensure
 import arrow.core.nel
 import arrow.core.nonEmptyListOf
 import arrow.core.toNonEmptyListOrNull

@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.traversal.inference
 
-import arrow.core.continuations.eagerEffect
-import arrow.core.continuations.recover
+import arrow.core.raise.eagerEffect
+import arrow.core.raise.recover
 import arrow.core.nel
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.error.Report

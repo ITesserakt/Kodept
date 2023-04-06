@@ -1,8 +1,8 @@
 package ru.tesserakt.kodept.traversal
 
 import arrow.core.*
-import arrow.core.continuations.EagerEffect
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.EagerEffect
+import arrow.core.raise.eagerEffect
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.RLT
@@ -38,7 +38,7 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
         get() = ((returns as? AST.ResolvedTypeReference)?.referral as? AST.ForeignStructDecl)?.relatedWith
 
     context(ReportCollector, Filepath)
-            override fun transform(node: AST.ForeignFunctionDecl): EagerEffect<UnrecoverableError, out AST.Node> =
+    override fun transform(node: AST.ForeignFunctionDecl): EagerEffect<UnrecoverableError, out AST.Node> =
         eagerEffect {
             val wrong = node.params.filterNot {
                 it.type is AST.ResolvedTypeReference && (it.type as AST.ResolvedTypeReference).referral is AST.ForeignStructDecl

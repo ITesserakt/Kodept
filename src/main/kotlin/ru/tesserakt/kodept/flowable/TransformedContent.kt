@@ -1,7 +1,9 @@
 package ru.tesserakt.kodept.flowable
 
 import arrow.core.*
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.EagerEffect
+import arrow.core.raise.eagerEffect
+import arrow.core.raise.getOrElse
 import arrow.typeclasses.Semigroup
 import mu.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
@@ -16,11 +18,11 @@ context (CompilationContext)
 class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<TransformedContent.Data> {
     data class Data(override val ast: Sequence<FileRelative<IorNel<Report, AST>>>) : Flowable.Data.ErroneousAST
 
-    private fun <T> Either<OrientedGraph.Errors, T>.handleErrors() = getOrElse {
+    private fun <T> EagerEffect<OrientedGraph.Errors, T>.handleErrors() = getOrElse {
         throw "Found errors in processors: ${
             when (it) {
                 is OrientedGraph.Cycle<*> -> "cycle of:\n${it.inside.joinToString("\n")}"
-                OrientedGraph.NotFound -> "common error"
+                else -> "common error"
             }
         }".let(::IllegalStateException)
     }
@@ -58,7 +60,7 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
 
             if (changes.isEmpty()) tree
             else tree.copyWith { changes.replaced() }
-        }()
+        }.invoke()
     }
 
     override val result = Data(transformed)

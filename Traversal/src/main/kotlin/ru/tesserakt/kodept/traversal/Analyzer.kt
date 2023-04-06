@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.traversal
 
-import arrow.core.continuations.EagerEffect
+import arrow.core.raise.EagerEffect
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.ReportCollector

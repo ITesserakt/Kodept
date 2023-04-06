@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.traversal.inference
 
-import arrow.core.continuations.EagerEffect
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.EagerEffect
+import arrow.core.raise.eagerEffect
 
 typealias AlgorithmUResult = EagerEffect<Errors, Substitutions>
 
