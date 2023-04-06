@@ -2,7 +2,7 @@ package ru.tesserakt.kodept.traversal
 
 import arrow.core.Ior
 import arrow.core.Nel
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.eagerEffect
 import arrow.core.nonEmptyListOf
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -17,7 +17,7 @@ class TraversalTest : BehaviorSpec({
     given("effect without shifting") {
         `when`("returns value") {
             then("Ior.Right should be returned") {
-                val value = unwrap { eagerEffect { 1 } }
+                val value = unwrap { eagerEffect<Nothing, _> { 1 }() }
                 value.shouldBeTypeOf<Ior.Right<Int>>()
                 value.value shouldBe 1
             }
@@ -26,7 +26,7 @@ class TraversalTest : BehaviorSpec({
         `when`("writes to sink and returns") {
             then("Ior.Both should be returned") {
                 val value = unwrap {
-                    eagerEffect {
+                    eagerEffect<Nothing, _> {
                         Report(
                             Filepath("Hi!"),
                             nonEmptyListOf(CodePoint(0, 0)),
@@ -34,7 +34,7 @@ class TraversalTest : BehaviorSpec({
                             SemanticWarning.AlignWithType("A")
                         ).report()
                         3
-                    }
+                    }()
                 }
                 value.shouldBeTypeOf<Ior.Both<Nel<Report>, Int>>()
                 val (left, right) = value.run { leftValue to rightValue }
@@ -48,8 +48,8 @@ class TraversalTest : BehaviorSpec({
         `when`("shifted with writes") {
             then("Ior.Left will be returned") {
                 val value = unwrap {
-                    eagerEffect {
-                        val i: Int = shift<Nothing>(
+                    eagerEffect<_, Int> {
+                        raise(
                             UnrecoverableError(
                                 Report(
                                     Filepath("Hi!"),
@@ -59,8 +59,7 @@ class TraversalTest : BehaviorSpec({
                                 )
                             )
                         )
-                        i
-                    }
+                    }()
                 }
 
                 value.shouldBeTypeOf<Ior.Left<Nel<Report>>>()

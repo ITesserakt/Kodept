@@ -28,13 +28,14 @@ fun <A : AST.Node> Transformer<A>.transformOrSkip(node: AST.Node) = eagerEffect 
     filterCandidatesBy(node)?.let { transform(it) }?.fold({ raise(it) }, { it })
 }
 
-fun <T> unwrap(f: context(Raise<UnrecoverableError>) ReportCollector.() -> T) = with(ReportCollector()) {
-    eagerEffect { f(this, this@with) }.fold({ (it.crashReport.nel() + collectedReports).leftIor() }, {
-        if (!hasReports) it.rightIor()
-        else if (hasErrors) definitelyCollected.leftIor()
-        else Ior.Both(definitelyCollected, it)
-    })
-}
+fun <T> unwrap(f: context(Raise<UnrecoverableError>) ReportCollector.() -> T): Ior<NonEmptyList<Report>, T> =
+    with(ReportCollector()) {
+        eagerEffect { f(this, this@with) }.fold({ (it.crashReport.nel() + collectedReports).leftIor() }, {
+            if (!hasReports) it.rightIor()
+            else if (hasErrors) definitelyCollected.leftIor()
+            else Ior.Both(definitelyCollected, it)
+        })
+    }
 
 context (Filepath, Raise<UnrecoverableError>)
 fun failWithReport(

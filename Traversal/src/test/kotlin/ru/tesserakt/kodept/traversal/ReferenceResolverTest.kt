@@ -3,6 +3,7 @@ package ru.tesserakt.kodept.traversal
 import arrow.core.nonEmptyListOf
 import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.mockk.clearAllMocks
 import io.mockk.mockk
@@ -32,11 +33,12 @@ class ReferenceResolverTest : StringSpec() {
                 val initVar = AST.InitializedVar(ref, false, null, AST.DecimalLiteral(5.toBigInteger()))
                 buildAST(initVar)
 
-                unwrap { ReferenceResolver.transform(ref) }.toEither().shouldBeRight() shouldBe AST.ResolvedReference(
+                unwrap { ReferenceResolver.transform(ref)() }.toEither().shouldBeRight()
+                    .toString() shouldBe AST.ResolvedReference(
                     ref.name,
                     initVar,
                     ref.context
-                )
+                ).toString()
             }
 
             "reference by variable declaration somewhere in a block" {
@@ -50,12 +52,12 @@ class ReferenceResolverTest : StringSpec() {
                 )
                 buildAST(block)
 
-                unwrap { ReferenceResolver.transform(ref) }.toEither()
-                    .shouldBeRight() shouldBe AST.ResolvedReference(
+                unwrap { ReferenceResolver.transform(ref)() }.toEither()
+                    .shouldBeRight().toString() shouldBe AST.ResolvedReference(
                     ref.name,
                     AST.InitializedVar(ref, false, null, AST.CharLiteral('y')),
                     ref.context
-                )
+                ).toString()
             }
 
             "reference by function name somewhere in a block" {
@@ -68,7 +70,7 @@ class ReferenceResolverTest : StringSpec() {
                 )
                 buildAST(block)
 
-                unwrap { ReferenceResolver.transform(ref) }
+                unwrap { ReferenceResolver.transform(ref)() }
                     .toEither().shouldBeRight()
                     .shouldBeTypeOf<AST.ResolvedReference>()
                     .referral.shouldBeTypeOf<AST.FunctionDecl>()
