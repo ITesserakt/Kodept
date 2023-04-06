@@ -8,7 +8,7 @@ val serializationVersion: String by extra
 plugins {
     kotlin("jvm") version "1.8.20"
     application
-    id("com.adarshr.test-logger") version "3.2.0"
+    id("org.graalvm.buildtools.native") version "0.9.20"
 }
 
 group = "ru.tesserakt"
