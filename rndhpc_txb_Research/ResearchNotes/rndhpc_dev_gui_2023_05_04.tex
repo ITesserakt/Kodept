@@ -239,7 +239,7 @@ def file_selection_to_html(parsed_line):
         file_selection = parsed_line[0]
     else:
         file_selection = parsed_line[4]
-    html_code.append('\t\tif "' + parsed_line[0] + '" in request.FILES:\n\t\t\t' + parsed_line[0] + ' = request.FILES["' + parsed_line[0] + '"]\n\t\t\tfs = FileSystemStorage()\n\t\t\tfilename = fs.save(' + parsed_line[0] + '.name, ' + parsed_line[0] + ')\n\t\t\timage_url = fs.url(filename)\n')
+    html_code.append('\t\tif "' + parsed_line[0] + '" in request.FILES:\n\t\t\t' + parsed_line[0] + ' = request.FILES["' + parsed_line[0] + '"]\n\t\t\tfs = FileSystemStorage()\n\t\t\tfilename = fs.save(' + parsed_line[0] + '.name, ' + parsed_line[0] + ')\n\t\t\tfile_url = fs.url(filename)\n')
     html_code.append('\t<p><b>' + file_selection + '</b><br>\n\t<input type="file" name="' + parsed_line[0] + '"></p>\n')
     return html_code
 
