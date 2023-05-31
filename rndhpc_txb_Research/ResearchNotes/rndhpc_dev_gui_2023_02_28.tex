@@ -2,15 +2,40 @@
 \def\notedate{2023.02.28}
 \def\currentauthor{Василян А.Р. (РК6-83Б)}
 %----------------------------------------------------------
-\notestatement{rndhpcgui}{Генерация страницы на основе дынных в формате aINI}
+\notestatement{rndhpcgui}{Генерация страницы на основе данных в формате aINI}
 
-Была разработана программа для преобразования данных формата aINI в HTML-код. В качестве языка входных данных программы для генерации был выбран aINI, так как он прост в использовании, а следовательно, пользователю не придётся долго разбираться с синтаксисом.
 
+<<<<<<< .mine
 Во время разработки программы преобразования данных из aINI в HTML использовался модуль синтаксического анализа для языка Python - Pyparsing.
 
-Программа построчно читает данные из входного файла и распознает строку в соответствии с шаблонами в парсере (листинг~\ref{rndhpcgui.2023.02.28.parser}). Интерпретация строк происходит с помощью функции \textsf{parsing} (листинг~\ref{rndhpcgui.2023.02.28.parsing}), которая принимает строку, разбирает её и возвращает список ``слов'' и ``текстов'' (построенных на основе комментариев).% и номера распознанного элемента для дальнещей генерации.
+=======
+Была разработана программа для преобразования данных формата \textsf{aINI} в \textsf{HTML}-код.
+Во время разработки программы преобразования данных из \textsf{aINI} в \textsf{HTML} использовался модуль синтаксического анализа для языка \textsf{Python} - \textsf{Pyparsing}. 
+>>>>>>> .theirs
 
+<<<<<<< .mine
+Программа построчно читает данные из входного файла и распознает строку в соответствии с шаблонами в парсере (листинг~\ref{rndhpcgui.2023.02.28.parser}). Интерпретация строк происходит с помощью функции \textsf{parsing} (листинг~\ref{rndhpcgui.2023.02.28.parsing}), которая принимает строку, разбирает её и возвращает список ``слов'' и ``текстов'' (построенных на основе комментариев).% и номера распознанного элемента для дальнещей генерации.
+=======
+
+>>>>>>> .theirs
+
+<<<<<<< .mine
 \begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.parser}, caption={Парсер}, language={Python}]
+
+
+
+
+
+
+=======
+На листинге~\ref{rndhpcgui.2023.02.28.parser} предсталвлены парсеры для отдельных символов, текстов, а потом из отдельных частей получается парсер для строк, соответствующих определённым элементам интерфейса.
+
+
+Программа построчно читает данные из входного файла и распознает строку в соответствии с шаблонами в парсере (листинг~\ref{rndhpcgui.2023.02.28.parser}). Расспознавание строк происходит в функции \textsf{parsing} (листинг~\ref{rndhpcgui.2023.02.28.parsing}) с помощью \textsf{parseString.asList()}, которая в зависимости от выбранного парсера разделяет строку на список. Функция возвращает этот список и номер распознанного элемента для дальнещей генерации.
+
+
+\begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.parser}, caption={Парсер}, language={Python}] 
+>>>>>>> .theirs
 	rus_alphas = 'ёйцукенгшщзхъфывапролджэячсмитьбюЁЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'
 
 	bool_var = Word('0' + '1')
@@ -27,7 +52,13 @@
 	parse_text = '//' + OneOrMore(text)
 \end{lstlisting}
 
+<<<<<<< .mine
 \begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.parsing}, caption={Функция parsing}, language={Python}]
+
+=======
+
+\begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.parsing}, caption={Функция parsing}, language={Python}] 
+>>>>>>> .theirs
 	def parsing(s):
     try:
         test = parse_section.parseString(s).asList()
@@ -64,7 +95,9 @@
     return [patern_id, test]
 \end{lstlisting}
 
-На основе элементов списка в выходной файл записывается HTML-код с помощью соответствующих функций для каждого из предусмотренных элементов интерфейса (листинг~\ref{rndhpcgui.2023.02.28.generation})
+
+На основе элементов списка в выходной файл записывается HTML-код с помощью соответствующих функций для каждого из предусмотренных элементов интерфейса (листинг~\ref{rndhpcgui.2023.02.28.generation}). Каждая из функций получает на фход список, из которого берутся ключевые слова для написания кода.
+
 
 \begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.generation}, caption={Функции записи HTML-кода элементов интерфейса}, language={Python}]
 	def section_to_html(f, parsed_line):
@@ -109,9 +142,16 @@ def text_to_html(f, parsed_line):
     f.write('<p class="text">'+parsed_line[1]+'</p>\n')
 \end{lstlisting}
 
+
 Пример входных данных представлен на листинге~\ref{rndhpcgui.2023.02.28.aINI}. На выходе при таких данных получается HTML-код на листинге~\ref{rndhpcgui.2023.02.28.HTML}
 
+<<<<<<< .mine
 \begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.aINI}, caption={Пример входных данных}, language={aINIExample}]
+
+=======
+
+\begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.aINI}, caption={Пример входных данных}] 
+>>>>>>> .theirs
 	[sec1]//Пункт 1
 	X=VX//Параметр X
 	Y=25//Параметр Y
@@ -124,7 +164,75 @@ def text_to_html(f, parsed_line):
 	//Московский государственный технический университет им. Н. Э. Баумана - российский национальный исследовательский университет, научный центр, особо ценный объект культурного наследия народов России.
 \end{lstlisting}
 
+<<<<<<< .mine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=======
+
+\begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.HTML}, caption={Пример выходных данных}, language={HTML}] 
+	<!DOCTYPE HTML>
+	<html>
+	<head>
+	<meta charset="utf-8">
+	<title>title</title>
+	<style>
+	p.text {text-indent: 20px;}
+	</style>
+	</head>
+	<body>
+	<form enctype="multipart/form-data" method="post">
+	<h1>Пункт 1</h1>
+	<p><b>Параметр X</b><br>
+	<input type="text" value="VX"></p>
+	<p><b>Параметр Y</b><br>
+	<input type="text" value="25"></p>
+	<p><<input type="checkbox" name="Флажок 1" checked>Флажок 1</p>
+	<p><<input type="checkbox" name="Флажок 2" checked>Флажок 2</p>
+	<h1>Пункт 2</h1>
+	<p><<input type="checkbox" name="Флажок 3">Флажок 3</p>
+	<p><b>Выберите имя файла</b><br>
+	<input type="file" name="file"></p>
+	<p><a href="https://www.google.ru">Ссылка на Google</a></p>
+	<p class="text">Московский государственный технический университет им. Н. Э. Баумана - российский национальный исследовательский университет, научный центр, особо ценный объект культурного наследия народов России.</p>
+	</form>
+	</body>
+	</html>
+\end{lstlisting}
+
+>>>>>>> .theirs
+
 Итоговая страница на рисунке~\ref{rndhpcgui.2023.02.28.picture1}.
+
+
 \begin{figure}[!ht]
   \centering
   \includegraphics[scale=0.4]{ResearchNotes/rndhpc_dev_gui_2023_02_28/rndhpcgui.2023.02.28.picture1.png}
@@ -132,6 +240,7 @@ def text_to_html(f, parsed_line):
   \label{rndhpcgui.2023.02.28.picture1}
 \end{figure}
 
+<<<<<<< .mine
 Полный код программы~\ref{rndhpcgui.2023.02.28.aINI_to_HTML}.
 \begin{lstlisting}[frame=single, label={rndhpcgui.2023.02.28.aINI_to_HTML}, caption={Пример выходных данных}, language={Python}]
     from pyparsing import *
@@ -269,6 +378,145 @@ def text_to_html(f, parsed_line):
     if __name__ == '__main__':
         main()
 \end{lstlisting}
+=======
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> .theirs
 %----------------------------------------------------------
 % Атрибуты задачи
 \noteattributes{}
