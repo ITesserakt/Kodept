@@ -1,0 +1,553 @@
+File {
+  Module {
+    TopLevel {
+      Struct {
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+      }
+    }
+    TopLevel {
+      Struct {
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+      }
+    }
+    TopLevel {
+      Struct {
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        TypedParameter {
+          Type {
+            TypeName;
+          }
+        }
+        BodiedFunction {
+          Body {
+            ExpressionBlock {
+              BlockLevel {
+                Operation {
+                  Application {
+                    Operation {
+                      Expression {
+                        Term {
+                          Reference {
+                            Identifier;
+                          }
+                        }
+                      }
+                    }
+                    Operation {
+                      Access {
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              BlockLevel {
+                Operation {
+                  Application {
+                    Operation {
+                      Expression {
+                        Term {
+                          Reference {
+                            Identifier;
+                          }
+                        }
+                      }
+                    }
+                    Operation {
+                      Expression {
+                        Literal {
+                          String;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              BlockLevel {
+                Operation {
+                  Application {
+                    Operation {
+                      Expression {
+                        Term {
+                          Reference {
+                            Identifier;
+                          }
+                        }
+                      }
+                    }
+                    Operation {
+                      Access {
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              BlockLevel {
+                ExpressionBlock {
+                  BlockLevel {
+                    InitializedVariable {
+                      Variable;
+                      Operation {
+                        Access {
+                          Operation {
+                            Expression {
+                              Term {
+                                Reference {
+                                  Identifier;
+                                }
+                              }
+                            }
+                          }
+                          Operation {
+                            Expression {
+                              Term {
+                                Reference {
+                                  Identifier;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  BlockLevel {
+                    ExpressionBlock {
+                      BlockLevel {
+                        InitializedVariable {
+                          Variable;
+                          Operation {
+                            Access {
+                              Operation {
+                                Expression {
+                                  Term {
+                                    Reference {
+                                      Identifier;
+                                    }
+                                  }
+                                }
+                              }
+                              Operation {
+                                Expression {
+                                  Term {
+                                    Reference {
+                                      Identifier;
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      BlockLevel {
+                        Operation {
+                          Expression {
+                            If {
+                              Operation {
+                                Binary {
+                                  Operation {
+                                    Access {
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  Operation {
+                                    Access {
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              Body {
+                                BlockLevel {
+                                  Operation {
+                                    Application {
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        BodiedFunction {
+          Body {
+            ExpressionBlock {
+              BlockLevel {
+                Operation {
+                  Application {
+                    Operation {
+                      Expression {
+                        Term {
+                          Reference {
+                            Identifier;
+                          }
+                        }
+                      }
+                    }
+                    Operation {
+                      Access {
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              BlockLevel {
+                Operation {
+                  Application {
+                    Operation {
+                      Expression {
+                        Term {
+                          Reference {
+                            Identifier;
+                          }
+                        }
+                      }
+                    }
+                    Operation {
+                      Expression {
+                        Literal {
+                          String;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              BlockLevel {
+                Operation {
+                  Application {
+                    Operation {
+                      Expression {
+                        Term {
+                          Reference {
+                            Identifier;
+                          }
+                        }
+                      }
+                    }
+                    Operation {
+                      Access {
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                        Operation {
+                          Expression {
+                            Term {
+                              Reference {
+                                Identifier;
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              BlockLevel {
+                ExpressionBlock {
+                  BlockLevel {
+                    InitializedVariable {
+                      Variable;
+                      Operation {
+                        Access {
+                          Operation {
+                            Expression {
+                              Term {
+                                Reference {
+                                  Identifier;
+                                }
+                              }
+                            }
+                          }
+                          Operation {
+                            Expression {
+                              Term {
+                                Reference {
+                                  Identifier;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  BlockLevel {
+                    ExpressionBlock {
+                      BlockLevel {
+                        InitializedVariable {
+                          Variable;
+                          Operation {
+                            Access {
+                              Operation {
+                                Expression {
+                                  Term {
+                                    Reference {
+                                      Identifier;
+                                    }
+                                  }
+                                }
+                              }
+                              Operation {
+                                Expression {
+                                  Term {
+                                    Reference {
+                                      Identifier;
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      BlockLevel {
+                        Operation {
+                          Expression {
+                            If {
+                              Operation {
+                                Binary {
+                                  Operation {
+                                    Access {
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                  Operation {
+                                    Access {
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              Body {
+                                BlockLevel {
+                                  Operation {
+                                    Application {
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                      Operation {
+                                        Expression {
+                                          Term {
+                                            Reference {
+                                              Identifier;
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

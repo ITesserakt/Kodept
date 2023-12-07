@@ -1,0 +1,77 @@
+[package]
+name = "kodept"
+version = "0.1.2"
+edition = "2021"
+rust-version = "1.70.0"
+
+[workspace]
+members = [
+    ".",
+    "crates/kodept-core",
+    "crates/kodept-parse",
+    "crates/kodept-inference",
+    "crates/kodept-ast",
+    "crates/kodept-macros"
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace.dependencies]
+nom = "^7.1.0"
+thiserror = "^1.0"
+size-of = "^0.1.5"
+extend = "^1.2.0"
+itertools = "^0.10"
+
+[workspace.lints]
+clippy.suspicious = "deny"
+clippy.correctness = "deny"
+clippy.complexity = "warn"
+clippy.style = "warn"
+clippy.perf = "warn"
+clippy.unwrap_used = "deny"
+rust.unsafe_code = "forbid"
+
+[dependencies]
+kodept-ast = { path = "crates/kodept-ast", features = ["size-of", "serde"] }
+kodept-core = { path = "crates/kodept-core", features = ["size-of"] }
+kodept-parse = { path = "crates/kodept-parse", features = ["size-of"] }
+kodept-inference = { path = "crates/kodept-inference" }
+kodept-macros = { path = "crates/kodept-macros", features = ["size-of"] }
+
+visita = { path = "crates/visita", version = "0.3" }
+
+anyhow = "1.0.75"
+clap = { version = "4.4.6", features = ["derive", "env"] }
+codespan-reporting = "0.11.1"
+derive_more = { version = "0.99", features = ["display"] }
+extend = { workspace = true }
+indicatif = "0.17.7"
+nom = { workspace = true }
+nom-supreme = "0.8.0"
+petgraph = "0.6.4"
+rayon = { version = "1.7.0" }
+serde_json = "1.0.107"
+size-of = { workspace = true }
+thiserror = { workspace = true }
+tracing = { version = "0.1.37" }
+tracing-subscriber = "0.3.17"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[profile.bench]
+opt-level = 3
+lto = false
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+panic = 'unwind'
+rpath = false

@@ -1,0 +1,23 @@
+[package]
+name = "visita"
+version = "0.3.2"
+edition = "2021"
+
+authors = ["João Vitor Costa Marcenes Vieira", "ITesserakt <potryas66@mail.ru>"]
+description = "Elegant implementation of the Visitor Pattern"
+
+keywords = ["visitor", "pattern", "design_pattern", "visitor_pattern"]
+categories = ["rust-patterns"]
+
+repository = "https://github.com/ITesserakt/visita"
+readme = "README.md"
+license = "MIT"
+
+[features]
+default = ["generic-lifetime"]
+generic-lifetime = []
+
+[dependencies]
+
+[dev-dependencies]
+derive_more = { version = "0.99", features = ["from"] }

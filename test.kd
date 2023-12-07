@@ -1,0 +1,24 @@
+module Prim {
+    struct String(ptr: Pointer, length: USize, capacity: USise)
+    struct Array(ptr: Pointer, length: USize, capacity: USize) {}
+    struct Person(name: String, address: String, phones: Array) {
+    	fun print_person(p: Person) {
+    		print(p.name)
+    		print(" ")
+    		print(p.address)
+
+            val phones = p.phones
+            var phones = p.phones
+            if phones.ptr != Pointer.none => print(phones)
+    	}
+    	fun print_person(p: Person) {
+    		print(p.name)
+    		print("")
+    		print(p.address)
+
+            val phones = p.phones
+            var phones = p.phones
+            if phones.ptr != Pointer.none => print(phones)
+    	}
+    }
+}

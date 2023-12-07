@@ -1,0 +1,22 @@
+[package]
+name = "kodept-ast"
+version = "0.1.4"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+serde = ["dep:serde"]
+size-of = ["dep:size-of"]
+
+[dependencies]
+kodept-core = { path = "../kodept-core" }
+
+visita = { path = "../visita", version = "0.3" }
+
+derive_more = { version = "0.99", features = ["from", "try_into"] }
+serde = { version = "1.0.188", optional = true, features = ["derive"] }
+size-of = { version = "0.1.5", optional = true }
+tracing = "0.1.37"
+enum-flags = "0.3.0"
