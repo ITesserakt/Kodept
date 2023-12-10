@@ -1,6 +1,5 @@
 use derive_more::From;
 use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::UntypedParameter;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -10,7 +9,7 @@ use visita::node_group;
 
 use crate::node_id::NodeId;
 use crate::traits::{IdProducer, Identifiable, Instantiable, IntoAst, Linker};
-use crate::{impl_identifiable, Body, Parameter, Type, TypedParameter};
+use crate::{impl_identifiable, Body, Parameter, Type};
 
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -69,10 +68,11 @@ impl IntoAst for rlt::BodiedFunction {
         let node = BodiedFunctionDeclaration {
             id: context.next_id(),
             name: context.get_chunk_located(&self.id).to_string(),
-            parameters: self.params.as_ref().map_or(vec![], |it| {
-                it.inner.iter().map(|it| it.construct(context)).collect()
-            }),
-            return_type: self.return_type.as_ref().map(|it| it.1.construct(context)),
+            parameters: self
+                .params
+                .as_ref()
+                .map_or(vec![], |it| it.inner.iter().map(|it| todo!()).collect()),
+            return_type: self.return_type.as_ref().map(|it| todo!()),
             body: self.body.construct(context),
         };
         context.link(node, self)
@@ -84,12 +84,8 @@ impl Instantiable for BodiedFunctionDeclaration {
         let node = Self {
             id: context.next_id(),
             name: self.name.clone(),
-            parameters: self
-                .parameters
-                .iter()
-                .map(|it| it.new_instance(context))
-                .collect(),
-            return_type: self.return_type.as_ref().map(|it| it.new_instance(context)),
+            parameters: self.parameters.iter().map(|it| todo!()).collect(),
+            return_type: self.return_type.as_ref().map(|it| todo!()),
             body: self.body.new_instance(context),
         };
         context.link_existing(node, self)
@@ -101,7 +97,7 @@ impl Instantiable for AbstractFunctionDeclaration {
         let node = Self {
             id: context.next_id(),
             name: self.name.clone(),
-            return_type: self.return_type.as_ref().map(|it| it.new_instance(context)),
+            return_type: self.return_type.as_ref().map(|it| todo!()),
         };
         context.link_existing(node, self)
     }

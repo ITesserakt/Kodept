@@ -16,11 +16,11 @@ impl_named!(VariableScopeTransformer);
 
 impl Transformer for VariableScopeTransformer {
     type Error = Infallible;
-    type Node = ExpressionBlock;
+    type Node<'n> = &'n mut ExpressionBlock;
 
-    fn transform<'c, C: Context<'c>>(
+    fn transform<'n, 'c, C: Context<'c>>(
         &self,
-        guard: VisitGuard<&mut Self::Node>,
+        guard: VisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Exiting)?;

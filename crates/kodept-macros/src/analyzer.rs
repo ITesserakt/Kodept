@@ -1,12 +1,12 @@
-use crate::analyzers::ast_node::ASTNode;
 use crate::traits::{Context, UnrecoverableError};
+use kodept_ast::graph::generic_node::GenericASTNode;
 use kodept_ast::visitor::visit_side::VisitGuard;
 use kodept_ast::visitor::TraversingResult;
 use kodept_core::code_point::CodePoint;
 
 pub trait Analyzer {
     type Error: Into<UnrecoverableError>;
-    type Node<'n>: TryFrom<ASTNode<'n>>;
+    type Node<'n>: TryFrom<&'n GenericASTNode>;
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &self,

@@ -3,6 +3,7 @@ use crate::analyzers::ast_node::{ASTNode, AnyASTNode};
 use crate::error::report::ReportMessage;
 use crate::traits::{Context, UnrecoverableError};
 use codespan_reporting::diagnostic::Severity;
+use kodept_ast::graph::generic_node::GenericASTNode;
 use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_core::Named;
@@ -43,7 +44,7 @@ fn report_io_error<'a, 'c, C: Context<'c>>(
 
 impl<W: Write> Analyzer for ASTFormatter<W> {
     type Error = UnrecoverableError;
-    type Node<'n> = ASTNode<'n>;
+    type Node<'n> = &'n GenericASTNode;
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &self,

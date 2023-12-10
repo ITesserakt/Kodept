@@ -106,7 +106,7 @@ impl IntoAst for rlt::Variable {
         let node = Variable {
             kind,
             name: context.get_chunk_located(id).to_string(),
-            assigned_type: ty.map(|it| it.1.construct(context)),
+            assigned_type: ty.map(|it| todo!()),
             id: context.next_id(),
         };
         context.link(node, self)
@@ -177,10 +177,7 @@ impl Instantiable for Variable {
         let node = Self {
             kind: self.kind.clone(),
             name: self.name.clone(),
-            assigned_type: self
-                .assigned_type
-                .as_ref()
-                .map(|it| it.new_instance(context)),
+            assigned_type: self.assigned_type.as_ref().map(|it| todo!()),
             id: context.next_id(),
         };
         context.link_existing(node, self)

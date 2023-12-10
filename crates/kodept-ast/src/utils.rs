@@ -44,50 +44,32 @@ macro_rules! make_ast_node_adaptor {
             Identifier($wrapper<$($life, )* Identifier>),
         }
 
-        impl<$($life, )*> kodept_core::Named for $name<$($life, )*> {
-            fn name(&self) -> &'static str {
-                match self {
-                    $name::File(_) => "File",
-                    $name::Module(_) => "Module",
-                    $name::Struct(_) => "Struct",
-                    $name::Enum(_) => "Enum",
-                    $name::Type(_) => "Type",
-                    $name::TypedParameter(_) => "TypedParameter",
-                    $name::UntypedParameter(_) => "UntypedParameter",
-                    $name::TopLevel(_) => "TopLevel",
-                    $name::TypeName(_) => "TypeName",
-                    $name::Variable(_) => "Variable",
-                    $name::InitializedVariable(_) => "InitializedVariable",
-                    $name::BodiedFunction(_) => "BodiedFunction",
-                    $name::Body(_) => "Body",
-                    $name::BlockLevel(_) => "BlockLevel",
-                    $name::ExpressionBlock(_) => "ExpressionBlock",
-                    $name::Operation(_) => "Operation",
-                    $name::Application(_) => "Application",
-                    $name::Lambda(_) => "Lambda",
-                    $name::Expression(_) => "Expression",
-                    $name::Term(_) => "Term",
-                    $name::Reference(_) => "Reference",
-                    $name::Access(_) => "Access",
-                    $name::Number(_) => "Number",
-                    $name::Char(_) => "Char",
-                    $name::String(_) => "String",
-                    $name::Tuple(_) => "Tuple",
-                    $name::Literal(_) => "Literal",
-                    $name::CodeFlow(_) => "CodeFlow",
-                    $name::If(_) => "If",
-                    $name::Elif(_) => "Elif",
-                    $name::Else(_) => "Else",
-                    $name::Binary(_) => "Binary",
-                    $name::Unary(_) => "Unary",
-                    $name::AbstractFunction(_) => "AbstractFunction",
-                    $name::ResolvedReference(_) => "ResolvedReference",
-                    $name::ResolvedTypeReference(_) => "ResolvedTypeReference",
-                    $name::ProdType(_) => "ProdType",
-                    $name::SumType(_) => "SumType",
-                    $name::Identifier(_) => "Identifier"
-                }
+        impl<$($life, )*> kodept_core::Named for $name<$($life, )*> {}
+    };
+}
+
+#[macro_export]
+macro_rules! property {
+    (in mut $trait_name:ty => $self_name:ty, $prop:ident: $prop_ty:ty) => {
+        paste::paste! {
+        impl $trait_name for $self_name {
+            fn [<get_ $prop>](&self) -> $prop_ty {
+                self.$prop
             }
+
+            fn [<set_ $prop>](&mut self, value: $prop_ty) {
+                self.$prop = value;
+            }
+        }
+        }
+    };
+    (in $trait_name:ty => $self_name:ty, $prop:ident: $prop_ty:ty) => {
+        paste::paste! {
+        impl $trait_name for $self_name {
+            fn [<get_ $prop>](&self) -> $prop_ty {
+                self.$prop
+            }
+        }
         }
     };
 }

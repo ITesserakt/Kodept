@@ -89,13 +89,12 @@ impl<'n> RLTAccessor<'n> {
         self.links.keys().collect()
     }
 
-    pub fn save<A, B>(&mut self, key: &A, value: B)
+    pub fn save<A, B>(&mut self, key: NodeId<A>, value: B)
     where
-        A: Identifiable + 'static,
         B: Into<RLTFamily<'n>>,
         NodeId<A>: Into<ASTFamily>,
     {
-        self.links.insert(key.get_id().clone().into(), value.into());
+        self.links.insert(key.into(), value.into());
     }
 }
 

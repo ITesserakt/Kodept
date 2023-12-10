@@ -4,6 +4,7 @@ mod code_flow;
 mod expression;
 mod file;
 mod function;
+pub mod graph;
 mod literal;
 pub mod node_id;
 pub mod rlt_accessor;

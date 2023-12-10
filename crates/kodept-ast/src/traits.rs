@@ -1,7 +1,6 @@
 use crate::node_id::NodeId;
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use kodept_core::structure::span::CodeHolder;
-use std::arch::asm;
 use std::fmt::Debug;
 use tracing::warn;
 
@@ -9,16 +8,31 @@ pub trait Identifiable: Sized {
     fn get_id(&self) -> NodeId<Self>;
 }
 
+impl<T: crate::graph::traits::Identifiable> Identifiable for T {
+    fn get_id(&self) -> NodeId<Self> {
+        <Self as crate::graph::traits::Identifiable>::get_id(self)
+    }
+}
+
 pub trait IdProducer {
     fn next_id<T>(&mut self) -> NodeId<T>;
 }
 
 pub trait Linker<'x> {
+    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
+    where
+        NodeId<A>: Into<ASTFamily>,
+        B: Into<RLTFamily<'x>>;
+
     fn link<A, B>(&mut self, ast: A, with: B) -> A
     where
         A: Identifiable + 'static,
         NodeId<A>: Into<ASTFamily>,
-        B: Into<RLTFamily<'x>>;
+        B: Into<RLTFamily<'x>>,
+    {
+        self.link_ref(ast.get_id(), with);
+        ast
+    }
 
     fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
     where

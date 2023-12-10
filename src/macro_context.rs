@@ -33,14 +33,12 @@ impl<'c> IdProducer for DefaultContext<'c> {
 }
 
 impl<'c> Linker<'c> for DefaultContext<'c> {
-    fn link<A, B>(&mut self, ast: A, with: B) -> A
+    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
     where
-        A: Identifiable + 'static,
         NodeId<A>: Into<ASTFamily>,
         B: Into<RLTFamily<'c>>,
     {
-        self.rlt_accessor.save(&ast, with);
-        ast
+        self.rlt_accessor.save(ast, with);
     }
 
     fn link_existing<A, B>(&mut self, a: A, b: &B) -> A

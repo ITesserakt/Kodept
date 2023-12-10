@@ -54,7 +54,7 @@ impl Analyzer for StructAnalyzer {
         let node = guard.allow_only(VisitSide::Entering)?;
         let rlt: Option<&rlt::Struct> = context.access(node);
 
-        if node.parameters.is_empty() {
+        if node.parameters().is_empty() {
             match rlt.map(|it| it.parameters.as_ref()) {
                 None => {
                     warn_about_broken_rlt::<rlt::Struct>();

@@ -15,8 +15,12 @@ kodept-core = { path = "../kodept-core" }
 
 visita = { path = "../visita", version = "0.3" }
 
-derive_more = { version = "0.99", features = ["from", "try_into"] }
+derive_more = { version = "0.99", features = ["from", "try_into", "constructor"] }
 serde = { version = "1.0.188", optional = true, features = ["derive"] }
 size-of = { version = "0.1.5", optional = true }
 tracing = "0.1.37"
 enum-flags = "0.3.0"
+dendron = "0.1.5"
+paste = "1.0.14"
+smallvec = "2.0.0-alpha.1"
+petgraph = "0.6.4"

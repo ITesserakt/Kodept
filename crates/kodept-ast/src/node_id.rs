@@ -5,6 +5,7 @@ use size_of::SizeOf;
 use std::hash::{Hash, Hasher};
 
 use derive_more::From;
+use petgraph::prelude::NodeIndex;
 use std::marker::PhantomData;
 
 #[derive(From, Debug)]
@@ -12,7 +13,7 @@ use std::marker::PhantomData;
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 #[repr(transparent)]
-pub struct NodeId<Node: 'static>(u32, PhantomData<Node>);
+pub struct NodeId<Node: 'static>(usize, PhantomData<Node>);
 
 impl<T: 'static> NodeId<T> {
     pub fn next<U: 'static>(&self) -> NodeId<U> {
@@ -25,8 +26,14 @@ impl<T: 'static> NodeId<T> {
 }
 
 impl<T: 'static> NodeId<T> {
-    pub fn new(id: u32) -> Self {
+    pub fn new(id: usize) -> Self {
         Self(id, PhantomData)
+    }
+}
+
+impl<T: 'static> Default for NodeId<T> {
+    fn default() -> Self {
+        NodeId::new(0)
     }
 }
 
@@ -47,5 +54,19 @@ impl<T: 'static> Eq for NodeId<T> {}
 impl<T: 'static> Clone for NodeId<T> {
     fn clone(&self) -> Self {
         Self::new(self.0)
+    }
+}
+
+impl<T: 'static> Copy for NodeId<T> {}
+
+impl<T: 'static> From<NodeIndex<usize>> for NodeId<T> {
+    fn from(value: NodeIndex<usize>) -> Self {
+        NodeId::new(value.index())
+    }
+}
+
+impl<T: 'static> From<NodeId<T>> for NodeIndex<usize> {
+    fn from(value: NodeId<T>) -> Self {
+        NodeIndex::new(value.0)
     }
 }

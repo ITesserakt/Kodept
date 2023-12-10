@@ -1,8 +1,8 @@
 use crate::analyzer::Analyzer;
-use crate::analyzers::ast_node::{ASTNode, ASTNodeMut};
 use crate::traits::{Context, UnrecoverableError};
 use crate::transformer::Transformer;
 use derive_more::From;
+use kodept_ast::graph::generic_node::GenericASTNode;
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
 use kodept_core::Named;
 
@@ -12,7 +12,12 @@ where
 {
     type Error;
 
-    fn analyze(&self, node: ASTNode, side: VisitSide, context: &mut C) -> Result<(), Self::Error>;
+    fn analyze(
+        &self,
+        node: &GenericASTNode,
+        side: VisitSide,
+        context: &mut C,
+    ) -> Result<(), Self::Error>;
 
     fn erase(self) -> Erased<'c, C, Self::Error>
     where
@@ -30,7 +35,7 @@ where
 
     fn transform(
         &self,
-        node: ASTNodeMut,
+        node: &mut GenericASTNode,
         side: VisitSide,
         context: &mut C,
     ) -> Result<(), Self::Error>;
@@ -68,13 +73,12 @@ impl<'c, C, T: Named> ErasedTransformer<'c, C> for T
 where
     C: Context<'c>,
     T: Transformer + 'static,
-    for<'a> &'a mut T::Node: TryFrom<ASTNodeMut<'a>>,
 {
     type Error = UnrecoverableError;
 
     fn transform(
         &self,
-        node: ASTNodeMut,
+        node: &mut GenericASTNode,
         side: VisitSide,
         context: &mut C,
     ) -> Result<(), Self::Error> {
@@ -98,7 +102,12 @@ where
 {
     type Error = UnrecoverableError;
 
-    fn analyze(&self, node: ASTNode, side: VisitSide, context: &mut C) -> Result<(), Self::Error> {
+    fn analyze(
+        &self,
+        node: &GenericASTNode,
+        side: VisitSide,
+        context: &mut C,
+    ) -> Result<(), Self::Error> {
         let Ok(node) = node.try_into() else {
             return Ok(());
         };

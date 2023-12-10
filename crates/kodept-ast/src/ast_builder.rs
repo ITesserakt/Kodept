@@ -1,7 +1,9 @@
+use crate::graph::graph::SyntaxTree;
+use crate::graph::traits::PopulateTree;
 use crate::node_id::NodeId;
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{IdProducer, Identifiable, IntoAst, Linker};
-use crate::FileDeclaration;
+use crate::traits::{IdProducer, Identifiable, Linker};
+use crate::AST;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
@@ -24,32 +26,17 @@ impl Default for ASTBuilder {
 }
 
 impl ASTBuilder {
-    pub fn build_from<'n, B, C>(
-        &mut self,
-        with: &'n B,
-        links: &mut RLTAccessor<'n>,
-        code: &C,
-    ) -> B::Output
-    where
-        B: IntoAst,
-        B::Output: Identifiable,
-        NodeId<B::Output>: Into<ASTFamily> + 'static,
-        &'n B: Into<RLTFamily<'n>> + 'n,
-        C: CodeHolder,
-    {
-        let ast_node = with.construct(&mut ASTLinker(self, links, code));
-        links.save(&ast_node, with);
-        ast_node
-    }
-
     pub fn recursive_build<'n, C: CodeHolder>(
         &mut self,
         from: &'n rlt::File,
         code: &C,
-    ) -> (FileDeclaration, RLTAccessor<'n>) {
+    ) -> (AST, RLTAccessor<'n>) {
         let mut links = RLTAccessor::default();
-        let node = self.build_from(from, &mut links, code);
-        (node, links)
+        let mut linker = ASTLinker(self, &mut links, code);
+        let mut tree = SyntaxTree::new();
+        from.convert(&mut tree, &mut linker);
+        let ast = AST::new(tree);
+        (ast, links)
     }
 }
 
@@ -58,14 +45,12 @@ where
     C: CodeHolder;
 
 impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
-    fn link<A, B>(&mut self, ast: A, with: B) -> A
+    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
     where
-        A: Identifiable + 'static,
         NodeId<A>: Into<ASTFamily>,
         B: Into<RLTFamily<'b>>,
     {
-        self.1.save(&ast, with);
-        ast
+        self.1.save(ast, with);
     }
 
     fn link_existing<A, B>(&mut self, a: A, b: &B) -> A

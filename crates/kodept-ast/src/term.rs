@@ -155,7 +155,7 @@ impl Instantiable for ResolvedTypeReference {
     fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
         let node = Self {
             name: self.name.clone(),
-            reference_type: self.reference_type.new_instance(context),
+            reference_type: todo!(),
             id: context.next_id(),
         };
         context.link_existing(node, self)
