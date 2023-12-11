@@ -1,5 +1,4 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
-use itertools::Itertools;
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
 #[cfg(feature = "size-of")]
@@ -56,10 +55,10 @@ impl Report {
         let diagnostic = if let [p] = points.as_slice() {
             diagnostic.with_labels(vec![Label::primary((), p.as_range())])
         } else if let [p, s @ ..] = points.as_slice() {
-            let mut secondaries = s
+            let mut secondaries: Vec<_> = s
                 .iter()
                 .map(|it| Label::secondary((), it.as_range()))
-                .collect_vec();
+                .collect();
             secondaries.insert(0, Label::primary((), p.as_range()));
             diagnostic.with_labels(secondaries)
         } else {

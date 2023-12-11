@@ -8,9 +8,9 @@ pub enum Skip<E> {
     SideGuard,
 }
 
-#[derive(Ord, PartialOrd, Eq, IsVariant)]
 #[repr(u8)]
 #[enum_flags]
+#[derive(Ord, PartialOrd, Eq, IsVariant, Clone)]
 pub enum VisitSide {
     Entering,
     Exiting,

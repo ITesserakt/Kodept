@@ -2,13 +2,14 @@
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 
 use derive_more::From;
 use petgraph::prelude::NodeIndex;
 use std::marker::PhantomData;
 
-#[derive(From, Debug)]
+#[derive(From)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
@@ -22,6 +23,12 @@ impl<T: 'static> NodeId<T> {
 
     pub(crate) fn cast<U: 'static>(self) -> NodeId<U> {
         NodeId(self.0, PhantomData)
+    }
+}
+
+impl<T: 'static> Debug for NodeId<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

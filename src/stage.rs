@@ -13,19 +13,13 @@ use kodept_core::file_relative::FileRelative;
 use kodept_core::loader::{Loader, LoadingError};
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::analyzers::ast_formatter::ASTFormatter;
-use kodept_macros::analyzers::empty_block_analyzer::{EnumAnalyzer, StructAnalyzer};
-use kodept_macros::analyzers::module_analyzer::{GlobalModuleAnalyzer, ModuleUniquenessAnalyzer};
-use kodept_macros::analyzers::variable_uniqueness::VariableUniquenessAnalyzer;
 use kodept_macros::erased::ErasedAnalyzer;
-use kodept_macros::erased::ErasedTransformer;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{Context, UnrecoverableError};
-use kodept_macros::transformers::variable_scope::VariableScopeTransformer;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 use kodept_parse::ParseError;
 use nom_supreme::final_parser::final_parser;
-use std::fs::File;
 use std::io::stdout;
 
 pub struct PredefinedTraverseSet<'c, C: Context<'c>, E>(TraverseSet<'c, C, E>);
@@ -33,16 +27,7 @@ pub struct PredefinedTraverseSet<'c, C: Context<'c>, E>(TraverseSet<'c, C, E>);
 impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableError> {
     fn default() -> Self {
         let mut set = TraverseSet::empty();
-        set.add_independent(ModuleUniquenessAnalyzer.erase());
-        set.add_independent(GlobalModuleAnalyzer.erase());
-        let id1 = set.add_independent(StructAnalyzer.erase());
-        let id2 = set.add_independent(EnumAnalyzer.erase());
-        let id3 = set.add_dependent(&[id1, id2], VariableScopeTransformer.erase());
-        set.add_dependent(&[id3], VariableUniquenessAnalyzer.erase());
-        set.add_dependent(
-            &[id3],
-            ASTFormatter::new(File::create("test.out.kd").unwrap()).erase(),
-        );
+        set.add_independent(ASTFormatter::new(stdout()).erase());
         Self(set)
     }
 }
@@ -103,7 +88,6 @@ impl BuildingAST {
     pub fn run<'c>(self, source: &ReadCodeSource, rlt: &'c RLT) -> (AST, DefaultContext<'c>) {
         let mut builder = ASTBuilder::default();
         let (ast, accessor) = builder.recursive_build(&rlt.0, source);
-        let ast = AST(ast);
         let context = DefaultContext::new(
             FileRelative {
                 value: ReportCollector::default(),

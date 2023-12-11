@@ -95,7 +95,7 @@ impl Analyzer for EnumAnalyzer {
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Entering)?;
 
-        if node.contents.is_empty() {
+        if node.contents().is_empty() {
             let rlt: Option<&Enum> = context.access(node);
             match rlt {
                 None => {

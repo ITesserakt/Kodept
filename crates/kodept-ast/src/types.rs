@@ -1,8 +1,9 @@
-use crate::graph::graph::SyntaxTree;
+use crate::graph::children::Identity;
 use crate::graph::traits::PopulateTree;
-use crate::impl_identifiable_2;
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
+use crate::{impl_identifiable_2, with_children};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -23,7 +24,6 @@ pub struct TypeName {
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ProdType {
-    pub types: Vec<Type>,
     id: NodeId<Self>,
 }
 
@@ -31,7 +31,6 @@ pub struct ProdType {
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct SumType {
-    pub types: Vec<Type>,
     id: NodeId<Self>,
 }
 
@@ -48,7 +47,6 @@ pub enum Type {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct TypedParameter {
     pub name: String,
-    pub parameter_type: Type,
     id: NodeId<Self>,
 }
 
@@ -79,7 +77,19 @@ impl SizeOf for Type {
     }
 }
 
-impl_identifiable_2! { TypeName }
+impl_identifiable_2! { TypeName, ProdType, SumType, TypedParameter }
+
+with_children!(ProdType => {
+    pub types: Vec<Type>
+});
+
+with_children!(SumType => {
+    pub types: Vec<Type>
+});
+
+with_children!(TypedParameter => {
+    pub parameter_type: Identity<Type>
+});
 
 impl PopulateTree for rlt::new_types::TypeName {
     type Output = TypeName;
@@ -95,5 +105,55 @@ impl PopulateTree for rlt::new_types::TypeName {
         };
 
         builder.add_node(node).with_rlt(context, self).id()
+    }
+}
+
+impl PopulateTree for rlt::TypedParameter {
+    type Output = TypedParameter;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        let node = TypedParameter {
+            name: context.get_chunk_located(&self.id).to_string(),
+            id: Default::default(),
+        };
+        builder
+            .add_node(node)
+            .with_children_from([&self.parameter_type], context)
+            .with_rlt(context, self)
+            .id()
+    }
+}
+
+impl PopulateTree for rlt::Type {
+    type Output = Type;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        match self {
+            rlt::Type::Reference(x) => x.convert(builder, context).cast(),
+            rlt::Type::Tuple(x) => builder
+                .add_node(ProdType {
+                    id: Default::default(),
+                })
+                .with_children_from(x.inner.iter().as_slice(), context)
+                .with_rlt(context, self)
+                .id()
+                .cast(),
+            rlt::Type::Union(x) => builder
+                .add_node(SumType {
+                    id: Default::default(),
+                })
+                .with_children_from(x.inner.iter().as_slice(), context)
+                .with_rlt(context, self)
+                .id()
+                .cast(),
+        }
     }
 }

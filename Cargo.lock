@@ -303,12 +303,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dendron"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2941626e5b2bec3e10b5575c0cfabd31f5a037fbc302bae988e5ce2f05405324"
-
-[[package]]
 name = "derive_more"
 version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -538,7 +532,6 @@ dependencies = [
 name = "kodept-ast"
 version = "0.1.4"
 dependencies = [
- "dendron",
  "derive_more",
  "enum-flags",
  "kodept-core",
@@ -580,7 +573,6 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "derive_more",
- "itertools",
  "kodept-ast",
  "kodept-core",
  "size-of",
@@ -741,6 +733,8 @@ checksum = "e1d3afd2628e69da2be385eb6f2fd57c8ac7977ceeff6dc166ff1657b0e386a9"
 dependencies = [
  "fixedbitset",
  "indexmap",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]

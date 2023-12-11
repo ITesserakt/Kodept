@@ -1,5 +1,4 @@
 use crate::analyzer::Analyzer;
-use crate::analyzers::ast_node::{ASTNode, AnyASTNode};
 use crate::error::report::ReportMessage;
 use crate::traits::{Context, UnrecoverableError};
 use codespan_reporting::diagnostic::Severity;
@@ -8,7 +7,6 @@ use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_core::Named;
 use std::cell::{Cell, RefCell};
-use std::fs::write;
 use std::io::{Error, Write};
 
 pub struct ASTFormatter<W: Write> {
@@ -72,8 +70,8 @@ impl<W: Write> Analyzer for ASTFormatter<W> {
         }
 
         match side {
-            VisitSide::Entering => writeln!(f, "{} {{", node.name()),
-            VisitSide::Leaf => writeln!(f, "{};", node.name()),
+            VisitSide::Entering => writeln!(f, "{:?} {{", node),
+            VisitSide::Leaf => writeln!(f, "{:?};", node),
             VisitSide::Exiting => writeln!(f, "}}"),
             _ => Ok(()),
         }

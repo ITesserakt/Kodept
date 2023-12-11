@@ -25,6 +25,7 @@ pub enum RLTFamily<'n> {
     Module(&'n rlt::Module),
     Struct(&'n rlt::Struct),
     Enum(&'n rlt::Enum),
+    Type(&'n rlt::Type),
     TypeName(&'n rlt::new_types::TypeName),
     TypedParameter(&'n rlt::TypedParameter),
     UntypedParameter(&'n rlt::UntypedParameter),

@@ -1,8 +1,8 @@
 #![allow(clippy::needless_lifetimes)]
 
 use crate::graph::generic_node::GenericASTNode;
-use crate::graph::graph::SyntaxTree;
 use crate::graph::traits::Identifiable;
+use crate::graph::SyntaxTree;
 use smallvec::SmallVec;
 use std::any::type_name;
 
@@ -15,14 +15,6 @@ pub(crate) trait HasChildrenMarker<Child>: Identifiable {
         Self: 'static,
     {
         Self::Container::unwrap(tree.children_of(self.get_id()))
-    }
-
-    fn get_children_mut<'b>(&self, tree: &'b mut SyntaxTree) -> ChildrenMut<'b, Self, Child>
-    where
-        for<'a> &'a mut Child: TryFrom<&'a mut GenericASTNode>,
-        Self: 'static,
-    {
-        Self::Container::unwrap_mut(tree.children_of_mut(self.get_id()))
     }
 }
 
@@ -126,7 +118,7 @@ impl<T> Container for Identity<T> {
 pub(crate) mod macros {
     #[macro_export]
     macro_rules! with_children {
-        ($t:ty => {$($vis:vis $name:ident: $c_t:ty$(,)*)*}) => {
+        ($t:ty => {$($vis:vis $name:ident: $c_t:ty)*}) => {
             paste::paste! {
             #[allow(private_interfaces)]
             $(impl $crate::graph::children::HasChildrenMarker<$crate::graph::children::ContainerT<$c_t>> for $t {
@@ -135,13 +127,8 @@ pub(crate) mod macros {
 
             impl $t {
                 #[allow(private_interfaces)]
-                $vis fn $name<'a>(&self, tree: &'a $crate::graph::graph::SyntaxTree) -> $crate::graph::children::ChildrenRef<'a, $t, $crate::graph::children::ContainerT<$c_t>> {
+                $vis fn $name<'a>(&self, tree: &'a $crate::graph::SyntaxTree) -> $crate::graph::children::ChildrenRef<'a, $t, $crate::graph::children::ContainerT<$c_t>> {
                     <Self as $crate::graph::children::HasChildrenMarker<$crate::graph::children::ContainerT<$c_t>>>::get_children(self, tree)
-                }
-
-                #[allow(private_interfaces)]
-                $vis fn [<$name _mut>]<'a>(&self, tree: &'a mut $crate::graph::graph::SyntaxTree) -> $crate::graph::children::ChildrenMut<'a, $t, $crate::graph::children::ContainerT<$c_t>> {
-                    <Self as $crate::graph::children::HasChildrenMarker<$crate::graph::children::ContainerT<$c_t>>>::get_children_mut(self, tree)
                 }
             })*
             }

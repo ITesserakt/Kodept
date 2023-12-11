@@ -1,5 +1,5 @@
-use crate::graph::graph::SyntaxTree;
 use crate::graph::traits::PopulateTree;
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
 use crate::{
@@ -51,6 +51,7 @@ impl_identifiable_2! { StructDeclaration, EnumDeclaration }
 
 with_children!(StructDeclaration => {
     pub parameters: Vec<TypedParameter>
+    pub contents: Vec<BodiedFunctionDeclaration>
 });
 
 with_children!(EnumDeclaration => {
@@ -69,7 +70,16 @@ impl PopulateTree for Struct {
             name: context.get_chunk_located(&self.id).to_string(),
             id: Default::default(),
         };
-        builder.add_node(node).with_rlt(context, self).id()
+        builder
+            .add_node(node)
+            .with_children_from(
+                self.parameters
+                    .as_ref()
+                    .map_or([].as_slice(), |x| x.inner.iter().as_slice()),
+                context,
+            )
+            .with_rlt(context, self)
+            .id()
     }
 }
 

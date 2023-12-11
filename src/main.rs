@@ -7,11 +7,10 @@ use crate::stage::{
 use indicatif::{ProgressBar, ProgressStyle};
 use kodept::macro_context::ErrorReported;
 use rayon::prelude::*;
-use std::process::ExitCode;
 
 type WideError = anyhow::Error;
 
-fn main() -> Result<ExitCode, WideError> {
+fn main() -> Result<(), WideError> {
     let p_style = ProgressStyle::with_template(
         "({elapsed_precise}) [{bar:.green/cyan}] ({pos}/{len}) - {msg}",
     )?
@@ -45,5 +44,5 @@ fn main() -> Result<ExitCode, WideError> {
     if any_error_reported? {
         Err(ErrorReported)?;
     }
-    Ok(ExitCode::FAILURE)
+    Ok(())
 }

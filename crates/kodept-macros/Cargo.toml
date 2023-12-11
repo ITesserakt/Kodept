@@ -18,6 +18,5 @@ visita = { path = "../visita", version = "0.3" }
 codespan = "0.11.1"
 codespan-reporting = "0.11.1"
 derive_more = { version = "0.99", features = ["try_into"] }
-itertools.workspace = true
 size-of = { version = "0.1.5", optional = true }
 tracing = "0.1.37"

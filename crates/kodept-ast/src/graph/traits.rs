@@ -1,5 +1,5 @@
 use crate::graph::generic_node::GenericASTNode;
-use crate::graph::graph::SyntaxTree;
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
 use kodept_core::structure::span::CodeHolder;

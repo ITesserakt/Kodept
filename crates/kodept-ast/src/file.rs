@@ -1,8 +1,8 @@
-use crate::graph::graph::SyntaxTree;
 use crate::graph::traits::PopulateTree;
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
-use crate::{impl_identifiable_2, TopLevel, with_children};
+use crate::{impl_identifiable_2, with_children, TopLevel};
 use derive_more::Constructor;
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
@@ -15,7 +15,7 @@ use size_of::SizeOf;
 #[derive(Debug, Constructor)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct AST(SyntaxTree);
+pub struct AST(pub(crate) SyntaxTree);
 
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
