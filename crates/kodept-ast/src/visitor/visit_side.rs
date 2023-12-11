@@ -1,6 +1,5 @@
 use crate::visitor::TraversingResult;
 use derive_more::{Constructor, IsVariant};
-use enum_flags::enum_flags;
 
 #[derive(Debug)]
 pub enum Skip<E> {
@@ -8,9 +7,8 @@ pub enum Skip<E> {
     SideGuard,
 }
 
+#[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy)]
 #[repr(u8)]
-#[enum_flags]
-#[derive(Ord, PartialOrd, Eq, IsVariant, Clone)]
 pub enum VisitSide {
     Entering,
     Exiting,
