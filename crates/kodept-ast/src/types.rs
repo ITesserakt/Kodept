@@ -1,5 +1,5 @@
-use crate::graph::children::Identity;
 use crate::graph::traits::PopulateTree;
+use crate::graph::Identity;
 use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;

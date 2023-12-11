@@ -328,17 +328,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
-name = "enum-flags"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e49d7f94ae5845d14507b85d9f24f1ac106acca19508cd8c78a54616f8610233"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "enum-iterator"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -533,13 +522,11 @@ name = "kodept-ast"
 version = "0.1.4"
 dependencies = [
  "derive_more",
- "enum-flags",
  "kodept-core",
  "paste",
  "petgraph",
  "serde",
  "size-of",
- "smallvec 2.0.0-alpha.1",
  "tracing",
  "visita",
 ]
@@ -993,12 +980,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
-name = "smallvec"
-version = "2.0.0-alpha.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2af12b8880f45a593fc99ac6d0a066f762861ea6822a6a6790fa1363d70a8089"
-
-[[package]]
 name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1174,7 +1155,7 @@ checksum = "30a651bc37f915e81f087d86e62a18eec5f79550c7faff886f7090b4ea757c77"
 dependencies = [
  "nu-ansi-term",
  "sharded-slab",
- "smallvec 1.11.2",
+ "smallvec",
  "thread_local",
  "tracing-core",
  "tracing-log",

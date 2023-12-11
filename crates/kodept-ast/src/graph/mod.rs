@@ -2,12 +2,15 @@
 
 pub mod children;
 pub mod generic_node;
+mod identity;
 pub mod traits;
+mod utils;
 pub mod visitor;
 
 use crate::graph::children::HasChildrenMarker;
 use crate::graph::generic_node::GenericASTNode;
 use crate::graph::traits::{Identifiable, PopulateTree};
+use crate::graph::utils::OptVec;
 use crate::node_id::NodeId;
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::Linker;
@@ -18,7 +21,8 @@ use petgraph::{Directed, Direction};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::{Context, SizeOf};
-use smallvec::SmallVec;
+
+pub use identity::Identity;
 
 type Graph = StableGraph<GenericASTNode, (), Directed, usize>;
 
@@ -57,7 +61,7 @@ impl SyntaxTree {
         }
     }
 
-    pub(crate) fn children_of<T, U>(&self, id: NodeId<T>) -> SmallVec<&U, 1>
+    pub(crate) fn children_of<T, U>(&self, id: NodeId<T>) -> OptVec<&U>
     where
         for<'a> &'a U: TryFrom<&'a GenericASTNode>,
     {
@@ -68,7 +72,7 @@ impl SyntaxTree {
             .collect()
     }
 
-    pub(crate) fn children_of_id<T, U>(&mut self, id: NodeId<T>) -> SmallVec<NodeId<U>, 1> {
+    pub(crate) fn children_of_id<T, U>(&mut self, id: NodeId<T>) -> OptVec<NodeId<U>> {
         self.inner
             .neighbors_directed(id.into(), Direction::Outgoing)
             .map(|x| x.into())
