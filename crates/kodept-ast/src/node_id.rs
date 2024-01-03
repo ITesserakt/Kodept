@@ -14,7 +14,7 @@ use std::marker::PhantomData;
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 #[repr(transparent)]
-pub struct NodeId<Node: 'static>(usize, PhantomData<Node>);
+pub struct NodeId<Node: 'static + ?Sized>(usize, PhantomData<Node>);
 
 impl<T: 'static> NodeId<T> {
     pub fn next<U: 'static>(&self) -> NodeId<U> {

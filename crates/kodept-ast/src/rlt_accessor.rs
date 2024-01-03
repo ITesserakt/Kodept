@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
-    derive(Hash, PartialEq, Eq, From, Debug),
+    derive(Hash, PartialEq, Eq, From, Debug, TryInto),
     cfg_attr(feature = "size-of", derive(SizeOf)),
     cfg_attr(feature = "serde", derive(Serialize, Deserialize)),
     cfg_attr(feature = "serde", serde(tag = "owner", content = "id"))

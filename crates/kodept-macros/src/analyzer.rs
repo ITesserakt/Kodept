@@ -1,5 +1,6 @@
 use crate::traits::{Context, UnrecoverableError};
 use kodept_ast::graph::generic_node::GenericASTNode;
+use kodept_ast::graph::SyntaxTree;
 use kodept_ast::visitor::visit_side::VisitGuard;
 use kodept_ast::visitor::TraversingResult;
 use kodept_core::code_point::CodePoint;

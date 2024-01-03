@@ -5,7 +5,7 @@ use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
-use kodept_ast::{BlockLevel, ExpressionBlock};
+use kodept_ast::ExpressionBlock;
 use kodept_core::impl_named;
 use kodept_core::structure::rlt::Variable;
 use kodept_core::structure::{rlt, Located};
@@ -38,14 +38,12 @@ impl Analyzer for VariableUniquenessAnalyzer {
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Exiting)?;
+        let tree = context.tree();
         let variables = node
-            .items
-            .iter()
-            .filter_map(|it| match it {
-                BlockLevel::InitVar(x) => Some(x),
-                _ => None,
-            })
-            .group_by(|it| &it.variable.name);
+            .items(&tree)
+            .into_iter()
+            .filter_map(|it| it.as_init_var())
+            .group_by(|it| &it.variable(&tree).name);
 
         for (name, variables) in variables.into_iter() {
             let variables = variables.collect_vec();

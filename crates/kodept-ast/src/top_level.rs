@@ -72,10 +72,9 @@ impl PopulateTree for Struct {
         };
         builder
             .add_node(node)
+            .with_children_from(self.body.iter().flat_map(|x| x.inner.as_ref()), context)
             .with_children_from(
-                self.parameters
-                    .as_ref()
-                    .map_or([].as_slice(), |x| x.inner.iter().as_slice()),
+                self.parameters.iter().flat_map(|x| x.inner.as_ref()),
                 context,
             )
             .with_rlt(context, self)
@@ -123,7 +122,7 @@ impl PopulateTree for TopLevelNode {
         match self {
             TopLevelNode::Enum(x) => x.convert(builder, context).cast(),
             TopLevelNode::Struct(x) => x.convert(builder, context).cast(),
-            TopLevelNode::BodiedFunction(x) => todo!(),
+            TopLevelNode::BodiedFunction(x) => x.convert(builder, context).cast(),
         }
     }
 }

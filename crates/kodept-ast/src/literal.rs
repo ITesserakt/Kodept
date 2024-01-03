@@ -1,6 +1,8 @@
-use crate::impl_identifiable;
+use crate::graph::traits::PopulateTree;
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
-use crate::traits::{IdProducer, Identifiable, Instantiable, IntoAst, Linker};
+use crate::traits::{IntoAst, Linker};
+use crate::{impl_identifiable_2, with_children};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -38,7 +40,6 @@ pub struct StringLiteral {
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct TupleLiteral {
-    pub value: Vec<Literal>,
     id: NodeId<Self>,
 }
 
@@ -63,111 +64,65 @@ impl SizeOf for Literal {
     }
 }
 
-impl_identifiable! {
+impl_identifiable_2! {
     NumberLiteral, CharLiteral, StringLiteral, TupleLiteral
 }
 node_group!(family: Literal, nodes: [
     Literal, NumberLiteral, CharLiteral, StringLiteral, TupleLiteral
 ]);
 
-impl Identifiable for Literal {
-    fn get_id(&self) -> NodeId<Self> {
-        match self {
-            Literal::Number(x) => x.get_id().cast(),
-            Literal::Char(x) => x.get_id().cast(),
-            Literal::String(x) => x.get_id().cast(),
-            Literal::Tuple(x) => x.get_id().cast(),
-        }
-    }
-}
+with_children!(TupleLiteral => {
+    pub value: Vec<Literal>
+});
 
-impl IntoAst for rlt::Literal {
+impl PopulateTree for rlt::Literal {
     type Output = Literal;
 
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output {
-        let node = match self {
-            rlt::Literal::Binary(x)
-            | rlt::Literal::Octal(x)
-            | rlt::Literal::Hex(x)
-            | rlt::Literal::Floating(x) => NumberLiteral {
-                value: context.get_chunk_located(x).to_string(),
-                id: context.next_id(),
-            }
-            .into(),
-            rlt::Literal::Char(x) => CharLiteral {
-                value: context.get_chunk_located(x).to_string(),
-                id: context.next_id(),
-            }
-            .into(),
-            rlt::Literal::String(x) => StringLiteral {
-                value: context.get_chunk_located(x).to_string(),
-                id: context.next_id(),
-            }
-            .into(),
-            rlt::Literal::Tuple(x) => TupleLiteral {
-                value: x.inner.iter().map(|it| it.construct(context)).collect(),
-                id: context.next_id(),
-            }
-            .into(),
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        let mut from_num = |x| {
+            builder
+                .add_node(NumberLiteral {
+                    value: context.get_chunk_located(x).to_string(),
+                    id: Default::default(),
+                })
+                .with_rlt(context, self)
+                .id()
+                .cast()
         };
-        context.link(node, self)
-    }
-}
 
-impl Instantiable for Literal {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
         match self {
-            Literal::Number(x) => x.new_instance(context).into(),
-            Literal::Char(x) => x.new_instance(context).into(),
-            Literal::String(x) => x.new_instance(context).into(),
-            Literal::Tuple(x) => x.new_instance(context).into(),
+            rlt::Literal::Binary(x) => from_num(x),
+            rlt::Literal::Octal(x) => from_num(x),
+            rlt::Literal::Hex(x) => from_num(x),
+            rlt::Literal::Floating(x) => from_num(x),
+            rlt::Literal::Char(x) => builder
+                .add_node(CharLiteral {
+                    value: context.get_chunk_located(x).to_string(),
+                    id: Default::default(),
+                })
+                .with_rlt(context, self)
+                .id()
+                .cast(),
+            rlt::Literal::String(x) => builder
+                .add_node(StringLiteral {
+                    value: context.get_chunk_located(x).to_string(),
+                    id: Default::default(),
+                })
+                .with_rlt(context, self)
+                .id()
+                .cast(),
+            rlt::Literal::Tuple(x) => builder
+                .add_node(TupleLiteral {
+                    id: Default::default(),
+                })
+                .with_children_from(x.inner.as_ref(), context)
+                .with_rlt(context, self)
+                .id()
+                .cast(),
         }
-    }
-}
-
-impl Instantiable for NumberLiteral {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            value: self.value.clone(),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for CharLiteral {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            value: self.value.clone(),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for StringLiteral {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            value: self.value.clone(),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for TupleLiteral {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            value: self
-                .value
-                .iter()
-                .map(|it| it.new_instance(context))
-                .collect(),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
     }
 }

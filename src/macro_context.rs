@@ -4,6 +4,7 @@ use codespan_reporting::files::{Error, Files};
 use codespan_reporting::term::termcolor::WriteColor;
 use derive_more::Constructor;
 use kodept_ast::ast_builder::ASTBuilder;
+use kodept_ast::graph::SyntaxTree;
 use kodept_ast::node_id::NodeId;
 use kodept_ast::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use kodept_ast::traits::{Accessor, IdProducer, Identifiable, Linker};
@@ -11,15 +12,17 @@ use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_macros::error::report::Report;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{FileContextual, Reporter};
-use size_of::SizeOf;
+
 use std::ops::Range;
+use std::rc::Rc;
 use thiserror::Error;
 
-#[derive(Debug, Constructor, SizeOf)]
+#[derive(Debug, Constructor)]
 pub struct DefaultContext<'c> {
     report_collector: FileRelative<ReportCollector>,
     rlt_accessor: RLTAccessor<'c>,
     ast_builder: ASTBuilder,
+    tree: Rc<SyntaxTree>,
 }
 
 #[derive(Debug, Error)]
@@ -69,6 +72,10 @@ impl<'c> Accessor<'c> for DefaultContext<'c> {
         NodeId<A>: Into<ASTFamily>,
     {
         self.rlt_accessor.access_unknown(ast).cloned()
+    }
+
+    fn tree(&self) -> Rc<SyntaxTree> {
+        self.tree.clone()
     }
 }
 

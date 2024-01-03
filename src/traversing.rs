@@ -1,7 +1,5 @@
 use crate::traversing::OptionalContext::Defined;
 use crate::utils;
-use kodept_ast::graph::visitor::ASTVisitor;
-use kodept_ast::AST;
 use kodept_macros::erased::Erased;
 use kodept_macros::traits::Context;
 use petgraph::algo::is_cyclic_directed;
@@ -27,7 +25,7 @@ impl<'c, C: Context<'c>, E> Default for TraverseSet<'c, C, E> {
 }
 
 pub trait Traversable<'c, C: Context<'c>, E> {
-    fn traverse(&self, ast: &mut AST, context: C) -> Result<C, (E, C)>;
+    fn traverse(&self, context: C) -> Result<C, (E, C)>;
 }
 
 impl<'c, C, E> TraverseSet<'c, C, E>
@@ -62,17 +60,18 @@ where
 }
 
 impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
-    fn traverse(&self, ast: &mut AST, context: C) -> Result<C, (E, C)> {
+    fn traverse(&self, context: C) -> Result<C, (E, C)> {
         let context = RefCell::new(Defined(context));
         let layers = utils::graph::topological_layers(&self.inner);
 
         for layer in layers {
-            let visitor = ASTVisitor::new(ast, |node, side| {
+            let mut guard = context.borrow_mut();
+            let tree = guard.tree();
+            let visitor = tree.iter().map(move |(node, side)| {
                 for item in &layer {
                     let Some(item) = self.inner.node_weight(*item) else {
                         continue;
                     };
-                    let mut guard = context.borrow_mut();
                     match item {
                         Erased::Transformer(x) => x.transform(node, side, &mut guard),
                         Erased::Analyzer(x) => x.analyze(node, side, &mut guard),
@@ -81,7 +80,7 @@ impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
                 Result::<_, E>::Ok(())
             });
             visitor
-                .apply()
+                .collect::<Result<_, _>>()
                 .map_err(|e| (e, context.take().into_inner()))?;
         }
         Ok(context.take().into_inner())

@@ -1,6 +1,8 @@
+use crate::graph::traits::PopulateTree;
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::{IdProducer, Identifiable, Instantiable, IntoAst, Linker};
-use crate::{impl_identifiable, Type};
+use crate::{impl_identifiable, impl_identifiable_2, Type};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -8,6 +10,7 @@ use kodept_core::structure::span::CodeHolder;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+use std::cell::Ref;
 use visita::node_group;
 
 #[derive(Debug, PartialEq)]
@@ -58,7 +61,7 @@ pub enum Identifier {
     ResolvedReference(ResolvedReference),
 }
 
-impl_identifiable! {
+impl_identifiable_2! {
     Reference,
     ResolvedReference,
     ResolvedTypeReference
@@ -159,5 +162,45 @@ impl Instantiable for ResolvedTypeReference {
             id: context.next_id(),
         };
         context.link_existing(node, self)
+    }
+}
+
+impl PopulateTree for rlt::Term {
+    type Output = Term;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        match self {
+            rlt::Term::Reference(x) => x.convert(builder, context).cast(),
+        }
+    }
+}
+
+impl PopulateTree for rlt::Reference {
+    type Output = Reference;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        let ident = match self {
+            rlt::Reference::Type(x) => Identifier::TypeReference {
+                name: context.get_chunk_located(x).to_string(),
+            },
+            rlt::Reference::Identifier(x) => Identifier::Reference {
+                name: context.get_chunk_located(x).to_string(),
+            },
+        };
+        builder
+            .add_node(Reference {
+                ident,
+                id: Default::default(),
+            })
+            .with_rlt(context, self)
+            .id()
     }
 }

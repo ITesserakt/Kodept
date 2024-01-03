@@ -60,9 +60,9 @@ impl Analyzer for GlobalModuleAnalyzer {
             kind: ModuleKind::Ordinary,
             name,
             ..
-        }] = node.modules.as_slice()
+        }] = node.modules(&context.tree()).as_slice()
         {
-            match context.access(m) {
+            match context.access(*m) {
                 Some(Module::Global { .. }) => {}
                 Some(Module::Ordinary { lbrace, rbrace, .. }) => context.add_report(
                     vec![lbrace.location(), rbrace.location()],
@@ -89,20 +89,27 @@ impl Analyzer for ModuleUniquenessAnalyzer {
         guard: VisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
+        let tree = context.tree();
         let node = guard.allow_only(VisitSide::Entering)?;
-        let group = node.modules.iter().group_by(|it| &it.name);
+        let group = node.modules(&tree).into_iter().group_by(|it| &it.name);
         let non_unique = group
             .into_iter()
             .map(|it| (it.0, it.1.collect_vec()))
-            .filter(|(_, group)| group.len() > 1);
+            .filter(|(_, group)| group.len() > 1)
+            .map(|(name, group)| {
+                (
+                    name.clone(),
+                    group
+                        .into_iter()
+                        .filter_map(|it| context.access(it))
+                        .map(|it: &Module| it.get_keyword().location())
+                        .collect_vec(),
+                )
+            })
+            .collect_vec();
 
-        for (name, group) in non_unique {
-            let positions = group
-                .into_iter()
-                .filter_map(|it| context.access(it))
-                .map(|it: &Module| it.get_keyword().location())
-                .collect();
-            context.add_report(positions, DuplicatedModules(name.clone()))
+        for (name, positions) in non_unique {
+            context.add_report(positions, DuplicatedModules(name))
         }
 
         Ok(())

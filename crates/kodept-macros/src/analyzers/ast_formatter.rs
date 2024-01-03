@@ -73,7 +73,6 @@ impl<W: Write> Analyzer for ASTFormatter<W> {
             VisitSide::Entering => writeln!(f, "{:?} {{", node),
             VisitSide::Leaf => writeln!(f, "{:?};", node),
             VisitSide::Exiting => writeln!(f, "}}"),
-            _ => Ok(()),
         }
         .or_else(report_io_error(context))?;
 

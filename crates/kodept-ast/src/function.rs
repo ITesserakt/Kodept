@@ -5,11 +5,14 @@ use kodept_core::structure::span::CodeHolder;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+use std::iter::once;
 use visita::node_group;
 
+use crate::graph::traits::PopulateTree;
+use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
-use crate::traits::{IdProducer, Identifiable, Instantiable, IntoAst, Linker};
-use crate::{impl_identifiable, Body, Parameter, Type};
+use crate::traits::{Identifiable, IntoAst, Linker};
+use crate::{impl_identifiable_2, with_children, Body, Parameter, Type, TypedParameter};
 
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -17,9 +20,6 @@ use crate::{impl_identifiable, Body, Parameter, Type};
 pub struct BodiedFunctionDeclaration {
     id: NodeId<Self>,
     pub name: String,
-    pub parameters: Vec<Parameter>,
-    pub return_type: Option<Type>,
-    pub body: Body,
 }
 
 #[derive(Debug, PartialEq)]
@@ -28,7 +28,6 @@ pub struct BodiedFunctionDeclaration {
 pub struct AbstractFunctionDeclaration {
     id: NodeId<Self>,
     pub name: String,
-    pub return_type: Option<Type>,
 }
 
 #[derive(Debug, PartialEq, From)]
@@ -44,9 +43,39 @@ node_group!(family: FunctionDeclaration, nodes: [
 ]);
 node_group!(family: BodiedFunctionDeclaration, nodes: [BodiedFunctionDeclaration, Body]);
 node_group!(family: AbstractFunctionDeclaration, nodes: [AbstractFunctionDeclaration]);
-impl_identifiable! {
-    BodiedFunctionDeclaration,
-    AbstractFunctionDeclaration
+
+impl_identifiable_2! { BodiedFunctionDeclaration, AbstractFunctionDeclaration }
+
+with_children!(BodiedFunctionDeclaration => {
+    pub parameters: Vec<Parameter>
+    pub return_type: Option<Type>
+    pub body: Identity<Body>
+});
+
+with_children!(AbstractFunctionDeclaration => {
+    pub parameters: Vec<TypedParameter>
+    pub return_type: Option<Type>
+});
+
+impl PopulateTree for rlt::BodiedFunction {
+    type Output = BodiedFunctionDeclaration;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        builder
+            .add_node(BodiedFunctionDeclaration {
+                id: Default::default(),
+                name: context.get_chunk_located(&self.id).to_string(),
+            })
+            .with_children_from(self.return_type.as_ref().map(|x| &x.1), context)
+            .with_children_from(self.params.iter().flat_map(|x| x.inner.as_ref()), context)
+            .with_children_from([self.body.as_ref()], context)
+            .with_rlt(context, self)
+            .id()
+    }
 }
 
 impl Identifiable for FunctionDeclaration {
@@ -54,60 +83,6 @@ impl Identifiable for FunctionDeclaration {
         match self {
             FunctionDeclaration::Abstract(x) => x.get_id().cast(),
             FunctionDeclaration::Bodied(x) => x.get_id().cast(),
-        }
-    }
-}
-
-impl IntoAst for rlt::BodiedFunction {
-    type Output = BodiedFunctionDeclaration;
-
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output {
-        let node = BodiedFunctionDeclaration {
-            id: context.next_id(),
-            name: context.get_chunk_located(&self.id).to_string(),
-            parameters: self
-                .params
-                .as_ref()
-                .map_or(vec![], |it| it.inner.iter().map(|it| todo!()).collect()),
-            return_type: self.return_type.as_ref().map(|it| todo!()),
-            body: self.body.construct(context),
-        };
-        context.link(node, self)
-    }
-}
-
-impl Instantiable for BodiedFunctionDeclaration {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            id: context.next_id(),
-            name: self.name.clone(),
-            parameters: self.parameters.iter().map(|it| todo!()).collect(),
-            return_type: self.return_type.as_ref().map(|it| todo!()),
-            body: self.body.new_instance(context),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for AbstractFunctionDeclaration {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            id: context.next_id(),
-            name: self.name.clone(),
-            return_type: self.return_type.as_ref().map(|it| todo!()),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for FunctionDeclaration {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        match self {
-            FunctionDeclaration::Abstract(x) => x.new_instance(context).into(),
-            FunctionDeclaration::Bodied(x) => x.new_instance(context).into(),
         }
     }
 }

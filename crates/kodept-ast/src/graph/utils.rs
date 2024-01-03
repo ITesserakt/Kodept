@@ -1,6 +1,7 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::any::type_name;
+use std::mem::replace;
 
 pub enum OptVec<T> {
     Empty,
@@ -44,9 +45,22 @@ impl<T> OptVec<T> {
             OptVec::Vector(x) => x.len(),
         }
     }
+
+    pub fn push(&mut self, item: T) {
+        match self {
+            OptVec::Empty => *self = OptVec::Single(item),
+            OptVec::Single(_) => {
+                let OptVec::Single(x) = replace(self, OptVec::Empty) else {
+                    return;
+                };
+                *self = OptVec::Vector(vec![x, item])
+            }
+            OptVec::Vector(vec) => vec.push(item),
+        }
+    }
 }
 
-pub(crate) trait FromOptVec {
+pub trait FromOptVec {
     type Ref<'a>
     where
         Self::T: 'a;

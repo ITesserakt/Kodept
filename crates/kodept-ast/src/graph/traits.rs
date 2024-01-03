@@ -5,13 +5,13 @@ use crate::traits::Linker;
 use kodept_core::structure::span::CodeHolder;
 
 pub trait PopulateTree {
-    type Output: Into<GenericASTNode>;
+    type Output: Into<GenericASTNode> + ?Sized;
 
     fn convert<'a>(
         &'a self,
         builder: &mut SyntaxTree,
         context: &mut (impl Linker<'a> + CodeHolder),
-    ) -> NodeId<Self::Output>;
+    ) -> NodeId<<Self as PopulateTree>::Output>;
 }
 
 pub(crate) trait Identifiable: Sized {

@@ -1,7 +1,9 @@
+use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use kodept_core::structure::span::CodeHolder;
 use std::fmt::Debug;
+use std::rc::Rc;
 use tracing::warn;
 
 pub trait Identifiable: Sized {
@@ -53,6 +55,8 @@ pub trait Accessor<'a> {
     where
         A: Identifiable + 'static,
         NodeId<A>: Into<ASTFamily>;
+
+    fn tree(&self) -> Rc<SyntaxTree>;
 }
 
 pub trait IntoAst: Sized {

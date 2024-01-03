@@ -5,11 +5,11 @@ use kodept_ast::visitor::TraversingResult;
 
 pub trait Transformer {
     type Error: Into<UnrecoverableError>;
-    type Node<'n>: TryFrom<&'n mut GenericASTNode>;
+    type Node<'n>: TryFrom<&'n GenericASTNode>;
 
-    fn transform<'n, 'c, C: Context<'c>>(
+    fn transform<'n, 'c>(
         &self,
         guard: VisitGuard<Self::Node<'n>>,
-        context: &mut C,
+        context: &mut impl Context<'c>,
     ) -> TraversingResult<Self::Error>;
 }

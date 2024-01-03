@@ -14,7 +14,7 @@ module Prim {
     	fun print_person(p: Person) {
     		print(p.name)
     		print("")
-    		print(p.address)
+    		print("", p.address, 2 + 2 == 4)
 
             val phones = p.phones
             var phones = p.phones

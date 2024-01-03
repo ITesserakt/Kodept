@@ -11,12 +11,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
-/// Abstract syntax tree
-#[derive(Debug, Constructor)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct AST(pub(crate) SyntaxTree);
-
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]

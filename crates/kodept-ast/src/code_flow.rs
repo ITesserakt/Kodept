@@ -1,6 +1,8 @@
+use crate::graph::traits::PopulateTree;
+use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
 use crate::traits::{IdProducer, Identifiable, Instantiable, IntoAst, Linker};
-use crate::{impl_identifiable, Body, Operation};
+use crate::{impl_identifiable, impl_identifiable_2, with_children, Body, Operation};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -21,10 +23,6 @@ pub enum CodeFlow {
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct IfExpression {
-    pub condition: Operation,
-    pub body: Body,
-    pub elif: Vec<ElifExpression>,
-    pub el: Option<ElseExpression>,
     id: NodeId<Self>,
 }
 
@@ -32,8 +30,6 @@ pub struct IfExpression {
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ElifExpression {
-    pub condition: Operation,
-    pub body: Body,
     id: NodeId<Self>,
 }
 
@@ -41,14 +37,29 @@ pub struct ElifExpression {
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ElseExpression {
-    pub body: Body,
     id: NodeId<Self>,
 }
 
-impl_identifiable! {
+impl_identifiable_2! {
     IfExpression, ElifExpression, ElseExpression
 }
 node_group!(family: IfExpression, nodes: [IfExpression, ElifExpression, ElseExpression]);
+
+with_children!(IfExpression => {
+    pub condition: Identity<Operation>
+    pub body: Identity<Body>
+    pub elifs: Vec<ElifExpression>
+    pub elses: Option<ElseExpression>
+});
+
+with_children!(ElifExpression => {
+    pub condition: Identity<Operation>
+    pub body: Identity<Body>
+});
+
+with_children!(ElseExpression => {
+    pub body: Identity<Body>
+});
 
 impl Identifiable for CodeFlow {
     fn get_id(&self) -> NodeId<Self> {
@@ -58,111 +69,60 @@ impl Identifiable for CodeFlow {
     }
 }
 
-impl IntoAst for rlt::CodeFlow {
-    type Output = CodeFlow;
-
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output {
-        let node = match self {
-            rlt::CodeFlow::If(x) => x.construct(context).into(),
-        };
-        context.link(node, self)
-    }
-}
-
-impl IntoAst for rlt::IfExpr {
+impl PopulateTree for rlt::IfExpr {
     type Output = IfExpression;
 
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output {
-        let node = IfExpression {
-            condition: self.condition.construct(context),
-            body: self.body.construct(context),
-            elif: self.elif.iter().map(|it| it.construct(context)).collect(),
-            el: self.el.as_ref().map(|it| it.construct(context)),
-            id: context.next_id(),
-        };
-        context.link(node, self)
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        builder
+            .add_node(IfExpression {
+                id: Default::default(),
+            })
+            .with_children_from([&self.condition], context)
+            .with_children_from([&self.body], context)
+            .with_children_from(self.elif.as_ref(), context)
+            .with_children_from(self.el.as_slice(), context)
+            .with_rlt(context, self)
+            .id()
     }
 }
 
-impl IntoAst for rlt::ElifExpr {
+impl PopulateTree for rlt::ElifExpr {
     type Output = ElifExpression;
 
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output {
-        let node = ElifExpression {
-            condition: self.condition.construct(context),
-            body: self.body.construct(context),
-            id: context.next_id(),
-        };
-        context.link(node, self)
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        builder
+            .add_node(ElifExpression {
+                id: Default::default(),
+            })
+            .with_children_from([&self.condition], context)
+            .with_children_from([&self.body], context)
+            .with_rlt(context, self)
+            .id()
     }
 }
 
-impl IntoAst for rlt::ElseExpr {
+impl PopulateTree for rlt::ElseExpr {
     type Output = ElseExpression;
 
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output {
-        let node = ElseExpression {
-            body: self.body.construct(context),
-            id: context.next_id(),
-        };
-        context.link(node, self)
-    }
-}
-
-impl Instantiable for CodeFlow {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        match self {
-            CodeFlow::If(x) => x.new_instance(context).into(),
-        }
-    }
-}
-
-impl Instantiable for IfExpression {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            condition: self.condition.new_instance(context),
-            body: self.body.new_instance(context),
-            elif: self
-                .elif
-                .iter()
-                .map(|it| it.new_instance(context))
-                .collect(),
-            el: self.el.as_ref().map(|it| it.new_instance(context)),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for ElifExpression {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            condition: self.condition.new_instance(context),
-            body: self.body.new_instance(context),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
-    }
-}
-
-impl Instantiable for ElseExpression {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self {
-        let node = Self {
-            body: self.body.new_instance(context),
-            id: context.next_id(),
-        };
-        context.link_existing(node, self)
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        builder
+            .add_node(ElseExpression {
+                id: Default::default(),
+            })
+            .with_children_from([&self.body], context)
+            .with_rlt(context, self)
+            .id()
     }
 }

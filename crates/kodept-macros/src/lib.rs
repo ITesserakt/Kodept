@@ -6,7 +6,7 @@ pub mod erased;
 pub mod error;
 pub mod traits;
 pub mod transformer;
-// pub mod transformers;
+pub mod transformers;
 
 pub fn warn_about_broken_rlt<T>() {
     warn!(

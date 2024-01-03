@@ -1,4 +1,4 @@
-use crate::graph::traits::PopulateTree;
+use crate::graph::traits::{Identifiable, PopulateTree};
 use crate::graph::Identity;
 use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
@@ -77,7 +77,7 @@ impl SizeOf for Type {
     }
 }
 
-impl_identifiable_2! { TypeName, ProdType, SumType, TypedParameter }
+impl_identifiable_2! { TypeName, ProdType, SumType, TypedParameter, UntypedParameter }
 
 with_children!(ProdType => {
     pub types: Vec<Type>
@@ -90,6 +90,22 @@ with_children!(SumType => {
 with_children!(TypedParameter => {
     pub parameter_type: Identity<Type>
 });
+
+impl Identifiable for Parameter {
+    fn get_id(&self) -> NodeId<Self> {
+        match self {
+            Parameter::Typed(x) => x.get_id().cast(),
+            Parameter::Untyped(x) => x.get_id().cast(),
+        }
+    }
+
+    fn set_id(&mut self, value: NodeId<Self>) {
+        match self {
+            Parameter::Typed(x) => x.set_id(value.cast()),
+            Parameter::Untyped(x) => x.set_id(value.cast()),
+        }
+    }
+}
 
 impl PopulateTree for rlt::new_types::TypeName {
     type Output = TypeName;
@@ -154,6 +170,39 @@ impl PopulateTree for rlt::Type {
                 .with_rlt(context, self)
                 .id()
                 .cast(),
+        }
+    }
+}
+
+impl PopulateTree for rlt::UntypedParameter {
+    type Output = UntypedParameter;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        builder
+            .add_node(UntypedParameter {
+                name: context.get_chunk_located(&self.id).to_string(),
+                id: Default::default(),
+            })
+            .with_rlt(context, self)
+            .id()
+    }
+}
+
+impl PopulateTree for rlt::Parameter {
+    type Output = Parameter;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output> {
+        match self {
+            rlt::Parameter::Typed(x) => x.convert(builder, context).cast(),
+            rlt::Parameter::Untyped(x) => x.convert(builder, context).cast(),
         }
     }
 }

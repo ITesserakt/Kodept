@@ -3,7 +3,6 @@ use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use crate::traits::{IdProducer, Identifiable, Linker};
-use crate::AST;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
@@ -30,13 +29,12 @@ impl ASTBuilder {
         &mut self,
         from: &'n rlt::File,
         code: &C,
-    ) -> (AST, RLTAccessor<'n>) {
+    ) -> (SyntaxTree, RLTAccessor<'n>) {
         let mut links = RLTAccessor::default();
         let mut linker = ASTLinker(self, &mut links, code);
         let mut tree = SyntaxTree::new();
         from.convert(&mut tree, &mut linker);
-        let ast = AST::new(tree);
-        (ast, links)
+        (tree, links)
     }
 }
 
