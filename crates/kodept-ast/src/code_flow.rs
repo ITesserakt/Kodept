@@ -1,8 +1,8 @@
 use crate::graph::traits::PopulateTree;
 use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
-use crate::traits::{IdProducer, Identifiable, Instantiable, IntoAst, Linker};
-use crate::{impl_identifiable, impl_identifiable_2, with_children, Body, Operation};
+use crate::traits::{Identifiable, Linker};
+use crate::{impl_identifiable_2, with_children, Body, Operation};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;

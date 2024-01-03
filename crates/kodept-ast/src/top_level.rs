@@ -1,11 +1,13 @@
+use crate::graph::generic_node::GenericASTNode;
 use crate::graph::traits::PopulateTree;
 use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
 use crate::{
-    impl_identifiable_2, with_children, BodiedFunctionDeclaration, TypeName, TypedParameter,
+    impl_identifiable_2, with_children, wrapper, BodiedFunctionDeclaration, TypeName,
+    TypedParameter,
 };
-use derive_more::From;
+use derive_more::{From, Into};
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
@@ -13,13 +15,15 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
-#[derive(Debug, PartialEq, From)]
+wrapper! {
+#[derive(Debug, PartialEq, From, Into)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum TopLevel {
-    Enum(EnumDeclaration),
-    Struct(StructDeclaration),
-    Function(BodiedFunctionDeclaration),
+pub wrapper TopLevel {
+    enum(EnumDeclaration) = GenericASTNode::Enum,
+    struct(StructDeclaration) = GenericASTNode::Struct,
+    function(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction,
+}
 }
 
 #[derive(Debug, PartialEq)]

@@ -4,22 +4,21 @@ use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
 use crate::traits::Linker;
 use crate::{
-    impl_identifiable_2, with_children, wraps, BodiedFunctionDeclaration, ExpressionBlock,
+    impl_identifiable_2, with_children, wrapper, BodiedFunctionDeclaration, ExpressionBlock,
     Operation, Type,
 };
-use derive_more::{From, IsVariant};
+use derive_more::{From, Into, IsVariant};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use size_of::Context;
 #[cfg(feature = "size-of")]
-use size_of::SizeOf;
+use size_of::{Context, SizeOf};
 use std::fmt::Debug;
 
-wraps! {
-    #[derive(Debug, PartialEq)]
+wrapper! {
+    #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper BlockLevel {
         func(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction,
@@ -154,6 +153,7 @@ impl PopulateTree for rlt::Variable {
     }
 }
 
+#[cfg(feature = "size-of")]
 impl SizeOf for BlockLevel {
     fn size_of_children(&self, context: &mut Context) {
         self.0.size_of_children(context)

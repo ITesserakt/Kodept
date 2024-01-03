@@ -1,7 +1,6 @@
 use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
-use kodept_core::structure::span::CodeHolder;
 use std::fmt::Debug;
 use std::rc::Rc;
 use tracing::warn;
@@ -59,31 +58,8 @@ pub trait Accessor<'a> {
     fn tree(&self) -> Rc<SyntaxTree>;
 }
 
-pub trait IntoAst: Sized {
-    type Output;
-
-    fn construct<'x, P: IdProducer + Linker<'x> + CodeHolder>(
-        &'x self,
-        context: &mut P,
-    ) -> Self::Output;
-}
-
-pub trait Instantiable {
-    fn new_instance<'c, P: IdProducer + Linker<'c>>(&'c self, context: &mut P) -> Self;
-}
-
 #[derive(Debug)]
 pub struct LinkGuard<I>(I);
-
-pub trait NewInstance: Sized {
-    type Constructor;
-
-    fn instantiate<P: IdProducer>(init: Self::Constructor, ctx: &mut P) -> LinkGuard<Self>;
-
-    fn guard(self) -> LinkGuard<Self> {
-        LinkGuard(self)
-    }
-}
 
 impl<I> LinkGuard<I>
 where

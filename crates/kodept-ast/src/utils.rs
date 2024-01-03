@@ -11,7 +11,6 @@ macro_rules! make_ast_node_adaptor {
             Parameter($wrapper<$($life, )* Parameter>),
             TypedParameter($wrapper<$($life, )* TypedParameter>),
             UntypedParameter($wrapper<$($life, )* UntypedParameter>),
-            TopLevel($wrapper<$($life, )* TopLevel>),
             TypeName($wrapper<$($life, )* TypeName>),
             Variable($wrapper<$($life, )* Variable>),
             InitializedVariable($wrapper<$($life, )* InitializedVariable>),

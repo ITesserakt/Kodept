@@ -4,10 +4,9 @@ use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
 use crate::traits::Linker;
 use crate::{
-    impl_identifiable_2, with_children, wraps, BlockLevel, Identifier, IfExpression, Literal,
-    Reference, Term,
+    impl_identifiable_2, with_children, wrapper, BlockLevel, IfExpression, Literal, Reference, Term,
 };
-use derive_more::From;
+use derive_more::{Deref, DerefMut, From};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
@@ -15,8 +14,6 @@ use kodept_core::structure::span::CodeHolder;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
-use std::ops::{Deref, DerefMut};
-use visita::node_group;
 use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
@@ -145,7 +142,8 @@ with_children!(Unary => {
     pub expr: Identity<Operation>
 });
 
-wraps! {
+wrapper! {
+    #[derive(Deref, DerefMut)]
     pub wrapper AOperation(Operation);
 }
 
@@ -154,10 +152,12 @@ with_children!(Application => {
     pub params: Vec<Operation>
 });
 
-wraps! {
+wrapper! {
+    #[derive(Deref, DerefMut)]
     pub wrapper LeftOperation(Operation);
 }
-wraps! {
+wrapper! {
+    #[derive(Deref, DerefMut)]
     pub wrapper RightOperation(Operation);
 }
 

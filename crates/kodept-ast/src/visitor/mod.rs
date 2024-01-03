@@ -1,5 +1,4 @@
-use crate::visitor::visit_side::{Skip, VisitSide};
-use crate::*;
+use crate::visitor::visit_side::Skip;
 
 pub mod visit_side;
 

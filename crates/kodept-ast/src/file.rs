@@ -3,7 +3,6 @@ use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
 use crate::{impl_identifiable_2, with_children, TopLevel};
-use derive_more::Constructor;
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]

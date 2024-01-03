@@ -59,37 +59,11 @@ unsafe impl NodeUnion for GenericASTNode {
 
 pub(crate) mod macros {
     #[macro_export]
-    macro_rules! wraps {
+    macro_rules! wrapper {
         ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident($inner:ty);) => {
             $(#[$config])*
             #[repr(transparent)]
             pub struct $wrapper($inner);
-
-            impl std::ops::Deref for $wrapper {
-                type Target = $inner;
-
-                fn deref(&self) -> &Self::Target {
-                    &self.0
-                }
-            }
-
-            impl std::ops::DerefMut for $wrapper {
-                fn deref_mut(&mut self) -> &mut Self::Target {
-                    &mut self.0
-                }
-            }
-
-            impl From<$inner> for $wrapper {
-                fn from(value: $inner) -> Self {
-                    Self(value)
-                }
-            }
-
-            impl From<$wrapper> for $inner {
-                fn from(value: $wrapper) -> Self {
-                    value.0
-                }
-            }
 
             impl<'a> TryFrom<&'a GenericASTNode> for &'a $wrapper {
                 type Error = <&'a $inner as TryFrom<&'a GenericASTNode>>::Error;
@@ -112,7 +86,7 @@ pub(crate) mod macros {
         ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident {
             $($name:ident($t:ty) = $variants:path$(,)*)*
         }) => {
-            wraps!($(#[$config])* $vis wrapper $wrapper(GenericASTNode););
+            wrapper!($(#[$config])* $vis wrapper $wrapper(GenericASTNode););
             unsafe impl $crate::graph::generic_node::NodeUnion for $wrapper {
                 fn contains(node: &GenericASTNode) -> bool {
                     match node {

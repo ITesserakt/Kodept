@@ -16,13 +16,11 @@ use crate::traits::Linker;
 use crate::visitor::visit_side::VisitSide;
 pub use identity::Identity;
 use kodept_core::structure::span::CodeHolder;
-use kodept_core::Named;
 use petgraph::graph::NodeIndex;
 use petgraph::prelude::{EdgeRef, StableGraph};
 use petgraph::{Directed, Direction};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::any::{type_name, Any, TypeId};
 use std::collections::VecDeque;
 use std::fmt::Debug;
 
@@ -41,11 +39,6 @@ pub struct ChildScope<'a, T: 'static> {
 
 pub struct SyntaxTreeIter<'a> {
     graph: &'a Graph,
-    order: VecDeque<(NodeIndex<usize>, VisitSide)>,
-}
-
-pub struct SyntaxTreeIterMut<'a> {
-    graph: &'a mut Graph,
     order: VecDeque<(NodeIndex<usize>, VisitSide)>,
 }
 
