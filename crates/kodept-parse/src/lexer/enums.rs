@@ -1,9 +1,10 @@
-use crate::Span;
 use derive_more::From;
 #[cfg(feature = "enum-iter")]
 use enum_iterator::Sequence;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::Span;
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

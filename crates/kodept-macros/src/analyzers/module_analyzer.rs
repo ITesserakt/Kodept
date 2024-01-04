@@ -1,16 +1,19 @@
+use std::convert::Infallible;
+
+use codespan_reporting::diagnostic::Severity;
+use itertools::Itertools;
+
+use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_core::impl_named;
+use kodept_core::structure::Located;
+use kodept_core::structure::rlt::Module;
+
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;
 use crate::traits::Context;
 use crate::warn_about_broken_rlt;
-use codespan_reporting::diagnostic::Severity;
-use itertools::Itertools;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
-use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
-use kodept_core::impl_named;
-use kodept_core::structure::rlt::Module;
-use kodept_core::structure::Located;
-use std::convert::Infallible;
 
 #[derive(Debug)]
 pub struct ModuleUniquenessAnalyzer;

@@ -1,14 +1,16 @@
-use crate::token_match::TokenMatch;
-use derive_more::Display;
-use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
-use nom_supreme::final_parser::RecreateContext;
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 
-use crate::lexer::Token;
-use kodept_core::code_point::CodePoint;
+use derive_more::Display;
+use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
+use nom_supreme::final_parser::RecreateContext;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use kodept_core::code_point::CodePoint;
+
+use crate::lexer::Token;
+use crate::token_match::TokenMatch;
 
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[derive(Clone, Debug, Display)]
@@ -165,13 +167,16 @@ impl<'t> RecreateContext<TokenStream<'t>> for CodePoint {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
+    use nom::InputTake;
+
+    use kodept_core::code_point::CodePoint;
+    use kodept_core::structure::span::Span;
+
     use crate::lexer::Token;
     use crate::token_match::TokenMatch;
     use crate::token_stream::TokenStream;
-    use kodept_core::code_point::CodePoint;
-    use kodept_core::structure::span::Span;
-    use nom::InputTake;
-    use std::ops::Deref;
 
     #[test]
     fn test_stream_take() {

@@ -1,8 +1,10 @@
-use crate::r#type::MonomorphicType;
-use derive_more::Display;
-use itertools::Itertools;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
+
+use derive_more::Display;
+use itertools::Itertools;
+
+use crate::r#type::MonomorphicType;
 
 #[derive(Debug, Clone, PartialEq, Display, Eq, Hash)]
 #[display(fmt = "{substituted} <~ {replacement}")]

@@ -1,9 +1,10 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::new_types::Enclosed;
-use crate::structure::span::Span;
-use crate::structure::Located;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::rlt::new_types::Enclosed;
+use crate::structure::span::Span;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {

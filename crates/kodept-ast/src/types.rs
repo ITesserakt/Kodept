@@ -1,109 +1,81 @@
-use crate::graph::traits::{Identifiable, PopulateTree};
-use crate::graph::Identity;
-use crate::graph::SyntaxTree;
-use crate::node_id::NodeId;
-use crate::traits::Linker;
-use crate::{impl_identifiable, with_children};
-use derive_more::From;
-use kodept_core::structure::rlt;
-use kodept_core::structure::span::CodeHolder;
+use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct TypeName {
-    pub name: String,
-    id: NodeId<Self>,
-}
+use kodept_core::structure::rlt;
+use kodept_core::structure::span::CodeHolder;
 
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct ProdType {
-    id: NodeId<Self>,
-}
+use crate::graph::GenericASTNode;
+use crate::graph::Identity;
+use crate::graph::NodeId;
+use crate::graph::SyntaxTree;
+use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper};
 
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct SumType {
-    id: NodeId<Self>,
-}
-
-#[derive(Clone, Debug, PartialEq, From)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum Type {
-    Reference(TypeName),
-    Tuple(ProdType),
-    Union(SumType),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct TypedParameter {
-    pub name: String,
-    id: NodeId<Self>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct UntypedParameter {
-    pub name: String,
-    id: NodeId<Self>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum Parameter {
-    Typed(TypedParameter),
-    Untyped(UntypedParameter),
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for Type {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        match self {
-            Type::Reference(x) => x.size_of_children(context),
-            Type::Tuple(x) => x.size_of_children(context),
-            Type::Union(x) => x.size_of_children(context),
-        }
+wrapper! {
+    #[derive(Debug, PartialEq, From, Into)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper Type {
+        type_name(TypeName) = GenericASTNode::TypeName(x) => Some(x),
+        tuple(ProdType) = GenericASTNode::ProdType(x) => Some(x),
+        union(SumType) = GenericASTNode::SumType(x) => Some(x),
     }
 }
 
-impl_identifiable! { TypeName, ProdType, SumType, TypedParameter, UntypedParameter }
-
-with_children!(ProdType => {
-    pub types: Vec<Type>
-});
-
-with_children!(SumType => {
-    pub types: Vec<Type>
-});
-
-with_children!(TypedParameter => {
-    pub parameter_type: Identity<Type>
-});
-
-impl Identifiable for Parameter {
-    fn get_id(&self) -> NodeId<Self> {
-        match self {
-            Parameter::Typed(x) => x.get_id().cast(),
-            Parameter::Untyped(x) => x.get_id().cast(),
-        }
+wrapper! {
+    #[derive(Debug, PartialEq, From, Into)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper Parameter {
+        typed(TypedParameter) = GenericASTNode::TypedParameter(x) => Some(x),
+        untyped(UntypedParameter) = GenericASTNode::UntypedParameter(x) => Some(x),
     }
+}
 
-    fn set_id(&mut self, value: NodeId<Self>) {
-        match self {
-            Parameter::Typed(x) => x.set_id(value.cast()),
-            Parameter::Untyped(x) => x.set_id(value.cast()),
-        }
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct TypeName {
+        pub name: String,;
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct ProdType {;
+        pub types: Vec<Type>,
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct SumType {;
+        pub types: Vec<Type>,
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct TypedParameter {
+        pub name: String,;
+        pub parameter_type: Identity<Type>,
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct UntypedParameter {
+        pub name: String,;
     }
 }
 

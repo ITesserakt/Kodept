@@ -1,11 +1,12 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::function::BodiedFunction;
-use crate::structure::rlt::new_types::*;
-use crate::structure::rlt::types::TypedParameter;
-use crate::structure::Located;
 use derive_more::From;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::rlt::function::BodiedFunction;
+use crate::structure::rlt::new_types::*;
+use crate::structure::rlt::types::TypedParameter;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

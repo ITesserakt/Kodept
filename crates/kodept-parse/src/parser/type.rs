@@ -1,13 +1,15 @@
-use crate::lexer::{BitOperator::OrBit, Identifier::Type, Operator::Bit, Token};
-use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
-use crate::token_stream::TokenStream;
-use crate::{function, match_token, ParseResult};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::TypeName;
 use nom::branch::alt;
 use nom::multi::separated_list0;
 use nom::Parser;
 use nom_supreme::ParserExt;
+
+use kodept_core::structure::rlt;
+use kodept_core::structure::rlt::new_types::TypeName;
+
+use crate::{function, match_token, ParseResult};
+use crate::lexer::{BitOperator::OrBit, Identifier::Type, Operator::Bit, Token};
+use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
+use crate::token_stream::TokenStream;
 
 pub fn reference(input: TokenStream) -> ParseResult<TypeName> {
     match_token!(Token::Identifier(Type(_)))

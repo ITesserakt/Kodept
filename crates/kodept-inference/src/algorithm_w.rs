@@ -1,10 +1,11 @@
+use derive_more::From;
+
+use crate::{Environment, language};
 use crate::algorithm_u::AlgorithmUError;
 use crate::assumption::Assumptions;
 use crate::language::{Language, Literal};
-use crate::r#type::{fun1, var, MonomorphicType, PrimitiveType, Tuple, Union};
+use crate::r#type::{fun1, MonomorphicType, PrimitiveType, Tuple, Union, var};
 use crate::substitution::Substitutions;
-use crate::{language, Environment};
-use derive_more::From;
 
 #[derive(From, Debug)]
 pub enum AlgorithmWError {

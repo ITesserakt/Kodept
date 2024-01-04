@@ -11,8 +11,7 @@ members = [
     "crates/kodept-parse",
     "crates/kodept-inference",
     "crates/kodept-ast",
-    "crates/kodept-macros"
-]
+    "crates/kodept-macros"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,7 +29,6 @@ clippy.complexity = "warn"
 clippy.style = "warn"
 clippy.perf = "warn"
 clippy.unwrap_used = "deny"
-rust.unsafe_code = "forbid"
 
 [dependencies]
 kodept-ast = { path = "crates/kodept-ast", features = ["size-of", "serde"] }

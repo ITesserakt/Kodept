@@ -1,8 +1,10 @@
-use crate::structure::Located;
+use std::ops::Range;
+
 use derive_more::{Constructor, Display};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
-use std::ops::Range;
+
+use crate::structure::Located;
 
 #[derive(Constructor, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
 #[display(fmt = "...{}:{}", offset, length)]

@@ -1,18 +1,21 @@
-use crate::graph::generic_node::{GenericASTNode, NodeUnion};
-use crate::graph::traits::PopulateTree;
-use crate::graph::{Identity, SyntaxTree};
-use crate::node_id::NodeId;
-use crate::traits::Linker;
-use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
+use std::fmt::Debug;
+
 use derive_more::{From, Into, IsVariant};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::BlockLevelNode;
-use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
-use size_of::{Context, SizeOf};
-use std::fmt::Debug;
+use size_of::SizeOf;
+
+use kodept_core::structure::rlt;
+use kodept_core::structure::rlt::BlockLevelNode;
+use kodept_core::structure::span::CodeHolder;
+
+use crate::graph::Identity;
+use crate::graph::NodeId;
+use crate::graph::SyntaxTree;
+use crate::graph::{GenericASTNode, NodeUnion};
+use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -39,7 +42,7 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Variable {
         pub kind: VariableKind,
-        pub name: std::string::String,;
+        pub name: String,;
         pub assigned_type: Option<Type>,
     }
 }

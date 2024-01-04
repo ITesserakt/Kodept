@@ -1,11 +1,12 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::block_level::Body;
-use crate::structure::rlt::new_types::*;
-use crate::structure::rlt::types::{Parameter, Type, TypedParameter};
-use crate::structure::Located;
 use derive_more::From;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::rlt::block_level::Body;
+use crate::structure::rlt::new_types::*;
+use crate::structure::rlt::types::{Parameter, Type, TypedParameter};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BodiedFunction {

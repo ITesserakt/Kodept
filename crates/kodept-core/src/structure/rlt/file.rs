@@ -1,10 +1,11 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::new_types::*;
-use crate::structure::rlt::top_level::TopLevelNode;
-use crate::structure::Located;
 use derive_more::Constructor;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::rlt::new_types::*;
+use crate::structure::rlt::top_level::TopLevelNode;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

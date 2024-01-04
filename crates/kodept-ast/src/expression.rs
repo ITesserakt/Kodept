@@ -1,24 +1,26 @@
-use crate::graph::generic_node::{GenericASTNode, NodeUnion};
-use crate::graph::traits::PopulateTree;
-use crate::graph::{Identity, SyntaxTree};
-use crate::node_id::NodeId;
-use crate::traits::Linker;
-use crate::wrappers::{AOperation, LeftOperation, RightOperation};
-use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
 use derive_more::{From, Into};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
-use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use kodept_core::structure::rlt;
+use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
+use kodept_core::structure::span::CodeHolder;
 use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
+use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, NodeUnion};
+use crate::graph::{Identity, SyntaxTree};
+use crate::traits::{Linker, PopulateTree};
+use crate::wrappers::{AOperation, LeftOperation, RightOperation};
+use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
+
 pub mod wrappers {
-    use crate::{graph::generic_node::GenericASTNode, wrapper, Operation};
     use derive_more::{Deref, DerefMut};
+
+    use crate::{graph::GenericASTNode, wrapper, Operation};
 
     wrapper! {
         #[derive(Deref, DerefMut)]

@@ -1,6 +1,7 @@
-use crate::error::report::Report;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::error::report::Report;
 
 #[derive(Default, Debug)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

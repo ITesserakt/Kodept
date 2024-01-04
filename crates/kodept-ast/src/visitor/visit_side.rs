@@ -1,5 +1,6 @@
-use crate::visitor::TraversingResult;
 use derive_more::{Constructor, IsVariant};
+
+use crate::visitor::TraversingResult;
 
 #[derive(Debug)]
 pub enum Skip<E> {

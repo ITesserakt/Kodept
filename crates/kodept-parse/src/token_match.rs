@@ -1,9 +1,10 @@
-use crate::lexer::Token;
 use derive_more::Constructor;
-use kodept_core::structure::span::Span;
-
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use kodept_core::structure::span::Span;
+
+use crate::lexer::Token;
 
 #[derive(Debug, Clone, PartialEq, Constructor)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

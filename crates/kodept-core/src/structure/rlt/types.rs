@@ -1,9 +1,10 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::new_types::*;
-use crate::structure::Located;
 use derive_more::From;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::rlt::new_types::*;
 
 #[derive(Debug, Clone, PartialEq, From)]
 pub enum Type {

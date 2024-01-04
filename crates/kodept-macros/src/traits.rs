@@ -1,9 +1,12 @@
-use crate::error::report::{Report, ReportMessage};
+use std::convert::Infallible;
+
 use derive_more::From;
+
 use kodept_ast::traits::{Accessor, IdProducer, Linker};
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
-use std::convert::Infallible;
+
+use crate::error::report::{Report, ReportMessage};
 
 #[derive(Debug, From)]
 pub enum UnrecoverableError {

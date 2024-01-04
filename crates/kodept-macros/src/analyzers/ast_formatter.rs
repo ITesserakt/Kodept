@@ -1,13 +1,16 @@
+use std::cell::{Cell, RefCell};
+use std::io::{Error, Write};
+
+use codespan_reporting::diagnostic::Severity;
+
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast_graph::generic_node::GenericASTNode;
+use kodept_core::Named;
+
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;
 use crate::traits::{Context, UnrecoverableError};
-use codespan_reporting::diagnostic::Severity;
-use kodept_ast::graph::generic_node::GenericASTNode;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
-use kodept_core::Named;
-use std::cell::{Cell, RefCell};
-use std::io::{Error, Write};
 
 pub struct ASTFormatter<W: Write> {
     writer: RefCell<W>,

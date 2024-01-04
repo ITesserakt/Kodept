@@ -1,10 +1,12 @@
-use crate::lexer::{Identifier::*, Token};
-use crate::token_stream::TokenStream;
-use crate::{function, match_token, ParseResult};
-use kodept_core::structure::rlt;
 use nom::branch::alt;
 use nom::Parser;
 use nom_supreme::ParserExt;
+
+use kodept_core::structure::rlt;
+
+use crate::{function, match_token, ParseResult};
+use crate::lexer::{Identifier::*, Token};
+use crate::token_stream::TokenStream;
 
 fn variable_ref(input: TokenStream) -> ParseResult<rlt::Reference> {
     match_token!(Token::Identifier(Identifier(_)))

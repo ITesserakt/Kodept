@@ -1,16 +1,18 @@
-use crate::graph::traits::PopulateTree;
-use crate::graph::{Identity, SyntaxTree};
-use crate::node_id::NodeId;
-use crate::traits::{Identifiable, Linker};
-use crate::{impl_identifiable, with_children, Body, Parameter, Type, TypedParameter};
 use derive_more::From;
-use kodept_core::structure::rlt;
-use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use kodept_core::structure::rlt;
+use kodept_core::structure::span::CodeHolder;
 use visita::node_group;
+
+use crate::graph::NodeId;
+use crate::graph::{Identity, SyntaxTree};
+use crate::traits::PopulateTree;
+use crate::traits::{Identifiable, Linker};
+use crate::{impl_identifiable, with_children, Body, Parameter, Type, TypedParameter};
 
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

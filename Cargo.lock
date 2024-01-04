@@ -529,12 +529,15 @@ name = "kodept-ast"
 version = "0.1.4"
 dependencies = [
  "derive_more",
+ "fixedbitset",
  "ghost-cell",
  "kodept-core",
  "paste",
  "serde",
  "size-of",
+ "static-rc",
  "tracing",
+ "typed-arena",
  "visita",
 ]
 
@@ -963,6 +966,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
+name = "static-rc"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b91d0104a7b28aeda24b30919f83222570111ac0bf1aab23aaffb8f59330e654"
+
+[[package]]
 name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1141,6 +1150,12 @@ dependencies = [
  "tracing-core",
  "tracing-log",
 ]
+
+[[package]]
+name = "typed-arena"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
 
 [[package]]
 name = "unicode-ident"

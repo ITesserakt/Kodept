@@ -1,7 +1,8 @@
-use crate::visitor::visit_side::VisitSide;
-use crate::visitor::GenericASTVisitor;
-use crate::*;
 use visita::{Data, NodeFamily, Visit, Visitor};
+
+use crate::*;
+use crate::visitor::GenericASTVisitor;
+use crate::visitor::visit_side::VisitSide;
 
 pub struct GAST<G: GenericASTVisitor>(G);
 

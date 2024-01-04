@@ -105,12 +105,14 @@ impl MonomorphicType {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::algorithm_u::AlgorithmUError;
-    use crate::r#type::MonomorphicType::Constant;
-    use crate::r#type::{fun, fun1, var, PrimitiveType, Tuple};
-    use crate::substitution::{Substitution, Substitutions};
-    use nonempty_collections::nev;
     use std::collections::HashSet;
+
+    use nonempty_collections::nev;
+
+    use crate::algorithm_u::AlgorithmUError;
+    use crate::r#type::{fun, fun1, PrimitiveType, Tuple, var};
+    use crate::r#type::MonomorphicType::Constant;
+    use crate::substitution::{Substitution, Substitutions};
 
     #[test]
     fn test_tautology_example_on_constants() {

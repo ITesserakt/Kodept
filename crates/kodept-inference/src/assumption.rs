@@ -1,9 +1,10 @@
+use std::collections::HashMap;
+use std::ops::Sub;
+
 use crate::language;
 use crate::language::Language;
 use crate::r#type::{MonomorphicType, PolymorphicType};
 use crate::substitution::Substitutions;
-use std::collections::HashMap;
-use std::ops::Sub;
 
 #[derive(Clone, Debug)]
 pub struct Assumptions<'l> {

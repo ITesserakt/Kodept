@@ -1,14 +1,16 @@
-use crate::graph::traits::PopulateTree;
-use crate::graph::SyntaxTree;
-use crate::node_id::NodeId;
-use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{IdProducer, Identifiable, Linker};
+use std::borrow::Cow;
+
+#[cfg(feature = "size-of")]
+use size_of::SizeOf;
+
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-use std::borrow::Cow;
+
+use crate::graph::NodeId;
+use crate::graph::SyntaxTree;
+use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
+use crate::traits::{IdProducer, Identifiable, Linker, PopulateTree};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -25,11 +27,11 @@ impl Default for ASTBuilder {
 }
 
 impl ASTBuilder {
-    pub fn recursive_build<'n, C: CodeHolder>(
-        &mut self,
+    pub fn recursive_build<'n, 'arena, C: CodeHolder>(
+        &'arena mut self,
         from: &'n rlt::File,
         code: &C,
-    ) -> (SyntaxTree, RLTAccessor<'n>) {
+    ) -> (SyntaxTree<'_>, RLTAccessor<'n>) {
         let mut links = RLTAccessor::default();
         let mut linker = ASTLinker(self, &mut links, code);
         let mut tree = SyntaxTree::new();

@@ -93,14 +93,16 @@ impl ToRepresentation for Keyword {
 
 #[cfg(all(test, feature = "enum-iter"))]
 mod tests {
-    use crate::lexer::traits::ToRepresentation;
-    use crate::lexer::*;
+    use std::fmt::Debug;
+
     use enum_iterator::{all, Sequence};
     use nom::Parser;
     use nom_supreme::error::ErrorTree;
     use nom_supreme::final_parser::final_parser;
-    use std::fmt::Debug;
     use test_case::test_case;
+
+    use crate::lexer::*;
+    use crate::lexer::traits::ToRepresentation;
 
     #[test_case(symbol)]
     #[test_case(operator)]

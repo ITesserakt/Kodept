@@ -1,10 +1,11 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::block_level::BlockLevelNode;
-use crate::structure::rlt::new_types::*;
-use crate::structure::rlt::{IfExpr, Literal, Reference, Term};
-use crate::structure::Located;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::rlt::{IfExpr, Literal, Reference, Term};
+use crate::structure::rlt::block_level::BlockLevelNode;
+use crate::structure::rlt::new_types::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Application {

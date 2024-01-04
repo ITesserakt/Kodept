@@ -1,13 +1,15 @@
-use crate::token_match::TokenMatch;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::Span;
-use nom_supreme::error::ErrorTree;
 use std::str::Utf8Error;
-use thiserror::Error;
 
-use crate::lexer::{token, Token};
+use nom_supreme::error::ErrorTree;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+use thiserror::Error;
+
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::span::Span;
+
+use crate::lexer::{token, Token};
+use crate::token_match::TokenMatch;
 
 #[derive(Error, Debug)]
 pub enum TokenizeError {
@@ -80,11 +82,12 @@ impl<'t> Iterator for Tokenizer<'t> {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    use kodept_core::code_point::CodePoint;
+
     use crate::lexer::{
         Identifier::*, Ignore::*, Keyword::*, MathOperator::*, Operator::*, Symbol::*,
     };
     use crate::tokenizer::Tokenizer;
-    use kodept_core::code_point::CodePoint;
 
     #[test]
     fn test_tokenizer_simple() {

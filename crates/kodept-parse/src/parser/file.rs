@@ -1,5 +1,11 @@
-use crate::parser::nom::{match_token, newline_separated};
-use crate::parser::top_level;
+use nom::combinator::cut;
+use nom::multi::{many0, many1};
+use nom::Parser;
+use nom::sequence::tuple;
+use nom_supreme::ParserExt;
+
+use kodept_core::structure::rlt;
+
 use crate::{
     function,
     lexer::{Identifier::*, Keyword::*, Operator::*, Symbol::*, Token},
@@ -7,12 +13,8 @@ use crate::{
     token_stream::TokenStream,
 };
 use crate::{match_any_token, ParseResult};
-use kodept_core::structure::rlt;
-use nom::combinator::cut;
-use nom::multi::{many0, many1};
-use nom::sequence::tuple;
-use nom::Parser;
-use nom_supreme::ParserExt;
+use crate::parser::nom::{match_token, newline_separated};
+use crate::parser::top_level;
 
 fn module_statement(input: TokenStream) -> ParseResult<rlt::Module> {
     tuple((

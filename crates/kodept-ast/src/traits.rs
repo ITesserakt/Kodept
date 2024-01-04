@@ -1,17 +1,20 @@
-use crate::graph::SyntaxTree;
-use crate::node_id::NodeId;
-use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use std::fmt::Debug;
 use std::rc::Rc;
+
+use kodept_core::structure::span::CodeHolder;
 use tracing::warn;
+
+use crate::graph::SyntaxTree;
+use crate::graph::{GenericASTNode, NodeId};
+use crate::rlt_accessor::{ASTFamily, RLTFamily};
 
 pub trait Identifiable: Sized {
     fn get_id(&self) -> NodeId<Self>;
 }
 
-impl<T: crate::graph::traits::Identifiable> Identifiable for T {
+impl<T: crate::graph::Identifiable> Identifiable for T {
     fn get_id(&self) -> NodeId<Self> {
-        <Self as crate::graph::traits::Identifiable>::get_id(self)
+        <Self as crate::graph::Identifiable>::get_id(self)
     }
 }
 
@@ -82,4 +85,14 @@ where
     {
         ctx.link_existing(self.0, with)
     }
+}
+
+pub trait PopulateTree {
+    type Output: Into<GenericASTNode>;
+
+    fn convert<'a>(
+        &'a self,
+        builder: &mut SyntaxTree,
+        context: &mut (impl Linker<'a> + CodeHolder),
+    ) -> NodeId<Self::Output>;
 }

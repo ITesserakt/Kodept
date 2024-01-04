@@ -1,21 +1,23 @@
-pub mod ast_builder;
+pub use self::{
+    block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
+    top_level::*, types::*,
+};
+
 mod block_level;
 mod code_flow;
 mod expression;
 mod file;
 mod function;
-pub mod graph;
 mod literal;
-pub mod node_id;
-pub mod rlt_accessor;
 mod term;
 mod top_level;
-pub mod traits;
 mod types;
+
+pub mod graph;
+
+pub mod ast_builder;
+mod macros;
+pub mod rlt_accessor;
+pub mod traits;
 mod utils;
 pub mod visitor;
-
-pub use self::{
-    block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
-    top_level::*, types::*,
-};

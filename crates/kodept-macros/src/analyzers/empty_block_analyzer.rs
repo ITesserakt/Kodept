@@ -1,15 +1,18 @@
+use std::convert::Infallible;
+
+use codespan_reporting::diagnostic::Severity;
+
+use kodept_ast::{EnumDeclaration, StructDeclaration};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_core::impl_named;
+use kodept_core::structure::{Located, rlt};
+use kodept_core::structure::rlt::Enum;
+
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;
 use crate::traits::Context;
 use crate::warn_about_broken_rlt;
-use codespan_reporting::diagnostic::Severity;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
-use kodept_ast::{EnumDeclaration, StructDeclaration};
-use kodept_core::impl_named;
-use kodept_core::structure::rlt::Enum;
-use kodept_core::structure::{rlt, Located};
-use std::convert::Infallible;
 
 #[derive(Debug)]
 pub struct StructAnalyzer;

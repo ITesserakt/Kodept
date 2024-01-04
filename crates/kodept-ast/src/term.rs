@@ -1,16 +1,18 @@
-use crate::graph::generic_node::GenericASTNode;
-use crate::graph::traits::PopulateTree;
-use crate::graph::SyntaxTree;
-use crate::node_id::NodeId;
-use crate::traits::Linker;
-use crate::{node, wrapper};
 use derive_more::{From, Into};
-use kodept_core::structure::rlt;
-use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use kodept_core::structure::rlt;
+use kodept_core::structure::span::CodeHolder;
+
+use crate::graph::GenericASTNode;
+use crate::graph::NodeId;
+use crate::graph::SyntaxTree;
+use crate::traits::Linker;
+use crate::traits::PopulateTree;
+use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]

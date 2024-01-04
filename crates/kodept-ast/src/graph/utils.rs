@@ -1,12 +1,24 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::any::type_name;
-use std::mem::replace;
+use std::mem::{replace, take};
 
+use derive_more::IsVariant;
+
+#[derive(Default, IsVariant)]
 pub enum OptVec<T> {
+    #[default]
     Empty,
     Single(T),
     Vector(Vec<T>),
+}
+
+#[derive(Default)]
+enum OptVecIter<'a, T> {
+    #[default]
+    Empty,
+    Single(&'a T),
+    Vector(std::slice::Iter<'a, T>),
 }
 
 impl<A> FromIterator<A> for OptVec<A> {
@@ -56,6 +68,14 @@ impl<T> OptVec<T> {
                 *self = OptVec::Vector(vec![x, item])
             }
             OptVec::Vector(vec) => vec.push(item),
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        match self {
+            OptVec::Empty => OptVecIter::Empty,
+            OptVec::Single(t) => OptVecIter::Single(t),
+            OptVec::Vector(x) => OptVecIter::Vector(x.iter()),
         }
     }
 }
@@ -114,5 +134,22 @@ impl<T> FromOptVec for Vec<T> {
 
     fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
         value.into_vec()
+    }
+}
+
+impl<'a, T> Iterator for OptVecIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            OptVecIter::Empty => None,
+            OptVecIter::Single(_) => {
+                let OptVecIter::Single(t) = take(self) else {
+                    unreachable!()
+                };
+                Some(t)
+            }
+            OptVecIter::Vector(iter) => iter.next(),
+        }
     }
 }

@@ -1,9 +1,10 @@
-use crate::code_source::CodeSource;
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};
 
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_source::CodeSource;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

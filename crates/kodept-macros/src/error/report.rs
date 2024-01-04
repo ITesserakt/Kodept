@@ -1,9 +1,11 @@
+use std::mem::size_of;
+
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
-use kodept_core::code_point::CodePoint;
-use kodept_core::file_relative::CodePath;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
-use std::mem::size_of;
+
+use kodept_core::code_point::CodePoint;
+use kodept_core::file_relative::CodePath;
 
 #[derive(Debug)]
 pub struct ReportMessage {

@@ -65,6 +65,7 @@ where
     ) -> Result<(), Vec<E>> {
         context
             .tree()
+            .dfs()
             .iter()
             .map(|(node, side)| {
                 analyzers

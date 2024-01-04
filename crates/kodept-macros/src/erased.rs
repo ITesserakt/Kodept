@@ -1,11 +1,14 @@
+use std::fmt::{Debug, Formatter};
+
+use derive_more::From;
+
+use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
+use kodept_ast_graph::generic_node::GenericASTNode;
+use kodept_core::Named;
+
 use crate::analyzer::Analyzer;
 use crate::traits::{Context, UnrecoverableError};
 use crate::transformer::Transformer;
-use derive_more::From;
-use kodept_ast::graph::generic_node::GenericASTNode;
-use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
-use kodept_core::Named;
-use std::fmt::{Debug, Formatter};
 
 pub trait ErasedAnalyzer<'c, C>: Named
 where

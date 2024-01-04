@@ -1,15 +1,17 @@
-use crate::block_level::{InitializedVariable, Variable};
-use crate::node_id::NodeId;
-use crate::traits::Identifiable;
-use crate::*;
+use std::collections::HashMap;
+use std::hash::Hash;
+
 use derive_more::{From, TryInto};
-use kodept_core::structure::rlt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
-use std::collections::HashMap;
-use std::hash::Hash;
+
+use kodept_core::structure::rlt;
+
+use crate::*;
+use crate::graph::NodeId;
+use crate::traits::Identifiable;
 
 make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
     derive(Hash, PartialEq, Eq, From, Debug, TryInto),

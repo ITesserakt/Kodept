@@ -1,12 +1,12 @@
-use crate::structure::span::Span;
 use derive_more::{From, Into};
-
-use crate::code_point::CodePoint;
-use crate::structure::Located;
 #[cfg(feature = "size-of")]
 use size_of::Context;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::Located;
+use crate::structure::span::Span;
 
 macro_rules! make_wrappers {
     ($($name:ident,)*) => {

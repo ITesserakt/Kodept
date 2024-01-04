@@ -1,14 +1,16 @@
-use crate::graph::traits::PopulateTree;
-use crate::graph::SyntaxTree;
-use crate::node_id::NodeId;
-use crate::traits::Linker;
-use crate::{node, TopLevel};
-use kodept_core::structure::rlt::{File, Module};
-use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use kodept_core::structure::rlt::{File, Module};
+use kodept_core::structure::span::CodeHolder;
+
+use crate::graph::NodeId;
+use crate::graph::SyntaxTree;
+use crate::traits::Linker;
+use crate::traits::PopulateTree;
+use crate::{node, TopLevel};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

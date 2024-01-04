@@ -1,11 +1,13 @@
-use crate::traits::Context;
-use crate::transformer::Transformer;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
-use kodept_ast::{BlockLevel, ExpressionBlock};
-use kodept_core::impl_named;
 use std::convert::Infallible;
 use std::mem::take;
+
+use kodept_ast::{BlockLevel, ExpressionBlock};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_core::impl_named;
+
+use crate::traits::Context;
+use crate::transformer::Transformer;
 
 #[derive(Debug)]
 pub struct VariableScopeTransformer;

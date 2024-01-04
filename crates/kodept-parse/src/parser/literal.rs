@@ -1,11 +1,13 @@
-use crate::lexer::{Literal::*, Token};
-use crate::parser::nom::{comma_separated0, paren_enclosed};
-use crate::token_stream::TokenStream;
-use crate::{function, match_token, ParseResult};
-use kodept_core::structure::rlt;
 use nom::branch::alt;
 use nom::Parser;
 use nom_supreme::ParserExt;
+
+use kodept_core::structure::rlt;
+
+use crate::{function, match_token, ParseResult};
+use crate::lexer::{Literal::*, Token};
+use crate::parser::nom::{comma_separated0, paren_enclosed};
+use crate::token_stream::TokenStream;
 
 fn tuple_literal(input: TokenStream) -> ParseResult<rlt::Literal> {
     paren_enclosed(comma_separated0(grammar))

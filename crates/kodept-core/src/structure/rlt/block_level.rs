@@ -1,14 +1,15 @@
-use crate::code_point::CodePoint;
-use crate::structure::rlt::BodiedFunction;
-use crate::structure::{
-    rlt::expression::{ExpressionBlock, Operation},
-    rlt::new_types::*,
-    rlt::Type,
-    Located,
-};
 use derive_more::From;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+
+use crate::code_point::CodePoint;
+use crate::structure::{
+    Located,
+    rlt::expression::{ExpressionBlock, Operation},
+    rlt::new_types::*,
+    rlt::Type,
+};
+use crate::structure::rlt::BodiedFunction;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

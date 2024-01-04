@@ -1,3 +1,11 @@
+use nom::branch::alt;
+use nom::Parser;
+use nom::sequence::separated_pair;
+use nom_supreme::ParserExt;
+
+use kodept_core::structure::rlt;
+
+use crate::{function, match_token, ParseResult};
 use crate::lexer::{
     Identifier::Identifier,
     Symbol::{Colon, TypeGap},
@@ -5,12 +13,6 @@ use crate::lexer::{
 };
 use crate::parser::r#type;
 use crate::token_stream::TokenStream;
-use crate::{function, match_token, ParseResult};
-use kodept_core::structure::rlt;
-use nom::branch::alt;
-use nom::sequence::separated_pair;
-use nom::Parser;
-use nom_supreme::ParserExt;
 
 pub fn typed_parameter(input: TokenStream) -> ParseResult<rlt::TypedParameter> {
     separated_pair(

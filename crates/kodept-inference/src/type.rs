@@ -1,13 +1,15 @@
-use crate::substitution::Substitutions;
-use crate::Environment;
-use crate::{LOWER_ALPHABET, UPPER_ALPHABET};
-use derive_more::{Display as DeriveDisplay, From};
-use itertools::Itertools;
-use nonempty_collections::NEVec;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
 use std::ops::{BitOr, Sub};
+
+use derive_more::{Display as DeriveDisplay, From};
+use itertools::Itertools;
+use nonempty_collections::NEVec;
+
+use crate::{LOWER_ALPHABET, UPPER_ALPHABET};
+use crate::Environment;
+use crate::substitution::Substitutions;
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {

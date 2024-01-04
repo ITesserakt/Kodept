@@ -1,13 +1,15 @@
-use crate::code_source::CodeSource;
-use itertools::Itertools;
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use itertools::Itertools;
 use thiserror::Error;
 use tracing::warn;
+
+use crate::code_source::CodeSource;
 
 pub enum Loader {
     File(Vec<(File, PathBuf)>),
@@ -164,12 +166,14 @@ impl Default for Loader {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::loader::Loader;
     use std::env::temp_dir;
     use std::fs::File;
     use std::io::{Read, Write};
     use std::path::Path;
+
     use tempfile::tempfile;
+
+    use crate::loader::Loader;
 
     #[test]
     fn test_load_text_from_scratch() {

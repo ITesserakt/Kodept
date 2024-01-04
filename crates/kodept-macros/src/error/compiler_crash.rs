@@ -1,5 +1,6 @@
-use crate::error::report::ReportMessage;
 use codespan_reporting::diagnostic::Severity;
+
+use crate::error::report::ReportMessage;
 
 pub struct CompilerCrash {
     message: String,

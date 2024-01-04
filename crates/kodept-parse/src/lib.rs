@@ -1,8 +1,9 @@
-use crate::parser::nom::TokenVerificationError;
-use crate::token_stream::TokenStream;
 use extend::ext;
 use nom::IResult;
 use nom_supreme::error::{ErrorTree, GenericErrorTree};
+
+use crate::parser::nom::TokenVerificationError;
+use crate::token_stream::TokenStream;
 
 pub mod lexer;
 pub mod parser;
