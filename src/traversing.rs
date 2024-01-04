@@ -1,10 +1,10 @@
 use crate::traversing::OptionalContext::Defined;
-use crate::utils;
-use kodept_macros::erased::Erased;
+use crate::utils::graph::topological_layers;
+use itertools::{Either, Itertools};
+use kodept_macros::erased::{Erased, ErasedAnalyzer};
 use kodept_macros::traits::Context;
 use petgraph::algo::is_cyclic_directed;
 use petgraph::prelude::{DiGraph, NodeIndex};
-use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
 
 type DefaultErased<'c, C, E> = Erased<'c, C, E>;
@@ -25,7 +25,7 @@ impl<'c, C: Context<'c>, E> Default for TraverseSet<'c, C, E> {
 }
 
 pub trait Traversable<'c, C: Context<'c>, E> {
-    fn traverse(&self, context: C) -> Result<C, (E, C)>;
+    fn traverse(&self, context: C) -> Result<C, (Vec<E>, C)>;
 }
 
 impl<'c, C, E> TraverseSet<'c, C, E>
@@ -57,33 +57,51 @@ where
         });
         id
     }
+
+    #[allow(clippy::manual_try_fold)]
+    fn run_analyzers(
+        context: &mut C,
+        analyzers: &[&dyn ErasedAnalyzer<'c, C, Error = E>],
+    ) -> Result<(), Vec<E>> {
+        context
+            .tree()
+            .iter()
+            .map(|(node, side)| {
+                analyzers
+                    .iter()
+                    .try_for_each(|a| a.analyze(node, side, context))
+            })
+            .fold(Ok(()), |acc, next| match (acc, next) {
+                (Ok(_), Ok(_)) => Ok(()),
+                (Ok(_), Err(e)) => Err(vec![e]),
+                (Err(e), Ok(_)) => Err(e),
+                (Err(mut e1), Err(e2)) => {
+                    e1.push(e2);
+                    Err(e1)
+                }
+            })
+    }
 }
 
 impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
-    fn traverse(&self, context: C) -> Result<C, (E, C)> {
-        let context = RefCell::new(Defined(context));
-        let layers = utils::graph::topological_layers(&self.inner);
+    fn traverse(&self, mut context: C) -> Result<C, (Vec<E>, C)> {
+        let sorted = topological_layers(&self.inner);
+        for layer in sorted {
+            let (transformers, analyzers): (Vec<_>, Vec<_>) = layer
+                .into_iter()
+                .map(|x| &self.inner[x])
+                .partition_map(|e| match e {
+                    Erased::Transformer(x) => Either::Left(x),
+                    Erased::Analyzer(x) => Either::Right(x.as_ref()),
+                });
 
-        for layer in layers {
-            let mut guard = context.borrow_mut();
-            let tree = guard.tree();
-            let visitor = tree.iter().map(move |(node, side)| {
-                for item in &layer {
-                    let Some(item) = self.inner.node_weight(*item) else {
-                        continue;
-                    };
-                    match item {
-                        Erased::Transformer(x) => x.transform(node, side, &mut guard),
-                        Erased::Analyzer(x) => x.analyze(node, side, &mut guard),
-                    }?;
-                }
-                Result::<_, E>::Ok(())
-            });
-            visitor
-                .collect::<Result<_, _>>()
-                .map_err(|e| (e, context.take().into_inner()))?;
+            let analyzer_result = TraverseSet::run_analyzers(&mut context, &analyzers);
+            match analyzer_result {
+                Ok(_) => {}
+                Err(e) => return Err((e, context)),
+            };
         }
-        Ok(context.take().into_inner())
+        Ok(context)
     }
 }
 

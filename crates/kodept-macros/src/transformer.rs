@@ -5,7 +5,7 @@ use kodept_ast::visitor::TraversingResult;
 
 pub trait Transformer {
     type Error: Into<UnrecoverableError>;
-    type Node<'n>: TryFrom<&'n GenericASTNode>;
+    type Node<'n>: TryFrom<&'n mut GenericASTNode>;
 
     fn transform<'n, 'c>(
         &self,

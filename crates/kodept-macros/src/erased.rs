@@ -36,7 +36,7 @@ where
 
     fn transform(
         &self,
-        node: &GenericASTNode,
+        node: &mut GenericASTNode,
         side: VisitSide,
         context: &mut C,
     ) -> Result<(), Self::Error>;
@@ -88,7 +88,7 @@ where
 
     fn transform(
         &self,
-        node: &GenericASTNode,
+        node: &mut GenericASTNode,
         side: VisitSide,
         context: &mut C,
     ) -> Result<(), Self::Error> {

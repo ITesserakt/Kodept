@@ -37,7 +37,7 @@ impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableE
 }
 
 impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for PredefinedTraverseSet<'c, C, E> {
-    fn traverse(&self, context: C) -> Result<C, (E, C)> {
+    fn traverse(&self, context: C) -> Result<C, (Vec<E>, C)> {
         self.0.traverse(context)
     }
 }
@@ -114,14 +114,17 @@ impl Traversing {
         source: &ReadCodeSource,
         settings: &mut CodespanSettings,
     ) -> C {
-        match set.traverse(context) {
-            Ok(c) => c,
-            Err((UnrecoverableError::Report(r), c)) => {
-                r.emit(settings, source).expect("Cannot emit diagnostics");
-                c
+        set.traverse(context).unwrap_or_else(|(vec, c)| {
+            for error in vec {
+                match error {
+                    UnrecoverableError::Report(report) => report
+                        .emit(settings, source)
+                        .expect("Cannot emit diagnostics"),
+                    UnrecoverableError::Infallible(_) => {}
+                }
             }
-            Err((_, c)) => c,
-        }
+            c
+        })
     }
 }
 
