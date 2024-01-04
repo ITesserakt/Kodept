@@ -2,7 +2,7 @@ use crate::graph::traits::PopulateTree;
 use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
 use crate::traits::{Identifiable, Linker};
-use crate::{impl_identifiable_2, with_children, Body, Parameter, Type, TypedParameter};
+use crate::{impl_identifiable, with_children, Body, Parameter, Type, TypedParameter};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -42,7 +42,7 @@ node_group!(family: FunctionDeclaration, nodes: [
 node_group!(family: BodiedFunctionDeclaration, nodes: [BodiedFunctionDeclaration, Body]);
 node_group!(family: AbstractFunctionDeclaration, nodes: [AbstractFunctionDeclaration]);
 
-impl_identifiable_2! { BodiedFunctionDeclaration, AbstractFunctionDeclaration }
+impl_identifiable! { BodiedFunctionDeclaration, AbstractFunctionDeclaration }
 
 with_children!(BodiedFunctionDeclaration => {
     pub parameters: Vec<Parameter>

@@ -53,8 +53,9 @@ impl Analyzer for StructAnalyzer {
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Entering)?;
         let rlt: Option<&rlt::Struct> = context.access(node);
+        let tree = context.tree();
 
-        if node.parameters().is_empty() {
+        if node.parameters(&tree).is_empty() {
             match rlt.map(|it| it.parameters.as_ref()) {
                 None => {
                     warn_about_broken_rlt::<rlt::Struct>();
@@ -68,7 +69,7 @@ impl Analyzer for StructAnalyzer {
             };
         }
 
-        if node.rest.is_empty() {
+        if node.contents(&tree).is_empty() {
             match rlt.map(|it| it.body.as_ref()) {
                 None => {
                     warn_about_broken_rlt::<rlt::Struct>();
@@ -94,8 +95,9 @@ impl Analyzer for EnumAnalyzer {
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Entering)?;
+        let tree = context.tree();
 
-        if node.contents().is_empty() {
+        if node.contents(&tree).is_empty() {
             let rlt: Option<&Enum> = context.access(node);
             match rlt {
                 None => {

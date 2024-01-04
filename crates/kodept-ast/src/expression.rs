@@ -1,12 +1,11 @@
-use crate::graph::generic_node::GenericASTNode;
+use crate::graph::generic_node::{GenericASTNode, NodeUnion};
 use crate::graph::traits::PopulateTree;
 use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
 use crate::traits::Linker;
-use crate::{
-    impl_identifiable_2, with_children, wrapper, BlockLevel, IfExpression, Literal, Reference, Term,
-};
-use derive_more::{Deref, DerefMut, From};
+use crate::wrappers::{AOperation, LeftOperation, RightOperation};
+use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
+use derive_more::{From, Into};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
@@ -17,62 +16,108 @@ use size_of::SizeOf;
 use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Application {
-    id: NodeId<Self>,
+pub mod wrappers {
+    use crate::{graph::generic_node::GenericASTNode, wrapper, Operation};
+    use derive_more::{Deref, DerefMut};
+
+    wrapper! {
+        #[derive(Deref, DerefMut)]
+        pub wrapper AOperation(Operation);
+    }
+    wrapper! {
+        #[derive(Deref, DerefMut)]
+        pub wrapper LeftOperation(Operation);
+    }
+    wrapper! {
+        #[derive(Deref, DerefMut)]
+        pub wrapper RightOperation(Operation);
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Access {
-    id: NodeId<Self>,
+wrapper! {
+    #[derive(Debug, PartialEq, From, Into)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper Operation {
+        application(Application) = GenericASTNode::Application(x) => Some(x),
+        access(Access) = GenericASTNode::Access(x) => Some(x),
+        unary(Unary) = GenericASTNode::Unary(x) => Some(x),
+        binary(Binary) = GenericASTNode::Binary(x) => Some(x),
+        block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => Some(x),
+        expression(Expression) = n if Expression::contains(n) => n.try_into().ok(),
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Unary {
-    pub kind: UnaryExpressionKind,
-    id: NodeId<Self>,
+wrapper! {
+    #[derive(Debug, PartialEq, From, Into)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper Expression {
+        lambda(Lambda) = GenericASTNode::Lambda(x) => Some(x),
+        if(IfExpression) = GenericASTNode::If(x) => Some(x),
+        literal(Literal) = n if Literal::contains(n) => n.try_into().ok(),
+        term(Term) = n if Term::contains(n) => n.try_into().ok(),
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Binary {
-    pub kind: BinaryExpressionKind,
-    id: NodeId<Self>,
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct Application {;
+        pub expr: Identity<AOperation>,
+        pub params: Vec<Operation>,
+    }
 }
 
-#[derive(Debug, PartialEq, From)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum Operation {
-    Application(Box<Application>),
-    Access(Box<Access>),
-    Unary(Box<Unary>),
-    Binary(Box<Binary>),
-    Expression(Box<Expression>),
-    Block(Box<ExpressionBlock>),
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct Access {;
+        _syntethic: Vec<Operation>,
+        pub left: Identity<LeftOperation>,
+        pub right: Identity<RightOperation>,
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Lambda {
-    id: NodeId<Self>,
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct Unary {
+        pub kind: UnaryExpressionKind,;
+        pub expr: Identity<Operation>,
+    }
 }
 
-#[derive(Debug, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum Expression {
-    Lambda(Lambda),
-    Term(Term),
-    Literal(Literal),
-    If(IfExpression),
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct Binary {
+        pub kind: BinaryExpressionKind,;
+        _syntethic: Vec<Operation>,
+        pub left: Identity<LeftOperation>,
+        pub right: Identity<RightOperation>,
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct Lambda {;
+        pub binds: Vec<Reference>,
+        pub expr: Identity<Operation>,
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct ExpressionBlock {;
+        pub items: Vec<BlockLevel>,
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -98,80 +143,6 @@ pub enum BinaryExpressionKind {
     Bit,
     Logic,
 }
-
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct ExpressionBlock {
-    id: NodeId<Self>,
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for Operation {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        match self {
-            Operation::Application(x) => x.size_of_children(context),
-            Operation::Access(x) => x.size_of_children(context),
-            Operation::Unary(x) => x.size_of_children(context),
-            Operation::Binary(x) => x.size_of_children(context),
-            Operation::Expression(x) => x.size_of_children(context),
-            Operation::Block(x) => x.size_of_children(context),
-        }
-    }
-}
-
-impl_identifiable_2! {
-    Application,
-    Access,
-    Unary,
-    Binary,
-    Lambda,
-    ExpressionBlock
-}
-
-with_children!(ExpressionBlock => {
-    pub items: Vec<BlockLevel>
-});
-
-with_children!(Lambda => {
-    pub binds: Vec<Reference>
-    pub expr: Identity<Operation>
-});
-
-with_children!(Unary => {
-    pub expr: Identity<Operation>
-});
-
-wrapper! {
-    #[derive(Deref, DerefMut)]
-    pub wrapper AOperation(Operation);
-}
-
-with_children!(Application => {
-    pub expr: Identity<AOperation>
-    pub params: Vec<Operation>
-});
-
-wrapper! {
-    #[derive(Deref, DerefMut)]
-    pub wrapper LeftOperation(Operation);
-}
-wrapper! {
-    #[derive(Deref, DerefMut)]
-    pub wrapper RightOperation(Operation);
-}
-
-with_children!(Access => {
-    _syntethic: Vec<Operation>
-    pub left: Identity<LeftOperation>
-    pub right: Identity<RightOperation>
-});
-
-with_children!(Binary => {
-    _syntethic: Vec<Operation>
-    pub left: Identity<LeftOperation>
-    pub right: Identity<RightOperation>
-});
 
 impl PopulateTree for rlt::ExpressionBlock {
     type Output = ExpressionBlock;

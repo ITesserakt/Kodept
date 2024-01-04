@@ -1,12 +1,9 @@
-use crate::graph::generic_node::GenericASTNode;
+use crate::graph::generic_node::{GenericASTNode, NodeUnion};
 use crate::graph::traits::PopulateTree;
 use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
 use crate::traits::Linker;
-use crate::{
-    impl_identifiable_2, with_children, wrapper, BodiedFunctionDeclaration, ExpressionBlock,
-    Operation, Type,
-};
+use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
 use derive_more::{From, Into, IsVariant};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
@@ -21,19 +18,41 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper BlockLevel {
-        func(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction,
-        init_var(InitializedVariable) = GenericASTNode::InitializedVariable,
-        operation(Operation) = GenericASTNode::Operation,
-        block(Body) = GenericASTNode::Body
+        func(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => Some(x),
+        init_var(InitializedVariable) = GenericASTNode::InitializedVariable(x) => Some(x),
+        operation(Operation) = n if Operation::contains(n) => n.try_into().ok(),
     }
 }
 
-#[derive(Debug, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum Body {
-    Block(ExpressionBlock),
-    Simple(Box<BlockLevel>),
+wrapper! {
+    #[derive(Debug, PartialEq, From, Into)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper Body {
+        block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => Some(x),
+        simple(BlockLevel) = x if BlockLevel::contains(x) => x.try_into().ok(),
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct Variable {
+        pub kind: VariableKind,
+        pub name: std::string::String,;
+        pub assigned_type: Option<Type>,
+    }
+}
+
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct InitializedVariable {
+        ;
+        pub variable: Identity<Variable>,
+        pub expr: Identity<Operation>,
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, IsVariant)]
@@ -44,35 +63,27 @@ pub enum VariableKind {
     Mutable,
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Variable {
-    pub kind: VariableKind,
-    pub name: String,
-    id: NodeId<Self>,
+impl BlockLevel {
+    pub fn as_body(&self) -> Option<&Body> {
+        match self {
+            BlockLevel(n @ GenericASTNode::ExpressionBlock(_)) => Some(Body::wrap(n)),
+            BlockLevel(n @ GenericASTNode::InitializedVariable(_)) => Some(Body::wrap(n)),
+            BlockLevel(n @ GenericASTNode::BodiedFunction(_)) => Some(Body::wrap(n)),
+            BlockLevel(n) if Operation::contains(n) => Some(Body::wrap(n)),
+            _ => None,
+        }
+    }
+
+    pub fn as_body_mut(&mut self) -> Option<&mut Body> {
+        match self {
+            BlockLevel(n @ GenericASTNode::ExpressionBlock(_)) => Some(Body::wrap_mut(n)),
+            BlockLevel(n @ GenericASTNode::InitializedVariable(_)) => Some(Body::wrap_mut(n)),
+            BlockLevel(n @ GenericASTNode::BodiedFunction(_)) => Some(Body::wrap_mut(n)),
+            BlockLevel(n) if Operation::contains(n) => Some(Body::wrap_mut(n)),
+            _ => None,
+        }
+    }
 }
-
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct InitializedVariable {
-    id: NodeId<Self>,
-}
-
-impl_identifiable_2! {
-    Variable,
-    InitializedVariable
-}
-
-with_children!(InitializedVariable => {
-    pub variable: Identity<Variable>
-    pub expr: Identity<Operation>
-});
-
-with_children!(Variable => {
-    pub assigned_type: Option<Type>
-});
 
 impl PopulateTree for rlt::Body {
     type Output = Body;
@@ -150,12 +161,5 @@ impl PopulateTree for rlt::Variable {
             .with_children_from(ty.as_ref().map(|x| &x.1), context)
             .with_rlt(context, self)
             .id()
-    }
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for BlockLevel {
-    fn size_of_children(&self, context: &mut Context) {
-        self.0.size_of_children(context)
     }
 }

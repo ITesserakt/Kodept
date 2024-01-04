@@ -1,8 +1,9 @@
+use crate::graph::generic_node::GenericASTNode;
 use crate::graph::traits::PopulateTree;
 use crate::graph::{Identity, SyntaxTree};
 use crate::node_id::NodeId;
-use crate::traits::{Identifiable, Linker};
-use crate::{impl_identifiable_2, with_children, Body, Operation};
+use crate::traits::Linker;
+use crate::{node, wrapper, Body, Operation};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -10,62 +11,43 @@ use kodept_core::structure::span::CodeHolder;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
-use visita::node_group;
 
-#[derive(Debug, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum CodeFlow {
-    If(IfExpression),
+wrapper! {
+    #[derive(Debug, PartialEq, From)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper CodeFlow {
+        if(IfExpression) = GenericASTNode::If(x) => Some(x)
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct IfExpression {
-    id: NodeId<Self>,
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct IfExpression {;
+        pub condition: Identity<Operation>,
+        pub body: Identity<Body>,
+        pub elifs: Vec<ElifExpression>,
+        pub elses: Option<ElseExpression>,
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct ElifExpression {
-    id: NodeId<Self>,
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct ElifExpression {;
+        pub condition: Identity<Operation>,
+        pub body: Identity<Body>,
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct ElseExpression {
-    id: NodeId<Self>,
-}
-
-impl_identifiable_2! {
-    IfExpression, ElifExpression, ElseExpression
-}
-node_group!(family: IfExpression, nodes: [IfExpression, ElifExpression, ElseExpression]);
-
-with_children!(IfExpression => {
-    pub condition: Identity<Operation>
-    pub body: Identity<Body>
-    pub elifs: Vec<ElifExpression>
-    pub elses: Option<ElseExpression>
-});
-
-with_children!(ElifExpression => {
-    pub condition: Identity<Operation>
-    pub body: Identity<Body>
-});
-
-with_children!(ElseExpression => {
-    pub body: Identity<Body>
-});
-
-impl Identifiable for CodeFlow {
-    fn get_id(&self) -> NodeId<Self> {
-        match self {
-            CodeFlow::If(x) => x.get_id().cast(),
-        }
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct ElseExpression {;
+        pub body: Identity<Body>,
     }
 }
 

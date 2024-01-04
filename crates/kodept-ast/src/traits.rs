@@ -83,16 +83,3 @@ where
         ctx.link_existing(self.0, with)
     }
 }
-
-pub(crate) mod macros {
-    #[macro_export]
-    macro_rules! impl_identifiable {
-        ($($t:ty$(,)*)*) => {
-            $(impl $crate::traits::Identifiable for $t {
-                fn get_id(&self) -> $crate::node_id::NodeId<Self> {
-                    self.id.clone()
-                }
-            })*
-        };
-    }
-}

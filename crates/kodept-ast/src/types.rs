@@ -3,7 +3,7 @@ use crate::graph::Identity;
 use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
-use crate::{impl_identifiable_2, with_children};
+use crate::{impl_identifiable, with_children};
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -77,7 +77,7 @@ impl SizeOf for Type {
     }
 }
 
-impl_identifiable_2! { TypeName, ProdType, SumType, TypedParameter, UntypedParameter }
+impl_identifiable! { TypeName, ProdType, SumType, TypedParameter, UntypedParameter }
 
 with_children!(ProdType => {
     pub types: Vec<Type>

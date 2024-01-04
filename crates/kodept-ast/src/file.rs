@@ -2,20 +2,13 @@ use crate::graph::traits::PopulateTree;
 use crate::graph::SyntaxTree;
 use crate::node_id::NodeId;
 use crate::traits::Linker;
-use crate::{impl_identifiable_2, with_children, TopLevel};
+use crate::{node, TopLevel};
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
-
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct FileDeclaration {
-    id: NodeId<FileDeclaration>,
-}
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -25,24 +18,26 @@ pub enum ModuleKind {
     Ordinary,
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct ModuleDeclaration {
-    pub kind: ModuleKind,
-    pub name: String,
-    id: NodeId<ModuleDeclaration>,
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct FileDeclaration {
+        ;
+        pub modules: Vec<ModuleDeclaration>,
+    }
 }
 
-impl_identifiable_2! { FileDeclaration, ModuleDeclaration }
-
-with_children!(FileDeclaration => {
-    pub modules: Vec<ModuleDeclaration>
-});
-
-with_children!(ModuleDeclaration => {
-    pub contents: Vec<TopLevel>
-});
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct ModuleDeclaration {
+        pub kind: ModuleKind,
+        pub name: String,;
+        pub contents: Vec<TopLevel>,
+    }
+}
 
 impl PopulateTree for File {
     type Output = FileDeclaration;
