@@ -2,6 +2,11 @@
 name = "kodept-ast"
 version = "0.2.0"
 edition = "2021"
+authors = ["Владимир Никитин <potyras85@mail.ru>"]
+description = "Simple compiler with dependent types support in mind"
+repository = "https://github.com/ITesserakt/Kodept/tree/rust"
+categories = ["compilers"]
+rust-version = "1.74.0"
 
 [lints]
 workspace = true
