@@ -7,9 +7,8 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::GenericASTNode;
 use crate::graph::NodeId;
-use crate::graph::SyntaxTree;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
 use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
@@ -59,7 +58,7 @@ impl PopulateTree for Struct {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let node = StructDeclaration {
@@ -83,7 +82,7 @@ impl PopulateTree for Enum {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let (kind, name, rest) = match self {
@@ -112,7 +111,7 @@ impl PopulateTree for TopLevelNode {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {

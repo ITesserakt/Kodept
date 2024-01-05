@@ -9,7 +9,7 @@ use kodept_core::structure::span::CodeHolder;
 use visita::node_group;
 
 use crate::graph::NodeId;
-use crate::graph::{Identity, SyntaxTree};
+use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::PopulateTree;
 use crate::traits::{Identifiable, Linker};
 use crate::{impl_identifiable, with_children, Body, Parameter, Type, TypedParameter};
@@ -62,7 +62,7 @@ impl PopulateTree for rlt::BodiedFunction {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder

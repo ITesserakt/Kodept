@@ -7,9 +7,8 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::GenericASTNode;
 use crate::graph::NodeId;
-use crate::graph::SyntaxTree;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
 use crate::{node, wrapper};
@@ -46,7 +45,7 @@ impl PopulateTree for rlt::Term {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
@@ -60,7 +59,7 @@ impl PopulateTree for rlt::Reference {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let ident = match self {

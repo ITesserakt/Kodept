@@ -1,5 +1,6 @@
-use derive_more::{Constructor, IsVariant};
+use derive_more::{From, IsVariant};
 
+use crate::graph::GhostToken;
 use crate::visitor::TraversingResult;
 
 #[derive(Debug)]
@@ -16,16 +17,40 @@ pub enum VisitSide {
     Leaf,
 }
 
-#[derive(Constructor)]
-pub struct VisitGuard<N>(N, VisitSide);
+#[derive(From)]
+pub struct MutAccess<'token>(&'token mut GhostToken);
 
-impl<N> VisitGuard<N> {
+#[derive(From)]
+pub struct RefAccess<'token>(&'token GhostToken);
+
+pub struct VisitGuard<N, Access>(N, VisitSide, Access);
+
+pub type RefVisitGuard<'token, N> = VisitGuard<N, RefAccess<'token>>;
+pub type MutVisitGuard<'token, N> = VisitGuard<N, MutAccess<'token>>;
+
+impl<N, T> VisitGuard<N, T> {
+    pub fn new<U: Into<T>>(node: N, side: VisitSide, access: U) -> Self {
+        Self(node, side, access.into())
+    }
+
     pub fn allow_only<E>(self, matches: VisitSide) -> Result<N, Skip<E>> {
         self.1.guard(matches).map(|_| self.0)
     }
 
     pub fn allow_all(self) -> (N, VisitSide) {
         (self.0, self.1)
+    }
+}
+
+impl<'token, N> VisitGuard<N, MutAccess<'token>> {
+    pub fn access(&mut self) -> &mut GhostToken {
+        self.2 .0
+    }
+}
+
+impl<'token, N> VisitGuard<N, RefAccess<'token>> {
+    pub fn access(&self) -> &GhostToken {
+        self.2 .0
     }
 }
 

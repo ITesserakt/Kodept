@@ -7,10 +7,9 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::GenericASTNode;
 use crate::graph::Identity;
 use crate::graph::NodeId;
-use crate::graph::SyntaxTree;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper};
 
@@ -84,7 +83,7 @@ impl PopulateTree for rlt::new_types::TypeName {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let node = TypeName {
@@ -101,7 +100,7 @@ impl PopulateTree for rlt::TypedParameter {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let node = TypedParameter {
@@ -121,7 +120,7 @@ impl PopulateTree for rlt::Type {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
@@ -151,7 +150,7 @@ impl PopulateTree for rlt::UntypedParameter {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -169,7 +168,7 @@ impl PopulateTree for rlt::Parameter {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {

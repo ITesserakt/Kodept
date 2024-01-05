@@ -2,10 +2,10 @@ use std::cell::{Cell, RefCell};
 use std::io::{Error, Write};
 
 use codespan_reporting::diagnostic::Severity;
+use kodept_ast::graph::GenericASTNode;
 
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
-use kodept_ast_graph::generic_node::GenericASTNode;
 use kodept_core::Named;
 
 use crate::analyzer::Analyzer;
@@ -49,7 +49,7 @@ impl<W: Write> Analyzer for ASTFormatter<W> {
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &self,
-        guard: VisitGuard<Self::Node<'n>>,
+        guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let (node, side) = guard.allow_all();

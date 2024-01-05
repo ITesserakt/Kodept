@@ -6,8 +6,7 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
-use crate::graph::SyntaxTree;
+use crate::graph::{NodeId, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
 use crate::{node, TopLevel};
@@ -46,7 +45,7 @@ impl PopulateTree for File {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -64,7 +63,7 @@ impl PopulateTree for Module {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let (kind, name, rest) = match self {

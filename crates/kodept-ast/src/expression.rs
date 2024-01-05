@@ -12,7 +12,7 @@ use UnaryExpressionKind::*;
 
 use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
-use crate::graph::{Identity, SyntaxTree};
+use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::wrappers::{AOperation, LeftOperation, RightOperation};
 use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
@@ -151,7 +151,7 @@ impl PopulateTree for rlt::ExpressionBlock {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -169,7 +169,7 @@ impl PopulateTree for rlt::Operation {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
@@ -229,7 +229,7 @@ impl PopulateTree for rlt::Application {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -253,7 +253,7 @@ impl PopulateTree for rlt::Expression {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {

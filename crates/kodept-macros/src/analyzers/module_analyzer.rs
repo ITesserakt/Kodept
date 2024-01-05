@@ -3,12 +3,12 @@ use std::convert::Infallible;
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 
-use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
+use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
 use kodept_core::impl_named;
-use kodept_core::structure::Located;
 use kodept_core::structure::rlt::Module;
+use kodept_core::structure::Located;
 
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;
@@ -55,7 +55,7 @@ impl Analyzer for GlobalModuleAnalyzer {
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &self,
-        guard: VisitGuard<Self::Node<'n>>,
+        guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Entering)?;
@@ -89,7 +89,7 @@ impl Analyzer for ModuleUniquenessAnalyzer {
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &self,
-        guard: VisitGuard<Self::Node<'n>>,
+        guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let tree = context.tree();

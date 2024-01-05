@@ -27,16 +27,16 @@ impl Default for ASTBuilder {
 }
 
 impl ASTBuilder {
-    pub fn recursive_build<'n, 'arena, C: CodeHolder>(
-        &'arena mut self,
+    pub fn recursive_build<'n, C: CodeHolder>(
+        &mut self,
         from: &'n rlt::File,
         code: &C,
-    ) -> (SyntaxTree<'_>, RLTAccessor<'n>) {
+    ) -> (SyntaxTree, RLTAccessor<'n>) {
         let mut links = RLTAccessor::default();
         let mut linker = ASTLinker(self, &mut links, code);
         let mut tree = SyntaxTree::new();
         from.convert(&mut tree, &mut linker);
-        (tree, links)
+        (tree.build(), links)
     }
 }
 

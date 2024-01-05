@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use kodept_core::structure::span::CodeHolder;
 use tracing::warn;
 
-use crate::graph::SyntaxTree;
+use kodept_core::structure::span::CodeHolder;
+
 use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 
 pub trait Identifiable: Sized {
@@ -92,7 +93,7 @@ pub trait PopulateTree {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output>;
 }

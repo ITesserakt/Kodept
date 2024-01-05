@@ -7,9 +7,9 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::GenericASTNode;
+use crate::graph::Identity;
 use crate::graph::NodeId;
-use crate::graph::{Identity, SyntaxTree};
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper, Body, Operation};
 
@@ -57,7 +57,7 @@ impl PopulateTree for rlt::IfExpr {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -78,7 +78,7 @@ impl PopulateTree for rlt::ElifExpr {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -97,7 +97,7 @@ impl PopulateTree for rlt::ElseExpr {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder

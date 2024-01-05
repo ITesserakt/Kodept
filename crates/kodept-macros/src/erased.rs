@@ -1,9 +1,9 @@
 use std::fmt::{Debug, Formatter};
 
 use derive_more::From;
+use kodept_ast::graph::{GenericASTNode, GhostToken};
 
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
-use kodept_ast_graph::generic_node::GenericASTNode;
 use kodept_core::Named;
 
 use crate::analyzer::Analyzer;
@@ -20,6 +20,7 @@ where
         &self,
         node: &GenericASTNode,
         side: VisitSide,
+        token: &GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error>;
 
@@ -41,6 +42,7 @@ where
         &self,
         node: &mut GenericASTNode,
         side: VisitSide,
+        token: &mut GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error>;
 
@@ -93,12 +95,13 @@ where
         &self,
         node: &mut GenericASTNode,
         side: VisitSide,
+        token: &mut GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error> {
         let Ok(node) = node.try_into() else {
             return Ok(());
         };
-        <Self as Transformer>::transform(self, VisitGuard::new(node, side), context)
+        <Self as Transformer>::transform(self, VisitGuard::new(node, side, token), context)
             .skipped()
             .map_err(|e| e.into())
     }
@@ -119,12 +122,13 @@ where
         &self,
         node: &GenericASTNode,
         side: VisitSide,
+        token: &GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error> {
         let Ok(node) = node.try_into() else {
             return Ok(());
         };
-        <Self as Analyzer>::analyze(self, VisitGuard::new(node, side), context)
+        <Self as Analyzer>::analyze(self, VisitGuard::new(node, side, token), context)
             .skipped()
             .map_err(|e| e.into())
     }

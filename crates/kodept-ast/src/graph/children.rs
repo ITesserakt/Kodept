@@ -48,7 +48,10 @@ pub mod macros {
             #[allow(private_interfaces)]
             #[allow(clippy::needless_lifetimes)]
             impl $t {
-                $vis fn $name<'a>(&self, tree: &'a $crate::graph::SyntaxTree) -> $crate::graph::ChildrenRef<'a, $t, $crate::graph::ContainerT<$c_t>> {
+                $vis fn $name<'a>(
+                    &self,
+                    tree: &'a $crate::graph::SyntaxTree
+                ) -> $crate::graph::ChildrenRef<'a, $t, $crate::graph::ContainerT<$c_t>> {
                     <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>>>::get_children(self, tree)
                 }
 

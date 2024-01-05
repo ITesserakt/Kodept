@@ -1,6 +1,6 @@
-use kodept_ast::visitor::visit_side::VisitGuard;
+use kodept_ast::graph::GenericASTNode;
+use kodept_ast::visitor::visit_side::{RefAccess, RefVisitGuard, VisitGuard};
 use kodept_ast::visitor::TraversingResult;
-use kodept_ast_graph::generic_node::GenericASTNode;
 use kodept_core::code_point::CodePoint;
 
 use crate::traits::{Context, UnrecoverableError};
@@ -11,7 +11,7 @@ pub trait Analyzer {
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &self,
-        guard: VisitGuard<Self::Node<'n>>,
+        guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error>;
 }
@@ -28,6 +28,6 @@ impl AccessExt for Option<CodePoint> {
 
 impl AccessExt for Option<Vec<CodePoint>> {
     fn or_unknown(self) -> Vec<CodePoint> {
-        self.unwrap_or(vec![])
+        self.unwrap_or_default()
     }
 }

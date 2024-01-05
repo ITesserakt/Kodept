@@ -1,6 +1,7 @@
 use crate::traversing::OptionalContext::Defined;
 use crate::utils::graph::topological_layers;
 use itertools::{Either, Itertools};
+use kodept_ast::graph::GhostToken;
 use kodept_macros::erased::{Erased, ErasedAnalyzer};
 use kodept_macros::traits::Context;
 use petgraph::algo::is_cyclic_directed;
@@ -63,24 +64,23 @@ where
         context: &mut C,
         analyzers: &[&dyn ErasedAnalyzer<'c, C, Error = E>],
     ) -> Result<(), Vec<E>> {
-        context
-            .tree()
-            .dfs()
-            .iter()
-            .map(|(node, side)| {
-                analyzers
-                    .iter()
-                    .try_for_each(|a| a.analyze(node, side, context))
-            })
-            .fold(Ok(()), |acc, next| match (acc, next) {
-                (Ok(_), Ok(_)) => Ok(()),
-                (Ok(_), Err(e)) => Err(vec![e]),
-                (Err(e), Ok(_)) => Err(e),
-                (Err(mut e1), Err(e2)) => {
-                    e1.push(e2);
-                    Err(e1)
-                }
-            })
+        let token = GhostToken::new();
+        let mut errors = Vec::new();
+
+        context.tree().dfs().iter(&token, |node, side| {
+            match analyzers
+                .iter()
+                .try_for_each(|a| a.analyze(node, side, &token, context))
+            {
+                Ok(_) => {}
+                Err(e) => errors.push(e),
+            };
+        });
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
 

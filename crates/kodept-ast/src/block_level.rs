@@ -10,10 +10,9 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::Identity;
 use crate::graph::NodeId;
-use crate::graph::SyntaxTree;
 use crate::graph::{GenericASTNode, NodeUnion};
+use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
 
@@ -93,7 +92,7 @@ impl PopulateTree for rlt::Body {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
@@ -108,7 +107,7 @@ impl PopulateTree for BlockLevelNode {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
@@ -125,7 +124,7 @@ impl PopulateTree for rlt::InitializedVariable {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
@@ -144,7 +143,7 @@ impl PopulateTree for rlt::Variable {
 
     fn convert<'a>(
         &'a self,
-        builder: &mut SyntaxTree,
+        builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker<'a> + CodeHolder),
     ) -> NodeId<Self::Output> {
         let (kind, name, ty) = match self {
