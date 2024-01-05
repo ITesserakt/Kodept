@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
-use crate::graph::{Identifiable, SyntaxTree};
+use crate::graph::{GhostToken, Identifiable, SyntaxTree};
 use crate::make_ast_node_adaptor;
 use crate::*;
 
@@ -22,13 +22,13 @@ pub trait NodeWithParent {
 }
 
 pub trait Node: Identifiable {
-    fn parent<'b>(&self, tree: &'b SyntaxTree) -> &'b Self::Parent
+    fn parent<'b>(&self, tree: &'b SyntaxTree, token: &'b GhostToken) -> &'b Self::Parent
     where
         Self: NodeWithParent + 'static,
         for<'a> &'a Self::Parent: TryFrom<&'a GenericASTNode>,
     {
         let id = self.get_id();
-        tree.parent_of(id)
+        tree.parent_of(id, token)
     }
 
     fn parent_mut<'b>(&self, tree: &'b mut SyntaxTree) -> &'b mut Self::Parent

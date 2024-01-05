@@ -7,7 +7,7 @@ use tracing::warn;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::generic_node::{Node, NodeWithParent};
-use crate::graph::nodes::{GhostToken, OwnedNode, RcNode, RefNode};
+use crate::graph::nodes::{BorrowedNode, GhostToken, OwnedNode, RefNode};
 use crate::graph::utils::OptVec;
 use crate::graph::{GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
@@ -22,7 +22,7 @@ pub struct AccessingStage;
 #[derive(Debug)]
 pub struct SyntaxTree<Stage = AccessingStage> {
     id_map: HashMap<NodeId<GenericASTNode>, OwnedNode>,
-    root: Option<RcNode<GenericASTNode>>,
+    root: Option<BorrowedNode<GenericASTNode>>,
     last_id: usize,
     stage: Stage,
 }
@@ -37,7 +37,7 @@ pub struct ChildScope<'arena, T> {
 
 #[derive(Clone)]
 pub struct Dfs<'arena> {
-    start: RcNode,
+    start: BorrowedNode,
     mark: FixedBitSet,
     _phantom: PhantomData<&'arena ()>,
 }
@@ -101,18 +101,19 @@ impl SyntaxTree {
         }
     }
 
-    pub fn children_of<'b, T, U>(&'b self, id: NodeId<T>) -> OptVec<&'b U>
+    pub fn children_of<'b, T, U>(&'b self, id: NodeId<T>, token: &'b GhostToken) -> OptVec<&U>
     where
         for<'a> &'a U: TryFrom<&'a GenericASTNode>,
     {
-        todo!()
-        // let node = &self.id_map[&id.cast()];
-        // node.borrow(&token)
-        //     .edges
-        //     .iter()
-        //     .filter_map(|x| x.upgrade())
-        //     .filter_map(|x| (&x.borrow(&token).data).try_into().ok())
-        //     .collect()
+        let node = &self.id_map[&id.cast()];
+        let edges = &node.ro(token).edges;
+        edges
+            .iter()
+            .filter_map(|x| x.upgrade())
+            .map(|x| x.ro(token).uid)
+            .map(|x| &self.id_map[&NodeId::new(x)].ro(token).data)
+            .filter_map(|x| x.try_into().ok())
+            .collect()
     }
 
     pub fn children_of_id<T, U, F, A>(&self, id: NodeId<T>, mut f: F) -> OptVec<A>
@@ -150,21 +151,20 @@ impl SyntaxTree {
         data.try_into().ok()
     }
 
-    pub fn parent_of<T>(&self, id: NodeId<T>) -> &T::Parent
+    pub fn parent_of<'a, T>(&'a self, id: NodeId<T>, token: &'a GhostToken) -> &T::Parent
     where
         T: NodeWithParent + Node,
-        for<'a> &'a T::Parent: TryFrom<&'a GenericASTNode>,
+        for<'b> &'b T::Parent: TryFrom<&'b GenericASTNode>,
     {
-        todo!()
-        // GhostToken::new(|token| {
-        //     self.id_map[&id.cast()]
-        //         .borrow(&token)
-        //         .parent
-        //         .and_then(|x| x.upgrade())
-        //         .map(|x| &x.borrow(&token).data)
-        //         .and_then(|x| x.try_into().ok())
-        //         .unwrap_or_else(|| panic!("Node {:?} has parent with wrong type", id))
-        // })
+        let node = &self.id_map[&id.cast()];
+        let parent = &node.ro(token).parent;
+        let parent = &parent.as_ref().and_then(|x| x.upgrade()).expect(
+            "NodeWithParent contract violated: such kind of nodes should always have a parent",
+        );
+        let parent_id = &parent.ro(token).uid;
+        let parent = &self.id_map[&NodeId::new(*parent_id)];
+        let parent = parent.data(token);
+        parent.try_into().ok().expect("Node has wrong type")
     }
 
     pub fn parent_of_mut<T>(&self, id: NodeId<T>) -> &mut T::Parent
@@ -212,18 +212,18 @@ impl<'arena> Dfs<'arena> {
 
     fn dfs_mut_impl(
         &mut self,
-        current: RcNode,
+        current: BorrowedNode,
         token: &mut GhostToken,
         mut f: &mut dyn FnMut(RefNode<GenericASTNode>, VisitSide, &mut GhostToken),
     ) {
-        let Some(current) = current.upgrade().map(OwnedNode::from) else {
+        let Some(current) = current.upgrade() else {
             return;
         };
-        let id = current.id(token);
+        let id = current.ro(token).uid;
         debug_assert!(!self.is_visited(id), "Syntax tree cannot contain cycles");
         self.visit(id);
 
-        match current.edges(token) {
+        match &current.ro(token).edges {
             OptVec::Empty => f(&current, VisitSide::Leaf, token),
             OptVec::Single(child_weak) => {
                 let child = child_weak.clone();
@@ -244,20 +244,20 @@ impl<'arena> Dfs<'arena> {
 
     fn dfs_impl(
         &mut self,
-        current: &RcNode,
+        current: &BorrowedNode,
         token: &GhostToken,
         mut f: &mut dyn FnMut(RefNode<GenericASTNode>, VisitSide, &GhostToken),
     ) {
-        let Some(current) = current.upgrade().map(OwnedNode::from) else {
+        let Some(current) = current.upgrade() else {
             warn!("Node commit suicide");
             return;
         };
 
-        let id = current.id(token);
+        let id = current.ro(token).uid;
         debug_assert!(!self.is_visited(id), "Syntax tree cannot contain cycles");
         self.visit(id);
 
-        match current.edges(token) {
+        match &current.ro(token).edges {
             OptVec::Empty => f(&current, VisitSide::Leaf, token),
             OptVec::Single(child_weak) => {
                 f(&current, VisitSide::Entering, token);
@@ -274,7 +274,7 @@ impl<'arena> Dfs<'arena> {
         };
     }
 
-    pub fn new(start: impl Into<RcNode>) -> Self {
+    pub fn new(start: impl Into<BorrowedNode>) -> Self {
         Self {
             start: start.into(),
             mark: Default::default(),

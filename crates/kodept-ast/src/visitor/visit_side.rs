@@ -1,4 +1,4 @@
-use derive_more::{From, IsVariant};
+use derive_more::{Deref, From, IsVariant};
 
 use crate::graph::GhostToken;
 use crate::visitor::TraversingResult;
@@ -17,10 +17,12 @@ pub enum VisitSide {
     Leaf,
 }
 
-#[derive(From)]
+#[derive(From, Deref)]
+#[deref(forward)]
 pub struct MutAccess<'token>(&'token mut GhostToken);
 
-#[derive(From)]
+#[derive(From, Deref)]
+#[deref(forward)]
 pub struct RefAccess<'token>(&'token GhostToken);
 
 pub struct VisitGuard<N, Access>(N, VisitSide, Access);
@@ -33,12 +35,12 @@ impl<N, T> VisitGuard<N, T> {
         Self(node, side, access.into())
     }
 
-    pub fn allow_only<E>(self, matches: VisitSide) -> Result<N, Skip<E>> {
-        self.1.guard(matches).map(|_| self.0)
+    pub fn allow_only<E>(self, matches: VisitSide) -> Result<(N, T), Skip<E>> {
+        self.1.guard(matches).map(|_| (self.0, self.2))
     }
 
-    pub fn allow_all(self) -> (N, VisitSide) {
-        (self.0, self.1)
+    pub fn allow_all(self) -> (N, T, VisitSide) {
+        (self.0, self.2, self.1)
     }
 }
 

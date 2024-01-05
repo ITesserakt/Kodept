@@ -52,7 +52,7 @@ impl<W: Write> Analyzer for ASTFormatter<W> {
         guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let (node, side) = guard.allow_all();
+        let (node, _, side) = guard.allow_all();
         let mut f = self.writer.borrow_mut();
 
         match side {

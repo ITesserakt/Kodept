@@ -40,13 +40,13 @@ impl Analyzer for VariableUniquenessAnalyzer {
         guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let node = guard.allow_only(VisitSide::Exiting)?;
+        let (node, token) = guard.allow_only(VisitSide::Exiting)?;
         let tree = context.tree();
         let variables = node
-            .items(&tree)
+            .items(&tree, &token)
             .into_iter()
             .filter_map(|it| it.as_init_var())
-            .group_by(|it| &it.variable(&tree).name);
+            .group_by(|it| &it.variable(&tree, &token).name);
 
         for (name, variables) in variables.into_iter() {
             let variables = variables.collect_vec();

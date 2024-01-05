@@ -3,7 +3,11 @@ use crate::graph::GenericASTNode;
 use derive_more::{Deref, DerefMut, From};
 use qcell::{TLCell, TLCellOwner};
 use std::fmt::{Debug, Formatter};
+use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
+
+type CellImpl<T> = TLCell<Ghost, T>;
+type CellOwnerImpl = TLCellOwner<Ghost>;
 
 #[derive(Debug)]
 pub struct Ghost;
@@ -11,20 +15,27 @@ pub struct Ghost;
 pub struct OwnedNodeImpl<T> {
     pub data: T,
     pub uid: usize,
-    pub parent: Option<RcNode<T>>,
-    pub edges: OptVec<RcNode<T>>,
+    pub parent: Option<BorrowedNode<T>>,
+    pub edges: OptVec<BorrowedNode<T>>,
 }
 
 #[derive(Deref, From)]
 #[deref(forward)]
-pub struct OwnedNode<T = GenericASTNode>(Arc<TLCell<Ghost, OwnedNodeImpl<T>>>);
+pub struct OwnedNode<T = GenericASTNode>(Arc<CellImpl<OwnedNodeImpl<T>>>);
 
 #[derive(Deref, From)]
-pub struct RcNode<T = GenericASTNode>(Weak<TLCell<Ghost, OwnedNodeImpl<T>>>);
+pub struct BorrowedNode<T = GenericASTNode>(Weak<CellImpl<OwnedNodeImpl<T>>>);
 #[derive(Deref, DerefMut, From)]
-pub struct GhostToken(TLCellOwner<Ghost>);
+pub struct GhostToken(CellOwnerImpl);
 
-pub type RefNode<'arena, T = GenericASTNode> = &'arena TLCell<Ghost, OwnedNodeImpl<T>>;
+#[derive(Deref)]
+pub struct RefOwnedNode<'arena, T = GenericASTNode> {
+    #[deref]
+    arc: Arc<CellImpl<OwnedNodeImpl<T>>>,
+    _phantom: PhantomData<&'arena ()>,
+}
+
+pub type RefNode<'arena, T = GenericASTNode> = &'arena CellImpl<OwnedNodeImpl<T>>;
 
 impl<T> OwnedNode<T> {
     pub fn new(data: T, uid: usize) -> Self {
@@ -36,7 +47,7 @@ impl<T> OwnedNode<T> {
         })))
     }
 
-    pub fn with_parent(data: T, uid: usize, parent: RcNode<T>) -> Self {
+    pub fn with_parent(data: T, uid: usize, parent: BorrowedNode<T>) -> Self {
         Self(Arc::new(TLCell::new(OwnedNodeImpl {
             data,
             uid,
@@ -45,15 +56,15 @@ impl<T> OwnedNode<T> {
         })))
     }
 
-    pub fn share(&self) -> RcNode<T> {
-        RcNode(Arc::downgrade(&self.0))
+    pub fn share(&self) -> BorrowedNode<T> {
+        BorrowedNode(Arc::downgrade(&self.0))
     }
 
     pub fn data<'a>(&'a self, token: &'a GhostToken) -> &T {
         &self.0.ro(token).data
     }
 
-    pub fn edges<'a>(&'a self, token: &'a GhostToken) -> &OptVec<RcNode<T>> {
+    pub fn edges<'a>(&'a self, token: &'a GhostToken) -> &OptVec<BorrowedNode<T>> {
         &self.0.ro(token).edges
     }
 
@@ -74,9 +85,9 @@ impl<T> Clone for OwnedNode<T> {
     }
 }
 
-impl<T> Clone for RcNode<T> {
+impl<T> Clone for BorrowedNode<T> {
     fn clone(&self) -> Self {
-        RcNode(self.0.clone())
+        BorrowedNode(self.0.clone())
     }
 }
 
@@ -89,7 +100,7 @@ impl<T: Debug> Debug for OwnedNode<T> {
     }
 }
 
-impl<T: Debug> Debug for RcNode<T> {
+impl<T: Debug> Debug for BorrowedNode<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RcNode")
             .field("strong_count", &Weak::strong_count(&self.0))

@@ -58,12 +58,12 @@ impl Analyzer for GlobalModuleAnalyzer {
         guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let node = guard.allow_only(VisitSide::Entering)?;
+        let (node, token) = guard.allow_only(VisitSide::Entering)?;
         if let [m @ ModuleDeclaration {
             kind: ModuleKind::Ordinary,
             name,
             ..
-        }] = node.modules(&context.tree()).as_slice()
+        }] = node.modules(&context.tree(), &*token).as_slice()
         {
             match context.access(*m) {
                 Some(Module::Global { .. }) => {}
@@ -93,8 +93,11 @@ impl Analyzer for ModuleUniquenessAnalyzer {
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let tree = context.tree();
-        let node = guard.allow_only(VisitSide::Entering)?;
-        let group = node.modules(&tree).into_iter().group_by(|it| &it.name);
+        let (node, token) = guard.allow_only(VisitSide::Entering)?;
+        let group = node
+            .modules(&tree, &*token)
+            .into_iter()
+            .group_by(|it| &it.name);
         let non_unique = group
             .into_iter()
             .map(|it| (it.0, it.1.collect_vec()))
