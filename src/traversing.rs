@@ -1,5 +1,3 @@
-use std::ops::{Deref, DerefMut};
-
 use itertools::{Either, Itertools};
 use petgraph::algo::is_cyclic_directed;
 use petgraph::prelude::{DiGraph, NodeIndex};
@@ -8,7 +6,6 @@ use kodept_ast::graph::GhostToken;
 use kodept_macros::erased::{Erased, ErasedAnalyzer};
 use kodept_macros::traits::Context;
 
-use crate::traversing::OptionalContext::Defined;
 use crate::utils::graph::topological_layers;
 
 type DefaultErased<'c, C, E> = Erased<'c, C, E>;
@@ -91,7 +88,7 @@ impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
     fn traverse(&self, mut context: C) -> Result<C, (Vec<E>, C)> {
         let sorted = topological_layers(&self.inner);
         for layer in sorted {
-            let (transformers, analyzers): (Vec<_>, Vec<_>) = layer
+            let (_transformers, analyzers): (Vec<_>, Vec<_>) = layer
                 .into_iter()
                 .map(|x| &self.inner[x])
                 .partition_map(|e| match e {
@@ -106,43 +103,5 @@ impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
             };
         }
         Ok(context)
-    }
-}
-
-#[derive(Default)]
-enum OptionalContext<C> {
-    Defined(C),
-    #[default]
-    None,
-}
-
-impl<C> OptionalContext<C> {
-    pub const TAKEN_MSG: &'static str = "Cannot get context that was taken";
-
-    pub fn into_inner(self) -> C {
-        match self {
-            Defined(c) => c,
-            OptionalContext::None => unreachable!("{}", Self::TAKEN_MSG),
-        }
-    }
-}
-
-impl<C> Deref for OptionalContext<C> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Defined(c) => c,
-            OptionalContext::None => unreachable!("{}", OptionalContext::<C>::TAKEN_MSG),
-        }
-    }
-}
-
-impl<C> DerefMut for OptionalContext<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match self {
-            Defined(c) => c,
-            OptionalContext::None => unreachable!("{}", OptionalContext::<C>::TAKEN_MSG),
-        }
     }
 }

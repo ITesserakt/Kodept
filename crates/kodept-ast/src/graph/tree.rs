@@ -116,7 +116,7 @@ impl SyntaxTree {
             .collect()
     }
 
-    pub fn children_of_id<T, U, F, A>(&self, id: NodeId<T>, mut f: F) -> OptVec<A>
+    pub fn children_of_id<T, U, F, A>(&self, _id: NodeId<T>, _f: F) -> OptVec<A>
     where
         F: FnMut(&mut U) -> A,
         for<'a> &'a mut U: TryFrom<&'a mut GenericASTNode>,
@@ -167,7 +167,7 @@ impl SyntaxTree {
         parent.try_into().ok().expect("Node has wrong type")
     }
 
-    pub fn parent_of_mut<T>(&self, id: NodeId<T>) -> &mut T::Parent
+    pub fn parent_of_mut<T>(&self, _id: NodeId<T>) -> &mut T::Parent
     where
         T: NodeWithParent + Node,
         for<'a> &'a mut T::Parent: TryFrom<&'a mut GenericASTNode>,

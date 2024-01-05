@@ -167,8 +167,6 @@ impl<'t> RecreateContext<TokenStream<'t>> for CodePoint {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-
     use nom::InputTake;
 
     use kodept_core::code_point::CodePoint;
@@ -187,7 +185,7 @@ mod tests {
         let stream = TokenStream::new(&slice);
 
         let (tail, body) = stream.take_split(0);
-        assert_eq!(body.slice.deref(), &[]);
-        assert_eq!(tail.slice.deref(), slice);
+        assert_eq!(body.slice, &[]);
+        assert_eq!(tail.slice, slice);
     }
 }
