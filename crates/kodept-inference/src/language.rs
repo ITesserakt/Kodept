@@ -1,6 +1,6 @@
+use derive_more::{Display, From};
 use std::fmt::{Display, Formatter};
 
-use derive_more::{Display, From};
 use itertools::Itertools;
 
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
@@ -122,8 +122,8 @@ impl<S: Into<String>> From<S> for Var {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::language::{app, lambda, Language, Literal, r#let, var};
-    use crate::r#type::{fun1, Tuple, Union, var as t_var};
+    use crate::language::{app, lambda, r#let, var, Language, Literal};
+    use crate::r#type::{fun1, var as t_var, Tuple, Union};
 
     #[test]
     fn test_infer_language() {

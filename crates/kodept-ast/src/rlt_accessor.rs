@@ -9,9 +9,9 @@ use size_of::SizeOf;
 
 use kodept_core::structure::rlt;
 
-use crate::*;
 use crate::graph::NodeId;
 use crate::traits::Identifiable;
+use crate::*;
 
 make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
     derive(Hash, PartialEq, Eq, From, Debug, TryInto),

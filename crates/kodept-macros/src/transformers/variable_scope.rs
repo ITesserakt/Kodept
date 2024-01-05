@@ -3,7 +3,7 @@ use std::mem::take;
 
 use kodept_ast::{BlockLevel, ExpressionBlock};
 use kodept_ast::visitor::TraversingResult;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::visitor::visit_side::{MutVisitGuard, VisitGuard, VisitSide};
 use kodept_core::impl_named;
 
 use crate::traits::Context;
@@ -20,10 +20,10 @@ impl Transformer for VariableScopeTransformer {
 
     fn transform<'n, 'c>(
         &self,
-        guard: VisitGuard<Self::Node<'n>>,
+        guard: MutVisitGuard<Self::Node<'n>>,
         context: &mut impl Context<'c>,
     ) -> TraversingResult<Self::Error> {
-        let node = guard.allow_only(VisitSide::Exiting)?;
+        let (node, token) = guard.allow_only(VisitSide::Exiting)?;
         let items = take(&mut node.items());
         *node = Self::step(items, vec![], context, node);
         Ok(())

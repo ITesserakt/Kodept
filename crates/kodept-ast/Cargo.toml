@@ -16,7 +16,7 @@ size-of = ["dep:size-of"]
 [dependencies]
 kodept-core = { path = "../kodept-core" }
 
-derive_more = { version = "0.99", features = ["from", "try_into", "constructor"] }
+derive_more.workspace = true
 serde = { version = "1.0.188", optional = true, features = ["derive"] }
 size-of = { version = "0.1.5", optional = true }
 tracing = "0.1.37"

@@ -13,7 +13,7 @@ default = []
 size-of = ["dep:size-of"]
 
 [dependencies]
-derive_more = { version = "0.99", features = ["constructor", "display", "from", "into"] }
+derive_more.workspace = true
 itertools.workspace = true
 pathdiff = "0.2.1"
 size-of = { version = "0.1.5", optional = true }

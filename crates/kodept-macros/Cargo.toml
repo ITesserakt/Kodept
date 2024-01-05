@@ -18,8 +18,8 @@ kodept-core = { path = "../kodept-core", version = "0.2" }
 
 codespan = "0.11.1"
 codespan-reporting = "0.11.1"
-derive_more = { version = "0.99", features = ["try_into"] }
-size-of = { version = "0.1.5", optional = true }
+derive_more.workspace = true
+size-of = { optional = true, workspace = true }
 tracing = "0.1.37"
 itertools.workspace = true
 petgraph = "0.6.4"

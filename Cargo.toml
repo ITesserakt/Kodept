@@ -16,11 +16,15 @@ members = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-nom = "^7.1.0"
-thiserror = "^1.0"
-size-of = "^0.1.5"
-extend = "^1.2.0"
-itertools = "^0.10"
+nom = "7.1"
+thiserror = "1.0"
+size-of = "0.1"
+extend = "1.2"
+itertools = "0.12"
+
+[workspace.dependencies.derive_more]
+version = "0.99"
+features = ["display", "into", "from", "deref", "deref_mut", "constructor", "try_into", "is_variant"]
 
 [workspace.lints]
 clippy.suspicious = "deny"
@@ -40,7 +44,7 @@ kodept-macros = { path = "crates/kodept-macros", features = ["size-of"] }
 anyhow = "1.0.75"
 clap = { version = "4.4.6", features = ["derive", "env"] }
 codespan-reporting = "0.11.1"
-derive_more = { version = "0.99", features = ["display"] }
+derive_more.workspace = true
 extend.workspace = true
 indicatif = "0.17.7"
 itertools.workspace = true

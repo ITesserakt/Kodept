@@ -16,13 +16,13 @@ enum-iter = ["dep:enum-iterator"]
 [dependencies]
 kodept-core = { path = "../kodept-core" }
 
-derive_more = { version = "0.99", features = ["into", "from"] }
+derive_more.workspace = true
 enum-iterator = { version = "1.4.1", optional = true }
 extend = { workspace = true }
 nom = { workspace = true }
 nom-supreme = "0.8.0"
-nonempty-collections = "0.1.1"
-size-of = { version = "0.1.5", optional = true }
+nonempty-collections = "0.1"
+size-of = { optional = true, workspace = true }
 thiserror = "1.0.44"
 
 [dev-dependencies]
