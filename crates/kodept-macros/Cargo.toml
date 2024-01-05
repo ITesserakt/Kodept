@@ -10,10 +10,8 @@ default = []
 size-of = ["dep:size-of"]
 
 [dependencies]
-kodept-ast = { path = "../kodept-ast", version = "0.1" }
+kodept-ast = { path = "../kodept-ast", version = "0.2" }
 kodept-core = { path = "../kodept-core", version = "0.2" }
-
-visita = { path = "../visita", version = "0.3" }
 
 codespan = "0.11.1"
 codespan-reporting = "0.11.1"

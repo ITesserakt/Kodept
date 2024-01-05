@@ -1,7 +1,8 @@
 #![allow(clippy::needless_lifetimes)]
 
-use crate::graph::utils::{FromOptVec, OptVec};
 use std::any::type_name;
+
+use crate::graph::utils::{FromOptVec, OptVec};
 
 #[repr(transparent)]
 pub struct Identity<T>(pub T);

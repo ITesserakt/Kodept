@@ -1,16 +1,18 @@
-use clap::{Args, Parser, ValueEnum};
-use codespan_reporting::term::termcolor::StandardStream;
-use codespan_reporting::term::{ColorArg, Config};
-use derive_more::Display;
-use kodept::codespan_settings::{CodespanSettings, StreamOutput};
-use kodept_core::loader::{Loader, LoadingError};
 use std::convert::Infallible;
 use std::ffi::OsString;
-use std::io::{stdin, Read};
+use std::io::{Read, stdin};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
+
+use clap::{Args, Parser, ValueEnum};
+use codespan_reporting::term::{ColorArg, Config};
+use codespan_reporting::term::termcolor::StandardStream;
+use derive_more::Display;
 use tracing::Level;
+
+use kodept::codespan_settings::{CodespanSettings, StreamOutput};
+use kodept_core::loader::{Loader, LoadingError};
 
 const ABOUT_MESSAGE: &str =
     "Typechecks or interprets passed INPUT using Kodept programming language";

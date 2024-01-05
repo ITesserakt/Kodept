@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
+use crate::{node, wrapper};
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::Identity;
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]

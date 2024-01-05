@@ -2,10 +2,10 @@ use std::cell::{Cell, RefCell};
 use std::io::{Error, Write};
 
 use codespan_reporting::diagnostic::Severity;
-use kodept_ast::graph::GenericASTNode;
 
-use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitGuard, VisitSide};
+use kodept_ast::graph::GenericASTNode;
 use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
 use kodept_core::Named;
 
 use crate::analyzer::Analyzer;

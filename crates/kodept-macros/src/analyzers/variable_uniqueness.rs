@@ -3,12 +3,12 @@ use std::convert::Infallible;
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 
-use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
 use kodept_ast::ExpressionBlock;
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
 use kodept_core::impl_named;
+use kodept_core::structure::{Located, rlt};
 use kodept_core::structure::rlt::Variable;
-use kodept_core::structure::{rlt, Located};
 
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;

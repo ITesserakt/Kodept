@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use fixedbitset::FixedBitSet;
@@ -6,10 +6,10 @@ use tracing::warn;
 
 use kodept_core::structure::span::CodeHolder;
 
+use crate::graph::{GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::graph::generic_node::{Node, NodeWithParent};
 use crate::graph::nodes::{BorrowedNode, GhostToken, OwnedNode, RefNode};
 use crate::graph::utils::OptVec;
-use crate::graph::{GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};
 use crate::visitor::visit_side::VisitSide;

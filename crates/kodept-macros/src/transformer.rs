@@ -1,6 +1,6 @@
 use kodept_ast::graph::GenericASTNode;
-use kodept_ast::visitor::visit_side::{MutVisitGuard, VisitGuard};
 use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::MutVisitGuard;
 
 use crate::traits::{Context, UnrecoverableError};
 

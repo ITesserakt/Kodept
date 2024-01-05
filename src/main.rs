@@ -1,12 +1,14 @@
-mod cli;
-mod stage;
+use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
+
+use kodept::macro_context::ErrorReported;
 
 use crate::stage::{
     BuildingAST, BuildingRLT, Emitting, PredefinedTraverseSet, Prepare, Reading, Traversing,
 };
-use indicatif::{ProgressBar, ProgressStyle};
-use kodept::macro_context::ErrorReported;
-use rayon::prelude::*;
+
+mod cli;
+mod stage;
 
 type WideError = anyhow::Error;
 

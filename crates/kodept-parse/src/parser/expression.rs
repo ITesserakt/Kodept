@@ -1,16 +1,16 @@
 use nom::branch::alt;
-use nom::sequence::tuple;
 use nom::Parser;
+use nom::sequence::tuple;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
+use crate::{function, ParseResult};
 use crate::lexer::Keyword::Lambda;
 use crate::lexer::Operator::Flow;
-use crate::parser::nom::{comma_separated0, match_token};
 use crate::parser::{code_flow, literal, operator, term};
+use crate::parser::nom::{comma_separated0, match_token};
 use crate::token_stream::TokenStream;
-use crate::{function, ParseResult};
 
 fn lambda(input: TokenStream) -> ParseResult<rlt::Expression> {
     tuple((

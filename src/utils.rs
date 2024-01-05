@@ -1,8 +1,8 @@
 pub mod graph {
-    use petgraph::visit::{
-        FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, VisitMap, Visitable,
-    };
     use petgraph::Direction;
+    use petgraph::visit::{
+        FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, Visitable, VisitMap,
+    };
 
     fn leaves<G, NodeId>(graph: G) -> Vec<NodeId>
     where

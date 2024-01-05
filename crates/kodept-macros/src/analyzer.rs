@@ -1,6 +1,6 @@
 use kodept_ast::graph::GenericASTNode;
-use kodept_ast::visitor::visit_side::{RefAccess, RefVisitGuard, VisitGuard};
 use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::RefVisitGuard;
 use kodept_core::code_point::CodePoint;
 
 use crate::traits::{Context, UnrecoverableError};

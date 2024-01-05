@@ -1,8 +1,8 @@
 use std::fmt::{Debug, Formatter};
 
 use derive_more::From;
-use kodept_ast::graph::{GenericASTNode, GhostToken};
 
+use kodept_ast::graph::{GenericASTNode, GhostToken};
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
 use kodept_core::Named;
 

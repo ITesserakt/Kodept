@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
-use crate::graph::utils::FromOptVec;
 use crate::graph::{GenericASTNode, Identifiable};
 use crate::graph::{GhostToken, SyntaxTree};
+use crate::graph::utils::FromOptVec;
 
 pub trait HasChildrenMarker<Child>: Identifiable {
     type Container: FromOptVec<T = Child>;

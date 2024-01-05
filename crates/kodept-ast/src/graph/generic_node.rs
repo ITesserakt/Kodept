@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
+use crate::*;
 use crate::graph::{GhostToken, Identifiable, SyntaxTree};
 use crate::make_ast_node_adaptor;
-use crate::*;
 
 type Identity<T> = T;
 

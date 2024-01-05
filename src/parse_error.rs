@@ -1,13 +1,14 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use extend::ext;
+use nom_supreme::error::{BaseErrorKind, Expectation, StackContext};
+use nom_supreme::error::GenericErrorTree::{Alt, Base, Stack};
+
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_parse::lexer::Token;
+use kodept_parse::ParseError;
 use kodept_parse::parser::error::TokenVerificationError;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::ParseError;
-use nom_supreme::error::GenericErrorTree::{Alt, Base, Stack};
-use nom_supreme::error::{BaseErrorKind, Expectation, StackContext};
 
 #[ext]
 impl<'s> TokenStream<'s> {

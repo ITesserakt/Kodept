@@ -4,13 +4,13 @@ use std::borrow::Cow;
 use size_of::SizeOf;
 
 use kodept_core::code_point::CodePoint;
+use kodept_core::structure::{Located, rlt};
 use kodept_core::structure::span::CodeHolder;
-use kodept_core::structure::{rlt, Located};
 
 use crate::graph::NodeId;
 use crate::graph::SyntaxTree;
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{IdProducer, Identifiable, Linker, PopulateTree};
+use crate::traits::{Identifiable, IdProducer, Linker, PopulateTree};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]

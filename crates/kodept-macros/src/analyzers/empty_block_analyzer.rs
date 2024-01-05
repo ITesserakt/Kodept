@@ -2,12 +2,12 @@ use std::convert::Infallible;
 
 use codespan_reporting::diagnostic::Severity;
 
-use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
 use kodept_ast::{EnumDeclaration, StructDeclaration};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
 use kodept_core::impl_named;
+use kodept_core::structure::{Located, rlt};
 use kodept_core::structure::rlt::Enum;
-use kodept_core::structure::{rlt, Located};
 
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;

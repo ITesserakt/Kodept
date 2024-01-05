@@ -4,23 +4,23 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
+use BinaryExpressionKind::*;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
-use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
-use crate::graph::NodeId;
+use crate::{BlockLevel, IfExpression, Literal, node, Reference, Term, wrapper};
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
+use crate::graph::NodeId;
 use crate::traits::{Linker, PopulateTree};
 use crate::wrappers::{AOperation, LeftOperation, RightOperation};
-use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
 
 pub mod wrappers {
     use derive_more::{Deref, DerefMut};
 
-    use crate::{graph::GenericASTNode, wrapper, Operation};
+    use crate::{graph::GenericASTNode, Operation, wrapper};
 
     wrapper! {
         #[derive(Deref, DerefMut)]

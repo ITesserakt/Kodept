@@ -6,56 +6,44 @@ use size_of::SizeOf;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
-use visita::node_group;
 
-use crate::graph::NodeId;
+use crate::{Body, node, Parameter, Type, TypedParameter, wrapper};
+use crate::graph::{GenericASTNode, NodeId};
 use crate::graph::{Identity, SyntaxTreeBuilder};
+use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::traits::{Identifiable, Linker};
-use crate::{impl_identifiable, with_children, Body, Parameter, Type, TypedParameter};
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct BodiedFunctionDeclaration {
-    id: NodeId<Self>,
-    pub name: String,
+wrapper! {
+    #[derive(Debug, PartialEq, From)]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub wrapper FunctionDeclaration {
+        bodied(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => Some(x),
+        abstract(AbstractFunctionDeclaration) = GenericASTNode::AbstractFunction(x) => Some(x),
+    }
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct AbstractFunctionDeclaration {
-    id: NodeId<Self>,
-    pub name: String,
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct BodiedFunctionDeclaration {
+        pub name: String,;
+        pub parameters: Vec<Parameter>,
+        pub return_type: Option<Type>,
+        pub body: Identity<Body>,
+    }
 }
 
-#[derive(Debug, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum FunctionDeclaration {
-    Abstract(AbstractFunctionDeclaration),
-    Bodied(BodiedFunctionDeclaration),
+node! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "size-of", derive(SizeOf))]
+    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+    pub struct AbstractFunctionDeclaration {
+        pub name: String,;
+        pub parameters: Vec<TypedParameter>,
+        pub return_type: Option<Type>,
+    }
 }
-
-node_group!(family: FunctionDeclaration, nodes: [
-    FunctionDeclaration, BodiedFunctionDeclaration, AbstractFunctionDeclaration
-]);
-node_group!(family: BodiedFunctionDeclaration, nodes: [BodiedFunctionDeclaration, Body]);
-node_group!(family: AbstractFunctionDeclaration, nodes: [AbstractFunctionDeclaration]);
-
-impl_identifiable! { BodiedFunctionDeclaration, AbstractFunctionDeclaration }
-
-with_children!(BodiedFunctionDeclaration => {
-    pub parameters: Vec<Parameter>
-    pub return_type: Option<Type>
-    pub body: Identity<Body>
-});
-
-with_children!(AbstractFunctionDeclaration => {
-    pub parameters: Vec<TypedParameter>
-    pub return_type: Option<Type>
-});
 
 impl PopulateTree for rlt::BodiedFunction {
     type Output = BodiedFunctionDeclaration;
@@ -75,14 +63,5 @@ impl PopulateTree for rlt::BodiedFunction {
             .with_children_from([self.body.as_ref()], context)
             .with_rlt(context, self)
             .id()
-    }
-}
-
-impl Identifiable for FunctionDeclaration {
-    fn get_id(&self) -> NodeId<Self> {
-        match self {
-            FunctionDeclaration::Abstract(x) => x.get_id().cast(),
-            FunctionDeclaration::Bodied(x) => x.get_id().cast(),
-        }
     }
 }

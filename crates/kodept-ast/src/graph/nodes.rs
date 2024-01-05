@@ -1,10 +1,12 @@
-use crate::graph::utils::OptVec;
-use crate::graph::GenericASTNode;
-use derive_more::{Deref, DerefMut, From};
-use qcell::{TLCell, TLCellOwner};
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
+
+use derive_more::{Deref, DerefMut, From};
+use qcell::{TLCell, TLCellOwner};
+
+use crate::graph::GenericASTNode;
+use crate::graph::utils::OptVec;
 
 type CellImpl<T> = TLCell<Ghost, T>;
 type CellOwnerImpl = TLCellOwner<Ghost>;

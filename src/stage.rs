@@ -1,5 +1,9 @@
-use crate::cli::Kodept;
+use std::io::stdout;
+use std::rc::Rc;
+
 use clap::Parser;
+use nom_supreme::final_parser::final_parser;
+
 use kodept::codespan_settings::{CodespanSettings, ReportExt};
 use kodept::macro_context::DefaultContext;
 use kodept::parse_error::Reportable;
@@ -17,12 +21,11 @@ use kodept_macros::analyzers::variable_uniqueness::VariableUniquenessAnalyzer;
 use kodept_macros::erased::ErasedAnalyzer;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{Context, UnrecoverableError};
+use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
-use kodept_parse::ParseError;
-use nom_supreme::final_parser::final_parser;
-use std::io::stdout;
-use std::rc::Rc;
+
+use crate::cli::Kodept;
 
 pub struct PredefinedTraverseSet<'c, C: Context<'c>, E>(TraverseSet<'c, C, E>);
 

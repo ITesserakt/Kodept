@@ -1,12 +1,15 @@
-use crate::traversing::OptionalContext::Defined;
-use crate::utils::graph::topological_layers;
+use std::ops::{Deref, DerefMut};
+
 use itertools::{Either, Itertools};
+use petgraph::algo::is_cyclic_directed;
+use petgraph::prelude::{DiGraph, NodeIndex};
+
 use kodept_ast::graph::GhostToken;
 use kodept_macros::erased::{Erased, ErasedAnalyzer};
 use kodept_macros::traits::Context;
-use petgraph::algo::is_cyclic_directed;
-use petgraph::prelude::{DiGraph, NodeIndex};
-use std::ops::{Deref, DerefMut};
+
+use crate::traversing::OptionalContext::Defined;
+use crate::utils::graph::topological_layers;
 
 type DefaultErased<'c, C, E> = Erased<'c, C, E>;
 

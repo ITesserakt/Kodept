@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
+use crate::{BodiedFunctionDeclaration, node, TypedParameter, TypeName, wrapper};
 use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
+use crate::graph::NodeId;
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
