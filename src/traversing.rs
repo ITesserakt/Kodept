@@ -64,7 +64,7 @@ where
         context: &mut C,
         analyzers: &[&dyn ErasedAnalyzer<'c, C, Error = E>],
     ) -> Result<(), Vec<E>> {
-        let token = GhostToken::new();
+        let token = unsafe { GhostToken::new() };
         let mut errors = Vec::new();
 
         context.tree().dfs().iter(&token, |node, side| {

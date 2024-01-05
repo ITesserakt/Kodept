@@ -557,12 +557,12 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "derive_more",
- "fixedbitset",
  "kodept-core",
  "paste",
+ "petgraph",
  "qcell",
  "serde",
  "size-of",

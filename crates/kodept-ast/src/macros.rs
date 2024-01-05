@@ -102,7 +102,6 @@ macro_rules! make_ast_node_adaptor {
             AbstractFunction($wrapper<$($life, )* AbstractFunctionDeclaration>),
             ProdType($wrapper<$($life, )* ProdType>),
             SumType($wrapper<$($life, )* SumType>),
-            Identifier($wrapper<$($life, )* Identifier>),
         }
 
         impl<$($life, )*> kodept_core::Named for $name<$($life, )*> {}

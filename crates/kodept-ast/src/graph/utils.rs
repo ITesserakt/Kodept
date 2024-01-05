@@ -1,9 +1,19 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::any::type_name;
+use std::fmt::Debug;
+use std::marker::PhantomData;
 use std::mem::{replace, take};
 
+use crate::graph::{GenericASTNode, GhostToken};
 use derive_more::IsVariant;
+
+use crate::graph::nodes::Owned;
+
+pub struct RefMut<'a, T> {
+    node: &'a Owned,
+    _phantom: PhantomData<T>,
+}
 
 #[derive(Default, IsVariant)]
 pub enum OptVec<T> {
@@ -19,6 +29,15 @@ enum OptVecIter<'a, T> {
     Empty,
     Single(&'a T),
     Vector(std::slice::Iter<'a, T>),
+}
+
+impl<'a, T> RefMut<'a, T> {
+    pub fn new(node: &'a Owned) -> Self {
+        Self {
+            node,
+            _phantom: Default::default(),
+        }
+    }
 }
 
 impl<A> FromIterator<A> for OptVec<A> {
@@ -84,18 +103,16 @@ pub trait FromOptVec {
     type Ref<'a>
     where
         Self::T: 'a;
-    type Mut<'a>
-    where
-        Self::T: 'a;
+    type Mut<'a>;
     type T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a>;
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a>;
+    fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a>;
 }
 
 impl<T> FromOptVec for Option<T> {
-    type Ref<'a>= Option<&'a T> where T: 'a;
-    type Mut<'a> = Option<&'a mut T> where T: 'a;
+    type Ref<'a> = Option<&'a T> where T: 'a;
+    type Mut<'a> = Option<RefMut<'a, T>>;
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
@@ -110,10 +127,10 @@ impl<T> FromOptVec for Option<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
+    fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
         match value {
             OptVec::Empty => None,
-            OptVec::Single(x) => Some(x),
+            OptVec::Single(x) => Some(RefMut::new(x)),
             OptVec::Vector(x) => panic!(
                 "Container must has no more then one child <{}>, but has {}",
                 type_name::<T>(),
@@ -125,15 +142,15 @@ impl<T> FromOptVec for Option<T> {
 
 impl<T> FromOptVec for Vec<T> {
     type Ref<'a> = Vec<&'a T> where Self::T: 'a;
-    type Mut<'a> = Vec<&'a mut T> where Self::T: 'a;
+    type Mut<'a> = Vec<RefMut<'a, T>>;
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
         value.into_vec()
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
-        value.into_vec()
+    fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
+        value.iter().map(|x| RefMut::new(x)).collect()
     }
 }
 
@@ -151,5 +168,15 @@ impl<'a, T> Iterator for OptVecIter<'a, T> {
             }
             OptVecIter::Vector(iter) => iter.next(),
         }
+    }
+}
+
+impl<'a, T> RefMut<'a, T>
+where
+    for<'b> &'b mut T: TryFrom<&'b mut GenericASTNode>,
+    for<'b> <&'b mut GenericASTNode as TryInto<&'b mut T>>::Error: Debug,
+{
+    pub fn into_inner(self, token: &'a mut GhostToken) -> &mut T {
+        self.node.rw(token).try_into().expect("Node has wrong type")
     }
 }

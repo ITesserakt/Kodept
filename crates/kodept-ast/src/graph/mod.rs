@@ -1,4 +1,6 @@
-pub use crate::graph::children::{ChildrenMut, ChildrenRef, ContainerT, HasChildrenMarker};
+pub use crate::graph::children::{
+    ChildrenMut, ChildrenRef, ContainerT, HasChildrenMarker, HasChildrenMutMarker,
+};
 pub use crate::graph::generic_node::GenericASTNode;
 pub use crate::graph::generic_node::NodeUnion;
 pub use crate::graph::identity::Identity;
