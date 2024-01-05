@@ -14,8 +14,6 @@ size-of = ["dep:size-of", "kodept-core/size-of"]
 enum-iter = ["dep:enum-iterator"]
 
 [dependencies]
-kodept-core = { path = "../kodept-core" }
-
 derive_more.workspace = true
 enum-iterator = { version = "1.4.1", optional = true }
 extend = { workspace = true }
@@ -24,6 +22,10 @@ nom-supreme = "0.8.0"
 nonempty-collections = "0.1"
 size-of = { optional = true, workspace = true }
 thiserror = "1.0.44"
+
+[dependencies.kodept-core]
+path = "../kodept-core"
+version = "0.2"
 
 [dev-dependencies]
 test-case = "3.2.1"
