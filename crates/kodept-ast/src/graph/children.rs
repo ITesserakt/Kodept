@@ -23,7 +23,7 @@ pub trait HasChildrenMarker<Child>: Identifiable {
 pub trait HasChildrenMutMarker<Child>: Identifiable {
     type Container: FromOptVec<T = Child>;
 
-    fn get_children_mut<'b>(&self, tree: &'b mut SyntaxTree) -> ChildrenMut<'b, Self, Child>
+    fn get_children_mut<'b>(&self, tree: &'b SyntaxTree) -> ChildrenMut<'b, Self, Child>
     where
         for<'a> &'a mut Child: TryFrom<&'a mut GenericASTNode>,
     {
@@ -52,8 +52,6 @@ pub mod macros {
                 type Container = $c_t;
             }
 
-            #[allow(private_interfaces)]
-            #[allow(clippy::needless_lifetimes)]
             impl $t {
                 $vis fn $name<'a>(
                     &self,
@@ -63,8 +61,10 @@ pub mod macros {
                     <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>>>::get_children(self, tree, token)
                 }
 
-                $vis fn [<$name _mut>]<'a>(&self, tree: &'a mut $crate::graph::SyntaxTree) {
-                    <Self as $crate::graph::HasChildrenMutMarker<$crate::graph::ContainerT<$c_t>>>::get_children_mut(self, tree);
+                $vis fn [<$name _mut>]<'a>(
+                    &self, tree: &'a $crate::graph::SyntaxTree
+                ) -> $crate::graph::ChildrenMut<'a, $t, $crate::graph::ContainerT<$c_t>> {
+                    <Self as $crate::graph::HasChildrenMutMarker<$crate::graph::ContainerT<$c_t>>>::get_children_mut(self, tree)
                 }
             })*
             }

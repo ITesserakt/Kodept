@@ -1,9 +1,8 @@
-use itertools::{Either, Itertools};
 use petgraph::algo::is_cyclic_directed;
 use petgraph::prelude::{DiGraph, NodeIndex};
 
 use kodept_ast::graph::GhostToken;
-use kodept_macros::erased::{Erased, ErasedAnalyzer};
+use kodept_macros::erased::Erased;
 use kodept_macros::traits::Context;
 
 use crate::utils::graph::topological_layers;
@@ -26,7 +25,7 @@ impl<'c, C: Context<'c>, E> Default for TraverseSet<'c, C, E> {
 }
 
 pub trait Traversable<'c, C: Context<'c>, E> {
-    fn traverse(&self, context: C) -> Result<C, (Vec<E>, C)>;
+    fn traverse(&mut self, context: C) -> Result<C, (Vec<E>, C)>;
 }
 
 impl<'c, C, E> TraverseSet<'c, C, E>
@@ -60,18 +59,17 @@ where
     }
 
     #[allow(clippy::manual_try_fold)]
-    fn run_analyzers(
-        context: &mut C,
-        analyzers: &[&dyn ErasedAnalyzer<'c, C, Error = E>],
-    ) -> Result<(), Vec<E>> {
+    fn run_analyzers(&mut self, context: &mut C, analyzers: Vec<NodeIndex>) -> Result<(), Vec<E>> {
         let token = unsafe { GhostToken::new() };
         let mut errors = Vec::new();
 
         context.tree().dfs().iter(&token, |node, side| {
-            match analyzers
-                .iter()
-                .try_for_each(|a| a.analyze(node, side, &token, context))
-            {
+            match analyzers.iter().try_for_each(|&id| {
+                let Erased::Analyzer(a) = &mut self.inner[id] else {
+                    unreachable!()
+                };
+                a.analyze(node, side, &token, context)
+            }) {
                 Ok(_) => {}
                 Err(e) => errors.push(e),
             };
@@ -85,18 +83,14 @@ where
 }
 
 impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
-    fn traverse(&self, mut context: C) -> Result<C, (Vec<E>, C)> {
+    fn traverse(&mut self, mut context: C) -> Result<C, (Vec<E>, C)> {
         let sorted = topological_layers(&self.inner);
         for layer in sorted {
-            let (_transformers, analyzers): (Vec<_>, Vec<_>) = layer
+            let (_transformers, analyzers) = layer
                 .into_iter()
-                .map(|x| &self.inner[x])
-                .partition_map(|e| match e {
-                    Erased::Transformer(x) => Either::Left(x),
-                    Erased::Analyzer(x) => Either::Right(x.as_ref()),
-                });
+                .partition(|id| matches!(&self.inner[*id], Erased::Transformer(_)));
 
-            let analyzer_result = TraverseSet::run_analyzers(&mut context, &analyzers);
+            let analyzer_result = self.run_analyzers(&mut context, analyzers);
             match analyzer_result {
                 Ok(_) => {}
                 Err(e) => return Err((e, context)),

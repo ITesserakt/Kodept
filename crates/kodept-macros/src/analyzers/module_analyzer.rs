@@ -3,12 +3,12 @@ use std::convert::Infallible;
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 
-use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
-use kodept_ast::visitor::TraversingResult;
 use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
 use kodept_core::impl_named;
-use kodept_core::structure::Located;
 use kodept_core::structure::rlt::Module;
+use kodept_core::structure::Located;
 
 use crate::analyzer::Analyzer;
 use crate::error::report::ReportMessage;
@@ -59,6 +59,7 @@ impl Analyzer for GlobalModuleAnalyzer {
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let (node, token) = guard.allow_only(VisitSide::Entering)?;
+
         if let [m @ ModuleDeclaration {
             kind: ModuleKind::Ordinary,
             name,

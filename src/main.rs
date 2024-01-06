@@ -37,8 +37,8 @@ fn main() -> Result<(), WideError> {
             };
 
             let context = BuildingAST.run(&read_source, &rlt);
-            let set = PredefinedTraverseSet::default();
-            let context = Traversing.run(&set, context, &read_source, settings);
+            let mut set = PredefinedTraverseSet::default();
+            let context = Traversing.run(&mut set, context, &read_source, settings);
             progress.inc(1);
             Ok(Emitting.run(context, &read_source, settings))
         })

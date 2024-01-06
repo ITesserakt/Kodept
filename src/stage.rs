@@ -21,9 +21,9 @@ use kodept_macros::analyzers::variable_uniqueness::VariableUniquenessAnalyzer;
 use kodept_macros::erased::ErasedAnalyzer;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{Context, UnrecoverableError};
-use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
+use kodept_parse::ParseError;
 
 use crate::cli::Kodept;
 
@@ -40,7 +40,7 @@ impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableE
 }
 
 impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for PredefinedTraverseSet<'c, C, E> {
-    fn traverse(&self, context: C) -> Result<C, (Vec<E>, C)> {
+    fn traverse(&mut self, context: C) -> Result<C, (Vec<E>, C)> {
         self.0.traverse(context)
     }
 }
@@ -112,7 +112,7 @@ pub struct Traversing;
 impl Traversing {
     pub fn run<'c, C: Context<'c>, T: Traversable<'c, C, UnrecoverableError>>(
         self,
-        set: &T,
+        set: &mut T,
         context: C,
         source: &ReadCodeSource,
         settings: &mut CodespanSettings,

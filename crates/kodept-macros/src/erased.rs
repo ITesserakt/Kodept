@@ -17,7 +17,7 @@ where
     type Error;
 
     fn analyze(
-        &self,
+        &mut self,
         node: &GenericASTNode,
         side: VisitSide,
         token: &GhostToken,
@@ -119,7 +119,7 @@ where
     type Error = UnrecoverableError;
 
     fn analyze(
-        &self,
+        &mut self,
         node: &GenericASTNode,
         side: VisitSide,
         token: &GhostToken,
