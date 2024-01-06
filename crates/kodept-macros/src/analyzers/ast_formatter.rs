@@ -4,8 +4,8 @@ use std::io::{Error, Write};
 use codespan_reporting::diagnostic::Severity;
 
 use kodept_ast::graph::GenericASTNode;
-use kodept_ast::visitor::TraversingResult;
 use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
+use kodept_ast::visitor::TraversingResult;
 use kodept_core::Named;
 
 use crate::analyzer::Analyzer;
@@ -48,7 +48,7 @@ impl<W: Write> Analyzer for ASTFormatter<W> {
     type Node<'n> = &'n GenericASTNode;
 
     fn analyze<'n, 'c, C: Context<'c>>(
-        &self,
+        &mut self,
         guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {

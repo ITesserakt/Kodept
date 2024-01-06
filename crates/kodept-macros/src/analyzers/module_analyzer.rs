@@ -54,7 +54,7 @@ impl Analyzer for GlobalModuleAnalyzer {
     type Node<'n> = &'n FileDeclaration;
 
     fn analyze<'n, 'c, C: Context<'c>>(
-        &self,
+        &mut self,
         guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
@@ -89,7 +89,7 @@ impl Analyzer for ModuleUniquenessAnalyzer {
     type Node<'n> = &'n FileDeclaration;
 
     fn analyze<'n, 'c, C: Context<'c>>(
-        &self,
+        &mut self,
         guard: RefVisitGuard<Self::Node<'n>>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {

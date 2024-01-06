@@ -7,13 +7,11 @@ use kodept_macros::traits::Context;
 
 use crate::utils::graph::topological_layers;
 
-type DefaultErased<'c, C, E> = Erased<'c, C, E>;
-
 pub struct TraverseSet<'c, C, E>
 where
     C: Context<'c>,
 {
-    inner: DiGraph<DefaultErased<'c, C, E>, ()>,
+    inner: DiGraph<Erased<'c, C, E>, ()>,
 }
 
 impl<'c, C: Context<'c>, E> Default for TraverseSet<'c, C, E> {
