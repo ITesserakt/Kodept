@@ -4,18 +4,18 @@ use std::borrow::Cow;
 use size_of::SizeOf;
 
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::{Located, rlt};
 use kodept_core::structure::span::CodeHolder;
+use kodept_core::structure::{rlt, Located};
 
-use crate::graph::NodeId;
 use crate::graph::SyntaxTree;
+use crate::graph::{GenericASTNode, NodeId};
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{Identifiable, IdProducer, Linker, PopulateTree};
+use crate::traits::{IdProducer, Identifiable, Linker, PopulateTree};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct ASTBuilder {
-    last_id: NodeId<()>,
+    last_id: NodeId<GenericASTNode>,
 }
 
 impl Default for ASTBuilder {
@@ -75,7 +75,7 @@ impl IdProducer for ASTBuilder {
     fn next_id<T>(&mut self) -> NodeId<T> {
         let next_id = self.last_id.next();
         let id = std::mem::replace(&mut self.last_id, next_id);
-        id.cast()
+        unsafe { id.cast_unchecked() }
     }
 }
 

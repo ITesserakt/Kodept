@@ -10,11 +10,11 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{BodiedFunctionDeclaration, ExpressionBlock, node, Operation, Type, wrapper};
+use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
-use crate::graph::NodeId;
 use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -87,6 +87,12 @@ impl BlockLevel {
     }
 }
 
+impl From<Body> for BlockLevel {
+    fn from(value: Body) -> Self {
+        Self(value.0)
+    }
+}
+
 impl PopulateTree for rlt::Body {
     type Output = Body;
 
@@ -112,7 +118,7 @@ impl PopulateTree for BlockLevelNode {
     ) -> NodeId<Self::Output> {
         match self {
             BlockLevelNode::InitVar(x) => x.convert(builder, context).cast(),
-            BlockLevelNode::Block(x) => x.convert(builder, context).cast(),
+            BlockLevelNode::Block(x) => x.convert(builder, context).cast::<Body>().cast(),
             BlockLevelNode::Function(x) => x.convert(builder, context).cast(),
             BlockLevelNode::Operation(x) => x.convert(builder, context).cast(),
         }

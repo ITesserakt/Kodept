@@ -47,6 +47,16 @@ macro_rules! wrapper {
             }
         }
 
+        $(
+        impl From<$t> for $wrapper {
+            #[inline]
+            fn from(value: $t) -> Self {
+                let generic: GenericASTNode = value.into();
+                $wrapper(generic)
+            }
+        }
+        )*
+
         impl $wrapper {
             paste::paste! {
                 $(

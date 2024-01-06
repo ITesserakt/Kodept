@@ -7,6 +7,7 @@ pub use crate::graph::nodes::GhostToken;
 pub use crate::graph::traits::Identifiable;
 pub use crate::graph::tree::{SyntaxTree, SyntaxTreeBuilder};
 
+mod changes;
 mod children;
 mod generic_node;
 mod identity;
