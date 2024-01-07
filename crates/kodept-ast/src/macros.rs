@@ -163,6 +163,8 @@ macro_rules! node {
             $($field_vis $field_name: $field_type,)*
         }
 
+        impl $crate::graph::Node for $name {}
+
         $crate::impl_identifiable!($name);
 
         $crate::with_children! [$name => {

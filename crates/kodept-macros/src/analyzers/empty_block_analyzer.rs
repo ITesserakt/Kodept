@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use codespan_reporting::diagnostic::Severity;
 
-use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_ast::{EnumDeclaration, StructDeclaration};
 use kodept_core::impl_named;
@@ -47,61 +47,61 @@ impl From<EmptyBody> for ReportMessage {
 
 impl Analyzer for StructAnalyzer {
     type Error = Infallible;
-    type Node<'n> = &'n StructDeclaration;
+    type Node = StructDeclaration;
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &mut self,
-        guard: RefVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let (node, token) = guard.allow_only(VisitSide::Entering)?;
-        let rlt: Option<&rlt::Struct> = context.access(node);
+        let node = guard.allow_only(VisitSide::Entering)?;
+        let rlt: Option<&rlt::Struct> = context.access(&*node);
         let tree = context.tree();
 
-        if node.parameters(&tree, &*token).is_empty() {
-            match rlt.map(|it| it.parameters.as_ref()) {
-                None => {
-                    warn_about_broken_rlt::<rlt::Struct>();
-                    context.add_report(vec![], EmptyParametersList);
-                }
-                Some(None) => {}
-                Some(Some(params)) => context.add_report(
-                    vec![params.left.location(), params.right.location()],
-                    EmptyParametersList,
-                ),
-            };
-        }
-
-        if node.contents(&tree, &*token).is_empty() {
-            match rlt.map(|it| it.body.as_ref()) {
-                None => {
-                    warn_about_broken_rlt::<rlt::Struct>();
-                    context.add_report(vec![], EmptyParametersList);
-                }
-                Some(None) => {}
-                Some(Some(rest)) => {
-                    context.add_report(vec![rest.left.location(), rest.right.location()], EmptyBody)
-                }
-            }
-        }
+        // if node.parameters(&tree, &*token).is_empty() {
+        //     match rlt.map(|it| it.parameters.as_ref()) {
+        //         None => {
+        //             warn_about_broken_rlt::<rlt::Struct>();
+        //             context.add_report(vec![], EmptyParametersList);
+        //         }
+        //         Some(None) => {}
+        //         Some(Some(params)) => context.add_report(
+        //             vec![params.left.location(), params.right.location()],
+        //             EmptyParametersList,
+        //         ),
+        //     };
+        // }
+        //
+        // if node.contents(&tree, &*token).is_empty() {
+        //     match rlt.map(|it| it.body.as_ref()) {
+        //         None => {
+        //             warn_about_broken_rlt::<rlt::Struct>();
+        //             context.add_report(vec![], EmptyParametersList);
+        //         }
+        //         Some(None) => {}
+        //         Some(Some(rest)) => {
+        //             context.add_report(vec![rest.left.location(), rest.right.location()], EmptyBody)
+        //         }
+        //     }
+        // }
         Ok(())
     }
 }
 
 impl Analyzer for EnumAnalyzer {
     type Error = Infallible;
-    type Node<'n> = &'n EnumDeclaration;
+    type Node = EnumDeclaration;
 
-    fn analyze<'n, 'c, C: Context<'c>>(
+    fn analyze<'c, C: Context<'c>>(
         &mut self,
-        guard: RefVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let (node, token) = guard.allow_only(VisitSide::Entering)?;
+        let node = guard.allow_only(VisitSide::Entering)?;
         let tree = context.tree();
 
-        if node.contents(&tree, &*token).is_empty() {
-            let rlt: Option<&Enum> = context.access(node);
+        if node.contents(&tree, node.token()).is_empty() {
+            let rlt: Option<&Enum> = context.access(&*node);
             match rlt {
                 None => {
                     warn_about_broken_rlt::<Enum>();

@@ -21,7 +21,7 @@ impl<T> NodeId<T> {
     }
 
     #[inline]
-    pub fn cast<U: From<T>>(self) -> NodeId<U> {
+    pub fn cast<U: TryFrom<T>>(self) -> NodeId<U> {
         NodeId(self.0, PhantomData)
     }
 

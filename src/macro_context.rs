@@ -6,10 +6,9 @@ use codespan_reporting::term::termcolor::WriteColor;
 use derive_more::Constructor;
 use thiserror::Error;
 
-use kodept_ast::ast_builder::ASTBuilder;
 use kodept_ast::graph::{NodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use kodept_ast::traits::{Accessor, Identifiable, IdProducer, Linker};
+use kodept_ast::traits::{Accessor, Identifiable, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_macros::error::report::Report;
 use kodept_macros::error::report_collector::ReportCollector;
@@ -22,19 +21,12 @@ use crate::read_code_source::ReadCodeSource;
 pub struct DefaultContext<'c> {
     report_collector: FileRelative<ReportCollector>,
     rlt_accessor: RLTAccessor<'c>,
-    ast_builder: ASTBuilder,
     tree: Rc<SyntaxTree>,
 }
 
 #[derive(Debug, Error)]
 #[error("Compilation failed due to produced errors")]
 pub struct ErrorReported;
-
-impl<'c> IdProducer for DefaultContext<'c> {
-    fn next_id<T>(&mut self) -> NodeId<T> {
-        self.ast_builder.next_id()
-    }
-}
 
 impl<'c> Linker<'c> for DefaultContext<'c> {
     fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)

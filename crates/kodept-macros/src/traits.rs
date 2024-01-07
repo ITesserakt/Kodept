@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use derive_more::From;
 
-use kodept_ast::traits::{Accessor, IdProducer, Linker};
+use kodept_ast::traits::{Accessor, Linker};
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
 
@@ -43,6 +43,6 @@ pub trait FileContextual {
     fn file_path(&self) -> CodePath;
 }
 
-pub trait Context<'c>: IdProducer + Linker<'c> + Accessor<'c> + Reporter {}
+pub trait Context<'c>: Linker<'c> + Accessor<'c> + Reporter {}
 
-impl<'c, T: IdProducer + Linker<'c> + Accessor<'c> + Reporter> Context<'c> for T {}
+impl<'c, T: Linker<'c> + Accessor<'c> + Reporter> Context<'c> for T {}

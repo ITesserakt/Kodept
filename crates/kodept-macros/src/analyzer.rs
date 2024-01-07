@@ -1,5 +1,5 @@
 use kodept_ast::graph::GenericASTNode;
-use kodept_ast::visitor::visit_side::RefVisitGuard;
+use kodept_ast::visitor::visit_side::VisitGuard;
 use kodept_ast::visitor::TraversingResult;
 use kodept_core::code_point::CodePoint;
 
@@ -7,11 +7,11 @@ use crate::traits::{Context, UnrecoverableError};
 
 pub trait Analyzer {
     type Error: Into<UnrecoverableError>;
-    type Node<'n>: TryFrom<&'n GenericASTNode>;
+    type Node: TryFrom<GenericASTNode>;
 
-    fn analyze<'n, 'c, C: Context<'c>>(
+    fn analyze<'c, C: Context<'c>>(
         &mut self,
-        guard: RefVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut C,
     ) -> TraversingResult<Self::Error>;
 }

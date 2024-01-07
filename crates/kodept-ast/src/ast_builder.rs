@@ -10,7 +10,7 @@ use kodept_core::structure::{rlt, Located};
 use crate::graph::SyntaxTree;
 use crate::graph::{GenericASTNode, NodeId};
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{IdProducer, Identifiable, Linker, PopulateTree};
+use crate::traits::{Identifiable, Linker, PopulateTree};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -62,20 +62,6 @@ impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
     {
         self.1.save_existing(&a, b);
         a
-    }
-}
-
-impl<'a, 'b, C: CodeHolder> IdProducer for ASTLinker<'a, 'b, C> {
-    fn next_id<T>(&mut self) -> NodeId<T> {
-        self.0.next_id()
-    }
-}
-
-impl IdProducer for ASTBuilder {
-    fn next_id<T>(&mut self) -> NodeId<T> {
-        let next_id = self.last_id.next();
-        let id = std::mem::replace(&mut self.last_id, next_id);
-        unsafe { id.cast_unchecked() }
     }
 }
 

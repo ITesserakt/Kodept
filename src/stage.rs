@@ -18,9 +18,10 @@ use kodept_core::structure::rlt::RLT;
 use kodept_macros::analyzers::ast_formatter::ASTFormatter;
 use kodept_macros::analyzers::module_analyzer::ModuleUniquenessAnalyzer;
 use kodept_macros::analyzers::variable_uniqueness::VariableUniquenessAnalyzer;
-use kodept_macros::erased::ErasedAnalyzer;
+use kodept_macros::erased::{ErasedAnalyzer, ErasedTransformer};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{Context, UnrecoverableError};
+use kodept_macros::transformers::variable_scope::VariableScopeTransformer;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 use kodept_parse::ParseError;
@@ -35,6 +36,7 @@ impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableE
         set.add_independent(ASTFormatter::new(stdout()).erase());
         set.add_independent(ModuleUniquenessAnalyzer.erase());
         set.add_independent(VariableUniquenessAnalyzer.erase());
+        set.add_independent(VariableScopeTransformer.erase());
         Self(set)
     }
 }
@@ -101,7 +103,6 @@ impl BuildingAST {
                 filepath: source.path(),
             },
             accessor,
-            builder,
             Rc::new(ast),
         )
     }

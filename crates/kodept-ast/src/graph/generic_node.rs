@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use size_of::SizeOf;
 use std::fmt::Debug;
 
+use crate::graph::changes::Change;
 use crate::graph::{GhostToken, Identifiable, NodeId, SyntaxTree};
 use crate::make_ast_node_adaptor;
 use crate::*;
@@ -22,7 +23,7 @@ pub trait NodeWithParent {
     type Parent;
 }
 
-pub trait Node: Identifiable {
+pub trait Node: Identifiable + Into<GenericASTNode> {
     fn parent<'b>(&self, tree: &'b SyntaxTree, token: &'b GhostToken) -> &'b Self::Parent
     where
         Self: NodeWithParent,
@@ -45,6 +46,19 @@ pub trait Node: Identifiable {
     {
         let id = self.get_id();
         tree.parent_of_mut(id, token)
+    }
+
+    fn replace_with(&self, other: Self) -> Change {
+        Change::Replace {
+            from_id: self.get_id().cast(),
+            to: other.into(),
+        }
+    }
+
+    fn remove(&self) -> Change {
+        Change::DeleteSelf {
+            node_id: self.get_id().cast(),
+        }
     }
 }
 
@@ -117,36 +131,34 @@ impl Identifiable for GenericASTNode {
     }
 
     fn set_id(&mut self, value: NodeId<Self>) {
-        unsafe {
-            match self {
-                GenericASTNode::File(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Module(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Struct(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Enum(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::TypedParameter(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::UntypedParameter(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::TypeName(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Variable(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::InitializedVariable(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::BodiedFunction(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::ExpressionBlock(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Application(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Lambda(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Reference(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Access(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Number(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Char(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::String(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Tuple(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::If(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Elif(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Else(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Binary(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::Unary(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::AbstractFunction(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::ProdType(x) => x.set_id(value.cast_unchecked()),
-                GenericASTNode::SumType(x) => x.set_id(value.cast_unchecked()),
-            }
+        match self {
+            GenericASTNode::File(x) => x.set_id(value.cast()),
+            GenericASTNode::Module(x) => x.set_id(value.cast()),
+            GenericASTNode::Struct(x) => x.set_id(value.cast()),
+            GenericASTNode::Enum(x) => x.set_id(value.cast()),
+            GenericASTNode::TypedParameter(x) => x.set_id(value.cast()),
+            GenericASTNode::UntypedParameter(x) => x.set_id(value.cast()),
+            GenericASTNode::TypeName(x) => x.set_id(value.cast()),
+            GenericASTNode::Variable(x) => x.set_id(value.cast()),
+            GenericASTNode::InitializedVariable(x) => x.set_id(value.cast()),
+            GenericASTNode::BodiedFunction(x) => x.set_id(value.cast()),
+            GenericASTNode::ExpressionBlock(x) => x.set_id(value.cast()),
+            GenericASTNode::Application(x) => x.set_id(value.cast()),
+            GenericASTNode::Lambda(x) => x.set_id(value.cast()),
+            GenericASTNode::Reference(x) => x.set_id(value.cast()),
+            GenericASTNode::Access(x) => x.set_id(value.cast()),
+            GenericASTNode::Number(x) => x.set_id(value.cast()),
+            GenericASTNode::Char(x) => x.set_id(value.cast()),
+            GenericASTNode::String(x) => x.set_id(value.cast()),
+            GenericASTNode::Tuple(x) => x.set_id(value.cast()),
+            GenericASTNode::If(x) => x.set_id(value.cast()),
+            GenericASTNode::Elif(x) => x.set_id(value.cast()),
+            GenericASTNode::Else(x) => x.set_id(value.cast()),
+            GenericASTNode::Binary(x) => x.set_id(value.cast()),
+            GenericASTNode::Unary(x) => x.set_id(value.cast()),
+            GenericASTNode::AbstractFunction(x) => x.set_id(value.cast()),
+            GenericASTNode::ProdType(x) => x.set_id(value.cast()),
+            GenericASTNode::SumType(x) => x.set_id(value.cast()),
         }
     }
 }

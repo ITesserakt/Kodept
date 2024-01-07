@@ -1,16 +1,15 @@
-use kodept_ast::graph::GenericASTNode;
-use kodept_ast::visitor::TraversingResult;
-use kodept_ast::visitor::visit_side::MutVisitGuard;
+use kodept_ast::graph::{Change, ChangeSet, GenericASTNode};
+use kodept_ast::visitor::visit_side::{Skip, VisitGuard};
 
 use crate::traits::{Context, UnrecoverableError};
 
 pub trait Transformer {
     type Error: Into<UnrecoverableError>;
-    type Node<'n>: TryFrom<&'n mut GenericASTNode>;
+    type Node: TryFrom<GenericASTNode>;
 
-    fn transform<'n, 'c>(
+    fn transform<'c>(
         &self,
-        guard: MutVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut impl Context<'c>,
-    ) -> TraversingResult<Self::Error>;
+    ) -> Result<ChangeSet, Skip<Self::Error>>;
 }

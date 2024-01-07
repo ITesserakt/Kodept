@@ -176,7 +176,17 @@ where
     for<'b> &'b mut T: TryFrom<&'b mut GenericASTNode>,
     for<'b> <&'b mut GenericASTNode as TryInto<&'b mut T>>::Error: Debug,
 {
-    pub fn into_inner(self, token: &'a mut GhostToken) -> &mut T {
+    pub fn borrow_mut(&self, token: &'a mut GhostToken) -> &mut T {
         self.node.rw(token).try_into().expect("Node has wrong type")
+    }
+}
+
+impl<'a, T> RefMut<'a, T>
+where
+    for<'b> &'b T: TryFrom<&'b GenericASTNode>,
+    for<'b> <&'b GenericASTNode as TryInto<&'b T>>::Error: Debug,
+{
+    pub fn borrow(&self, token: &'a GhostToken) -> &T {
+        self.node.ro(token).try_into().expect("Node has wrong type")
     }
 }

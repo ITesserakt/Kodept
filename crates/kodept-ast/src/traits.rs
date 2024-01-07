@@ -19,10 +19,6 @@ impl<T: crate::graph::Identifiable> Identifiable for T {
     }
 }
 
-pub trait IdProducer {
-    fn next_id<T>(&mut self) -> NodeId<T>;
-}
-
 pub trait Linker<'x> {
     fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
     where

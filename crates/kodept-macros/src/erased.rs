@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use derive_more::From;
 
-use kodept_ast::graph::{GenericASTNode, GhostToken};
+use kodept_ast::graph::{ChangeSet, GhostToken, RefMut, RefNode};
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
 use kodept_core::Named;
 
@@ -18,9 +18,9 @@ where
 
     fn analyze(
         &mut self,
-        node: &GenericASTNode,
+        node: RefNode,
         side: VisitSide,
-        token: &GhostToken,
+        token: &mut GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error>;
 
@@ -40,11 +40,11 @@ where
 
     fn transform(
         &self,
-        node: &mut GenericASTNode,
+        node: RefNode,
         side: VisitSide,
         token: &mut GhostToken,
         context: &mut C,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<ChangeSet, Self::Error>;
 
     fn erase(self) -> Erased<'c, C, Self::Error>
     where
@@ -93,17 +93,18 @@ where
 
     fn transform(
         &self,
-        node: &mut GenericASTNode,
+        node: RefNode,
         side: VisitSide,
         token: &mut GhostToken,
         context: &mut C,
-    ) -> Result<(), Self::Error> {
-        let Ok(node) = node.try_into() else {
-            return Ok(());
-        };
-        <Self as Transformer>::transform(self, VisitGuard::new(node, side, token), context)
-            .skipped()
-            .map_err(|e| e.into())
+    ) -> Result<ChangeSet, Self::Error> {
+        <Self as Transformer>::transform(
+            self,
+            VisitGuard::new(side, RefMut::new(node), token),
+            context,
+        )
+        .skipped()
+        .map_err(|e| e.into())
     }
 
     fn erase(self) -> Erased<'c, C, Self::Error> {
@@ -120,17 +121,18 @@ where
 
     fn analyze(
         &mut self,
-        node: &GenericASTNode,
+        node: RefNode,
         side: VisitSide,
-        token: &GhostToken,
+        token: &mut GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error> {
-        let Ok(node) = node.try_into() else {
-            return Ok(());
-        };
-        <Self as Analyzer>::analyze(self, VisitGuard::new(node, side, token), context)
-            .skipped()
-            .map_err(|e| e.into())
+        <Self as Analyzer>::analyze(
+            self,
+            VisitGuard::new(side, RefMut::new(node), token),
+            context,
+        )
+        .skipped()
+        .map_err(|e| e.into())
     }
 
     fn erase(self) -> Erased<'c, C, Self::Error> {

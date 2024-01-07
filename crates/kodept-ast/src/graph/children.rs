@@ -18,10 +18,6 @@ pub trait HasChildrenMarker<Child>: Identifiable {
     {
         Self::Container::unwrap(tree.children_of(self.get_id(), token))
     }
-}
-
-pub trait HasChildrenMutMarker<Child>: Identifiable {
-    type Container: FromOptVec<T = Child>;
 
     fn get_children_mut<'b>(&self, tree: &'b SyntaxTree) -> ChildrenMut<'b, Self, Child>
     where
@@ -35,7 +31,7 @@ pub type ChildrenRef<'a, T, Child> =
     <<T as HasChildrenMarker<Child>>::Container as FromOptVec>::Ref<'a>;
 
 pub type ChildrenMut<'a, T, Child> =
-    <<T as HasChildrenMutMarker<Child>>::Container as FromOptVec>::Mut<'a>;
+    <<T as HasChildrenMarker<Child>>::Container as FromOptVec>::Mut<'a>;
 
 pub type ContainerT<T> = <T as FromOptVec>::T;
 
@@ -46,9 +42,6 @@ pub mod macros {
             paste::paste! {
             $(
             impl $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>> for $t {
-                type Container = $c_t;
-            }
-            impl $crate::graph::HasChildrenMutMarker<$crate::graph::ContainerT<$c_t>> for $t {
                 type Container = $c_t;
             }
 
@@ -64,7 +57,7 @@ pub mod macros {
                 $vis fn [<$name _mut>]<'a>(
                     &self, tree: &'a $crate::graph::SyntaxTree
                 ) -> $crate::graph::ChildrenMut<'a, $t, $crate::graph::ContainerT<$c_t>> {
-                    <Self as $crate::graph::HasChildrenMutMarker<$crate::graph::ContainerT<$c_t>>>::get_children_mut(self, tree)
+                    <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>>>::get_children_mut(self, tree)
                 }
             })*
             }

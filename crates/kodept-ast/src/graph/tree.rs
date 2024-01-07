@@ -161,16 +161,8 @@ impl SyntaxTree {
 }
 
 impl<'arena> Dfs<'arena> {
-    pub fn iter(&mut self, token: &GhostToken, mut f: impl FnMut(&GenericASTNode, VisitSide)) {
-        self.dfs_impl(self.start, &mut |node, side| f(node.ro(token), side));
-    }
-
-    pub fn iter_mut(
-        &mut self,
-        token: &mut GhostToken,
-        mut f: impl FnMut(&mut GenericASTNode, VisitSide),
-    ) {
-        self.dfs_impl(self.start, &mut |node, side| f(node.rw(token), side));
+    pub fn iter(&mut self, mut f: impl FnMut(RefNode<GenericASTNode>, VisitSide)) {
+        self.dfs_impl(self.start, &mut |node, side| f(node, side));
     }
 
     fn dfs_impl(

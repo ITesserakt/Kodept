@@ -1,4 +1,3 @@
-use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 
 use kodept::macro_context::ErrorReported;

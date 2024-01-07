@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 
-use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_ast::{FileDeclaration, ModuleDeclaration, ModuleKind};
 use kodept_core::impl_named;
@@ -51,73 +51,74 @@ impl From<NonGlobalModule> for ReportMessage {
 
 impl Analyzer for GlobalModuleAnalyzer {
     type Error = Infallible;
-    type Node<'n> = &'n FileDeclaration;
+    type Node = FileDeclaration;
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &mut self,
-        guard: RefVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let (node, token) = guard.allow_only(VisitSide::Entering)?;
+        let node = guard.allow_only(VisitSide::Entering)?;
 
-        if let [m @ ModuleDeclaration {
-            kind: ModuleKind::Ordinary,
-            name,
-            ..
-        }] = node.modules(&context.tree(), &*token).as_slice()
-        {
-            match context.access(*m) {
-                Some(Module::Global { .. }) => {}
-                Some(Module::Ordinary { lbrace, rbrace, .. }) => context.add_report(
-                    vec![lbrace.location(), rbrace.location()],
-                    NonGlobalModule(name.clone()),
-                ),
-                None => {
-                    warn_about_broken_rlt::<Module>();
-                    context.add_report(vec![], NonGlobalModule(name.clone()))
-                }
-            };
-            Ok(())
-        } else {
-            Ok(())
-        }
+        // if let [m @ ModuleDeclaration {
+        //     kind: ModuleKind::Ordinary,
+        //     name,
+        //     ..
+        // }] = node.modules(&context.tree(), &*token).as_slice()
+        // {
+        //     match context.access(*m) {
+        //         Some(Module::Global { .. }) => {}
+        //         Some(Module::Ordinary { lbrace, rbrace, .. }) => context.add_report(
+        //             vec![lbrace.location(), rbrace.location()],
+        //             NonGlobalModule(name.clone()),
+        //         ),
+        //         None => {
+        //             warn_about_broken_rlt::<Module>();
+        //             context.add_report(vec![], NonGlobalModule(name.clone()))
+        //         }
+        //     };
+        //     Ok(())
+        // } else {
+        //     Ok(())
+        // }
+        Ok(())
     }
 }
 
 impl Analyzer for ModuleUniquenessAnalyzer {
     type Error = Infallible;
-    type Node<'n> = &'n FileDeclaration;
+    type Node = FileDeclaration;
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &mut self,
-        guard: RefVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
         let tree = context.tree();
-        let (node, token) = guard.allow_only(VisitSide::Entering)?;
-        let group = node
-            .modules(&tree, &*token)
-            .into_iter()
-            .group_by(|it| &it.name);
-        let non_unique = group
-            .into_iter()
-            .map(|it| (it.0, it.1.collect_vec()))
-            .filter(|(_, group)| group.len() > 1)
-            .map(|(name, group)| {
-                (
-                    name.clone(),
-                    group
-                        .into_iter()
-                        .filter_map(|it| context.access(it))
-                        .map(|it: &Module| it.get_keyword().location())
-                        .collect_vec(),
-                )
-            })
-            .collect_vec();
-
-        for (name, positions) in non_unique {
-            context.add_report(positions, DuplicatedModules(name))
-        }
+        let node = guard.allow_only(VisitSide::Entering)?;
+        // let group = node
+        //     .modules(&tree, &*token)
+        //     .into_iter()
+        //     .group_by(|it| &it.name);
+        // let non_unique = group
+        //     .into_iter()
+        //     .map(|it| (it.0, it.1.collect_vec()))
+        //     .filter(|(_, group)| group.len() > 1)
+        //     .map(|(name, group)| {
+        //         (
+        //             name.clone(),
+        //             group
+        //                 .into_iter()
+        //                 .filter_map(|it| context.access(it))
+        //                 .map(|it: &Module| it.get_keyword().location())
+        //                 .collect_vec(),
+        //         )
+        //     })
+        //     .collect_vec();
+        //
+        // for (name, positions) in non_unique {
+        //     context.add_report(positions, DuplicatedModules(name))
+        // }
 
         Ok(())
     }

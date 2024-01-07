@@ -1,7 +1,8 @@
-use derive_more::{Deref, From, IsVariant};
+use derive_more::{From, Into, IsVariant};
+use std::fmt::Debug;
+use std::ops::{Deref, DerefMut};
 
-use crate::graph::GhostToken;
-use crate::visitor::TraversingResult;
+use crate::graph::{GenericASTNode, GhostToken, RefMut};
 
 #[derive(Debug)]
 pub enum Skip<E> {
@@ -17,42 +18,22 @@ pub enum VisitSide {
     Leaf,
 }
 
-#[derive(From, Deref)]
-#[deref(forward)]
-pub struct MutAccess<'token>(&'token mut GhostToken);
+#[derive(From, Into)]
+pub struct Access<'arena, 'token, N>(&'token mut GhostToken, RefMut<'arena, N>);
 
-#[derive(From, Deref)]
-#[deref(forward)]
-pub struct RefAccess<'token>(&'token GhostToken);
+pub struct VisitGuard<'arena, 'token, N>(VisitSide, RefMut<'arena, N>, &'token mut GhostToken);
 
-pub struct VisitGuard<N, Access>(N, VisitSide, Access);
-
-pub type RefVisitGuard<'token, N> = VisitGuard<N, RefAccess<'token>>;
-pub type MutVisitGuard<'token, N> = VisitGuard<N, MutAccess<'token>>;
-
-impl<N, T> VisitGuard<N, T> {
-    pub fn new<U: Into<T>>(node: N, side: VisitSide, access: U) -> Self {
-        Self(node, side, access.into())
+impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
+    pub fn new(side: VisitSide, access: RefMut<'arena, N>, token: &'token mut GhostToken) -> Self {
+        Self(side, access, token)
     }
 
-    pub fn allow_only<E>(self, matches: VisitSide) -> Result<(N, T), Skip<E>> {
-        self.1.guard(matches).map(|_| (self.0, self.2))
+    pub fn allow_only<E>(self, matches: VisitSide) -> Result<Access<'arena, 'token, N>, Skip<E>> {
+        self.0.guard(matches).map(|_| Access(self.2, self.1))
     }
 
-    pub fn allow_all(self) -> (N, T, VisitSide) {
-        (self.0, self.2, self.1)
-    }
-}
-
-impl<'token, N> VisitGuard<N, MutAccess<'token>> {
-    pub fn access(&mut self) -> &mut GhostToken {
-        self.2 .0
-    }
-}
-
-impl<'token, N> VisitGuard<N, RefAccess<'token>> {
-    pub fn access(&self) -> &GhostToken {
-        self.2 .0
+    pub fn allow_all(self) -> (Access<'arena, 'token, N>, VisitSide) {
+        (Access(self.2, self.1), self.0)
     }
 }
 
@@ -72,16 +53,53 @@ impl<E> From<E> for Skip<E> {
     }
 }
 
-pub trait SkipExt<E> {
-    fn skipped(self) -> Result<(), E>;
+pub trait SkipExt<T, E> {
+    fn skipped(self) -> Result<T, E>;
 }
 
-impl<E> SkipExt<E> for TraversingResult<E> {
-    fn skipped(self) -> Result<(), E> {
+impl<T, E> SkipExt<T, E> for Result<T, Skip<E>>
+where
+    T: Default,
+{
+    fn skipped(self) -> Result<T, E> {
         match self {
-            Ok(_) => Ok(()),
-            Err(Skip::SideGuard) => Ok(()),
+            Ok(_) => Ok(T::default()),
+            Err(Skip::SideGuard) => Ok(T::default()),
             Err(Skip::WithError(e)) => Err(e),
         }
+    }
+}
+
+impl<'arena, 'token, N: 'arena> Deref for Access<'arena, 'token, N>
+where
+    for<'a> &'a N: TryFrom<&'a GenericASTNode>,
+    for<'a> <&'a GenericASTNode as TryInto<&'a N>>::Error: Debug,
+{
+    type Target = N;
+
+    fn deref(&self) -> &Self::Target {
+        self.1.borrow(self.0)
+    }
+}
+
+impl<'arena, 'token, N: 'arena> DerefMut for Access<'arena, 'token, N>
+where
+    for<'a> &'a N: TryFrom<&'a GenericASTNode>,
+    for<'a> &'a mut N: TryFrom<&'a mut GenericASTNode>,
+    for<'a> <&'a GenericASTNode as TryInto<&'a N>>::Error: Debug,
+    for<'a> <&'a mut GenericASTNode as TryInto<&'a mut N>>::Error: Debug,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.1.borrow_mut(self.0)
+    }
+}
+
+impl<'arena, 'token, N> Access<'arena, 'token, N> {
+    pub fn token(&self) -> &GhostToken {
+        self.0
+    }
+    
+    pub fn token_mut(&mut self) -> &mut GhostToken {
+        self.0
     }
 }

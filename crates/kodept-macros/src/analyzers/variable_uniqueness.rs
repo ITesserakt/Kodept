@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 
-use kodept_ast::visitor::visit_side::{RefVisitGuard, VisitSide};
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_ast::ExpressionBlock;
 use kodept_core::impl_named;
@@ -33,38 +33,38 @@ impl From<DuplicatedVariable> for ReportMessage {
 
 impl Analyzer for VariableUniquenessAnalyzer {
     type Error = Infallible;
-    type Node<'n> = &'n ExpressionBlock;
+    type Node = ExpressionBlock;
 
     fn analyze<'n, 'c, C: Context<'c>>(
         &mut self,
-        guard: RefVisitGuard<Self::Node<'n>>,
+        guard: VisitGuard<Self::Node>,
         context: &mut C,
     ) -> TraversingResult<Self::Error> {
-        let (node, token) = guard.allow_only(VisitSide::Exiting)?;
+        let node = guard.allow_only(VisitSide::Exiting)?;
         let tree = context.tree();
-        let variables = node
-            .items(&tree, &token)
-            .into_iter()
-            .filter_map(|it| it.as_init_var())
-            .group_by(|it| &it.variable(&tree, &token).name);
-
-        for (name, variables) in variables.into_iter() {
-            let variables = variables.collect_vec();
-            if variables.len() > 1 {
-                context.add_report(
-                    variables
-                        .into_iter()
-                        .filter_map(|it| context.access(it))
-                        .map(|it: &rlt::InitializedVariable| match &it.variable {
-                            Variable::Immutable { id, .. } | Variable::Mutable { id, .. } => {
-                                id.location()
-                            }
-                        })
-                        .collect(),
-                    DuplicatedVariable(name.clone()),
-                )
-            }
-        }
+        // let variables = node
+        //     .items(&tree, &token)
+        //     .into_iter()
+        //     .filter_map(|it| it.as_init_var())
+        //     .group_by(|it| &it.variable(&tree, &token).name);
+        //
+        // for (name, variables) in variables.into_iter() {
+        //     let variables = variables.collect_vec();
+        //     if variables.len() > 1 {
+        //         context.add_report(
+        //             variables
+        //                 .into_iter()
+        //                 .filter_map(|it| context.access(it))
+        //                 .map(|it: &rlt::InitializedVariable| match &it.variable {
+        //                     Variable::Immutable { id, .. } | Variable::Mutable { id, .. } => {
+        //                         id.location()
+        //                     }
+        //                 })
+        //                 .collect(),
+        //             DuplicatedVariable(name.clone()),
+        //         )
+        //     }
+        // }
 
         Ok(())
     }
