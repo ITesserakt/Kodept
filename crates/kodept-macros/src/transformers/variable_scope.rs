@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::convert::Infallible;
 
 use kodept_ast::graph::{Change, ChangeSet};
@@ -25,8 +26,8 @@ impl Transformer for VariableScopeTransformer {
         let tree = context.tree();
         let node = guard.allow_only(VisitSide::Exiting)?;
 
-        // let items = node.items(&tree, &token);
-        // dbg!(items);
+        let items = node.items_mut(&tree);
+        dbg!(items);
         Ok(ChangeSet::empty())
     }
 }

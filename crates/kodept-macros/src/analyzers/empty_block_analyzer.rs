@@ -58,32 +58,32 @@ impl Analyzer for StructAnalyzer {
         let rlt: Option<&rlt::Struct> = context.access(&*node);
         let tree = context.tree();
 
-        // if node.parameters(&tree, &*token).is_empty() {
-        //     match rlt.map(|it| it.parameters.as_ref()) {
-        //         None => {
-        //             warn_about_broken_rlt::<rlt::Struct>();
-        //             context.add_report(vec![], EmptyParametersList);
-        //         }
-        //         Some(None) => {}
-        //         Some(Some(params)) => context.add_report(
-        //             vec![params.left.location(), params.right.location()],
-        //             EmptyParametersList,
-        //         ),
-        //     };
-        // }
-        //
-        // if node.contents(&tree, &*token).is_empty() {
-        //     match rlt.map(|it| it.body.as_ref()) {
-        //         None => {
-        //             warn_about_broken_rlt::<rlt::Struct>();
-        //             context.add_report(vec![], EmptyParametersList);
-        //         }
-        //         Some(None) => {}
-        //         Some(Some(rest)) => {
-        //             context.add_report(vec![rest.left.location(), rest.right.location()], EmptyBody)
-        //         }
-        //     }
-        // }
+        if node.parameters(&tree, node.token()).is_empty() {
+            match rlt.map(|it| it.parameters.as_ref()) {
+                None => {
+                    warn_about_broken_rlt::<rlt::Struct>();
+                    context.add_report(vec![], EmptyParametersList);
+                }
+                Some(None) => {}
+                Some(Some(params)) => context.add_report(
+                    vec![params.left.location(), params.right.location()],
+                    EmptyParametersList,
+                ),
+            };
+        }
+
+        if node.contents(&tree, node.token()).is_empty() {
+            match rlt.map(|it| it.body.as_ref()) {
+                None => {
+                    warn_about_broken_rlt::<rlt::Struct>();
+                    context.add_report(vec![], EmptyParametersList);
+                }
+                Some(None) => {}
+                Some(Some(rest)) => {
+                    context.add_report(vec![rest.left.location(), rest.right.location()], EmptyBody)
+                }
+            }
+        }
         Ok(())
     }
 }

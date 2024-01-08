@@ -60,28 +60,27 @@ impl Analyzer for GlobalModuleAnalyzer {
     ) -> TraversingResult<Self::Error> {
         let node = guard.allow_only(VisitSide::Entering)?;
 
-        // if let [m @ ModuleDeclaration {
-        //     kind: ModuleKind::Ordinary,
-        //     name,
-        //     ..
-        // }] = node.modules(&context.tree(), &*token).as_slice()
-        // {
-        //     match context.access(*m) {
-        //         Some(Module::Global { .. }) => {}
-        //         Some(Module::Ordinary { lbrace, rbrace, .. }) => context.add_report(
-        //             vec![lbrace.location(), rbrace.location()],
-        //             NonGlobalModule(name.clone()),
-        //         ),
-        //         None => {
-        //             warn_about_broken_rlt::<Module>();
-        //             context.add_report(vec![], NonGlobalModule(name.clone()))
-        //         }
-        //     };
-        //     Ok(())
-        // } else {
-        //     Ok(())
-        // }
-        Ok(())
+        if let [m @ ModuleDeclaration {
+            kind: ModuleKind::Ordinary,
+            name,
+            ..
+        }] = node.modules(&context.tree(), node.token()).as_slice()
+        {
+            match context.access(*m) {
+                Some(Module::Global { .. }) => {}
+                Some(Module::Ordinary { lbrace, rbrace, .. }) => context.add_report(
+                    vec![lbrace.location(), rbrace.location()],
+                    NonGlobalModule(name.clone()),
+                ),
+                None => {
+                    warn_about_broken_rlt::<Module>();
+                    context.add_report(vec![], NonGlobalModule(name.clone()))
+                }
+            };
+            Ok(())
+        } else {
+            Ok(())
+        }
     }
 }
 

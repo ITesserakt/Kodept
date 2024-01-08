@@ -1,4 +1,4 @@
-use kodept_ast::graph::{Change, ChangeSet, GenericASTNode};
+use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::visitor::visit_side::{Skip, VisitGuard};
 
 use crate::traits::{Context, UnrecoverableError};
