@@ -8,6 +8,7 @@ repository = "https://github.com/ITesserakt/Kodept/"
 categories = ["compilers"]
 license = "Apache-2.0"
 rust-version = "1.74.0"
+exclude = ["docs"]
 
 [workspace]
 members = [
