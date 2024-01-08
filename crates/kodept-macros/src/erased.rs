@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use derive_more::From;
 
-use kodept_ast::graph::{ChangeSet, GhostToken, RefMut, RefNode};
+use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken, RefMut, RefNode};
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
 use kodept_core::Named;
 
@@ -88,6 +88,7 @@ impl<'c, C, T: Named> ErasedTransformer<'c, C> for T
 where
     C: Context<'c>,
     T: Transformer + 'static,
+    for<'a> &'a T::Node: TryFrom<&'a GenericASTNode>,
 {
     type Error = UnrecoverableError;
 
@@ -98,6 +99,9 @@ where
         token: &mut GhostToken,
         context: &mut C,
     ) -> Result<ChangeSet, Self::Error> {
+        let Ok(_): Result<&T::Node, _> = node.ro(token).try_into() else {
+            return Ok(ChangeSet::new());
+        };
         <Self as Transformer>::transform(
             self,
             VisitGuard::new(side, RefMut::new(node), token),
@@ -116,6 +120,7 @@ impl<'c, C, A: Named> ErasedAnalyzer<'c, C> for A
 where
     C: Context<'c>,
     A: Analyzer + 'static,
+    for<'a> &'a A::Node: TryFrom<&'a GenericASTNode>,
 {
     type Error = UnrecoverableError;
 
@@ -126,6 +131,9 @@ where
         token: &mut GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error> {
+        let Ok(_): Result<&A::Node, _> = node.ro(token).try_into() else {
+            return Ok(());
+        };
         <Self as Analyzer>::analyze(
             self,
             VisitGuard::new(side, RefMut::new(node), token),

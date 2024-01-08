@@ -96,29 +96,29 @@ impl Analyzer for ModuleUniquenessAnalyzer {
     ) -> TraversingResult<Self::Error> {
         let tree = context.tree();
         let node = guard.allow_only(VisitSide::Entering)?;
-        // let group = node
-        //     .modules(&tree, &*token)
-        //     .into_iter()
-        //     .group_by(|it| &it.name);
-        // let non_unique = group
-        //     .into_iter()
-        //     .map(|it| (it.0, it.1.collect_vec()))
-        //     .filter(|(_, group)| group.len() > 1)
-        //     .map(|(name, group)| {
-        //         (
-        //             name.clone(),
-        //             group
-        //                 .into_iter()
-        //                 .filter_map(|it| context.access(it))
-        //                 .map(|it: &Module| it.get_keyword().location())
-        //                 .collect_vec(),
-        //         )
-        //     })
-        //     .collect_vec();
-        //
-        // for (name, positions) in non_unique {
-        //     context.add_report(positions, DuplicatedModules(name))
-        // }
+        let group = node
+            .modules(&tree, node.token())
+            .into_iter()
+            .group_by(|it| &it.name);
+        let non_unique = group
+            .into_iter()
+            .map(|it| (it.0, it.1.collect_vec()))
+            .filter(|(_, group)| group.len() > 1)
+            .map(|(name, group)| {
+                (
+                    name.clone(),
+                    group
+                        .into_iter()
+                        .filter_map(|it| context.access(it))
+                        .map(|it: &Module| it.get_keyword().location())
+                        .collect_vec(),
+                )
+            })
+            .collect_vec();
+
+        for (name, positions) in non_unique {
+            context.add_report(positions, DuplicatedModules(name))
+        }
 
         Ok(())
     }
