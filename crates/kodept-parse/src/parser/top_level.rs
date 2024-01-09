@@ -1,27 +1,27 @@
 use nom::branch::alt;
 use nom::combinator::cut;
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::TopLevelNode;
 
-use crate::{function, OptionTExt};
 use crate::lexer::{Keyword::*, Symbol::*};
-use crate::parser::{function, r#type};
 use crate::parser::nom::{
     brace_enclosed, comma_separated0, comma_separated1, match_token, newline_separated,
     paren_enclosed,
 };
 use crate::parser::parameter::typed_parameter;
-use crate::ParseResult;
+use crate::parser::{function, r#type};
 use crate::token_stream::TokenStream;
+use crate::ParseResult;
+use crate::{function, OptionTExt};
 
 fn enum_statement(input: TokenStream) -> ParseResult<rlt::Enum> {
     tuple((
         match_token(Enum),
-        match_token(Struct).or(match_token(Class)),
+        match_token(Struct).or(match_token(Class)).cut(),
         r#type::reference,
         cut(alt((
             match_token(Semicolon).value(None),
@@ -40,7 +40,7 @@ fn enum_statement(input: TokenStream) -> ParseResult<rlt::Enum> {
 fn struct_statement(input: TokenStream) -> ParseResult<rlt::Struct> {
     tuple((
         match_token(Struct),
-        r#type::reference,
+        r#type::reference.cut(),
         paren_enclosed(comma_separated0(typed_parameter)).opt(),
         brace_enclosed(newline_separated(function::bodied)).opt(),
     ))

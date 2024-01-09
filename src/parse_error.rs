@@ -1,14 +1,14 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use extend::ext;
-use nom_supreme::error::{BaseErrorKind, Expectation, StackContext};
 use nom_supreme::error::GenericErrorTree::{Alt, Base, Stack};
+use nom_supreme::error::{BaseErrorKind, Expectation, StackContext};
 
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_parse::lexer::Token;
-use kodept_parse::ParseError;
 use kodept_parse::parser::error::TokenVerificationError;
 use kodept_parse::token_stream::TokenStream;
+use kodept_parse::ParseError;
 
 #[ext]
 impl<'s> TokenStream<'s> {
@@ -50,7 +50,7 @@ fn base_to_report(
             vec![Diagnostic::error()
                 .with_code("SE003")
                 .with_message(format!(
-                    "Expected `{}`, got `{:?}`",
+                    "Expected `{}`, got `{}`",
                     expectation,
                     needle.iter().next().map_or(Token::Unknown, |it| it.token)
                 ))
@@ -60,7 +60,7 @@ fn base_to_report(
             vec![Diagnostic::error()
                 .with_code("SE004")
                 .with_message(format!(
-                    "Expected `{}`, got `{:?}`",
+                    "Expected `{}`, got `{}`",
                     kind.description(),
                     needle.iter().next().map_or(Token::Unknown, |it| it.token)
                 ))
@@ -69,7 +69,7 @@ fn base_to_report(
         BaseErrorKind::External(x) => vec![Diagnostic::error()
             .with_code("SE002")
             .with_message(format!(
-                "Expected `{}`, got `{:?}`",
+                "Expected `{}`, got `{}`",
                 x.expected,
                 needle.iter().next().map_or(Token::Unknown, |it| it.token)
             ))

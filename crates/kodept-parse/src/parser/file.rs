@@ -1,11 +1,12 @@
-use nom::combinator::cut;
 use nom::multi::{many0, many1};
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
+use crate::parser::nom::{match_token, newline_separated};
+use crate::parser::top_level;
 use crate::{
     function,
     lexer::{Identifier::*, Keyword::*, Operator::*, Symbol::*, Token},
@@ -13,15 +14,13 @@ use crate::{
     token_stream::TokenStream,
 };
 use crate::{match_any_token, ParseResult};
-use crate::parser::nom::{match_token, newline_separated};
-use crate::parser::top_level;
 
 fn module_statement(input: TokenStream) -> ParseResult<rlt::Module> {
     tuple((
         match_token(Module),
         match_token!(Token::Identifier(Type(_))),
         match_token(LBrace),
-        newline_separated(top_level::grammar).cut(),
+        newline_separated(top_level::grammar),
         match_token(RBrace).cut(),
     ))
     .context(function!())
@@ -40,7 +39,7 @@ fn global_module_statement(input: TokenStream) -> ParseResult<rlt::Module> {
         match_token(Module),
         match_token!(Token::Identifier(Type(_))),
         match_token(Flow),
-        cut(many0(top_level::grammar)),
+        many0(top_level::grammar).cut(),
     ))
     .context(function!())
     .map(|it| rlt::Module::Global {

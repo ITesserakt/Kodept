@@ -1,17 +1,17 @@
 use nom::branch::alt;
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
-use crate::{function, OptionTExt};
-use crate::{match_token, ParseResult};
 use crate::lexer::{Identifier::*, Keyword::*, Symbol::*, Token};
-use crate::parser::{block_level, r#type};
 use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
 use crate::parser::parameter::{parameter, typed_parameter};
+use crate::parser::{block_level, r#type};
 use crate::token_stream::TokenStream;
+use crate::{function, OptionTExt};
+use crate::{match_token, ParseResult};
 
 #[allow(unused)]
 // TODO
@@ -39,7 +39,7 @@ pub fn bodied(input: TokenStream) -> ParseResult<rlt::BodiedFunction> {
         match_token!(Token::Identifier(Identifier(_))),
         paren_enclosed(comma_separated0(parameter)).opt(),
         tuple((match_token(Colon), r#type::grammar.cut())).opt(),
-        block_level::body,
+        block_level::body.cut(),
     ))
     .context(function!())
     .map(|it| rlt::BodiedFunction {

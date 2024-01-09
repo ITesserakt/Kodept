@@ -3,6 +3,7 @@ use derive_more::From;
 use enum_iterator::Sequence;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
+use std::fmt::{Display, Formatter};
 
 use crate::Span;
 
@@ -142,4 +143,19 @@ pub enum Token<'t> {
     Literal(Literal<'t>),
     Operator(Operator),
     Unknown,
+}
+
+impl Display for Token<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Ignore(x) => match x {
+                Ignore::Comment(x) => write!(f, "{x}"),
+                Ignore::MultilineComment(x) => write!(f, "{x}"),
+                Ignore::Newline => write!(f, "<newline>"),
+                Ignore::Whitespace => write!(f, " "),
+            },
+            Token::Unknown => write!(f, "<unknown>"),
+            _ => write!(f, "{self:?}"),
+        }
+    }
 }
