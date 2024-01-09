@@ -81,7 +81,7 @@ impl SyntaxTree<BuildingStage> {
     }
 
     pub fn export_dot<'a>(&'a self, config: &'a [Config]) -> impl Display + 'a {
-        struct Wrapper<'c>(Graph<&'static str, &'static str>, &'c [Config]);
+        struct Wrapper<'c>(Graph<String, &'static str>, &'c [Config]);
         impl Display for Wrapper<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 let dot = Dot::with_config(&self.0, self.1);
@@ -89,9 +89,10 @@ impl SyntaxTree<BuildingStage> {
             }
         }
 
-        let mapping = self
-            .graph
-            .map(|_, node| node.ro(&self.stage.0).name(), |_, _| "");
+        let mapping = self.graph.map(
+            |id, node| format!("{} [{}]", node.ro(&self.stage.0).name(), id.index()),
+            |_, _| "",
+        );
         Wrapper(mapping, config)
     }
 }
