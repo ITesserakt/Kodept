@@ -195,10 +195,12 @@ impl<'arena> Dfs<'arena> {
         let mut edges = self
             .graph
             .neighbors_directed(current_id, Direction::Outgoing)
+            .collect::<Vec<_>>()
+            .into_iter()
             .peekable();
         if edges.peek().is_some() {
             f(current, VisitSide::Entering);
-            for child in edges {
+            for child in edges.rev() {
                 self.dfs_impl(child, &mut f);
             }
             f(current, VisitSide::Exiting);
