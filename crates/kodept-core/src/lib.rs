@@ -11,14 +11,3 @@ pub trait Named {
         type_name::<Self>()
     }
 }
-
-#[macro_export]
-macro_rules! impl_named {
-    ($typ:ty) => {
-        impl $crate::Named for $typ {
-            fn name(&self) -> &'static str {
-                stringify!($typ)
-            }
-        }
-    };
-}
