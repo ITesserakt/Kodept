@@ -21,16 +21,20 @@ fn main() -> Result<(), WideError> {
 
     let settings = cli_arguments.diagnostic_config.into();
     let loader: Loader = cli_arguments.loading_config.try_into()?;
-    let sources = loader.into_sources().into_par_iter().filter_map(|res| {
-        let path = res.path();
-        match res.try_into() {
-            Ok(source) => Some(source),
-            Err(e) => {
-                error!(?path, "Cannot read source, I/O error: {e}.");
-                None
+    let sources = loader
+        .into_sources()
+        .into_par_iter()
+        .inspect(|source| debug!("Reading {}", source.path()))
+        .filter_map(|res| {
+            let path = res.path();
+            match res.try_into() {
+                Ok(source) => Some(source),
+                Err(e) => {
+                    error!(?path, "Cannot read source, I/O error: {e}.");
+                    None
+                }
             }
-        }
-    });
+        });
 
     match cli_arguments.subcommands {
         None => debug!("Here!"),
