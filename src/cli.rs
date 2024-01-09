@@ -1,13 +1,13 @@
 use std::convert::Infallible;
 use std::ffi::OsString;
-use std::io::{Read, stdin};
+use std::io::{stdin, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-use clap::{Args, Parser, ValueEnum};
-use codespan_reporting::term::{ColorArg, Config};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use codespan_reporting::term::termcolor::StandardStream;
+use codespan_reporting::term::{ColorArg, Config};
 use derive_more::Display;
 use tracing::Level;
 
@@ -59,9 +59,9 @@ pub struct DiagnosticConfig {
     color: ColorArg,
     /// Enable output of diagnostics to stderr
     #[arg(
-        conflicts_with_all = ["style", "tab_width", "color"],
-        long = "disable-diagnostics", 
-        default_value_t = false
+    conflicts_with_all = ["style", "tab_width", "color"],
+    long = "disable-diagnostics",
+    default_value_t = false
     )]
     disable: bool,
 }
@@ -71,6 +71,8 @@ pub struct LoadingConfig {
     /// Read input from stdin
     #[arg(long = "stdin")]
     read_stdin: bool,
+    #[arg(default_value_t = false, long)]
+    repl: bool,
     /// Read input from the specified places
     #[arg(conflicts_with = "read_stdin", required = true)]
     input: Vec<PathBuf>,
@@ -93,6 +95,11 @@ pub enum DisplayStyle {
 pub enum Extension {
     Any,
     Specified(OsString),
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    Graph {},
 }
 
 impl FromStr for Extension {
