@@ -1,10 +1,12 @@
+use clap::Parser;
 use rayon::prelude::*;
+use tracing::{debug, error};
 
+use cli::common::Kodept;
 use kodept::macro_context::ErrorReported;
+use kodept_core::loader::Loader;
 
-use crate::stage::{
-    BuildingAST, BuildingRLT, Emitting, PredefinedTraverseSet, Prepare, Reading, Traversing,
-};
+use crate::cli::commands::{Commands, Graph};
 
 mod cli;
 mod stage;
@@ -12,26 +14,27 @@ mod stage;
 type WideError = anyhow::Error;
 
 fn main() -> Result<(), WideError> {
-    let (settings, sources) = Prepare.run()?;
+    let cli_arguments: Kodept = Kodept::parse();
+    tracing_subscriber::fmt()
+        .with_max_level(cli_arguments.level())
+        .init();
 
-    let any_error_reported: Result<_, WideError> = sources
-        .into_par_iter()
-        .map(|source| Reading.run(source))
-        .map_with(settings, |settings, source| {
-            let read_source = source?;
-            let rlt = match BuildingRLT.run(&read_source, settings) {
-                None => return Ok(true),
-                Some(x) => x,
-            };
+    let settings = cli_arguments.diagnostic_config.into();
+    let loader: Loader = cli_arguments.loading_config.try_into()?;
+    let sources = loader.into_sources().into_par_iter().filter_map(|res| {
+        let path = res.path();
+        match res.try_into() {
+            Ok(source) => Some(source),
+            Err(e) => {
+                error!(?path, "Cannot read source, I/O error: {e}.");
+                None
+            }
+        }
+    });
 
-            let context = BuildingAST.run(&read_source, &rlt);
-            let mut set = PredefinedTraverseSet::default();
-            let context = Traversing.run(&mut set, context, &read_source, settings);
-            Ok(Emitting.run(context, &read_source, settings))
-        })
-        .try_reduce(|| false, |next, acc| Ok(acc | next));
-    if any_error_reported? {
-        Err(ErrorReported)?;
-    }
+    match cli_arguments.subcommands {
+        None => debug!("Here!"),
+        Some(Commands::Graph(_)) => Graph::exec(sources, settings, cli_arguments.output)?,
+    };
     Ok(())
 }

@@ -27,7 +27,6 @@ impl Transformer for VariableScopeTransformer {
         let node = guard.allow_only(VisitSide::Exiting)?;
 
         let items = node.items_mut(&tree);
-        dbg!(items);
         Ok(ChangeSet::empty())
     }
 }

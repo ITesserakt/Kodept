@@ -1,4 +1,5 @@
 use derive_more::{From, TryInto};
+use kodept_core::Named;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
@@ -159,6 +160,40 @@ impl Identifiable for GenericASTNode {
             GenericASTNode::AbstractFunction(x) => x.set_id(value.cast()),
             GenericASTNode::ProdType(x) => x.set_id(value.cast()),
             GenericASTNode::SumType(x) => x.set_id(value.cast()),
+        }
+    }
+}
+
+impl Named for GenericASTNode {
+    fn name(&self) -> &'static str {
+        match self {
+            GenericASTNode::File(_) => "File",
+            GenericASTNode::Module(_) => "Module",
+            GenericASTNode::Struct(_) => "Struct",
+            GenericASTNode::Enum(_) => "Enum",
+            GenericASTNode::TypedParameter(_) => "TypedParameter",
+            GenericASTNode::UntypedParameter(_) => "UntypedParameter",
+            GenericASTNode::TypeName(_) => "TypeName",
+            GenericASTNode::Variable(_) => "Variable",
+            GenericASTNode::InitializedVariable(_) => "InitializedVariable",
+            GenericASTNode::BodiedFunction(_) => "BodiedFunction",
+            GenericASTNode::ExpressionBlock(_) => "ExpressionBlock",
+            GenericASTNode::Application(_) => "Application",
+            GenericASTNode::Lambda(_) => "Lambda",
+            GenericASTNode::Reference(_) => "Reference",
+            GenericASTNode::Access(_) => "Access",
+            GenericASTNode::Number(_) => "Number",
+            GenericASTNode::Char(_) => "Char",
+            GenericASTNode::String(_) => "String",
+            GenericASTNode::Tuple(_) => "Tuple",
+            GenericASTNode::If(_) => "If",
+            GenericASTNode::Elif(_) => "Elif",
+            GenericASTNode::Else(_) => "Else",
+            GenericASTNode::Binary(_) => "Binary",
+            GenericASTNode::Unary(_) => "Unary",
+            GenericASTNode::AbstractFunction(_) => "AbstractFunction",
+            GenericASTNode::ProdType(_) => "ProdType",
+            GenericASTNode::SumType(_) => "SumType",
         }
     }
 }

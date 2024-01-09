@@ -1,6 +1,8 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
+use kodept_core::Named;
+use petgraph::dot::{Config, Dot};
 use petgraph::prelude::{NodeIndex, StableGraph};
 use petgraph::{Directed, Direction};
 
@@ -19,7 +21,7 @@ pub struct BuildingStage(GhostToken);
 #[derive(Default, Debug)]
 pub struct AccessingStage;
 
-type Graph = StableGraph<Owned<GenericASTNode>, (), Directed, usize>;
+type Graph<T = Owned, E = ()> = StableGraph<T, E, Directed, usize>;
 
 #[derive(Debug)]
 pub struct SyntaxTree<Stage = AccessingStage> {
@@ -76,6 +78,21 @@ impl SyntaxTree<BuildingStage> {
             graph: self.graph,
             stage: AccessingStage,
         }
+    }
+
+    pub fn export_dot<'a>(&'a self, config: &'a [Config]) -> impl Display + 'a {
+        struct Wrapper<'c>(Graph<&'static str, &'static str>, &'c [Config]);
+        impl Display for Wrapper<'_> {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                let dot = Dot::with_config(&self.0, self.1);
+                write!(f, "{dot}")
+            }
+        }
+
+        let mapping = self
+            .graph
+            .map(|_, node| node.ro(&self.stage.0).name(), |_, _| "");
+        Wrapper(mapping, config)
     }
 }
 

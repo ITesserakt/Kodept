@@ -1,7 +1,6 @@
 use std::io::stdout;
 use std::rc::Rc;
 
-use clap::Parser;
 use nom_supreme::final_parser::final_parser;
 
 use kodept::codespan_settings::{CodespanSettings, ReportExt};
@@ -11,9 +10,7 @@ use kodept::read_code_source::ReadCodeSource;
 use kodept::top_parser;
 use kodept::traversing::{Traversable, TraverseSet};
 use kodept_ast::ast_builder::ASTBuilder;
-use kodept_core::code_source::CodeSource;
 use kodept_core::file_relative::FileRelative;
-use kodept_core::loader::{Loader, LoadingError};
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::analyzers::ast_formatter::ASTFormatter;
 use kodept_macros::analyzers::module_analyzer::ModuleUniquenessAnalyzer;
@@ -25,8 +22,6 @@ use kodept_macros::transformers::variable_scope::VariableScopeTransformer;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 use kodept_parse::ParseError;
-
-use crate::cli::Kodept;
 
 pub struct PredefinedTraverseSet<'c, C: Context<'c>, E>(TraverseSet<'c, C, E>);
 
@@ -44,29 +39,6 @@ impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableE
 impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for PredefinedTraverseSet<'c, C, E> {
     fn traverse(&mut self, context: C) -> Result<C, (Vec<E>, C)> {
         self.0.traverse(context)
-    }
-}
-
-pub struct Prepare;
-
-impl Prepare {
-    pub fn run(self) -> Result<(CodespanSettings, Vec<CodeSource>), LoadingError> {
-        let cli_arguments = Kodept::parse();
-        tracing_subscriber::fmt()
-            .with_max_level(cli_arguments.level())
-            .init();
-
-        let settings = cli_arguments.diagnostic_config.into();
-        let loader: Loader = cli_arguments.loading_config.try_into()?;
-        Ok((settings, loader.into_sources()))
-    }
-}
-
-pub struct Reading;
-
-impl Reading {
-    pub fn run(self, source: CodeSource) -> Result<ReadCodeSource, std::io::Error> {
-        source.try_into()
     }
 }
 
@@ -103,7 +75,7 @@ impl BuildingAST {
                 filepath: source.path(),
             },
             accessor,
-            Rc::new(ast),
+            Rc::new(ast.build()),
         )
     }
 }
@@ -129,20 +101,5 @@ impl Traversing {
             }
             c
         })
-    }
-}
-
-pub struct Emitting;
-
-impl Emitting {
-    pub fn run(
-        self,
-        context: DefaultContext,
-        source: &ReadCodeSource,
-        settings: &mut CodespanSettings,
-    ) -> bool {
-        let has_errors = context.has_errors();
-        context.emit_diagnostics(settings, source);
-        has_errors
     }
 }

@@ -25,6 +25,8 @@ impl<T> NodeId<T> {
         NodeId(self.0, PhantomData)
     }
 
+    /// # Safety
+    /// Caller should carefully do this, cause it may violate some contracts
     #[inline]
     pub unsafe fn cast_unchecked<U>(self) -> NodeId<U> {
         NodeId(self.0, PhantomData)
@@ -65,7 +67,7 @@ impl<T> Eq for NodeId<T> {}
 
 impl<T> Clone for NodeId<T> {
     fn clone(&self) -> Self {
-        Self::new(self.0)
+        *self
     }
 }
 

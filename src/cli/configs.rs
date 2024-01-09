@@ -1,50 +1,15 @@
-use std::convert::Infallible;
-use std::ffi::OsString;
 use std::io::{stdin, Read};
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::Args;
 use codespan_reporting::term::termcolor::StandardStream;
 use codespan_reporting::term::{ColorArg, Config};
-use derive_more::Display;
-use tracing::Level;
 
 use kodept::codespan_settings::{CodespanSettings, StreamOutput};
 use kodept_core::loader::{Loader, LoadingError};
 
-const ABOUT_MESSAGE: &str =
-    "Typechecks or interprets passed INPUT using Kodept programming language";
-
-#[derive(Parser, Debug)]
-#[command(version, author, about = ABOUT_MESSAGE)]
-pub struct Kodept {
-    /// Enable debugging output
-    #[arg(short, long)]
-    debug: bool,
-    /// Enable verbose output
-    #[arg(short, long, conflicts_with = "debug")]
-    verbose: bool,
-    /// Set logger output level
-    #[arg(
-    short = 's',
-    long = "severity",
-    ignore_case = true,
-    default_value = "info",
-    env = "RUST_LOG",
-    conflicts_with_all = ["debug", "verbose"]
-    )]
-    verbosity: Level,
-    /// Write output to specified path
-    #[arg(short = 'o', long = "out", default_value = "./")]
-    pub output: PathBuf,
-
-    #[command(flatten)]
-    pub diagnostic_config: DiagnosticConfig,
-    #[command(flatten)]
-    pub loading_config: LoadingConfig,
-}
+use crate::cli::utils::{DisplayStyle, Extension};
 
 #[derive(Debug, Args)]
 pub struct DiagnosticConfig {
@@ -69,48 +34,14 @@ pub struct DiagnosticConfig {
 #[derive(Debug, Args)]
 pub struct LoadingConfig {
     /// Read input from stdin
-    #[arg(long = "stdin")]
+    #[arg(long = "stdin", global = true)]
     read_stdin: bool,
-    #[arg(default_value_t = false, long)]
-    repl: bool,
     /// Read input from the specified places
-    #[arg(conflicts_with = "read_stdin", required = true)]
+    #[arg(conflicts_with = "read_stdin", global = true)]
     input: Vec<PathBuf>,
     /// Use this extension for files
     #[arg(short = 'e', long, default_value = "kd")]
     extension: Extension,
-}
-
-#[derive(Debug, Clone, Display, ValueEnum)]
-pub enum DisplayStyle {
-    /// Adds code preview
-    Rich,
-    /// Adds notes
-    Medium,
-    /// Adds file, line number, severity and message
-    Short,
-}
-
-#[derive(Clone, Debug)]
-pub enum Extension {
-    Any,
-    Specified(OsString),
-}
-
-#[derive(Subcommand)]
-pub enum Commands {
-    Graph {},
-}
-
-impl FromStr for Extension {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "*" => Extension::Any,
-            _ => Extension::Specified(OsString::from(s)),
-        })
-    }
 }
 
 impl From<DiagnosticConfig> for CodespanSettings {
@@ -127,16 +58,6 @@ impl From<DiagnosticConfig> for CodespanSettings {
         };
 
         Self { config, stream }
-    }
-}
-
-impl From<DisplayStyle> for codespan_reporting::term::DisplayStyle {
-    fn from(value: DisplayStyle) -> Self {
-        match value {
-            DisplayStyle::Rich => Self::Rich,
-            DisplayStyle::Medium => Self::Medium,
-            DisplayStyle::Short => Self::Short,
-        }
     }
 }
 
@@ -159,18 +80,6 @@ impl TryFrom<LoadingConfig> for Loader {
                 Some(x) => builder.with_starting_path(x),
             };
             builder.build()
-        }
-    }
-}
-
-impl Kodept {
-    pub fn level(&self) -> Level {
-        if self.debug {
-            Level::DEBUG
-        } else if self.verbose {
-            Level::TRACE
-        } else {
-            self.verbosity
         }
     }
 }

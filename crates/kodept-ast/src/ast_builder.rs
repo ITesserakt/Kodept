@@ -7,8 +7,8 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
 
-use crate::graph::SyntaxTree;
 use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use crate::traits::{Identifiable, Linker, PopulateTree};
 
@@ -31,18 +31,25 @@ impl ASTBuilder {
         &mut self,
         from: &'n rlt::File,
         code: &C,
-    ) -> (SyntaxTree, RLTAccessor<'n>) {
+    ) -> (SyntaxTreeBuilder, RLTAccessor<'n>) {
         let mut links = RLTAccessor::default();
-        let mut linker = ASTLinker(self, &mut links, code);
+        let mut linker = ASTLinker {
+            access: &mut links,
+            code,
+        };
         let mut tree = SyntaxTree::new();
         from.convert(&mut tree, &mut linker);
-        (tree.build(), links)
+        (tree, links)
     }
 }
 
-struct ASTLinker<'a, 'b, C>(&'a mut ASTBuilder, &'a mut RLTAccessor<'b>, &'a C)
+struct ASTLinker<'a, 'b, C>
 where
-    C: CodeHolder;
+    C: CodeHolder,
+{
+    access: &'a mut RLTAccessor<'b>,
+    code: &'a C,
+}
 
 impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
     fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
@@ -50,7 +57,7 @@ impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
         NodeId<A>: Into<ASTFamily>,
         B: Into<RLTFamily<'b>>,
     {
-        self.1.save(ast, with);
+        self.access.save(ast, with);
     }
 
     fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
@@ -60,17 +67,17 @@ impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
         NodeId<A>: Into<ASTFamily>,
         NodeId<B>: Into<ASTFamily>,
     {
-        self.1.save_existing(&a, b);
+        self.access.save_existing(&a, b);
         a
     }
 }
 
 impl<'a, 'b, C: CodeHolder> CodeHolder for ASTLinker<'a, 'b, C> {
     fn get_chunk(&self, at: CodePoint) -> Cow<str> {
-        self.2.get_chunk(at)
+        self.code.get_chunk(at)
     }
 
     fn get_chunk_located<L: Located>(&self, for_item: &L) -> Cow<str> {
-        self.2.get_chunk_located(for_item)
+        self.code.get_chunk_located(for_item)
     }
 }

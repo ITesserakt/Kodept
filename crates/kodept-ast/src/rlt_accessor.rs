@@ -63,7 +63,7 @@ impl<'n> RLTAccessor<'n> {
         &'n B: TryFrom<RLTFamily<'n>> + 'n,
     {
         self.links
-            .get(&node.get_id().clone().into())
+            .get(&node.get_id().into())
             .and_then(|it| it.clone().try_into().ok())
     }
 
@@ -72,7 +72,7 @@ impl<'n> RLTAccessor<'n> {
         NodeId<A>: Into<ASTFamily>,
         A: Identifiable + 'static,
     {
-        self.links.get(&node.get_id().clone().into())
+        self.links.get(&node.get_id().into())
     }
 
     pub fn save_existing<A, B>(&mut self, new: &A, existing: &B)
@@ -82,9 +82,9 @@ impl<'n> RLTAccessor<'n> {
         A: Identifiable + 'static,
         NodeId<A>: Into<ASTFamily>,
     {
-        match self.links.get(&existing.get_id().clone().into()) {
+        match self.links.get(&existing.get_id().into()) {
             None => None,
-            Some(x) => self.links.insert(new.get_id().clone().into(), x.clone()),
+            Some(x) => self.links.insert(new.get_id().into(), x.clone()),
         };
     }
 
