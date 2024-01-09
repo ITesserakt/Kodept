@@ -1,0 +1,24 @@
+[package]
+name = "kodept-interpret"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lints]
+workspace = true
+
+[dependencies]
+derive_more.workspace = true
+
+[dependencies.kodept-macros]
+path = "../kodept-macros"
+version = "0.1"
+
+[dependencies.kodept-ast]
+path = "../kodept-ast"
+version = "0.2"
+
+[dependencies.kodept-core]
+path = "../kodept-core"
+version = "0.2"
