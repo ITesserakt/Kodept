@@ -1,6 +1,7 @@
 use std::mem::size_of;
 
-use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
+pub use codespan_reporting::diagnostic::Severity;
+use codespan_reporting::diagnostic::{Diagnostic, Label};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 

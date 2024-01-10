@@ -37,7 +37,7 @@ impl<W: Write> ASTFormatter<W> {
 fn report_io_error<'a, 'c, C: Context<'c>>(
     ctx: &'a C,
 ) -> impl Fn(Error) -> Result<(), UnrecoverableError> + 'a {
-    move |e| ctx.report_and_fail(vec![], IOError(e)).map(|_| ())
+    move |e| ctx.report_and_fail(vec![], IOError(e))
 }
 
 impl<W: Write> Analyzer for ASTFormatter<W> {

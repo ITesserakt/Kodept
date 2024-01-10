@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use derive_more::From;
+use derive_more::{From, Unwrap};
 
 use kodept_ast::traits::{Accessor, Linker};
 use kodept_core::code_point::CodePoint;
@@ -8,7 +8,7 @@ use kodept_core::file_relative::CodePath;
 
 use crate::error::report::{Report, ReportMessage};
 
-#[derive(Debug, From)]
+#[derive(Debug, From, Unwrap)]
 pub enum UnrecoverableError {
     Report(Report),
     Infallible(Infallible),
@@ -24,11 +24,11 @@ impl UnrecoverableError {
 }
 
 pub trait Reporter: FileContextual {
-    fn report_and_fail<R: Into<ReportMessage>>(
+    fn report_and_fail<R: Into<ReportMessage>, T>(
         &self,
         at: Vec<CodePoint>,
         message: R,
-    ) -> Result<Infallible, UnrecoverableError> {
+    ) -> Result<T, UnrecoverableError> {
         Err(Report::new(&self.file_path(), at, message).into())
     }
 
