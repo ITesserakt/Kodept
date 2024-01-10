@@ -3,10 +3,10 @@ use derive_more::From;
 use size_of::SizeOf;
 
 use crate::code_point::CodePoint;
-use crate::structure::Located;
 use crate::structure::rlt::function::BodiedFunction;
 use crate::structure::rlt::new_types::*;
 use crate::structure::rlt::types::TypedParameter;
+use crate::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -61,6 +61,15 @@ impl Located for TopLevelNode {
             TopLevelNode::Enum(x) => x.location(),
             TopLevelNode::Struct(x) => x.location(),
             TopLevelNode::BodiedFunction(x) => x.location(),
+        }
+    }
+}
+
+impl Enum {
+    pub fn id(&self) -> &TypeName {
+        match self {
+            Enum::Stack { id, .. } => id,
+            Enum::Heap { id, .. } => id,
         }
     }
 }

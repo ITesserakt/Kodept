@@ -2,21 +2,21 @@ use std::fmt::Debug;
 
 use derive_more::{Constructor, From};
 use nom::bytes::complete::{take, take_while};
+use nom::multi::{separated_list0, separated_list1};
+use nom::sequence::tuple;
 use nom::Err::Error;
 use nom::IResult;
-use nom::multi::{separated_list0, separated_list1};
 use nom::Parser;
-use nom::sequence::tuple;
 use nom_supreme::error::BaseErrorKind;
 use nom_supreme::ParserExt;
 use thiserror::Error;
 
 use kodept_core::structure::rlt::new_types::Enclosed;
 
-use crate::{
-    lexer::Token, ParseError, ParseResult, token_match::TokenMatch, token_stream::TokenStream,
-};
 use crate::lexer::traits::ToRepresentation;
+use crate::{
+    lexer::Token, token_match::TokenMatch, token_stream::TokenStream, ParseError, ParseResult,
+};
 
 #[derive(From, Clone, Debug)]
 pub struct VerboseEnclosed<'t, T> {

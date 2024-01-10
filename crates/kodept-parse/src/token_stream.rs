@@ -1,7 +1,6 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
 
-use derive_more::Display;
 use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
 use nom_supreme::final_parser::RecreateContext;
 #[cfg(feature = "size-of")]
@@ -9,12 +8,12 @@ use size_of::SizeOf;
 
 use kodept_core::code_point::CodePoint;
 
-use crate::lexer::Token;
+use crate::lexer::traits::ToRepresentation;
+use crate::lexer::{Identifier, Literal, Token};
 use crate::token_match::TokenMatch;
 
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
-#[derive(Clone, Debug, Display)]
-#[display(fmt = "{:?}", slice)]
+#[derive(Clone, Debug)]
 pub struct TokenStream<'t> {
     slice: &'t [TokenMatch<'t>],
 }
@@ -162,6 +161,44 @@ impl<'t> RecreateContext<TokenStream<'t>> for CodePoint {
         } else {
             CodePoint::single_point(0)
         }
+    }
+}
+
+impl Display for TokenStream<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let Some(offset) = self.slice.first().map(|it| it.span.point.offset) else {
+            return write!(f, "");
+        };
+        let size = self.slice.last().expect("Unreachable").span.point.offset - offset;
+        let mut output = " ".repeat(size);
+        for token_match in self.iter().take(10) {
+            let index = token_match.span.point.offset - offset;
+            let len = token_match.span.point.length;
+
+            output.replace_range(
+                index..index + len,
+                match token_match.token {
+                    Token::Ignore(_) => " ",
+                    Token::Keyword(x) => x.representation(),
+                    Token::Symbol(x) => x.representation(),
+                    Token::Identifier(x) => match x {
+                        Identifier::Identifier(x) => x,
+                        Identifier::Type(x) => x,
+                    },
+                    Token::Literal(x) => match x {
+                        Literal::Binary(x) => x,
+                        Literal::Octal(x) => x,
+                        Literal::Hex(x) => x,
+                        Literal::Floating(x) => x,
+                        Literal::Char(x) => x,
+                        Literal::String(x) => x,
+                    },
+                    Token::Operator(x) => x.representation(),
+                    Token::Unknown => "<unknown>",
+                },
+            )
+        }
+        write!(f, "{}...", output.trim())
     }
 }
 

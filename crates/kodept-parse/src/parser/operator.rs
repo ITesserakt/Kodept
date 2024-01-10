@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::multi::many0;
-use nom::Parser;
 use nom::sequence::{delimited, tuple};
+use nom::Parser;
 use nom_supreme::ParserExt;
 use nonempty_collections::NEVec;
 
@@ -10,7 +10,6 @@ use kodept_core::structure::rlt::new_types::{
     BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
 };
 
-use crate::{function, ParseResult};
 use crate::lexer::BitOperator::{AndBit, NotBit, OrBit, XorBit};
 use crate::lexer::ComparisonOperator::{
     Equiv, Greater, GreaterEquals, Less, LessEquals, NotEquiv, Spaceship,
@@ -23,6 +22,7 @@ use crate::parser::expression;
 use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
+use crate::{function, ParseResult};
 
 fn left_fold<'t, I, T, P, E, F, R>(parser: P, produce: F) -> impl Parser<I, R, E> + 't
 where
@@ -79,6 +79,23 @@ fn access(input: TokenStream) -> ParseResult<rlt::Operation> {
     .parse(input)
 }
 
+fn parameters(input: TokenStream) -> ParseResult<Enclosed<Box<[rlt::Operation]>>> {
+    paren_enclosed(comma_separated0(grammar))
+        .context(function!())
+        .map(|it| it.into())
+        .parse(input)
+}
+
+fn application(input: TokenStream) -> ParseResult<rlt::Operation> {
+    tuple((access, parameters.opt()))
+        .context(function!())
+        .map(|(expr, params)| match params {
+            None => expr,
+            Some(_) => rlt::Operation::Application(Box::new(rlt::Application { expr, params })),
+        })
+        .parse(input)
+}
+
 fn top_expr(input: TokenStream) -> ParseResult<rlt::Operation> {
     alt((
         match_token(Math(Sub)).map(|it| UnaryOperationSymbol::Neg(it.span.into())),
@@ -91,7 +108,7 @@ fn top_expr(input: TokenStream) -> ParseResult<rlt::Operation> {
         operator: it.0,
         expr: Box::new(it.1),
     })
-    .or(access)
+    .or(application)
     .context(function!())
     .parse(input)
 }
@@ -232,24 +249,7 @@ fn logic_expr(input: TokenStream) -> ParseResult<rlt::Operation> {
     .parse(input)
 }
 
-fn parameters(input: TokenStream) -> ParseResult<Enclosed<Box<[rlt::Operation]>>> {
-    paren_enclosed(comma_separated0(application))
-        .context(function!())
-        .map(|it| it.into())
-        .parse(input)
-}
-
-fn application(input: TokenStream) -> ParseResult<rlt::Operation> {
-    tuple((logic_expr, parameters.opt()))
-        .context(function!())
-        .map(|(expr, params)| match params {
-            None => expr,
-            Some(_) => rlt::Operation::Application(Box::new(rlt::Application { expr, params })),
-        })
-        .parse(input)
-}
-
 #[inline]
 pub fn grammar(input: TokenStream) -> ParseResult<rlt::Operation> {
-    application(input)
+    logic_expr(input)
 }
