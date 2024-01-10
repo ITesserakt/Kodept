@@ -6,7 +6,7 @@ macro_rules! wrapper {
         pub struct $wrapper($inner);
 
         impl<'a> TryFrom<&'a GenericASTNode> for &'a $wrapper {
-            type Error = <&'a $inner as TryFrom<&'a GenericASTNode>>::Error;
+            type Error = $crate::utils::Skip<<&'a $inner as TryFrom<&'a GenericASTNode>>::Error>;
 
             #[inline]
             fn try_from(value: &'a GenericASTNode) -> Result<Self, Self::Error> {
@@ -16,7 +16,7 @@ macro_rules! wrapper {
         }
 
         impl<'a> TryFrom<&'a mut GenericASTNode> for &'a mut $wrapper {
-            type Error = <&'a mut $inner as TryFrom<&'a mut GenericASTNode>>::Error;
+            type Error = $crate::utils::Skip<<&'a mut $inner as TryFrom<&'a mut GenericASTNode>>::Error>;
 
             #[inline]
             fn try_from(value: &'a mut GenericASTNode) -> Result<Self, Self::Error> {
@@ -35,7 +35,41 @@ macro_rules! wrapper {
     ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident {
         $($name:ident($t:ty) = $variants:pat $(if $variant_if:expr)? => $variant_expr:expr$(,)*)*
     }) => {
-        wrapper!($(#[$config])* $vis wrapper $wrapper(GenericASTNode););
+        $(#[$config])*
+        #[repr(transparent)]
+        pub struct $wrapper(GenericASTNode);
+
+        impl<'a> TryFrom<&'a GenericASTNode> for &'a $wrapper {
+            type Error = $crate::utils::Skip<<&'a GenericASTNode as TryFrom<&'a GenericASTNode>>::Error>;
+
+            #[inline]
+            fn try_from(value: &'a GenericASTNode) -> Result<Self, Self::Error> {
+                if !<$wrapper as $crate::graph::NodeUnion>::contains(value) {
+                    return Err($crate::utils::Skip::Skipped);
+                }
+                Ok(unsafe { std::mem::transmute(value) })
+            }
+        }
+
+        impl<'a> TryFrom<&'a mut GenericASTNode> for &'a mut $wrapper {
+            type Error = $crate::utils::Skip<<&'a mut GenericASTNode as TryFrom<&'a mut GenericASTNode>>::Error>;
+
+            #[inline]
+            fn try_from(value: &'a mut GenericASTNode) -> Result<Self, Self::Error> {
+                if !<$wrapper as $crate::graph::NodeUnion>::contains(value) {
+                    return Err($crate::utils::Skip::Skipped);
+                }
+                Ok(unsafe { std::mem::transmute(value) })
+            }
+        }
+
+        #[cfg(feature = "size-of")]
+        impl size_of::SizeOf for $wrapper where GenericASTNode: size_of::SizeOf {
+            fn size_of_children(&self, context: &mut size_of::Context) {
+                self.0.size_of_children(context)
+            }
+        }
+
         unsafe impl $crate::graph::NodeUnion for $wrapper {
             fn contains(node: &GenericASTNode) -> bool {
                 #[allow(unused_variables)]

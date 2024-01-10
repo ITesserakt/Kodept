@@ -10,5 +10,5 @@ mod macros;
 mod node;
 pub mod rlt_accessor;
 pub mod traits;
-mod utils;
+pub mod utils;
 pub mod visitor;
