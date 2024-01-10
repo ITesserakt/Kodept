@@ -17,7 +17,8 @@ members = [
     "crates/kodept-parse",
     "crates/kodept-inference",
     "crates/kodept-ast",
-    "crates/kodept-macros", "crates/kodept-interpeter"]
+    "crates/kodept-macros",
+    "crates/kodept-interpret"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -81,6 +82,10 @@ features = ["size-of", "serde"]
 path = "crates/kodept-macros"
 version = "0.1"
 features = ["size-of"]
+
+[dependencies.kodept-interpret]
+path = "crates/kodept-interpret"
+version = "0.1"
 
 [dev-dependencies]
 criterion = "0.5.1"

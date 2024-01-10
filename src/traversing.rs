@@ -1,14 +1,18 @@
 use std::mem::replace;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use petgraph::algo::is_cyclic_directed;
 use petgraph::prelude::{DiGraph, NodeIndex};
 
 use kodept_ast::graph::{ChangeSet, GhostToken};
 use kodept_macros::erased::Erased;
-use kodept_macros::traits::Context;
+use kodept_macros::error::compiler_crash::CompilerCrash;
+use kodept_macros::error::report::Report;
+use kodept_macros::traits::{Context, UnrecoverableError};
 
 use crate::utils::graph::topological_layers;
 
+#[derive(Debug)]
 pub struct TraverseSet<'c, C, E>
 where
     C: Context<'c>,
@@ -113,23 +117,34 @@ where
     }
 }
 
-impl<'c, C: Context<'c>, E> Traversable<'c, C, E> for TraverseSet<'c, C, E> {
-    fn traverse(&mut self, mut context: C) -> Result<C, (Vec<E>, C)> {
+impl<'c, C: Context<'c>> Traversable<'c, C, UnrecoverableError>
+    for TraverseSet<'c, C, UnrecoverableError>
+{
+    fn traverse(&mut self, mut context: C) -> Result<C, (Vec<UnrecoverableError>, C)> {
         let sorted = topological_layers(&self.inner);
         for layer in sorted {
             let (transformers, analyzers) = layer
                 .into_iter()
                 .partition(|id| matches!(&self.inner[*id], Erased::Transformer(_)));
 
-            let analyzer_result = self.run_analyzers(&mut context, analyzers);
-            let transformer_result = self.run_transformers(&mut context, transformers);
-            match (analyzer_result, transformer_result) {
-                (Ok(_), Ok(_)) => {}
-                (Err(e), Ok(_)) => return Err((e, context)),
-                (Ok(_), Err(e)) => return Err((vec![e], context)),
-                (Err(mut e1), Err(e2)) => {
+            let exec_result = catch_unwind(AssertUnwindSafe(|| {
+                (
+                    self.run_analyzers(&mut context, analyzers),
+                    self.run_transformers(&mut context, transformers),
+                )
+            }));
+            match exec_result {
+                Ok((Ok(_), Ok(_))) => {}
+                Ok((Err(e), Ok(_))) => return Err((e, context)),
+                Ok((Ok(_), Err(e))) => return Err((vec![e], context)),
+                Ok((Err(mut e1), Err(e2))) => {
                     e1.push(e2);
                     return Err((e1, context));
+                }
+                Err(crash) => {
+                    let report =
+                        Report::new(&context.file_path(), vec![], CompilerCrash::new(crash)).into();
+                    return Err((vec![report], context));
                 }
             };
         }

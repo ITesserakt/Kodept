@@ -3,10 +3,10 @@ use rayon::prelude::*;
 use tracing::{debug, error};
 
 use cli::common::Kodept;
-use kodept::macro_context::ErrorReported;
 use kodept_core::loader::Loader;
 
-use crate::cli::commands::{Commands, Graph};
+use crate::cli::commands::{Commands, Execute, Graph};
+use crate::stage::PredefinedTraverseSet;
 
 mod cli;
 mod stage;
@@ -37,7 +37,7 @@ fn main() -> Result<(), WideError> {
         });
 
     match cli_arguments.subcommands {
-        None => debug!("Here!"),
+        None => Execute.exec(sources, settings)?,
         Some(Commands::Graph(_)) => Graph::exec(sources, settings, cli_arguments.output)?,
     };
     Ok(())

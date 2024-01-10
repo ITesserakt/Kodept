@@ -1,5 +1,7 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use extend::ext;
+use itertools::Itertools;
+use nom::InputTake;
 use nom_supreme::error::GenericErrorTree::{Alt, Base, Stack};
 use nom_supreme::error::{BaseErrorKind, Expectation, StackContext};
 
@@ -30,7 +32,7 @@ fn add_notes(
         context
             .into_iter()
             .filter_map(|it| match it {
-                (_, StackContext::Context(c)) => Some(format!("at `{}`", c)),
+                (needle, StackContext::Context(c)) => Some(format!("at {c: <60} - '{}'", needle)),
                 _ => None,
             })
             .collect(),

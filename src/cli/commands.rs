@@ -1,6 +1,7 @@
 use std::fs::{create_dir_all, File};
 use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use clap::{Parser, Subcommand};
 use codespan_reporting::diagnostic::Diagnostic;
@@ -10,21 +11,28 @@ use petgraph::dot::Config;
 use rayon::prelude::ParallelIterator;
 
 use kodept::codespan_settings::CodespanSettings;
+use kodept::macro_context::{DefaultContext, ErrorReported};
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
+use kodept::traversing::Traversable;
 use kodept::{codespan_settings::ReportExt, top_parser};
 use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
+use kodept_macros::error::report_collector::ReportCollector;
+use kodept_macros::traits::Reporter;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 use kodept_parse::ParseError;
 
-use crate::ErrorReported;
+use crate::stage::PredefinedTraverseSet;
 use crate::WideError;
 
 #[derive(Parser, Debug)]
 pub struct Graph;
+
+#[derive(Debug)]
+pub struct Execute;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
@@ -60,6 +68,45 @@ impl Commands {
         let result =
             final_parser(top_parser)(token_stream).map_err(|e: ParseError| e.to_diagnostics());
         result
+    }
+}
+
+impl Execute {
+    pub fn exec(
+        self,
+        sources: impl ParallelIterator<Item = ReadCodeSource>,
+        settings: CodespanSettings,
+    ) -> Result<(), WideError> {
+        sources.try_for_each_with(settings, |settings, source| {
+            self.exec_for_source(source, settings)
+        })
+    }
+
+    fn exec_for_source(
+        &self,
+        source: ReadCodeSource,
+        settings: &mut CodespanSettings,
+    ) -> Result<(), WideError> {
+        let rlt = Commands::build_rlt(&source)
+            .or_emit_diagnostics(settings, &source)?
+            .0;
+        let (tree, accessor) = ASTBuilder::default().recursive_build(&rlt, &source);
+        let context = DefaultContext::new(
+            source.with_filename(|_| ReportCollector::new()),
+            accessor,
+            Rc::new(tree.build()),
+        );
+        let mut set = PredefinedTraverseSet::default();
+        let context = set.traverse(context).or_else(|(errors, context)| {
+            errors
+                .into_iter()
+                .map(|it| it.unwrap_report())
+                .try_for_each(|it| it.emit(settings, &source))?;
+            Result::<_, WideError>::Ok(context)
+        })?;
+        context.emit_diagnostics(settings, &source);
+
+        Ok(())
     }
 }
 

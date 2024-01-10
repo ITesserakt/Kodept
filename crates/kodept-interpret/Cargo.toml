@@ -10,6 +10,10 @@ workspace = true
 
 [dependencies]
 derive_more.workspace = true
+paste = "1.0.14"
+replace_with = "0.1.7"
+extend = "1.2.0"
+tracing = "0.1.40"
 
 [dependencies.kodept-macros]
 path = "../kodept-macros"
@@ -22,3 +26,7 @@ version = "0.2"
 [dependencies.kodept-core]
 path = "../kodept-core"
 version = "0.2"
+
+[dependencies.kodept-inference]
+path = "../kodept-inference"
+version = "0.1"

@@ -7,7 +7,7 @@ use size_of::SizeOf;
 
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
-use kodept_core::file_relative::CodePath;
+use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_core::structure::span::CodeHolder;
 
 #[derive(SizeOf, Debug)]
@@ -32,6 +32,13 @@ impl ReadCodeSource {
 
     pub fn into_inner(self) -> (String, CodePath) {
         (self.source_contents, self.source_path)
+    }
+
+    pub fn with_filename<T>(&self, f: impl Fn(&Self) -> T) -> FileRelative<T> {
+        FileRelative {
+            value: f(self),
+            filepath: self.source_path.clone(),
+        }
     }
 }
 
