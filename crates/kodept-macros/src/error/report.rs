@@ -1,5 +1,3 @@
-use std::mem::size_of;
-
 pub use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 #[cfg(feature = "size-of")]
@@ -85,7 +83,7 @@ impl SizeOf for Report {
         context.add_vectorlike(
             self.diagnostic.labels.len(),
             self.diagnostic.labels.capacity(),
-            size_of::<Label<()>>(),
+            std::mem::size_of::<Label<()>>(),
         );
     }
 }
