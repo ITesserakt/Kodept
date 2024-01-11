@@ -6,7 +6,6 @@ use cli::common::Kodept;
 use kodept_core::loader::Loader;
 
 use crate::cli::commands::{Commands, Execute, Graph};
-use crate::stage::PredefinedTraverseSet;
 
 mod cli;
 mod stage;
