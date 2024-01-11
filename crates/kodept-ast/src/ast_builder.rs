@@ -7,24 +7,14 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
 
-use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::NodeId;
 use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use crate::traits::{Identifiable, Linker, PopulateTree};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
-pub struct ASTBuilder {
-    last_id: NodeId<GenericASTNode>,
-}
-
-impl Default for ASTBuilder {
-    fn default() -> Self {
-        Self {
-            last_id: NodeId::new(0),
-        }
-    }
-}
+pub struct ASTBuilder;
 
 impl ASTBuilder {
     pub fn recursive_build<'n, C: CodeHolder>(

@@ -24,6 +24,7 @@ pub enum Change {
     DeleteSelf { node_id: NodeId<GenericASTNode> },
 }
 
+#[allow(unused)]
 impl ChangeSet {
     pub fn new() -> Self {
         Self(vec![])
