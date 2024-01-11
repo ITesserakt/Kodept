@@ -11,7 +11,6 @@ pub struct PredefinedTraverseSet<'c, C: Context<'c> = DefaultContext<'c>, E = Un
 impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableError> {
     fn default() -> Self {
         let mut set = TraverseSet::empty();
-        // set.add_independent(ASTFormatter::new(stdout()).erase());
         set.add_independent(SemanticAnalyzer::new().erase());
         Self(set)
     }

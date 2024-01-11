@@ -1,24 +1,27 @@
 module Main =>
 
-enum struct Bool { True, False }
+enum struct Bool { False, True }
 
-fun and(a: Bool, b: Bool) =>
-    if a => if b => True
-            else => False
-    else => False
+fun not(self) =>
+    if self => ::Main::Bool::False
+    else => ::Main::Bool::True
 
-fun not(self: Bool) =>
-    if self => False
-    else => True
+fun and(a, b) =>
+    if a => if b => ::Main::Bool::False
+            else => ::Main::Bool::True
+    else => ::Main::Bool::True
 
-fun rule110(a: Bool, b: Bool, c: Bool) =>
-    if   and(a,      and(b,      c))      => False
-    elif and(a,      and(b,      not(c))) => True
-    elif and(a,      and(not(b), c))      => True
-    elif and(a,      and(not(b), not(c))) => False
-    elif and(not(a), and(b,      c))      => True
-    elif and(not(a), and(b,      not(c))) => True
-    elif and(not(a), and(not(b), c))      => True
-    else                                  => False
+fun rule110(a, b, c) =>
+    if   and(a,      and(b,      c))      => ::Main::Bool::False
+    elif and(a,      and(b,      not(c))) => ::Main::Bool::True
+    elif and(a,      and(not(b), c))      => ::Main::Bool::True
+    elif and(a,      and(not(b), not(c))) => ::Main::Bool::False
+    elif and(not(a), and(b,      c))      => ::Main::Bool::True
+    elif and(not(a), and(b,      not(c))) => ::Main::Bool::True
+    elif and(not(a), and(not(b), c))      => ::Main::Bool::True
+    else                                  => ::Main::Bool::False
 
-fun main => rule110(True, True, True)
+fun main => (
+    not(::Main::Bool::True),
+    not(not(::Main::Bool::True))
+)

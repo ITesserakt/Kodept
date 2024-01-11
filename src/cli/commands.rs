@@ -20,7 +20,6 @@ use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::traits::Reporter;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 use kodept_parse::ParseError;
