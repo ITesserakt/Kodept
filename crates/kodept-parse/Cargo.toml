@@ -34,4 +34,4 @@ path = "../kodept-core"
 version = "0.2"
 
 [dev-dependencies]
-test-case = "3.2.1"
+rstest = "0.18.2"

@@ -1,21 +1,21 @@
 use nom::{
     branch::alt,
-    bytes::complete::{is_a, is_not, take},
     bytes::complete::take_while,
+    bytes::complete::{is_a, is_not, take},
     character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of},
     combinator::{map, opt, recognize, value},
     error::context,
     multi::{many0, many1, many_till},
-    Parser,
     sequence::{delimited, tuple},
+    Parser,
 };
-use nom_supreme::ParserExt;
 use nom_supreme::tag::complete::{tag, tag_no_case};
+use nom_supreme::ParserExt;
 
 pub use enums::*;
 
-use crate::{TokenizationError, TokenizationResult};
 use crate::Span;
+use crate::{TokenizationError, TokenizationResult};
 
 pub mod enums;
 pub mod traits;
@@ -261,33 +261,35 @@ mod tests {
     use std::fmt::Debug;
 
     use nom::Finish;
-    use test_case::test_case;
+    use rstest::rstest;
 
     #[allow(unused_imports)]
-        use crate::lexer::{ignore, Ignore};
+    use crate::lexer::{ignore, Ignore};
     use crate::TokenizationResult;
 
-    #[test_case(ignore("// hello world!"), Ignore::Comment("// hello world!"), None; "ignore_parser_comment")]
-    #[test_case(
+    #[rstest]
+    #[case::ignore_comment(ignore("// hello world!"), Ignore::Comment("// hello world!"), None)]
+    #[case::ignore_comment_another_line(
         ignore("//hello world!\nthis is not comment"),
         Ignore::Comment("//hello world!"),
-        Some("\nthis is not comment"); "ignore_parser_comment_another_line")]
-    #[test_case(
+        Some("\nthis is not comment")
+    )]
+    #[case::ignore_multiline_comment(
         ignore("/* this is\nmultiline comment */"),
         Ignore::MultilineComment("/* this is\nmultiline comment */"),
-        None; "ignore_parser_multiline_comment"
+        None
     )]
-    #[test_case(
+    #[case::ignore_multiline_comment_with_rest(
         ignore("/* this is\nmultiline comment */ this is not"),
         Ignore::MultilineComment("/* this is\nmultiline comment */"),
-        Some(" this is not"); "ignore_parser_multiline_comment_with_rest"
+        Some(" this is not")
     )]
-    #[test_case(ignore("\n\n\n"), Ignore::Newline, None; "ignore_parser_newline")]
-    #[test_case(ignore("   \t"), Ignore::Whitespace, None; "ignore_parser_whitespace")]
+    #[case::ignore_newline(ignore("\n\n\n"), Ignore::Newline, None)]
+    #[case::ignore_whitespace(ignore("   \t"), Ignore::Whitespace, None)]
     fn test_parser<T: PartialEq + Debug>(
-        result: TokenizationResult<T>,
-        expected: T,
-        expected_rest: Option<&'static str>,
+        #[case] result: TokenizationResult<T>,
+        #[case] expected: T,
+        #[case] expected_rest: Option<&'static str>,
     ) {
         let (rest, data) = result.finish().unwrap();
 
