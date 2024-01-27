@@ -1,5 +1,5 @@
 use derive_more::{From, TryInto};
-use kodept_core::Named;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
@@ -28,8 +28,7 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
     fn parent<'b>(&self, tree: &'b SyntaxTree, token: &'b GhostToken) -> &'b Self::Parent
     where
         Self: NodeWithParent,
-        for<'a> &'a Self::Parent: TryFrom<&'a GenericASTNode>,
-        for<'a> <&'a Self::Parent as TryFrom<&'a GenericASTNode>>::Error: Debug,
+        GenericASTNode: ConvertibleToRef<Self::Parent>,
     {
         let id = self.get_id();
         tree.parent_of(id, token)
@@ -42,8 +41,7 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
     ) -> &'b mut Self::Parent
     where
         Self: NodeWithParent,
-        for<'a> &'a mut Self::Parent: TryFrom<&'a mut GenericASTNode>,
-        for<'a> <&'a mut Self::Parent as TryFrom<&'a mut GenericASTNode>>::Error: Debug,
+        GenericASTNode: ConvertibleToMut<Self::Parent>,
     {
         let id = self.get_id();
         tree.parent_of_mut(id, token)

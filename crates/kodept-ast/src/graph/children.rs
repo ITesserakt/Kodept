@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::utils::FromOptVec;
 use crate::graph::{GenericASTNode, Identifiable};
@@ -13,15 +13,14 @@ pub trait HasChildrenMarker<Child>: Identifiable {
         token: &'b GhostToken,
     ) -> ChildrenRef<'b, Self, Child>
     where
-        for<'a> &'a Child: TryFrom<&'a GenericASTNode>,
-        for<'a> <&'a GenericASTNode as TryInto<&'a Child>>::Error: Debug,
+        GenericASTNode: ConvertibleToRef<Child>,
     {
         Self::Container::unwrap(tree.children_of(self.get_id(), token))
     }
 
     fn get_children_mut<'b>(&self, tree: &'b SyntaxTree) -> ChildrenMut<'b, Self, Child>
     where
-        for<'a> &'a mut Child: TryFrom<&'a mut GenericASTNode>,
+        GenericASTNode: ConvertibleToMut<Child>,
     {
         Self::Container::unwrap_mut(tree.children_of_raw(self.get_id()))
     }

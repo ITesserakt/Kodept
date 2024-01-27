@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use derive_more::{From, TryInto};
+use kodept_core::ConvertibleTo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
@@ -10,7 +11,7 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 
 use crate::graph::NodeId;
-use crate::traits::Identifiable;
+use crate::traits::IntoASTFamily;
 use crate::*;
 
 make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
@@ -56,35 +57,23 @@ pub struct RLTAccessor<'n> {
 }
 
 impl<'n> RLTAccessor<'n> {
-    pub fn access<A, B>(&self, node: &A) -> Option<&'n B>
+    pub fn access<B: 'n>(&self, node: &impl IntoASTFamily) -> Option<&B>
     where
-        NodeId<A>: Into<ASTFamily>,
-        A: Identifiable + 'static,
-        &'n B: TryFrom<RLTFamily<'n>> + 'n,
+        RLTFamily<'n>: ConvertibleTo<&'n B>,
     {
         self.links
-            .get(&node.get_id().into())
-            .and_then(|it| it.clone().try_into().ok())
+            .get(&node.as_member())
+            .and_then(|it| it.clone().try_as())
     }
 
-    pub fn access_unknown<A>(&self, node: &A) -> Option<&RLTFamily>
-    where
-        NodeId<A>: Into<ASTFamily>,
-        A: Identifiable + 'static,
-    {
-        self.links.get(&node.get_id().into())
+    pub fn access_unknown(&self, node: &impl IntoASTFamily) -> Option<&RLTFamily> {
+        self.links.get(&node.as_member())
     }
 
-    pub fn save_existing<A, B>(&mut self, new: &A, existing: &B)
-    where
-        B: Identifiable + 'static,
-        NodeId<B>: Into<ASTFamily>,
-        A: Identifiable + 'static,
-        NodeId<A>: Into<ASTFamily>,
-    {
-        match self.links.get(&existing.get_id().into()) {
+    pub fn save_existing(&mut self, new: &impl IntoASTFamily, existing: &impl IntoASTFamily) {
+        match self.links.get(&existing.as_member()) {
             None => None,
-            Some(x) => self.links.insert(new.get_id().into(), x.clone()),
+            Some(x) => self.links.insert(new.as_member(), x.clone()),
         };
     }
 
@@ -92,10 +81,9 @@ impl<'n> RLTAccessor<'n> {
         self.links.keys().collect()
     }
 
-    pub fn save<A, B>(&mut self, key: NodeId<A>, value: B)
+    pub fn save<B>(&mut self, key: impl Into<ASTFamily>, value: B)
     where
         B: Into<RLTFamily<'n>>,
-        NodeId<A>: Into<ASTFamily>,
     {
         self.links.insert(key.into(), value.into());
     }

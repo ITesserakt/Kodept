@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
-use kodept_core::Named;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
 use petgraph::dot::{Config, Dot};
 use petgraph::prelude::{NodeIndex, StableGraph};
 use petgraph::{Directed, Direction};
@@ -120,28 +120,27 @@ impl SyntaxTree {
 
     pub fn children_of<'b, T, U>(&'b self, id: NodeId<T>, token: &'b GhostToken) -> OptVec<&U>
     where
-        for<'a> &'a U: TryFrom<&'a GenericASTNode>,
+        GenericASTNode: ConvertibleToRef<U>,
     {
         self.graph
             .neighbors_directed(id.into(), Direction::Outgoing)
             .map(|x| self.graph[x].ro(token))
-            .filter_map(|x| x.try_into().ok())
+            .filter_map(|x| x.try_as_ref())
             .collect()
     }
 
     pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut GhostToken) -> Option<&mut T>
     where
-        for<'a> &'a mut T: TryFrom<&'a mut GenericASTNode>,
+        GenericASTNode: ConvertibleToMut<T>,
     {
         let node_ref = self.graph.node_weight(id.into())?;
-        node_ref.rw(token).try_into().ok()
+        node_ref.rw(token).try_as_mut()
     }
 
     pub fn parent_of<'a, T>(&'a self, id: NodeId<T>, token: &'a GhostToken) -> &T::Parent
     where
         T: NodeWithParent + Node,
-        for<'b> &'b T::Parent: TryFrom<&'b GenericASTNode>,
-        for<'b> <&'b T::Parent as TryFrom<&'b GenericASTNode>>::Error: Debug,
+        GenericASTNode: ConvertibleToRef<T::Parent>,
     {
         let mut parents = self
             .graph
@@ -152,7 +151,7 @@ impl SyntaxTree {
             )
         };
         let parent_ref = self.graph[parent_id].ro(token);
-        parent_ref.try_into().expect("Node has wrong type")
+        parent_ref.try_as_ref().expect("Node has wrong type")
     }
 
     pub fn parent_of_mut<'a, T>(
@@ -162,8 +161,7 @@ impl SyntaxTree {
     ) -> &mut T::Parent
     where
         T: NodeWithParent + Node,
-        for<'b> &'b mut T::Parent: TryFrom<&'b mut GenericASTNode>,
-        for<'b> <&'b mut T::Parent as TryFrom<&'b mut GenericASTNode>>::Error: Debug,
+        GenericASTNode: ConvertibleToMut<T::Parent>,
     {
         let mut parents = self
             .graph
@@ -174,7 +172,7 @@ impl SyntaxTree {
             )
         };
         let parent_ref = self.graph[parent_id].rw(token);
-        parent_ref.try_into().expect("Node has wrong type")
+        parent_ref.try_as_mut().expect("Node has wrong type")
     }
 }
 

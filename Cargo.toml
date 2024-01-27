@@ -87,9 +87,6 @@ features = ["size-of"]
 path = "crates/kodept-interpret"
 version = "0.1"
 
-[dev-dependencies]
-criterion = "0.5.1"
-
 [profile.bench]
 opt-level = 3
 lto = false

@@ -8,8 +8,9 @@ use thiserror::Error;
 
 use kodept_ast::graph::{NodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use kodept_ast::traits::{Accessor, Identifiable, Linker};
+use kodept_ast::traits::{Accessor, IntoASTFamily, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
+use kodept_core::ConvertibleTo;
 use kodept_macros::error::report::Report;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{FileContextual, Reporter};
@@ -34,36 +35,33 @@ impl<'c> Linker<'c> for DefaultContext<'c> {
         NodeId<A>: Into<ASTFamily>,
         B: Into<RLTFamily<'c>>,
     {
-        self.rlt_accessor.save(ast, with);
+        self.rlt_accessor.save(ast, with)
     }
 
-    fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
+    fn link<A, B>(&mut self, ast: A, with: B) -> A
     where
-        A: Identifiable + 'static,
-        B: Identifiable + 'static,
-        NodeId<A>: Into<ASTFamily>,
-        NodeId<B>: Into<ASTFamily>,
+        A: IntoASTFamily,
+        B: Into<RLTFamily<'c>>,
     {
+        self.rlt_accessor.save(ast.as_member(), with);
+        ast
+    }
+
+    fn link_existing<A: IntoASTFamily>(&mut self, a: A, b: &impl IntoASTFamily) -> A {
         self.rlt_accessor.save_existing(&a, b);
         a
     }
 }
 
 impl<'c> Accessor<'c> for DefaultContext<'c> {
-    fn access<A, B>(&self, ast: &A) -> Option<&'c B>
+    fn access<B: 'c>(&self, ast: &impl IntoASTFamily) -> Option<&B>
     where
-        A: Identifiable + 'static,
-        NodeId<A>: Into<ASTFamily>,
-        &'c B: TryFrom<RLTFamily<'c>> + 'c,
+        RLTFamily<'c>: ConvertibleTo<&'c B>,
     {
         self.rlt_accessor.access(ast)
     }
 
-    fn access_unknown<A>(&self, ast: &A) -> Option<RLTFamily>
-    where
-        A: Identifiable + 'static,
-        NodeId<A>: Into<ASTFamily>,
-    {
+    fn access_unknown(&self, ast: &impl IntoASTFamily) -> Option<RLTFamily> {
         self.rlt_accessor.access_unknown(ast).cloned()
     }
 

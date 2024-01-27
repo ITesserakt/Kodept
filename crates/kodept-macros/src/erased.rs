@@ -4,7 +4,7 @@ use derive_more::From;
 
 use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken, RefMut, RefNode};
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
-use kodept_core::Named;
+use kodept_core::{ConvertibleToRef, Named};
 
 use crate::analyzer::Analyzer;
 use crate::traits::{Context, UnrecoverableError};
@@ -88,7 +88,7 @@ impl<'c, C, T: Named> ErasedTransformer<'c, C> for T
 where
     C: Context<'c>,
     T: Transformer + 'static,
-    for<'a> &'a T::Node: TryFrom<&'a GenericASTNode>,
+    GenericASTNode: ConvertibleToRef<T::Node>,
 {
     type Error = UnrecoverableError;
 
@@ -99,7 +99,7 @@ where
         token: &mut GhostToken,
         context: &mut C,
     ) -> Result<ChangeSet, Self::Error> {
-        let Ok(_): Result<&T::Node, _> = node.ro(token).try_into() else {
+        let Some(_) = node.ro(token).try_as_ref() else {
             return Ok(ChangeSet::new());
         };
         <Self as Transformer>::transform(
@@ -120,7 +120,7 @@ impl<'c, C, A: Named> ErasedAnalyzer<'c, C> for A
 where
     C: Context<'c>,
     A: Analyzer + 'static,
-    for<'a> &'a A::Node: TryFrom<&'a GenericASTNode>,
+    GenericASTNode: ConvertibleToRef<A::Node>,
 {
     type Error = UnrecoverableError;
 
@@ -131,7 +131,7 @@ where
         token: &mut GhostToken,
         context: &mut C,
     ) -> Result<(), Self::Error> {
-        let Ok(_): Result<&A::Node, _> = node.ro(token).try_into() else {
+        let Some(_) = node.ro(token).try_as_ref() else {
             return Ok(());
         };
         <Self as Analyzer>::analyze(

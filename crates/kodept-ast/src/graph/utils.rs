@@ -7,6 +7,7 @@ use std::mem::{replace, take};
 
 use crate::graph::{GenericASTNode, GhostToken};
 use derive_more::IsVariant;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::nodes::Owned;
 
@@ -173,21 +174,25 @@ impl<'a, T> Iterator for OptVecIter<'a, T> {
 
 impl<'a, T> RefMut<'a, T>
 where
-    for<'b> &'b mut T: TryFrom<&'b mut GenericASTNode>,
-    for<'b> <&'b mut GenericASTNode as TryInto<&'b mut T>>::Error: Debug,
+    GenericASTNode: ConvertibleToMut<T>,
 {
     pub fn borrow_mut(&self, token: &'a mut GhostToken) -> &mut T {
-        self.node.rw(token).try_into().expect("Node has wrong type")
+        self.node
+            .rw(token)
+            .try_as_mut()
+            .expect("Node has wrong type")
     }
 }
 
 impl<'a, T> RefMut<'a, T>
 where
-    for<'b> &'b T: TryFrom<&'b GenericASTNode>,
-    for<'b> <&'b GenericASTNode as TryInto<&'b T>>::Error: Debug,
+    GenericASTNode: ConvertibleToRef<T>,
 {
     pub fn borrow(&self, token: &'a GhostToken) -> &T {
-        self.node.ro(token).try_into().expect("Node has wrong type")
+        self.node
+            .ro(token)
+            .try_as_ref()
+            .expect("Node has wrong type")
     }
 }
 

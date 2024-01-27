@@ -1,4 +1,5 @@
 use derive_more::{From, Into, IsVariant};
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
@@ -72,8 +73,7 @@ where
 
 impl<'arena, 'token, N: 'arena> Deref for Access<'arena, 'token, N>
 where
-    for<'a> &'a N: TryFrom<&'a GenericASTNode>,
-    for<'a> <&'a GenericASTNode as TryInto<&'a N>>::Error: Debug,
+    GenericASTNode: ConvertibleToRef<N>,
 {
     type Target = N;
 
@@ -84,10 +84,7 @@ where
 
 impl<'arena, 'token, N: 'arena> DerefMut for Access<'arena, 'token, N>
 where
-    for<'a> &'a N: TryFrom<&'a GenericASTNode>,
-    for<'a> &'a mut N: TryFrom<&'a mut GenericASTNode>,
-    for<'a> <&'a GenericASTNode as TryInto<&'a N>>::Error: Debug,
-    for<'a> <&'a mut GenericASTNode as TryInto<&'a mut N>>::Error: Debug,
+    GenericASTNode: ConvertibleToMut<N>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.1.borrow_mut(self.0)
@@ -98,7 +95,7 @@ impl<'arena, 'token, N> Access<'arena, 'token, N> {
     pub fn token(&self) -> &GhostToken {
         self.0
     }
-    
+
     pub fn token_mut(&mut self) -> &mut GhostToken {
         self.0
     }

@@ -10,7 +10,7 @@ use kodept_core::structure::{rlt, Located};
 use crate::graph::NodeId;
 use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{Identifiable, Linker, PopulateTree};
+use crate::traits::{IntoASTFamily, Linker, PopulateTree};
 
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -50,13 +50,16 @@ impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
         self.access.save(ast, with);
     }
 
-    fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
+    fn link<A, B>(&mut self, ast: A, with: B) -> A
     where
-        A: Identifiable + 'static,
-        B: Identifiable + 'static,
-        NodeId<A>: Into<ASTFamily>,
-        NodeId<B>: Into<ASTFamily>,
+        A: IntoASTFamily,
+        B: Into<RLTFamily<'b>>,
     {
+        self.access.save(ast.as_member(), with);
+        ast
+    }
+
+    fn link_existing<A: IntoASTFamily>(&mut self, a: A, b: &impl IntoASTFamily) -> A {
         self.access.save_existing(&a, b);
         a
     }
