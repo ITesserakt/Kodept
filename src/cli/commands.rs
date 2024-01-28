@@ -7,7 +7,6 @@ use clap::{Parser, Subcommand};
 use codespan_reporting::diagnostic::Diagnostic;
 use extend::ext;
 use nom_supreme::final_parser::final_parser;
-use petgraph::dot::Config;
 use rayon::prelude::ParallelIterator;
 
 use kodept::codespan_settings::CodespanSettings;
@@ -89,7 +88,7 @@ impl Execute {
         let rlt = Commands::build_rlt(&source)
             .or_emit_diagnostics(settings, &source)?
             .0;
-        let (tree, accessor) = ASTBuilder::default().recursive_build(&rlt, &source);
+        let (tree, accessor) = ASTBuilder.recursive_build(&rlt, &source);
         let context = DefaultContext::new(
             source.with_filename(|_| ReportCollector::new()),
             accessor,
@@ -126,10 +125,10 @@ impl Graph {
         output_path: &Path,
     ) -> Result<(), WideError> {
         let rlt = Commands::build_rlt(&source).or_emit_diagnostics(settings, &source)?;
-        let (tree, _) = ASTBuilder::default().recursive_build(&rlt.0, &source);
+        let (tree, _) = ASTBuilder.recursive_build(&rlt.0, &source);
         let mut output_file = Self::get_output_file(&source, output_path)?;
 
-        write!(output_file, "{}", tree.export_dot(&[Config::EdgeNoLabel]))?;
+        write!(output_file, "{}", tree.export_dot(&[]))?;
         Ok(())
     }
 

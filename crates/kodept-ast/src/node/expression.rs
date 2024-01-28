@@ -4,36 +4,24 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
-use BinaryExpressionKind::*;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
+use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
-use crate::{BlockLevel, IfExpression, Literal, node, Reference, Term, wrapper};
+use self::tags::*;
+use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
-use crate::graph::NodeId;
 use crate::traits::{Linker, PopulateTree};
-use crate::wrappers::{AOperation, LeftOperation, RightOperation};
+use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
 
-pub mod wrappers {
-    use derive_more::{Deref, DerefMut};
-
-    use crate::{graph::GenericASTNode, Operation, wrapper};
-
-    wrapper! {
-        #[derive(Deref, DerefMut)]
-        pub wrapper AOperation(Operation);
-    }
-    wrapper! {
-        #[derive(Deref, DerefMut)]
-        pub wrapper LeftOperation(Operation);
-    }
-    wrapper! {
-        #[derive(Deref, DerefMut)]
-        pub wrapper RightOperation(Operation);
-    }
+mod tags {
+    pub const PRIMARY: u8 = 0;
+    pub const SECONDARY: u8 = 1;
+    pub const LEFT: u8 = 1;
+    pub const RIGHT: u8 = 2;
 }
 
 wrapper! {
@@ -65,8 +53,8 @@ node! {
     #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Application {;
-        pub expr: Identity<AOperation>,
-        pub params: Vec<Operation>,
+        pub expr: Identity<Operation> as PRIMARY,
+        pub params: Vec<Operation> as SECONDARY,
     }
 }
 
@@ -75,9 +63,8 @@ node! {
     #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Access {;
-        _syntethic: Vec<Operation>,
-        pub left: Identity<LeftOperation>,
-        pub right: Identity<RightOperation>,
+        pub left: Identity<Operation> as LEFT,
+        pub right: Identity<Operation> as RIGHT,
     }
 }
 
@@ -97,9 +84,8 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Binary {
         pub kind: BinaryExpressionKind,;
-        _syntethic: Vec<Operation>,
-        pub left: Identity<LeftOperation>,
-        pub right: Identity<RightOperation>,
+        pub left: Identity<Operation> as LEFT,
+        pub right: Identity<Operation> as RIGHT,
     }
 }
 
@@ -178,7 +164,8 @@ impl PopulateTree for rlt::Operation {
                 .add_node(Access {
                     id: Default::default(),
                 })
-                .with_children_from([left.as_ref(), right.as_ref()], context)
+                .with_children_from::<LEFT, _>([left.as_ref()], context)
+                .with_children_from::<RIGHT, _>([right.as_ref()], context)
                 .with_rlt(context, self)
                 .id()
                 .cast(),
@@ -214,7 +201,8 @@ impl PopulateTree for rlt::Operation {
                     },
                     id: Default::default(),
                 })
-                .with_children_from([left.as_ref(), right.as_ref()], context)
+                .with_children_from::<LEFT, _>([left.as_ref()], context)
+                .with_children_from::<RIGHT, _>([right.as_ref()], context)
                 .with_rlt(context, self)
                 .id()
                 .cast(),
@@ -236,8 +224,8 @@ impl PopulateTree for rlt::Application {
             .add_node(Application {
                 id: Default::default(),
             })
-            .with_children_from([&self.expr], context)
-            .with_children_from(
+            .with_children_from::<PRIMARY, _>([&self.expr], context)
+            .with_children_from::<SECONDARY, _>(
                 self.params
                     .as_ref()
                     .map_or([].as_slice(), |x| x.inner.as_ref()),

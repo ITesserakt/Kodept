@@ -11,7 +11,9 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::generic_node::{Node, NodeWithParent};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
 use crate::graph::utils::OptVec;
-use crate::graph::{GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
+use crate::graph::{
+    ChildTag, GenericASTNode, HasChildrenMarker, Identifiable, NodeId, DEFAULT_TAG,
+};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};
 use crate::visitor::visit_side::VisitSide;
@@ -21,7 +23,7 @@ pub struct BuildingStage(GhostToken);
 #[derive(Default, Debug)]
 pub struct AccessingStage;
 
-type Graph<T = Owned, E = ()> = StableGraph<T, E, Directed, usize>;
+type Graph<T = Owned, E = ChildTag> = StableGraph<T, E, Directed, usize>;
 
 #[derive(Debug)]
 pub struct SyntaxTree<Stage = AccessingStage> {
@@ -81,7 +83,7 @@ impl SyntaxTree<BuildingStage> {
     }
 
     pub fn export_dot<'a>(&'a self, config: &'a [Config]) -> impl Display + 'a {
-        struct Wrapper<'c>(Graph<String, &'static str>, &'c [Config]);
+        struct Wrapper<'c>(Graph<String, String>, &'c [Config]);
         impl Display for Wrapper<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 let dot = Dot::with_config(&self.0, self.1);
@@ -91,18 +93,32 @@ impl SyntaxTree<BuildingStage> {
 
         let mapping = self.graph.map(
             |id, node| format!("{} [{}]", node.ro(&self.stage.0).name(), id.index()),
-            |_, _| "",
+            |_, edge| {
+                if *edge == DEFAULT_TAG {
+                    "".to_string()
+                } else {
+                    format!("Tag = {edge}")
+                }
+            },
         );
         Wrapper(mapping, config)
     }
 }
 
 impl<U> SyntaxTree<U> {
-    pub(crate) fn children_of_raw<T>(&self, id: NodeId<T>) -> OptVec<&Owned> {
-        self.graph
+    pub(crate) fn children_of_raw<T>(&self, id: NodeId<T>, tag: ChildTag) -> OptVec<&Owned> {
+        let mut walker = self
+            .graph
             .neighbors_directed(id.into(), Direction::Outgoing)
-            .map(|x| &self.graph[x])
-            .collect()
+            .detach();
+        let mut result = OptVec::Empty;
+        while let Some((edge_id, node_id)) = walker.next(&self.graph) {
+            if self.graph[edge_id] != tag {
+                continue;
+            }
+            result.push(&self.graph[node_id])
+        }
+        result
     }
 }
 
@@ -118,15 +134,29 @@ impl SyntaxTree {
         }
     }
 
-    pub fn children_of<'b, T, U>(&'b self, id: NodeId<T>, token: &'b GhostToken) -> OptVec<&U>
+    pub fn children_of<'b, T, U>(
+        &'b self,
+        id: NodeId<T>,
+        token: &'b GhostToken,
+        tag: ChildTag,
+    ) -> OptVec<&U>
     where
         GenericASTNode: ConvertibleToRef<U>,
     {
-        self.graph
+        let mut walker = self
+            .graph
             .neighbors_directed(id.into(), Direction::Outgoing)
-            .map(|x| self.graph[x].ro(token))
-            .filter_map(|x| x.try_as_ref())
-            .collect()
+            .detach();
+        let mut result = OptVec::Empty;
+        while let Some((edge_id, node_id)) = walker.next(&self.graph) {
+            if self.graph[edge_id] != tag {
+                continue;
+            }
+            if let Some(node) = self.graph[node_id].ro(token).try_as_ref() {
+                result.push(node)
+            }
+        }
+        result
     }
 
     pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut GhostToken) -> Option<&mut T>
@@ -209,23 +239,21 @@ impl<'arena> Dfs<'arena> {
 }
 
 impl<'arena, T> ChildScope<'arena, T> {
-    fn add_child_by_ref<U>(&mut self, child_id: NodeIndex<usize>)
+    fn add_child_by_ref<U, const TAG: ChildTag>(&mut self, child_id: NodeIndex<usize>)
     where
         U: Into<GenericASTNode>,
-        T: HasChildrenMarker<U>,
+        T: HasChildrenMarker<U, TAG>,
     {
-        self.tree.graph.add_edge(self.node_id, child_id, ());
+        self.tree.graph.add_edge(self.node_id, child_id, TAG);
     }
 
-    pub fn with_children_from<'b, I, U>(
+    pub fn with_children_from<'b, const TAG: ChildTag, U: PopulateTree + 'b>(
         mut self,
-        iter: I,
+        iter: impl IntoIterator<Item = &'b U>,
         context: &mut (impl Linker<'b> + CodeHolder),
     ) -> Self
     where
-        I: IntoIterator<Item = &'b U>,
-        U: PopulateTree + 'b,
-        T: HasChildrenMarker<<U as PopulateTree>::Output>,
+        T: HasChildrenMarker<U::Output, TAG>,
     {
         for item in iter {
             let child_id = item.convert(self.tree, context);

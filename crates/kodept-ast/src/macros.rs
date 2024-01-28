@@ -187,7 +187,7 @@ macro_rules! impl_identifiable {
 macro_rules! node {
     ($(#[$config:meta])* $vis:vis struct $name:ident {
         $($field_vis:vis $field_name:ident: $field_type:ty,)*;
-        $($graph_vis:vis $graph_name:ident: $graph_type:ty,)*
+        $($graph_vis:vis $graph_name:ident: $graph_type:ty$( as $tag:tt)*,)*
     }) => {
         $(#[$config])*
         $vis struct $name {
@@ -200,7 +200,7 @@ macro_rules! node {
         $crate::impl_identifiable!($name);
 
         $crate::with_children! [$name => {
-            $($graph_vis $graph_name: $graph_type)*
+            $($graph_vis $graph_name: $graph_type $(as $tag)?,)*
         }];
     };
     ($(#[$config:meta])* $vis:vis struct $name:ident;) => {
