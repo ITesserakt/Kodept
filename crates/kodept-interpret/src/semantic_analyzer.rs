@@ -3,9 +3,9 @@ use std::ops::Deref;
 use extend::ext;
 use tracing::debug;
 
-use kodept_ast::graph::{GhostToken, NodeId, NodeUnion, SyntaxTree};
-use kodept_ast::rlt_accessor::{ASTFamily, RLTFamily};
-use kodept_ast::traits::Identifiable;
+use kodept_ast::graph::{GhostToken, NodeUnion, SyntaxTree};
+use kodept_ast::rlt_accessor::RLTFamily;
+use kodept_ast::traits::IntoASTFamily;
 use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_ast::{
@@ -14,7 +14,7 @@ use kodept_ast::{
 };
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
-use kodept_core::Named;
+use kodept_core::{ConvertibleTo, Named};
 use kodept_macros::analyzer::Analyzer;
 use kodept_macros::error::report::ReportMessage;
 use kodept_macros::traits::{Context, UnrecoverableError};
@@ -62,11 +62,13 @@ impl Default for SemanticAnalyzer {
 
 #[ext]
 impl<E: Into<ReportMessage>> Result<(), E> {
-    fn report_errors<'c, T, F, U>(self, at: &T, context: &mut impl Context<'c>, func: F)
-    where
-        T: Identifiable + 'static,
-        NodeId<T>: Into<ASTFamily>,
-        &'c U: TryFrom<RLTFamily<'c>> + 'c,
+    fn report_errors<'c, F, U: 'c>(
+        self,
+        at: &impl IntoASTFamily,
+        context: &mut impl Context<'c>,
+        func: F,
+    ) where
+        RLTFamily<'c>: ConvertibleTo<&'c U>,
         F: Fn(&U) -> Vec<CodePoint>,
     {
         if let Err(error) = self {
