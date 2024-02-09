@@ -31,3 +31,6 @@ petgraph = { version = "0.6.4", features = ["stable_graph"] }
 [dependencies.kodept-core]
 path = "../kodept-core"
 version = "0.2"
+
+[dev-dependencies]
+rstest = "0.18.2"

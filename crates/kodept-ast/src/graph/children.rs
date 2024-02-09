@@ -1,11 +1,21 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
+use crate::graph::tags::ChildTag;
 use crate::graph::utils::FromOptVec;
 use crate::graph::{GenericASTNode, Identifiable};
 use crate::graph::{GhostToken, SyntaxTree};
 
-pub type ChildTag = u8;
-pub const DEFAULT_TAG: ChildTag = 0;
+pub(crate) mod tags {
+    pub type ChildTag = u8;
+
+    pub const DEFAULT: ChildTag = 0;
+    pub const PRIMARY: ChildTag = 1;
+    pub const SECONDARY: ChildTag = 2;
+    pub const LEFT: ChildTag = 3;
+    pub const RIGHT: ChildTag = 4;
+
+    pub static TAGS_DESC: [&str; 5] = ["", "P", "S", "L", "R"];
+}
 
 pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
     type Container: FromOptVec<T = Child>;

@@ -10,19 +10,12 @@ use kodept_core::structure::span::CodeHolder;
 use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
-use self::tags::*;
+use crate::graph::tags::*;
 use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
-
-mod tags {
-    pub const PRIMARY: u8 = 0;
-    pub const SECONDARY: u8 = 1;
-    pub const LEFT: u8 = 1;
-    pub const RIGHT: u8 = 2;
-}
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]

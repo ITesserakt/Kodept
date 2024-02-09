@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
+use std::mem::size_of;
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
 use petgraph::dot::{Config, Dot};
@@ -10,10 +11,9 @@ use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::generic_node::{Node, NodeWithParent};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
+use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
-use crate::graph::{
-    ChildTag, GenericASTNode, HasChildrenMarker, Identifiable, NodeId, DEFAULT_TAG,
-};
+use crate::graph::{GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};
 use crate::visitor::visit_side::VisitSide;
@@ -83,7 +83,7 @@ impl SyntaxTree<BuildingStage> {
     }
 
     pub fn export_dot<'a>(&'a self, config: &'a [Config]) -> impl Display + 'a {
-        struct Wrapper<'c>(Graph<String, String>, &'c [Config]);
+        struct Wrapper<'c>(Graph<String, &'static str>, &'c [Config]);
         impl Display for Wrapper<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 let dot = Dot::with_config(&self.0, self.1);
@@ -93,13 +93,7 @@ impl SyntaxTree<BuildingStage> {
 
         let mapping = self.graph.map(
             |id, node| format!("{} [{}]", node.ro(&self.stage.0).name(), id.index()),
-            |_, edge| {
-                if *edge == DEFAULT_TAG {
-                    "".to_string()
-                } else {
-                    format!("Tag = {edge}")
-                }
-            },
+            |_, &edge| TAGS_DESC[edge as usize],
         );
         Wrapper(mapping, config)
     }
@@ -285,5 +279,20 @@ impl From<NodeIndex<usize>> for NodeId<GenericASTNode> {
 impl<T> From<NodeId<T>> for NodeIndex<usize> {
     fn from(value: NodeId<T>) -> Self {
         NodeIndex::new(value.into())
+    }
+}
+
+#[cfg(feature = "size-of")]
+impl size_of::SizeOf for SyntaxTree<BuildingStage> {
+    fn size_of_children(&self, context: &mut size_of::Context) {
+        let (node_cap, edge_cap) = self.graph.capacity();
+        let node_len = self.graph.node_count();
+        let edge_len = self.graph.edge_count();
+        context
+            .add_vectorlike(node_len, node_cap, size_of::<Owned>())
+            .add_vectorlike(edge_len, edge_cap, size_of::<ChildTag>());
+        for node in self.graph.node_weights() {
+            node.ro(&self.stage.0).size_of_children(context);
+        }
     }
 }
