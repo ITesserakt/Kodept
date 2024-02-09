@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::Identity;
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -81,10 +81,10 @@ node! {
 impl PopulateTree for rlt::new_types::TypeName {
     type Output = TypeName;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let node = TypeName {
             name: context.get_chunk_located(self).to_string(),
@@ -98,10 +98,10 @@ impl PopulateTree for rlt::new_types::TypeName {
 impl PopulateTree for rlt::TypedParameter {
     type Output = TypedParameter;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let node = TypedParameter {
             name: context.get_chunk_located(&self.id).to_string(),
@@ -118,10 +118,10 @@ impl PopulateTree for rlt::TypedParameter {
 impl PopulateTree for rlt::Type {
     type Output = Type;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Type::Reference(x) => x.convert(builder, context).cast(),
@@ -148,10 +148,10 @@ impl PopulateTree for rlt::Type {
 impl PopulateTree for rlt::UntypedParameter {
     type Output = UntypedParameter;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(UntypedParameter {
@@ -166,10 +166,10 @@ impl PopulateTree for rlt::UntypedParameter {
 impl PopulateTree for rlt::Parameter {
     type Output = Parameter;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Parameter::Typed(x) => x.convert(builder, context).cast(),

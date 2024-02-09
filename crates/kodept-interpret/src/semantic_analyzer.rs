@@ -14,7 +14,7 @@ use kodept_ast::{
 };
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
-use kodept_core::{ConvertibleTo, Named};
+use kodept_core::{ConvertibleToRef, Named};
 use kodept_macros::analyzer::Analyzer;
 use kodept_macros::error::report::ReportMessage;
 use kodept_macros::traits::{Context, UnrecoverableError};
@@ -62,13 +62,9 @@ impl Default for SemanticAnalyzer {
 
 #[ext]
 impl<E: Into<ReportMessage>> Result<(), E> {
-    fn report_errors<'c, F, U: 'c>(
-        self,
-        at: &impl IntoASTFamily,
-        context: &mut impl Context<'c>,
-        func: F,
-    ) where
-        RLTFamily<'c>: ConvertibleTo<&'c U>,
+    fn report_errors<F, U>(self, at: &impl IntoASTFamily, context: &mut impl Context, func: F)
+    where
+        RLTFamily: ConvertibleToRef<U>,
         F: Fn(&U) -> Vec<CodePoint>,
     {
         if let Err(error) = self {
@@ -96,7 +92,7 @@ impl Analyzer for SemanticAnalyzer {
     type Error = UnrecoverableError;
     type Node = AnalyzingNode;
 
-    fn analyze<'c, C: Context<'c>>(
+    fn analyze<C: Context>(
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut C,

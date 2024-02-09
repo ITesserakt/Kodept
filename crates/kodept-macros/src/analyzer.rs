@@ -9,7 +9,7 @@ pub trait Analyzer {
     type Error: Into<UnrecoverableError>;
     type Node: TryFrom<GenericASTNode>;
 
-    fn analyze<'c, C: Context<'c>>(
+    fn analyze<'c, C: Context>(
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut C,

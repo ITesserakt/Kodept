@@ -34,7 +34,7 @@ impl<W: Write> ASTFormatter<W> {
 }
 
 #[inline]
-fn report_io_error<'a, 'c, C: Context<'c>>(
+fn report_io_error<'a, C: Context>(
     ctx: &'a C,
 ) -> impl Fn(Error) -> Result<(), UnrecoverableError> + 'a {
     move |e| ctx.report_and_fail(vec![], IOError(e))
@@ -44,7 +44,7 @@ impl<W: Write> Analyzer for ASTFormatter<W> {
     type Error = UnrecoverableError;
     type Node = GenericASTNode;
 
-    fn analyze<'n, 'c, C: Context<'c>>(
+    fn analyze<'n, C: Context>(
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut C,

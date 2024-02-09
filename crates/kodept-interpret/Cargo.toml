@@ -20,6 +20,7 @@ paste = "1.0.14"
 replace_with = "0.1.7"
 extend = "1.2.0"
 tracing = "0.1.40"
+petgraph = "0.6.4"
 
 [dependencies.kodept-macros]
 path = "../kodept-macros"

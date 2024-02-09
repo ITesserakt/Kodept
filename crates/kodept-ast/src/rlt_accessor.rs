@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use derive_more::{From, TryInto};
-use kodept_core::ConvertibleTo;
+use kodept_core::ConvertibleToRef;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
@@ -22,48 +22,49 @@ make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
 ]);
 
 #[derive(Clone, From, TryInto, Debug)]
+#[try_into(ref)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
-pub enum RLTFamily<'n> {
-    File(&'n rlt::File),
-    Module(&'n rlt::Module),
-    Struct(&'n rlt::Struct),
-    Enum(&'n rlt::Enum),
-    Type(&'n rlt::Type),
-    TypeName(&'n rlt::new_types::TypeName),
-    TypedParameter(&'n rlt::TypedParameter),
-    UntypedParameter(&'n rlt::UntypedParameter),
-    Variable(&'n rlt::Variable),
-    InitializedVariable(&'n rlt::InitializedVariable),
-    BodiedFunction(&'n rlt::BodiedFunction),
-    Body(&'n rlt::Body),
-    BlockLevel(&'n rlt::BlockLevelNode),
-    ExpressionBlock(&'n rlt::ExpressionBlock),
-    Operation(&'n rlt::Operation),
-    Application(&'n rlt::Application),
-    Expression(&'n rlt::Expression),
-    Term(&'n rlt::Term),
-    Reference(&'n rlt::Reference),
-    Literal(&'n rlt::Literal),
-    CodeFlow(&'n rlt::CodeFlow),
-    If(&'n rlt::IfExpr),
-    Elif(&'n rlt::ElifExpr),
-    Else(&'n rlt::ElseExpr),
+pub enum RLTFamily {
+    File(rlt::File),
+    Module(rlt::Module),
+    Struct(rlt::Struct),
+    Enum(rlt::Enum),
+    Type(rlt::Type),
+    TypeName(rlt::new_types::TypeName),
+    TypedParameter(rlt::TypedParameter),
+    UntypedParameter(rlt::UntypedParameter),
+    Variable(rlt::Variable),
+    InitializedVariable(rlt::InitializedVariable),
+    BodiedFunction(rlt::BodiedFunction),
+    Body(rlt::Body),
+    BlockLevel(rlt::BlockLevelNode),
+    ExpressionBlock(rlt::ExpressionBlock),
+    Operation(rlt::Operation),
+    Application(rlt::Application),
+    Expression(rlt::Expression),
+    Term(rlt::Term),
+    Reference(rlt::Reference),
+    Literal(rlt::Literal),
+    CodeFlow(rlt::CodeFlow),
+    If(rlt::IfExpr),
+    Elif(rlt::ElifExpr),
+    Else(rlt::ElseExpr),
 }
 
 #[derive(Default, Debug)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
-pub struct RLTAccessor<'n> {
-    links: HashMap<ASTFamily, RLTFamily<'n>>,
+pub struct RLTAccessor {
+    links: HashMap<ASTFamily, RLTFamily>,
 }
 
-impl<'n> RLTAccessor<'n> {
-    pub fn access<B: 'n>(&self, node: &impl IntoASTFamily) -> Option<&B>
+impl RLTAccessor {
+    pub fn access<B>(&self, node: &impl IntoASTFamily) -> Option<&B>
     where
-        RLTFamily<'n>: ConvertibleTo<&'n B>,
+        RLTFamily: ConvertibleToRef<B>,
     {
         self.links
             .get(&node.as_member())
-            .and_then(|it| it.clone().try_as())
+            .and_then(|it| it.try_as_ref())
     }
 
     pub fn access_unknown(&self, node: &impl IntoASTFamily) -> Option<&RLTFamily> {
@@ -81,16 +82,16 @@ impl<'n> RLTAccessor<'n> {
         self.links.keys().collect()
     }
 
-    pub fn save<B>(&mut self, key: impl Into<ASTFamily>, value: B)
+    pub fn save<B>(&mut self, key: impl Into<ASTFamily>, value: &B)
     where
-        B: Into<RLTFamily<'n>>,
+        B: Into<RLTFamily> + Clone,
     {
-        self.links.insert(key.into(), value.into());
+        self.links.insert(key.into(), value.clone().into());
     }
 }
 
-impl<'a, 'b> From<&'a RLTFamily<'b>> for RLTFamily<'b> {
-    fn from(value: &'a RLTFamily<'b>) -> Self {
+impl<'a> From<&'a RLTFamily> for RLTFamily {
+    fn from(value: &'a RLTFamily) -> Self {
         value.clone()
     }
 }

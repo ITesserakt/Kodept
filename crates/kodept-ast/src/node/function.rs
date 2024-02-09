@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{Body, node, Parameter, Type, TypedParameter, wrapper};
 use crate::graph::{GenericASTNode, NodeId};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper, Body, Parameter, Type, TypedParameter};
 
 wrapper! {
     #[derive(Debug, PartialEq, From)]
@@ -48,10 +48,10 @@ node! {
 impl PopulateTree for rlt::BodiedFunction {
     type Output = BodiedFunctionDeclaration;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(BodiedFunctionDeclaration {

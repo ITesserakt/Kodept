@@ -8,7 +8,6 @@ use crate::graph::{GhostToken, SyntaxTree};
 pub(crate) mod tags {
     pub type ChildTag = u8;
 
-    pub const DEFAULT: ChildTag = 0;
     pub const PRIMARY: ChildTag = 1;
     pub const SECONDARY: ChildTag = 2;
     pub const LEFT: ChildTag = 3;

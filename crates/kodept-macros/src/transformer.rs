@@ -7,9 +7,9 @@ pub trait Transformer {
     type Error: Into<UnrecoverableError>;
     type Node: TryFrom<GenericASTNode>;
 
-    fn transform<'c>(
+    fn transform(
         &self,
         guard: VisitGuard<Self::Node>,
-        context: &mut impl Context<'c>,
+        context: &mut impl Context,
     ) -> Result<ChangeSet, Skip<Self::Error>>;
 }

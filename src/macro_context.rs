@@ -10,7 +10,7 @@ use kodept_ast::graph::{NodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use kodept_ast::traits::{Accessor, IntoASTFamily, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
-use kodept_core::ConvertibleTo;
+use kodept_core::ConvertibleToRef;
 use kodept_macros::error::report::Report;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{FileContextual, Reporter};
@@ -19,9 +19,9 @@ use crate::codespan_settings::{CodespanSettings, ReportExt};
 use crate::read_code_source::ReadCodeSource;
 
 #[derive(Debug, Constructor)]
-pub struct DefaultContext<'c> {
+pub struct DefaultContext {
     report_collector: FileRelative<ReportCollector>,
-    rlt_accessor: RLTAccessor<'c>,
+    rlt_accessor: RLTAccessor,
     tree: Rc<SyntaxTree>,
 }
 
@@ -29,19 +29,19 @@ pub struct DefaultContext<'c> {
 #[error("Compilation failed due to produced errors")]
 pub struct ErrorReported;
 
-impl<'c> Linker<'c> for DefaultContext<'c> {
-    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
+impl Linker for DefaultContext {
+    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: &B)
     where
         NodeId<A>: Into<ASTFamily>,
-        B: Into<RLTFamily<'c>>,
+        B: Into<RLTFamily> + Clone,
     {
         self.rlt_accessor.save(ast, with)
     }
 
-    fn link<A, B>(&mut self, ast: A, with: B) -> A
+    fn link<A, B>(&mut self, ast: A, with: &B) -> A
     where
         A: IntoASTFamily,
-        B: Into<RLTFamily<'c>>,
+        B: Into<RLTFamily> + Clone,
     {
         self.rlt_accessor.save(ast.as_member(), with);
         ast
@@ -53,10 +53,10 @@ impl<'c> Linker<'c> for DefaultContext<'c> {
     }
 }
 
-impl<'c> Accessor<'c> for DefaultContext<'c> {
-    fn access<B: 'c>(&self, ast: &impl IntoASTFamily) -> Option<&B>
+impl Accessor for DefaultContext {
+    fn access<B>(&self, ast: &impl IntoASTFamily) -> Option<&B>
     where
-        RLTFamily<'c>: ConvertibleTo<&'c B>,
+        RLTFamily: ConvertibleToRef<B>,
     {
         self.rlt_accessor.access(ast)
     }
@@ -70,19 +70,19 @@ impl<'c> Accessor<'c> for DefaultContext<'c> {
     }
 }
 
-impl<'c> FileContextual for DefaultContext<'c> {
+impl FileContextual for DefaultContext {
     fn file_path(&self) -> CodePath {
         self.report_collector.filepath.clone()
     }
 }
 
-impl<'c> Reporter for DefaultContext<'c> {
+impl Reporter for DefaultContext {
     fn report(&mut self, report: Report) {
         self.report_collector.value.report(report)
     }
 }
 
-impl<'c> DefaultContext<'c> {
+impl DefaultContext {
     pub fn emit_diagnostics<W: WriteColor>(
         self,
         settings: &mut CodespanSettings<W>,

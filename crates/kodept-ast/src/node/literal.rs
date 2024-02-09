@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -63,10 +63,10 @@ node! {
 impl PopulateTree for rlt::Literal {
     type Output = Literal;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let mut from_num = |x| {
             builder

@@ -1,3 +1,4 @@
+use replace_with::replace_with_or_abort;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
@@ -5,7 +6,6 @@ use std::rc::Rc;
 use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
 use crate::Errors::{AlreadyDefined, UnresolvedReference};
 use crate::{Errors, Path};
-use replace_with::replace_with_or_abort;
 
 pub struct ScopedSymbolTable {
     symbols: HashMap<Path, Symbol>,
@@ -86,7 +86,6 @@ impl Debug for ScopedSymbolTable {
         f.debug_struct("ScopedSymbolTable")
             .field("name", &self.name)
             .field("depth", &self.depth)
-            .field("enclosing_scope", &self.enclosing_scope)
             .field("symbols", &self.symbols)
             .finish()
     }

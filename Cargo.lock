@@ -571,6 +571,7 @@ dependencies = [
  "kodept-inference",
  "kodept-macros",
  "paste",
+ "petgraph",
  "replace_with",
  "tracing",
 ]

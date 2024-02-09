@@ -128,10 +128,10 @@ pub enum BinaryExpressionKind {
 impl PopulateTree for rlt::ExpressionBlock {
     type Output = ExpressionBlock;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(ExpressionBlock {
@@ -146,10 +146,10 @@ impl PopulateTree for rlt::ExpressionBlock {
 impl PopulateTree for rlt::Operation {
     type Output = Operation;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Operation::Block(x) => x.convert(builder, context).cast(),
@@ -208,10 +208,10 @@ impl PopulateTree for rlt::Operation {
 impl PopulateTree for rlt::Application {
     type Output = Application;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(Application {
@@ -232,10 +232,10 @@ impl PopulateTree for rlt::Application {
 impl PopulateTree for rlt::Expression {
     type Output = Expression;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Expression::Lambda { binds, expr, .. } => builder

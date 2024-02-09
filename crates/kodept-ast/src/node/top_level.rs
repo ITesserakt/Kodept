@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{BodiedFunctionDeclaration, node, TypedParameter, TypeName, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -56,10 +56,10 @@ node! {
 impl PopulateTree for Struct {
     type Output = StructDeclaration;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let node = StructDeclaration {
             name: context.get_chunk_located(&self.id).to_string(),
@@ -80,10 +80,10 @@ impl PopulateTree for Struct {
 impl PopulateTree for Enum {
     type Output = EnumDeclaration;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let (kind, name, rest) = match self {
             Enum::Stack { id, contents, .. } => (EnumKind::Stack, id, contents),
@@ -109,10 +109,10 @@ impl PopulateTree for Enum {
 impl PopulateTree for TopLevelNode {
     type Output = TopLevel;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             TopLevelNode::Enum(x) => x.convert(builder, context).cast(),

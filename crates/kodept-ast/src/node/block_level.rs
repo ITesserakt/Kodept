@@ -96,10 +96,10 @@ impl From<Body> for BlockLevel {
 impl PopulateTree for rlt::Body {
     type Output = Body;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Body::Block(x) => x.convert(builder, context).cast(),
@@ -111,10 +111,10 @@ impl PopulateTree for rlt::Body {
 impl PopulateTree for BlockLevelNode {
     type Output = BlockLevel;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             BlockLevelNode::InitVar(x) => x.convert(builder, context).cast(),
@@ -128,10 +128,10 @@ impl PopulateTree for BlockLevelNode {
 impl PopulateTree for rlt::InitializedVariable {
     type Output = InitializedVariable;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(InitializedVariable {
@@ -147,10 +147,10 @@ impl PopulateTree for rlt::InitializedVariable {
 impl PopulateTree for rlt::Variable {
     type Output = Variable;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let (kind, name, ty) = match self {
             rlt::Variable::Immutable {

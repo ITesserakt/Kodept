@@ -244,7 +244,7 @@ impl<'arena, T> ChildScope<'arena, T> {
     pub fn with_children_from<'b, const TAG: ChildTag, U: PopulateTree + 'b>(
         mut self,
         iter: impl IntoIterator<Item = &'b U>,
-        context: &mut (impl Linker<'b> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> Self
     where
         T: HasChildrenMarker<U::Output, TAG>,
@@ -256,9 +256,9 @@ impl<'arena, T> ChildScope<'arena, T> {
         self
     }
 
-    pub fn with_rlt<'b, U>(self, context: &mut impl Linker<'b>, rlt_node: U) -> Self
+    pub fn with_rlt<U>(self, context: &mut impl Linker, rlt_node: &U) -> Self
     where
-        U: Into<RLTFamily<'b>>,
+        U: Into<RLTFamily> + Clone,
         NodeId<T>: Into<ASTFamily>,
     {
         context.link_ref(self.id(), rlt_node);

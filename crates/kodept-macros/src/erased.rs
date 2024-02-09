@@ -10,10 +10,7 @@ use crate::analyzer::Analyzer;
 use crate::traits::{Context, UnrecoverableError};
 use crate::transformer::Transformer;
 
-pub trait ErasedAnalyzer<'c, C>: Named
-where
-    C: Context<'c>,
-{
+pub trait ErasedAnalyzer<C: Context>: Named {
     type Error;
 
     fn analyze(
@@ -24,7 +21,7 @@ where
         context: &mut C,
     ) -> Result<(), Self::Error>;
 
-    fn erase(self) -> Erased<'c, C, Self::Error>
+    fn erase(self) -> Erased<C, Self::Error>
     where
         Self: Sized + 'static,
     {
@@ -32,10 +29,7 @@ where
     }
 }
 
-pub trait ErasedTransformer<'c, C>: Named
-where
-    C: Context<'c>,
-{
+pub trait ErasedTransformer<C: Context>: Named {
     type Error;
 
     fn transform(
@@ -46,7 +40,7 @@ where
         context: &mut C,
     ) -> Result<ChangeSet, Self::Error>;
 
-    fn erase(self) -> Erased<'c, C, Self::Error>
+    fn erase(self) -> Erased<C, Self::Error>
     where
         Self: Sized + 'static,
     {
@@ -54,28 +48,22 @@ where
     }
 }
 
-type BoxedTransformer<'c, C, E> = Box<dyn ErasedTransformer<'c, C, Error = E>>;
-type BoxedAnalyzer<'c, C, E> = Box<dyn ErasedAnalyzer<'c, C, Error = E>>;
+type BoxedTransformer<C, E> = Box<dyn ErasedTransformer<C, Error = E>>;
+type BoxedAnalyzer<C, E> = Box<dyn ErasedAnalyzer<C, Error = E>>;
 
 #[derive(From)]
-pub enum Erased<'c, C, E>
-where
-    C: Context<'c>,
-{
-    Transformer(BoxedTransformer<'c, C, E>),
-    Analyzer(BoxedAnalyzer<'c, C, E>),
+pub enum Erased<C: Context, E> {
+    Transformer(BoxedTransformer<C, E>),
+    Analyzer(BoxedAnalyzer<C, E>),
 }
 
-impl<'c, C, E> Debug for Erased<'c, C, E>
-where
-    C: Context<'c>,
-{
+impl<C: Context, E> Debug for Erased<C, E> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name())
     }
 }
 
-impl<'c, C: Context<'c>, E> Named for Erased<'c, C, E> {
+impl<C: Context, E> Named for Erased<C, E> {
     fn name(&self) -> &'static str {
         match self {
             Erased::Transformer(x) => x.name(),
@@ -84,9 +72,9 @@ impl<'c, C: Context<'c>, E> Named for Erased<'c, C, E> {
     }
 }
 
-impl<'c, C, T: Named> ErasedTransformer<'c, C> for T
+impl<C, T: Named> ErasedTransformer<C> for T
 where
-    C: Context<'c>,
+    C: Context,
     T: Transformer + 'static,
     GenericASTNode: ConvertibleToRef<T::Node>,
 {
@@ -111,14 +99,14 @@ where
         .map_err(|e| e.into())
     }
 
-    fn erase(self) -> Erased<'c, C, Self::Error> {
+    fn erase(self) -> Erased<C, Self::Error> {
         Erased::Transformer(Box::new(self))
     }
 }
 
-impl<'c, C, A: Named> ErasedAnalyzer<'c, C> for A
+impl<'c, C, A: Named> ErasedAnalyzer<C> for A
 where
-    C: Context<'c>,
+    C: Context,
     A: Analyzer + 'static,
     GenericASTNode: ConvertibleToRef<A::Node>,
 {
@@ -143,7 +131,7 @@ where
         .map_err(|e| e.into())
     }
 
-    fn erase(self) -> Erased<'c, C, Self::Error> {
+    fn erase(self) -> Erased<C, Self::Error> {
         Erased::Analyzer(Box::new(self))
     }
 }

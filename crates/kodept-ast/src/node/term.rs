@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -43,10 +43,10 @@ pub enum Identifier {
 impl PopulateTree for rlt::Term {
     type Output = Term;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Term::Reference(x) => x.convert(builder, context).cast(),
@@ -57,10 +57,10 @@ impl PopulateTree for rlt::Term {
 impl PopulateTree for rlt::Reference {
     type Output = Reference;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let ident = match self {
             rlt::Reference::Type(x) => Identifier::TypeReference {

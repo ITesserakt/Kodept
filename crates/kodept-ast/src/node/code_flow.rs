@@ -7,11 +7,11 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{Body, node, Operation, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::Identity;
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper, Body, Operation};
 
 wrapper! {
     #[derive(Debug, PartialEq, From)]
@@ -55,10 +55,10 @@ node! {
 impl PopulateTree for rlt::IfExpr {
     type Output = IfExpression;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(IfExpression {
@@ -76,10 +76,10 @@ impl PopulateTree for rlt::IfExpr {
 impl PopulateTree for rlt::ElifExpr {
     type Output = ElifExpression;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(ElifExpression {
@@ -95,10 +95,10 @@ impl PopulateTree for rlt::ElifExpr {
 impl PopulateTree for rlt::ElseExpr {
     type Output = ElseExpression;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(ElseExpression {

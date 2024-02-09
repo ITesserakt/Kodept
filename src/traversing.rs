@@ -13,14 +13,11 @@ use kodept_macros::traits::{Context, UnrecoverableError};
 use crate::utils::graph::topological_layers;
 
 #[derive(Debug)]
-pub struct TraverseSet<'c, C, E>
-where
-    C: Context<'c>,
-{
-    inner: DiGraph<Erased<'c, C, E>, ()>,
+pub struct TraverseSet<C: Context, E> {
+    inner: DiGraph<Erased<C, E>, ()>,
 }
 
-impl<'c, C: Context<'c>, E> Default for TraverseSet<'c, C, E> {
+impl<C: Context, E> Default for TraverseSet<C, E> {
     fn default() -> Self {
         Self {
             inner: Default::default(),
@@ -28,19 +25,16 @@ impl<'c, C: Context<'c>, E> Default for TraverseSet<'c, C, E> {
     }
 }
 
-pub trait Traversable<'c, C: Context<'c>, E> {
+pub trait Traversable<C: Context, E> {
     fn traverse(&mut self, context: C) -> Result<C, (Vec<E>, C)>;
 }
 
-impl<'c, C, E> TraverseSet<'c, C, E>
-where
-    C: Context<'c>,
-{
+impl<C: Context, E> TraverseSet<C, E> {
     pub fn empty() -> Self {
         Self::default()
     }
 
-    pub fn add_independent(&mut self, item: Erased<'c, C, E>) -> NodeIndex {
+    pub fn add_independent(&mut self, item: Erased<C, E>) -> NodeIndex {
         self.inner.add_node(item)
     }
 
@@ -54,7 +48,7 @@ where
         }
     }
 
-    pub fn add_dependent(&mut self, from: &[NodeIndex], item: Erased<'c, C, E>) -> NodeIndex {
+    pub fn add_dependent(&mut self, from: &[NodeIndex], item: Erased<C, E>) -> NodeIndex {
         let id = self.inner.add_node(item);
         from.iter().for_each(|&it| {
             self.inner.add_edge(it, id, ());
@@ -117,9 +111,7 @@ where
     }
 }
 
-impl<'c, C: Context<'c>> Traversable<'c, C, UnrecoverableError>
-    for TraverseSet<'c, C, UnrecoverableError>
-{
+impl<C: Context> Traversable<C, UnrecoverableError> for TraverseSet<C, UnrecoverableError> {
     fn traverse(&mut self, mut context: C) -> Result<C, (Vec<UnrecoverableError>, C)> {
         let sorted = topological_layers(&self.inner);
         for layer in sorted {

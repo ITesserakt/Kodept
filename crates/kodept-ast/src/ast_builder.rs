@@ -19,11 +19,11 @@ use crate::utils::ByteSize;
 pub struct ASTBuilder;
 
 impl ASTBuilder {
-    pub fn recursive_build<'n, C: CodeHolder>(
+    pub fn recursive_build<C: CodeHolder>(
         &mut self,
-        from: &'n rlt::File,
+        from: &rlt::File,
         code: &C,
-    ) -> (SyntaxTreeBuilder, RLTAccessor<'n>) {
+    ) -> (SyntaxTreeBuilder, RLTAccessor) {
         let mut links = RLTAccessor::default();
         let mut linker = ASTLinker {
             access: &mut links,
@@ -45,27 +45,27 @@ impl ASTBuilder {
     }
 }
 
-struct ASTLinker<'a, 'b, C>
+struct ASTLinker<'a, C>
 where
     C: CodeHolder,
 {
-    access: &'a mut RLTAccessor<'b>,
+    access: &'a mut RLTAccessor,
     code: &'a C,
 }
 
-impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
-    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: B)
+impl<'a, C: CodeHolder> Linker for ASTLinker<'a, C> {
+    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: &B)
     where
         NodeId<A>: Into<ASTFamily>,
-        B: Into<RLTFamily<'b>>,
+        B: Into<RLTFamily> + Clone,
     {
         self.access.save(ast, with);
     }
 
-    fn link<A, B>(&mut self, ast: A, with: B) -> A
+    fn link<A, B>(&mut self, ast: A, with: &B) -> A
     where
         A: IntoASTFamily,
-        B: Into<RLTFamily<'b>>,
+        B: Into<RLTFamily> + Clone,
     {
         self.access.save(ast.as_member(), with);
         ast
@@ -77,7 +77,7 @@ impl<'a, 'b, C: CodeHolder> Linker<'b> for ASTLinker<'a, 'b, C> {
     }
 }
 
-impl<'a, 'b, C: CodeHolder> CodeHolder for ASTLinker<'a, 'b, C> {
+impl<'a, C: CodeHolder> CodeHolder for ASTLinker<'a, C> {
     fn get_chunk(&self, at: CodePoint) -> Cow<str> {
         self.code.get_chunk(at)
     }

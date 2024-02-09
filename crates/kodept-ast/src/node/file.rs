@@ -6,10 +6,10 @@ use size_of::SizeOf;
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, TopLevel};
 use crate::graph::{NodeId, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, TopLevel};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "size-of", derive(SizeOf))]
@@ -43,10 +43,10 @@ node! {
 impl PopulateTree for File {
     type Output = FileDeclaration;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
             .add_node(FileDeclaration {
@@ -61,10 +61,10 @@ impl PopulateTree for File {
 impl PopulateTree for Module {
     type Output = ModuleDeclaration;
 
-    fn convert<'a>(
-        &'a self,
+    fn convert(
+        &self,
         builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker<'a> + CodeHolder),
+        context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         let (kind, name, rest) = match self {
             Module::Global { id, rest, .. } => (ModuleKind::Global, id, rest),

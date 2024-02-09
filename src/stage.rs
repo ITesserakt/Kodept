@@ -4,11 +4,11 @@ use kodept_interpret::SemanticAnalyzer;
 use kodept_macros::erased::ErasedAnalyzer;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
-pub struct PredefinedTraverseSet<'c, C: Context<'c> = DefaultContext<'c>, E = UnrecoverableError>(
-    TraverseSet<'c, C, E>,
+pub struct PredefinedTraverseSet<C: Context = DefaultContext, E = UnrecoverableError>(
+    TraverseSet<C, E>,
 );
 
-impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableError> {
+impl<C: Context> Default for PredefinedTraverseSet<C, UnrecoverableError> {
     fn default() -> Self {
         let mut set = TraverseSet::empty();
         set.add_independent(SemanticAnalyzer::new().erase());
@@ -16,8 +16,8 @@ impl<'c, C: Context<'c>> Default for PredefinedTraverseSet<'c, C, UnrecoverableE
     }
 }
 
-impl<'c, C: Context<'c>> Traversable<'c, C, UnrecoverableError>
-    for PredefinedTraverseSet<'c, C, UnrecoverableError>
+impl<C: Context> Traversable<C, UnrecoverableError>
+    for PredefinedTraverseSet<C, UnrecoverableError>
 {
     fn traverse(&mut self, context: C) -> Result<C, (Vec<UnrecoverableError>, C)> {
         self.0.traverse(context)

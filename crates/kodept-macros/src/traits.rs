@@ -43,6 +43,6 @@ pub trait FileContextual {
     fn file_path(&self) -> CodePath;
 }
 
-pub trait Context<'c>: Linker<'c> + Accessor<'c> + Reporter {}
+pub trait Context: Linker + Accessor + Reporter {}
 
-impl<'c, T: Linker<'c> + Accessor<'c> + Reporter> Context<'c> for T {}
+impl<'c, T: Linker + Accessor + Reporter> Context for T {}
