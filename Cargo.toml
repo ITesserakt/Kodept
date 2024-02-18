@@ -46,6 +46,7 @@ anyhow = "1.0.75"
 clap = { version = "4.4.6", features = ["derive", "env"] }
 codespan-reporting = "0.11.1"
 derive_more.workspace = true
+dhat = { version = "0.3.3", optional = true }
 extend.workspace = true
 indicatif = "0.17.7"
 itertools.workspace = true
@@ -86,6 +87,13 @@ features = ["size-of"]
 [dependencies.kodept-interpret]
 path = "crates/kodept-interpret"
 version = "0.1"
+
+[features]
+profiler = ["dep:dhat"]
+
+[profile.profiler]
+debug = true
+inherits = "release"
 
 [profile.bench]
 opt-level = 3
