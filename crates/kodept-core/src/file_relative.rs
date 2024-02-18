@@ -1,20 +1,15 @@
 use std::fmt::Formatter;
 use std::path::{Path, PathBuf};
 
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use crate::code_source::CodeSource;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum CodePath {
     ToFile(PathBuf),
     ToMemory(String),
 }
 
 #[derive(Debug)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct FileRelative<T> {
     pub value: T,
     pub filepath: CodePath,

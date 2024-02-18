@@ -1,13 +1,9 @@
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use crate::code_point::CodePoint;
 use crate::structure::Located;
 use crate::structure::rlt::{Body, Operation};
 use crate::structure::rlt::new_types::Keyword;
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct IfExpr {
     pub keyword: Keyword,
     pub condition: Operation,
@@ -17,7 +13,6 @@ pub struct IfExpr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct ElifExpr {
     pub keyword: Keyword,
     pub condition: Operation,
@@ -25,14 +20,12 @@ pub struct ElifExpr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct ElseExpr {
     pub keyword: Keyword,
     pub body: Body,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum CodeFlow {
     If(IfExpr),
 }

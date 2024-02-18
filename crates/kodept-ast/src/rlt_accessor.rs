@@ -6,8 +6,6 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::ConvertibleToRef;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use kodept_core::structure::{rlt, Located};
 
@@ -17,14 +15,12 @@ use crate::*;
 
 make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
     derive(Hash, PartialEq, Eq, From, Debug, TryInto),
-    cfg_attr(feature = "size-of", derive(SizeOf)),
     cfg_attr(feature = "serde", derive(Serialize, Deserialize)),
     cfg_attr(feature = "serde", serde(tag = "owner", content = "id"))
 ]);
 
 #[derive(Clone, From, TryInto, Debug)]
 #[try_into(ref)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum RLTFamily {
     File(rlt::File),
     Module(rlt::Module),
@@ -53,7 +49,6 @@ pub enum RLTFamily {
 }
 
 #[derive(Default, Debug)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct RLTAccessor {
     links: HashMap<ASTFamily, RLTFamily>,
 }

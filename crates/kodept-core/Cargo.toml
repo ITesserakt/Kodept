@@ -16,13 +16,11 @@ workspace = true
 
 [features]
 default = []
-size-of = ["dep:size-of"]
 
 [dependencies]
 derive_more.workspace = true
 itertools.workspace = true
 pathdiff = "0.2.1"
-size-of = { version = "0.1.5", optional = true }
 thiserror = { workspace = true }
 tracing = "0.1.37"
 

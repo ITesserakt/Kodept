@@ -1,8 +1,6 @@
 use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -26,7 +24,6 @@ wrapper! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct NumberLiteral {
         pub value: String,;
@@ -35,7 +32,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct CharLiteral {
         pub value: String,;
@@ -44,7 +40,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct StringLiteral {
         pub value: String,;
@@ -53,7 +48,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct TupleLiteral {;
         pub value: Vec<Literal>,

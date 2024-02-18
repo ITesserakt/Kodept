@@ -17,12 +17,10 @@ workspace = true
 [features]
 default = []
 serde = ["dep:serde"]
-size-of = ["dep:size-of"]
 
 [dependencies]
 derive_more.workspace = true
 serde = { version = "1.0.188", optional = true, features = ["derive"] }
-size-of = { version = "0.1.5", optional = true }
 tracing = "0.1.37"
 paste = "1.0.14"
 qcell = "0.5.4"

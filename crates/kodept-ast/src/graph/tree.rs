@@ -1,6 +1,5 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use std::mem::size_of;
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
 use petgraph::dot::{Config, Dot};
@@ -279,20 +278,5 @@ impl From<NodeIndex<usize>> for NodeId<GenericASTNode> {
 impl<T> From<NodeId<T>> for NodeIndex<usize> {
     fn from(value: NodeId<T>) -> Self {
         NodeIndex::new(value.into())
-    }
-}
-
-#[cfg(feature = "size-of")]
-impl size_of::SizeOf for SyntaxTree<BuildingStage> {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        let (node_cap, edge_cap) = self.graph.capacity();
-        let node_len = self.graph.node_count();
-        let edge_len = self.graph.edge_count();
-        context
-            .add_vectorlike(node_len, node_cap, size_of::<Owned>())
-            .add_vectorlike(edge_len, edge_cap, size_of::<ChildTag>());
-        for node in self.graph.node_weights() {
-            node.ro(&self.stage.0).size_of_children(context);
-        }
     }
 }

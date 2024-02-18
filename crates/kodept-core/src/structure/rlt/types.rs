@@ -1,6 +1,4 @@
 use derive_more::From;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use crate::code_point::CodePoint;
 use crate::structure::Located;
@@ -16,34 +14,20 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct TypedParameter {
     pub id: Identifier,
     pub parameter_type: Type,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct UntypedParameter {
     pub id: Identifier,
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Parameter {
     Typed(TypedParameter),
     Untyped(UntypedParameter),
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for Type {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        match self {
-            Type::Reference(x) => x.size_of_children(context),
-            Type::Tuple(x) => x.size_of_children(context),
-            Type::Union(x) => x.size_of_children(context),
-        }
-    }
 }
 
 impl Located for Type {

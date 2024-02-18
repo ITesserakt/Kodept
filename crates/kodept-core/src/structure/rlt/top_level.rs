@@ -1,7 +1,4 @@
 use derive_more::From;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use crate::code_point::CodePoint;
 use crate::structure::rlt::function::BodiedFunction;
 use crate::structure::rlt::new_types::*;
@@ -9,7 +6,6 @@ use crate::structure::rlt::types::TypedParameter;
 use crate::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct Struct {
     pub keyword: Keyword,
     pub id: TypeName,
@@ -18,7 +14,6 @@ pub struct Struct {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Enum {
     Stack {
         keyword: Keyword,
@@ -33,7 +28,6 @@ pub enum Enum {
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum TopLevelNode {
     Enum(Enum),
     Struct(Struct),

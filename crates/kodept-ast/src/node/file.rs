@@ -1,7 +1,5 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
@@ -12,7 +10,6 @@ use crate::traits::PopulateTree;
 use crate::{node, TopLevel};
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum ModuleKind {
     Global,
@@ -21,7 +18,6 @@ pub enum ModuleKind {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct FileDeclaration {
         ;
@@ -31,7 +27,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ModuleDeclaration {
         pub kind: ModuleKind,

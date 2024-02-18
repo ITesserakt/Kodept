@@ -1,7 +1,4 @@
 use derive_more::From;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use crate::code_point::CodePoint;
 use crate::structure::{
     Located,
@@ -12,7 +9,6 @@ use crate::structure::{
 use crate::structure::rlt::BodiedFunction;
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Body {
     Block(ExpressionBlock),
     Simplified {
@@ -30,7 +26,6 @@ pub enum BlockLevelNode {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Variable {
     Immutable {
         keyword: Symbol,
@@ -45,23 +40,10 @@ pub enum Variable {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct InitializedVariable {
     pub variable: Variable,
     pub equals: Symbol,
     pub expression: Operation,
-}
-
-#[cfg(feature = "size-of")]
-impl ::size_of::SizeOf for BlockLevelNode {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        match self {
-            Self::InitVar(x) => x.size_of_children(context),
-            Self::Block(x) => x.size_of_children(context),
-            Self::Function(x) => x.size_of_children(context),
-            Self::Operation(x) => x.size_of_children(context),
-        }
-    }
 }
 
 impl Located for Variable {

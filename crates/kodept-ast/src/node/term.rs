@@ -1,8 +1,6 @@
 use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
@@ -23,7 +21,6 @@ wrapper! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Reference {
         pub ident: Identifier,;
@@ -31,7 +28,6 @@ node! {
 }
 
 #[derive(Debug, PartialEq, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Identifier {
     #[from(ignore)]

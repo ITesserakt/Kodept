@@ -1,9 +1,5 @@
 use std::borrow::Cow;
 
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-use tracing::debug;
-
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
@@ -12,10 +8,8 @@ use crate::graph::NodeId;
 use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
 use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use crate::traits::{IntoASTFamily, Linker, PopulateTree};
-use crate::utils::ByteSize;
 
 #[derive(Debug, Default)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct ASTBuilder;
 
 impl ASTBuilder {
@@ -31,16 +25,6 @@ impl ASTBuilder {
         };
         let mut tree = SyntaxTree::new();
         from.convert(&mut tree, &mut linker);
-        #[cfg(feature = "size-of")]
-        {
-            let size = tree.size_of();
-            let total = ByteSize::compress(size.total_bytes());
-            let excess = ByteSize::compress(size.excess_bytes());
-            debug!(
-                "Size of AST ~= {:.2}{} (with {:.2}{} excess)",
-                total.0, total.1, excess.0, excess.1
-            );
-        }
         (tree, links)
     }
 }
@@ -53,7 +37,7 @@ where
     code: &'a C,
 }
 
-impl<'a, C: CodeHolder> Linker for ASTLinker<'a, C> {
+impl<C: CodeHolder> Linker for ASTLinker<'_, C> {
     fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: &B)
     where
         NodeId<A>: Into<ASTFamily>,
@@ -77,7 +61,7 @@ impl<'a, C: CodeHolder> Linker for ASTLinker<'a, C> {
     }
 }
 
-impl<'a, C: CodeHolder> CodeHolder for ASTLinker<'a, C> {
+impl<C: CodeHolder> CodeHolder for ASTLinker<'_, C> {
     fn get_chunk(&self, at: CodePoint) -> Cow<str> {
         self.code.get_chunk(at)
     }

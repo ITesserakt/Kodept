@@ -2,8 +2,6 @@ use derive_more::{From, TryInto};
 use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 use std::fmt::Debug;
 
 use crate::graph::changes::Change;
@@ -16,8 +14,7 @@ type Identity<T> = T;
 make_ast_node_adaptor!(GenericASTNode, lifetimes: [], Identity, configs: [
     derive(Debug, PartialEq, From, TryInto),
     try_into(owned, ref, ref_mut),
-    cfg_attr(feature = "serde", derive(Serialize, Deserialize)),
-    cfg_attr(feature = "size-of", derive(SizeOf))
+    cfg_attr(feature = "serde", derive(Serialize, Deserialize))
 ]);
 
 #[macro_export]
