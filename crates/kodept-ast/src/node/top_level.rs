@@ -1,9 +1,6 @@
 use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
@@ -14,7 +11,6 @@ use crate::traits::PopulateTree;
 use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum EnumKind {
     Stack,
@@ -33,7 +29,6 @@ wrapper! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct StructDeclaration {
         pub name: String,;
@@ -44,7 +39,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct EnumDeclaration {
         pub kind: EnumKind,

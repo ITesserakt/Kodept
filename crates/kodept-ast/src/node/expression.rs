@@ -1,12 +1,9 @@
 use derive_more::{From, Into};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
@@ -43,7 +40,6 @@ wrapper! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Application {;
         pub expr: Identity<Operation> as PRIMARY,
@@ -53,7 +49,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Access {;
         pub left: Identity<Operation> as LEFT,
@@ -63,7 +58,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Unary {
         pub kind: UnaryExpressionKind,;
@@ -73,7 +67,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Binary {
         pub kind: BinaryExpressionKind,;
@@ -84,7 +77,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Lambda {;
         pub binds: Vec<Reference>,
@@ -94,7 +86,6 @@ node! {
 
 node! {
     #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "size-of", derive(SizeOf))]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ExpressionBlock {;
         pub items: Vec<BlockLevel>,
@@ -102,7 +93,6 @@ node! {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum UnaryExpressionKind {
     Neg,
@@ -112,7 +102,6 @@ pub enum UnaryExpressionKind {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum BinaryExpressionKind {
     Pow,

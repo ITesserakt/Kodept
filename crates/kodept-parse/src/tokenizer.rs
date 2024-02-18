@@ -1,8 +1,6 @@
 use std::str::Utf8Error;
 
 use nom_supreme::error::ErrorTree;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 use thiserror::Error;
 
 use kodept_core::code_point::CodePoint;
@@ -21,7 +19,6 @@ pub enum TokenizeError {
     Utf8(#[from] Utf8Error),
 }
 
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct Tokenizer<'t> {
     buffer: &'t str,
     pos: usize,

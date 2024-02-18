@@ -1,6 +1,3 @@
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 use crate::code_point::CodePoint;
 use crate::structure::Located;
 use crate::structure::rlt::new_types::Enclosed;
@@ -15,21 +12,6 @@ pub enum Literal {
     Char(Span),
     String(Span),
     Tuple(Enclosed<Box<[Literal]>>),
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for Literal {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        match self {
-            Literal::Binary(x) => x.size_of_children(context),
-            Literal::Octal(x) => x.size_of_children(context),
-            Literal::Hex(x) => x.size_of_children(context),
-            Literal::Floating(x) => x.size_of_children(context),
-            Literal::Char(x) => x.size_of_children(context),
-            Literal::String(x) => x.size_of_children(context),
-            Literal::Tuple(x) => x.size_of_children(context),
-        }
-    }
 }
 
 impl Located for Literal {

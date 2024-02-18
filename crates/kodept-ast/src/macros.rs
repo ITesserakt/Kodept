@@ -24,13 +24,6 @@ macro_rules! wrapper {
                 Ok(unsafe { std::mem::transmute(node) })
             }
         }
-
-        #[cfg(feature = "size-of")]
-        impl size_of::SizeOf for $wrapper where $inner: size_of::SizeOf {
-            fn size_of_children(&self, context: &mut size_of::Context) {
-                self.0.size_of_children(context)
-            }
-        }
     };
     ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident {
         $($name:ident($t:ty) = $variants:pat $(if $variant_if:expr)? => $variant_expr:expr$(,)*)*
@@ -60,13 +53,6 @@ macro_rules! wrapper {
                     return Err($crate::utils::Skip::Skipped);
                 }
                 Ok(unsafe { std::mem::transmute(value) })
-            }
-        }
-
-        #[cfg(feature = "size-of")]
-        impl size_of::SizeOf for $wrapper where GenericASTNode: size_of::SizeOf {
-            fn size_of_children(&self, context: &mut size_of::Context) {
-                self.0.size_of_children(context)
             }
         }
 

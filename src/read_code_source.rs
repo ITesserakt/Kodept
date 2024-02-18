@@ -3,14 +3,13 @@ use std::env::current_dir;
 use std::io::Read;
 
 use codespan_reporting::files::line_starts;
-use size_of::SizeOf;
 
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_core::structure::span::CodeHolder;
 
-#[derive(SizeOf, Debug)]
+#[derive(Debug)]
 pub struct ReadCodeSource {
     source_contents: String,
     source_path: CodePath,

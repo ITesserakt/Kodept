@@ -25,7 +25,6 @@ members = [
 [workspace.dependencies]
 nom = "7.1"
 thiserror = "1.0"
-size-of = "0.1"
 extend = "1.2"
 itertools = "0.12"
 
@@ -55,7 +54,6 @@ nom-supreme = "0.8.0"
 petgraph = "0.6.4"
 rayon = { version = "1.7.0" }
 serde_json = "1.0.107"
-size-of.workspace = true
 thiserror.workspace = true
 tracing = { version = "0.1.37" }
 tracing-subscriber = "0.3.17"
@@ -63,7 +61,6 @@ tracing-subscriber = "0.3.17"
 [dependencies.kodept-core]
 path = "crates/kodept-core"
 version = "0.2"
-features = ["size-of"]
 
 [dependencies.kodept-inference]
 path = "crates/kodept-inference"
@@ -72,17 +69,15 @@ version = "0.1"
 [dependencies.kodept-parse]
 path = "crates/kodept-parse"
 version = "0.1"
-features = ["size-of"]
 
 [dependencies.kodept-ast]
 path = "crates/kodept-ast"
 version = "0.2"
-features = ["size-of", "serde"]
+features = ["serde"]
 
 [dependencies.kodept-macros]
 path = "crates/kodept-macros"
 version = "0.1"
-features = ["size-of"]
 
 [dependencies.kodept-interpret]
 path = "crates/kodept-interpret"

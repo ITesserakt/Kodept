@@ -16,7 +16,6 @@ workspace = true
 
 [features]
 default = []
-size-of = ["dep:size-of", "kodept-core/size-of"]
 enum-iter = ["dep:enum-iterator"]
 
 [dependencies]
@@ -26,7 +25,6 @@ extend = { workspace = true }
 nom = { workspace = true }
 nom-supreme = "0.8.0"
 nonempty-collections = "0.1"
-size-of = { optional = true, workspace = true }
 thiserror = "1.0.44"
 
 [dependencies.kodept-core]

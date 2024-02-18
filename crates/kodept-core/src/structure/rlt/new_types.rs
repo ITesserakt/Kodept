@@ -1,8 +1,4 @@
 use derive_more::{From, Into};
-#[cfg(feature = "size-of")]
-use size_of::Context;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use crate::code_point::CodePoint;
 use crate::structure::Located;
@@ -13,7 +9,6 @@ macro_rules! make_wrappers {
         $(
         #[repr(transparent)]
         #[derive(Debug, Clone, PartialEq, From, Into)]
-        #[cfg_attr(feature = "size-of", derive(SizeOf))]
         pub struct $name(pub Span);
 
         impl $crate::structure::Located for $name {
@@ -28,7 +23,6 @@ macro_rules! make_wrappers {
 make_wrappers!(Keyword, Symbol, TypeName, Identifier,);
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum UnaryOperationSymbol {
     Neg(Symbol),
     Not(Symbol),
@@ -37,7 +31,6 @@ pub enum UnaryOperationSymbol {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum BinaryOperationSymbol {
     /// **
     Pow(Symbol),
@@ -62,15 +55,6 @@ pub struct Enclosed<T> {
     pub left: Symbol,
     pub inner: T,
     pub right: Symbol,
-}
-
-#[cfg(feature = "size-of")]
-impl<T: SizeOf> SizeOf for Enclosed<Box<[T]>> {
-    fn size_of_children(&self, context: &mut Context) {
-        self.left.size_of_children(context);
-        self.inner.size_of_children(context);
-        self.right.size_of_children(context);
-    }
 }
 
 impl Located for UnaryOperationSymbol {

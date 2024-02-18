@@ -3,8 +3,6 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 use extend::ext;
 use kodept_ast::rlt_accessor::RLTFamily;
 use kodept_ast::traits::IntoASTFamily;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use crate::traits::Context;
 use crate::warn_about_broken_rlt;
@@ -76,21 +74,6 @@ impl Report {
 
     pub fn into_diagnostic(self) -> Diagnostic<()> {
         self.diagnostic
-    }
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for Report {
-    fn size_of_children(&self, context: &mut size_of::Context) {
-        context.add(1); // severity
-        self.diagnostic.message.size_of_children(context);
-        self.diagnostic.code.size_of_children(context);
-        self.diagnostic.notes.size_of_children(context);
-        context.add_vectorlike(
-            self.diagnostic.labels.len(),
-            self.diagnostic.labels.capacity(),
-            std::mem::size_of::<Label<()>>(),
-        );
     }
 }
 

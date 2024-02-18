@@ -3,8 +3,6 @@ use std::iter::FusedIterator;
 
 use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
 use nom_supreme::final_parser::RecreateContext;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use kodept_core::code_point::CodePoint;
 
@@ -12,7 +10,6 @@ use crate::lexer::traits::ToRepresentation;
 use crate::lexer::{Identifier, Literal, Token};
 use crate::token_match::TokenMatch;
 
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 #[derive(Clone, Debug)]
 pub struct TokenStream<'t> {
     slice: &'t [TokenMatch<'t>],

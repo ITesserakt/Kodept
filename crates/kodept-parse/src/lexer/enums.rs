@@ -1,14 +1,11 @@
 use derive_more::From;
 #[cfg(feature = "enum-iter")]
 use enum_iterator::Sequence;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 use std::fmt::{Display, Formatter};
 
 use crate::Span;
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Ignore<'t> {
     Comment(Span<'t>),
     MultilineComment(Span<'t>),
@@ -18,7 +15,6 @@ pub enum Ignore<'t> {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Keyword {
     Fun,
     Val,
@@ -43,7 +39,6 @@ pub enum Keyword {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Symbol {
     Comma,
     Semicolon,
@@ -59,14 +54,12 @@ pub enum Symbol {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Identifier<'t> {
     Identifier(Span<'t>),
     Type(Span<'t>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Literal<'t> {
     Binary(Span<'t>),
     Octal(Span<'t>),
@@ -78,7 +71,6 @@ pub enum Literal<'t> {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum MathOperator {
     Plus,
     Sub,
@@ -90,7 +82,6 @@ pub enum MathOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum ComparisonOperator {
     Equals,
     Equiv,
@@ -104,7 +95,6 @@ pub enum ComparisonOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum LogicOperator {
     OrLogic,
     AndLogic,
@@ -113,7 +103,6 @@ pub enum LogicOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum BitOperator {
     OrBit,
     AndBit,
@@ -123,7 +112,6 @@ pub enum BitOperator {
 
 #[derive(Debug, PartialEq, Clone, From)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Operator {
     Dot,
     Flow,
@@ -134,7 +122,6 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq, Clone, From)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Token<'t> {
     Ignore(Ignore<'t>),
     Keyword(Keyword),

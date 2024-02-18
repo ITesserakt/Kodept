@@ -575,7 +575,6 @@ dependencies = [
  "petgraph",
  "rayon",
  "serde_json",
- "size-of",
  "thiserror",
  "tracing",
  "tracing-subscriber",
@@ -592,7 +591,6 @@ dependencies = [
  "qcell",
  "rstest",
  "serde",
- "size-of",
  "tracing",
 ]
 
@@ -603,7 +601,6 @@ dependencies = [
  "derive_more",
  "itertools",
  "pathdiff",
- "size-of",
  "tempfile",
  "thiserror",
  "tracing",
@@ -647,7 +644,6 @@ dependencies = [
  "kodept-ast",
  "kodept-core",
  "petgraph",
- "size-of",
  "tracing",
 ]
 
@@ -663,7 +659,6 @@ dependencies = [
  "nom-supreme",
  "nonempty-collections",
  "rstest",
- "size-of",
  "thiserror",
 ]
 
@@ -1123,26 +1118,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
-]
-
-[[package]]
-name = "size-of"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4e36eca171fddeda53901b0a436573b3f2391eaa9189d439b2bd8ea8cebd7e3"
-dependencies = [
- "size-of-derive",
-]
-
-[[package]]
-name = "size-of-derive"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eefff4890f5308d477f3da563af8bdb8fbb6fabaec4c974bd211896fa7945e68"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]

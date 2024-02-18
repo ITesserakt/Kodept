@@ -1,6 +1,4 @@
 use derive_more::Constructor;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use crate::code_point::CodePoint;
 use crate::structure::Located;
@@ -8,7 +6,6 @@ use crate::structure::rlt::new_types::*;
 use crate::structure::rlt::top_level::TopLevelNode;
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub enum Module {
     Global {
         keyword: Keyword,
@@ -26,11 +23,9 @@ pub enum Module {
 }
 
 #[derive(Debug, Clone, PartialEq, Constructor)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct File(pub Box<[Module]>);
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct RLT(pub File);
 
 impl Module {

@@ -1,14 +1,11 @@
 use std::ops::Range;
 
 use derive_more::{Constructor, Display};
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
 
 use crate::structure::Located;
 
 #[derive(Constructor, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
 #[display(fmt = "...{}:{}", offset, length)]
-#[cfg_attr(feature = "size-of", derive(SizeOf))]
 pub struct CodePoint {
     pub length: usize,
     pub offset: usize,

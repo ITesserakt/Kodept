@@ -2,11 +2,6 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 
-#[cfg(feature = "size-of")]
-use size_of::Context;
-#[cfg(feature = "size-of")]
-use size_of::SizeOf;
-
 #[derive(Debug)]
 pub enum CodeSource {
     Memory {
@@ -57,21 +52,6 @@ impl Seek for CodeSource {
         match self {
             CodeSource::Memory { contents, .. } => contents.seek(pos),
             CodeSource::File { file, .. } => file.seek(pos),
-        }
-    }
-}
-
-#[cfg(feature = "size-of")]
-impl SizeOf for CodeSource {
-    fn size_of_children(&self, context: &mut Context) {
-        match self {
-            CodeSource::Memory { name, contents } => {
-                name.size_of_children(context);
-                contents.get_ref().size_of_children(context);
-            }
-            CodeSource::File { name, .. } => {
-                name.size_of_children(context);
-            }
         }
     }
 }
