@@ -4,6 +4,7 @@ use std::rc::Rc;
 use kodept_core::ConvertibleToRef;
 use tracing::warn;
 
+use crate::generic_ast_node_map;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::{GenericASTNode, NodeId};
@@ -22,6 +23,12 @@ where
     fn as_member(&self) -> ASTFamily {
         let id = self.get_id();
         id.into()
+    }
+}
+
+impl IntoASTFamily for GenericASTNode {
+    fn as_member(&self) -> ASTFamily {
+        generic_ast_node_map!(self, |x| x.as_member())
     }
 }
 

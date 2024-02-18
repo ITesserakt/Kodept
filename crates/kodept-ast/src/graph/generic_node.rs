@@ -20,6 +20,13 @@ make_ast_node_adaptor!(GenericASTNode, lifetimes: [], Identity, configs: [
     cfg_attr(feature = "size-of", derive(SizeOf))
 ]);
 
+#[macro_export]
+macro_rules! generic_ast_node_map {
+    ($self:expr, |$var:ident| $mapping:expr) => {
+        $crate::functor_map!(GenericASTNode, $self, |$var| $mapping)
+    };
+}
+
 pub trait NodeWithParent {
     type Parent;
 }
@@ -97,68 +104,14 @@ unsafe impl NodeUnion for GenericASTNode {
 }
 
 impl Identifiable for GenericASTNode {
+    #[inline]
     fn get_id(&self) -> NodeId<Self> {
-        match self {
-            GenericASTNode::File(x) => x.get_id().cast(),
-            GenericASTNode::Module(x) => x.get_id().cast(),
-            GenericASTNode::Struct(x) => x.get_id().cast(),
-            GenericASTNode::Enum(x) => x.get_id().cast(),
-            GenericASTNode::TypedParameter(x) => x.get_id().cast(),
-            GenericASTNode::UntypedParameter(x) => x.get_id().cast(),
-            GenericASTNode::TypeName(x) => x.get_id().cast(),
-            GenericASTNode::Variable(x) => x.get_id().cast(),
-            GenericASTNode::InitializedVariable(x) => x.get_id().cast(),
-            GenericASTNode::BodiedFunction(x) => x.get_id().cast(),
-            GenericASTNode::ExpressionBlock(x) => x.get_id().cast(),
-            GenericASTNode::Application(x) => x.get_id().cast(),
-            GenericASTNode::Lambda(x) => x.get_id().cast(),
-            GenericASTNode::Reference(x) => x.get_id().cast(),
-            GenericASTNode::Access(x) => x.get_id().cast(),
-            GenericASTNode::Number(x) => x.get_id().cast(),
-            GenericASTNode::Char(x) => x.get_id().cast(),
-            GenericASTNode::String(x) => x.get_id().cast(),
-            GenericASTNode::Tuple(x) => x.get_id().cast(),
-            GenericASTNode::If(x) => x.get_id().cast(),
-            GenericASTNode::Elif(x) => x.get_id().cast(),
-            GenericASTNode::Else(x) => x.get_id().cast(),
-            GenericASTNode::Binary(x) => x.get_id().cast(),
-            GenericASTNode::Unary(x) => x.get_id().cast(),
-            GenericASTNode::AbstractFunction(x) => x.get_id().cast(),
-            GenericASTNode::ProdType(x) => x.get_id().cast(),
-            GenericASTNode::SumType(x) => x.get_id().cast(),
-        }
+        generic_ast_node_map!(self, |x| x.get_id().cast())
     }
 
+    #[inline]
     fn set_id(&mut self, value: NodeId<Self>) {
-        match self {
-            GenericASTNode::File(x) => x.set_id(value.cast()),
-            GenericASTNode::Module(x) => x.set_id(value.cast()),
-            GenericASTNode::Struct(x) => x.set_id(value.cast()),
-            GenericASTNode::Enum(x) => x.set_id(value.cast()),
-            GenericASTNode::TypedParameter(x) => x.set_id(value.cast()),
-            GenericASTNode::UntypedParameter(x) => x.set_id(value.cast()),
-            GenericASTNode::TypeName(x) => x.set_id(value.cast()),
-            GenericASTNode::Variable(x) => x.set_id(value.cast()),
-            GenericASTNode::InitializedVariable(x) => x.set_id(value.cast()),
-            GenericASTNode::BodiedFunction(x) => x.set_id(value.cast()),
-            GenericASTNode::ExpressionBlock(x) => x.set_id(value.cast()),
-            GenericASTNode::Application(x) => x.set_id(value.cast()),
-            GenericASTNode::Lambda(x) => x.set_id(value.cast()),
-            GenericASTNode::Reference(x) => x.set_id(value.cast()),
-            GenericASTNode::Access(x) => x.set_id(value.cast()),
-            GenericASTNode::Number(x) => x.set_id(value.cast()),
-            GenericASTNode::Char(x) => x.set_id(value.cast()),
-            GenericASTNode::String(x) => x.set_id(value.cast()),
-            GenericASTNode::Tuple(x) => x.set_id(value.cast()),
-            GenericASTNode::If(x) => x.set_id(value.cast()),
-            GenericASTNode::Elif(x) => x.set_id(value.cast()),
-            GenericASTNode::Else(x) => x.set_id(value.cast()),
-            GenericASTNode::Binary(x) => x.set_id(value.cast()),
-            GenericASTNode::Unary(x) => x.set_id(value.cast()),
-            GenericASTNode::AbstractFunction(x) => x.set_id(value.cast()),
-            GenericASTNode::ProdType(x) => x.set_id(value.cast()),
-            GenericASTNode::SumType(x) => x.set_id(value.cast()),
-        }
+        generic_ast_node_map!(self, |x| x.set_id(value.cast()))
     }
 }
 

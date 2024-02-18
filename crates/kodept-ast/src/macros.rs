@@ -151,6 +151,41 @@ macro_rules! make_ast_node_adaptor {
 }
 
 #[macro_export]
+macro_rules! functor_map {
+    ($ty:ident, $self:expr, |$var:ident| $mapping:expr) => {
+        match $self {
+            $ty::File($var) => $mapping,
+            $ty::Module($var) => $mapping,
+            $ty::Struct($var) => $mapping,
+            $ty::Enum($var) => $mapping,
+            $ty::TypedParameter($var) => $mapping,
+            $ty::UntypedParameter($var) => $mapping,
+            $ty::TypeName($var) => $mapping,
+            $ty::Variable($var) => $mapping,
+            $ty::InitializedVariable($var) => $mapping,
+            $ty::BodiedFunction($var) => $mapping,
+            $ty::ExpressionBlock($var) => $mapping,
+            $ty::Application($var) => $mapping,
+            $ty::Lambda($var) => $mapping,
+            $ty::Reference($var) => $mapping,
+            $ty::Access($var) => $mapping,
+            $ty::Number($var) => $mapping,
+            $ty::Char($var) => $mapping,
+            $ty::String($var) => $mapping,
+            $ty::Tuple($var) => $mapping,
+            $ty::If($var) => $mapping,
+            $ty::Elif($var) => $mapping,
+            $ty::Else($var) => $mapping,
+            $ty::Binary($var) => $mapping,
+            $ty::Unary($var) => $mapping,
+            $ty::AbstractFunction($var) => $mapping,
+            $ty::ProdType($var) => $mapping,
+            $ty::SumType($var) => $mapping,
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! property {
     (in mut $trait_name:ty => $self_name:ty, $prop:ident: $prop_ty:ty) => {
         paste::paste! {
