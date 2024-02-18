@@ -22,6 +22,8 @@ pub enum LoadingError {
     StartingPathNotAbsolute,
     #[error("IO error: {0}")]
     IOError(#[from] std::io::Error),
+    #[error("No input files")]
+    NoInput,
 }
 
 pub struct LoaderBuilder<'p> {
@@ -116,7 +118,11 @@ impl<'p> LoaderBuilder<'p> {
             vec![]
         };
 
-        Ok(Loader::File(sources))
+        if sources.is_empty() {
+            Err(LoadingError::NoInput)
+        } else {
+            Ok(Loader::File(sources))
+        }
     }
 }
 
