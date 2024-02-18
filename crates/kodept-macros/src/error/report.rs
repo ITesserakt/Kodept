@@ -1,10 +1,16 @@
 pub use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
+use extend::ext;
+use kodept_ast::rlt_accessor::RLTFamily;
+use kodept_ast::traits::IntoASTFamily;
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
+use crate::traits::Context;
+use crate::warn_about_broken_rlt;
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
+use kodept_core::ConvertibleToRef;
 
 #[derive(Debug)]
 pub struct ReportMessage {
@@ -85,5 +91,29 @@ impl SizeOf for Report {
             self.diagnostic.labels.capacity(),
             std::mem::size_of::<Label<()>>(),
         );
+    }
+}
+
+#[ext]
+pub impl<T: Default, E: Into<ReportMessage>> Result<T, E> {
+    fn report_errors<F, U>(self, at: &impl IntoASTFamily, context: &mut impl Context, func: F) -> T
+    where
+        RLTFamily: ConvertibleToRef<U>,
+        F: Fn(&U) -> Vec<CodePoint>,
+    {
+        match self {
+            Ok(x) => x,
+            Err(error) => {
+                let points = context.access(at).map_or_else(
+                    || {
+                        warn_about_broken_rlt::<U>();
+                        vec![]
+                    },
+                    func,
+                );
+                context.add_report(points, error);
+                T::default()
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ pub enum Errors {
     UnresolvedReference(Path),
     AlreadyDefined(Path),
     WrongScope { expected: Path, found: Path },
+    TooComplex,
 }
 
 impl From<Errors> for ReportMessage {
@@ -28,6 +29,11 @@ impl From<Errors> for ReportMessage {
                 Severity::Bug,
                 "SM003",
                 format!("Expected exit at scope `{expected}`, but exited scope `{found:?}`"),
+            ),
+            Errors::TooComplex => ReportMessage::new(
+                Severity::Bug,
+                "SM004",
+                "Complex types is not supported yet".to_string(),
             ),
         }
     }

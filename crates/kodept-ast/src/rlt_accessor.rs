@@ -2,13 +2,14 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use derive_more::{From, TryInto};
+use kodept_core::code_point::CodePoint;
 use kodept_core::ConvertibleToRef;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "size-of")]
 use size_of::SizeOf;
 
-use kodept_core::structure::rlt;
+use kodept_core::structure::{rlt, Located};
 
 use crate::graph::NodeId;
 use crate::traits::IntoASTFamily;
@@ -93,5 +94,36 @@ impl RLTAccessor {
 impl<'a> From<&'a RLTFamily> for RLTFamily {
     fn from(value: &'a RLTFamily) -> Self {
         value.clone()
+    }
+}
+
+impl Located for RLTFamily {
+    fn location(&self) -> CodePoint {
+        match self {
+            RLTFamily::File(x) => x.location(),
+            RLTFamily::Module(x) => x.location(),
+            RLTFamily::Struct(x) => x.location(),
+            RLTFamily::Enum(x) => x.location(),
+            RLTFamily::Type(x) => x.location(),
+            RLTFamily::TypeName(x) => x.location(),
+            RLTFamily::TypedParameter(x) => x.location(),
+            RLTFamily::UntypedParameter(x) => x.location(),
+            RLTFamily::Variable(x) => x.location(),
+            RLTFamily::InitializedVariable(x) => x.location(),
+            RLTFamily::BodiedFunction(x) => x.location(),
+            RLTFamily::Body(x) => x.location(),
+            RLTFamily::BlockLevel(x) => x.location(),
+            RLTFamily::ExpressionBlock(x) => x.location(),
+            RLTFamily::Operation(x) => x.location(),
+            RLTFamily::Application(x) => x.location(),
+            RLTFamily::Expression(x) => x.location(),
+            RLTFamily::Term(x) => x.location(),
+            RLTFamily::Reference(x) => x.location(),
+            RLTFamily::Literal(x) => x.location(),
+            RLTFamily::CodeFlow(x) => x.location(),
+            RLTFamily::If(x) => x.location(),
+            RLTFamily::Elif(x) => x.location(),
+            RLTFamily::Else(x) => x.location(),
+        }
     }
 }

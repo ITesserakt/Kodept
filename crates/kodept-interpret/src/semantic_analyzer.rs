@@ -1,29 +1,25 @@
 use std::ops::Deref;
 
-use extend::ext;
 use tracing::debug;
 
 use kodept_ast::graph::{GhostToken, NodeUnion, SyntaxTree};
-use kodept_ast::rlt_accessor::RLTFamily;
-use kodept_ast::traits::IntoASTFamily;
 use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::TraversingResult;
 use kodept_ast::{
     BodiedFunctionDeclaration, EnumDeclaration, Identifier, InitializedVariable, ModuleDeclaration,
     Parameter, Reference,
 };
-use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
-use kodept_core::{ConvertibleToRef, Named};
+use kodept_core::Named;
 use kodept_macros::analyzer::Analyzer;
-use kodept_macros::error::report::ReportMessage;
+use kodept_macros::error::report::ResultTEExt;
 use kodept_macros::traits::{Context, UnrecoverableError};
-use kodept_macros::warn_about_broken_rlt;
 
 use crate::scope::ScopedSymbolTable;
 use crate::semantic_analyzer::wrapper::AnalyzingNode;
 use crate::symbol::{TypeSymbol, VarSymbol};
 use crate::Errors;
+use crate::Errors::TooComplex;
 
 mod wrapper {
     use derive_more::{From, Into};
@@ -60,26 +56,6 @@ impl Default for SemanticAnalyzer {
     }
 }
 
-#[ext]
-impl<E: Into<ReportMessage>> Result<(), E> {
-    fn report_errors<F, U>(self, at: &impl IntoASTFamily, context: &mut impl Context, func: F)
-    where
-        RLTFamily: ConvertibleToRef<U>,
-        F: Fn(&U) -> Vec<CodePoint>,
-    {
-        if let Err(error) = self {
-            let points = context.access(at).map_or_else(
-                || {
-                    warn_about_broken_rlt::<U>();
-                    vec![]
-                },
-                func,
-            );
-            context.add_report(points, error);
-        }
-    }
-}
-
 impl SemanticAnalyzer {
     pub fn new() -> Self {
         Self::default()
@@ -92,10 +68,10 @@ impl Analyzer for SemanticAnalyzer {
     type Error = UnrecoverableError;
     type Node = AnalyzingNode;
 
-    fn analyze<C: Context>(
+    fn analyze(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        context: &mut C,
+        context: &mut impl Context,
     ) -> TraversingResult<Self::Error> {
         let (node, side) = guard.allow_all();
         let tree = context.tree();
@@ -164,7 +140,7 @@ impl SemanticAnalyzer {
         }
         let ty = decl.variable(tree, token).assigned_type(tree, token);
         let ty_symbol = match ty.and_then(|it| it.as_type_name()) {
-            None => panic!("Complex types is not supported yet"),
+            None => Err(TooComplex)?,
             Some(x) => Some(self.current_scope.lookup_type(&x.name, false)?),
         };
         self.current_scope.insert(VarSymbol::new(
@@ -234,7 +210,7 @@ impl SemanticAnalyzer {
         }
         if let Some(typed) = param.as_typed() {
             let ty = match typed.parameter_type(tree, token).as_type_name() {
-                None => panic!("Complex types is not supported yet"),
+                None => Err(TooComplex)?,
                 Some(x) => Some(self.current_scope.lookup_type(&x.name, false)?),
             };
             self.current_scope
