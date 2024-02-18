@@ -12,7 +12,14 @@ mod stage;
 
 type WideError = anyhow::Error;
 
+#[cfg(feature = "profiler")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() -> Result<(), WideError> {
+    #[cfg(feature = "profiler")]
+    let _profiler = dhat::Profiler::new_heap();
+
     let cli_arguments: Kodept = Kodept::parse();
     tracing_subscriber::fmt()
         .with_max_level(cli_arguments.level())
