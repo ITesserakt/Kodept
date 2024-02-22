@@ -3,8 +3,8 @@ use crate::lexer::{
 };
 
 pub trait ToRepresentation
-    where
-        Self: 'static,
+where
+    Self: 'static,
 {
     fn representation(&self) -> &'static str;
 }
@@ -102,17 +102,17 @@ mod tests {
     use nom_supreme::final_parser::final_parser;
     use rstest::rstest;
 
-    use crate::lexer::traits::ToRepresentation;
     use crate::lexer::*;
+    use crate::lexer::traits::ToRepresentation;
 
     #[rstest]
     #[case(symbol)]
     #[case(operator)]
     #[case(keyword)]
     fn test_lexers<'t, T, P>(#[case] mut parser: P)
-        where
-            T: Sequence + ToRepresentation + PartialEq + Debug,
-            P: Parser<&'t str, T, TokenizationError<'t>>,
+    where
+        T: Sequence + ToRepresentation + PartialEq + Debug,
+        P: Parser<&'t str, T, TokenizationError<'t>>,
     {
         let values = all::<T>().map(|it| {
             let parsed: Result<_, ErrorTree<&str>> =

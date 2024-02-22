@@ -2,33 +2,33 @@ use std::ops::Deref;
 
 use tracing::debug;
 
-use kodept_ast::graph::{GhostToken, NodeUnion, SyntaxTree};
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
 use kodept_ast::{
     BodiedFunctionDeclaration, EnumDeclaration, Identifier, InitializedVariable, ModuleDeclaration,
-    Parameter, Reference,
+    Parameter, Reference, StructDeclaration,
 };
-use kodept_core::structure::{rlt, Located};
+use kodept_ast::graph::{GhostToken, NodeUnion, SyntaxTree};
+use kodept_ast::visitor::TraversingResult;
+use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_core::Named;
+use kodept_core::structure::{Located, rlt};
 use kodept_macros::analyzer::Analyzer;
 use kodept_macros::error::report::ResultTEExt;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
-use crate::scope::ScopedSymbolTable;
-use crate::semantic_analyzer::wrapper::AnalyzingNode;
-use crate::symbol::{TypeSymbol, VarSymbol};
 use crate::Errors;
 use crate::Errors::TooComplex;
+use crate::scope::SymbolTable;
+use crate::semantic_analyzer::wrapper::AnalyzingNode;
+use crate::symbol::{TypeSymbol, VarSymbol};
 
 mod wrapper {
     use derive_more::{From, Into};
 
-    use kodept_ast::graph::{GenericASTNode, NodeUnion};
     use kodept_ast::{
-        wrapper, BodiedFunctionDeclaration, EnumDeclaration, InitializedVariable,
-        ModuleDeclaration, Parameter, Reference,
+        BodiedFunctionDeclaration, EnumDeclaration, InitializedVariable, ModuleDeclaration,
+        Parameter, Reference, StructDeclaration, wrapper,
     };
+    use kodept_ast::graph::{GenericASTNode, NodeUnion};
 
     wrapper! {
         #[derive(From, Into)]
@@ -39,19 +39,20 @@ mod wrapper {
             enum(EnumDeclaration) = GenericASTNode::Enum(x) => Some(x),
             reference(Reference) = GenericASTNode::Reference(x) => Some(x),
             function(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => Some(x)
-            parameter(Parameter) = n if Parameter::contains(n) => n.try_into().ok()
+            parameter(Parameter) = n if Parameter::contains(n) => n.try_into().ok(),
+            struct(StructDeclaration) = GenericASTNode::Struct(x) => Some(x),
         }
     }
 }
 
 pub struct SemanticAnalyzer {
-    current_scope: ScopedSymbolTable,
+    current_scope: SymbolTable,
 }
 
 impl Default for SemanticAnalyzer {
     fn default() -> Self {
         Self {
-            current_scope: ScopedSymbolTable::new("::", None),
+            current_scope: SymbolTable::new("".to_string()),
         }
     }
 }
@@ -101,13 +102,19 @@ impl Analyzer for SemanticAnalyzer {
             let result = self.visit_parameter(param, side, &tree, node.token());
             if let Some(typed) = param.as_typed() {
                 result.report_errors(typed, context, |rlt: &rlt::TypedParameter| {
-                    vec![rlt.location()]
+                    vec![rlt.parameter_type.location()]
                 });
             } else if let Some(untyped) = param.as_untyped() {
                 result.report_errors(untyped, context, |rlt: &rlt::UntypedParameter| {
                     vec![rlt.id.location()]
                 })
             }
+        } else if let Some(structure) = node.as_struct() {
+            self.visit_struct(structure, side).report_errors(
+                structure,
+                context,
+                |rlt: &rlt::Struct| vec![rlt.id.location()],
+            )
         }
 
         if side == VisitSide::Exiting && AnalyzingNode::contains(node.deref().into()) {
@@ -120,10 +127,9 @@ impl Analyzer for SemanticAnalyzer {
 impl SemanticAnalyzer {
     fn visit_module(&mut self, module: &ModuleDeclaration, side: VisitSide) -> Result<(), Errors> {
         if side == VisitSide::Entering {
-            self.current_scope.new_layer(module.name.clone());
+            self.current_scope.begin_scope(module.name.clone())?;
         } else if side == VisitSide::Exiting {
-            self.current_scope
-                .replace_with_enclosing_scope(&module.name)?;
+            self.current_scope.end_scope(&module.name)?;
         }
         Ok(())
     }
@@ -139,9 +145,10 @@ impl SemanticAnalyzer {
             return Ok(());
         }
         let ty = decl.variable(tree, token).assigned_type(tree, token);
-        let ty_symbol = match ty.and_then(|it| it.as_type_name()) {
-            None => Err(TooComplex)?,
-            Some(x) => Some(self.current_scope.lookup_type(&x.name, false)?),
+        let ty_symbol = match ty.map(|it| it.as_type_name()) {
+            None => None,
+            Some(None) => Err(TooComplex)?,
+            Some(Some(x)) => Some(self.current_scope.lookup_type(&x.name, false)?),
         };
         self.current_scope.insert(VarSymbol::new(
             decl.variable(tree, token).name.clone(),
@@ -157,15 +164,18 @@ impl SemanticAnalyzer {
         token: &GhostToken,
         tree: &SyntaxTree,
     ) -> Result<(), Errors> {
-        if side != VisitSide::Entering {
-            return Ok(());
+        if side == VisitSide::Entering {
+            let ty = self
+                .current_scope
+                .insert(TypeSymbol::user(decl.name.clone()))?;
+            self.current_scope.begin_scope(decl.name.clone())?;
+            for variant in decl.contents(tree, token) {
+                self.current_scope
+                    .insert(VarSymbol::new(variant.name.clone(), Some(ty.clone())))?;
+            }
         }
-        let ty = self
-            .current_scope
-            .insert(TypeSymbol::user(decl.name.clone()))?;
-        for variant in decl.contents(tree, token) {
-            self.current_scope
-                .insert(VarSymbol::new(variant.name.clone(), Some(ty.clone())))?;
+        if side == VisitSide::Exiting {
+            self.current_scope.end_scope(&decl.name)?;
         }
         Ok(())
     }
@@ -190,10 +200,9 @@ impl SemanticAnalyzer {
         if side == VisitSide::Entering {
             self.current_scope
                 .insert(VarSymbol::new(func.name.clone(), None))?;
-            self.current_scope.new_layer(func.name.clone());
+            self.current_scope.begin_scope(func.name.clone())?;
         } else if side == VisitSide::Exiting {
-            self.current_scope
-                .replace_with_enclosing_scope(&func.name)?;
+            self.current_scope.end_scope(&func.name)?;
         }
         Ok(())
     }
@@ -205,7 +214,7 @@ impl SemanticAnalyzer {
         tree: &SyntaxTree,
         token: &GhostToken,
     ) -> Result<(), Errors> {
-        if side != VisitSide::Entering {
+        if side == VisitSide::Exiting {
             return Ok(());
         }
         if let Some(typed) = param.as_typed() {
@@ -218,6 +227,24 @@ impl SemanticAnalyzer {
         } else if let Some(untyped) = param.as_untyped() {
             self.current_scope
                 .insert(VarSymbol::new(untyped.name.clone(), None))?;
+        }
+        Ok(())
+    }
+
+    fn visit_struct(
+        &mut self,
+        structure: &StructDeclaration,
+        side: VisitSide,
+    ) -> Result<(), Errors> {
+        if matches!(side, VisitSide::Entering | VisitSide::Leaf) {
+            self.current_scope
+                .insert(TypeSymbol::user(structure.name.clone()))?;
+        }
+
+        if side == VisitSide::Entering {
+            self.current_scope.begin_scope(structure.name.clone())?;
+        } else if side == VisitSide::Exiting {
+            self.current_scope.end_scope(&structure.name)?;
         }
         Ok(())
     }
