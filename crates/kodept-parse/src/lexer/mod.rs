@@ -91,6 +91,7 @@ fn keyword(input: Span) -> TokenizationResult<Keyword> {
             "while" => Keyword::While,
             "module" => Keyword::Module,
             "extend" => Keyword::Extend,
+            "return" => Keyword::Return,
             "\\" => Keyword::Lambda,
             soft "abstract" => Keyword::Abstract,
             soft "trait" => Keyword::Trait,
@@ -153,9 +154,9 @@ fn literal(input: Span) -> TokenizationResult<Literal> {
                     many0(one_of(alphabet).or(one_of("0_"))),
                     one_of(alphabet).or(char('0')),
                 ))
-                .recognize()
-                .or(one_of(alphabet).or(char('0')).recognize())
-                .cut(),
+                    .recognize()
+                    .or(one_of(alphabet).or(char('0')).recognize())
+                    .cut(),
             )
             .recognize()
     }
@@ -270,19 +271,19 @@ mod tests {
     #[rstest]
     #[case::ignore_comment(ignore("// hello world!"), Ignore::Comment("// hello world!"), None)]
     #[case::ignore_comment_another_line(
-        ignore("//hello world!\nthis is not comment"),
-        Ignore::Comment("//hello world!"),
-        Some("\nthis is not comment")
+    ignore("//hello world!\nthis is not comment"),
+    Ignore::Comment("//hello world!"),
+    Some("\nthis is not comment")
     )]
     #[case::ignore_multiline_comment(
-        ignore("/* this is\nmultiline comment */"),
-        Ignore::MultilineComment("/* this is\nmultiline comment */"),
-        None
+    ignore("/* this is\nmultiline comment */"),
+    Ignore::MultilineComment("/* this is\nmultiline comment */"),
+    None
     )]
     #[case::ignore_multiline_comment_with_rest(
-        ignore("/* this is\nmultiline comment */ this is not"),
-        Ignore::MultilineComment("/* this is\nmultiline comment */"),
-        Some(" this is not")
+    ignore("/* this is\nmultiline comment */ this is not"),
+    Ignore::MultilineComment("/* this is\nmultiline comment */"),
+    Some(" this is not")
     )]
     #[case::ignore_newline(ignore("\n\n\n"), Ignore::Newline, None)]
     #[case::ignore_whitespace(ignore("   \t"), Ignore::Whitespace, None)]

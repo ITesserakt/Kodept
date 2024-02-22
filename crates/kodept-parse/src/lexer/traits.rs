@@ -3,8 +3,8 @@ use crate::lexer::{
 };
 
 pub trait ToRepresentation
-where
-    Self: 'static,
+    where
+        Self: 'static,
 {
     fn representation(&self) -> &'static str;
 }
@@ -87,6 +87,7 @@ impl ToRepresentation for Keyword {
             Keyword::Foreign => "foreign",
             Keyword::TypeAlias => "type",
             Keyword::With => "with",
+            Keyword::Return => "return",
         }
     }
 }
@@ -99,18 +100,19 @@ mod tests {
     use nom::Parser;
     use nom_supreme::error::ErrorTree;
     use nom_supreme::final_parser::final_parser;
-    use test_case::test_case;
+    use rstest::rstest;
 
-    use crate::lexer::*;
     use crate::lexer::traits::ToRepresentation;
+    use crate::lexer::*;
 
-    #[test_case(symbol)]
-    #[test_case(operator)]
-    #[test_case(keyword)]
-    fn test_lexers<'t, T, P>(mut parser: P)
-    where
-        T: Sequence + ToRepresentation + PartialEq + Debug,
-        P: Parser<&'t str, T, TokenizationError<'t>>,
+    #[rstest]
+    #[case(symbol)]
+    #[case(operator)]
+    #[case(keyword)]
+    fn test_lexers<'t, T, P>(#[case] mut parser: P)
+        where
+            T: Sequence + ToRepresentation + PartialEq + Debug,
+            P: Parser<&'t str, T, TokenizationError<'t>>,
     {
         let values = all::<T>().map(|it| {
             let parsed: Result<_, ErrorTree<&str>> =

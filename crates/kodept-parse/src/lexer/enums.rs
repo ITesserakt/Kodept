@@ -35,6 +35,7 @@ pub enum Keyword {
     Foreign,
     TypeAlias,
     With,
+    Return,
 }
 
 #[derive(Debug, PartialEq, Clone)]
