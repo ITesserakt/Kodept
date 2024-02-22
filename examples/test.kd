@@ -1,0 +1,14 @@
+module Testing {
+    fun complex {
+        fun inner(a, b) => a + b
+
+        val result = inner(1, 1)
+        result
+    }
+
+    enum struct Bool { True, False }
+}
+
+module Testing2 {
+    struct Int
+}

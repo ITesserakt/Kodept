@@ -1,21 +1,21 @@
 use nom::{
     branch::alt,
-    bytes::complete::take_while,
     bytes::complete::{is_a, is_not, take},
+    bytes::complete::take_while,
     character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of},
     combinator::{map, opt, recognize, value},
     error::context,
     multi::{many0, many1, many_till},
-    sequence::{delimited, tuple},
     Parser,
+    sequence::{delimited, tuple},
 };
-use nom_supreme::tag::complete::{tag, tag_no_case};
 use nom_supreme::ParserExt;
+use nom_supreme::tag::complete::{tag, tag_no_case};
 
 pub use enums::*;
 
-use crate::Span;
 use crate::{TokenizationError, TokenizationResult};
+use crate::Span;
 
 pub mod enums;
 pub mod traits;
@@ -154,9 +154,9 @@ fn literal(input: Span) -> TokenizationResult<Literal> {
                     many0(one_of(alphabet).or(one_of("0_"))),
                     one_of(alphabet).or(char('0')),
                 ))
-                    .recognize()
-                    .or(one_of(alphabet).or(char('0')).recognize())
-                    .cut(),
+                .recognize()
+                .or(one_of(alphabet).or(char('0')).recognize())
+                .cut(),
             )
             .recognize()
     }
@@ -271,19 +271,19 @@ mod tests {
     #[rstest]
     #[case::ignore_comment(ignore("// hello world!"), Ignore::Comment("// hello world!"), None)]
     #[case::ignore_comment_another_line(
-    ignore("//hello world!\nthis is not comment"),
-    Ignore::Comment("//hello world!"),
-    Some("\nthis is not comment")
+        ignore("//hello world!\nthis is not comment"),
+        Ignore::Comment("//hello world!"),
+        Some("\nthis is not comment")
     )]
     #[case::ignore_multiline_comment(
-    ignore("/* this is\nmultiline comment */"),
-    Ignore::MultilineComment("/* this is\nmultiline comment */"),
-    None
+        ignore("/* this is\nmultiline comment */"),
+        Ignore::MultilineComment("/* this is\nmultiline comment */"),
+        None
     )]
     #[case::ignore_multiline_comment_with_rest(
-    ignore("/* this is\nmultiline comment */ this is not"),
-    Ignore::MultilineComment("/* this is\nmultiline comment */"),
-    Some(" this is not")
+        ignore("/* this is\nmultiline comment */ this is not"),
+        Ignore::MultilineComment("/* this is\nmultiline comment */"),
+        Some(" this is not")
     )]
     #[case::ignore_newline(ignore("\n\n\n"), Ignore::Newline, None)]
     #[case::ignore_whitespace(ignore("   \t"), Ignore::Whitespace, None)]

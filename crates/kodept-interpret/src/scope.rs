@@ -1,27 +1,60 @@
-use replace_with::replace_with_or_abort;
+#![allow(clippy::unwrap_used)]
+
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
-use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
-use crate::Errors::{AlreadyDefined, UnresolvedReference};
-use crate::{Errors, Path};
+use derive_more::Display;
+use id_tree::{InsertBehavior, Node, Tree, TreeBuilder};
 
-pub struct ScopedSymbolTable {
-    symbols: HashMap<Path, Symbol>,
-    enclosing_scope: Option<Box<ScopedSymbolTable>>,
-    name: String,
-    depth: usize,
+use crate::{Errors, Path};
+use crate::Errors::{AlreadyDefined, UnresolvedReference};
+use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
+
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Display)]
+struct Tag(String);
+
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct Name(String);
+
+type Id = id_tree::NodeId;
+
+pub struct SymbolTable {
+    table: HashMap<Id, Symbol>,
+    structure: Tree<Tag>,
+    current_tag_id: Id,
 }
 
-impl ScopedSymbolTable {
+impl SymbolTable {
+    fn get_current_tag(&self) -> &Tag {
+        self.structure
+            .get(&self.current_tag_id)
+            .expect("Cannot get current node")
+            .data()
+    }
+
+    fn get_current_parent_id(&self) -> Option<&Id> {
+        self.structure.get(&self.current_tag_id).ok()?.parent()
+    }
+
+    fn tag_chain(&self, tag: &Id) -> impl DoubleEndedIterator<Item = &Tag> {
+        let vec: Vec<_> = self.structure.ancestors(tag).unwrap().collect();
+        vec.into_iter().rev().map(|it| it.data())
+    }
+
     pub fn lookup(&self, path: &Path, exclusive: bool) -> Result<Symbol, Errors> {
-        let mut current_scope = Some(self);
+        let mut current_scope = Some(&self.current_tag_id);
         loop {
             if let Some(scope) = current_scope {
-                match scope.symbols.get(path) {
+                let node = self.structure.get(scope).unwrap();
+                let name = node.children().iter().find(|it| {
+                    self.structure
+                        .get(it)
+                        .is_ok_and(|node| &node.data().0 == path)
+                });
+                match name.and_then(|it| self.table.get(it)) {
                     None if exclusive => return Err(UnresolvedReference(path.clone())),
-                    None => current_scope = scope.enclosing_scope.as_deref(),
+                    None => current_scope = node.parent(),
                     Some(x) => return Ok(x.clone()),
                 }
             } else {
@@ -31,62 +64,107 @@ impl ScopedSymbolTable {
     }
 
     pub fn lookup_type(&self, path: &Path, exclusive: bool) -> Result<Rc<TypeSymbol>, Errors> {
-        self.lookup(path, exclusive)
-            .and_then(|it| it.try_into().map_err(|_| UnresolvedReference(path.clone())))
+        self.lookup(path, exclusive)?
+            .try_into()
+            .map_err(|_| UnresolvedReference(path.clone()))
     }
 
     pub fn lookup_var(&self, path: &Path, exclusive: bool) -> Result<Rc<VarSymbol>, Errors> {
-        self.lookup(path, exclusive)
-            .and_then(|it| it.try_into().map_err(|_| UnresolvedReference(path.clone())))
+        self.lookup(path, exclusive)?
+            .try_into()
+            .map_err(|_| UnresolvedReference(path.clone()))
     }
 
     pub fn insert<T: Clone + Into<Symbol>>(&mut self, symbol: T) -> Result<T, Errors> {
         let out = symbol;
         let symbol = out.clone().into();
-        match self.symbols.insert(symbol.path().clone(), symbol.clone()) {
-            None => Ok(out),
-            Some(x) => Err(AlreadyDefined(x.path().clone())),
+        if self
+            .structure
+            .children(&self.current_tag_id)
+            .unwrap()
+            .any(|it| &it.data().0 == symbol.path())
+        {
+            return Err(AlreadyDefined(symbol.path().clone()));
         }
+        let id = self
+            .structure
+            .insert(
+                Node::new(Tag(symbol.path().clone())),
+                InsertBehavior::UnderNode(&self.current_tag_id),
+            )
+            .unwrap();
+        self.table.insert(id, symbol);
+        Ok(out)
     }
 
-    pub fn new(name: impl Into<String>, enclosing: Option<ScopedSymbolTable>) -> Self {
-        let depth = enclosing.as_ref().map(|s| s.depth + 1).unwrap_or(0);
+    pub fn new(root: Path) -> Self {
+        let structure = TreeBuilder::new().with_root(Node::new(Tag(root))).build();
+        let current_tag_id = structure.root_node_id().unwrap().clone();
         Self {
-            symbols: Default::default(),
-            enclosing_scope: enclosing.map(Box::new),
-            name: name.into(),
-            depth,
+            table: Default::default(),
+            structure,
+            current_tag_id,
         }
     }
 
-    pub fn new_layer(&mut self, name: Path) {
-        replace_with_or_abort(self, |this| ScopedSymbolTable::new(name, Some(this)));
+    pub fn begin_scope(&mut self, name: Path) -> Result<(), Errors> {
+        self.current_tag_id = match self
+            .structure
+            .children_ids(&self.current_tag_id)
+            .unwrap()
+            .find(|it| {
+                self.structure
+                    .get(it)
+                    .is_ok_and(|node| node.data().0 == name)
+            }) {
+            None => self
+                .structure
+                .insert(
+                    Node::new(Tag(name)),
+                    InsertBehavior::UnderNode(&self.current_tag_id),
+                )
+                .unwrap(),
+            Some(x) => x.clone(),
+        };
+        Ok(())
     }
 
-    pub fn replace_with_enclosing_scope(&mut self, name: &Path) -> Result<(), Errors> {
-        if &self.name != name {
+    pub fn end_scope(&mut self, name: &Path) -> Result<(), Errors> {
+        if &self.get_current_tag().0 != name {
             return Err(Errors::WrongScope {
-                expected: self.name.clone(),
-                found: name.clone(),
+                expected: name.clone(),
+                found: self.get_current_tag().0.clone(),
             });
         }
-        if self.enclosing_scope.is_some() {
-            replace_with_or_abort(self, |this| {
-                *this
-                    .enclosing_scope
-                    .expect("Enclosing scope should be some")
-            })
+        let parent = self.get_current_parent_id();
+        if let Some(id) = parent {
+            self.current_tag_id = id.clone();
         }
         Ok(())
     }
 }
 
-impl Debug for ScopedSymbolTable {
+impl Debug for SymbolTable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ScopedSymbolTable")
-            .field("name", &self.name)
-            .field("depth", &self.depth)
-            .field("symbols", &self.symbols)
-            .finish()
+        writeln!(f)?;
+        self.structure.write_formatted(f)?;
+        write!(f, "SymbolTable {{")?;
+        let table = self
+            .table
+            .iter()
+            .fold(String::new(), |acc, (tag_id, symbol)| {
+                let path = self
+                    .tag_chain(tag_id)
+                    .fold(String::new(), |acc, next_id| format!("{acc}::{}", next_id));
+                let pointer = if tag_id == &self.current_tag_id {
+                    ">   "
+                } else {
+                    "    "
+                };
+                format!("{acc}\n{pointer}{path} => {symbol:?}")
+            });
+        writeln!(f, "{table}")?;
+        writeln!(f, "}}")?;
+        Ok(())
     }
 }
