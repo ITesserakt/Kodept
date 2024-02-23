@@ -1,24 +1,22 @@
 pub mod graph {
+    use itertools::Itertools;
     use petgraph::Direction;
     use petgraph::visit::{
         FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, Visitable, VisitMap,
     };
 
-    fn leaves<G, NodeId>(graph: G) -> Vec<NodeId>
+    pub fn roots<'a, G: 'a, NodeId>(graph: G) -> impl Iterator<Item = NodeId> + 'a
     where
         G: IntoNodeIdentifiers<NodeId = NodeId>,
         G: IntoEdgesDirected<NodeId = NodeId>,
         NodeId: Clone,
     {
-        graph
-            .node_identifiers()
-            .filter(|it| {
-                graph
-                    .edges_directed(it.clone(), Direction::Incoming)
-                    .count()
-                    == 0
-            })
-            .collect()
+        graph.node_identifiers().filter(move |it| {
+            graph
+                .edges_directed(it.clone(), Direction::Incoming)
+                .count()
+                == 0
+        })
     }
 
     pub fn topological_layers<G>(graph: G) -> Vec<Vec<G::NodeId>>
@@ -43,7 +41,7 @@ pub mod graph {
         let mut layers = vec![];
         loop {
             let filter = NodeFiltered(graph, InvertedVisitMap(&map));
-            let leaves = leaves(&filter);
+            let leaves = roots(&filter).collect_vec();
             if leaves.is_empty() {
                 break;
             }
@@ -53,15 +51,5 @@ pub mod graph {
             layers.push(leaves);
         }
         layers
-    }
-}
-
-pub mod progress {
-    use indicatif::ProgressBar;
-
-    pub trait ProgressEmitter {
-        fn update<F>(&self, f: F)
-        where
-            F: Fn(&ProgressBar);
     }
 }

@@ -4,15 +4,14 @@ use std::ops::Deref;
 use codespan_reporting::diagnostic::Severity;
 use derive_more::From;
 
-use kodept_ast::graph::GenericASTNode;
+use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::rlt_accessor::RLTFamily;
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::TraversingResult;
-use kodept_core::structure::Located;
+use kodept_ast::visitor::visit_side::{Skip, VisitGuard, VisitSide};
 use kodept_core::Named;
+use kodept_core::structure::Located;
 
-use crate::analyzer::Analyzer;
 use crate::error::report::{ReportMessage, ResultTEExt};
+use crate::Macro;
 use crate::traits::{Context, UnrecoverableError};
 
 pub struct ASTFormatter<W: Write> {
@@ -37,45 +36,40 @@ impl<W: Write> ASTFormatter<W> {
     }
 }
 
-#[inline]
-fn report_io_error<'a>(
-    ctx: &'a impl Context,
-) -> impl Fn(Error) -> Result<(), UnrecoverableError> + 'a {
-    move |e| ctx.report_and_fail(vec![], IOError(e))
-}
-
-impl<W: Write> Analyzer for ASTFormatter<W> {
+impl<W: Write> Macro for ASTFormatter<W> {
     type Error = UnrecoverableError;
     type Node = GenericASTNode;
 
-    fn analyze(
+    fn transform(
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut impl Context,
-    ) -> TraversingResult<Self::Error> {
+    ) -> Result<ChangeSet, Skip<Self::Error>> {
         let (node, side) = guard.allow_all();
         let node_data = node.deref();
         let f = &mut self.writer;
 
         match side {
             VisitSide::Entering => {
-                write!(f, "{}{:?} {{", "  ".repeat(self.indent), node_data).report_errors(
+                writeln!(f, "{}{:?} {{", "  ".repeat(self.indent), node_data).report_errors(
                     node_data,
                     context,
                     |it: &RLTFamily| vec![it.location()],
                 );
                 self.indent += 1;
             }
+            VisitSide::Leaf => writeln!(f, "{}{:?};", "  ".repeat(self.indent), node_data)
+                .report_errors(node_data, context, |it: &RLTFamily| vec![it.location()]),
             VisitSide::Exiting => {
                 self.indent -= 1;
-                write!(f, "{}{:?};", "  ".repeat(self.indent), node_data)
-                    .or_else(report_io_error(context))?;
-            }
-            _ => {
-                write!(f, "{}}}", "  ".repeat(self.indent)).or_else(report_io_error(context))?;
+                writeln!(f, "{}}}", "  ".repeat(self.indent)).report_errors(
+                    node_data,
+                    context,
+                    |it: &RLTFamily| vec![it.location()],
+                );
             }
         }
 
-        Ok(())
+        Ok(ChangeSet::empty())
     }
 }
