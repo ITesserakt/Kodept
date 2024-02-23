@@ -1,32 +1,61 @@
+use std::collections::HashMap;
+use std::marker::PhantomData;
 use std::mem::replace;
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use petgraph::algo::is_cyclic_directed;
-use petgraph::prelude::{DiGraph, NodeIndex};
+use itertools::Itertools;
+use petgraph::prelude::{NodeIndex, StableDiGraph};
 
 use kodept_ast::graph::{ChangeSet, GhostToken};
-use kodept_macros::erased::Erased;
+use kodept_macros::erased::{BoxedMacro, CanErase};
 use kodept_macros::error::compiler_crash::CompilerCrash;
 use kodept_macros::error::report::Report;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
-use crate::utils::graph::topological_layers;
+use crate::utils::graph::roots;
 
-#[derive(Debug)]
+type Graph<C, E> = StableDiGraph<BoxedMacro<C, E>, ()>;
+type Handler<C, E> = Box<dyn FnOnce(&mut TraverseSet<C, E>, BoxedMacro<C, E>)>;
+
 pub struct TraverseSet<C: Context, E> {
-    inner: DiGraph<Erased<C, E>, ()>,
+    inner: Graph<C, E>,
+    handlers: HashMap<NodeIndex, Handler<C, E>>,
+}
+
+pub struct DependencyScope<'a, C: Context, E, T> {
+    graph: &'a mut TraverseSet<C, E>,
+    self_id: NodeIndex,
+    post_handler: Option<Handler<C, E>>,
+    _phantom: PhantomData<T>,
+}
+
+impl<'a, C: Context, E, T: 'static> DependencyScope<'a, C, E, T> {
+    pub fn then<F>(&mut self, handle: F)
+    where
+        F: FnOnce(&mut TraverseSet<C, E>, T) + 'static,
+    {
+        self.post_handler = Some(Box::new(|this, obj| {
+            let obj = obj.into_any().downcast().expect("Cannot cast");
+            handle(this, *obj)
+        }))
+    }
 }
 
 impl<C: Context, E> Default for TraverseSet<C, E> {
     fn default() -> Self {
         Self {
             inner: Default::default(),
+            handlers: Default::default(),
         }
     }
 }
 
-pub trait Traversable<C: Context, E> {
-    fn traverse(&mut self, context: C) -> Result<C, (Vec<E>, C)>;
+impl<C: Context, E, T> Drop for DependencyScope<'_, C, E, T> {
+    fn drop(&mut self) {
+        if let Some(handler) = self.post_handler.take() {
+            self.graph.handlers.insert(self.self_id, handler);
+        }
+    }
 }
 
 impl<C: Context, E> TraverseSet<C, E> {
@@ -34,55 +63,20 @@ impl<C: Context, E> TraverseSet<C, E> {
         Self::default()
     }
 
-    pub fn add_independent(&mut self, item: Erased<C, E>) -> NodeIndex {
-        self.inner.add_node(item)
-    }
+    pub fn add<T: CanErase<C, Error = E>>(&mut self, item: T) -> DependencyScope<C, E, T> {
+        let self_id = self.inner.add_node(item.erase());
 
-    pub fn add_link(&mut self, from: NodeIndex, to: NodeIndex) {
-        if from == to {
-            panic!("Cannot add link to itself");
-        }
-        self.inner.add_edge(from, to, ());
-        if is_cyclic_directed(&self.inner) {
-            panic!("Cannot add link that produces a cycle");
-        }
-    }
-
-    pub fn add_dependent(&mut self, from: &[NodeIndex], item: Erased<C, E>) -> NodeIndex {
-        let id = self.inner.add_node(item);
-        from.iter().for_each(|&it| {
-            self.inner.add_edge(it, id, ());
-        });
-        id
-    }
-
-    #[allow(clippy::manual_try_fold)]
-    fn run_analyzers(&mut self, context: &mut C, analyzers: Vec<NodeIndex>) -> Result<(), Vec<E>> {
-        let mut token = unsafe { GhostToken::new() };
-        let mut errors = Vec::new();
-
-        context.tree().dfs().iter(|node, side| {
-            match analyzers.iter().try_for_each(|&id| {
-                let Erased::Analyzer(a) = &mut self.inner[id] else {
-                    unreachable!()
-                };
-                a.analyze(node, side, &mut token, context)
-            }) {
-                Ok(_) => {}
-                Err(e) => errors.push(e),
-            };
-        });
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(errors)
+        DependencyScope {
+            graph: self,
+            self_id,
+            post_handler: None,
+            _phantom: PhantomData,
         }
     }
 
     fn run_transformers(
-        &mut self,
         context: &mut C,
-        transformers: Vec<NodeIndex>,
+        mut transformers: Vec<&mut BoxedMacro<C, E>>,
     ) -> Result<ChangeSet, E> {
         let mut token = unsafe { GhostToken::new() };
         let mut changes = ChangeSet::empty();
@@ -90,10 +84,7 @@ impl<C: Context, E> TraverseSet<C, E> {
 
         context.tree().dfs().iter(|node, side| {
             let mut local_changes = replace(&mut changes, ChangeSet::empty());
-            for &t_id in &transformers {
-                let Erased::Transformer(t) = &mut self.inner[t_id] else {
-                    unreachable!()
-                };
+            for t in &mut transformers {
                 match t.transform(node, side, &mut token, context) {
                     Ok(next_changes) => local_changes = next_changes.merge(local_changes),
                     Err(e) => {
@@ -111,32 +102,32 @@ impl<C: Context, E> TraverseSet<C, E> {
     }
 }
 
-impl<C: Context> Traversable<C, UnrecoverableError> for TraverseSet<C, UnrecoverableError> {
-    fn traverse(&mut self, mut context: C) -> Result<C, (Vec<UnrecoverableError>, C)> {
-        let sorted = topological_layers(&self.inner);
-        for layer in sorted {
-            let (transformers, analyzers) = layer
+impl<C: Context> TraverseSet<C, UnrecoverableError> {
+    pub fn traverse(&mut self, mut context: C) -> Result<C, (UnrecoverableError, C)> {
+        while self.inner.node_count() != 0 {
+            let root_ids = roots(&self.inner).collect_vec();
+            let mut layer = root_ids
                 .into_iter()
-                .partition(|id| matches!(&self.inner[*id], Erased::Transformer(_)));
+                .filter_map(|id| Some((self.inner.remove_node(id)?, id)))
+                .collect_vec();
+            let transformers = layer.iter_mut().map(|it| &mut it.0).collect();
 
             let exec_result = catch_unwind(AssertUnwindSafe(|| {
-                (
-                    self.run_analyzers(&mut context, analyzers),
-                    self.run_transformers(&mut context, transformers),
-                )
+                Self::run_transformers(&mut context, transformers)
             }));
+            for (erased, id) in layer {
+                let Some(handler) = self.handlers.remove(&id) else {
+                    continue;
+                };
+                handler(self, erased)
+            }
             match exec_result {
-                Ok((Ok(_), Ok(_))) => {}
-                Ok((Err(e), Ok(_))) => return Err((e, context)),
-                Ok((Ok(_), Err(e))) => return Err((vec![e], context)),
-                Ok((Err(mut e1), Err(e2))) => {
-                    e1.push(e2);
-                    return Err((e1, context));
-                }
+                Ok(Ok(_)) => {}
+                Ok(Err(e)) => return Err((e, context)),
                 Err(crash) => {
                     let report =
                         Report::new(&context.file_path(), vec![], CompilerCrash::new(crash)).into();
-                    return Err((vec![report], context));
+                    return Err((report, context));
                 }
             };
         }

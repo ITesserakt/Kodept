@@ -9,19 +9,18 @@ use extend::ext;
 use nom_supreme::final_parser::final_parser;
 use rayon::prelude::ParallelIterator;
 
+use kodept::{codespan_settings::ReportExt, top_parser};
 use kodept::codespan_settings::CodespanSettings;
 use kodept::macro_context::{DefaultContext, ErrorReported};
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
-use kodept::traversing::Traversable;
-use kodept::{codespan_settings::ReportExt, top_parser};
 use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::report_collector::ReportCollector;
+use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
-use kodept_parse::ParseError;
 
 use crate::stage::PredefinedTraverseSet;
 use crate::WideError;
@@ -94,14 +93,14 @@ impl Execute {
             accessor,
             Rc::new(tree.build()),
         );
-        let mut set = PredefinedTraverseSet::default();
-        let context = set.traverse(context).or_else(|(errors, context)| {
-            errors
-                .into_iter()
-                .map(|it| it.unwrap_report())
-                .try_for_each(|it| it.emit(settings, &source))?;
-            Result::<_, WideError>::Ok(context)
-        })?;
+        let set = PredefinedTraverseSet::default();
+        let context = set
+            .into_inner()
+            .traverse(context)
+            .or_else(|(errors, context)| {
+                errors.unwrap_report().emit(settings, &source)?;
+                Result::<_, WideError>::Ok(context)
+            })?;
         context.emit_diagnostics(settings, &source);
 
         Ok(())

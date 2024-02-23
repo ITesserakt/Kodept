@@ -17,9 +17,9 @@ workspace = true
 [dependencies]
 derive_more.workspace = true
 paste = "1.0.14"
-extend = "1.2.0"
-tracing = "0.1.40"
-id_tree = "1.8.0"
+extend.workspace = true
+tracing.workspace = true
+id_tree.workspace = true
 
 [dependencies.kodept-macros]
 path = "../kodept-macros"

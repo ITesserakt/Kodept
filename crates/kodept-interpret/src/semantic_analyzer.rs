@@ -6,13 +6,13 @@ use kodept_ast::{
     BodiedFunctionDeclaration, EnumDeclaration, Identifier, InitializedVariable, ModuleDeclaration,
     Parameter, Reference, StructDeclaration,
 };
-use kodept_ast::graph::{GhostToken, NodeUnion, SyntaxTree};
-use kodept_ast::visitor::TraversingResult;
+use kodept_ast::graph::{ChangeSet, GhostToken, NodeUnion, SyntaxTree};
 use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::visitor::visit_side::Skip;
 use kodept_core::Named;
 use kodept_core::structure::{Located, rlt};
-use kodept_macros::analyzer::Analyzer;
 use kodept_macros::error::report::ResultTEExt;
+use kodept_macros::Macro;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
 use crate::Errors;
@@ -65,15 +65,15 @@ impl SemanticAnalyzer {
 
 impl Named for SemanticAnalyzer {}
 
-impl Analyzer for SemanticAnalyzer {
+impl Macro for SemanticAnalyzer {
     type Error = UnrecoverableError;
     type Node = AnalyzingNode;
 
-    fn analyze(
+    fn transform(
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut impl Context,
-    ) -> TraversingResult<Self::Error> {
+    ) -> Result<ChangeSet, Skip<Self::Error>> {
         let (node, side) = guard.allow_all();
         let tree = context.tree();
         if let Some(module) = node.as_module() {
@@ -120,7 +120,7 @@ impl Analyzer for SemanticAnalyzer {
         if side == VisitSide::Exiting && AnalyzingNode::contains(node.deref().into()) {
             debug!("{:#?}", self.current_scope);
         }
-        Ok(())
+        Ok(ChangeSet::empty())
     }
 }
 

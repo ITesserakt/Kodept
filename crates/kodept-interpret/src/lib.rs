@@ -1,9 +1,9 @@
-mod scope;
-mod semantic_analyzer;
-mod symbol;
-
 use kodept_macros::error::report::{ReportMessage, Severity};
-pub use semantic_analyzer::SemanticAnalyzer;
+
+mod scope;
+pub mod semantic_analyzer;
+mod symbol;
+pub mod type_checker;
 
 pub enum Errors {
     UnresolvedReference(Path),
