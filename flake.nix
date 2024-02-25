@@ -4,21 +4,23 @@
     flake-utils.url = "github:numtide/flake-utils";
     naersk.url = "github:nix-community/naersk";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    devenv.url = "github:cachix/devenv";
   };
 
-  outputs = { self, flake-utils, naersk, nixpkgs, fenix }:
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
+  };
+
+  outputs = { self, flake-utils, naersk, nixpkgs, fenix, devenv }@inputs:
     let
       system = flake-utils.lib.system.x86_64-linux;
-    
+
       pkgs = (import nixpkgs) {
         inherit system;
       };
 
-      toolchain = with fenix.packages.${system}; combine [
-        minimal.rustc
-        minimal.cargo
-        targets.x86_64-unknown-linux-musl.latest.rust-std
-      ];
+      toolchain = fenix.packages.${system}.stable.toolchain;
 
       toolchain_win = with fenix.packages.${system}; combine [
         minimal.rustc
@@ -35,19 +37,18 @@
         cargo = toolchain_win;
         rustc = toolchain_win;
       };
-    in rec {
-      packages.${flake-utils.lib.system.x86_64-linux}.default = naersk'.buildPackage {
-        src = ./.;
+    in
+    {
+      packages.${system}.default = naersk'.buildPackage {
+        src = self;
         nativeBuildInputs = with pkgs; [ pkgsStatic.stdenv.cc ];
         doCheck = true;
-        
-        CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-        CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
       };
 
       packages.${flake-utils.lib.system.x86_64-windows}.default = naersk_win.buildPackage {
-        src = ./.;
+        src = self;
         strictDeps = true;
+        doCheck = true;
         nativeBuildInputs = with pkgs; [ wineWowPackages.stable ];
         depsBuildBuild = with pkgs; [
           pkgsCross.mingwW64.stdenv.cc
@@ -61,9 +62,18 @@
         '';
       };
 
-      # For `nix develop`:
-      devShells.${system}.default = pkgs.mkShell {
-        nativeBuildInputs = with pkgs; [ rustc cargo ];
+      devShells.${system}.default = devenv.lib.mkShell {
+        inherit inputs pkgs;
+        modules = [
+          ({ pkgs, ... }: {
+             packages = with pkgs; [  ];
+             scripts.ide.exec = ''${pkgs.jetbrains.rust-rover}/bin/rust-rover'';
+             languages.rust = {
+               enable = true;
+               channel = "stable";
+             };
+           })
+        ];
       };
     };
 }

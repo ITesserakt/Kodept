@@ -4,3 +4,5 @@
 **/out/
 dhat-heap.json
 **/result/
+.devenv/
+.direnv/
