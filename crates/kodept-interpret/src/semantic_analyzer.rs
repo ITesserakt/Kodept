@@ -9,7 +9,6 @@ use kodept_ast::{
 use kodept_ast::graph::{ChangeSet, GhostToken, NodeUnion, SyntaxTree};
 use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::visitor::visit_side::Skip;
-use kodept_core::Named;
 use kodept_core::structure::{Located, rlt};
 use kodept_macros::error::report::ResultTEExt;
 use kodept_macros::Macro;
@@ -61,9 +60,11 @@ impl SemanticAnalyzer {
     pub fn new() -> Self {
         Self::default()
     }
-}
 
-impl Named for SemanticAnalyzer {}
+    pub fn into_inner(self) -> SymbolTable {
+        self.current_scope
+    }
+}
 
 impl Macro for SemanticAnalyzer {
     type Error = UnrecoverableError;

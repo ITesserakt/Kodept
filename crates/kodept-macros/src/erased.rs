@@ -2,7 +2,7 @@ use std::any::Any;
 
 use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken, RefMut, RefNode};
 use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
-use kodept_core::{ConvertibleToRef, Named};
+use kodept_core::ConvertibleToRef;
 
 use crate::Macro;
 use crate::traits::Context;
@@ -28,7 +28,7 @@ pub type BoxedMacro<C, E> = Box<dyn ErasedMacro<C, Error = E>>;
 
 impl<C, T, E> CanErase<C> for T
 where
-    T: Macro<Error = E> + Named + 'static,
+    T: Macro<Error = E> + 'static,
     C: Context,
     GenericASTNode: ConvertibleToRef<T::Node>,
 {
@@ -46,7 +46,7 @@ where
 impl<C, T, E> ErasedMacro<C> for T
 where
     C: Context,
-    T: Macro<Error = E> + Named + 'static,
+    T: Macro<Error = E> + 'static,
     GenericASTNode: ConvertibleToRef<T::Node>,
 {
     fn transform(

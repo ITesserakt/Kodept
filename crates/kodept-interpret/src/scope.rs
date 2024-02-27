@@ -7,9 +7,9 @@ use std::rc::Rc;
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, Tree, TreeBuilder};
 
-use crate::{Errors, Path};
-use crate::Errors::{AlreadyDefined, UnresolvedReference};
 use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
+use crate::Errors::{AlreadyDefined, UnresolvedReference};
+use crate::{Errors, Path};
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Display)]
 struct Tag(String);
@@ -19,10 +19,19 @@ struct Name(String);
 
 type Id = id_tree::NodeId;
 
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub struct PathChain(Vec<Tag>);
+
 pub struct SymbolTable {
     table: HashMap<Id, Symbol>,
     structure: Tree<Tag>,
     current_tag_id: Id,
+}
+
+impl PathChain {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl SymbolTable {
@@ -141,6 +150,22 @@ impl SymbolTable {
             self.current_tag_id = id.clone();
         }
         Ok(())
+    }
+
+    pub fn into_symbols(self) -> Vec<(PathChain, Symbol)> {
+        let structure = self.structure;
+        self.table
+            .into_iter()
+            .map(|(k, v)| {
+                let chain: Vec<_> = structure
+                    .ancestors(&k)
+                    .unwrap()
+                    .map(|it| it.data())
+                    .collect();
+                let chain = chain.into_iter().cloned().rev().collect();
+                (PathChain(chain), v)
+            })
+            .collect()
     }
 }
 

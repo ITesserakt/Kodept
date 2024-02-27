@@ -7,6 +7,7 @@ pub mod language;
 pub mod substitution;
 pub mod r#type;
 
+#[derive(Default)]
 pub struct Environment {
     variable_index: usize,
 }

@@ -22,22 +22,30 @@ pub struct TraverseSet<C: Context, E> {
     handlers: HashMap<NodeIndex, Handler<C, E>>,
 }
 
-pub struct DependencyScope<'a, C: Context, E, T> {
-    graph: &'a mut TraverseSet<C, E>,
-    self_id: NodeIndex,
+pub struct DependencyScope<C: Context, E, T> {
+    item: BoxedMacro<C, E>,
     post_handler: Option<Handler<C, E>>,
     _phantom: PhantomData<T>,
 }
 
-impl<'a, C: Context, E, T: 'static> DependencyScope<'a, C, E, T> {
-    pub fn then<F>(&mut self, handle: F)
+impl<C: Context, E, T: 'static> DependencyScope<C, E, T> {
+    #[must_use]
+    pub fn then<F>(mut self, handle: F) -> Self
     where
         F: FnOnce(&mut TraverseSet<C, E>, T) + 'static,
     {
-        self.post_handler = Some(Box::new(|this, obj| {
+        self.post_handler = Some(Box::new(move |this, obj| {
             let obj = obj.into_any().downcast().expect("Cannot cast");
             handle(this, *obj)
-        }))
+        }));
+        self
+    }
+
+    pub fn add(self, set: &mut TraverseSet<C, E>) {
+        let index = set.inner.add_node(self.item);
+        if let Some(handler) = self.post_handler {
+            set.handlers.insert(index, handler);
+        }
     }
 }
 
@@ -50,25 +58,15 @@ impl<C: Context, E> Default for TraverseSet<C, E> {
     }
 }
 
-impl<C: Context, E, T> Drop for DependencyScope<'_, C, E, T> {
-    fn drop(&mut self) {
-        if let Some(handler) = self.post_handler.take() {
-            self.graph.handlers.insert(self.self_id, handler);
-        }
-    }
-}
-
 impl<C: Context, E> TraverseSet<C, E> {
     pub fn empty() -> Self {
         Self::default()
     }
 
-    pub fn add<T: CanErase<C, Error = E>>(&mut self, item: T) -> DependencyScope<C, E, T> {
-        let self_id = self.inner.add_node(item.erase());
-
+    #[must_use]
+    pub fn dependency<T: CanErase<C, Error = E>>(&self, item: T) -> DependencyScope<C, E, T> {
         DependencyScope {
-            graph: self,
-            self_id,
+            item: item.erase(),
             post_handler: None,
             _phantom: PhantomData,
         }
@@ -102,7 +100,7 @@ impl<C: Context, E> TraverseSet<C, E> {
     }
 }
 
-impl<C: Context> TraverseSet<C, UnrecoverableError> {
+impl<C: Context, E: Into<UnrecoverableError>> TraverseSet<C, E> {
     pub fn traverse(&mut self, mut context: C) -> Result<C, (UnrecoverableError, C)> {
         while self.inner.node_count() != 0 {
             let root_ids = roots(&self.inner).collect_vec();
@@ -110,10 +108,10 @@ impl<C: Context> TraverseSet<C, UnrecoverableError> {
                 .into_iter()
                 .filter_map(|id| Some((self.inner.remove_node(id)?, id)))
                 .collect_vec();
-            let transformers = layer.iter_mut().map(|it| &mut it.0).collect();
+            let macros = layer.iter_mut().map(|it| &mut it.0).collect();
 
             let exec_result = catch_unwind(AssertUnwindSafe(|| {
-                Self::run_transformers(&mut context, transformers)
+                Self::run_transformers(&mut context, macros)
             }));
             for (erased, id) in layer {
                 let Some(handler) = self.handlers.remove(&id) else {
@@ -123,7 +121,7 @@ impl<C: Context> TraverseSet<C, UnrecoverableError> {
             }
             match exec_result {
                 Ok(Ok(_)) => {}
-                Ok(Err(e)) => return Err((e, context)),
+                Ok(Err(e)) => return Err((e.into(), context)),
                 Err(crash) => {
                     let report =
                         Report::new(&context.file_path(), vec![], CompilerCrash::new(crash)).into();
