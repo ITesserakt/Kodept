@@ -1,21 +1,22 @@
-use std::io::stdout;
-
 use kodept::macro_context::DefaultContext;
 use kodept::traversing::TraverseSet;
 use kodept_interpret::semantic_analyzer::SemanticAnalyzer;
-use kodept_macros::default::ASTFormatter;
+use kodept_interpret::type_checker::TypeChecker;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
 pub struct PredefinedTraverseSet<C: Context = DefaultContext, E = UnrecoverableError>(
     TraverseSet<C, E>,
 );
 
-impl<C: Context> Default for PredefinedTraverseSet<C, UnrecoverableError> {
+impl<C: Context + 'static> Default for PredefinedTraverseSet<C, UnrecoverableError> {
     fn default() -> Self {
         let mut set = TraverseSet::empty();
-        set.add(SemanticAnalyzer::new()).then(|set, _| {
-            set.add(ASTFormatter::new(stdout()));
-        });
+        set.dependency(SemanticAnalyzer::new())
+            .then(|set, sa| {
+                set.dependency(TypeChecker::new(sa.into_inner())).add(set);
+            })
+            .add(&mut set);
+
         Self(set)
     }
 }

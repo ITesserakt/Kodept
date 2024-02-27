@@ -45,4 +45,4 @@ pub trait FileContextual {
 
 pub trait Context: Linker + Accessor + Reporter {}
 
-impl<'c, T: Linker + Accessor + Reporter> Context for T {}
+impl<T: Linker + Accessor + Reporter> Context for T {}
