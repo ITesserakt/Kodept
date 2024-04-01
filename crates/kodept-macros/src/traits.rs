@@ -2,6 +2,7 @@ use std::convert::Infallible;
 
 use derive_more::{From, Unwrap};
 
+use kodept_ast::graph::SyntaxTree;
 use kodept_ast::traits::{Accessor, Linker};
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
@@ -44,5 +45,12 @@ pub trait FileContextual {
 }
 
 pub trait Context: Linker + Accessor + Reporter {}
+
+pub trait MutableContext: Context {
+    fn modify_tree(
+        &mut self,
+        f: impl FnOnce(SyntaxTree) -> SyntaxTree,
+    ) -> Result<(), ReportMessage>;
+}
 
 impl<T: Linker + Accessor + Reporter> Context for T {}

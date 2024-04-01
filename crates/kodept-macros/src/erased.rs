@@ -1,11 +1,12 @@
 use std::any::Any;
 
 use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken, RefMut, RefNode};
-use kodept_ast::visitor::visit_side::{SkipExt, VisitGuard, VisitSide};
+use kodept_ast::utils::Execution;
+use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::ConvertibleToRef;
 
-use crate::Macro;
 use crate::traits::Context;
+use crate::Macro;
 
 pub trait CanErase<C: Context> {
     type Error;
@@ -21,7 +22,7 @@ pub trait ErasedMacro<C: Context>: CanErase<C> {
         side: VisitSide,
         token: &mut GhostToken,
         context: &mut C,
-    ) -> Result<ChangeSet, Self::Error>;
+    ) -> Execution<Self::Error, ChangeSet>;
 }
 
 pub type BoxedMacro<C, E> = Box<dyn ErasedMacro<C, Error = E>>;
@@ -55,15 +56,14 @@ where
         side: VisitSide,
         token: &mut GhostToken,
         context: &mut C,
-    ) -> Result<ChangeSet, Self::Error> {
+    ) -> Execution<Self::Error, ChangeSet> {
         let Some(_) = node.ro(token).try_as_ref() else {
-            return Ok(ChangeSet::new());
+            return Execution::Skipped;
         };
         <Self as Macro>::transform(
             self,
             VisitGuard::new(side, RefMut::new(node), token),
             context,
         )
-        .skipped()
     }
 }

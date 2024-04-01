@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use std::rc::Rc;
+use std::rc::Weak;
 
 use kodept_core::ConvertibleToRef;
 use tracing::warn;
@@ -63,13 +63,18 @@ pub trait Accessor {
 
     fn access_unknown(&self, ast: &impl IntoASTFamily) -> Option<RLTFamily>;
 
-    fn tree(&self) -> Rc<SyntaxTree>;
+    fn tree(&self) -> Weak<SyntaxTree>;
 }
 
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct LinkGuard<I>(I);
 
 impl<I: IntoASTFamily> LinkGuard<I> {
+    pub fn new(item: I) -> Self {
+        Self(item)
+    }
+
     pub fn link<L: Linker>(self, ctx: &mut L, with: &RLTFamily) -> I {
         ctx.link(self.0, with)
     }

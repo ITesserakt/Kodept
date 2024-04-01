@@ -5,7 +5,7 @@ use crate::graph::utils::FromOptVec;
 use crate::graph::{GenericASTNode, Identifiable};
 use crate::graph::{GhostToken, SyntaxTree};
 
-pub(crate) mod tags {
+pub mod tags {
     pub type ChildTag = u8;
 
     pub const PRIMARY: ChildTag = 1;

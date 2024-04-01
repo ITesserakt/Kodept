@@ -8,11 +8,11 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
+use crate::{BodiedFunctionDeclaration, ExpressionBlock, node, Operation, Type, wrapper};
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
+use crate::graph::NodeId;
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -26,6 +26,7 @@ wrapper! {
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
+    #[into(ref)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Body {
         block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => Some(x),

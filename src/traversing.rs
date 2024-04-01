@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::mem::replace;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use itertools::Itertools;
 use petgraph::prelude::{NodeIndex, StableDiGraph};
 
 use kodept_ast::graph::{ChangeSet, GhostToken};
+use kodept_ast::utils::Execution;
 use kodept_macros::erased::{BoxedMacro, CanErase};
 use kodept_macros::error::compiler_crash::CompilerCrash;
 use kodept_macros::error::report::Report;
-use kodept_macros::traits::{Context, UnrecoverableError};
+use kodept_macros::traits::{Context, MutableContext, UnrecoverableError};
 
 use crate::utils::graph::roots;
 
@@ -71,36 +71,34 @@ impl<C: Context, E> TraverseSet<C, E> {
             _phantom: PhantomData,
         }
     }
+}
 
-    fn run_transformers(
+impl<C: MutableContext, E: Into<UnrecoverableError>> TraverseSet<C, E> {
+    fn run_macros(
         context: &mut C,
-        mut transformers: Vec<&mut BoxedMacro<C, E>>,
-    ) -> Result<ChangeSet, E> {
+        mut macros: Vec<&mut BoxedMacro<C, E>>,
+    ) -> Result<(), UnrecoverableError> {
         let mut token = unsafe { GhostToken::new() };
-        let mut changes = ChangeSet::empty();
-        let mut error = None;
+        let mut changes = ChangeSet::new();
 
-        context.tree().dfs().iter(|node, side| {
-            let mut local_changes = replace(&mut changes, ChangeSet::empty());
-            for t in &mut transformers {
-                match t.transform(node, side, &mut token, context) {
-                    Ok(next_changes) => local_changes = next_changes.merge(local_changes),
-                    Err(e) => {
-                        error = Some(e);
-                        return;
-                    }
+        for (node, side) in context.tree().upgrade().unwrap().dfs() {
+            for marc in &mut macros {
+                match marc.transform(node, side, &mut token, context) {
+                    Execution::Failed(e) => return Err(e.into()),
+                    Execution::Completed(next) => changes.extend(next),
+                    Execution::Skipped => continue,
                 }
             }
-            changes = local_changes;
-        });
-        match error {
-            None => Ok(changes),
-            Some(e) => Err(e),
+        }
+
+        match context.modify_tree(|tree| tree.apply_changes(changes, &mut token)) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(Report::new(&context.file_path(), vec![], e).into()),
         }
     }
 }
 
-impl<C: Context, E: Into<UnrecoverableError>> TraverseSet<C, E> {
+impl<C: MutableContext, E: Into<UnrecoverableError>> TraverseSet<C, E> {
     pub fn traverse(&mut self, mut context: C) -> Result<C, (UnrecoverableError, C)> {
         while self.inner.node_count() != 0 {
             let root_ids = roots(&self.inner).collect_vec();
@@ -110,9 +108,8 @@ impl<C: Context, E: Into<UnrecoverableError>> TraverseSet<C, E> {
                 .collect_vec();
             let macros = layer.iter_mut().map(|it| &mut it.0).collect();
 
-            let exec_result = catch_unwind(AssertUnwindSafe(|| {
-                Self::run_transformers(&mut context, macros)
-            }));
+            let exec_result =
+                catch_unwind(AssertUnwindSafe(|| Self::run_macros(&mut context, macros)));
             for (erased, id) in layer {
                 let Some(handler) = self.handlers.remove(&id) else {
                     continue;
@@ -121,7 +118,7 @@ impl<C: Context, E: Into<UnrecoverableError>> TraverseSet<C, E> {
             }
             match exec_result {
                 Ok(Ok(_)) => {}
-                Ok(Err(e)) => return Err((e.into(), context)),
+                Ok(Err(e)) => return Err((e, context)),
                 Err(crash) => {
                     let report =
                         Report::new(&context.file_path(), vec![], CompilerCrash::new(crash)).into();

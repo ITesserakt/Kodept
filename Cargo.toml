@@ -7,7 +7,7 @@ description = "Simple compiler with dependent types support in mind"
 repository = "https://github.com/ITesserakt/Kodept/"
 categories = ["compilers"]
 license = "Apache-2.0"
-rust-version = "1.74.0"
+rust-version = "1.75.0"
 exclude = ["docs"]
 
 [workspace]
@@ -54,7 +54,7 @@ itertools.workspace = true
 nom.workspace = true
 nom-supreme = "0.8.0"
 petgraph = "0.6.4"
-rayon = { version = "1.7.0" }
+rayon = { version = "1.10.0" }
 serde_json = "1.0.107"
 thiserror.workspace = true
 tracing.workspace = true

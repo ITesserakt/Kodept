@@ -75,3 +75,19 @@ impl PopulateTree for rlt::Reference {
             .id()
     }
 }
+
+impl Reference {
+    pub fn new_type_ref(name: String) -> Self {
+        Reference {
+            id: Default::default(),
+            ident: Identifier::TypeReference { name },
+        }
+    }
+    
+    pub fn new_ref(name: String) -> Self {
+        Reference {
+            id: Default::default(),
+            ident: Identifier::Reference { name },
+        }
+    }
+}

@@ -1,8 +1,8 @@
 #![allow(clippy::needless_lifetimes)]
 
-use crate::graph::nodes::Owned;
 use std::any::type_name;
 
+use crate::graph::nodes::Owned;
 use crate::graph::utils::{FromOptVec, OptVec, RefMut};
 
 #[repr(transparent)]
@@ -14,9 +14,9 @@ impl<T> FromOptVec for Identity<T> {
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
-        match value {
-            OptVec::Single(x) => x,
-            _ => panic!(
+        match value.into_inner() {
+            Ok([x]) => x,
+            Err(value) => panic!(
                 "Container must has only one child <{}>, but has {}",
                 type_name::<T>(),
                 value.len()
@@ -25,9 +25,9 @@ impl<T> FromOptVec for Identity<T> {
     }
 
     fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
-        match value {
-            OptVec::Single(x) => RefMut::new(x),
-            _ => panic!(
+        match value.into_inner() {
+            Ok([x]) => RefMut::new(x),
+            Err(value) => panic!(
                 "Container must has only one child <{}>, but has {}",
                 type_name::<T>(),
                 value.len()

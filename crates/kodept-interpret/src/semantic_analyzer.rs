@@ -7,8 +7,9 @@ use kodept_ast::{
     Parameter, Reference, StructDeclaration,
 };
 use kodept_ast::graph::{ChangeSet, GhostToken, NodeUnion, SyntaxTree};
-use kodept_ast::visitor::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::visitor::visit_side::Skip;
+use kodept_ast::traits::Identifiable;
+use kodept_ast::utils::Execution;
+use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::structure::{Located, rlt};
 use kodept_macros::error::report::ResultTEExt;
 use kodept_macros::Macro;
@@ -74,9 +75,11 @@ impl Macro for SemanticAnalyzer {
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut impl Context,
-    ) -> Result<ChangeSet, Skip<Self::Error>> {
+    ) -> Execution<Self::Error, ChangeSet> {
         let (node, side) = guard.allow_all();
-        let tree = context.tree();
+        let Some(tree) = context.tree().upgrade() else {
+            return Execution::Skipped;
+        };
         if let Some(module) = node.as_module() {
             self.visit_module(module, side)
                 .report_errors(module, context, |rlt: &rlt::Module| vec![rlt.location()]);
@@ -121,7 +124,7 @@ impl Macro for SemanticAnalyzer {
         if side == VisitSide::Exiting && AnalyzingNode::contains(node.deref().into()) {
             debug!("{:#?}", self.current_scope);
         }
-        Ok(ChangeSet::empty())
+        Execution::Completed(ChangeSet::new())
     }
 }
 
@@ -151,10 +154,10 @@ impl SemanticAnalyzer {
             Some(None) => Err(TooComplex)?,
             Some(Some(x)) => Some(self.current_scope.lookup_type(&x.name, false)?),
         };
-        self.current_scope.insert(VarSymbol::new(
-            decl.variable(tree, token).name.clone(),
-            ty_symbol,
-        ))?;
+        self.current_scope.insert(
+            VarSymbol::new(decl.variable(tree, token).name.clone(), ty_symbol),
+            decl.get_id().cast(),
+        )?;
         Ok(())
     }
 
@@ -168,11 +171,13 @@ impl SemanticAnalyzer {
         if side == VisitSide::Entering {
             let ty = self
                 .current_scope
-                .insert(TypeSymbol::user(decl.name.clone()))?;
+                .insert(TypeSymbol::user(decl.name.clone()), decl.get_id().cast())?;
             self.current_scope.begin_scope(decl.name.clone())?;
             for variant in decl.contents(tree, token) {
-                self.current_scope
-                    .insert(VarSymbol::new(variant.name.clone(), Some(ty.clone())))?;
+                self.current_scope.insert(
+                    VarSymbol::new(variant.name.clone(), Some(ty.clone())),
+                    variant.get_id().cast(),
+                )?;
             }
         }
         if side == VisitSide::Exiting {
@@ -199,8 +204,10 @@ impl SemanticAnalyzer {
         side: VisitSide,
     ) -> Result<(), Errors> {
         if side == VisitSide::Entering {
-            self.current_scope
-                .insert(VarSymbol::new(func.name.clone(), None))?;
+            self.current_scope.insert(
+                VarSymbol::new(func.name.clone(), None),
+                func.get_id().cast(),
+            )?;
             self.current_scope.begin_scope(func.name.clone())?;
         } else if side == VisitSide::Exiting {
             self.current_scope.end_scope(&func.name)?;
@@ -223,11 +230,15 @@ impl SemanticAnalyzer {
                 None => Err(TooComplex)?,
                 Some(x) => Some(self.current_scope.lookup_type(&x.name, false)?),
             };
-            self.current_scope
-                .insert(VarSymbol::new(typed.name.clone(), ty))?;
+            self.current_scope.insert(
+                VarSymbol::new(typed.name.clone(), ty),
+                typed.get_id().cast(),
+            )?;
         } else if let Some(untyped) = param.as_untyped() {
-            self.current_scope
-                .insert(VarSymbol::new(untyped.name.clone(), None))?;
+            self.current_scope.insert(
+                VarSymbol::new(untyped.name.clone(), None),
+                untyped.get_id().cast(),
+            )?;
         }
         Ok(())
     }
@@ -238,8 +249,10 @@ impl SemanticAnalyzer {
         side: VisitSide,
     ) -> Result<(), Errors> {
         if matches!(side, VisitSide::Entering | VisitSide::Leaf) {
-            self.current_scope
-                .insert(TypeSymbol::user(structure.name.clone()))?;
+            self.current_scope.insert(
+                TypeSymbol::user(structure.name.clone()),
+                structure.get_id().cast(),
+            )?;
         }
 
         if side == VisitSide::Entering {
