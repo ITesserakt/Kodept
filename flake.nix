@@ -7,11 +7,6 @@
     devenv.url = "github:cachix/devenv";
   };
 
-  nixConfig = {
-    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
-    extra-substituters = "https://devenv.cachix.org";
-  };
-
   outputs = { self, flake-utils, naersk, nixpkgs, fenix, devenv }@inputs:
     let
       system = flake-utils.lib.system.x86_64-linux;
@@ -20,7 +15,7 @@
         inherit system;
       };
 
-      toolchain = fenix.packages.${system}.stable.toolchain;
+      toolchain = fenix.packages.${system}.latest.toolchain;
 
       toolchain_win = with fenix.packages.${system}; combine [
         minimal.rustc
@@ -66,11 +61,12 @@
         inherit inputs pkgs;
         modules = [
           ({ pkgs, ... }: {
-             packages = with pkgs; [  ];
-             scripts.ide.exec = ''${pkgs.jetbrains.rust-rover}/bin/rust-rover'';
+             packages = with pkgs; [ rustup ];
+             pre-commit.hooks.clippy.enable = true;
+             scripts.ide.exec = ''${pkgs.daemon}/bin/daemon ${pkgs.jetbrains.rust-rover}/bin/rust-rover'';
              languages.rust = {
                enable = true;
-               channel = "stable";
+               channel = "nightly";
              };
            })
         ];

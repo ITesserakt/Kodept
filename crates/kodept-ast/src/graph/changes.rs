@@ -1,7 +1,8 @@
-use crate::graph::{GenericASTNode, NodeId, SyntaxTree};
+use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::tags::ChildTag;
+use crate::graph::utils::OptVec;
 
-#[derive(Default)]
-pub struct ChangeSet(Vec<Change>);
+pub type ChangeSet = OptVec<Change>;
 
 /// Represents a modification of AST
 pub enum Change {
@@ -14,6 +15,7 @@ pub enum Change {
     Add {
         parent_id: NodeId<GenericASTNode>,
         child: GenericASTNode,
+        tag: ChildTag,
     },
     /// Replace itself with other node
     Replace {
@@ -24,19 +26,27 @@ pub enum Change {
     DeleteSelf { node_id: NodeId<GenericASTNode> },
 }
 
-#[allow(unused)]
-impl ChangeSet {
-    pub fn new() -> Self {
-        Self(vec![])
+impl Change {
+    pub fn delete<T: Into<GenericASTNode>>(id: NodeId<T>) -> Change {
+        Change::DeleteSelf { node_id: id.cast() }
     }
 
-    pub fn empty() -> Self {
-        Self(vec![])
+    pub fn add<T, U>(to: NodeId<T>, element: U, tag: ChildTag) -> Change
+    where
+        T: Into<GenericASTNode>,
+        U: Into<GenericASTNode>,
+    {
+        Change::Add {
+            parent_id: to.cast(),
+            child: element.into(),
+            tag,
+        }
     }
 
-    pub fn add(change: Change, tree: &SyntaxTree) {}
-
-    pub fn merge(self, other: Self) -> Self {
-        self
+    pub fn replace<T: Into<GenericASTNode>>(node: NodeId<GenericASTNode>, with: T) -> Change {
+        Change::Replace {
+            from_id: node.cast(),
+            to: with.into(),
+        }
     }
 }

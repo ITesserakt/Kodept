@@ -1,17 +1,14 @@
-use derive_more::{From, Into, IsVariant};
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
+use derive_more::{From, Into, IsVariant};
+
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
+
 use crate::graph::{GenericASTNode, GhostToken, RefMut};
+use crate::utils::Execution;
+use crate::utils::Execution::{Completed, Skipped};
 
-#[derive(Debug)]
-pub enum Skip<E> {
-    WithError(E),
-    SideGuard,
-}
-
-#[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy)]
+#[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy, Debug)]
 #[repr(u8)]
 pub enum VisitSide {
     Entering,
@@ -29,8 +26,9 @@ impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
         Self(side, access, token)
     }
 
-    pub fn allow_only<E>(self, matches: VisitSide) -> Result<Access<'arena, 'token, N>, Skip<E>> {
-        self.0.guard(matches).map(|_| Access(self.2, self.1))
+    pub fn allow_only<E>(self, matches: VisitSide) -> Execution<E, Access<'arena, 'token, N>> {
+        self.0.guard(matches)?;
+        Completed(Access(self.2, self.1))
     }
 
     pub fn allow_all(self) -> (Access<'arena, 'token, N>, VisitSide) {
@@ -39,34 +37,11 @@ impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
 }
 
 impl VisitSide {
-    pub fn guard<E>(self, guarded: VisitSide) -> Result<(), Skip<E>> {
+    pub fn guard<E>(self, guarded: VisitSide) -> Execution<E> {
         if self != guarded {
-            Err(Skip::SideGuard)
+            Skipped
         } else {
-            Ok(())
-        }
-    }
-}
-
-impl<E> From<E> for Skip<E> {
-    fn from(value: E) -> Self {
-        Skip::WithError(value)
-    }
-}
-
-pub trait SkipExt<T, E> {
-    fn skipped(self) -> Result<T, E>;
-}
-
-impl<T, E> SkipExt<T, E> for Result<T, Skip<E>>
-where
-    T: Default,
-{
-    fn skipped(self) -> Result<T, E> {
-        match self {
-            Ok(_) => Ok(T::default()),
-            Err(Skip::SideGuard) => Ok(T::default()),
-            Err(Skip::WithError(e)) => Err(e),
+            Completed(())
         }
     }
 }

@@ -1,0 +1,163 @@
+%----------------------------------------------------------
+\def\argmax{\operatornamewithlimits{argmax}}
+%----------------------------------------------------------
+% горизонтальная линия для последующего проставления подписи
+\newcommand{\signhrule}{\raggedright\baselineskip0.0ex \vrule height 0.5pt width30mm depth0pt}
+% место для проставления даты
+\newcommand{\datetofill}{<<\uline{\textcolor{white}{\hspace{30pt}}}>>~\uline{\textcolor{white}{\hspace{80pt}}}~\Year~\cyrg.}
+
+% 1 - role	% роль
+% 2 - ФИО 	% подпись, дата
+\newcommand{\signerline}[3][black]{%
+#2 & \textunderset{подпись, дата}{\underline{\textcolor{white}{\hspace{120pt}}}} & & \textunderset{ФИО}{\uline{\textcolor{#1}{#3}}}  %фамилия, и.о.
+}
+%----------------------------------------------------------
+\newcommand{\headerruleseparator}{%
+\vrule height 0.6mm width 1.0\textwidth depth0pt
+\vspace{-19pt}
+\vrule height 0.2mm width 1.0\textwidth depth0pt
+}
+%----------------------------------------------------------
+% 1 -- \depHeadPosition
+% 2 -- \department
+% 3 -- \depHeadName 
+\newcommand{\officialheader}{%
+\begin{center}
+\UpperFullOrganisationName\newline \FullOrganisationName
+\end{center}
+\vspace{-20pt}
+\headerruleseparator}
+%----------------------------------------------------------
+% 1 -- \depHeadPosition
+% 2 -- \department
+% 3 -- \depHeadName 
+\newcommand{\signerblock}[3]{%
+\parbox[t]{72.0mm}{%
+\begin{center}
+УТВЕРЖДАЮ\\
+\vskip1.0mm
+#1 \textunderset{индекс}{\underline{\textit{#2}}}\\%\newline
+\vskip1.0mm
+\textunderset{}{\signhrule} \quad \textit{#3}\newline
+\datetofill
+\end{center}
+}}
+%----------------------------------------------------------
+\newcommand{\groupblock}[3]{%
+\begin{tabular}{p{0.18\textwidth}p{0.15\textwidth}}
+\hfill ФАКУЛЬТЕТ & \underline{#1} \\
+\hfill КАФЕДРА & \underline{#2} \\
+\hfill ГРУППА & \underline{#3} \\
+\end{tabular}}
+%-------------------------
+\usepackage{ifthen}
+\usepackage{calc}
+%-------------------------
+% #1 - showleft
+% #2 - subdocname
+% #3 - subdocnamedscra
+\newcommand{\officialheaderfull}[3][]{%
+\officialheader
+
+\begin{center}
+\vspace{-50pt}
+\begin{tabular}{P{0.25\textwidth}P{0.3\textwidth}P{0.4\textwidth}}
+\ifthenelse{\equal{#1}{showleft}}{\smash{%
+		\raisebox{-1.25\height}{%
+		\groupblock{\facultyShort}{\departmentShort}{\group}
+		}}}{}
+& & \signerblock{\depHeadPosition}{\departmentShort}{\depHeadName} \\
+\end{tabular}
+\end{center}
+
+\begin{center}
+\vspace{-15pt}
+\large
+\MakeUppercase{\textbf{#2}}\\
+\textbf{#3}
+\end{center}
+
+\noindent\begin{tabular}{p{0.95\textwidth}}
+Студент группы: \underline{\group} \\
+\AuthorFull \\%[-10pt]
+\hline
+\multicolumn{1}{P{0.9\textwidth}}{\smaller[2] \vspace{-19pt}(фамилия, имя, отчество)}
+\end{tabular}
+
+\noindent%\begin{tabular}{p{0.95\textwidth}}
+Тема \doctypec: \expandafter\uline\expandafter{\Title}% \\%[-10pt]
+%\hline \\
+%\end{tabular}
+}
+%-------------------------
+% #1 - current \doctype
+% #2 - destination document
+% #3 - text
+\newcommand{\myconditionaltext}[3]{%
+\ifthenelse{\equal{#1}{kr}\AND\equal{#2}{kr}}{#3}{}%
+\ifthenelse{\equal{#1}{kp}\AND\equal{#2}{kp}}{#3}{}%
+\ifthenelse{\equal{#1}{vkr}\AND\equal{#2}{vkr}}{#3}{}%
+\ifthenelse{\equal{#1}{nirs}\AND\equal{#2}{nirs}}{#3}{}%
+\ifthenelse{\equal{#1}{nkr}\AND\equal{#2}{nkr}}{#3}{}%
+}
+% использование
+%\myconditionaltext{\doctypesid}{kp}{XXXXXXX} % вставится только при сборке КП
+%-------------------------
+% к \doctypeb
+\newcommand{\doctypeb}{%
+\ifthenelse{\equal{\doctypesid}{vkr}}{выпускной квалификационной работе}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{курсовой работе}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{курсовому проекту}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательской работе студента}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационной работе}{}%
+} 
+% на выполнение \doctypec
+\newcommand{\doctypec}{%
+\ifthenelse{\equal{\doctypesid}{vkr}}{выпускной квалификационной работы}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{курсовой работы}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{курсового проекта}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательской работы студента}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационной работы}{}%
+}
+% \doctype (в именительном падеже)
+\newcommand{\doctype}{%
+\ifthenelse{\equal{\doctypesid}{vkr}}{выпускная квалификационная работа}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{курсовая работа}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{курсовой проект}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{научно-исследовательская работа студента}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{научно-квалификационная работа}{}%
+} 
+% \doctypeshort (сокращение)
+\newcommand{\doctypeshort}{%
+\ifthenelse{\equal{\doctypesid}{vkr}}{ВКР}{}%
+\ifthenelse{\equal{\doctypesid}{kr}}{КР}{}%
+\ifthenelse{\equal{\doctypesid}{kp}}{КП}{}%
+\ifthenelse{\equal{\doctypesid}{nirs}}{НИРС}{}%
+\ifthenelse{\equal{\doctypesid}{nkr}}{НКР}{}%
+}
+%-------------------------
+% атрибуты
+\newcommand{\docattributes}[6]{%
+\def\tempempty{}
+\def\tempa{#1}
+\def\tempb{#2}
+\def\tempc{#3}
+\def\tempd{#4}
+  \ifx\tempempty\tempa \def\tempa{\ScientificAdviserPosition, \ScientificAdviser}\fi
+  \ifx\tempempty\tempb \def\tempb{Решение и вёрстка:}\fi
+  \ifx\tempempty\tempc \def\tempc{}\fi
+  \ifx\tempempty\tempd \def\tempd{}\else \def\tempd{{\textnormal\copyright}~#4}\fi
+
+\vspace{0.5cm}
+\begin{flushright}
+\smaller[1]
+		\begin{tabular}{p{0.25\textwidth}p{0.75\textwidth}}
+		\hfill Постановка: & \doclicense~\textit{\tempa} \\
+		\hfill \tempb & \doclicense~\textit{#5} \\
+		\hfill \tempc & \textit{\tempd} \\
+		\hfill & \textit{#6}\\
+		\end{tabular}
+\end{flushright}
+}
+%----------------------------------------------------------
+

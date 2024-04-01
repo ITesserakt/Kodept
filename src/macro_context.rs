@@ -1,6 +1,7 @@
 use std::ops::Range;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
+use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{Error, Files};
 use codespan_reporting::term::termcolor::WriteColor;
 use derive_more::Constructor;
@@ -11,9 +12,9 @@ use kodept_ast::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
 use kodept_ast::traits::{Accessor, IntoASTFamily, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_core::ConvertibleToRef;
-use kodept_macros::error::report::Report;
+use kodept_macros::error::report::{Report, ReportMessage};
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::traits::{FileContextual, Reporter};
+use kodept_macros::traits::{FileContextual, MutableContext, Reporter};
 
 use crate::codespan_settings::{CodespanSettings, ReportExt};
 use crate::read_code_source::ReadCodeSource;
@@ -22,7 +23,7 @@ use crate::read_code_source::ReadCodeSource;
 pub struct DefaultContext {
     report_collector: FileRelative<ReportCollector>,
     rlt_accessor: RLTAccessor,
-    tree: Rc<SyntaxTree>,
+    tree: Option<Rc<SyntaxTree>>,
 }
 
 #[derive(Debug, Error)]
@@ -65,8 +66,8 @@ impl Accessor for DefaultContext {
         self.rlt_accessor.access_unknown(ast).cloned()
     }
 
-    fn tree(&self) -> Rc<SyntaxTree> {
-        self.tree.clone()
+    fn tree(&self) -> Weak<SyntaxTree> {
+        Rc::downgrade(&self.tree.as_ref().expect("AST was deallocated"))
     }
 }
 
@@ -146,6 +147,51 @@ impl ReadCodeSource {
                 given: line_index,
                 max: self.line_starts().len() - 1,
             }),
+        }
+    }
+}
+
+struct SharedASTError;
+
+struct DroppedASTError;
+
+impl From<SharedASTError> for ReportMessage {
+    fn from(_: SharedASTError) -> Self {
+        Self::new(
+            Severity::Error,
+            "IE001",
+            "AST still can be accessed from some places".to_string(),
+        )
+    }
+}
+
+impl From<DroppedASTError> for ReportMessage {
+    fn from(_: DroppedASTError) -> Self {
+        Self::new(
+            Severity::Bug,
+            "IE002",
+            "AST was dropped. Concurrent access?".to_string(),
+        )
+    }
+}
+
+impl MutableContext for DefaultContext {
+    fn modify_tree(
+        &mut self,
+        f: impl FnOnce(SyntaxTree) -> SyntaxTree,
+    ) -> Result<(), ReportMessage> {
+        match self.tree.take() {
+            None => Err(DroppedASTError.into()),
+            Some(rc) => match Rc::try_unwrap(rc) {
+                Ok(this) => {
+                    self.tree = Some(Rc::new(f(this)));
+                    Ok(())
+                }
+                Err(this) => {
+                    self.tree = Some(this);
+                    Err(SharedASTError.into())
+                }
+            },
         }
     }
 }

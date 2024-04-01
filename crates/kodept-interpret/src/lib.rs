@@ -1,5 +1,6 @@
 use kodept_macros::error::report::{ReportMessage, Severity};
 
+pub mod operator_desugaring;
 mod scope;
 pub mod semantic_analyzer;
 mod symbol;

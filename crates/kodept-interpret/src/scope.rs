@@ -1,28 +1,40 @@
 #![allow(clippy::unwrap_used)]
 
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
 
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, Tree, TreeBuilder};
 
-use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
-use crate::Errors::{AlreadyDefined, UnresolvedReference};
+use kodept_ast::graph::GenericASTNode;
+use kodept_ast::traits::Identifiable;
+
 use crate::{Errors, Path};
+use crate::Errors::{AlreadyDefined, UnresolvedReference};
+use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
+
+pub struct Scope {
+    start_from_id: NodeId,
+}
+
+#[derive(Clone)]
+pub struct SymbolId<'a> {
+    inner: Id,
+    table: &'a SymbolTable,
+}
 
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Display)]
 struct Tag(String);
 
-#[derive(Hash, Eq, PartialEq, Debug)]
-struct Name(String);
-
 type Id = id_tree::NodeId;
+type NodeId = kodept_ast::graph::NodeId<GenericASTNode>;
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct PathChain(Vec<Tag>);
 
 pub struct SymbolTable {
+    node_table: HashMap<NodeId, Id>,
     table: HashMap<Id, Symbol>,
     structure: Tree<Tag>,
     current_tag_id: Id,
@@ -84,7 +96,31 @@ impl SymbolTable {
             .map_err(|_| UnresolvedReference(path.clone()))
     }
 
-    pub fn insert<T: Clone + Into<Symbol>>(&mut self, symbol: T) -> Result<T, Errors> {
+    pub fn lookup_by_node<N: Identifiable>(&self, node: &N) -> Result<SymbolId, Errors>
+    where
+        GenericASTNode: TryFrom<N>,
+    {
+        let id = node.get_id().cast();
+
+        self.node_table
+            .get(&id)
+            .cloned()
+            .ok_or(UnresolvedReference("".to_string()))
+            .map(|it| SymbolId {
+                inner: it,
+                table: self,
+            })
+    }
+
+    pub fn lookup_by_id(&self, id: SymbolId) -> Symbol {
+        self.table.get(&id.inner).cloned().unwrap()
+    }
+
+    pub fn insert<T: Clone + Into<Symbol>>(
+        &mut self,
+        symbol: T,
+        node_id: NodeId,
+    ) -> Result<T, Errors> {
         let out = symbol;
         let symbol = out.clone().into();
         if self
@@ -102,7 +138,8 @@ impl SymbolTable {
                 InsertBehavior::UnderNode(&self.current_tag_id),
             )
             .unwrap();
-        self.table.insert(id, symbol);
+        self.table.insert(id.clone(), symbol);
+        self.node_table.insert(node_id, id);
         Ok(out)
     }
 
@@ -110,6 +147,7 @@ impl SymbolTable {
         let structure = TreeBuilder::new().with_root(Node::new(Tag(root))).build();
         let current_tag_id = structure.root_node_id().unwrap().clone();
         Self {
+            node_table: Default::default(),
             table: Default::default(),
             structure,
             current_tag_id,
@@ -191,5 +229,17 @@ impl Debug for SymbolTable {
         writeln!(f, "{table}")?;
         writeln!(f, "}}")?;
         Ok(())
+    }
+}
+
+impl Into<String> for SymbolId<'_> {
+    fn into(self) -> String {
+        self.table.lookup_by_id(self.clone()).path().to_string()
+    }
+}
+
+impl Debug for SymbolId<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.table.lookup_by_id(self.clone()).fmt(f)
     }
 }

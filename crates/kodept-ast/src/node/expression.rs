@@ -242,3 +242,11 @@ impl PopulateTree for rlt::Expression {
         }
     }
 }
+
+impl Application {
+    pub fn new() -> Self {
+        Application {
+            id: Default::default(),
+        }
+    }
+}

@@ -6,7 +6,9 @@ use derive_more::From;
 
 use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::rlt_accessor::RLTFamily;
-use kodept_ast::visitor::visit_side::{Skip, VisitGuard, VisitSide};
+use kodept_ast::utils::Execution;
+use kodept_ast::utils::Execution::Completed;
+use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::Named;
 use kodept_core::structure::Located;
 
@@ -44,7 +46,7 @@ impl<W: Write> Macro for ASTFormatter<W> {
         &mut self,
         guard: VisitGuard<Self::Node>,
         context: &mut impl Context,
-    ) -> Result<ChangeSet, Skip<Self::Error>> {
+    ) -> Execution<Self::Error, ChangeSet> {
         let (node, side) = guard.allow_all();
         let node_data = node.deref();
         let f = &mut self.writer;
@@ -70,6 +72,6 @@ impl<W: Write> Macro for ASTFormatter<W> {
             }
         }
 
-        Ok(ChangeSet::empty())
+        Completed(ChangeSet::new())
     }
 }

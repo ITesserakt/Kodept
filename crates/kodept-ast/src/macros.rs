@@ -77,6 +77,12 @@ macro_rules! wrapper {
         }
         )*
 
+        impl $crate::traits::Identifiable for $wrapper {
+            fn get_id(&self) -> $crate::graph::NodeId<Self> {
+                self.0.get_id().cast()
+            }
+        }
+
         impl $wrapper {
             paste::paste! {
                 $(

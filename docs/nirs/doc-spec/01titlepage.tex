@@ -1,0 +1,114 @@
+%----------------------------------------------------------
+%%%       РНП, 2011-2012-2013 г.
+%%%       Титульный лист
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\NirTitle}[1]{
+ \thispagestyle{empty}
+
+\bgroup
+    \centering
+
+   % \hrule height 0.5pt
+   % \vskip3pt
+    \bgroup
+      \UpperFullOrganisationName
+    \egroup
+   % \vskip3pt
+   % \hrule height 0.5pt
+
+    \vskip3mm
+
+    \bgroup
+      \FullOrganisationName
+    \egroup
+
+    \vskip4mm
+
+    \hbox to \hsize
+       \bgroup
+         \parbox[t]{80mm}
+            {
+            \raggedright\vskip5mm\noindent
+            УДК \UDK\newline
+            Номер госрегистрации \No\NIRcitis\newline
+          %  Код ГРНТИ \GRNTI\newline
+            Инв. \InvNum\newline
+            }
+            \hfil
+         \parbox[t]{68.0mm}
+            {
+             \centering
+             УТВЕРЖДАЮ\par
+             \vskip2mm
+             \OrgBossPosition\\
+           %  \ShortOrganisationName\\
+             \OrgBossScDegree, \OrgBossScPosition\par
+             \vskip5mm
+             \textunderset{}{\signvrule} \quad \OrgBossName\par
+             \vskip2mm
+             \datetofill
+             %"\vrule height0.5pt width8mm depth0pt{}" \vrule height0.5pt width20mm depth0pt{} 20\vrule height0.5pt width7mm depth0pt{} г.
+            }
+       \egroup
+
+
+    \vskip7mm
+
+    \bgroup
+			\begin{center}
+			
+      \textnormal{\large\textbf{\MakeUppercase{Отчет}}} \\
+       \textnormal{\large\textbf{\MakeUppercase{\ReportType}}}
+       \end{center}
+    \egroup
+
+    %\vskip2mm
+
+    \bgroup
+       
+%\leftskip0pt\rightskip0pt\parfillskip=0ptplus1fil\parskip3.5mm
+
+       %по проекту \NIRid: \MakeUppercase{<<#1>>}, \\ 
+       %в рамках реализации программы: \NIRProgram. \\
+			 %Мероприятие: \No\NIRGovActionNo: <<\NIRGovAction>>.\\
+			 %Раздел: \No\NIRGovSectionNo: <<\NIRGovSection>>.\\
+			 %Подраздел: \No\NIRGovSubSectionNo: <<\NIRGovSubSection>>.\\
+       %Этап: \NIRStageNo.\\   			
+		\begin{center}
+			\DocTheme \\ 
+				
+			по теме: \\
+			\MakeUppercase{\DocWork}  \\ 
+%		(\textnormal{\large{\NIRReportType}}, этап №\NIRStageNo)	 \\
+		(\NIRReportType, этап №\NIRStageNo)	 \\
+		государственный контракт №\ContractNum от \ContractDate \\
+		Шифр <<\Shifr>>
+		\end{center}
+       %\begin{center} ( \NIRReportType ) \end{center}\\
+       %\begin{center} \NIRid \end{center}
+       %Вид отчета: \NIRReportType.\\
+    \egroup
+
+   % \vskip15mm
+
+   % \hbox to \hsize{%
+     %  \parbox[t]{55mm}{
+    \vskip1mm
+		\begin{flushleft}
+
+\begin{tabular}{p{0.50\textwidth}p{0.18\textwidth}p{0.21\textwidth}}
+			 Руководитель проекта, & & \\	
+   		 \executer{\NIRManagerPosition\enskip\OrgExecutiveDepartment, \NIRManagerScDegree}{\NIRManagerName}{}
+			 %& & \\
+   		 \executer{Нормоконтролер}{\NormControlName}{}
+\end{tabular}
+
+		\end{flushleft}
+
+		\vskip5mm
+		\NirTown~\NirYear\\ 
+\egroup
+
+}
+%----------------------------------------------------------
+

@@ -1,7 +1,9 @@
-use crate::Path;
-use derive_more::{From, TryInto};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
+
+use derive_more::{From, TryInto};
+
+use crate::Path;
 
 #[derive(From, Debug, TryInto, Clone)]
 pub enum Symbol {
@@ -27,8 +29,8 @@ pub enum PrimitiveTypeSymbol {
 }
 
 pub struct VarSymbol {
-    path: Path,
-    assigned_type: Option<Rc<TypeSymbol>>,
+    pub path: Path,
+    pub assigned_type: Option<Rc<TypeSymbol>>,
 }
 
 impl VarSymbol {
