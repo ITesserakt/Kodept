@@ -1,13 +1,15 @@
-use derive_more::{From, TryInto};
-use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-use crate::graph::changes::Change;
-use crate::graph::{GhostToken, Identifiable, NodeId, SyntaxTree};
-use crate::make_ast_node_adaptor;
+use derive_more::{From, TryInto};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
+
 use crate::*;
+use crate::graph::{GhostToken, Identifiable, NodeId, SyntaxTree};
+use crate::graph::changes::Change;
+use crate::make_ast_node_adaptor;
 
 type Identity<T> = T;
 
@@ -36,6 +38,9 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
     {
         let id = self.get_id();
         tree.parent_of(id, token)
+            .expect("NodeWithParent: contract violated")
+            .try_as_ref()
+            .expect("Node has wrong type")
     }
 
     fn parent_mut<'b>(
@@ -54,7 +59,7 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
     fn replace_with(&self, other: Self) -> Change {
         Change::Replace {
             from_id: self.get_id().cast(),
-            to: other.into()
+            to: other.into(),
         }
     }
 

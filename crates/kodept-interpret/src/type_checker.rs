@@ -17,11 +17,11 @@ use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::Macro;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
-use crate::scope::SymbolTable;
+use crate::scope::ScopeTree;
 use crate::symbol::TypeSymbol;
 
 pub struct TypeChecker {
-    _symbols: SymbolTable,
+    _symbols: ScopeTree,
     _env: Environment,
     constants: HashMap<Rc<TypeSymbol>, usize>,
 }

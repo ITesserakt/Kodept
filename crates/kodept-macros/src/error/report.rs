@@ -1,14 +1,10 @@
-pub use codespan_reporting::diagnostic::Severity;
-use codespan_reporting::diagnostic::{Diagnostic, Label};
-use extend::ext;
-use kodept_ast::rlt_accessor::RLTFamily;
-use kodept_ast::traits::IntoASTFamily;
+use std::convert::Infallible;
 
-use crate::traits::Context;
-use crate::warn_about_broken_rlt;
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+pub use codespan_reporting::diagnostic::Severity;
+
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
-use kodept_core::ConvertibleToRef;
 
 #[derive(Debug)]
 pub struct ReportMessage {
@@ -77,26 +73,8 @@ impl Report {
     }
 }
 
-#[ext]
-pub impl<T: Default, E: Into<ReportMessage>> Result<T, E> {
-    fn report_errors<F, U>(self, at: &impl IntoASTFamily, context: &mut impl Context, func: F) -> T
-    where
-        RLTFamily: ConvertibleToRef<U>,
-        F: Fn(&U) -> Vec<CodePoint>,
-    {
-        match self {
-            Ok(x) => x,
-            Err(error) => {
-                let points = context.access(at).map_or_else(
-                    || {
-                        warn_about_broken_rlt::<U>();
-                        vec![]
-                    },
-                    func,
-                );
-                context.add_report(points, error);
-                T::default()
-            }
-        }
+impl From<Infallible> for ReportMessage {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
     }
 }

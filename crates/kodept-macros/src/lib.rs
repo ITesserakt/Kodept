@@ -1,11 +1,12 @@
 use tracing::warn;
 
-use kodept_ast::graph::{ChangeSet, GenericASTNode};
+use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Skipped;
 use kodept_ast::visit_side::VisitGuard;
 
-use crate::traits::{Context, UnrecoverableError};
+use crate::error::report::ReportMessage;
+use crate::traits::Context;
 
 pub mod default;
 pub mod erased;
@@ -20,7 +21,7 @@ pub fn warn_about_broken_rlt<T>() {
 }
 
 pub trait Macro {
-    type Error: Into<UnrecoverableError>;
+    type Error: Into<ReportMessage>;
     type Node: TryFrom<GenericASTNode>;
 
     #[allow(unused_variables)]
@@ -29,6 +30,15 @@ pub trait Macro {
         guard: VisitGuard<Self::Node>,
         context: &mut impl Context,
     ) -> Execution<Self::Error, ChangeSet> {
+        Skipped
+    }
+
+    #[allow(unused_variables)]
+    fn run(
+        &mut self,
+        token: &GhostToken,
+        context: &mut impl Context,
+    ) -> Execution<Self::Error, ()> {
         Skipped
     }
 }

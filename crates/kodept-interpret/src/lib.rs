@@ -1,16 +1,21 @@
+#![feature(iter_intersperse)]
+
 use kodept_macros::error::report::{ReportMessage, Severity};
+
+use crate::scope::ScopeError;
 
 pub mod operator_desugaring;
 mod scope;
 pub mod semantic_analyzer;
 mod symbol;
-pub mod type_checker;
+mod utils;
+// pub mod type_checker;
 
 pub enum Errors {
     UnresolvedReference(Path),
     AlreadyDefined(Path),
-    WrongScope { expected: Path, found: Path },
     TooComplex,
+    Scope(ScopeError),
 }
 
 impl From<Errors> for ReportMessage {
@@ -26,11 +31,7 @@ impl From<Errors> for ReportMessage {
                 "SM002",
                 format!("`{name}` already defined"),
             ),
-            Errors::WrongScope { expected, found } => ReportMessage::new(
-                Severity::Bug,
-                "SM003",
-                format!("Expected exit at scope `{expected}`, but exited scope `{found:?}`"),
-            ),
+            Errors::Scope(inner) => ReportMessage::new(Severity::Bug, "SM003", inner.to_string()),
             Errors::TooComplex => ReportMessage::new(
                 Severity::Bug,
                 "SM004",

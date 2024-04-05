@@ -5,16 +5,14 @@ use codespan_reporting::diagnostic::Severity;
 use derive_more::From;
 
 use kodept_ast::graph::{ChangeSet, GenericASTNode};
-use kodept_ast::rlt_accessor::RLTFamily;
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Completed;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::Named;
-use kodept_core::structure::Located;
 
-use crate::error::report::{ReportMessage, ResultTEExt};
+use crate::error::report::ReportMessage;
 use crate::Macro;
-use crate::traits::{Context, UnrecoverableError};
+use crate::traits::Context;
 
 pub struct ASTFormatter<W: Write> {
     writer: W,
@@ -24,7 +22,7 @@ pub struct ASTFormatter<W: Write> {
 impl<W: Write> Named for ASTFormatter<W> {}
 
 #[derive(From)]
-struct IOError(Error);
+pub struct IOError(Error);
 
 impl<T: Into<IOError>> From<T> for ReportMessage {
     fn from(value: T) -> Self {
@@ -39,13 +37,13 @@ impl<W: Write> ASTFormatter<W> {
 }
 
 impl<W: Write> Macro for ASTFormatter<W> {
-    type Error = UnrecoverableError;
+    type Error = IOError;
     type Node = GenericASTNode;
 
     fn transform(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        context: &mut impl Context,
+        _: &mut impl Context,
     ) -> Execution<Self::Error, ChangeSet> {
         let (node, side) = guard.allow_all();
         let node_data = node.deref();
@@ -53,22 +51,15 @@ impl<W: Write> Macro for ASTFormatter<W> {
 
         match side {
             VisitSide::Entering => {
-                writeln!(f, "{}{:?} {{", "  ".repeat(self.indent), node_data).report_errors(
-                    node_data,
-                    context,
-                    |it: &RLTFamily| vec![it.location()],
-                );
+                writeln!(f, "{}{:?} {{", "  ".repeat(self.indent), node_data).map_err(IOError)?;
                 self.indent += 1;
             }
-            VisitSide::Leaf => writeln!(f, "{}{:?};", "  ".repeat(self.indent), node_data)
-                .report_errors(node_data, context, |it: &RLTFamily| vec![it.location()]),
+            VisitSide::Leaf => {
+                writeln!(f, "{}{:?};", "  ".repeat(self.indent), node_data).map_err(IOError)?
+            }
             VisitSide::Exiting => {
                 self.indent -= 1;
-                writeln!(f, "{}}}", "  ".repeat(self.indent)).report_errors(
-                    node_data,
-                    context,
-                    |it: &RLTFamily| vec![it.location()],
-                );
+                writeln!(f, "{}}}", "  ".repeat(self.indent)).map_err(IOError)?;
             }
         }
 

@@ -1,10 +1,12 @@
+use std::convert::Infallible;
+
 use kodept_ast::{Application, Binary, BinaryExpressionKind, Reference};
 use kodept_ast::graph::{Change, ChangeSet, GenericASTNode, tags};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_macros::Macro;
-use kodept_macros::traits::{Context, UnrecoverableError};
+use kodept_macros::traits::Context;
 
 #[derive(Default)]
 pub struct BinaryOperatorExpander {}
@@ -33,7 +35,7 @@ impl BinaryOperatorExpander {
 }
 
 impl Macro for BinaryOperatorExpander {
-    type Error = UnrecoverableError;
+    type Error = Infallible;
     type Node = Binary;
 
     fn transform(

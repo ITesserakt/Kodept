@@ -1,245 +1,167 @@
 #![allow(clippy::unwrap_used)]
 
 use std::collections::HashMap;
-use std::fmt::{Debug, Display, Formatter};
-use std::rc::Rc;
+use std::fmt::{Debug, Formatter};
 
 use derive_more::Display;
-use id_tree::{InsertBehavior, Node, Tree, TreeBuilder};
+use id_tree::{InsertBehavior, Node, Tree};
 
 use kodept_ast::graph::GenericASTNode;
 use kodept_ast::traits::Identifiable;
+use kodept_inference::language::{var, Var};
+use kodept_inference::r#type::PolymorphicType;
+use kodept_macros::error::report::{ReportMessage, Severity};
 
-use crate::{Errors, Path};
-use crate::Errors::{AlreadyDefined, UnresolvedReference};
-use crate::symbol::{Symbol, TypeSymbol, VarSymbol};
+use crate::scope::ScopeError::{Duplicate, NoScope};
+
+#[derive(Display)]
+pub enum ScopeError {
+    #[display(fmt = "No scope available at this point")]
+    NoScope,
+    #[display(fmt = "Element with name `{_0}` already defined")]
+    Duplicate(String),
+}
+
+#[derive(Default)]
+pub struct ScopeTree {
+    tree: Tree<Scope>,
+    current_scope: Option<Id>,
+}
 
 pub struct Scope {
     start_from_id: NodeId,
+    name: Option<String>,
+    types: HashMap<String, PolymorphicType>,
+    variables: HashMap<String, Var>,
 }
-
-#[derive(Clone)]
-pub struct SymbolId<'a> {
-    inner: Id,
-    table: &'a SymbolTable,
-}
-
-#[derive(Hash, Eq, PartialEq, Debug, Clone, Display)]
-struct Tag(String);
 
 type Id = id_tree::NodeId;
 type NodeId = kodept_ast::graph::NodeId<GenericASTNode>;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
-pub struct PathChain(Vec<Tag>);
-
-pub struct SymbolTable {
-    node_table: HashMap<NodeId, Id>,
-    table: HashMap<Id, Symbol>,
-    structure: Tree<Tag>,
-    current_tag_id: Id,
-}
-
-impl PathChain {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
-impl SymbolTable {
-    fn get_current_tag(&self) -> &Tag {
-        self.structure
-            .get(&self.current_tag_id)
-            .expect("Cannot get current node")
-            .data()
+impl ScopeTree {
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    fn get_current_parent_id(&self) -> Option<&Id> {
-        self.structure.get(&self.current_tag_id).ok()?.parent()
-    }
-
-    fn tag_chain(&self, tag: &Id) -> impl DoubleEndedIterator<Item = &Tag> {
-        let vec: Vec<_> = self.structure.ancestors(tag).unwrap().collect();
-        vec.into_iter().rev().map(|it| it.data())
-    }
-
-    pub fn lookup(&self, path: &Path, exclusive: bool) -> Result<Symbol, Errors> {
-        let mut current_scope = Some(&self.current_tag_id);
-        loop {
-            if let Some(scope) = current_scope {
-                let node = self.structure.get(scope).unwrap();
-                let name = node.children().iter().find(|it| {
-                    self.structure
-                        .get(it)
-                        .is_ok_and(|node| &node.data().0 == path)
-                });
-                match name.and_then(|it| self.table.get(it)) {
-                    None if exclusive => return Err(UnresolvedReference(path.clone())),
-                    None => current_scope = node.parent(),
-                    Some(x) => return Ok(x.clone()),
-                }
-            } else {
-                return Err(UnresolvedReference(path.clone()));
-            }
-        }
-    }
-
-    pub fn lookup_type(&self, path: &Path, exclusive: bool) -> Result<Rc<TypeSymbol>, Errors> {
-        self.lookup(path, exclusive)?
-            .try_into()
-            .map_err(|_| UnresolvedReference(path.clone()))
-    }
-
-    pub fn lookup_var(&self, path: &Path, exclusive: bool) -> Result<Rc<VarSymbol>, Errors> {
-        self.lookup(path, exclusive)?
-            .try_into()
-            .map_err(|_| UnresolvedReference(path.clone()))
-    }
-
-    pub fn lookup_by_node<N: Identifiable>(&self, node: &N) -> Result<SymbolId, Errors>
+    pub fn push_scope<N>(&mut self, from: &N, name: Option<impl Into<String>>)
     where
         GenericASTNode: TryFrom<N>,
+        N: Identifiable,
     {
-        let id = node.get_id().cast();
-
-        self.node_table
-            .get(&id)
-            .cloned()
-            .ok_or(UnresolvedReference("".to_string()))
-            .map(|it| SymbolId {
-                inner: it,
-                table: self,
-            })
-    }
-
-    pub fn lookup_by_id(&self, id: SymbolId) -> Symbol {
-        self.table.get(&id.inner).cloned().unwrap()
-    }
-
-    pub fn insert<T: Clone + Into<Symbol>>(
-        &mut self,
-        symbol: T,
-        node_id: NodeId,
-    ) -> Result<T, Errors> {
-        let out = symbol;
-        let symbol = out.clone().into();
-        if self
-            .structure
-            .children(&self.current_tag_id)
-            .unwrap()
-            .any(|it| &it.data().0 == symbol.path())
-        {
-            return Err(AlreadyDefined(symbol.path().clone()));
-        }
-        let id = self
-            .structure
-            .insert(
-                Node::new(Tag(symbol.path().clone())),
-                InsertBehavior::UnderNode(&self.current_tag_id),
-            )
-            .unwrap();
-        self.table.insert(id.clone(), symbol);
-        self.node_table.insert(node_id, id);
-        Ok(out)
-    }
-
-    pub fn new(root: Path) -> Self {
-        let structure = TreeBuilder::new().with_root(Node::new(Tag(root))).build();
-        let current_tag_id = structure.root_node_id().unwrap().clone();
-        Self {
-            node_table: Default::default(),
-            table: Default::default(),
-            structure,
-            current_tag_id,
-        }
-    }
-
-    pub fn begin_scope(&mut self, name: Path) -> Result<(), Errors> {
-        self.current_tag_id = match self
-            .structure
-            .children_ids(&self.current_tag_id)
-            .unwrap()
-            .find(|it| {
-                self.structure
-                    .get(it)
-                    .is_ok_and(|node| node.data().0 == name)
-            }) {
-            None => self
-                .structure
-                .insert(
-                    Node::new(Tag(name)),
-                    InsertBehavior::UnderNode(&self.current_tag_id),
-                )
-                .unwrap(),
-            Some(x) => x.clone(),
+        let behaviour = match &self.current_scope {
+            None => InsertBehavior::AsRoot,
+            Some(id) => InsertBehavior::UnderNode(id),
         };
-        Ok(())
+        let next_id = self
+            .tree
+            .insert(
+                Node::new(Scope::new(from.get_id().cast(), name.map(|it| it.into()))),
+                behaviour,
+            )
+            .expect("Current scope corrupted");
+        self.current_scope = Some(next_id);
     }
 
-    pub fn end_scope(&mut self, name: &Path) -> Result<(), Errors> {
-        if &self.get_current_tag().0 != name {
-            return Err(Errors::WrongScope {
-                expected: name.clone(),
-                found: self.get_current_tag().0.clone(),
-            });
+    pub fn current_mut(&mut self) -> Result<&mut Scope, ScopeError> {
+        Ok(self
+            .tree
+            .get_mut(self.current_scope.as_ref().ok_or(NoScope)?)
+            .expect("Node was added recently")
+            .data_mut())
+    }
+
+    pub fn pop_scope(&mut self) -> Result<(), ScopeError> {
+        let current = self.current_scope.as_ref().ok_or(NoScope)?;
+        self.current_scope = self
+            .tree
+            .ancestor_ids(current)
+            .expect("Current node corrupted")
+            .next()
+            .cloned();
+        Ok(())
+    }
+}
+
+impl Scope {
+    fn new(from: NodeId, name: Option<String>) -> Self {
+        Self {
+            start_from_id: from,
+            name,
+            types: Default::default(),
+            variables: Default::default(),
         }
-        let parent = self.get_current_parent_id();
-        if let Some(id) = parent {
-            self.current_tag_id = id.clone();
+    }
+
+    pub fn insert_type(
+        &mut self,
+        name: impl Into<String> + Clone,
+        ty: PolymorphicType,
+    ) -> Result<(), ScopeError> {
+        if self.types.insert(name.clone().into(), ty).is_some() {
+            return Err(Duplicate(name.into()));
         }
         Ok(())
     }
 
-    pub fn into_symbols(self) -> Vec<(PathChain, Symbol)> {
-        let structure = self.structure;
-        self.table
-            .into_iter()
-            .map(|(k, v)| {
-                let chain: Vec<_> = structure
-                    .ancestors(&k)
-                    .unwrap()
-                    .map(|it| it.data())
-                    .collect();
-                let chain = chain.into_iter().cloned().rev().collect();
-                (PathChain(chain), v)
-            })
-            .collect()
+    pub fn insert_var(&mut self, name: impl Into<String> + Clone) -> Result<(), ScopeError> {
+        if self
+            .variables
+            .insert(name.clone().into(), var(name.clone()))
+            .is_some()
+        {
+            return Err(Duplicate(name.into()));
+        }
+        Ok(())
+    }
+
+    pub fn starts_from(&self) -> NodeId {
+        self.start_from_id
     }
 }
 
-impl Debug for SymbolTable {
+impl Debug for ScopeTree {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f)?;
-        self.structure.write_formatted(f)?;
-        write!(f, "SymbolTable {{")?;
-        let table = self
-            .table
-            .iter()
-            .fold(String::new(), |acc, (tag_id, symbol)| {
-                let path = self
-                    .tag_chain(tag_id)
-                    .fold(String::new(), |acc, next_id| format!("{acc}::{}", next_id));
-                let pointer = if tag_id == &self.current_tag_id {
-                    ">   "
-                } else {
-                    "    "
-                };
-                format!("{acc}\n{pointer}{path} => {symbol:?}")
-            });
-        writeln!(f, "{table}")?;
-        writeln!(f, "}}")?;
+        self.tree.write_formatted(f)
+    }
+}
+
+impl Debug for Scope {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.start_from_id)?;
+        if let Some(name) = &self.name {
+            write!(f, " [{name}]")?;
+        }
+        if !self.types.is_empty() {
+            write!(
+                f,
+                " {{{}}}",
+                self.types
+                    .iter()
+                    .map(|(name, ty)| format!("{name} => {ty}"))
+                    .intersperse(", ".to_string())
+                    .collect::<String>()
+            )?;
+        }
+        if !self.variables.is_empty() {
+            write!(
+                f,
+                " {{{}}}",
+                self.variables
+                    .keys()
+                    .cloned()
+                    .intersperse(", ".to_string())
+                    .collect::<String>()
+            )?;
+        }
         Ok(())
     }
 }
 
-impl Into<String> for SymbolId<'_> {
-    fn into(self) -> String {
-        self.table.lookup_by_id(self.clone()).path().to_string()
-    }
-}
-
-impl Debug for SymbolId<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.table.lookup_by_id(self.clone()).fmt(f)
+impl From<ScopeError> for ReportMessage {
+    fn from(value: ScopeError) -> Self {
+        match value {
+            NoScope => Self::new(Severity::Bug, "SM001", value.to_string()),
+            Duplicate(_) => Self::new(Severity::Error, "SM002", value.to_string()),
+        }
     }
 }
