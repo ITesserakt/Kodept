@@ -130,7 +130,9 @@ impl SyntaxTree<ModifyingStage<'_>> {
                 child,
                 tag,
             } => {
-                let (_, id) = self.graph.add_child(parent_id.into(), tag, Owned::new(child));
+                let (_, id) = self
+                    .graph
+                    .add_child(parent_id.into(), tag, Owned::new(child));
                 self.graph[id].rw(self.stage.0).set_id(id.into())
             }
             Change::Replace { from_id, to } => {
@@ -202,19 +204,17 @@ impl SyntaxTree {
         node_ref.rw(token).try_as_mut()
     }
 
-    pub fn parent_of<'a, T>(&'a self, id: NodeId<T>, token: &'a GhostToken) -> &T::Parent
-    where
-        T: NodeWithParent + Node,
-        GenericASTNode: ConvertibleToRef<T::Parent>,
-    {
+    pub fn parent_of<'a, T>(
+        &'a self,
+        id: NodeId<T>,
+        token: &'a GhostToken,
+    ) -> Option<&GenericASTNode> {
         let mut parents = self.graph.parents(id.into()).iter(&self.graph);
-        let (Some((_, parent_id)), None) = (parents.next(), parents.next()) else {
-            panic!(
-                "NodeWithParent contract violated: such kind of nodes should always have a parent"
-            )
-        };
-        let parent_ref = self.graph[parent_id].ro(token);
-        parent_ref.try_as_ref().expect("Node has wrong type")
+        if let (Some((_, parent_id)), None) = (parents.next(), parents.next()) {
+            Some(self.graph[parent_id].ro(token))
+        } else {
+            None
+        }
     }
 
     pub fn parent_of_mut<'a, T>(
@@ -279,7 +279,10 @@ impl<'arena, T, S> ChildScope<'arena, T, S> {
         U: Into<GenericASTNode>,
         T: HasChildrenMarker<U, TAG>,
     {
-        self.tree.graph.add_edge(self.node_id, child_id, TAG).expect("Given layout don't form DAG");
+        self.tree
+            .graph
+            .add_edge(self.node_id, child_id, TAG)
+            .expect("Given layout don't form DAG");
     }
 
     pub fn with_rlt<U>(self, context: &mut impl Linker, rlt_node: &U) -> Self
