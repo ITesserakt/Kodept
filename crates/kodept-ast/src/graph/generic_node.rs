@@ -4,12 +4,12 @@ use derive_more::{From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::{ConvertibleToMut, ConvertibleToRef, Named};
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::*;
-use crate::graph::{GhostToken, Identifiable, NodeId, SyntaxTree};
 use crate::graph::changes::Change;
+use crate::graph::{GhostToken, Identifiable, NodeId, SyntaxTree};
 use crate::make_ast_node_adaptor;
+use crate::*;
 
 type Identity<T> = T;
 
@@ -118,8 +118,8 @@ impl Identifiable for GenericASTNode {
     }
 }
 
-impl Named for GenericASTNode {
-    fn name(&self) -> &'static str {
+impl GenericASTNode {
+    pub fn name(&self) -> &'static str {
         match self {
             GenericASTNode::File(_) => "File",
             GenericASTNode::Module(_) => "Module",

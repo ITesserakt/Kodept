@@ -27,7 +27,7 @@ version = "0.1"
 
 [dependencies.kodept-ast]
 path = "../kodept-ast"
-version = "0.2"
+version = "0.3"
 
 [dependencies.kodept-core]
 path = "../kodept-core"
