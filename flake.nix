@@ -1,6 +1,6 @@
 {
   inputs = {
-    fenix.url = "github:nix-community/fenix";
+    fenix.url = "github:nix-community/fenix/monthly";
     flake-utils.url = "github:numtide/flake-utils";
     naersk.url = "github:nix-community/naersk";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -15,7 +15,7 @@
         inherit system;
       };
 
-      toolchain = fenix.packages.${system}.latest.toolchain;
+      toolchain = fenix.packages.${system}.default.toolchain;
 
       toolchain_win = with fenix.packages.${system}; combine [
         minimal.rustc
@@ -60,10 +60,10 @@
       devShells.${system}.default = devenv.lib.mkShell {
         inherit inputs pkgs;
         modules = [
-          ({ pkgs, ... }: {
-             packages = with pkgs; [ rustup ];
+          ({ pkgs, config, ... }: {
+#             env.RUSTUP_HOME = "${config.env.DEVENV_DOTFILE}/profile/bin";
+             packages = with pkgs; [ xdot rustup ];
              pre-commit.hooks.clippy.enable = true;
-             scripts.ide.exec = ''${pkgs.daemon}/bin/daemon ${pkgs.jetbrains.rust-rover}/bin/rust-rover'';
              languages.rust = {
                enable = true;
                channel = "nightly";
