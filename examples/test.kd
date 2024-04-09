@@ -4,7 +4,7 @@ module Testing {
     fun complex {
         fun inner(a, b) => a(b)
 
-        val result = inner(1, 1)
+        val result = inner(\x => x, 1)
         result
     }
 
