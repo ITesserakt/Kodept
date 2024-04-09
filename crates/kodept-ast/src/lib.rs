@@ -12,6 +12,7 @@ pub mod ast_builder;
 pub mod graph;
 mod macros;
 mod node;
+mod node_properties;
 pub mod rlt_accessor;
 pub mod traits;
 pub mod utils;

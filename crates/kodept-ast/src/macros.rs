@@ -32,6 +32,17 @@ macro_rules! wrapper {
         #[repr(transparent)]
         pub struct $wrapper(GenericASTNode);
 
+        unsafe impl $crate::graph::NodeUnion for $wrapper {
+            fn contains(node: &GenericASTNode) -> bool {
+                #[allow(unused_variables)]
+                #[allow(unreachable_patterns)]
+                match node {
+                    $($variants $(if $variant_if)? => true,)*
+                    _ => false
+                }
+            }
+        }
+
         impl<'a> TryFrom<&'a GenericASTNode> for &'a $wrapper {
             type Error = $crate::utils::Skip<<&'a GenericASTNode as TryFrom<&'a GenericASTNode>>::Error>;
 
@@ -40,7 +51,7 @@ macro_rules! wrapper {
                 if !<$wrapper as $crate::graph::NodeUnion>::contains(value) {
                     return Err($crate::utils::Skip::Skipped);
                 }
-                Ok(unsafe { std::mem::transmute(value) })
+                Ok(<$wrapper as $crate::graph::NodeUnion>::wrap(value))
             }
         }
 
@@ -52,18 +63,7 @@ macro_rules! wrapper {
                 if !<$wrapper as $crate::graph::NodeUnion>::contains(value) {
                     return Err($crate::utils::Skip::Skipped);
                 }
-                Ok(unsafe { std::mem::transmute(value) })
-            }
-        }
-
-        unsafe impl $crate::graph::NodeUnion for $wrapper {
-            fn contains(node: &GenericASTNode) -> bool {
-                #[allow(unused_variables)]
-                #[allow(unreachable_patterns)]
-                match node {
-                    $($variants $(if $variant_if)? => true,)*
-                    _ => false
-                }
+                Ok(<$wrapper as $crate::graph::NodeUnion>::wrap_mut(value))
             }
         }
 
@@ -79,7 +79,7 @@ macro_rules! wrapper {
 
         impl $crate::traits::Identifiable for $wrapper {
             fn get_id(&self) -> $crate::graph::NodeId<Self> {
-                self.0.get_id().cast()
+                <GenericASTNode as $crate::traits::Identifiable>::get_id(&self.0).cast()
             }
         }
 
@@ -222,7 +222,7 @@ macro_rules! node {
             $($field_vis $field_name: $field_type,)*
         }
 
-        impl $crate::graph::Node for $name {}
+        impl $crate::node_properties::Node for $name {}
 
         $crate::impl_identifiable!($name);
 
