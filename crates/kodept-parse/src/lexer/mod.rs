@@ -1,21 +1,21 @@
 use nom::{
     branch::alt,
-    bytes::complete::{is_a, is_not, take},
     bytes::complete::take_while,
+    bytes::complete::{is_a, is_not, take},
     character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of},
     combinator::{map, opt, recognize, value},
     error::context,
     multi::{many0, many1, many_till},
-    Parser,
     sequence::{delimited, tuple},
+    Parser,
 };
-use nom_supreme::ParserExt;
 use nom_supreme::tag::complete::{tag, tag_no_case};
+use nom_supreme::ParserExt;
 
 pub use enums::*;
 
-use crate::{TokenizationError, TokenizationResult};
 use crate::Span;
+use crate::{TokenizationError, TokenizationResult};
 
 pub mod enums;
 pub mod traits;
@@ -84,9 +84,9 @@ fn keyword(input: Span) -> TokenizationResult<Keyword> {
             "fun" => Keyword::Fun,
             "val" => Keyword::Val,
             "var" => Keyword::Var,
-            "if" => Keyword::If,
-            "elif" => Keyword::Elif,
-            "else" => Keyword::Else,
+            soft "if" => Keyword::If,
+            soft "elif" => Keyword::Elif,
+            soft "else" => Keyword::Else,
             "match" => Keyword::Match,
             "while" => Keyword::While,
             "module" => Keyword::Module,

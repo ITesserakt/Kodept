@@ -623,7 +623,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "derive_more",
  "enum-iterator",

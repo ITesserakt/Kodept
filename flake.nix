@@ -15,7 +15,7 @@
         inherit system;
       };
 
-      toolchain = fenix.packages.${system}.default.toolchain;
+      toolchain = fenix.packages.${system}.latest;
 
       toolchain_win = with fenix.packages.${system}; combine [
         minimal.rustc
@@ -24,8 +24,8 @@
       ];
 
       naersk' = naersk.lib.${system}.override {
-        cargo = toolchain;
-        rustc = toolchain;
+        cargo = toolchain.toolchain;
+        rustc = toolchain.toolchain;
       };
 
       naersk_win = naersk.lib.${system}.override {
@@ -38,6 +38,7 @@
         src = self;
         nativeBuildInputs = with pkgs; [ pkgsStatic.stdenv.cc ];
         doCheck = true;
+        doDoc = false;
       };
 
       packages.${flake-utils.lib.system.x86_64-windows}.default = naersk_win.buildPackage {
@@ -61,12 +62,11 @@
         inherit inputs pkgs;
         modules = [
           ({ pkgs, config, ... }: {
-#             env.RUSTUP_HOME = "${config.env.DEVENV_DOTFILE}/profile/bin";
              packages = with pkgs; [ xdot rustup ];
              pre-commit.hooks.clippy.enable = true;
              languages.rust = {
                enable = true;
-               channel = "nightly";
+               toolchain = toolchain;
              };
            })
         ];
