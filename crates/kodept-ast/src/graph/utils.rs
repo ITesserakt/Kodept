@@ -8,8 +8,8 @@ use smallvec::SmallVec;
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{GenericASTNode, GhostToken};
 use crate::graph::nodes::Owned;
+use crate::graph::{GenericASTNode, GhostToken};
 
 pub struct RefMut<'a, T> {
     node: &'a Owned,
@@ -38,7 +38,7 @@ pub trait FromOptVec {
     fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a>;
 }
 
-impl<T> FromOptVec for Option<T> {
+impl<T: Debug> FromOptVec for Option<T> {
     type Ref<'a> = Option<&'a T> where T: 'a;
     type Mut<'a> = Option<RefMut<'a, T>>;
     type T = T;
@@ -48,10 +48,10 @@ impl<T> FromOptVec for Option<T> {
             None => None,
             Some((x, [])) => Some(x),
             Some((_, x)) => panic!(
-                "Container must has no more then one child <{}>, but has {}",
+                "Container must has no more then one child <{}>, but has {:?}",
                 type_name::<T>(),
-                x.len() + 1
-            )
+                x
+            ),
         }
     }
 
@@ -60,10 +60,10 @@ impl<T> FromOptVec for Option<T> {
             None => None,
             Some((x, [])) => Some(RefMut::new(x)),
             Some((_, x)) => panic!(
-                "Container must has no more then one child <{}>, but has {}",
+                "Container must has no more then one child <{}>, but has {:?}",
                 type_name::<T>(),
-                x.len() + 1
-            )
+                x
+            ),
         }
     }
 }
@@ -78,7 +78,7 @@ impl<T> FromOptVec for Vec<T> {
     }
 
     fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
-        value.iter().map(|x| RefMut::new(x)).collect()
+        value.into_iter().map(|x| RefMut::new(x)).collect()
     }
 }
 

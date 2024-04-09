@@ -39,7 +39,7 @@ wrapper! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Default)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Application {;
         pub expr: Identity<Operation> as PRIMARY,
@@ -246,8 +246,6 @@ impl PopulateTree for rlt::Expression {
 
 impl Application {
     pub fn new() -> Self {
-        Application {
-            id: Default::default(),
-        }
+        Self::default()
     }
 }

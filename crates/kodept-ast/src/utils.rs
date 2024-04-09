@@ -60,21 +60,11 @@ impl<E, R> FromResidual for Execution<E, R> {
     }
 }
 
-impl<E, R> FromResidual<Result<Infallible, E>> for Execution<E, R> {
-    fn from_residual(residual: Result<Infallible, E>) -> Self {
+impl<E1: Into<E2>, E2, R> FromResidual<Result<Infallible, E1>> for Execution<E2, R> {
+    fn from_residual(residual: Result<Infallible, E1>) -> Self {
         match residual {
             Ok(_) => unreachable!(),
-            Err(e) => Self::Failed(e),
-        }
-    }
-}
-
-impl<E, R> FromResidual<Result<R, Skip<E>>> for Execution<E, R> {
-    fn from_residual(residual: Result<R, Skip<E>>) -> Self {
-        match residual {
-            Ok(x) => Self::Completed(x),
-            Err(Skip::Skipped) => Self::Skipped,
-            Err(Skip::Failed(e)) => Self::Failed(e),
+            Err(e) => Self::Failed(e.into()),
         }
     }
 }

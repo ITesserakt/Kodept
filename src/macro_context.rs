@@ -67,7 +67,7 @@ impl Accessor for DefaultContext {
     }
 
     fn tree(&self) -> Weak<SyntaxTree> {
-        Rc::downgrade(&self.tree.as_ref().expect("AST was deallocated"))
+        Rc::downgrade(self.tree.as_ref().expect("AST was deallocated"))
     }
 }
 

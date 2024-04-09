@@ -1,13 +1,11 @@
 module Testing {
+    fun compose(f, g) => \x => f(g(x))
+
     fun complex {
-        fun inner(a, b) => a
+        fun inner(a, b) => a(b)
 
         val result = inner(1, 1)
         result
-    }
-
-    fun test => fun test2 => {
-        val bruh = ""
     }
 
     enum struct Bool { True, False }

@@ -4,12 +4,13 @@ use kodept_macros::error::report::{ReportMessage, Severity};
 
 use crate::scope::ScopeError;
 
+mod convert_model;
 pub mod operator_desugaring;
 mod scope;
 pub mod semantic_analyzer;
 mod symbol;
+pub mod type_checker;
 mod utils;
-// pub mod type_checker;
 
 pub enum Errors {
     UnresolvedReference(Path),

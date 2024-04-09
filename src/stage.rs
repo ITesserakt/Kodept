@@ -2,6 +2,7 @@ use kodept::macro_context::DefaultContext;
 use kodept::traversing::TraverseSet;
 use kodept_interpret::operator_desugaring::BinaryOperatorExpander;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
+use kodept_interpret::type_checker::TypeChecker;
 use kodept_macros::traits::{Context, UnrecoverableError};
 
 pub struct PredefinedTraverseSet<C: Context = DefaultContext, E = UnrecoverableError>(
@@ -14,7 +15,11 @@ impl<C: Context + 'static> Default for PredefinedTraverseSet<C, UnrecoverableErr
 
         set.dependency(BinaryOperatorExpander::new())
             .then(|set, _| {
-                set.dependency(ScopeAnalyzer::new()).add(set);
+                set.dependency(ScopeAnalyzer::new())
+                    .then(|set, sa| {
+                        set.dependency(TypeChecker::new(sa.into_inner())).add(set);
+                    })
+                    .add(set);
             })
             .add(&mut set);
         Self(set)

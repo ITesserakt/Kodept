@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, Tree};
 
-use kodept_ast::graph::GenericASTNode;
+use kodept_ast::graph::{GenericASTNode, GhostToken, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::PolymorphicType;
@@ -14,7 +14,7 @@ use kodept_macros::error::report::{ReportMessage, Severity};
 
 use crate::scope::ScopeError::{Duplicate, NoScope};
 
-#[derive(Display)]
+#[derive(Display, Debug)]
 pub enum ScopeError {
     #[display(fmt = "No scope available at this point")]
     NoScope,
@@ -33,6 +33,12 @@ pub struct Scope {
     name: Option<String>,
     types: HashMap<String, PolymorphicType>,
     variables: HashMap<String, Var>,
+}
+
+pub struct ScopeSearch<'a> {
+    tree: &'a Tree<Scope>,
+    current_pos: Id,
+    exclusive: bool,
 }
 
 type Id = id_tree::NodeId;
@@ -80,6 +86,51 @@ impl ScopeTree {
             .cloned();
         Ok(())
     }
+
+    fn of_node<N>(&self, node: &N, ast: &SyntaxTree, token: &GhostToken) -> Result<Id, ScopeError>
+    where
+        GenericASTNode: TryFrom<N>,
+        N: Identifiable,
+    {
+        let parents = {
+            let mut current = node.get_id().cast();
+            let mut result = vec![current];
+            while let Some(parent) = ast.parent_of(current, token) {
+                result.push(parent.get_id());
+                current = parent.get_id();
+            }
+            result
+        };
+
+        let root = self.tree.root_node_id().ok_or(NoScope)?;
+        self.tree
+            .traverse_post_order_ids(root)
+            .expect("Root node corrupted")
+            .find(|id| {
+                self.tree
+                    .get(id)
+                    .is_ok_and(|it| parents.contains(&it.data().start_from_id))
+            })
+            .ok_or(NoScope)
+    }
+
+    pub fn lookup<N>(
+        &self,
+        node: &N,
+        ast: &SyntaxTree,
+        token: &GhostToken,
+    ) -> Result<ScopeSearch, ScopeError>
+    where
+        GenericASTNode: TryFrom<N>,
+        N: Identifiable,
+    {
+        let start = self.of_node(node, ast, token)?;
+        Ok(ScopeSearch {
+            tree: &self.tree,
+            current_pos: start,
+            exclusive: false,
+        })
+    }
 }
 
 impl Scope {
@@ -116,6 +167,45 @@ impl Scope {
 
     pub fn starts_from(&self) -> NodeId {
         self.start_from_id
+    }
+
+    fn lookup_var(&self, name: impl AsRef<str>) -> Option<Var> {
+        self.variables.get(name.as_ref()).cloned()
+    }
+}
+
+impl ScopeSearch<'_> {
+    pub fn exclusive(self) -> Self {
+        Self {
+            exclusive: true,
+            ..self
+        }
+    }
+
+    pub fn var(&self, name: impl AsRef<str> + Clone) -> Option<Var> {
+        if self.exclusive {
+            let scope = self.tree.get(&self.current_pos).expect("Tree corrupted");
+            return scope.data().lookup_var(name);
+        }
+        let mut current_pos = self.current_pos.clone();
+
+        loop {
+            let scope = self.tree.get(&current_pos).expect("Tree corrupted");
+            match scope.data().lookup_var(name.clone()) {
+                None => {
+                    current_pos = match self
+                        .tree
+                        .ancestor_ids(&current_pos)
+                        .expect("Tree corrupted")
+                        .next()
+                    {
+                        None => return None,
+                        Some(x) => x.clone(),
+                    };
+                }
+                Some(x) => return Some(x),
+            }
+        }
     }
 }
 

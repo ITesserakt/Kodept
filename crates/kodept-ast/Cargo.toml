@@ -7,7 +7,7 @@ description = "Simple compiler with dependent types support in mind"
 repository = "https://github.com/ITesserakt/Kodept/"
 categories = ["compilers"]
 license = "Apache-2.0"
-rust-version = "1.75.0"
+rust-version = "1.76.0"
 
 [lints]
 workspace = true
@@ -25,7 +25,7 @@ tracing = "0.1.37"
 paste = "1.0.14"
 qcell = "0.5.4"
 daggy = { version = "0.8.0", features = ["stable_dag"] }
-smallvec = "2.0.0-alpha.4"
+smallvec = "2.0.0-alpha.5"
 
 [dependencies.kodept-core]
 path = "../kodept-core"

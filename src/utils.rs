@@ -1,14 +1,14 @@
 pub mod graph {
     use itertools::Itertools;
-    use petgraph::Direction;
     use petgraph::visit::{
-        FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, Visitable, VisitMap,
+        FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, VisitMap, Visitable,
     };
+    use petgraph::Direction;
 
-    pub fn roots<'a, G: 'a, NodeId>(graph: G) -> impl Iterator<Item = NodeId> + 'a
+    pub fn roots<'a, G, NodeId>(graph: G) -> impl Iterator<Item = NodeId> + 'a
     where
         G: IntoNodeIdentifiers<NodeId = NodeId>,
-        G: IntoEdgesDirected<NodeId = NodeId>,
+        G: IntoEdgesDirected<NodeId = NodeId> + 'a,
         NodeId: Clone,
     {
         graph.node_identifiers().filter(move |it| {

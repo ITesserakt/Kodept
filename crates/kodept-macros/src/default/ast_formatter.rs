@@ -2,7 +2,6 @@ use std::io::{Error, Write};
 use std::ops::Deref;
 
 use codespan_reporting::diagnostic::Severity;
-use derive_more::From;
 
 use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::utils::Execution;
@@ -21,12 +20,11 @@ pub struct ASTFormatter<W: Write> {
 
 impl<W: Write> Named for ASTFormatter<W> {}
 
-#[derive(From)]
 pub struct IOError(Error);
 
-impl<T: Into<IOError>> From<T> for ReportMessage {
-    fn from(value: T) -> Self {
-        Self::new(Severity::Bug, "IO000", value.into().0.to_string())
+impl From<IOError> for ReportMessage {
+    fn from(value: IOError) -> Self {
+        Self::new(Severity::Bug, "IO000", value.0.to_string())
     }
 }
 
