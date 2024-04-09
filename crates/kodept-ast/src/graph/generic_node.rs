@@ -1,15 +1,11 @@
 use std::fmt::Debug;
 
+use crate::graph::{Identifiable, NodeId};
+use crate::make_ast_node_adaptor;
+use crate::*;
 use derive_more::{From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-
-use crate::graph::changes::Change;
-use crate::graph::{GhostToken, Identifiable, NodeId, SyntaxTree};
-use crate::make_ast_node_adaptor;
-use crate::*;
 
 type Identity<T> = T;
 
@@ -24,51 +20,6 @@ macro_rules! generic_ast_node_map {
     ($self:expr, |$var:ident| $mapping:expr) => {
         $crate::functor_map!(GenericASTNode, $self, |$var| $mapping)
     };
-}
-
-pub trait NodeWithParent {
-    type Parent;
-}
-
-#[allow(private_bounds)]
-pub trait Node: Identifiable + Into<GenericASTNode> {
-    fn parent<'b>(&self, tree: &'b SyntaxTree, token: &'b GhostToken) -> &'b Self::Parent
-    where
-        Self: NodeWithParent,
-        GenericASTNode: ConvertibleToRef<Self::Parent>,
-    {
-        let id = self.get_id();
-        tree.parent_of(id, token)
-            .expect("NodeWithParent: contract violated")
-            .try_as_ref()
-            .expect("Node has wrong type")
-    }
-
-    fn parent_mut<'b>(
-        &self,
-        tree: &'b mut SyntaxTree,
-        token: &'b mut GhostToken,
-    ) -> &'b mut Self::Parent
-    where
-        Self: NodeWithParent,
-        GenericASTNode: ConvertibleToMut<Self::Parent>,
-    {
-        let id = self.get_id();
-        tree.parent_of_mut(id, token)
-    }
-
-    fn replace_with(&self, other: Self) -> Change {
-        Change::Replace {
-            from_id: self.get_id().cast(),
-            to: other.into(),
-        }
-    }
-
-    fn remove(&self) -> Change {
-        Change::DeleteSelf {
-            node_id: self.get_id().cast(),
-        }
-    }
 }
 
 /// # Safety

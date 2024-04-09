@@ -11,11 +11,11 @@ use daggy::{NodeIndex, Walker};
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::generic_node::{Node, NodeWithParent};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
 use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
 use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
+use crate::node_properties::{Node, NodeWithParent};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};
 use crate::visit_side::VisitSide;
