@@ -12,7 +12,7 @@ use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Reference, Term};
+use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Term, UntypedParameter};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -79,8 +79,9 @@ node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Lambda {;
-        pub binds: Vec<Reference>,
-        pub expr: Identity<Operation>,
+        // binds somehow wrapped in operation causing expr to fail => tags required
+        pub binds: Vec<UntypedParameter> as PRIMARY,
+        pub expr: Identity<Operation> as SECONDARY,
     }
 }
 
