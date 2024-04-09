@@ -74,7 +74,7 @@ version = "0.1"
 
 [dependencies.kodept-ast]
 path = "crates/kodept-ast"
-version = "0.2"
+version = "0.3"
 features = ["serde"]
 
 [dependencies.kodept-macros]

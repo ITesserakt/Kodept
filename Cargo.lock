@@ -556,7 +556,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "daggy",
  "derive_more",
@@ -571,7 +571,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "derive_more",
  "itertools",

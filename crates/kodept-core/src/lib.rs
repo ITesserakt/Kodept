@@ -18,12 +18,6 @@ pub trait ConvertibleTo<Output> {
     fn try_as(self) -> Option<Output>;
 }
 
-pub trait Named {
-    fn name(&self) -> &'static str {
-        type_name::<Self>()
-    }
-}
-
 impl<T, U> ConvertibleToRef<U> for T
 where
     for<'a> &'a U: TryFrom<&'a T>,

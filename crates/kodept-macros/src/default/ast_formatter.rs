@@ -7,18 +7,15 @@ use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Completed;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::Named;
 
 use crate::error::report::ReportMessage;
-use crate::Macro;
 use crate::traits::Context;
+use crate::Macro;
 
 pub struct ASTFormatter<W: Write> {
     writer: W,
     indent: usize,
 }
-
-impl<W: Write> Named for ASTFormatter<W> {}
 
 pub struct IOError(Error);
 

@@ -9,7 +9,7 @@ use daggy::stable_dag::StableDag;
 use daggy::{NodeIndex, Walker};
 
 use kodept_core::structure::span::CodeHolder;
-use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef, Named};
+use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::generic_node::{Node, NodeWithParent};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
