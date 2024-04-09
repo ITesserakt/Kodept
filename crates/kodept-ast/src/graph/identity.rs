@@ -1,6 +1,7 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::any::type_name;
+use std::fmt::Debug;
 
 use crate::graph::nodes::Owned;
 use crate::graph::utils::{FromOptVec, OptVec, RefMut};
@@ -8,7 +9,7 @@ use crate::graph::utils::{FromOptVec, OptVec, RefMut};
 #[repr(transparent)]
 pub struct Identity<T>(pub T);
 
-impl<T> FromOptVec for Identity<T> {
+impl<T: Debug> FromOptVec for Identity<T> {
     type Ref<'a> = &'a T where Self::T: 'a;
     type Mut<'a> = RefMut<'a, T>;
     type T = T;
@@ -17,9 +18,9 @@ impl<T> FromOptVec for Identity<T> {
         match value.into_inner() {
             Ok([x]) => x,
             Err(value) => panic!(
-                "Container must has only one child <{}>, but has {}",
+                "Container must has only one child <{}>, but has {:?}",
                 type_name::<T>(),
-                value.len()
+                value
             ),
         }
     }
@@ -28,9 +29,9 @@ impl<T> FromOptVec for Identity<T> {
         match value.into_inner() {
             Ok([x]) => RefMut::new(x),
             Err(value) => panic!(
-                "Container must has only one child <{}>, but has {}",
+                "Container must has only one child <{}>, but has {:?}",
                 type_name::<T>(),
-                value.len()
+                value
             ),
         }
     }

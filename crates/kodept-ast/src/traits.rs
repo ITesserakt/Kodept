@@ -93,7 +93,7 @@ impl<I: IntoASTFamily> LinkGuard<I> {
     }
 }
 
-pub trait PopulateTree {
+pub(crate) trait PopulateTree {
     type Output: Into<GenericASTNode>;
 
     fn convert(

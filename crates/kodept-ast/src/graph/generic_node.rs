@@ -30,6 +30,7 @@ pub trait NodeWithParent {
     type Parent;
 }
 
+#[allow(private_bounds)]
 pub trait Node: Identifiable + Into<GenericASTNode> {
     fn parent<'b>(&self, tree: &'b SyntaxTree, token: &'b GhostToken) -> &'b Self::Parent
     where

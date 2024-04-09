@@ -1,6 +1,6 @@
 use tracing::warn;
 
-use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken};
+use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Skipped;
 use kodept_ast::visit_side::VisitGuard;
@@ -30,15 +30,6 @@ pub trait Macro {
         guard: VisitGuard<Self::Node>,
         context: &mut impl Context,
     ) -> Execution<Self::Error, ChangeSet> {
-        Skipped
-    }
-
-    #[allow(unused_variables)]
-    fn run(
-        &mut self,
-        token: &GhostToken,
-        context: &mut impl Context,
-    ) -> Execution<Self::Error, ()> {
         Skipped
     }
 }

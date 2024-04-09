@@ -3,19 +3,19 @@ use std::iter;
 use std::marker::PhantomData;
 use std::ops::Coroutine;
 
-use daggy::{NodeIndex, Walker};
-use daggy::petgraph::Direction;
 use daggy::petgraph::dot::{Config, Dot};
+use daggy::petgraph::Direction;
 use daggy::stable_dag::StableDag;
+use daggy::{NodeIndex, Walker};
 
-use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef, Named};
 use kodept_core::structure::span::CodeHolder;
+use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef, Named};
 
-use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::graph::generic_node::{Node, NodeWithParent};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
 use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
+use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};
 use crate::visit_side::VisitSide;
@@ -311,13 +311,15 @@ impl<'arena, T, S> ChildScope<'arena, T, S> {
 }
 
 impl<T> ChildScope<'_, T, BuildingStage> {
-    pub fn with_children_from<'b, const TAG: ChildTag, U: PopulateTree + 'b>(
+    #[allow(private_bounds)]
+    pub fn with_children_from<'b, const TAG: ChildTag, U>(
         mut self,
         iter: impl IntoIterator<Item = &'b U>,
         context: &mut (impl Linker + CodeHolder),
     ) -> Self
     where
         T: HasChildrenMarker<U::Output, TAG>,
+        U: PopulateTree + 'b,
     {
         for item in iter {
             let child_id = item.convert(self.tree, context);
