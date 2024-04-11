@@ -6,10 +6,12 @@ use kodept_ast::BodiedFunctionDeclaration;
 use kodept_inference::algorithm_u::AlgorithmUError;
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
+use kodept_inference::language::Language;
 use kodept_inference::Environment;
 use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::traits::Context;
 use kodept_macros::Macro;
+use std::rc::Rc;
 use tracing::debug;
 
 use crate::scope::{ScopeError, ScopeTree};
@@ -81,9 +83,9 @@ impl Macro for TypeChecker {
             return Execution::Skipped;
         };
 
-        let model = self.to_model(&tree, node.token(), &*node)?;
+        let model = Rc::new(self.to_model(&tree, node.token(), &*node)?);
         let mut assumptions = Assumptions::empty();
-        let ty = model.infer_with_env(&mut assumptions, &mut self.env)?;
+        let ty = Language::infer_with_env(model.clone(), &mut assumptions, &mut self.env)?;
         debug!("{} => {model} => {ty}", node.name);
 
         Execution::Completed(ChangeSet::new())

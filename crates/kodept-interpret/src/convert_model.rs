@@ -1,14 +1,62 @@
+use crate::node_family::TypeDerivableNode;
 use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
 use kodept_ast::graph::{GhostToken, SyntaxTree};
+use kodept_ast::traits::Identifiable;
 use kodept_ast::{
     BlockLevel, BodiedFunctionDeclaration, Body, Expression, ExpressionBlock, Identifier,
     InitializedVariable, Lambda, Literal, Operation, Term,
 };
 use kodept_inference::algorithm_w::AlgorithmWError;
+use kodept_inference::assumption::Assumptions;
 use kodept_inference::language::Literal::{Floating, Tuple};
 use kodept_inference::language::{app, lambda, r#let, var, Language};
-use tracing::debug;
+use kodept_inference::r#type::MonomorphicType;
+use kodept_inference::Environment;
+use std::borrow::Cow;
+use std::collections::VecDeque;
+use std::rc::Rc;
+use Identifier::TypeReference;
+
+impl TypeDerivableNode {
+    pub fn type_of<'a>(
+        &self,
+        ast: &'a SyntaxTree,
+        token: &'a GhostToken,
+        scopes: &'a ScopeTree,
+        assumptions: &mut Assumptions,
+        environment: &mut Environment,
+    ) -> Result<(Rc<Language>, MonomorphicType), InferError> {
+        let helper = ConversionHelper { scopes, ast, token };
+        let model = Rc::new(helper.convert(self)?);
+        let derived_type = Language::infer_with_env(model.clone(), assumptions, environment)?;
+        Ok((model, derived_type))
+    }
+}
+
+impl ToModelFrom<TypeDerivableNode> for ConversionHelper<'_> {
+    fn convert(self, node: &TypeDerivableNode) -> Result<Language, InferError> {
+        if let Some(node) = node.as_function() {
+            self.convert(node)
+        } else if let Some(node) = node.as_expression_block() {
+            self.convert(node)
+        } else if let Some(node) = node.as_init_var() {
+            self.convert(node)
+        } else if let Some(node) = node.as_lambda() {
+            self.convert(node)
+        } else if let Some(node) = node.as_application() {
+            todo!()
+        } else if let Some(node) = node.as_if_expr() {
+            todo!()
+        } else if let Some(node) = node.as_reference() {
+            todo!()
+        } else if let Some(node) = node.as_literal() {
+            self.convert(node)
+        } else {
+            unreachable!()
+        }
+    }
+}
 
 impl TypeChecker {
     #[allow(private_bounds)]
@@ -44,6 +92,10 @@ const fn unit() -> Language {
 
 trait ToModelFrom<N> {
     fn convert(self, node: &N) -> Result<Language, InferError>;
+}
+
+trait ExtractName {
+    fn extract_name(&self, tree: &SyntaxTree, token: &GhostToken) -> Cow<str>;
 }
 
 impl ToModelFrom<Body> for ConversionHelper<'_> {
@@ -109,6 +161,7 @@ impl ToModelFrom<Operation> for ConversionHelper<'_> {
             let mut params = node
                 .params(self.ast, self.token)
                 .into_iter()
+                .rev()
                 .map(|it| self.convert(it))
                 .peekable();
             return if params.peek().is_some() {
@@ -126,19 +179,21 @@ impl ToModelFrom<Operation> for ConversionHelper<'_> {
 
 impl ToModelFrom<ExpressionBlock> for ConversionHelper<'_> {
     fn convert(self, node: &ExpressionBlock) -> Result<Language, InferError> {
-        node.items(self.ast, self.token)
-            .into_iter()
-            .map(|it| self.convert(it))
-            .enumerate()
-            .try_fold(unit(), |acc, (idx, next)| {
-                let next = next?;
-                debug!("{acc}");
-                if let Language::Let(l) = next {
-                    Ok(r#let(l.bind.clone(), l, acc).into())
-                } else {
-                    Ok(r#let(var(idx.to_string()), next, acc).into())
-                }
-            })
+        let on_empty = unit();
+        let mut items = VecDeque::from(node.items(self.ast, self.token));
+        let Some(last_item) = items.pop_front() else {
+            return Ok(on_empty);
+        };
+        let mut needle = self.convert(last_item)?;
+
+        for item in items {
+            let name = item.extract_name(self.ast, self.token);
+            let item = self.convert(item)?;
+
+            needle = r#let(var(name), item, needle).into();
+        }
+
+        Ok(needle)
     }
 }
 
@@ -150,7 +205,7 @@ impl ToModelFrom<InitializedVariable> for ConversionHelper<'_> {
         let bind = scope
             .var(&variable.name)
             .ok_or(AlgorithmWError::UnknownVar(var(&variable.name)))?;
-        Ok(r#let(bind, expr, unit()).into())
+        Ok(r#let(bind.clone(), expr, bind).into())
     }
 }
 
@@ -189,7 +244,7 @@ impl ToModelFrom<Term> for ConversionHelper<'_> {
         if let Some(node) = node.as_reference() {
             let scope = self.scopes.lookup(node, self.ast, self.token)?;
             return match &node.ident {
-                Identifier::TypeReference { .. } => Err(InferError::Unknown),
+                TypeReference { .. } => Err(InferError::Unknown),
                 Identifier::Reference { name } => Ok(scope
                     .var(name)
                     .ok_or(AlgorithmWError::UnknownVar(var(name)))?
@@ -212,5 +267,17 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
                     .ok_or(AlgorithmWError::UnknownVar(var(&it.name)))
             })
             .try_fold(expr, |acc, next| Ok(lambda(next?, acc).into()))
+    }
+}
+
+impl ExtractName for BlockLevel {
+    fn extract_name(&self, tree: &SyntaxTree, token: &GhostToken) -> Cow<str> {
+        if let Some(node) = self.as_func() {
+            node.name.as_str().into()
+        } else if let Some(node) = self.as_init_var() {
+            node.variable(tree, token).name.clone().into()
+        } else {
+            self.get_id().to_string().into()
+        }
     }
 }

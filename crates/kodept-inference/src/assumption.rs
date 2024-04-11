@@ -1,17 +1,20 @@
 use std::collections::HashMap;
 use std::ops::Sub;
+use std::rc::Rc;
 
 use crate::language;
 use crate::language::Language;
 use crate::r#type::{MonomorphicType, PolymorphicType};
 use crate::substitution::Substitutions;
 
-#[derive(Clone, Debug)]
-pub struct Assumptions<'l> {
-    value: HashMap<&'l Language, PolymorphicType>,
+type RLanguage = Rc<Language>;
+
+#[derive(Clone, Debug, Default)]
+pub struct Assumptions {
+    value: HashMap<RLanguage, PolymorphicType>,
 }
 
-impl<'l> Assumptions<'l> {
+impl Assumptions {
     pub fn substitute_mut(&mut self, substitutions: &Substitutions) -> &mut Self {
         for t in self.value.values_mut() {
             *t = t.substitute(substitutions);
@@ -19,7 +22,7 @@ impl<'l> Assumptions<'l> {
         self
     }
 
-    pub fn push(&mut self, expr: &'l Language, t: PolymorphicType) -> &mut Self {
+    pub fn push(&mut self, expr: RLanguage, t: PolymorphicType) -> &mut Self {
         self.value.insert(expr, t);
         self
     }
@@ -43,15 +46,14 @@ impl<'l> Assumptions<'l> {
     }
 
     #[must_use]
-    pub fn empty() -> Assumptions<'l> {
-        Assumptions {
-            value: HashMap::new(),
-        }
+    pub fn empty() -> Self {
+        Self::default()
     }
 
+    /// Removes all assumptions about specified var
     pub fn filter_all(&mut self, var: &language::Var) -> &mut Self {
         self.value
-            .retain(|it, _| !matches!(it, Language::Var(v) if v == var));
+            .retain(|it, _| !matches!(it.as_ref(), Language::Var(v) if v == var));
         self
     }
 }
