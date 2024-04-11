@@ -1,11 +1,12 @@
 use derive_more::From;
+use std::rc::Rc;
 
-use crate::{Environment, language};
 use crate::algorithm_u::AlgorithmUError;
 use crate::assumption::Assumptions;
 use crate::language::{Language, Literal};
-use crate::r#type::{fun1, MonomorphicType, PrimitiveType, Tuple, Union, var};
+use crate::r#type::{fun1, var, MonomorphicType, PrimitiveType, Tuple, Union};
 use crate::substitution::Substitutions;
+use crate::{language, Environment};
 
 #[derive(From, Debug)]
 pub enum AlgorithmWError {
@@ -14,14 +15,14 @@ pub enum AlgorithmWError {
     UnknownVar(language::Var),
 }
 
-struct AlgorithmW<'e, 'l> {
-    context: &'e mut Assumptions<'l>,
+struct AlgorithmW<'e> {
+    context: &'e mut Assumptions,
     env: &'e mut Environment,
 }
 
 type AWResult = Result<(Substitutions, MonomorphicType), AlgorithmWError>;
 
-impl<'e, 'l> AlgorithmW<'e, 'l> {
+impl<'e> AlgorithmW<'e> {
     fn apply(&mut self, expression: &Language) -> AWResult {
         match expression {
             Language::Var(x) => self.apply_var(x),
@@ -58,9 +59,9 @@ impl<'e, 'l> AlgorithmW<'e, 'l> {
 
     fn apply_lambda(&mut self, lambda: &language::Lambda) -> AWResult {
         let v = self.env.new_var();
-        let var_bind = lambda.bind.clone().into();
+        let var_bind = lambda.bind.clone();
         let mut new_context = self.context.clone();
-        new_context.push(&var_bind, MonomorphicType::Var(v.clone()).into());
+        new_context.push(var_bind, MonomorphicType::Var(v.clone()).into());
         let (s1, t1) = AlgorithmW {
             context: &mut new_context,
             env: self.env,
@@ -72,10 +73,15 @@ impl<'e, 'l> AlgorithmW<'e, 'l> {
 
     fn apply_let(&mut self, l: &language::Let) -> AWResult {
         let (s1, t1) = l.binder.infer_w(self)?;
-        let var_bind = l.bind.clone().into();
+        let var_bind = l.bind.clone();
         let poly_type = self.context.substitute_mut(&s1).generalize(t1);
         let mut new_context = self.context.clone();
-        new_context.filter_all(&l.bind).push(&var_bind, poly_type);
+        new_context
+            .filter_all(match l.bind.as_ref() {
+                Language::Var(v) => v,
+                _ => unreachable!(),
+            })
+            .push(var_bind, poly_type);
 
         let (s2, t2) = AlgorithmW {
             context: &mut new_context,
@@ -125,19 +131,34 @@ impl Language {
     }
 
     pub fn infer_with_env<'l>(
-        &'l self,
-        context: &mut Assumptions<'l>,
+        self: Rc<Self>,
+        context: &mut Assumptions,
         env: &mut Environment,
     ) -> Result<MonomorphicType, AlgorithmWError> {
-        let (s, t) = AlgorithmW { context, env }.apply(self)?;
+        let (s, t) = AlgorithmW { context, env }.apply(&self)?;
         let poly_type = context.generalize(t.clone());
         context.substitute_mut(&s).push(self, poly_type);
         Ok(t)
     }
 
-    pub fn infer(&self) -> Result<(Assumptions, MonomorphicType), AlgorithmWError> {
+    pub fn infer(self: Rc<Self>) -> Result<(Assumptions, MonomorphicType), AlgorithmWError> {
         let mut assumptions = Assumptions::empty();
-        let t = self.infer_with_env(&mut assumptions, &mut Environment { variable_index: 0 })?;
+        let t = Self::infer_with_env(
+            self,
+            &mut assumptions,
+            &mut Environment { variable_index: 0 },
+        )?;
         Ok((assumptions, t))
+    }
+
+    pub fn infer_type(&self) -> Result<MonomorphicType, AlgorithmWError> {
+        let mut context = Assumptions::empty();
+        let mut env = Environment::default();
+        AlgorithmW {
+            context: &mut context,
+            env: &mut env,
+        }
+        .apply(self)
+        .map(|it| it.1)
     }
 }

@@ -1,5 +1,6 @@
 use derive_more::{Display, From};
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 use itertools::Itertools;
 
@@ -17,14 +18,14 @@ pub struct App {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Lambda {
-    pub bind: Var,
+    pub bind: Rc<Language>, // only vars,
     pub expr: Box<Language>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Let {
     pub binder: Box<Language>,
-    pub bind: Var,
+    pub bind: Rc<Language>, // only vars,
     pub usage: Box<Language>,
 }
 
@@ -56,21 +57,26 @@ pub fn app<N: Into<Language>, M: Into<Language>>(arg: N, func: M) -> App {
     }
 }
 
-pub fn lambda<B: Into<Var>, E: Into<Language>>(bind: B, expr: E) -> Lambda {
+pub fn lambda<B, E>(bind: B, expr: E) -> Lambda
+where
+    Var: From<B>,
+    E: Into<Language>,
+{
     Lambda {
-        bind: bind.into(),
+        bind: Rc::new(Var::from(bind).into()),
         expr: Box::new(expr.into()),
     }
 }
 
-pub fn r#let<V: Into<Var>, B: Into<Language>, U: Into<Language>>(
-    bind: V,
-    binder: B,
-    usage: U,
-) -> Let {
+pub fn r#let<V, B, U>(bind: V, binder: B, usage: U) -> Let
+where
+    B: Into<Language>,
+    U: Into<Language>,
+    Var: From<V>,
+{
     Let {
         binder: Box::new(binder.into()),
-        bind: bind.into(),
+        bind: Rc::new(Var::from(bind).into()),
         usage: Box::new(usage.into()),
     }
 }
@@ -141,7 +147,7 @@ mod tests {
         )
         .into();
 
-        let (_assumptions, t) = expr.infer().unwrap();
+        let t = expr.infer_type().unwrap();
 
         assert_eq!(
             t,
@@ -183,9 +189,9 @@ mod tests {
         )
         .into();
 
-        let (_, zt) = zero.infer().unwrap();
-        let (_, ot) = one.infer().unwrap();
-        let (_, pt) = plus.infer().unwrap();
+        let zt = zero.infer_type().unwrap();
+        let ot = one.infer_type().unwrap();
+        let pt = plus.infer_type().unwrap();
 
         println!(
             "{}\n{}\n\n{}\n{}\n\n{}\n{}",

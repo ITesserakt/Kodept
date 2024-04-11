@@ -5,6 +5,7 @@ use kodept_macros::error::report::{ReportMessage, Severity};
 use crate::scope::ScopeError;
 
 mod convert_model;
+mod node_family;
 pub mod operator_desugaring;
 mod scope;
 pub mod semantic_analyzer;
