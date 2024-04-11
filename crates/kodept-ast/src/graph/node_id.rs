@@ -2,17 +2,19 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
-use derive_more::From;
+use derive_more::{Display, From};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(From)]
+#[derive(From, Display)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 #[repr(transparent)]
+#[display(fmt = "{_0}")]
 pub struct NodeId<Node: ?Sized>(usize, PhantomData<Node>);
 
 impl<T> NodeId<T> {
+    #[deprecated]
     pub fn next<U>(&self) -> NodeId<U> {
         NodeId(self.0 + 1, PhantomData)
     }
@@ -23,8 +25,9 @@ impl<T> NodeId<T> {
     }
 
     /// # Safety
-    /// Caller should carefully do this, cause it may violate some contracts
+    /// Caller should carefully do this, because it may violate some contracts
     #[inline]
+    #[deprecated]
     pub unsafe fn cast_unchecked<U>(self) -> NodeId<U> {
         NodeId(self.0, PhantomData)
     }
