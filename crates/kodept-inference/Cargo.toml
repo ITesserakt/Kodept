@@ -1,6 +1,6 @@
 [package]
 name = "kodept-inference"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"

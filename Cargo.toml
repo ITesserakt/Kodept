@@ -64,10 +64,6 @@ tracing-subscriber = "0.3.17"
 path = "crates/kodept-core"
 version = "0.2"
 
-[dependencies.kodept-inference]
-path = "crates/kodept-inference"
-version = "0.1"
-
 [dependencies.kodept-parse]
 path = "crates/kodept-parse"
 version = "0.1"
