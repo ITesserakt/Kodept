@@ -5,7 +5,7 @@ use kodept_ast::graph::{GhostToken, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::{
     BlockLevel, BodiedFunctionDeclaration, Body, Expression, ExpressionBlock, Identifier,
-    InitializedVariable, Lambda, Literal, Operation, Term,
+    IfExpression, InitializedVariable, Lambda, Literal, Operation, Term,
 };
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
@@ -44,11 +44,11 @@ impl ToModelFrom<TypeDerivableNode> for ConversionHelper<'_> {
             self.convert(node)
         } else if let Some(node) = node.as_lambda() {
             self.convert(node)
-        } else if let Some(node) = node.as_application() {
+        } else if let Some(_node) = node.as_application() {
             todo!()
-        } else if let Some(node) = node.as_if_expr() {
+        } else if let Some(_node) = node.as_if_expr() {
             todo!()
-        } else if let Some(node) = node.as_reference() {
+        } else if let Some(_node) = node.as_reference() {
             todo!()
         } else if let Some(node) = node.as_literal() {
             self.convert(node)
@@ -169,9 +169,9 @@ impl ToModelFrom<Operation> for ConversionHelper<'_> {
             } else {
                 Ok(app(unit(), expr).into())
             };
-        } else if let Some(node) = node.as_access() {
-        } else if let Some(node) = node.as_binary() {
-        } else if let Some(node) = node.as_unary() {
+        } else if let Some(_node) = node.as_access() {
+        } else if let Some(_node) = node.as_binary() {
+        } else if let Some(_node) = node.as_unary() {
         }
         unreachable!()
     }
@@ -214,12 +214,19 @@ impl ToModelFrom<Expression> for ConversionHelper<'_> {
         if let Some(node) = node.as_term() {
             return self.convert(node);
         } else if let Some(node) = node.as_if() {
+            return self.convert(node);
         } else if let Some(node) = node.as_literal() {
             return self.convert(node);
         } else if let Some(node) = node.as_lambda() {
             return self.convert(node);
         }
         unreachable!()
+    }
+}
+
+impl ToModelFrom<IfExpression> for ConversionHelper<'_> {
+    fn convert(self, node: &IfExpression) -> Result<Language, InferError> {
+        Ok(unit())
     }
 }
 

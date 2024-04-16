@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use derive_more::Display;
-use id_tree::{InsertBehavior, Node, Tree};
+use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 
 use kodept_ast::graph::{GenericASTNode, GhostToken, SyntaxTree};
 use kodept_ast::traits::Identifiable;
@@ -35,6 +35,7 @@ pub struct Scope {
     variables: HashMap<String, Var>,
 }
 
+#[derive(Clone, Debug)]
 pub struct ScopeSearch<'a> {
     tree: &'a Tree<Scope>,
     current_pos: Id,
@@ -172,6 +173,10 @@ impl Scope {
     fn lookup_var(&self, name: impl AsRef<str>) -> Option<Var> {
         self.variables.get(name.as_ref()).cloned()
     }
+
+    fn lookup_type(&self, name: impl AsRef<str>) -> Option<PolymorphicType> {
+        self.types.get(name.as_ref()).cloned()
+    }
 }
 
 impl ScopeSearch<'_> {
@@ -182,29 +187,39 @@ impl ScopeSearch<'_> {
         }
     }
 
+    fn bubble_up<T>(&self, f: impl Fn(&Scope) -> Option<T>) -> Result<Option<T>, NodeIdError> {
+        let mut current_pos = &self.current_pos;
+        loop {
+            let scope = self.tree.get(current_pos)?;
+            match f(scope.data()) {
+                None => {
+                    current_pos = match self.tree.ancestor_ids(current_pos)?.next() {
+                        None => return Ok(None),
+                        Some(parent_id) => parent_id,
+                    }
+                }
+                Some(out) => return Ok(Some(out)),
+            }
+        }
+    }
+
     pub fn var(&self, name: impl AsRef<str> + Clone) -> Option<Var> {
         if self.exclusive {
             let scope = self.tree.get(&self.current_pos).expect("Tree corrupted");
             return scope.data().lookup_var(name);
+        } else {
+            self.bubble_up(|scope| scope.lookup_var(name.clone()))
+                .expect("Tree corrupted")
         }
-        let mut current_pos = self.current_pos.clone();
+    }
 
-        loop {
-            let scope = self.tree.get(&current_pos).expect("Tree corrupted");
-            match scope.data().lookup_var(name.clone()) {
-                None => {
-                    current_pos = match self
-                        .tree
-                        .ancestor_ids(&current_pos)
-                        .expect("Tree corrupted")
-                        .next()
-                    {
-                        None => return None,
-                        Some(x) => x.clone(),
-                    };
-                }
-                Some(x) => return Some(x),
-            }
+    pub fn ty(&self, name: impl AsRef<str> + Clone) -> Option<PolymorphicType> {
+        if self.exclusive {
+            let scope = self.tree.get(&self.current_pos).expect("Tree corrupted");
+            return scope.data().lookup_type(name);
+        } else {
+            self.bubble_up(|scope| scope.lookup_type(name.clone()))
+                .expect("Tree corrupted")
         }
     }
 }

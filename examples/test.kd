@@ -1,7 +1,7 @@
 module Testing {
     fun compose(f, g) => \x => f(g(x))
 
-    fun complex {
+    fun complex(c: ()) {
         fun inner(a, b) => a(b)
 
         val result = inner(\x => x, 1)

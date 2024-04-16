@@ -1,16 +1,16 @@
 use tracing::debug;
 
-use kodept_ast::{
-    AbstractFunctionDeclaration, BodiedFunctionDeclaration, EnumDeclaration, ModuleDeclaration,
-    StructDeclaration, TypedParameter, TypeName, UntypedParameter, Variable,
-};
 use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::{
+    AbstractFunctionDeclaration, BodiedFunctionDeclaration, EnumDeclaration, ModuleDeclaration,
+    StructDeclaration, TypeName, TypedParameter, UntypedParameter, Variable,
+};
 use kodept_inference::r#type::MonomorphicType::Constant;
-use kodept_macros::Macro;
 use kodept_macros::traits::Context;
+use kodept_macros::Macro;
 
 use crate::scope::{ScopeError, ScopeTree};
 
@@ -110,6 +110,10 @@ impl Macro for ScopeAnalyzer {
                     scope.insert_type(name, Constant(self.1).into())?;
                     self.1 += 1;
                 }
+            }
+            GenericASTNode::Enum(EnumDeclaration { name, .. }) => {
+                scope.insert_type(name, Constant(self.1).into())?;
+                self.1 += 1;
             }
             GenericASTNode::Variable(Variable { name, .. }) => scope.insert_var(name)?,
             GenericASTNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
