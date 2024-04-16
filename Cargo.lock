@@ -547,6 +547,7 @@ dependencies = [
  "nom-supreme",
  "petgraph",
  "rayon",
+ "replace_with",
  "serde_json",
  "thiserror",
  "tracing",
@@ -941,6 +942,12 @@ name = "relative-path"
 version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e898588f33fdd5b9420719948f9f2a32c922a246964576f71ba7f24f80610fbc"
+
+[[package]]
+name = "replace_with"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a8614ee435691de62bcffcf4a66d91b3594bf1428a5722e79103249a095690"
 
 [[package]]
 name = "rstest"
