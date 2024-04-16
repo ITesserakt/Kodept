@@ -1,10 +1,10 @@
-use std::ops::Range;
+use std::ops::{Range};
 use std::rc::{Rc, Weak};
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{Error, Files};
 use codespan_reporting::term::termcolor::WriteColor;
-use derive_more::Constructor;
+use replace_with::replace_with_or_abort;
 use thiserror::Error;
 
 use kodept_ast::graph::{NodeId, SyntaxTree};
@@ -19,16 +19,30 @@ use kodept_macros::traits::{FileContextual, MutableContext, Reporter};
 use crate::codespan_settings::{CodespanSettings, ReportExt};
 use crate::read_code_source::ReadCodeSource;
 
-#[derive(Debug, Constructor)]
+#[derive(Debug)]
 pub struct DefaultContext {
     report_collector: FileRelative<ReportCollector>,
     rlt_accessor: RLTAccessor,
-    tree: Option<Rc<SyntaxTree>>,
+    tree: Rc<SyntaxTree>,
 }
 
 #[derive(Debug, Error)]
 #[error("Compilation failed due to produced errors")]
 pub struct ErrorReported;
+
+impl DefaultContext {
+    pub fn new(
+        report_collector: FileRelative<ReportCollector>,
+        rlt_accessor: RLTAccessor,
+        ast: SyntaxTree,
+    ) -> Self {
+        Self {
+            report_collector,
+            rlt_accessor,
+            tree: Rc::new(ast),
+        }
+    }
+}
 
 impl Linker for DefaultContext {
     fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: &B)
@@ -67,7 +81,7 @@ impl Accessor for DefaultContext {
     }
 
     fn tree(&self) -> Weak<SyntaxTree> {
-        Rc::downgrade(self.tree.as_ref().expect("AST was deallocated"))
+        Rc::downgrade(&self.tree)
     }
 }
 
@@ -180,18 +194,9 @@ impl MutableContext for DefaultContext {
         &mut self,
         f: impl FnOnce(SyntaxTree) -> SyntaxTree,
     ) -> Result<(), ReportMessage> {
-        match self.tree.take() {
-            None => Err(DroppedASTError.into()),
-            Some(rc) => match Rc::try_unwrap(rc) {
-                Ok(this) => {
-                    self.tree = Some(Rc::new(f(this)));
-                    Ok(())
-                }
-                Err(this) => {
-                    self.tree = Some(this);
-                    Err(SharedASTError.into())
-                }
-            },
+        match Rc::get_mut(&mut self.tree) {
+            None => Err(SharedASTError.into()),
+            Some(rc) => Ok(replace_with_or_abort(rc, f)),
         }
     }
 }

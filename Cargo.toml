@@ -55,6 +55,7 @@ nom.workspace = true
 nom-supreme = "0.8.0"
 petgraph = "0.6.4"
 rayon = { version = "1.10.0" }
+replace_with = "0.1.7"
 serde_json = "1.0.107"
 thiserror.workspace = true
 tracing.workspace = true

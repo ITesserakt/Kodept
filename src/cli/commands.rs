@@ -91,7 +91,7 @@ impl Execute {
         let context = DefaultContext::new(
             source.with_filename(|_| ReportCollector::new()),
             accessor,
-            Some(Rc::new(tree.build())),
+            tree.build(),
         );
         let set = PredefinedTraverseSet::default();
         let context = set
