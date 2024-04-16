@@ -9,8 +9,8 @@ use kodept_ast::utils::Execution::Completed;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 
 use crate::error::report::ReportMessage;
-use crate::traits::Context;
 use crate::Macro;
+use crate::traits::Context;
 
 pub struct ASTFormatter<W: Write> {
     writer: W,

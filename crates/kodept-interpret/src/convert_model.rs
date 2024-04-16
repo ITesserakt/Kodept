@@ -1,22 +1,24 @@
-use crate::node_family::TypeDerivableNode;
-use crate::scope::ScopeTree;
-use crate::type_checker::{InferError, TypeChecker};
-use kodept_ast::graph::{GhostToken, SyntaxTree};
-use kodept_ast::traits::Identifiable;
+use std::borrow::Cow;
+use std::collections::VecDeque;
+use std::rc::Rc;
+
+use Identifier::TypeReference;
 use kodept_ast::{
     BlockLevel, BodiedFunctionDeclaration, Body, Expression, ExpressionBlock, Identifier,
     IfExpression, InitializedVariable, Lambda, Literal, Operation, Term,
 };
+use kodept_ast::graph::{GhostToken, SyntaxTree};
+use kodept_ast::traits::Identifiable;
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
-use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::language::{app, lambda, r#let, var, Language};
-use kodept_inference::r#type::MonomorphicType;
 use kodept_inference::Environment;
-use std::borrow::Cow;
-use std::collections::VecDeque;
-use std::rc::Rc;
-use Identifier::TypeReference;
+use kodept_inference::language::{app, lambda, Language, r#let, var};
+use kodept_inference::language::Literal::{Floating, Tuple};
+use kodept_inference::r#type::MonomorphicType;
+
+use crate::node_family::TypeDerivableNode;
+use crate::scope::ScopeTree;
+use crate::type_checker::{InferError, TypeChecker};
 
 impl TypeDerivableNode {
     pub fn type_of<'a>(

@@ -7,8 +7,8 @@ use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::Itertools;
 use nonempty_collections::NEVec;
 
-use crate::substitution::Substitutions;
 use crate::{Environment, LOWER_ALPHABET, UPPER_ALPHABET};
+use crate::substitution::Substitutions;
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {

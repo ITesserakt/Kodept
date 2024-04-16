@@ -1,18 +1,19 @@
 use derive_more::{From, Into};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+use BinaryExpressionKind::*;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
-use crate::graph::tags::*;
-use crate::graph::NodeId;
+use crate::{BlockLevel, IfExpression, Literal, node, Term, UntypedParameter, wrapper};
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
+use crate::graph::NodeId;
+use crate::graph::tags::*;
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Term, UntypedParameter};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]

@@ -1,10 +1,10 @@
-use std::io::{stdin, Read};
+use std::io::{Read, stdin};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use clap::Args;
-use codespan_reporting::term::termcolor::StandardStream;
 use codespan_reporting::term::{ColorArg, Config};
+use codespan_reporting::term::termcolor::StandardStream;
 
 use kodept::codespan_settings::{CodespanSettings, StreamOutput};
 use kodept_core::loader::{Loader, LoadingError};

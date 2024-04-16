@@ -3,18 +3,18 @@ use std::iter;
 use std::marker::PhantomData;
 use std::ops::Coroutine;
 
-use daggy::petgraph::dot::{Config, Dot};
-use daggy::petgraph::Direction;
-use daggy::stable_dag::StableDag;
 use daggy::{NodeIndex, Walker};
+use daggy::petgraph::Direction;
+use daggy::petgraph::dot::{Config, Dot};
+use daggy::stable_dag::StableDag;
 
-use kodept_core::structure::span::CodeHolder;
 use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef};
+use kodept_core::structure::span::CodeHolder;
 
+use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
 use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
-use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::node_properties::{Node, NodeWithParent};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};

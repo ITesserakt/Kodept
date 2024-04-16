@@ -1,4 +1,5 @@
 use derive_more::From;
+
 use crate::code_point::CodePoint;
 use crate::structure::{
     Located,

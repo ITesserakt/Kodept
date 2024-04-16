@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
 
+use crate::{node, TopLevel};
 use crate::graph::{NodeId, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, TopLevel};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]

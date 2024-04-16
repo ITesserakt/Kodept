@@ -8,8 +8,8 @@ use smallvec::SmallVec;
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::nodes::Owned;
 use crate::graph::{GenericASTNode, GhostToken};
+use crate::graph::nodes::Owned;
 
 pub struct RefMut<'a, T> {
     node: &'a Owned,

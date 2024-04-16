@@ -6,8 +6,8 @@ use nom_supreme::final_parser::RecreateContext;
 
 use kodept_core::code_point::CodePoint;
 
-use crate::lexer::traits::ToRepresentation;
 use crate::lexer::{Identifier, Literal, Token};
+use crate::lexer::traits::ToRepresentation;
 use crate::token_match::TokenMatch;
 
 #[derive(Clone, Debug)]

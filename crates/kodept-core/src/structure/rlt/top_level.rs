@@ -1,9 +1,10 @@
 use derive_more::From;
+
 use crate::code_point::CodePoint;
+use crate::structure::Located;
 use crate::structure::rlt::function::BodiedFunction;
 use crate::structure::rlt::new_types::*;
 use crate::structure::rlt::types::TypedParameter;
-use crate::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Struct {

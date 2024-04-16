@@ -1,22 +1,24 @@
-use crate::node_family::TypeRestrictedNode;
+use std::ops::Deref;
+use std::rc::Rc;
+
 use derive_more::From;
+use tracing::debug;
+
+use kodept_ast::BodiedFunctionDeclaration;
 use kodept_ast::graph::{ChangeSet, GenericASTNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::BodiedFunctionDeclaration;
 use kodept_core::ConvertibleToRef;
 use kodept_inference::algorithm_u::AlgorithmUError;
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
-use kodept_inference::language::Language;
 use kodept_inference::Environment;
+use kodept_inference::language::Language;
 use kodept_macros::error::report::{ReportMessage, Severity};
-use kodept_macros::traits::Context;
 use kodept_macros::Macro;
-use std::ops::Deref;
-use std::rc::Rc;
-use tracing::debug;
+use kodept_macros::traits::Context;
 
+use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeTree};
 use crate::type_checker::InferError::Unknown;
 

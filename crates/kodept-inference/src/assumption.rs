@@ -1,14 +1,15 @@
-use itertools::Itertools;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::ops::Sub;
 use std::rc::Rc;
 
+use itertools::Itertools;
+
+use crate::{Environment, language};
 use crate::language::Language;
 use crate::r#type::{MonomorphicType, PolymorphicType};
 use crate::substitution::Substitutions;
-use crate::{language, Environment};
 
 type RLanguage = Rc<Language>;
 type RPolymorphicType = Rc<PolymorphicType>;
