@@ -3,13 +3,12 @@ use std::fmt::{Display, Formatter};
 use std::iter::once;
 use std::ops::{BitOr, Sub};
 
-use derive_more::{Display as DeriveDisplay, From};
+use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::Itertools;
 use nonempty_collections::NEVec;
 
-use crate::{LOWER_ALPHABET, UPPER_ALPHABET};
-use crate::Environment;
 use crate::substitution::Substitutions;
+use crate::{Environment, LOWER_ALPHABET, UPPER_ALPHABET};
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {
@@ -39,11 +38,11 @@ pub enum PrimitiveType {
 #[derive(Debug, Clone, PartialEq, Hash, Eq, From)]
 pub struct Var(pub(crate) usize);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
 
 pub struct Tuple(pub(crate) Vec<MonomorphicType>);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
 
 pub struct Union(pub(crate) Vec<MonomorphicType>);
 
@@ -63,6 +62,7 @@ pub enum MonomorphicType {
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
+#[from(forward)]
 pub enum PolymorphicType {
     Monomorphic(MonomorphicType),
     #[from(ignore)]
@@ -194,17 +194,17 @@ impl MonomorphicType {
 
 impl PolymorphicType {
     fn collect(&self) -> (Vec<Var>, MonomorphicType) {
-        fn step(mut acc: Vec<Var>, current: &PolymorphicType) -> (Vec<Var>, MonomorphicType) {
+        let mut result = vec![];
+        let mut current = self;
+        loop {
             match current {
-                PolymorphicType::Monomorphic(t) => (vec![], t.clone()),
+                PolymorphicType::Monomorphic(ty) => return (result, ty.clone()),
                 PolymorphicType::Binding { bind, binding_type } => {
-                    acc.push(bind.clone());
-                    step(acc, binding_type.as_ref())
+                    result.push(bind.clone());
+                    current = binding_type.as_ref();
                 }
             }
         }
-
-        step(vec![], self)
     }
 
     #[must_use]

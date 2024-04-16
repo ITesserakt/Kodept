@@ -4,6 +4,7 @@ use kodept_interpret::operator_desugaring::BinaryOperatorExpander;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
 use kodept_macros::traits::{Context, UnrecoverableError};
+use std::rc::Rc;
 
 pub struct PredefinedTraverseSet<C: Context = DefaultContext, E = UnrecoverableError>(
     TraverseSet<C, E>,
@@ -17,7 +18,8 @@ impl<C: Context + 'static> Default for PredefinedTraverseSet<C, UnrecoverableErr
             .then(|set, _| {
                 set.dependency(ScopeAnalyzer::new())
                     .then(|set, sa| {
-                        set.dependency(TypeChecker::new(sa.into_inner())).add(set);
+                        let scopes = Rc::new(sa.into_inner());
+                        set.dependency(TypeChecker::new(scopes.clone())).add(set);
                     })
                     .add(set);
             })
