@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 
 use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::files::{Error, Files};
-use codespan_reporting::term::Config;
 use codespan_reporting::term::termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
+use codespan_reporting::term::Config;
 
 use kodept_macros::error::report::Report;
 

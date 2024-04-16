@@ -1,4 +1,4 @@
-use std::ops::{Range};
+use std::ops::Range;
 use std::rc::{Rc, Weak};
 
 use codespan_reporting::diagnostic::Severity;

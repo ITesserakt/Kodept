@@ -1,4 +1,5 @@
 use derive_more::Constructor;
+
 use kodept_core::structure::span::Span;
 
 use crate::lexer::Token;

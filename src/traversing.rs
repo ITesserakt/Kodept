@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use itertools::Itertools;
 use petgraph::prelude::{NodeIndex, StableDiGraph};
@@ -31,8 +31,8 @@ pub struct DependencyScope<C: Context, E, T> {
 impl<C: Context, E, T: 'static> DependencyScope<C, E, T> {
     #[must_use]
     pub fn then<F>(mut self, handle: F) -> Self
-    where
-        F: FnOnce(&mut TraverseSet<C, E>, T) + 'static,
+        where
+            F: FnOnce(&mut TraverseSet<C, E>, T) + 'static,
     {
         self.post_handler = Some(Box::new(move |this, obj| {
             let obj = obj.into_any().downcast().expect("Cannot cast");
@@ -64,7 +64,7 @@ impl<C: Context, E> TraverseSet<C, E> {
     }
 
     #[must_use]
-    pub fn dependency<T: CanErase<C, Error = E>>(&self, item: T) -> DependencyScope<C, E, T> {
+    pub fn dependency<T: CanErase<C, Error=E>>(&self, item: T) -> DependencyScope<C, E, T> {
         DependencyScope {
             item: item.erase(),
             post_handler: None,

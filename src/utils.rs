@@ -1,15 +1,15 @@
 pub mod graph {
     use itertools::Itertools;
-    use petgraph::visit::{
-        FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, VisitMap, Visitable,
-    };
     use petgraph::Direction;
+    use petgraph::visit::{
+        FilterNode, IntoEdgesDirected, IntoNodeIdentifiers, NodeFiltered, Visitable, VisitMap,
+    };
 
-    pub fn roots<'a, G, NodeId>(graph: G) -> impl Iterator<Item = NodeId> + 'a
-    where
-        G: IntoNodeIdentifiers<NodeId = NodeId>,
-        G: IntoEdgesDirected<NodeId = NodeId> + 'a,
-        NodeId: Clone,
+    pub fn roots<'a, G, NodeId>(graph: G) -> impl Iterator<Item=NodeId> + 'a
+        where
+            G: IntoNodeIdentifiers<NodeId=NodeId>,
+            G: IntoEdgesDirected<NodeId=NodeId> + 'a,
+            NodeId: Clone,
     {
         graph.node_identifiers().filter(move |it| {
             graph
@@ -20,17 +20,17 @@ pub mod graph {
     }
 
     pub fn topological_layers<G>(graph: G) -> Vec<Vec<G::NodeId>>
-    where
-        G: Visitable,
-        G::Map: FilterNode<G::NodeId>,
-        G: IntoNodeIdentifiers,
-        G: IntoEdgesDirected,
+        where
+            G: Visitable,
+            G::Map: FilterNode<G::NodeId>,
+            G: IntoNodeIdentifiers,
+            G: IntoEdgesDirected,
     {
         struct InvertedVisitMap<'m, M>(&'m M);
 
         impl<'m, N, M> FilterNode<N> for InvertedVisitMap<'m, M>
-        where
-            M: FilterNode<N>,
+            where
+                M: FilterNode<N>,
         {
             fn include_node(&self, node: N) -> bool {
                 !self.0.include_node(node)

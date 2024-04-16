@@ -1,20 +1,23 @@
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use derive_more::{From, Into};
+
+use kodept_ast::{
+    AbstractFunctionDeclaration, Application, BodiedFunctionDeclaration, ExpressionBlock, Identifier,
+    IfExpression, InitializedVariable, Lambda, Literal, Reference, Type, TypedParameter,
+    Variable, wrapper,
+};
+use kodept_ast::graph::{GenericASTNode, GhostToken, NodeId, NodeUnion, SyntaxTree};
+use kodept_ast::Identifier::TypeReference;
+use kodept_inference::assumption::Assumptions;
+use kodept_inference::language::{Language, var};
+use kodept_inference::r#type::{MonomorphicType, PolymorphicType, Tuple, Union};
+use kodept_macros::error::report::{ReportMessage, Severity};
+
 use crate::node_family::Errors::Undefined;
 use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 use crate::type_checker::InferError;
-use derive_more::{From, Into};
-use kodept_ast::graph::{GenericASTNode, GhostToken, NodeId, NodeUnion, SyntaxTree};
-use kodept_ast::Identifier::TypeReference;
-use kodept_ast::{
-    wrapper, AbstractFunctionDeclaration, Application, BodiedFunctionDeclaration, ExpressionBlock,
-    Identifier, IfExpression, InitializedVariable, Lambda, Literal, Reference, Type,
-    TypedParameter, Variable,
-};
-use kodept_inference::assumption::Assumptions;
-use kodept_inference::language::{var, Language};
-use kodept_inference::r#type::{MonomorphicType, PolymorphicType, Tuple, Union};
-use kodept_macros::error::report::{ReportMessage, Severity};
-use std::collections::HashMap;
-use std::rc::Rc;
 
 pub struct Store {
     models_cache: HashMap<NodeId<GenericASTNode>, Rc<Language>>,

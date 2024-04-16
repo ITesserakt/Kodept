@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 
-use crate::graph::{Identifiable, NodeId};
-use crate::make_ast_node_adaptor;
-use crate::*;
 use derive_more::{From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+use crate::*;
+use crate::graph::{Identifiable, NodeId};
+use crate::make_ast_node_adaptor;
 
 type Identity<T> = T;
 

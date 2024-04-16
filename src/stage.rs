@@ -1,10 +1,11 @@
+use std::rc::Rc;
+
 use kodept::macro_context::DefaultContext;
 use kodept::traversing::TraverseSet;
 use kodept_interpret::operator_desugaring::BinaryOperatorExpander;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
 use kodept_macros::traits::{Context, UnrecoverableError};
-use std::rc::Rc;
 
 pub struct PredefinedTraverseSet<C: Context = DefaultContext, E = UnrecoverableError>(
     TraverseSet<C, E>,

@@ -1,5 +1,6 @@
-use crate::graph::{Change, GenericASTNode, GhostToken, Identifiable, SyntaxTree};
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
+
+use crate::graph::{Change, GenericASTNode, GhostToken, Identifiable, SyntaxTree};
 
 pub trait NodeWithParent {
     type Parent;

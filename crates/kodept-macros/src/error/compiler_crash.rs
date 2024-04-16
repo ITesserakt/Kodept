@@ -1,6 +1,7 @@
+use std::any::Any;
+
 use codespan_reporting::diagnostic::Severity;
 use derive_more::Constructor;
-use std::any::Any;
 
 use crate::error::report::ReportMessage;
 

@@ -75,9 +75,9 @@ fn base_to_report(
             ))
             .with_labels(needle.as_labels())],
     }
-    .into_iter()
-    .map(|it| add_notes(it, context.clone()))
-    .collect()
+        .into_iter()
+        .map(|it| add_notes(it, context.clone()))
+        .collect()
 }
 
 pub trait Reportable {

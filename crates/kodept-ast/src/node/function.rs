@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
+use crate::{Body, node, Parameter, Type, TypedParameter, wrapper};
 use crate::graph::{GenericASTNode, NodeId};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, wrapper, Body, Parameter, Type, TypedParameter};
 
 wrapper! {
     #[derive(Debug, PartialEq, From)]

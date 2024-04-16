@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use derive_more::{From, TryInto};
-use kodept_core::code_point::CodePoint;
-use kodept_core::ConvertibleToRef;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::structure::{rlt, Located};
+use kodept_core::code_point::CodePoint;
+use kodept_core::ConvertibleToRef;
+use kodept_core::structure::{Located, rlt};
 
+use crate::*;
 use crate::graph::NodeId;
 use crate::traits::IntoASTFamily;
-use crate::*;
 
 make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
     derive(Hash, PartialEq, Eq, From, Debug, TryInto),

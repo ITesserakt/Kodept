@@ -1,21 +1,21 @@
 use nom::{
     branch::alt,
-    bytes::complete::take_while,
     bytes::complete::{is_a, is_not, take},
+    bytes::complete::take_while,
     character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of},
     combinator::{map, opt, recognize, value},
     error::context,
     multi::{many0, many1, many_till},
-    sequence::{delimited, tuple},
     Parser,
+    sequence::{delimited, tuple},
 };
-use nom_supreme::tag::complete::{tag, tag_no_case};
 use nom_supreme::ParserExt;
+use nom_supreme::tag::complete::{tag, tag_no_case};
 
 pub use enums::*;
 
-use crate::Span;
 use crate::{TokenizationError, TokenizationResult};
+use crate::Span;
 
 pub mod enums;
 pub mod traits;

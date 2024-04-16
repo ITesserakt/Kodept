@@ -1,7 +1,6 @@
 use std::fs::{create_dir_all, File};
 use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
 use clap::{Parser, Subcommand};
 use codespan_reporting::diagnostic::Diagnostic;
@@ -9,18 +8,18 @@ use extend::ext;
 use nom_supreme::final_parser::final_parser;
 use rayon::prelude::ParallelIterator;
 
+use kodept::{codespan_settings::ReportExt, top_parser};
 use kodept::codespan_settings::CodespanSettings;
 use kodept::macro_context::{DefaultContext, ErrorReported};
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
-use kodept::{codespan_settings::ReportExt, top_parser};
 use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::report_collector::ReportCollector;
+use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
-use kodept_parse::ParseError;
 
 use crate::stage::PredefinedTraverseSet;
 use crate::WideError;
@@ -71,7 +70,7 @@ impl Commands {
 impl Execute {
     pub fn exec(
         self,
-        sources: impl ParallelIterator<Item = ReadCodeSource>,
+        sources: impl ParallelIterator<Item=ReadCodeSource>,
         settings: CodespanSettings,
     ) -> Result<(), WideError> {
         sources.try_for_each_with(settings, |settings, source| {
@@ -109,7 +108,7 @@ impl Execute {
 
 impl Graph {
     pub fn exec(
-        sources: impl ParallelIterator<Item = ReadCodeSource>,
+        sources: impl ParallelIterator<Item=ReadCodeSource>,
         settings: CodespanSettings,
         output_path: PathBuf,
     ) -> Result<(), WideError> {

@@ -1,7 +1,8 @@
+use std::fmt::{Display, Formatter};
+
 use derive_more::From;
 #[cfg(feature = "enum-iter")]
 use enum_iterator::Sequence;
-use std::fmt::{Display, Formatter};
 
 use crate::Span;
 
