@@ -1,9 +1,0 @@
-\glossarysection[\glossarytoctitle]{\glossarytitle}\glossarypreamble
-\begin{theglossary}\glossaryheader
-\glsgroupheading{J}\relax \glsresetentrylist %
-\glossentry{JVM}{\glossaryentrynumbers{\relax 
-		\setentrycounter[]{page}\glsnumberformat{11\delimN 12}}}\glsgroupskip
-\glsgroupheading{Ð}\relax \glsresetentrylist %
-\glossentry{OOP}{\glossaryentrynumbers{\relax 
-		\setentrycounter[]{page}\glsnumberformat{12}}}%
-\end{theglossary}\glossarypostamble
