@@ -1,6 +1,6 @@
 #!/usr/bin/env just --justfile
 
-PROJECT_NAME := 'cpxsln_rpt_prj_2024_rk6_75b_nikitinvl_nirs'
+PROJECT_NAME := 'rndhpc_prj_2024_rk6_75b_nikitinvl_nirs'
 OUTDIR := join(justfile_directory(), 'out')
 SRCDIR := join(justfile_directory(), 'src/')
 DOCDIR := join(justfile_directory(), 'doc/')
