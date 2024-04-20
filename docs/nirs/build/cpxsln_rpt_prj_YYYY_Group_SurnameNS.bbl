@@ -1,0 +1,39 @@
+\begin{thebibliography}{1}
+\def\selectlanguageifdefined#1{
+\expandafter\ifx\csname date#1\endcsname\relax
+\else\language\csname l@#1\endcsname\fi}
+\ifx\undefined\url\def\url#1{{\small #1}}\else\fi
+\ifx\undefined\BibUrl\def\BibUrl#1{\url{#1}}\else\fi
+\ifx\undefined\BibAnnote\long\def\BibAnnote#1{(#1)}\else\fi
+\ifx\undefined\BibEmph\def\BibEmph#1{\emph{#1}}\else\fi
+
+\bibitem{TheFoundationsOfArithmetic}
+\selectlanguageifdefined{russian}
+Foundations of Arithmetic~// The Legacy of Mario Pieri in Geometry and
+  Arithmetic.
+\newblock Boston, MA: Birkh{\"a}user Boston, 2007.
+\newblock {С.}~289--329.{}
+
+\bibitem{Typing}
+\selectlanguageifdefined{russian}
+Груздев~Денис. Ликбез по типизации в языках
+  программирования [Электронный ресурс].
+\newblock 2012.
+\newblock (Дата обращения 18.04.2024). URL:  \BibUrl{
+  https://habr.com/ru/articles/161205/}.{}
+
+\bibitem{KotlinTypeSpec}
+\selectlanguageifdefined{russian}
+Marat~Akhin~Mikhail~Belyaev. Kotlin language specification.
+\newblock (Дата обращения 19.04.2024). URL:  \BibUrl{
+  https://kotlinlang.org/spec/type-system.html}.{}
+
+\bibitem{UrbanN2009}
+\selectlanguageifdefined{russian}
+Urban~Christian, Nipkow~Tobias. Nominal verification of algorithm {W}~// From
+  Semantics to Computer Science. Essays in Honour of Gilles Kahn~/ {под
+  ред. }G.~Huet, J.-J.~Lévy, G.~Plotkin.
+\newblock Cambridge University Press, 2009.
+\newblock {С.}~363--382.{}
+
+\end{thebibliography}

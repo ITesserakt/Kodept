@@ -1,0 +1,14 @@
+\glossarysection[\glossarytoctitle]{\glossarytitle}\glossarypreamble
+\begin{theglossary}\glossaryheader
+\glsgroupheading{K}\relax \glsresetentrylist %
+\glossentry{Kodept}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsnumberformat{7}}}\glsgroupskip
+\glsgroupheading{Ð}\relax \glsresetentrylist %
+\glossentry{LC}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsnumberformat{10}}}\glsgroupskip
+\glsgroupheading{Ñ}\relax \glsresetentrylist %
+\glossentry{TS}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsnumberformat{7\delimN 8}}}%
+\glossentry{TLC}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsnumberformat{12}}}%
+\end{theglossary}\glossarypostamble
