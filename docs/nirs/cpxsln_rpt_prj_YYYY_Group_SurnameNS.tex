@@ -1,5 +1,6 @@
 %\documentclass[12pt]{report}
-\documentclass[utf8, 14pt]{G7-32}  % ГОСТ 7.32-2001
+\documentclass[utf8, 14pt]{G7-32}
+\usepackage{mathtools}  % ГОСТ 7.32-2001
 %----------------------------------------------------------
 % Значения констант по КП, НИРС, ВКР
 \input{doc-spec/constants_id.tex}
@@ -79,7 +80,7 @@
 \pagestyle{fancy}
 \printglossary[type=\acronymtype, title={СОКРАЩЕНИЯ}, nopostdot=false, nonumberlist]
 %\thispagestyle{plain}
-%\printglossary[type=main, title={ОПРЕДЕЛЕНИЯ}, nopostdot=true]
+\printglossary[type=main, title={ОПРЕДЕЛЕНИЯ}, nopostdot=true]
 %----------------------------------------------------------
 % Содержание
 % Глубина содержания должна быть не более, чем глава (chapter), раздел (section) и подраздел (subsection) 
