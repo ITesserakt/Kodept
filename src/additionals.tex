@@ -1,0 +1,58 @@
+%приложения
+%
+% листы A1
+% Акт об отсутствии заимствований
+% Рецензии
+%
+
+\appendix
+
+% команды далее необходимы для того, чтобы нумерация элементов текста в приложениях была корректной.
+\renewcommand{\theequation}{\thechapter.\arabic{equation}}
+\renewcommand{\thefigure}{\thechapter.\arabic{figure}}
+\renewcommand{\thetable}{\thechapter.\arabic{table}}
+% -------
+\renewcommand{\appendixname}{ПРИЛОЖЕНИЯ}
+\def\chaptername{ПРИЛОЖЕНИЕ}
+\def\thechapter{\Asbuk{chapter}\unskip}
+\renewcommand{\thesection}{\thechapter.\arabic{section}\unskip}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addcontentsline{toc}{chapter}{ПРИЛОЖЕНИЯ}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ПРИЛОЖЕНИЕ
+\fancyhead[C]{\thepage \\ \textbf{\leftmark}}
+\fancyfoot[C]{}
+%----------------------------------------------------------------
+\includepdfset{turn=true,scale=0.85,linktodoc=true,pages=-,pagecommand={\pagestyle{fancy}}}
+%----------------------------------------------------------------
+\chapter{}\label{apx_a1}
+
+
+
+
+%{\catcode`\_=11
+%\newpage
+%\includepdf[pagecommand=\label{appx_A1_list1},pages=-]{appendices/appx_A1_list1.pdf}
+%}
+%
+%%{\catcode`\_=11
+%%\newpage
+%%\includepdf[pagecommand=\label{appx_A1_list1},pages=-]{appendices/appx_A1_list1.pdf}
+%%}
+%%----------------------------------------------------------------
+%\chapter{Акты и рецензии}\label{apx_acts_reviews}
+%
+%{\catcode`\_=11
+%\newpage
+%\includepdf[pagecommand=\label{appx_act_plagiat},pages=-]{appendices/appx_act_plagiatpdf}
+%}
+%
+%{\catcode`\_=11
+%\newpage
+%\includepdf[pagecommand=\label{appx_review_1},pages=-]{appendices/appx_review_1.pdf}
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+

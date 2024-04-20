@@ -1,0 +1,124 @@
+%----------------------------------------------------------
+\chapter{Система типов Хиндли-Милнера}
+\label{ch:chap4_hindley_milner}
+%----------------------------------------------------------
+
+Исходя из классификации выше, было принято решение использовать систему типов Хиндли-Милнера.
+Фактически она является подобием системы $\lambda 2$ и является, пожалуй, самой популярной.
+Среди прочих ее особенностей, важно отметить то, что она способна вывести наиболее общий тип выражения, основываясь на аннотациях типов программиста и окружающем контексте.
+Здесь приведена её небольшая модификация с добавлением типов-объединений и примитивных типов.
+
+Наиболее классическим алгоритмом в этой области является так называемый алгоритм $W$ \cite{UrbanN2009}.
+
+Для определения системы типов необходимо 3 составляющие: набор термов, набор типов и набор суждений.
+
+\textbf{Термы:}
+\begin{flalign*}
+    a, b, c &\Coloneqq  \\
+    & x && (\text{переменная}) \\
+    & \lambda x. a && (\text{лямбда-функция}) \\
+    & a(b) && (\text{применение аргумента к функции}) \\
+    & let ~ a = b ~ in ~ c && (\text{объявление переменной}) \\
+    & 1, 2, 3, \ldots && (\text{целочисленный литерал}) \\
+    & 1.1, 1.2, 10.0, \ldots && (\text{вещественный литерал}) \\
+    & (a, b) && (\text{объединение})
+\end{flalign*}
+
+\textbf{Типы:}
+\begin{flalign*}
+    \iota &\Coloneqq && (\text{примитивный тип}) \\
+    & Integral && (\text{целочистенный}) \\
+    & Floating && (\text{вещественный}) \\
+    \tau, \sigma &\Coloneqq && (\text{мономорфный тип}) \\
+    & \iota \\
+    & T && (\text{переменная типа}) \\
+    & \tau \to \sigma && (\text{функциональный тип}) \\
+    & (\tau, \sigma) && (\text{тип-объединение}) \\
+    & \Lambda && (\text{пользовательский тип}) \\
+    \alpha &\Coloneqq && (\text{полиморфный тип}) \\
+    & \tau \\
+    & \forall a. \alpha && (\text{параметрический тип})
+\end{flalign*}
+
+Полиморфные типы - основное отличие $\lambda \to$ от $\lambda 2$.
+Благодаря им имеется возможность определять более обобщенные функции.
+Самый простой пример - функция $id$ - имеет следующий тип: $id: \forall a. a \to a$.
+Таким образом ее можно вызвать и с аргументом-числом, и с аргументом-функцией.
+
+Алгоритм $W$ работает, исходя из набора суждений:
+
+\begin{equation}
+    \label{eq:taut}
+    \tag{TAUT}
+    \frac{}{\Gamma \vdash x: \sigma}
+\end{equation}
+
+\begin{equation}
+    \label{eq:inst}
+    \tag{INST}
+    \frac{\Gamma \vdash x: \sigma, \sigma' < \sigma}{\Gamma \vdash x: \sigma'}
+\end{equation}
+
+Запись $\sigma' < \sigma$ означает, что тип $\sigma'$ более конкретный, чем $\sigma$.
+
+\begin{equation}
+    \label{eq:gen}
+    \tag{GEN}
+    \frac{\Gamma \vdash x: \sigma, a \notin free(\Gamma)}{\Gamma \vdash x: \forall a. \sigma}
+\end{equation}
+
+\begin{equation}
+    \label{eq:comb}
+    \tag{COMB}
+    \frac{\Gamma \vdash f: \tau \to \tau', x: \tau}{\Gamma \vdash f(x): \tau'}
+\end{equation}
+
+\begin{equation}
+    \label{eq:abs}
+    \tag{ABS}
+    \frac{\Gamma \cup x: \tau \vdash y: \tau'}{\Gamma \vdash \lambda x. y : \tau \to \tau'}
+\end{equation}
+
+\begin{equation}
+    \label{eq:let}
+    \tag{LET}
+    \frac{\Gamma \vdash x: \sigma, \Gamma \cup y: \sigma \vdash z: \tau}{\Gamma \vdash (let ~ y = x ~ in ~ z): \tau}
+\end{equation}
+
+\begin{equation}
+    \label{eq:tuple}
+    \tag{TUPLE}
+    \frac{\Gamma \vdash x_1: \tau_1, x_2: \tau_2, x_3: \tau_3, \ldots}{\Gamma \vdash (x_1, x_2, x_3, \ldots): (\tau_1, \tau_2, \tau_3, \ldots)}
+\end{equation}
+
+Исходя из этих суждений, алгоритм $W$ составляет так называемое дерево вывода.
+Если дерево построить удалось, то написанная программа считается верной.
+
+Разберём небольшой пример: пусть имеется следующий контекст: $\Gamma = \left\{ fst: \forall a, b. a \to b \to a \right\}$.
+Удостоверимся, что следующее выражение $let ~snd = \lambda x, y. fst(y)(x) ~in ~snd$, имеет тип $\forall a, b. a \to b \to b$.
+
+\[
+    \frac{
+        \frac{
+            \Gamma \cup x: \alpha \cup y: \beta \vdash \frac{
+                \Gamma \vdash \frac{
+                    \Gamma \vdash fst: \beta \to \alpha \to \beta, y: \beta
+                }{
+                    \Gamma \vdash fst(y): \alpha \to \beta
+                }: \alpha \to \beta, x: \alpha
+            }{
+                \Gamma \vdash fst(y)(x): \beta
+            }
+        }{
+            \Gamma \vdash \lambda x, y. fst(y)(x): \alpha \to \beta \to \beta
+        }, \Gamma \cup y: \forall a, b. a \to b \to b \vdash z: \forall a, b. a \to b \to b
+    }{
+        \Gamma \vdash (let ~y = x ~in~ z): \forall a, b. a \to b \to b
+    }
+\]
+
+Однако не всегда можно легко вывести тип выражения.
+Например, выражение $\lambda x. x(x)$ имеет бесконечный рекурсивный тип, который нельзя выразить в $\lambda 2$.
+
+%----------------------------------------------------------
+
