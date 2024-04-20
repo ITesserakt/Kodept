@@ -1,7 +1,7 @@
 #!/usr/bin/env just --justfile
 
 PROJECT_NAME := 'cpxsln_rpt_prj_2024_rk6_75b_nikitinvl_nirs'
-OUTDIR := join(justfile_directory(), 'out/')
+OUTDIR := join(justfile_directory(), 'out')
 SRCDIR := join(justfile_directory(), 'src/')
 DOCDIR := join(justfile_directory(), 'doc/')
 
@@ -21,17 +21,17 @@ mk_folder:
 
 [private]
 build_pdf:
-    cd {{ SRCDIR }} && pdflatex -quiet -file-line-error -interaction=nonstopmode -synctex=1 -output-format=pdf -output-directory={{OUTDIR}} {{PROJECT_NAME}}.tex
+    cd {{ SRCDIR }} && latexmk -quiet -outdir={{ OUTDIR }} -pdf {{ PROJECT_NAME }}
 
 [private]
 build_gls:
-    cd {{ SRCDIR }} && makeglossaries -d {{OUTDIR}} {{ PROJECT_NAME }}
+    cd {{ OUTDIR }} && makeglossaries-lite {{ PROJECT_NAME }}
 
 [private]
 build_bib:
-    cd {{OUTDIR}} && bibtex {{ PROJECT_NAME }}
+    cd {{ OUTDIR }} && bibtex {{ PROJECT_NAME }}
 
-build: mk_folder build_pdf build_bib build_gls && build_pdf
+build: mk_folder build_pdf build_gls build_bib && build_pdf
 
 rebuild: clean build
 
