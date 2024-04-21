@@ -1,6 +1,3 @@
-.idea
-**/out/
-.vscode
 *.nav
 *.upb
 *.log
@@ -28,3 +25,4 @@
 *node_modules/*
 *.synctex.gz
 /rndhpc_txb_Research/*.synctex
+.idea
