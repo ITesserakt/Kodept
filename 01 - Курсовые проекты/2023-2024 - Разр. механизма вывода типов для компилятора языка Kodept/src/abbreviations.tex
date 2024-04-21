@@ -1,0 +1,63 @@
+%----------------------------------------------------------
+%Термины и определения по тексту в большинстве случаев выделяются курсивом.
+%В настоящем отчете о НИР применяют следующие термины с соответствующими определениями, также используются представленные обозначения и сокращения.
+
+
+%\newabbreviation[category=inline]{html}{HTML}{hypertext markup language}
+%\newabbreviation[category=footer]{shtml}{SHTML}{server-parsed HTML}
+
+%\newglossaryentry{sample2}{name={sample2},
+%	symbol={\ensuremath{\mathcal{S}_2}},
+%	category=symbol,
+%	description={the second sample entry}}
+
+%\newabbreviation
+%[prefix={an\space},
+%prefixfirst={a~}]
+%{svm}{SVM}{support vector machine}
+
+%\newabbreviation
+%[category=initialism,description={for example}]
+%{eg}{eg}{exempli gratia}
+% define the entries:
+
+%\newabbreviation{html}{html}{hypertext markup language}
+
+%\newabbreviation[category=initialism]{eg}{eg}{for example}
+%\newabbreviation[category=initialism]{si}{SI}{sample initials}
+%\newabbreviation{xml}{XML}{extensible markup language}
+%\newabbreviation{css}{CSS}{cascading style sheet}
+%\newacronym[description={a device that emits a narrow intense 
+%	beam of light}]{laser}{laser}{light amplification by stimulated 
+%	emission of radiation}
+
+%\newacronym[description={a form of \gls{laser} generating a beam of
+%	microwaves}]{maser}{maser}{microwave amplification by stimulated 
+%	emission of radiation}
+
+%\newacronym[description={a system for detecting the location and
+%	speed of ships, aircraft, etc, through the use of radio waves}]{radar}{radar}{radio detection and ranging}
+
+%\newacronym[description={portable breathing apparatus for divers}]{scuba}{scuba}{self-contained underwater breathing apparatus}
+
+%%%%% для обычных newglossaryentry по умолчанию category==general.
+%%%%% для обычных newabbreviation по умолчанию category==abbreviation.
+%%%%% команда для создания своей категории \glscategory{<label>}
+%----------------------------------------------------------
+\newglossaryentry{slver}{name={Solver}, description={Решатель системы \gls{dcs-gcd}. Регистрируется в таблице \textbf{com.slvrs} БД \gls{gcddb} \gls{dcs-gcd}.}}
+
+\newabbreviation[category=initialism]{atype}{ATYPE}{Предметный тип функции в системе РВС GCD.}
+\newabbreviation[category=initialism]{SOFTWARE}{ПО}{Программное обеспечение}
+ 
+\GlsXtrEnableEntryCounting
+{abbreviation}% list of categories to use entry counting
+{2}% trigger value
+
+\GlsXtrEnableEntryCounting
+{symbol}% list of categories to use entry counting
+{2}% trigger value
+
+
+%----------------------------------------------------------
+
+
