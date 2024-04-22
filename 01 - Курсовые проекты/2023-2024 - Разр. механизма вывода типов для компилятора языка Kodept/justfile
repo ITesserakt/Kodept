@@ -37,3 +37,6 @@ rebuild: clean build
 
 dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
+
+compile_mermaid file:
+    mmdc -i {{ SRCDIR / 'mermaid' / file }} -o {{ SRCDIR / 'figures' / without_extension(file) }}'.png' -b transparent

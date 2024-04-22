@@ -1,0 +1,22 @@
+flowchart TD
+;
+    A[kodept-core];
+    B[kodept-ast];
+    C[kodept-parse];
+    D[kodept-macros];
+    E[kodept-inference];
+    F[kodept-interpret];
+    G[kodept];
+    A --> B;
+    A --> D;
+    A --> F;
+    A --> C;
+    A --> G;
+    B --> G;
+    B --> F;
+    B --> D;
+    C --> G;
+    D --> F;
+    D --> G;
+    E --> F;
+    F --> G;
