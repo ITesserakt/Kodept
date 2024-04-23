@@ -98,23 +98,28 @@
 Удостоверимся, что следующее выражение $let ~snd = \lambda x, y. fst(y)(x) ~in ~snd$, имеет тип $\forall a, b. a \to b \to b$.
 
 \[
-    \frac{
-        \frac{
-            \Gamma \cup x: \alpha \cup y: \beta \vdash \frac{
-                \Gamma \vdash \frac{
-                    \Gamma \vdash fst: \beta \to \alpha \to \beta, y: \beta
-                }{
-                    \Gamma \vdash fst(y): \alpha \to \beta
-                }: \alpha \to \beta, x: \alpha
-            }{
-                \Gamma \vdash fst(y)(x): \beta
-            }
+    \begin{aligned}
+        J_1 &\coloneqq \frac{
+            \Gamma \vdash fst: \beta \to \alpha \to \beta, y: \beta
+        }{
+            \Gamma \vdash fst(y): \alpha \to \beta
+        }, \\
+        J_2 &\coloneqq \frac{
+            \Gamma \vdash J_1: \alpha \to \beta, x: \alpha
+        }{
+            \Gamma \vdash fst(y)(x): \beta
+        }, \\
+        J_3 &\coloneqq \frac{
+            \Gamma \cup x: \alpha \cup y: \beta \vdash J_2
         }{
             \Gamma \vdash \lambda x, y. fst(y)(x): \alpha \to \beta \to \beta
-        }, \Gamma \cup y: \forall a, b. a \to b \to b \vdash z: \forall a, b. a \to b \to b
-    }{
-        \Gamma \vdash (let ~y = x ~in~ z): \forall a, b. a \to b \to b
-    }
+        } \\
+        J_4 &\coloneqq \frac{
+            J_3, \Gamma \cup y: \forall a, b. a \to b \to b \vdash z: \forall a, b. a \to b \to b
+        }{
+            \Gamma \vdash (let ~y = x ~in~ z): \forall a, b. a \to b \to b
+        }
+    \end{aligned}
 \]
 
 Однако не всегда можно легко вывести тип выражения.
