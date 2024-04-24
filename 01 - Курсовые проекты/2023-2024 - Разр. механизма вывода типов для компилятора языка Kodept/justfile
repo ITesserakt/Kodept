@@ -11,6 +11,9 @@ export BSTINPUTS := replace(SRCDIR, '\ ', ' ')
 default:
     just --choose
 
+clean_fig:
+    rm -rf {{SRCDIR / 'figures' / '*'}}
+
 clean:
     rm -rf {{OUTDIR}}
 
@@ -21,7 +24,7 @@ mk_folder:
 
 [private]
 build_pdf:
-    cd {{ SRCDIR }} && latexmk -quiet -outdir={{ OUTDIR }} -pdf {{ PROJECT_NAME }}
+    cd {{ SRCDIR }} && latexmk -quiet -outdir={{ OUTDIR }} -pdf {{ PROJECT_NAME }} --shell-escape
 
 [private]
 build_gls:
@@ -33,10 +36,18 @@ build_bib:
 
 build: mk_folder build_pdf build_gls build_bib && build_pdf
 
-rebuild: clean build
+rebuild: clean clean_fig compile build
 
 dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
 
-compile_mermaid file:
-    mmdc -i {{ SRCDIR / 'mermaid' / file }} -o {{ SRCDIR / 'figures' / without_extension(file) }}'.png' -b transparent
+compile_mermaid file ext='.pdf':
+    mmdc -i {{ SRCDIR / 'mermaid' / file }} -o {{ SRCDIR / 'figures' / without_extension(file) + ext }} -b transparent -f -C {{ SRCDIR / 'mermaid' / 'mermaid.css' }}
+
+compile: clean_fig
+    #!/usr/bin/env python3
+    from glob import glob
+    from subprocess import run
+    from os import path
+    for file in glob("{{replace(SRCDIR, '\ ', ' ')}}mermaid/*.mmd"):
+        run(['just', 'compile_mermaid', path.basename(file)])
