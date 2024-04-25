@@ -1,0 +1,18 @@
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/dot}
+    \caption{Изображение структуры абстрактного синтаксического дерева}
+    \label{fig:ast_dot}
+\end{figure}
+
+\begin{lstlisting}[label=lst:kodept, caption={Исходная программа на языке Kodept}]
+module Testing {
+    fun compose(f, g) => \x => f(g(x))
+
+    enum struct Bool { True, False }
+}
+
+module Testing2 {
+    struct Int
+}
+\end{lstlisting}

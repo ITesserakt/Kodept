@@ -7,16 +7,26 @@ flowchart TD
     E[kodept-inference];
     F[kodept-interpret];
     G[kodept];
+
+    IN[/Исходный код/]
+    OUT[/Диагностики/]
+
+    IN -.-> C;
+    C -.-> B;
+
     A --> B;
     A --> D;
+    D --> F;
+    B --> F;
+    B -.-> F;
     A --> F;
     A --> C;
     A --> G;
-    B --> G;
-    B --> F;
-    B --> D;
     C --> G;
-    D --> F;
+    B --> G;
+    B --> D;
     D --> G;
     E --> F;
     F --> G;
+
+    F -.-> OUT;

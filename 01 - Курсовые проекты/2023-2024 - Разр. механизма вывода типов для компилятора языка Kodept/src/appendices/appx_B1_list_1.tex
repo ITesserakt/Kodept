@@ -1,0 +1,27 @@
+\begin{lstlisting}[label=lst:nodes, caption={Имена всех элементов, составляющих абстрактное синтаксическое дерево}, language=C]
+    File, // root element
+    Module, // module {name} {rest}
+    Struct, // struct {name}({params}) {rest}
+    Enum, // enum {name} {rest}
+    TypedParameter, // {name}: {type}
+    UntypedParameter, // {name}
+    Variable, // val {name}: {type}
+    InitializedVar, // val {name}: {type} = {expr}
+    BodiedFunction, // fun {name}({params}) => {expr}
+    ExpressionBlock, // {  {expr1}; {expr2}; ... }
+    Application, // {expr}({expr})
+    Lambda, // \textbackslash {binds} => {expr}
+    Reference, // {name}
+    Access, // {expr}.{expr}
+    Number, // number literal
+    Char, // char literal
+    String, // string literal
+    Tuple, // ({expr1}, {expr2}, ...)
+    If, // if {expr} => {expr} {другие ветки}
+    Elif, // elif {expr} => {expr}
+    Else, // else {expr}
+    Binary, // binary operator: +, -, *, /, \%, \textasciicircum
+    Unary, // unary operator: -, +, !, \texttildelow
+    AbstractFunction, // abstract fun {name}({params}): {type}
+    ProdType, // ({type1}, {type2}, ...)
+\end{lstlisting}
