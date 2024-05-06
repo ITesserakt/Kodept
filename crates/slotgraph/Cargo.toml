@@ -1,0 +1,18 @@
+[package]
+name = "slotgraph"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+slotmap = "1.0.7"
+petgraph = { version = "0.6.4", default-features = false }
+serde = { version = "1.0.200", optional = true }
+
+[dev-dependencies]
+rstest = "0.19.0"
+
+[lints]
+workspace = true
+
+[features]
+serde = ["dep:serde", "slotmap/serde"]

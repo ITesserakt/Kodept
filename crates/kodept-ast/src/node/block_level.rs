@@ -8,11 +8,11 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{BodiedFunctionDeclaration, ExpressionBlock, node, Operation, Type, wrapper};
+use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
-use crate::graph::NodeId;
 use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -129,9 +129,7 @@ impl PopulateTree for rlt::InitializedVariable {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(InitializedVariable {
-                id: Default::default(),
-            })
+            .add_node(InitializedVariable::uninit())
             .with_children_from([&self.expression], context)
             .with_children_from([&self.variable], context)
             .with_rlt(context, self)
@@ -156,11 +154,10 @@ impl PopulateTree for rlt::Variable {
             } => (VariableKind::Mutable, id, assigned_type),
         };
         builder
-            .add_node(Variable {
+            .add_node(Variable::uninit(
                 kind,
-                name: context.get_chunk_located(name).to_string(),
-                id: Default::default(),
-            })
+                context.get_chunk_located(name).to_string(),
+            ))
             .with_children_from(ty.as_ref().map(|x| &x.1), context)
             .with_rlt(context, self)
             .id()

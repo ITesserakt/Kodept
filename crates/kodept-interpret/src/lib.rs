@@ -11,6 +11,7 @@ mod scope;
 pub mod semantic_analyzer;
 mod symbol;
 pub mod type_checker;
+mod typing;
 mod utils;
 
 pub enum Errors {

@@ -79,7 +79,7 @@ macro_rules! wrapper {
 
         impl $crate::traits::Identifiable for $wrapper {
             fn get_id(&self) -> $crate::graph::NodeId<Self> {
-                <GenericASTNode as $crate::traits::Identifiable>::get_id(&self.0).cast()
+                <GenericASTNode as $crate::traits::Identifiable>::get_id(&self.0).narrow()
             }
         }
 
@@ -223,6 +223,15 @@ macro_rules! node {
         }
 
         impl $crate::node_properties::Node for $name {}
+
+        impl $name {
+            pub fn uninit($($field_name: $field_type,)*) -> Self {
+                Self {
+                    id: $crate::graph::NodeId::<$name>::null(),
+                    $($field_name, )*
+                }
+            }
+        }
 
         $crate::impl_identifiable!($name);
 

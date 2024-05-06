@@ -1,13 +1,28 @@
+*.nav
+*.upb
+*.log
 *.aux
-auxil/
-out/
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
-
+*.out
+*.snm
+*.tps
+*.upa
+*.toc
+*.fls
+*.fdb_latexmk
+*.bbl
+*.glg
+*.ist
+*.blg
+*.bbl
+*.glg-abr
+*.gls
+*.gls-abr
+*.glo-abr
+*.tmp
+*.glo
+*.vrb*sw*
+*.DS_Store*
+*node_modules/*
+*.synctex.gz
+/rndhpc_txb_Research/*.synctex
+.idea

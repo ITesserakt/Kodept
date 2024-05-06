@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{Body, node, Operation, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::Identity;
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper, Body, Operation};
 
 wrapper! {
     #[derive(Debug, PartialEq, From)]
@@ -56,9 +56,7 @@ impl PopulateTree for rlt::IfExpr {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(IfExpression {
-                id: Default::default(),
-            })
+            .add_node(IfExpression::uninit())
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
             .with_children_from(self.elif.as_ref(), context)
@@ -77,9 +75,7 @@ impl PopulateTree for rlt::ElifExpr {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(ElifExpression {
-                id: Default::default(),
-            })
+            .add_node(ElifExpression::uninit())
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
             .with_rlt(context, self)
@@ -96,9 +92,7 @@ impl PopulateTree for rlt::ElseExpr {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(ElseExpression {
-                id: Default::default(),
-            })
+            .add_node(ElseExpression::uninit())
             .with_children_from([&self.body], context)
             .with_rlt(context, self)
             .id()

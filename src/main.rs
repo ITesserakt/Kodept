@@ -3,7 +3,7 @@ use rayon::prelude::*;
 use tracing::{debug, error};
 
 use cli::common::Kodept;
-use kodept_core::loader::Loader;
+use kodept::loader::Loader;
 
 use crate::cli::commands::{Commands, Execute, Graph};
 
@@ -18,7 +18,7 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 
 fn main() -> Result<(), WideError> {
     #[cfg(feature = "profiler")]
-        let _profiler = dhat::Profiler::new_heap();
+    let _profiler = dhat::Profiler::new_heap();
 
     let cli_arguments: Kodept = Kodept::parse();
     tracing_subscriber::fmt()

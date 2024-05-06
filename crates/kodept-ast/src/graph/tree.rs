@@ -1,20 +1,16 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::iter;
-use std::marker::PhantomData;
 use std::ops::Coroutine;
 
-use daggy::{NodeIndex, Walker};
-use daggy::petgraph::Direction;
-use daggy::petgraph::dot::{Config, Dot};
-use daggy::stable_dag::StableDag;
-
-use kodept_core::{ConvertibleTo, ConvertibleToMut, ConvertibleToRef};
 use kodept_core::structure::span::CodeHolder;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
+use slotgraph::export::{Config, Direction, Dot};
+use slotgraph::{Key, NodeKey, SubDiGraph};
 
-use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::graph::nodes::{GhostToken, Owned, RefNode};
 use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
+use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::node_properties::{Node, NodeWithParent};
 use crate::rlt_accessor::{ASTFamily, RLTFamily};
 use crate::traits::{Linker, PopulateTree};
@@ -46,7 +42,7 @@ impl CanModify for ModifyingStage<'_> {
     }
 }
 
-type Graph<T = Owned, E = ChildTag> = StableDag<T, E, usize>;
+type Graph<T = Owned, E = ChildTag> = slotgraph::DiGraph<T, E>;
 
 #[derive(Debug)]
 pub struct SyntaxTree<Stage = AccessingStage> {
@@ -58,8 +54,7 @@ pub type SyntaxTreeBuilder = SyntaxTree<BuildingStage>;
 
 pub struct ChildScope<'arena, T, Stage = BuildingStage> {
     tree: &'arena mut SyntaxTree<Stage>,
-    node_id: NodeIndex<usize>,
-    _phantom: PhantomData<T>,
+    id: Key<T>,
 }
 
 impl Default for SyntaxTree<BuildingStage> {
@@ -78,7 +73,7 @@ impl SyntaxTree<BuildingStage> {
     }
 
     pub fn export_dot<'a>(&'a self, config: &'a [Config]) -> impl Display + 'a {
-        struct Wrapper<'c>(Graph<String, &'static str>, &'c [Config]);
+        struct Wrapper<'c>(SubDiGraph<String, &'static str>, &'c [Config]);
         impl Display for Wrapper<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 let dot = Dot::with_config(&self.0, self.1);
@@ -87,7 +82,7 @@ impl SyntaxTree<BuildingStage> {
         }
 
         let mapping = self.graph.map(
-            |id, node| format!("{} [{}]", node.ro(&self.stage.0).name(), id.index()),
+            |id, node| format!("{} [{:?}]", node.ro(&self.stage.0).name(), id),
             |_, &edge| TAGS_DESC[edge as usize],
         );
         Wrapper(mapping, config)
@@ -106,8 +101,7 @@ impl<U: CanModify> SyntaxTree<U> {
 
         ChildScope {
             tree: self,
-            node_id: id,
-            _phantom: PhantomData,
+            id: id.into(),
         }
     }
 
@@ -153,23 +147,22 @@ impl SyntaxTree<ModifyingStage<'_>> {
 
 impl<U> SyntaxTree<U> {
     pub(crate) fn children_of_raw<T>(&self, id: NodeId<T>, tag: ChildTag) -> OptVec<&Owned> {
-        let mut walker = self.graph.children(id.into());
-        let mut result = OptVec::new();
-        while let Some((edge_id, node_id)) = walker.walk_next(&self.graph) {
-            if self.graph[edge_id] != tag {
-                continue;
-            }
-            result.push(&self.graph[node_id])
-        }
-        result
+        self.graph
+            .children(id.into())
+            .filter(|it| self.graph[it.0].data == tag)
+            .map(|it| &self.graph[it.1])
+            .collect()
     }
 
     pub fn dfs(&self) -> impl Iterator<Item = (RefNode, VisitSide)> + '_ {
-        let mut roots = self.graph.graph().externals(Direction::Incoming);
+        let mut roots = self.graph.externals(Direction::Incoming);
         let (Some(start), None) = (roots.next(), roots.next()) else {
             panic!("Syntax tree should have a root")
         };
-        iter::from_coroutine(move || yield_all!(coroutine(&self.graph, start)))
+        iter::from_coroutine(
+            #[coroutine]
+            move || yield_all!(coroutine(&self.graph, start)),
+        )
     }
 }
 
@@ -183,17 +176,11 @@ impl SyntaxTree {
     where
         GenericASTNode: ConvertibleToRef<U>,
     {
-        let mut walker = self.graph.children(id.into());
-        let mut result = OptVec::new();
-        while let Some((edge_id, node_id)) = walker.walk_next(&self.graph) {
-            if self.graph[edge_id] != tag {
-                continue;
-            }
-            if let Some(node) = self.graph[node_id].ro(token).try_as_ref() {
-                result.push(node)
-            }
-        }
-        result
+        self.graph
+            .children(id.into())
+            .filter(|it| self.graph[it.0].data == tag)
+            .filter_map(|it| self.graph[it.1].ro(token).try_as_ref())
+            .collect()
     }
 
     pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut GhostToken) -> Option<&mut T>
@@ -209,7 +196,7 @@ impl SyntaxTree {
         id: NodeId<T>,
         token: &'a GhostToken,
     ) -> Option<&GenericASTNode> {
-        let mut parents = self.graph.parents(id.into()).iter(&self.graph);
+        let mut parents = self.graph.parents(id.into());
         if let (Some((_, parent_id)), None) = (parents.next(), parents.next()) {
             Some(self.graph[parent_id].ro(token))
         } else {
@@ -226,7 +213,7 @@ impl SyntaxTree {
         T: NodeWithParent + Node,
         GenericASTNode: ConvertibleToMut<T::Parent>,
     {
-        let mut parents = self.graph.parents(id.into()).iter(&self.graph);
+        let mut parents = self.graph.parents(id.into());
         let (Some((_, parent_id)), None) = (parents.next(), parents.next()) else {
             panic!(
                 "NodeWithParent contract violated: such kind of nodes should always have a parent"
@@ -254,35 +241,35 @@ impl SyntaxTree {
 
 fn coroutine(
     graph: &Graph,
-    start: NodeIndex<usize>,
+    start: NodeKey,
 ) -> Box<dyn Coroutine<Return = (), Yield = (RefNode, VisitSide)> + '_> {
-    Box::new(move || {
-        let Some(current) = graph.node_weight(start) else {
-            return;
-        };
-        let mut edges = graph.children(start).iter(graph).peekable();
-        if edges.peek().is_some() {
-            yield (current, VisitSide::Entering);
-            for (_, child) in edges.collect::<Vec<_>>().into_iter().rev() {
-                yield_all!(coroutine(graph, child));
+    Box::new(
+        #[coroutine]
+        move || {
+            let Some(current) = graph.node_weight(start) else {
+                return;
+            };
+            let mut edges = graph.children(start).peekable();
+            if edges.peek().is_some() {
+                yield (current, VisitSide::Entering);
+                for (_, child) in edges.collect::<Vec<_>>().into_iter().rev() {
+                    yield_all!(coroutine(graph, child));
+                }
+                yield (current, VisitSide::Exiting);
+            } else {
+                yield (current, VisitSide::Leaf);
             }
-            yield (current, VisitSide::Exiting);
-        } else {
-            yield (current, VisitSide::Leaf);
-        }
-    })
+        },
+    )
 }
 
 impl<'arena, T, S> ChildScope<'arena, T, S> {
-    fn add_child_by_ref<U, const TAG: ChildTag>(&mut self, child_id: NodeIndex<usize>)
+    fn add_child_by_ref<U, const TAG: ChildTag>(&mut self, child_id: NodeKey)
     where
         U: Into<GenericASTNode>,
         T: HasChildrenMarker<U, TAG>,
     {
-        self.tree
-            .graph
-            .add_edge(self.node_id, child_id, TAG)
-            .expect("Given layout don't form DAG");
+        self.tree.graph.add_edge(self.id.into(), child_id, TAG);
     }
 
     pub fn with_rlt<U>(self, context: &mut impl Linker, rlt_node: &U) -> Self
@@ -295,18 +282,7 @@ impl<'arena, T, S> ChildScope<'arena, T, S> {
     }
 
     pub fn id(&self) -> NodeId<T> {
-        NodeId::new(self.node_id.index())
-    }
-
-    pub fn cast<U>(self) -> ChildScope<'arena, U, S>
-    where
-        T: ConvertibleTo<U>,
-    {
-        ChildScope {
-            tree: self.tree,
-            node_id: self.node_id,
-            _phantom: Default::default(),
-        }
+        self.id.into()
     }
 }
 
@@ -326,17 +302,5 @@ impl<T> ChildScope<'_, T, BuildingStage> {
             self.add_child_by_ref(child_id.into());
         }
         self
-    }
-}
-
-impl From<NodeIndex<usize>> for NodeId<GenericASTNode> {
-    fn from(value: NodeIndex<usize>) -> Self {
-        NodeId::new(value.index())
-    }
-}
-
-impl<T> From<NodeId<T>> for NodeIndex<usize> {
-    fn from(value: NodeId<T>) -> Self {
-        NodeIndex::new(value.into())
     }
 }

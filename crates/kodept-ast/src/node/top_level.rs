@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{BodiedFunctionDeclaration, node, TypedParameter, TypeName, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -56,10 +56,7 @@ impl PopulateTree for Struct {
         builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
-        let node = StructDeclaration {
-            name: context.get_chunk_located(&self.id).to_string(),
-            id: Default::default(),
-        };
+        let node = StructDeclaration::uninit(context.get_chunk_located(&self.id).to_string());
         builder
             .add_node(node)
             .with_children_from(self.body.iter().flat_map(|x| x.inner.as_ref()), context)
@@ -84,11 +81,7 @@ impl PopulateTree for Enum {
             Enum::Stack { id, contents, .. } => (EnumKind::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumKind::Heap, id, contents),
         };
-        let node = EnumDeclaration {
-            kind,
-            name: context.get_chunk_located(name).to_string(),
-            id: Default::default(),
-        };
+        let node = EnumDeclaration::uninit(kind, context.get_chunk_located(name).to_string());
         builder
             .add_node(node)
             .with_children_from(

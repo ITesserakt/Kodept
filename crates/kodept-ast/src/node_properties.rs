@@ -35,14 +35,14 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
 
     fn replace_with(&self, other: Self) -> Change {
         Change::Replace {
-            from_id: self.get_id().cast(),
+            from_id: self.get_id().widen(),
             to: other.into(),
         }
     }
 
     fn remove(&self) -> Change {
         Change::DeleteSelf {
-            node_id: self.get_id().cast(),
+            node_id: self.get_id().widen(),
         }
     }
 }

@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{Body, node, Parameter, Type, TypedParameter, wrapper};
 use crate::graph::{GenericASTNode, NodeId};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper, Body, Parameter, Type, TypedParameter};
 
 wrapper! {
     #[derive(Debug, PartialEq, From)]
@@ -50,10 +50,9 @@ impl PopulateTree for rlt::BodiedFunction {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(BodiedFunctionDeclaration {
-                id: Default::default(),
-                name: context.get_chunk_located(&self.id).to_string(),
-            })
+            .add_node(BodiedFunctionDeclaration::uninit(
+                context.get_chunk_located(&self.id).to_string(),
+            ))
             .with_children_from(self.return_type.as_ref().map(|x| &x.1), context)
             .with_children_from(self.params.iter().flat_map(|x| x.inner.as_ref()), context)
             .with_children_from([self.body.as_ref()], context)

@@ -18,7 +18,8 @@ members = [
     "crates/kodept-inference",
     "crates/kodept-ast",
     "crates/kodept-macros",
-    "crates/kodept-interpret"]
+    "crates/kodept-interpret",
+    "crates/slotgraph"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -81,6 +82,9 @@ version = "0.1"
 [dependencies.kodept-interpret]
 path = "crates/kodept-interpret"
 version = "0.1"
+
+[dev-dependencies]
+tempfile = "3.7.0"
 
 [features]
 profiler = ["dep:dhat"]
