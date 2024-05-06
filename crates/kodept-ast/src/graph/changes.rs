@@ -1,6 +1,6 @@
-use crate::graph::{GenericASTNode, NodeId};
 use crate::graph::tags::ChildTag;
 use crate::graph::utils::OptVec;
+use crate::graph::{GenericASTNode, NodeId};
 
 pub type ChangeSet = OptVec<Change>;
 
@@ -28,7 +28,9 @@ pub enum Change {
 
 impl Change {
     pub fn delete<T: Into<GenericASTNode>>(id: NodeId<T>) -> Change {
-        Change::DeleteSelf { node_id: id.cast() }
+        Change::DeleteSelf {
+            node_id: id.widen(),
+        }
     }
 
     pub fn add<T, U>(to: NodeId<T>, element: U, tag: ChildTag) -> Change
@@ -37,7 +39,7 @@ impl Change {
         U: Into<GenericASTNode>,
     {
         Change::Add {
-            parent_id: to.cast(),
+            parent_id: to.widen(),
             child: element.into(),
             tag,
         }
@@ -45,7 +47,7 @@ impl Change {
 
     pub fn replace<T: Into<GenericASTNode>>(node: NodeId<GenericASTNode>, with: T) -> Change {
         Change::Replace {
-            from_id: node.cast(),
+            from_id: node.widen(),
             to: with.into(),
         }
     }

@@ -52,8 +52,7 @@ impl ScopeTree {
 
     pub fn push_scope<N>(&mut self, from: &N, name: Option<impl Into<String>>)
     where
-        GenericASTNode: TryFrom<N>,
-        N: Identifiable,
+        N: Identifiable + Into<GenericASTNode>,
     {
         let behaviour = match &self.current_scope {
             None => InsertBehavior::AsRoot,
@@ -62,7 +61,7 @@ impl ScopeTree {
         let next_id = self
             .tree
             .insert(
-                Node::new(Scope::new(from.get_id().cast(), name.map(|it| it.into()))),
+                Node::new(Scope::new(from.get_id().widen(), name.map(|it| it.into()))),
                 behaviour,
             )
             .expect("Current scope corrupted");
@@ -90,11 +89,10 @@ impl ScopeTree {
 
     fn of_node<N>(&self, node: &N, ast: &SyntaxTree, token: &GhostToken) -> Result<Id, ScopeError>
     where
-        GenericASTNode: TryFrom<N>,
-        N: Identifiable,
+        N: Identifiable + Into<GenericASTNode>,
     {
         let parents = {
-            let mut current = node.get_id().cast();
+            let mut current = node.get_id().widen();
             let mut result = vec![current];
             while let Some(parent) = ast.parent_of(current, token) {
                 result.push(parent.get_id());
@@ -122,8 +120,7 @@ impl ScopeTree {
         token: &GhostToken,
     ) -> Result<ScopeSearch, ScopeError>
     where
-        GenericASTNode: TryFrom<N>,
-        N: Identifiable,
+        N: Identifiable + Into<GenericASTNode>,
     {
         let start = self.of_node(node, ast, token)?;
         Ok(ScopeSearch {

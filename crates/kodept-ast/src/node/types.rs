@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::Identity;
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
+use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -79,10 +79,7 @@ impl PopulateTree for rlt::new_types::TypeName {
         builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
-        let node = TypeName {
-            name: context.get_chunk_located(self).to_string(),
-            id: Default::default(),
-        };
+        let node = TypeName::uninit(context.get_chunk_located(self).to_string());
 
         builder.add_node(node).with_rlt(context, self).id()
     }
@@ -96,10 +93,7 @@ impl PopulateTree for rlt::TypedParameter {
         builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
-        let node = TypedParameter {
-            name: context.get_chunk_located(&self.id).to_string(),
-            id: Default::default(),
-        };
+        let node = TypedParameter::uninit(context.get_chunk_located(&self.id).to_string());
         builder
             .add_node(node)
             .with_children_from([&self.parameter_type], context)
@@ -119,17 +113,13 @@ impl PopulateTree for rlt::Type {
         match self {
             rlt::Type::Reference(x) => x.convert(builder, context).cast(),
             rlt::Type::Tuple(x) => builder
-                .add_node(ProdType {
-                    id: Default::default(),
-                })
+                .add_node(ProdType::uninit())
                 .with_children_from(x.inner.iter().as_slice(), context)
                 .with_rlt(context, self)
                 .id()
                 .cast(),
             rlt::Type::Union(x) => builder
-                .add_node(SumType {
-                    id: Default::default(),
-                })
+                .add_node(SumType::uninit())
                 .with_children_from(x.inner.iter().as_slice(), context)
                 .with_rlt(context, self)
                 .id()
@@ -147,10 +137,9 @@ impl PopulateTree for rlt::UntypedParameter {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(UntypedParameter {
-                name: context.get_chunk_located(&self.id).to_string(),
-                id: Default::default(),
-            })
+            .add_node(UntypedParameter::uninit(
+                context.get_chunk_located(&self.id).to_string(),
+            ))
             .with_rlt(context, self)
             .id()
     }

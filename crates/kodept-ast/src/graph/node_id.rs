@@ -1,53 +1,64 @@
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::marker::PhantomData;
 
 use derive_more::{Display, From};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(From, Display)]
+use slotgraph::{Key, NodeKey};
+
+use crate::graph::{GenericASTNode, NodeUnion};
+
+#[derive(Display, From)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 #[repr(transparent)]
-#[display(fmt = "{_0}")]
-pub struct NodeId<Node: ?Sized>(usize, PhantomData<Node>);
+pub struct NodeId<Node>(Key<Node>);
+
+pub type GenericNodeId = NodeId<GenericASTNode>;
+
+impl<T> From<NodeKey> for NodeId<T> {
+    fn from(value: NodeKey) -> Self {
+        NodeId(value.into())
+    }
+}
+
+impl<T> From<NodeId<T>> for NodeKey {
+    fn from(value: NodeId<T>) -> Self {
+        value.0.into()
+    }
+}
 
 impl<T> NodeId<T> {
-    #[deprecated]
-    pub fn next<U>(&self) -> NodeId<U> {
-        NodeId(self.0 + 1, PhantomData)
+    pub fn null() -> Self {
+        Self(Key::null())
     }
+}
 
-    #[inline]
-    pub fn cast<U: TryFrom<T>>(self) -> NodeId<U> {
-        NodeId(self.0, PhantomData)
+impl<T: Into<GenericASTNode>> NodeId<T> {
+    pub fn widen(self) -> GenericNodeId {
+        NodeId(self.0.cast())
     }
+}
 
-    /// # Safety
-    /// Caller should carefully do this, because it may violate some contracts
-    #[inline]
-    #[deprecated]
-    pub unsafe fn cast_unchecked<U>(self) -> NodeId<U> {
-        NodeId(self.0, PhantomData)
+impl<T> NodeId<T> {
+    pub fn cast<U>(self) -> NodeId<U>
+    where
+        U: From<T> + NodeUnion,
+    {
+        NodeId(self.0.cast())
+    }
+}
+
+impl GenericNodeId {
+    pub fn narrow<T: TryFrom<GenericASTNode>>(self) -> NodeId<T> {
+        NodeId(self.0.cast())
     }
 }
 
 impl<T> Debug for NodeId<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl<T> NodeId<T> {
-    pub fn new(id: usize) -> Self {
-        Self(id, PhantomData)
-    }
-}
-
-impl<T> Default for NodeId<T> {
-    fn default() -> Self {
-        NodeId::new(0)
     }
 }
 
@@ -72,9 +83,3 @@ impl<T> Clone for NodeId<T> {
 }
 
 impl<T> Copy for NodeId<T> {}
-
-impl<T> From<NodeId<T>> for usize {
-    fn from(value: NodeId<T>) -> Self {
-        value.0
-    }
-}

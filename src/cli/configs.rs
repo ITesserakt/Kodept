@@ -1,15 +1,14 @@
-use std::io::{Read, stdin};
+use std::io::{stdin, Read};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use clap::Args;
-use codespan_reporting::term::{ColorArg, Config};
 use codespan_reporting::term::termcolor::StandardStream;
-
-use kodept::codespan_settings::{CodespanSettings, StreamOutput};
-use kodept_core::loader::{Loader, LoadingError};
+use codespan_reporting::term::{ColorArg, Config};
 
 use crate::cli::utils::{DisplayStyle, Extension};
+use kodept::codespan_settings::{CodespanSettings, StreamOutput};
+use kodept::loader::{Loader, LoadingError};
 
 #[derive(Debug, Args)]
 pub struct DiagnosticConfig {

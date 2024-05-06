@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt::{File, Module};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, TopLevel};
 use crate::graph::{NodeId, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, TopLevel};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -44,9 +44,7 @@ impl PopulateTree for File {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(FileDeclaration {
-                id: NodeId::default(),
-            })
+            .add_node(FileDeclaration::uninit())
             .with_children_from(self.0.iter(), context)
             .with_rlt(context, self)
             .id()
@@ -65,11 +63,7 @@ impl PopulateTree for Module {
             Module::Global { id, rest, .. } => (ModuleKind::Global, id, rest),
             Module::Ordinary { id, rest, .. } => (ModuleKind::Ordinary, id, rest),
         };
-        let node = ModuleDeclaration {
-            kind,
-            name: context.get_chunk_located(name).to_string(),
-            id: NodeId::default(),
-        };
+        let node = ModuleDeclaration::uninit(kind, context.get_chunk_located(name).to_string());
         builder
             .add_node(node)
             .with_children_from(rest.iter(), context)

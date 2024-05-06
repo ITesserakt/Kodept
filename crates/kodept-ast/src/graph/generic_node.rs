@@ -4,9 +4,10 @@ use derive_more::{From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::*;
-use crate::graph::{Identifiable, NodeId};
+use crate::graph::node_id::GenericNodeId;
+use crate::graph::Identifiable;
 use crate::make_ast_node_adaptor;
+use crate::*;
 
 type Identity<T> = T;
 
@@ -60,13 +61,13 @@ unsafe impl NodeUnion for GenericASTNode {
 
 impl Identifiable for GenericASTNode {
     #[inline]
-    fn get_id(&self) -> NodeId<Self> {
-        generic_ast_node_map!(self, |x| x.get_id().cast())
+    fn get_id(&self) -> GenericNodeId {
+        generic_ast_node_map!(self, |x| x.get_id().widen())
     }
 
     #[inline]
-    fn set_id(&mut self, value: NodeId<Self>) {
-        generic_ast_node_map!(self, |x| x.set_id(value.cast()))
+    fn set_id(&mut self, value: GenericNodeId) {
+        generic_ast_node_map!(self, |x| x.set_id(value.narrow()))
     }
 }
 

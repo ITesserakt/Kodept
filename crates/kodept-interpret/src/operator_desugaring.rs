@@ -1,28 +1,30 @@
 use std::convert::Infallible;
 
-use kodept_ast::{Application, Binary, BinaryExpressionKind, Reference};
-use kodept_ast::graph::{Change, ChangeSet, GenericASTNode, tags};
+use kodept_ast::graph::{tags, Change, ChangeSet, GenericASTNode};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_macros::Macro;
+use kodept_ast::{Application, Binary, BinaryExpressionKind, Identifier, Reference};
 use kodept_macros::traits::Context;
+use kodept_macros::Macro;
 
 #[derive(Default)]
 pub struct BinaryOperatorExpander {}
 
-fn replace_with<N: Identifiable>(replaced: &N, function_name: &'static str) -> ChangeSet
-where
-    GenericASTNode: TryFrom<N>,
-{
+fn replace_with<N: Identifiable + Into<GenericASTNode>>(
+    replaced: &N,
+    function_name: &'static str,
+) -> ChangeSet {
     // <function_name>(<left>, <right>)
-    let id = replaced.get_id().cast();
+    let id = replaced.get_id().widen();
 
     ChangeSet::from_iter([
-        Change::replace(id, Application::new()),
+        Change::replace(id, Application::uninit()),
         Change::add(
             id,
-            Reference::new_ref(function_name.to_string()),
+            Reference::uninit(Identifier::Reference {
+                name: function_name.to_string(),
+            }),
             tags::PRIMARY,
         ),
     ])

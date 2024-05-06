@@ -1,7 +1,6 @@
 pub mod code_point;
 pub mod code_source;
 pub mod file_relative;
-pub mod loader;
 pub mod structure;
 
 pub trait ConvertibleToRef<Output> {

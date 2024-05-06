@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::{node, wrapper};
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::graph::NodeId;
+use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
+use crate::{node, wrapper};
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -64,10 +64,9 @@ impl PopulateTree for rlt::Literal {
     ) -> NodeId<Self::Output> {
         let mut from_num = |x| {
             builder
-                .add_node(NumberLiteral {
-                    value: context.get_chunk_located(x).to_string(),
-                    id: Default::default(),
-                })
+                .add_node(NumberLiteral::uninit(
+                    context.get_chunk_located(x).to_string(),
+                ))
                 .with_rlt(context, self)
                 .id()
                 .cast()
@@ -79,25 +78,21 @@ impl PopulateTree for rlt::Literal {
             rlt::Literal::Hex(x) => from_num(x),
             rlt::Literal::Floating(x) => from_num(x),
             rlt::Literal::Char(x) => builder
-                .add_node(CharLiteral {
-                    value: context.get_chunk_located(x).to_string(),
-                    id: Default::default(),
-                })
+                .add_node(CharLiteral::uninit(
+                    context.get_chunk_located(x).to_string(),
+                ))
                 .with_rlt(context, self)
                 .id()
                 .cast(),
             rlt::Literal::String(x) => builder
-                .add_node(StringLiteral {
-                    value: context.get_chunk_located(x).to_string(),
-                    id: Default::default(),
-                })
+                .add_node(StringLiteral::uninit(
+                    context.get_chunk_located(x).to_string(),
+                ))
                 .with_rlt(context, self)
                 .id()
                 .cast(),
             rlt::Literal::Tuple(x) => builder
-                .add_node(TupleLiteral {
-                    id: Default::default(),
-                })
+                .add_node(TupleLiteral::uninit())
                 .with_children_from(x.inner.as_ref(), context)
                 .with_rlt(context, self)
                 .id()

@@ -16,10 +16,11 @@ workspace = true
 
 [dependencies]
 derive_more.workspace = true
-paste = "1.0.14"
 extend.workspace = true
 tracing.workspace = true
 id_tree.workspace = true
+paste = "1.0.14"
+cached = "0.49.3"
 
 [dependencies.kodept-macros]
 path = "../kodept-macros"
