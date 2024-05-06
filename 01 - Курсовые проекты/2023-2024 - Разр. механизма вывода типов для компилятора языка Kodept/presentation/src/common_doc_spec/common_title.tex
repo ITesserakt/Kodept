@@ -1,0 +1,53 @@
+%----------------------------------------------------------
+% Определение значений параметров для формирования титульной страницы
+\institute{\FullOrganisationName}
+\title{\presentationtitle}
+\subtitle{\small
+\textit{\SubTitle}\vspace{5pt} \hfill\break
+\raggedright\noindent Место проведения: \textit{\eventplace} \hfill\break
+\raggedright\noindent Продолжительность: \textit{\eventduration}}
+\author{\AuthorFull}%[\Author]
+\date[\city\enskip\year]{\scriptsize\conferenceperiod}
+%----------------------------------------------------------
+% Создание МГТУ-шной титульной страницы
+\ifthenelse{\equal{\titlepagestyle}{brief}}{%
+\setbeamercolor{background canvas}{bg=bblue}
+\begin{frame}[t]
+\nobibliography{bibliography}
+
+    \begin{beamercolorbox}[wd=15cm,leftskip=-0.2cm,sep=5pt]{pretitle}
+      \myalssector\textbf{\insertinstitute}%\par
+    \end{beamercolorbox}
+
+%    \vspace{1.5cm}
+    \vskip\titleheaderskip%
+    \begin{beamercolorbox}[wd=11cm,leftskip=-0.4cm,sep=5pt]{pretitle}
+     \myalssector\Huge\textbf{\inserttitle}\par
+    \end{beamercolorbox}%
+
+    \vskip\titleheaderskip%
+    \begin{beamercolorbox}[wd=11cm,leftskip=-0.4cm,sep=5pt]{}
+        \myalssector\textcolor{white}{\textbf{\insertauthor}}\par
+    \end{beamercolorbox}%
+
+%    \vspace{2.5cm}
+    \vskip\titleheaderskip%
+    \begin{beamercolorbox}[wd=11cm,leftskip=-0.4cm,sep=5pt]{}
+     \myalssector\textcolor{white}{\textbf{\insertdate}}\par
+    \end{beamercolorbox}%
+
+\end{frame}
+%\setcounter{framenumber}{0}
+}{}
+% Вне зависимости от включения МГТУ-шной титульной страницы фон должен стать белым
+\setbeamercolor{background canvas}{bg=white}
+%----------------------------------------------------------
+% Создание титульной страницы
+\ifthenelse{\equal{\titlepagestyle}{detail}}{%
+\frame{%
+\nobibliography{bibliography}
+%\nocite{*}
+\titlepage}
+%\setcounter{framenumber}{0}
+}{}
+%----------------------------------------------------------

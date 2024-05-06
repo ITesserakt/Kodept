@@ -1,0 +1,25 @@
+%----------------------------------------------------------
+% Сохранение метаданных в PDF об авторе документа
+\expandafter\hypersetup{%
+		pdftitle={\Title},    	% title
+		pdfauthor={\Author},    % author
+		pdfcopyright={\doctextlicense, \begdate -- \Year, \Author. Все права защищены.},% -- \today,
+		pdfsubject={\Title},   % subject of the document
+%		pdfcreator={\pdftexbanner},   % creator of the document
+		pdfpublisher={\department, \ShortOrganisationName},
+		pdfcaptionwriter={\Author},
+		pdfproducer={\Author, \begdate -- \Year, \ShortOrganisationName}, % producer of the document
+		pdfkeywords={\keywordsru, \keywordsen}, % producer of the document
+}
+%----------------------------------------------------------
+% final - удаляет все всплывающие комментарии
+%\usepackage[author={\Author},opacity=0.1, final]{pdfcomment}
+\usepackage[opacity=0.1]{pdfcomment}
+%----------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{tikzmark}
+\usetikzlibrary{matrix,automata,positioning,arrows,arrows.meta,graphs}
+\usetikzlibrary{trees,topaths}
+\usetikzlibrary{calc, circuits.ee.IEC}
+\usetikzlibrary{patterns,decorations.pathmorphing,decorations.markings}
+%----------------------------------------------------------

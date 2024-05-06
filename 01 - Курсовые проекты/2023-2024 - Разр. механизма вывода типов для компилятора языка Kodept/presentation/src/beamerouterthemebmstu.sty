@@ -1,0 +1,95 @@
+\mode<presentation>
+%----------------------------------------------------------
+% Frame title
+\defbeamertemplate*{frametitle}{bmstu}[1][]
+{
+  \vskip0.3cm%
+	
+  \begin{beamercolorbox}[ht=0.1\paperheight,wd=0.8\paperwidth,leftskip=1.0cm,left]{frametitle}
+    \ifx\insertframetitle\@empty%\relax%
+    \else%
+				\ifx\insertframesubtitle\@empty%
+					\usebeamerfont{frametitle}\insertframetitle\par%
+				\else%
+					\usebeamerfont{frametitle}\insertframetitle\par%
+					\usebeamerfont{framesubtitle}~~\raisebox{2pt}{\texorpdfstring{\rotatebox[origin=c]{180}{$\Lsh$}}{}}~\insertframesubtitle\par%
+				\fi
+    \fi
+  \end{beamercolorbox}
+
+  \ifx\insertframetitle\@empty%
+  \else%
+  \vspace{-0.2cm}
+  \begin{beamercolorbox}[wd=0.97\paperwidth,leftskip=0.4cm]{frametitle} %
+    \textcolor{bblue}{\rule{0.97\textwidth}{2pt}}
+  \end{beamercolorbox}%
+  \fi
+
+  \vskip0.1cm%
+}
+
+\addtobeamertemplate{frametitle}{}{%
+\ifx\insertframetitle\@empty% Нужно, чтобы не было на первой странице
+  \else%
+\begin{tikzpicture}[remember picture,overlay]
+\node[anchor=north east,yshift=0pt] at (current page.north east) {\includegraphics[width=0.1\textwidth]{pictures/Logo_Blue_No-BG.pdf}};
+\end{tikzpicture}
+  \fi
+}
+
+%----------------------------------------------------------
+% Автоматизация формирования заголовков слайдов на основе секций и подсекций
+\addtobeamertemplate{frametitle}{
+   \let\insertframetitle\secname}{}
+\addtobeamertemplate{frametitle}{
+   \let\insertframesubtitle\subsecname}{}
+
+\let\oldsection=\section
+\def\section{\gdef\subsecname{}\oldsection}
+
+%----------------------------------------------------------
+\makeatletter
+  \CheckCommand*\beamer@checkframetitle{\@ifnextchar\bgroup\beamer@inlineframetitle{}}
+  \renewcommand*\beamer@checkframetitle{\global\let\beamer@frametitle\relax\@ifnextchar\bgroup\beamer@inlineframetitle{}}
+\makeatother
+%----------------------------------------------------------
+
+% Footer
+\def\emptyfooterpages{%
+\hbox{%
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.25ex,dp=1ex,center]{}%
+      % empty environment to raise height
+    \end{beamercolorbox}}%
+    \vskip0pt%
+}
+\defbeamertemplate*{footline}{bmstu}
+{
+  \leavevmode%
+  \ifnum \value{page}=1 %\insertpagenumber=2
+    \emptyfooterpages
+  \else
+  \ifnum\value{page}=2 %
+    \emptyfooterpages
+  \else
+    %\leavevmode%
+    \hbox{%
+    %%\fontsize{9}{13}\selectfont
+     \fontseries{m}\selectfont % see this for options: https://tex.stackexchange.com/questions/68745/possible-values-for-fontseries-and-fontshape
+    \begin{beamercolorbox}[wd=.9\paperwidth,ht=2.25ex,dp=1ex,left]{date in head/foot}%
+      %\usebeamerfont{author in head/foot}\insertsection
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.10\paperwidth,ht=1.25ex,dp=10ex,center]{date in head/foot}%
+      \usebeamerfont{date}\insertframenumber{} / \inserttotalframenumber
+    \end{beamercolorbox}}%
+    \vskip2pt%
+  \fi
+  \fi
+}
+
+% Reset block background to default
+%\setbeamertemplate{blocks}[default]
+%\setbeamercolor{block title}{bg=}
+%\setbeamercolor{block body}{bg=}
+
+%----------------------------------------------------------
+\mode<all>
