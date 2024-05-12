@@ -91,7 +91,7 @@ impl<C: MutableContext, E: Into<UnrecoverableError>> TraverseSet<C, E> {
             }
         }
 
-        match context.modify_tree(|tree| tree.apply_changes(changes, &mut token)) {
+        match context.modify_tree(|tree| tree.apply_changes(changes, &token)) {
             Ok(_) => Ok(()),
             Err(e) => Err(Report::new(&context.file_path(), vec![], e).into()),
         }
