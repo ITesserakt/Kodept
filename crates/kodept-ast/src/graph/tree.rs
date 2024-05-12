@@ -21,23 +21,23 @@ use crate::yield_all;
 pub struct BuildingStage(GhostToken);
 
 #[derive(Debug)]
-pub struct ModifyingStage<'a>(&'a mut GhostToken);
+pub struct ModifyingStage<'a>(&'a GhostToken);
 
 #[derive(Default, Debug)]
 pub struct AccessingStage;
 
-trait CanModify {
-    fn tkn(&mut self) -> &mut GhostToken;
+trait CanAccess {
+    fn tkn(&self) -> &GhostToken;
 }
 
-impl CanModify for BuildingStage {
-    fn tkn(&mut self) -> &mut GhostToken {
-        &mut self.0
+impl CanAccess for BuildingStage {
+    fn tkn(&self) -> &GhostToken {
+        &self.0
     }
 }
 
-impl CanModify for ModifyingStage<'_> {
-    fn tkn(&mut self) -> &mut GhostToken {
+impl CanAccess for ModifyingStage<'_> {
+    fn tkn(&self) -> &GhostToken {
         self.0
     }
 }
@@ -90,14 +90,14 @@ impl SyntaxTree<BuildingStage> {
 }
 
 #[allow(private_bounds)]
-impl<U: CanModify> SyntaxTree<U> {
+impl<U: CanAccess> SyntaxTree<U> {
     pub fn add_node<T>(&mut self, node: T) -> ChildScope<'_, T, U>
     where
         T: Into<GenericASTNode>,
     {
         let id = self.graph.add_node(Owned::new(node));
         let node_ref = &self.graph[id];
-        node_ref.rw(self.stage.tkn()).set_id(id.into());
+        node_ref.ro(self.stage.tkn()).set_id(id.into());
 
         ChildScope {
             tree: self,
@@ -127,14 +127,14 @@ impl SyntaxTree<ModifyingStage<'_>> {
                 let (_, id) = self
                     .graph
                     .add_child(parent_id.into(), tag, Owned::new(child));
-                self.graph[id].rw(self.stage.0).set_id(id.into())
+                self.graph[id].ro(self.stage.tkn()).set_id(id.into())
             }
             Change::Replace { from_id, to } => {
                 match self.graph.node_weight_mut(from_id.into()) {
                     None => {}
                     Some(x) => {
                         *x = Owned::new(to);
-                        x.rw(self.stage.tkn()).set_id(from_id);
+                        x.ro(self.stage.tkn()).set_id(from_id);
                     }
                 };
             }
@@ -223,7 +223,7 @@ impl SyntaxTree {
         parent_ref.try_as_mut().expect("Node has wrong type")
     }
 
-    pub fn apply_changes(self, changes: ChangeSet, token: &mut GhostToken) -> Self {
+    pub fn apply_changes(self, changes: ChangeSet, token: &GhostToken) -> Self {
         let mut this = self.modify(token);
         for change in changes {
             this.apply_change(change);
@@ -231,7 +231,7 @@ impl SyntaxTree {
         this.build()
     }
 
-    fn modify(self, token: &mut GhostToken) -> SyntaxTree<ModifyingStage> {
+    fn modify(self, token: &GhostToken) -> SyntaxTree<ModifyingStage> {
         SyntaxTree {
             graph: self.graph,
             stage: ModifyingStage(token),
