@@ -1,9 +1,11 @@
 use clap::Parser;
+#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 use tracing::{debug, error};
 
 use cli::common::Kodept;
 use kodept::loader::Loader;
+use kodept_core::code_source::CodeSource;
 
 use crate::cli::commands::{Commands, Execute, Graph};
 
@@ -16,6 +18,16 @@ type WideError = anyhow::Error;
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
+#[cfg(not(feature = "parallel"))]
+fn sources_iter(loader: Loader) -> impl Iterator<Item = CodeSource> {
+    loader.into_sources().into_iter()
+}
+
+#[cfg(feature = "parallel")]
+fn sources_iter(loader: Loader) -> impl ParallelIterator<Item = CodeSource> {
+    loader.into_sources().into_par_iter()
+} 
+
 fn main() -> Result<(), WideError> {
     #[cfg(feature = "profiler")]
     let _profiler = dhat::Profiler::new_heap();
@@ -27,9 +39,7 @@ fn main() -> Result<(), WideError> {
 
     let settings = cli_arguments.diagnostic_config.into();
     let loader: Loader = cli_arguments.loading_config.try_into()?;
-    let sources = loader
-        .into_sources()
-        .into_par_iter()
+    let sources = sources_iter(loader)
         .inspect(|source| debug!("Reading {}", source.path()))
         .filter_map(|res| {
             let path = res.path();

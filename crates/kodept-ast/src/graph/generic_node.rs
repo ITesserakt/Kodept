@@ -66,7 +66,7 @@ impl Identifiable for GenericASTNode {
     }
 
     #[inline]
-    fn set_id(&mut self, value: GenericNodeId) {
+    fn set_id(&self, value: GenericNodeId) {
         generic_ast_node_map!(self, |x| x.set_id(value.narrow()))
     }
 }

@@ -178,47 +178,22 @@ macro_rules! functor_map {
 }
 
 #[macro_export]
-macro_rules! property {
-    (in mut $trait_name:ty => $self_name:ty, $prop:ident: $prop_ty:ty) => {
-        paste::paste! {
-        impl $trait_name for $self_name {
-            fn [<get_ $prop>](&self) -> $prop_ty {
-                self.$prop
-            }
-
-            fn [<set_ $prop>](&mut self, value: $prop_ty) {
-                self.$prop = value;
-            }
-        }
-        }
-    };
-    (in $trait_name:ty => $self_name:ty, $prop:ident: $prop_ty:ty) => {
-        paste::paste! {
-        impl $trait_name for $self_name {
-            fn [<get_ $prop>](&self) -> $prop_ty {
-                self.$prop
-            }
-        }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! impl_identifiable {
-    ($($t:ty$(,)?)*) => {
-        $($crate::property!(in mut $crate::graph::Identifiable => $t, id: NodeId<Self>);)*
-    };
-}
-
-#[macro_export]
 macro_rules! node {
     ($(#[$config:meta])* $vis:vis struct $name:ident {
         $($field_vis:vis $field_name:ident: $field_type:ty,)*;
         $($graph_vis:vis $graph_name:ident: $graph_type:ty$( as $tag:tt)*,)*
     }) => {
+        #[cfg(feature = "serde")]
         $(#[$config])*
         $vis struct $name {
-            id: $crate::graph::NodeId<$name>,
+            id: once_cell_serde::unsync::OnceCell<$crate::graph::NodeId<$name>>,
+            $($field_vis $field_name: $field_type,)*
+        }
+
+        #[cfg(not(feature = "serde"))]
+        $(#[$config])*
+        $vis struct $name {
+            id: std::cell::OnceCell<$crate::graph::NodeId<$name>>,
             $($field_vis $field_name: $field_type,)*
         }
 
@@ -227,13 +202,23 @@ macro_rules! node {
         impl $name {
             pub fn uninit($($field_name: $field_type,)*) -> Self {
                 Self {
-                    id: $crate::graph::NodeId::<$name>::null(),
+                    id: Default::default(),
                     $($field_name, )*
                 }
             }
         }
 
-        $crate::impl_identifiable!($name);
+        impl $crate::graph::Identifiable for $name {
+            fn get_id(&self) -> $crate::graph::NodeId<Self> {
+                self.id.get().copied().unwrap_or($crate::graph::NodeId::<Self>::null())
+            }
+
+            fn set_id(&self, value: $crate::graph::NodeId<Self>) {
+                if let Err(_) = self.id.set(value) {
+                    tracing::warn!("Tried to set id twice");
+                }
+            }
+        }
 
         $crate::with_children! [$name => {
             $($graph_vis $graph_name: $graph_type $(as $tag)?,)*

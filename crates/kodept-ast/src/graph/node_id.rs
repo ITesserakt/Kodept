@@ -37,7 +37,7 @@ impl<T> NodeId<T> {
 
 impl<T: Into<GenericASTNode>> NodeId<T> {
     pub fn widen(self) -> GenericNodeId {
-        NodeId(self.0.cast())
+        NodeId(self.0.coerce())
     }
 }
 
@@ -46,13 +46,13 @@ impl<T> NodeId<T> {
     where
         U: From<T> + NodeUnion,
     {
-        NodeId(self.0.cast())
+        NodeId(self.0.coerce())
     }
 }
 
 impl GenericNodeId {
     pub fn narrow<T: TryFrom<GenericASTNode>>(self) -> NodeId<T> {
-        NodeId(self.0.cast())
+        NodeId(self.0.coerce())
     }
 }
 

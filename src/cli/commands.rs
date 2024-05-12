@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 use codespan_reporting::diagnostic::Diagnostic;
 use extend::ext;
 use nom_supreme::final_parser::final_parser;
+#[cfg(feature = "parallel")]
 use rayon::prelude::ParallelIterator;
 
 use kodept::{codespan_settings::ReportExt, top_parser};
@@ -56,18 +57,17 @@ impl<T> Result<T, Vec<Diagnostic<()>>> {
 }
 
 impl Commands {
-    #[allow(clippy::let_and_return)]
     fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
         let tokenizer = Tokenizer::new(source.contents());
         let tokens = tokenizer.into_vec();
         let token_stream = TokenStream::new(&tokens);
-        let result =
-            final_parser(top_parser)(token_stream).map_err(|e: ParseError| e.to_diagnostics());
+        let result = final_parser(top_parser)(token_stream).map_err(|e: ParseError| e.to_diagnostics());
         result
     }
 }
 
 impl Execute {
+    #[cfg(feature = "parallel")]
     pub fn exec(
         self,
         sources: impl ParallelIterator<Item=ReadCodeSource>,
@@ -76,6 +76,18 @@ impl Execute {
         sources.try_for_each_with(settings, |settings, source| {
             self.exec_for_source(source, settings)
         })
+    }
+    
+    #[cfg(not(feature = "parallel"))]
+    pub fn exec(
+        self,
+        sources: impl Iterator<Item=ReadCodeSource>,
+        mut settings: CodespanSettings,
+    ) -> Result<(), WideError> {
+        for source in sources {
+            self.exec_for_source(source, &mut settings)?;
+        }
+        Ok(())
     }
 
     fn exec_for_source(
@@ -107,6 +119,7 @@ impl Execute {
 }
 
 impl Graph {
+    #[cfg(feature = "parallel")]
     pub fn exec(
         sources: impl ParallelIterator<Item=ReadCodeSource>,
         settings: CodespanSettings,
@@ -115,6 +128,18 @@ impl Graph {
         sources.try_for_each_with(settings, |settings, source| {
             Graph::exec_for_source(source, settings, &output_path)
         })
+    }
+    
+    #[cfg(not(feature = "parallel"))]
+    pub fn exec(
+        sources: impl Iterator<Item=ReadCodeSource>,
+        mut settings: CodespanSettings,
+        output_path: PathBuf,
+    ) -> Result<(), WideError> {
+        for source in sources {
+            Self::exec_for_source(source, &mut settings, &output_path)?;
+        }
+        Ok(())
     }
 
     fn exec_for_source(
