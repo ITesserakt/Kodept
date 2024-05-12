@@ -16,11 +16,12 @@ new_key_type! { pub(crate) struct CommonKey; }
 #[repr(transparent)]
 pub struct Key<T> {
     key_data: KeyData,
+    #[cfg_attr(feature = "serde", serde(skip))]
     _phantom: PhantomData<T>,
 }
 
 impl CommonKey {
-    pub fn to_index(&self) -> u64 {
+    pub fn to_index(self) -> u64 {
         self.0.as_ffi()
     }
 
@@ -39,10 +40,17 @@ impl<T> From<CommonKey> for Key<T> {
 }
 
 impl<T> Key<T> {
-    pub fn cast<U: TryFrom<T>>(self) -> Key<U> {
+    pub fn coerce<U: TryFrom<T>>(self) -> Key<U> {
         Key {
             _phantom: Default::default(),
             key_data: self.key_data,
+        }
+    }
+
+    pub fn coerce_unchecked<U>(self) -> Key<U> {
+        Key {
+            key_data: self.key_data,
+            _phantom: Default::default(),
         }
     }
 
