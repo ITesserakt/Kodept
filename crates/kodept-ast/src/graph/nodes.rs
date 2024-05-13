@@ -26,10 +26,9 @@ impl<T> Owned<T> {
 }
 
 impl GhostToken {
-    /// # Safety
     /// Value of this type should be a singleton in one thread
     /// If this contract violated, function will panic
-    pub unsafe fn new() -> Self {
+    pub fn new() -> Self {
         Self(TLCellOwner::new())
     }
 }

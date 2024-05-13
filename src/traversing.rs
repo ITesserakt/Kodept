@@ -78,7 +78,7 @@ impl<C: MutableContext, E: Into<UnrecoverableError>> TraverseSet<C, E> {
         context: &mut C,
         mut macros: Vec<&mut BoxedMacro<C, E>>,
     ) -> Result<(), UnrecoverableError> {
-        let mut token = unsafe { GhostToken::new() };
+        let mut token = GhostToken::new();
         let mut changes = ChangeSet::new();
 
         for (node, side) in context.tree().upgrade().unwrap().dfs() {

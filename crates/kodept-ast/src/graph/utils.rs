@@ -16,7 +16,7 @@ pub struct RefMut<'a, T> {
     _phantom: PhantomData<T>,
 }
 
-pub type OptVec<T> = SmallVec<T, 1>;
+pub type OptVec<T> = SmallVec<[T; 1]>;
 
 impl<'a, T> RefMut<'a, T> {
     pub fn new(node: &'a Owned) -> Self {
@@ -74,7 +74,7 @@ impl<T> FromOptVec for Vec<T> {
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
-        value.into_vec()
+        value.to_vec()
     }
 
     fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {

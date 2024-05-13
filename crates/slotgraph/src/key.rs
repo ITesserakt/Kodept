@@ -55,7 +55,8 @@ impl<T> Key<T> {
     }
 
     pub fn null() -> Self {
-        <Self as slotmap::Key>::null()
+        use slotmap::Key;
+        Key::null()
     }
 }
 
@@ -126,6 +127,9 @@ impl<T> Display for Key<T> {
     }
 }
 
+#[allow(unsafe_code)]
+/// # Safety
+/// Key does not introduce additional contracts, just stores information about type
 unsafe impl<T> slotmap::Key for Key<T> {
     fn data(&self) -> KeyData {
         self.key_data

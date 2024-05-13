@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::{Located, rlt};
 use kodept_core::structure::span::CodeHolder;
+use kodept_core::structure::{rlt, Located};
 
+use crate::graph::{GenericASTNode};
 use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
-use crate::graph::NodeId;
-use crate::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use crate::traits::{IntoASTFamily, Linker, PopulateTree};
+use crate::rlt_accessor::{RLTAccessor, RLTFamily};
+use crate::traits::{Identifiable, Linker, PopulateTree};
 
 #[derive(Debug, Default)]
 pub struct ASTBuilder;
@@ -38,24 +38,19 @@ where
 }
 
 impl<C: CodeHolder> Linker for ASTLinker<'_, C> {
-    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: &B)
+    fn link<A, B>(&mut self, ast: &A, with: &B)
     where
-        NodeId<A>: Into<ASTFamily>,
+        A: Identifiable + Into<GenericASTNode>,
         B: Into<RLTFamily> + Clone,
     {
-        self.access.save(ast, with);
+        self.access.save(ast, with)
     }
 
-    fn link<A, B>(&mut self, ast: A, with: &B) -> A
+    fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
     where
-        A: IntoASTFamily,
-        B: Into<RLTFamily> + Clone,
+        A: Identifiable + Into<GenericASTNode>,
+        B: Identifiable + Into<GenericASTNode>,
     {
-        self.access.save(ast.as_member(), with);
-        ast
-    }
-
-    fn link_existing<A: IntoASTFamily>(&mut self, a: A, b: &impl IntoASTFamily) -> A {
         self.access.save_existing(&a, b);
         a
     }

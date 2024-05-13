@@ -24,6 +24,7 @@ macro_rules! generic_ast_node_map {
     };
 }
 
+#[allow(unsafe_code)]
 /// # Safety
 /// Implement only for `#repr(transparent)` structs
 pub unsafe trait NodeUnion: Sized {
@@ -42,6 +43,7 @@ pub unsafe trait NodeUnion: Sized {
     }
 }
 
+#[allow(unsafe_code)]
 unsafe impl NodeUnion for GenericASTNode {
     #[inline]
     fn contains(_node: &GenericASTNode) -> bool {

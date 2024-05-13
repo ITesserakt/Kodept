@@ -12,7 +12,7 @@ use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
 use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::node_properties::{Node, NodeWithParent};
-use crate::rlt_accessor::{ASTFamily, RLTFamily};
+use crate::rlt_accessor::{RLTFamily};
 use crate::traits::{Linker, PopulateTree};
 use crate::visit_side::VisitSide;
 use crate::yield_all;
@@ -62,7 +62,7 @@ impl Default for SyntaxTree<BuildingStage> {
         // SAFE: While tree is building, token should be owned by it
         Self {
             graph: Default::default(),
-            stage: BuildingStage(unsafe { GhostToken::new() }),
+            stage: BuildingStage(GhostToken::new()),
         }
     }
 }
@@ -252,7 +252,7 @@ fn coroutine(
             let mut edges = graph.children(start).peekable();
             if edges.peek().is_some() {
                 yield (current, VisitSide::Entering);
-                for (_, child) in edges.collect::<Vec<_>>().into_iter().rev() {
+                for (_, child) in edges {
                     yield_all!(coroutine(graph, child));
                 }
                 yield (current, VisitSide::Exiting);
@@ -272,12 +272,17 @@ impl<'arena, T, S> ChildScope<'arena, T, S> {
         self.tree.graph.add_edge(self.id.into(), child_id, TAG);
     }
 
+    #[allow(private_bounds)]
     pub fn with_rlt<U>(self, context: &mut impl Linker, rlt_node: &U) -> Self
     where
         U: Into<RLTFamily> + Clone,
-        NodeId<T>: Into<ASTFamily>,
+        T: Into<GenericASTNode>,
+        S: CanAccess
     {
-        context.link_ref(self.id(), rlt_node);
+        let element = &self.tree.graph[NodeKey::from(self.id)];
+        let node = element.ro(self.tree.stage.tkn());
+
+        context.link(node, rlt_node);
         self
     }
 

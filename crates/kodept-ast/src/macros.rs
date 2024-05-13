@@ -1,30 +1,5 @@
 #[macro_export]
 macro_rules! wrapper {
-    ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident($inner:ty);) => {
-        $(#[$config])*
-        #[repr(transparent)]
-        pub struct $wrapper($inner);
-
-        impl<'a> TryFrom<&'a GenericASTNode> for &'a $wrapper {
-            type Error = $crate::utils::Skip<<&'a $inner as TryFrom<&'a GenericASTNode>>::Error>;
-
-            #[inline]
-            fn try_from(value: &'a GenericASTNode) -> Result<Self, Self::Error> {
-                let node: &$inner = value.try_into()?;
-                Ok(unsafe { std::mem::transmute(node) })
-            }
-        }
-
-        impl<'a> TryFrom<&'a mut GenericASTNode> for &'a mut $wrapper {
-            type Error = $crate::utils::Skip<<&'a mut $inner as TryFrom<&'a mut GenericASTNode>>::Error>;
-
-            #[inline]
-            fn try_from(value: &'a mut GenericASTNode) -> Result<Self, Self::Error> {
-                let node: &mut $inner = value.try_into()?;
-                Ok(unsafe { std::mem::transmute(node) })
-            }
-        }
-    };
     ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident {
         $($name:ident($t:ty) = $variants:pat $(if $variant_if:expr)? => $variant_expr:expr$(,)*)*
     }) => {
@@ -32,6 +7,7 @@ macro_rules! wrapper {
         #[repr(transparent)]
         pub struct $wrapper(GenericASTNode);
 
+        #[allow(unsafe_code)]
         unsafe impl $crate::graph::NodeUnion for $wrapper {
             fn contains(node: &GenericASTNode) -> bool {
                 #[allow(unused_variables)]
