@@ -85,7 +85,7 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
         self.nodes.get(id.0)
     }
 
-    pub fn children(&self, parent_id: NodeKey) -> impl Iterator<Item = (EdgeKey, NodeKey)> + '_ {
+    pub fn children(&self, parent_id: NodeKey) -> impl FusedIterator<Item = (EdgeKey, NodeKey)> + '_ {
         self.edges.iter().filter_map(move |(k, v)| {
             match (D::is_directed(), v.from == parent_id, v.to == parent_id) {
                 (_, true, _) => Some((EdgeKey(k), v.to)),

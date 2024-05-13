@@ -3,6 +3,8 @@
 #![feature(coroutines)]
 #![feature(coroutine_trait)]
 
+extern crate core;
+
 pub use self::node::{
     block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
     top_level::*, types::*,

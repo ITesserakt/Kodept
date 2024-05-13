@@ -7,9 +7,9 @@ use codespan_reporting::term::termcolor::WriteColor;
 use replace_with::replace_with_or_abort;
 use thiserror::Error;
 
-use kodept_ast::graph::{NodeId, SyntaxTree};
-use kodept_ast::rlt_accessor::{ASTFamily, RLTAccessor, RLTFamily};
-use kodept_ast::traits::{Accessor, IntoASTFamily, Linker};
+use kodept_ast::graph::{GenericASTNode, SyntaxTree};
+use kodept_ast::rlt_accessor::{RLTAccessor, RLTFamily};
+use kodept_ast::traits::{Accessor, Identifiable, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_core::ConvertibleToRef;
 use kodept_macros::error::report::{Report, ReportMessage};
@@ -45,38 +45,37 @@ impl DefaultContext {
 }
 
 impl Linker for DefaultContext {
-    fn link_ref<A, B>(&mut self, ast: NodeId<A>, with: &B)
+    fn link<A, B>(&mut self, ast: &A, with: &B)
     where
-        NodeId<A>: Into<ASTFamily>,
+        A: Identifiable + Into<GenericASTNode>,
         B: Into<RLTFamily> + Clone,
     {
-        self.rlt_accessor.save(ast, with)
+        self.rlt_accessor.save(ast, with);
     }
 
-    fn link<A, B>(&mut self, ast: A, with: &B) -> A
+    fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
     where
-        A: IntoASTFamily,
-        B: Into<RLTFamily> + Clone,
+        A: Identifiable + Into<GenericASTNode>,
+        B: Identifiable + Into<GenericASTNode>,
     {
-        self.rlt_accessor.save(ast.as_member(), with);
-        ast
-    }
-
-    fn link_existing<A: IntoASTFamily>(&mut self, a: A, b: &impl IntoASTFamily) -> A {
         self.rlt_accessor.save_existing(&a, b);
         a
     }
 }
 
 impl Accessor for DefaultContext {
-    fn access<B>(&self, ast: &impl IntoASTFamily) -> Option<&B>
+    fn access<A, B>(&self, ast: &A) -> Option<&B>
     where
+        A: Identifiable + Into<GenericASTNode>,
         RLTFamily: ConvertibleToRef<B>,
     {
         self.rlt_accessor.access(ast)
     }
 
-    fn access_unknown(&self, ast: &impl IntoASTFamily) -> Option<RLTFamily> {
+    fn access_unknown<A>(&self, ast: &A) -> Option<RLTFamily>
+    where
+        A: Identifiable + Into<GenericASTNode>,
+    {
         self.rlt_accessor.access_unknown(ast).cloned()
     }
 

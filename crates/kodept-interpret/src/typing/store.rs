@@ -1,16 +1,16 @@
-use kodept_ast::graph::{GenericASTNode, NodeId};
+use std::rc::Rc;
+
+use slotmap::SecondaryMap;
+
+use kodept_ast::graph::GenericNodeKey;
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::language::Language;
 use kodept_inference::r#type::PolymorphicType;
-use std::collections::HashMap;
-use std::rc::Rc;
-
-type GNodeId = NodeId<GenericASTNode>;
 
 pub struct Store {
-    models_cache: HashMap<GNodeId, Rc<Language>>,
-    types_cache: HashMap<GNodeId, Rc<PolymorphicType>>,
-    constraints_cache: HashMap<GNodeId, Assumptions>,
+    models_cache: SecondaryMap<GenericNodeKey, Rc<Language>>,
+    types_cache: SecondaryMap<GenericNodeKey, Rc<PolymorphicType>>,
+    constraints_cache: SecondaryMap<GenericNodeKey, Assumptions>,
 }
 
 impl Store {

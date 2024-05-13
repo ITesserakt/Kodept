@@ -16,6 +16,13 @@ use crate::graph::{GenericASTNode, NodeUnion};
 pub struct NodeId<Node>(Key<Node>);
 
 pub type GenericNodeId = NodeId<GenericASTNode>;
+pub type GenericNodeKey = Key<GenericASTNode>;
+
+impl Into<Key<GenericASTNode>> for GenericNodeId {
+    fn into(self) -> Key<GenericASTNode> {
+        self.0
+    }
+}
 
 impl<T> From<NodeKey> for NodeId<T> {
     fn from(value: NodeKey) -> Self {

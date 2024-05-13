@@ -15,9 +15,9 @@ impl<T: Debug> FromOptVec for Identity<T> {
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
-        match value.into_inner() {
-            Ok([x]) => x,
-            Err(value) => panic!(
+        match value.as_slice() {
+            [x] => x,
+            _ => panic!(
                 "Container must has only one child <{}>, but has {:?}",
                 type_name::<T>(),
                 value
@@ -26,9 +26,9 @@ impl<T: Debug> FromOptVec for Identity<T> {
     }
 
     fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
-        match value.into_inner() {
-            Ok([x]) => RefMut::new(x),
-            Err(value) => panic!(
+        match value.as_slice() {
+            [x] => RefMut::new(x),
+            _ => panic!(
                 "Container must has only one child <{}>, but has {:?}",
                 type_name::<T>(),
                 value

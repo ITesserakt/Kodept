@@ -1,23 +1,12 @@
-use std::collections::HashMap;
-use std::hash::Hash;
-
 use derive_more::{From, TryInto};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use slotmap::SecondaryMap;
 
 use kodept_core::code_point::CodePoint;
+use kodept_core::structure::{rlt, Located};
 use kodept_core::ConvertibleToRef;
-use kodept_core::structure::{Located, rlt};
 
-use crate::*;
-use crate::graph::NodeId;
-use crate::traits::IntoASTFamily;
-
-make_ast_node_adaptor!(ASTFamily, lifetimes: [], NodeId, configs: [
-    derive(Hash, PartialEq, Eq, From, Debug, TryInto),
-    cfg_attr(feature = "serde", derive(Serialize, Deserialize)),
-    cfg_attr(feature = "serde", serde(tag = "owner", content = "id"))
-]);
+use crate::graph::{GenericASTNode, GenericNodeKey};
+use crate::traits::Identifiable;
 
 #[derive(Clone, From, TryInto, Debug)]
 #[try_into(ref)]
@@ -48,41 +37,54 @@ pub enum RLTFamily {
     Else(rlt::ElseExpr),
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct RLTAccessor {
-    links: HashMap<ASTFamily, RLTFamily>,
+    links: SecondaryMap<GenericNodeKey, RLTFamily>,
+}
+
+impl Default for RLTAccessor {
+    fn default() -> Self {
+        Self {
+            links: SecondaryMap::default(),
+        }
+    }
 }
 
 impl RLTAccessor {
-    pub fn access<B>(&self, node: &impl IntoASTFamily) -> Option<&B>
+    pub fn access<A, B>(&self, node: &A) -> Option<&B>
     where
+        A: Identifiable + Into<GenericASTNode>,
         RLTFamily: ConvertibleToRef<B>,
     {
         self.links
-            .get(&node.as_member())
+            .get(node.get_id().widen().into())
             .and_then(|it| it.try_as_ref())
     }
 
-    pub fn access_unknown(&self, node: &impl IntoASTFamily) -> Option<&RLTFamily> {
-        self.links.get(&node.as_member())
+    pub fn access_unknown<A>(&self, node: &A) -> Option<&RLTFamily>
+    where
+        A: Identifiable + Into<GenericASTNode>,
+    {
+        self.links.get(node.get_id().widen().into())
     }
 
-    pub fn save_existing(&mut self, new: &impl IntoASTFamily, existing: &impl IntoASTFamily) {
-        match self.links.get(&existing.as_member()) {
+    pub fn save_existing<A, B>(&mut self, new: &A, existing: &B)
+    where
+        A: Identifiable + Into<GenericASTNode>,
+        B: Identifiable + Into<GenericASTNode>,
+    {
+        match self.links.get(existing.get_id().widen().into()) {
             None => None,
-            Some(x) => self.links.insert(new.as_member(), x.clone()),
+            Some(x) => self.links.insert(new.get_id().widen().into(), x.clone()),
         };
     }
 
-    pub fn keys(&self) -> Vec<&ASTFamily> {
-        self.links.keys().collect()
-    }
-
-    pub fn save<B>(&mut self, key: impl Into<ASTFamily>, value: &B)
+    pub fn save<A, B>(&mut self, key: &A, value: &B)
     where
         B: Into<RLTFamily> + Clone,
+        A: Identifiable + Into<GenericASTNode>
     {
-        self.links.insert(key.into(), value.clone().into());
+        self.links.insert(key.get_id().widen().into(), value.clone().into());
     }
 }
 
