@@ -1,0 +1,54 @@
+%-------------------------
+\newpage
+%-------------------------
+\officialheaderfull[]{ЗАДАНИЕ}{на выполнение \doctypec}
+%-------------------------
+
+\noindent Источник тематики (кафедра, предприятие, НИР): \underline{\TitleSource}
+
+\myconditionaltext{\doctypesid}{vkr}{%
+\noindent Тема \doctypec\xspace утверждена распоряжением по факультету \facultyShort~№~\uline{\textcolor{white}{\hspace{40pt}}} от \datetofill
+}
+
+\myconditionaltext{\doctypesid}{kp}{%
+\noindent Тема \doctypec\xspace утверждена на заседании кафедры \department, Протокол~№~\uline{\textcolor{white}{\hspace{40pt}}} от \datetofill
+}
+
+\noindent \textbf{Техническое задание}
+
+\noindent \textbf{Часть 1.} \textit{Анализ актуальности.\\
+\uline{Должен быть выполнен анализ существующих система систем типов в современных языках программирования. Также должна быть обоснована актуальность разработки в целом.}}
+
+\noindent \textbf{Часть 2.} \textit{Математическая постановка задачи, разработка архитектуры программной реализации, программная реализация.\\
+\uline{Должна быть описана система типов и реализована в языке программирования Kodept в качестве механизма вывода типов}}
+
+\noindent \textbf{Часть 3.} \textit{Проведение тестирования.\\
+\uline{Должно быть проведено тестирование разработанной в ходе работы над курсовым проектом программы.}}
+
+%\vspace{0.3cm}
+
+\noindent \textbf{Оформление \doctypec:}
+
+\noindent Расчетно-пояснительная записка на \total{page} листах формата А4.
+
+\noindent Перечень графического (иллюстративного) материала (чертежи, плакаты, слайды и т.п.):
+
+\noindent\begin{tabular}{|p{0.95\textwidth}|}
+\hline
+\textit{количество: \total{ffigure}~рис., \total{ttable}~табл., \total{bibcnt}~источн.} \\
+\hline
+\end{tabular}
+
+\noindent Дата выдачи задания \TaskStatementDate\\
+
+\myconditionaltext{\doctypesid}{vkr}{%
+\noindent В соответствии с учебным планом выпускную квалификационную работу выполнить в полном объёме в срок до \datetofill}
+
+%\vspace{-15pt}
+\noindent \begin{tabular}{p{0.5\textwidth}>{\raggedleft}p{0.2\textwidth}p{0.01\textwidth}P{0.2\textwidth}} 
+\signerline{\textbf{Студент}}{\Author} \\[5pt]
+\signerline{\textbf{Руководитель \doctypec}}{\ScientificAdviser} \\
+\end{tabular}
+
+\vspace{2pt}
+\noindent {\smaller[1] Примечание. Задание оформляется в двух экземплярах: один выдается студенту, второй хранится на кафедре.}
