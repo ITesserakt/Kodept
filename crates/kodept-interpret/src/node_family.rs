@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use derive_more::{From, Into};
 
-use kodept_ast::graph::{GenericASTNode, GhostToken, NodeUnion, SyntaxTree};
+use kodept_ast::graph::{GenericASTNode, PermTkn, NodeUnion, SyntaxTree};
 use kodept_ast::Identifier::TypeReference;
 use kodept_ast::{
     wrapper, AbstractFunctionDeclaration, Application, BodiedFunctionDeclaration, ExpressionBlock,
@@ -73,7 +73,7 @@ impl TypeRestrictedNode {
     pub fn type_of(
         &self,
         ast: &SyntaxTree,
-        token: &GhostToken,
+        token: &PermTkn,
         scopes: &ScopeTree,
     ) -> Result<Assumptions, Errors> {
         <Self as HasRestrictedType>::type_of(self, ast, token, scopes)
@@ -84,7 +84,7 @@ trait HasRestrictedType {
     fn type_of(
         &self,
         ast: &SyntaxTree,
-        token: &GhostToken,
+        token: &PermTkn,
         scopes: &ScopeTree,
     ) -> Result<Assumptions, Errors>;
 }
@@ -93,7 +93,7 @@ impl HasRestrictedType for TypeRestrictedNode {
     fn type_of(
         &self,
         ast: &SyntaxTree,
-        token: &GhostToken,
+        token: &PermTkn,
         scopes: &ScopeTree,
     ) -> Result<Assumptions, Errors> {
         if let Some(node) = self.as_typed_parameter() {
@@ -132,7 +132,7 @@ impl HasRestrictedType for TypedParameter {
     fn type_of(
         &self,
         ast: &SyntaxTree,
-        token: &GhostToken,
+        token: &PermTkn,
         scopes: &ScopeTree,
     ) -> Result<Assumptions, Errors> {
         let mut a0 = Assumptions::empty();
@@ -148,7 +148,7 @@ fn convert(
     ty: &Type,
     scope: ScopeSearch,
     ast: &SyntaxTree,
-    token: &GhostToken,
+    token: &PermTkn,
 ) -> Result<PolymorphicType, Errors> {
     if let Some(constant) = ty.as_type_name() {
         scope

@@ -1,4 +1,5 @@
 #![feature(try_trait_v2)]
+#![feature(iter_array_chunks)]
 
 pub use self::node::{
     block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,

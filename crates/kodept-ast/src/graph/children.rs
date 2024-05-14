@@ -1,9 +1,10 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{GenericASTNode, Identifiable};
-use crate::graph::{GhostToken, SyntaxTree};
+use crate::graph::{GenericASTNode};
+use crate::graph::{PermTkn, SyntaxTree};
 use crate::graph::tags::ChildTag;
 use crate::graph::utils::FromOptVec;
+use crate::traits::Identifiable;
 
 pub mod tags {
     pub type ChildTag = u8;
@@ -16,14 +17,13 @@ pub mod tags {
     pub static TAGS_DESC: [&str; 5] = ["", "P", "S", "L", "R"];
 }
 
-#[allow(private_bounds)]
 pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
     type Container: FromOptVec<T = Child>;
 
     fn get_children<'b>(
         &self,
         tree: &'b SyntaxTree,
-        token: &'b GhostToken,
+        token: &'b PermTkn,
     ) -> ChildrenRef<'b, Self, Child, TAG>
     where
         GenericASTNode: ConvertibleToRef<Child>,
@@ -61,7 +61,7 @@ pub mod macros {
                 $vis fn $name<'a>(
                     &self,
                     tree: &'a $crate::graph::SyntaxTree,
-                    token: &'a $crate::graph::GhostToken,
+                    token: &'a $crate::graph::PermTkn,
                 ) -> $crate::graph::ChildrenRef<'a, $t, $crate::graph::ContainerT<$c_t>, $tag> {
                     <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag>>::get_children(self, tree, token)
                 }

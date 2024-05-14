@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 
-use kodept_ast::graph::{GenericASTNode, GenericNodeId, GhostToken, SyntaxTree};
+use kodept_ast::graph::{GenericASTNode, GenericNodeId, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::PolymorphicType;
@@ -86,7 +86,7 @@ impl ScopeTree {
         Ok(())
     }
 
-    fn of_node<N>(&self, node: &N, ast: &SyntaxTree, token: &GhostToken) -> Result<Id, ScopeError>
+    fn of_node<N>(&self, node: &N, ast: &SyntaxTree, token: &PermTkn) -> Result<Id, ScopeError>
     where
         N: Identifiable + Into<GenericASTNode>,
     {
@@ -116,7 +116,7 @@ impl ScopeTree {
         &self,
         node: &N,
         ast: &SyntaxTree,
-        token: &GhostToken,
+        token: &PermTkn,
     ) -> Result<ScopeSearch, ScopeError>
     where
         N: Identifiable + Into<GenericASTNode>,

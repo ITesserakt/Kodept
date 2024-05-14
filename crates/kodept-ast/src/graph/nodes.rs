@@ -12,20 +12,21 @@ type CellOwnerImpl = TLCellOwner<Ghost>;
 pub struct Ghost;
 
 #[derive(Deref, From)]
-pub struct Owned<T = GenericASTNode>(CellImpl<T>);
+#[repr(transparent)]
+pub struct Inaccessible<T = GenericASTNode>(CellImpl<T>);
 
 #[derive(Deref, DerefMut, From)]
-pub struct GhostToken(CellOwnerImpl);
+pub struct PermTkn(CellOwnerImpl);
 
-pub type RefNode<'arena, T = GenericASTNode> = &'arena Owned<T>;
+pub type RefNode<'arena, T = GenericASTNode> = &'arena Inaccessible<T>;
 
-impl<T> Owned<T> {
+impl<T> Inaccessible<T> {
     pub fn new<U: Into<T>>(data: U) -> Self {
         Self(TLCell::new(data.into()))
     }
 }
 
-impl GhostToken {
+impl PermTkn {
     /// Value of this type should be a singleton in one thread
     /// If this contract violated, function will panic
     pub fn new() -> Self {
@@ -33,14 +34,14 @@ impl GhostToken {
     }
 }
 
-impl<T: Debug> Debug for Owned<T> {
+impl<T: Debug> Debug for Inaccessible<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("OwnedNode").finish_non_exhaustive()
+        f.debug_struct("Inaccessible").finish_non_exhaustive()
     }
 }
 
-impl Debug for GhostToken {
+impl Debug for PermTkn {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GhostToken").finish_non_exhaustive()
+        f.debug_struct("PermissionToken").finish_non_exhaustive()
     }
 }

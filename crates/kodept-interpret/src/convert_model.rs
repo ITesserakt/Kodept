@@ -7,7 +7,7 @@ use kodept_ast::{
     BlockLevel, BodiedFunctionDeclaration, Body, Expression, ExpressionBlock, Identifier,
     IfExpression, InitializedVariable, Lambda, Literal, Operation, Term,
 };
-use kodept_ast::graph::{GhostToken, SyntaxTree};
+use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
@@ -24,7 +24,7 @@ impl TypeDerivableNode {
     pub fn type_of<'a>(
         &self,
         ast: &'a SyntaxTree,
-        token: &'a GhostToken,
+        token: &'a PermTkn,
         scopes: &'a ScopeTree,
         assumptions: &mut Assumptions,
         environment: &mut Environment,
@@ -65,7 +65,7 @@ impl TypeChecker {
     pub(crate) fn to_model<'a, N>(
         &'a self,
         ast: &'a SyntaxTree,
-        token: &'a GhostToken,
+        token: &'a PermTkn,
         node: &N,
     ) -> Result<Language, InferError>
     where
@@ -84,7 +84,7 @@ impl TypeChecker {
 struct ConversionHelper<'a> {
     scopes: &'a ScopeTree,
     ast: &'a SyntaxTree,
-    token: &'a GhostToken,
+    token: &'a PermTkn,
 }
 
 #[inline]
@@ -97,7 +97,7 @@ trait ToModelFrom<N> {
 }
 
 trait ExtractName {
-    fn extract_name(&self, tree: &SyntaxTree, token: &GhostToken) -> Cow<str>;
+    fn extract_name(&self, tree: &SyntaxTree, token: &PermTkn) -> Cow<str>;
 }
 
 impl ToModelFrom<Body> for ConversionHelper<'_> {
@@ -280,7 +280,7 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
 }
 
 impl ExtractName for BlockLevel {
-    fn extract_name(&self, tree: &SyntaxTree, token: &GhostToken) -> Cow<str> {
+    fn extract_name(&self, tree: &SyntaxTree, token: &PermTkn) -> Cow<str> {
         if let Some(node) = self.as_func() {
             node.name.as_str().into()
         } else if let Some(node) = self.as_init_var() {

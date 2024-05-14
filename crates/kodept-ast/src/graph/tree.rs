@@ -1,36 +1,43 @@
-pub use stage::*;
 pub use tree::*;
 pub use utils::*;
 
-use crate::graph::nodes::Owned;
+use crate::graph::nodes::Inaccessible;
 use crate::graph::tags::ChildTag;
 
-type Graph<T = Owned, E = ChildTag> = slotgraph::DiGraph<T, E>;
+type Graph<T = Inaccessible, E = ChildTag> = slotgraph::DiGraph<T, E>;
 
 mod stage {
-    use crate::graph::GhostToken;
+    use crate::graph::PermTkn;
 
     #[derive(Debug)]
-    pub struct BuildingStage(pub(super) GhostToken);
+    pub struct FullAccess(pub(super) PermTkn);
 
     #[derive(Debug)]
-    pub struct ModifyingStage<'a>(pub(super) &'a GhostToken);
+    pub struct ViewingAccess<'a>(pub(super) &'a PermTkn);
+
+    pub struct ModificationAccess<'a>(pub(super) &'a mut PermTkn);
 
     #[derive(Default, Debug)]
-    pub struct AccessingStage;
+    pub struct NoAccess;
 
     pub(super) trait CanAccess {
-        fn tkn(&self) -> &GhostToken;
+        fn tkn(&self) -> &PermTkn;
     }
 
-    impl CanAccess for BuildingStage {
-        fn tkn(&self) -> &GhostToken {
+    impl CanAccess for FullAccess {
+        fn tkn(&self) -> &PermTkn {
             &self.0
         }
     }
 
-    impl CanAccess for ModifyingStage<'_> {
-        fn tkn(&self) -> &GhostToken {
+    impl CanAccess for ViewingAccess<'_> {
+        fn tkn(&self) -> &PermTkn {
+            self.0
+        }
+    }
+
+    impl CanAccess for ModificationAccess<'_> {
+        fn tkn(&self) -> &PermTkn {
             self.0
         }
     }
@@ -43,34 +50,37 @@ mod tree {
     use slotgraph::export::{Config, Direction, Dot};
     use slotgraph::SubDiGraph;
 
-    use crate::graph::{Change, ChangeSet, GenericASTNode, GhostToken, Identifiable, NodeId};
-    use crate::graph::nodes::Owned;
+    use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::{ChildTag, TAGS_DESC};
-    use crate::graph::tree::{AccessingStage, BuildingStage, ChildScope, DfsIter, Graph, ModifyingStage};
-    use crate::graph::tree::stage::CanAccess;
+    use crate::graph::tree::stage::{
+        CanAccess, FullAccess, ModificationAccess, NoAccess, ViewingAccess,
+    };
+    use crate::graph::tree::{ChildScope, DfsIter, Graph};
     use crate::graph::utils::OptVec;
+    use crate::graph::{Change, ChangeSet, GenericASTNode, Identifiable, NodeId, PermTkn};
     use crate::node_properties::{Node, NodeWithParent};
 
     #[derive(Debug)]
-    pub struct SyntaxTree<Stage = AccessingStage> {
+    pub struct SyntaxTree<Permission = NoAccess> {
         pub(super) graph: Graph,
-        pub(super) stage: Stage,
+        pub(super) stage: Permission,
     }
 
-    pub type SyntaxTreeBuilder = SyntaxTree<BuildingStage>;
+    pub type SyntaxTreeBuilder = SyntaxTree<FullAccess>;
+    pub type SyntaxTreeMutView<'token> = SyntaxTree<ModificationAccess<'token>>;
 
-    impl Default for SyntaxTree<BuildingStage> {
+    impl Default for SyntaxTree<FullAccess> {
         fn default() -> Self {
             // SAFE: While tree is building, token should be owned by it
             Self {
                 graph: Default::default(),
-                stage: BuildingStage(GhostToken::new()),
+                stage: FullAccess(PermTkn::new()),
             }
         }
     }
 
-    impl SyntaxTree<BuildingStage> {
-        pub fn new() -> SyntaxTree<BuildingStage> {
+    impl SyntaxTree<FullAccess> {
+        pub fn new() -> SyntaxTree<FullAccess> {
             SyntaxTree::default()
         }
 
@@ -94,25 +104,25 @@ mod tree {
     #[allow(private_bounds)]
     impl<U: CanAccess> SyntaxTree<U> {
         pub fn add_node<T>(&mut self, node: T) -> ChildScope<'_, T, U>
-            where
-                T: Into<GenericASTNode>,
+        where
+            T: Into<GenericASTNode>,
         {
-            let id = self.graph.add_node(Owned::new(node));
+            let id = self.graph.add_node(Inaccessible::new(node));
             let node_ref = &self.graph[id];
             node_ref.ro(self.stage.tkn()).set_id(id.into());
 
             ChildScope::new(self, id.into())
         }
 
-        pub fn build(self) -> SyntaxTree<AccessingStage> {
+        pub fn build(self) -> SyntaxTree<NoAccess> {
             SyntaxTree {
                 graph: self.graph,
-                stage: AccessingStage,
+                stage: NoAccess,
             }
         }
     }
 
-    impl SyntaxTree<ModifyingStage<'_>> {
+    impl SyntaxTree<ViewingAccess<'_>> {
         fn apply_change(&mut self, change: Change) {
             match change {
                 Change::Delete { child_id, .. } => {
@@ -123,16 +133,16 @@ mod tree {
                     child,
                     tag,
                 } => {
-                    let (_, id) = self
-                        .graph
-                        .add_child(parent_id.into(), tag, Owned::new(child));
+                    let (_, id) =
+                        self.graph
+                            .add_child(parent_id.into(), tag, Inaccessible::new(child));
                     self.graph[id].ro(self.stage.tkn()).set_id(id.into())
                 }
                 Change::Replace { from_id, to } => {
                     match self.graph.node_weight_mut(from_id.into()) {
                         None => {}
                         Some(x) => {
-                            *x = Owned::new(to);
+                            *x = Inaccessible::new(to);
                             x.ro(self.stage.tkn()).set_id(from_id);
                         }
                     };
@@ -145,7 +155,11 @@ mod tree {
     }
 
     impl<U> SyntaxTree<U> {
-        pub(crate) fn children_of_raw<T>(&self, id: NodeId<T>, tag: ChildTag) -> OptVec<&Owned> {
+        pub(crate) fn children_of_raw<T>(
+            &self,
+            id: NodeId<T>,
+            tag: ChildTag,
+        ) -> OptVec<&Inaccessible> {
             self.graph
                 .children(id.into())
                 .filter(|it| self.graph[it.0].data == tag)
@@ -158,20 +172,20 @@ mod tree {
             let (Some(start), None) = (roots.next(), roots.next()) else {
                 panic!("Syntax tree should have a root")
             };
-            
+
             DfsIter::new(&self.graph, start)
         }
     }
-    
+
     impl SyntaxTree {
         pub fn children_of<'b, T, U>(
             &'b self,
             id: NodeId<T>,
-            token: &'b GhostToken,
+            token: &'b PermTkn,
             tag: ChildTag,
         ) -> OptVec<&U>
-            where
-                GenericASTNode: ConvertibleToRef<U>,
+        where
+            GenericASTNode: ConvertibleToRef<U>,
         {
             self.graph
                 .children(id.into())
@@ -180,9 +194,9 @@ mod tree {
                 .collect()
         }
 
-        pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut GhostToken) -> Option<&mut T>
-            where
-                GenericASTNode: ConvertibleToMut<T>,
+        pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut PermTkn) -> Option<&mut T>
+        where
+            GenericASTNode: ConvertibleToMut<T>,
         {
             let node_ref = self.graph.node_weight(id.into())?;
             node_ref.rw(token).try_as_mut()
@@ -191,7 +205,7 @@ mod tree {
         pub fn parent_of<'a, T>(
             &'a self,
             id: NodeId<T>,
-            token: &'a GhostToken,
+            token: &'a PermTkn,
         ) -> Option<&GenericASTNode> {
             let mut parents = self.graph.parents(id.into());
             if let (Some((_, parent_id)), None) = (parents.next(), parents.next()) {
@@ -204,11 +218,11 @@ mod tree {
         pub fn parent_of_mut<'a, T>(
             &'a self,
             id: NodeId<T>,
-            token: &'a mut GhostToken,
+            token: &'a mut PermTkn,
         ) -> &mut T::Parent
-            where
-                T: NodeWithParent + Node,
-                GenericASTNode: ConvertibleToMut<T::Parent>,
+        where
+            T: NodeWithParent + Node,
+            GenericASTNode: ConvertibleToMut<T::Parent>,
         {
             let mut parents = self.graph.parents(id.into());
             let (Some((_, parent_id)), None) = (parents.next(), parents.next()) else {
@@ -220,7 +234,7 @@ mod tree {
             parent_ref.try_as_mut().expect("Node has wrong type")
         }
 
-        pub fn apply_changes(self, changes: ChangeSet, token: &GhostToken) -> Self {
+        pub fn apply_changes(self, changes: ChangeSet, token: &PermTkn) -> Self {
             let mut this = self.modify(token);
             for change in changes {
                 this.apply_change(change);
@@ -228,10 +242,10 @@ mod tree {
             this.build()
         }
 
-        fn modify(self, token: &GhostToken) -> SyntaxTree<ModifyingStage> {
+        fn modify(self, token: &PermTkn) -> SyntaxTree<ViewingAccess> {
             SyntaxTree {
                 graph: self.graph,
-                stage: ModifyingStage(token),
+                stage: ViewingAccess(token),
             }
         }
     }
@@ -242,19 +256,19 @@ mod utils {
     use std::iter::FusedIterator;
 
     use kodept_core::structure::span::CodeHolder;
-    use slotgraph::{Key, NodeKey};
     use slotgraph::export::NodeCount;
+    use slotgraph::{Key, NodeKey};
 
-    use crate::graph::{GenericASTNode, HasChildrenMarker, NodeId, SyntaxTree};
-    use crate::graph::nodes::Owned;
+    use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::ChildTag;
-    use crate::graph::tree::{BuildingStage, Graph};
-    use crate::graph::tree::stage::CanAccess;
+    use crate::graph::tree::stage::{CanAccess, FullAccess};
+    use crate::graph::tree::Graph;
+    use crate::graph::{GenericASTNode, HasChildrenMarker, NodeId, SyntaxTree};
     use crate::rlt_accessor::RLTFamily;
     use crate::traits::{Linker, PopulateTree};
     use crate::visit_side::VisitSide;
 
-    pub struct ChildScope<'arena, T, Stage = BuildingStage> {
+    pub struct ChildScope<'arena, T, Stage = FullAccess> {
         tree: &'arena mut SyntaxTree<Stage>,
         id: Key<T>,
     }
@@ -274,7 +288,7 @@ mod utils {
         pub(super) fn new(graph: &'arena Graph, start: NodeKey) -> Self {
             let mut stack = VecDeque::with_capacity(graph.node_count());
             stack.push_back((start, TraverseState::DescendDeeper));
-            
+
             Self {
                 stack,
                 edges_buffer: vec![],
@@ -284,7 +298,7 @@ mod utils {
     }
 
     impl<'arena> Iterator for DfsIter<'arena> {
-        type Item = (&'arena Owned, VisitSide);
+        type Item = (&'arena Inaccessible, VisitSide);
 
         fn next(&mut self) -> Option<Self::Item> {
             let Some((next, descend)) = self.stack.pop_back() else {
@@ -322,26 +336,23 @@ mod utils {
 
     impl<'arena, T, S> ChildScope<'arena, T, S> {
         pub(super) fn new(tree: &'arena mut SyntaxTree<S>, node_id: Key<T>) -> Self {
-            Self {
-                tree,
-                id: node_id,
-            }
+            Self { tree, id: node_id }
         }
-        
+
         fn add_child_by_ref<U, const TAG: ChildTag>(&mut self, child_id: NodeKey)
-            where
-                U: Into<GenericASTNode>,
-                T: HasChildrenMarker<U, TAG>,
+        where
+            U: Into<GenericASTNode>,
+            T: HasChildrenMarker<U, TAG>,
         {
             self.tree.graph.add_edge(self.id.into(), child_id, TAG);
         }
 
         #[allow(private_bounds)]
         pub fn with_rlt<U>(self, context: &mut impl Linker, rlt_node: &U) -> Self
-            where
-                U: Into<RLTFamily> + Clone,
-                T: Into<GenericASTNode>,
-                S: CanAccess,
+        where
+            U: Into<RLTFamily> + Clone,
+            T: Into<GenericASTNode>,
+            S: CanAccess,
         {
             let element = &self.tree.graph[NodeKey::from(self.id)];
             let node = element.ro(self.tree.stage.tkn());
@@ -355,16 +366,16 @@ mod utils {
         }
     }
 
-    impl<T> ChildScope<'_, T, BuildingStage> {
+    impl<T> ChildScope<'_, T, FullAccess> {
         #[allow(private_bounds)]
         pub fn with_children_from<'b, const TAG: ChildTag, U>(
             mut self,
             iter: impl IntoIterator<Item = &'b U>,
             context: &mut (impl Linker + CodeHolder),
         ) -> Self
-            where
-                T: HasChildrenMarker<U::Output, TAG>,
-                U: PopulateTree + 'b,
+        where
+            T: HasChildrenMarker<U::Output, TAG>,
+            U: PopulateTree + 'b,
         {
             for item in iter {
                 let child_id = item.convert(self.tree, context);
@@ -377,18 +388,18 @@ mod utils {
 
 #[cfg(test)]
 mod tests {
-    use crate::FileDeclaration;
     use crate::graph::SyntaxTreeBuilder;
+    use crate::FileDeclaration;
 
     #[test]
     fn test_tree_creation() {
         let mut builder = SyntaxTreeBuilder::new();
-        
+
         let id = builder.add_node(FileDeclaration::uninit()).id();
-        
+
         let tree = builder.build();
         let children = tree.children_of_raw(id, 0);
-        
+
         assert!(children.is_empty());
     }
 }
