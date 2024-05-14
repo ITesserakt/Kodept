@@ -5,7 +5,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use itertools::Itertools;
 use petgraph::prelude::{NodeIndex, StableDiGraph};
 
-use kodept_ast::graph::{ChangeSet, GhostToken};
+use kodept_ast::graph::{ChangeSet, PermTkn};
 use kodept_ast::utils::Execution;
 use kodept_macros::erased::{BoxedMacro, CanErase};
 use kodept_macros::error::compiler_crash::CompilerCrash;
@@ -78,7 +78,7 @@ impl<C: MutableContext, E: Into<UnrecoverableError>> TraverseSet<C, E> {
         context: &mut C,
         mut macros: Vec<&mut BoxedMacro<C, E>>,
     ) -> Result<(), UnrecoverableError> {
-        let mut token = GhostToken::new();
+        let mut token = PermTkn::new();
         let mut changes = ChangeSet::new();
 
         for (node, side) in context.tree().upgrade().unwrap().dfs() {

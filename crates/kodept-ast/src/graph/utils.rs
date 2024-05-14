@@ -8,18 +8,19 @@ use smallvec::SmallVec;
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{GenericASTNode, GhostToken};
-use crate::graph::nodes::Owned;
+use crate::graph::nodes::Inaccessible;
+use crate::graph::{GenericASTNode, PermTkn};
 
+#[repr(transparent)]
 pub struct RefMut<'a, T> {
-    node: &'a Owned,
+    node: &'a Inaccessible,
     _phantom: PhantomData<T>,
 }
 
 pub type OptVec<T> = SmallVec<[T; 1]>;
 
 impl<'a, T> RefMut<'a, T> {
-    pub fn new(node: &'a Owned) -> Self {
+    pub fn new(node: &'a Inaccessible) -> Self {
         Self {
             node,
             _phantom: Default::default(),
@@ -35,7 +36,7 @@ pub trait FromOptVec {
     type T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a>;
-    fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a>;
+    fn unwrap_mut<'a>(value: OptVec<&'a Inaccessible>) -> Self::Mut<'a>;
 }
 
 impl<T: Debug> FromOptVec for Option<T> {
@@ -55,7 +56,7 @@ impl<T: Debug> FromOptVec for Option<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
+    fn unwrap_mut<'a>(value: OptVec<&'a Inaccessible>) -> Self::Mut<'a> {
         match value.split_first() {
             None => None,
             Some((x, [])) => Some(RefMut::new(x)),
@@ -77,7 +78,7 @@ impl<T> FromOptVec for Vec<T> {
         value.to_vec()
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a Owned>) -> Self::Mut<'a> {
+    fn unwrap_mut<'a>(value: OptVec<&'a Inaccessible>) -> Self::Mut<'a> {
         value.into_iter().map(|x| RefMut::new(x)).collect()
     }
 }
@@ -86,7 +87,7 @@ impl<'a, T> RefMut<'a, T>
 where
     GenericASTNode: ConvertibleToMut<T>,
 {
-    pub fn borrow_mut(&self, token: &'a mut GhostToken) -> &mut T {
+    pub fn borrow_mut<'b>(&'b self, token: &'a mut PermTkn) -> &'a mut T {
         self.node
             .rw(token)
             .try_as_mut()
@@ -98,7 +99,7 @@ impl<'a, T> RefMut<'a, T>
 where
     GenericASTNode: ConvertibleToRef<T>,
 {
-    pub fn borrow(&self, token: &'a GhostToken) -> &T {
+    pub fn borrow(&self, token: &'a PermTkn) -> &T {
         self.node
             .ro(token)
             .try_as_ref()

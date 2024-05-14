@@ -4,7 +4,7 @@ use derive_more::{From, Into, IsVariant};
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{GenericASTNode, GhostToken, RefMut};
+use crate::graph::{GenericASTNode, PermTkn, RefMut};
 use crate::utils::Execution;
 use crate::utils::Execution::{Completed, Skipped};
 
@@ -17,12 +17,12 @@ pub enum VisitSide {
 }
 
 #[derive(From, Into)]
-pub struct Access<'arena, 'token, N>(&'token mut GhostToken, RefMut<'arena, N>);
+pub struct Access<'arena, 'token, N>(&'token mut PermTkn, RefMut<'arena, N>);
 
-pub struct VisitGuard<'arena, 'token, N>(VisitSide, RefMut<'arena, N>, &'token mut GhostToken);
+pub struct VisitGuard<'arena, 'token, N>(VisitSide, RefMut<'arena, N>, &'token mut PermTkn);
 
 impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
-    pub fn new(side: VisitSide, access: RefMut<'arena, N>, token: &'token mut GhostToken) -> Self {
+    pub fn new(side: VisitSide, access: RefMut<'arena, N>, token: &'token mut PermTkn) -> Self {
         Self(side, access, token)
     }
 
@@ -67,11 +67,11 @@ where
 }
 
 impl<'arena, 'token, N> Access<'arena, 'token, N> {
-    pub fn token(&self) -> &GhostToken {
+    pub fn token(&self) -> &PermTkn {
         self.0
     }
 
-    pub fn token_mut(&mut self) -> &mut GhostToken {
+    pub fn token_mut(&mut self) -> &mut PermTkn {
         self.0
     }
 }

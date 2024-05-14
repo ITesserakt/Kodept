@@ -3,9 +3,9 @@ pub use crate::graph::children::*;
 pub use crate::graph::generic_node::*;
 pub use crate::graph::identity::Identity;
 pub use crate::graph::node_id::{NodeId, GenericNodeId, GenericNodeKey};
-pub use crate::graph::nodes::{GhostToken, RefNode};
+pub use crate::graph::nodes::{PermTkn, RefNode};
 pub(crate) use crate::graph::traits::Identifiable;
-pub use crate::graph::tree::{SyntaxTree, SyntaxTreeBuilder};
+pub use crate::graph::tree::{SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView};
 pub use crate::graph::utils::RefMut;
 
 mod changes;

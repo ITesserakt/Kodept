@@ -1,6 +1,6 @@
 use crate::scope::{ScopeError, ScopeTree};
 use crate::type_checker::InferError;
-use kodept_ast::graph::{GhostToken, SyntaxTree};
+use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::language::Language;
 use kodept_inference::r#type::PolymorphicType;
@@ -10,7 +10,7 @@ use std::rc::Rc;
 pub struct Context<'a> {
     scopes: &'a ScopeTree,
     ast: &'a SyntaxTree,
-    token: &'a GhostToken,
+    token: &'a PermTkn,
 }
 
 pub trait NodeWithType {

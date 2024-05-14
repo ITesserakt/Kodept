@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use kodept_ast::graph::{ChangeSet, GenericASTNode, GhostToken, RefMut, RefNode};
+use kodept_ast::graph::{ChangeSet, GenericASTNode, PermTkn, RefMut, RefNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::ConvertibleToRef;
@@ -22,7 +22,7 @@ pub trait ErasedMacro<C: Context>: CanErase<C> {
         &mut self,
         node: RefNode,
         side: VisitSide,
-        token: &mut GhostToken,
+        token: &mut PermTkn,
         context: &mut C,
     ) -> Execution<Self::Error, ChangeSet>;
 }
@@ -56,7 +56,7 @@ where
         &mut self,
         node: RefNode,
         side: VisitSide,
-        token: &mut GhostToken,
+        token: &mut PermTkn,
         context: &mut C,
     ) -> Execution<Self::Error, ChangeSet> {
         let Some(_) = node.ro(token).try_as_ref() else {
