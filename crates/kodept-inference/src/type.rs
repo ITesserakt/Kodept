@@ -310,7 +310,7 @@ impl Display for PolymorphicType {
                     f,
                     "∀{} => {}",
                     pretty_bindings()
-                        .map(|it| expand_to_string(it.1, LOWER_ALPHABET))
+                        .map(|it| format!("'{}", expand_to_string(it.1, LOWER_ALPHABET)))
                         .join(", "),
                     renamed
                 )
