@@ -190,7 +190,7 @@ impl<N, E, D: EdgeType> IntoNodeIdentifiers for &Graph<N, E, D> {
 
 impl<'a, N, E, D: EdgeType> IntoNodeReferences for &'a Graph<N, E, D> {
     type NodeRef = KeyRef<'a, N>;
-    type NodeReferences = impl Iterator<Item = Self::NodeRef>;
+    type NodeReferences = impl Iterator<Item = KeyRef<'a, N>>;
 
     fn node_references(self) -> Self::NodeReferences {
         self.nodes.iter().map(|it| KeyRef::new(it.0, it.1))
@@ -199,7 +199,7 @@ impl<'a, N, E, D: EdgeType> IntoNodeReferences for &'a Graph<N, E, D> {
 
 impl<'a, N, E, D: EdgeType> IntoEdgeReferences for &'a Graph<N, E, D> {
     type EdgeRef = KeyRef<'a, Edge<E, D>>;
-    type EdgeReferences = impl Iterator<Item = Self::EdgeRef>;
+    type EdgeReferences = impl Iterator<Item = KeyRef<'a, Edge<E, D>>>;
 
     fn edge_references(self) -> Self::EdgeReferences {
         self.edges.iter().map(|it| KeyRef::new(it.0, it.1))

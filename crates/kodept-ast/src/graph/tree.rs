@@ -1,21 +1,20 @@
+use std::collections::VecDeque;
 use std::fmt::{Debug, Display, Formatter};
-use std::iter;
-use std::ops::Coroutine;
+use std::iter::FusedIterator;
 
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-use slotgraph::export::{Config, Direction, Dot};
+use slotgraph::export::{Config, Direction, Dot, NodeCount};
 use slotgraph::{Key, NodeKey, SubDiGraph};
 
-use crate::graph::nodes::{GhostToken, Owned, RefNode};
+use crate::graph::nodes::{GhostToken, Owned};
 use crate::graph::tags::{ChildTag, TAGS_DESC};
 use crate::graph::utils::OptVec;
 use crate::graph::{Change, ChangeSet, GenericASTNode, HasChildrenMarker, Identifiable, NodeId};
 use crate::node_properties::{Node, NodeWithParent};
-use crate::rlt_accessor::{RLTFamily};
+use crate::rlt_accessor::RLTFamily;
 use crate::traits::{Linker, PopulateTree};
 use crate::visit_side::VisitSide;
-use crate::yield_all;
 
 #[derive(Debug)]
 pub struct BuildingStage(GhostToken);
@@ -55,6 +54,17 @@ pub type SyntaxTreeBuilder = SyntaxTree<BuildingStage>;
 pub struct ChildScope<'arena, T, Stage = BuildingStage> {
     tree: &'arena mut SyntaxTree<Stage>,
     id: Key<T>,
+}
+
+pub enum TraverseState {
+    DescendDeeper,
+    Exit,
+}
+
+pub struct DfsIter<'a> {
+    stack: VecDeque<(NodeKey, TraverseState)>,
+    edges_buffer: Vec<NodeKey>,
+    graph: &'a Graph,
 }
 
 impl Default for SyntaxTree<BuildingStage> {
@@ -154,17 +164,60 @@ impl<U> SyntaxTree<U> {
             .collect()
     }
 
-    pub fn dfs(&self) -> impl Iterator<Item = (RefNode, VisitSide)> + '_ {
+    pub fn dfs(&self) -> DfsIter {
         let mut roots = self.graph.externals(Direction::Incoming);
         let (Some(start), None) = (roots.next(), roots.next()) else {
             panic!("Syntax tree should have a root")
         };
-        iter::from_coroutine(
-            #[coroutine]
-            move || yield_all!(coroutine(&self.graph, start)),
-        )
+        let mut stack = VecDeque::with_capacity(self.graph.node_count());
+        let edges_buffer = vec![];
+        stack.push_back((start, TraverseState::DescendDeeper));
+
+        DfsIter {
+            stack,
+            edges_buffer,
+            graph: &self.graph,
+        }
     }
 }
+
+impl DfsIter<'_> {}
+
+impl<'arena> Iterator for DfsIter<'arena> {
+    type Item = (&'arena Owned, VisitSide);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Some((next, descend)) = self.stack.pop_back() else {
+            return None;
+        };
+        let Some(current) = self.graph.node_weight(next) else {
+            return None;
+        };
+        if matches!(descend, TraverseState::Exit) {
+            return Some((current, VisitSide::Exiting));
+        }
+
+        self.edges_buffer.clear();
+        self.edges_buffer.extend(self.graph.children(next).map(|it| it.1));
+        self.edges_buffer.reverse();
+        let edges_iter = self.edges_buffer.iter();
+        return if edges_iter.len() != 0 {
+            self.stack.push_back((next, TraverseState::Exit));
+            for child in edges_iter {
+                self.stack.push_back((*child, TraverseState::DescendDeeper));
+            }
+            Some((current, VisitSide::Entering))
+        } else {
+            Some((current, VisitSide::Leaf))
+        };
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.stack.len(), Some(self.graph.node_count() * 2))
+    }
+}
+
+impl FusedIterator for DfsIter<'_> {}
 
 impl SyntaxTree {
     pub fn children_of<'b, T, U>(
@@ -239,30 +292,6 @@ impl SyntaxTree {
     }
 }
 
-fn coroutine(
-    graph: &Graph,
-    start: NodeKey,
-) -> Box<dyn Coroutine<Return = (), Yield = (RefNode, VisitSide)> + '_> {
-    Box::new(
-        #[coroutine]
-        move || {
-            let Some(current) = graph.node_weight(start) else {
-                return;
-            };
-            let mut edges = graph.children(start).peekable();
-            if edges.peek().is_some() {
-                yield (current, VisitSide::Entering);
-                for (_, child) in edges {
-                    yield_all!(coroutine(graph, child));
-                }
-                yield (current, VisitSide::Exiting);
-            } else {
-                yield (current, VisitSide::Leaf);
-            }
-        },
-    )
-}
-
 impl<'arena, T, S> ChildScope<'arena, T, S> {
     fn add_child_by_ref<U, const TAG: ChildTag>(&mut self, child_id: NodeKey)
     where
@@ -277,7 +306,7 @@ impl<'arena, T, S> ChildScope<'arena, T, S> {
     where
         U: Into<RLTFamily> + Clone,
         T: Into<GenericASTNode>,
-        S: CanAccess
+        S: CanAccess,
     {
         let element = &self.tree.graph[NodeKey::from(self.id)];
         let node = element.ro(self.tree.stage.tkn());

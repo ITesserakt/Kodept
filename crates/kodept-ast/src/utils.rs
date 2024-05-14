@@ -102,21 +102,6 @@ impl ByteSize {
     }
 }
 
-pub(crate) mod macros {
-    #[macro_export]
-    macro_rules! yield_all {
-        ($subroutine:expr) => {{
-            let mut coro = std::pin::Pin::from($subroutine);
-            loop {
-                match coro.as_mut().resume(()) {
-                    std::ops::CoroutineState::Yielded(it) => yield it,
-                    std::ops::CoroutineState::Complete(_) => break,
-                }
-            }
-        }};
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
