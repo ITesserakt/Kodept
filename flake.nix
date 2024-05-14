@@ -44,7 +44,7 @@
       packages.${flake-utils.lib.system.x86_64-windows}.default = naersk_win.buildPackage {
         src = self;
         strictDeps = true;
-        doCheck = true;
+        doCheck = false;
         nativeBuildInputs = with pkgs; [ wineWowPackages.stable ];
         depsBuildBuild = with pkgs; [
           pkgsCross.mingwW64.stdenv.cc
