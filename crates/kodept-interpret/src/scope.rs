@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 
-use kodept_ast::graph::{GenericASTNode, GhostToken, SyntaxTree};
+use kodept_ast::graph::{GenericASTNode, GenericNodeId, GhostToken, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::PolymorphicType;
@@ -29,7 +29,7 @@ pub struct ScopeTree {
 }
 
 pub struct Scope {
-    start_from_id: NodeId,
+    start_from_id: GenericNodeId,
     name: Option<String>,
     types: HashMap<String, PolymorphicType>,
     variables: HashMap<String, Var>,
@@ -43,7 +43,6 @@ pub struct ScopeSearch<'a> {
 }
 
 type Id = id_tree::NodeId;
-type NodeId = kodept_ast::graph::NodeId<GenericASTNode>;
 
 impl ScopeTree {
     pub fn new() -> Self {
@@ -132,7 +131,7 @@ impl ScopeTree {
 }
 
 impl Scope {
-    fn new(from: NodeId, name: Option<String>) -> Self {
+    fn new(from: GenericNodeId, name: Option<String>) -> Self {
         Self {
             start_from_id: from,
             name,
@@ -163,7 +162,7 @@ impl Scope {
         Ok(())
     }
 
-    pub fn starts_from(&self) -> NodeId {
+    pub fn starts_from(&self) -> GenericNodeId {
         self.start_from_id
     }
 
