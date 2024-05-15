@@ -15,7 +15,7 @@ wrapper! {
     #[derive(Debug, PartialEq, From)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper CodeFlow {
-        if(IfExpression) = GenericASTNode::If(x) => Some(x)
+        if(IfExpression) = GenericASTNode::If(x) => x.into()
     }
 }
 

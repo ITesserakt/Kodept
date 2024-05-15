@@ -15,8 +15,8 @@ wrapper! {
     #[derive(Debug, PartialEq, From)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper FunctionDeclaration {
-        bodied(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => Some(x),
-        abstract(AbstractFunctionDeclaration) = GenericASTNode::AbstractFunction(x) => Some(x),
+        bodied(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => x.into(),
+        abstract(AbstractFunctionDeclaration) = GenericASTNode::AbstractFunction(x) => x.into(),
     }
 }
 

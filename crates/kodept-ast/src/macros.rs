@@ -1,11 +1,56 @@
+use crate::graph::GenericASTNode;
+use kodept_core::ConvertibleTo;
+
+pub trait ForceInto {
+    type Output<T: 'static>;
+
+    fn force_into<T>(self) -> Self::Output<T>
+    where
+        T: 'static,
+        Self: ConvertibleTo<Self::Output<T>>;
+}
+
+impl<'a> ForceInto for &'a GenericASTNode {
+    type Output<T: 'static> = &'a T;
+
+    fn force_into<T: 'static>(self) -> Self::Output<T>
+    where
+        Self: ConvertibleTo<Self::Output<T>>,
+    {
+        self.try_as().expect("Cannot convert GenericASTNode")
+    }
+}
+
+impl<'a> ForceInto for &'a mut GenericASTNode {
+    type Output<T: 'static> = &'a mut T;
+
+    fn force_into<T>(self) -> Self::Output<T>
+    where
+        T: 'static,
+        Self: ConvertibleTo<Self::Output<T>>,
+    {
+        self.try_as().expect("Cannot convert GenericASTNode")
+    }
+}
+
 #[macro_export]
 macro_rules! wrapper {
     ($(#[$config:meta])* $vis:vis wrapper $wrapper:ident {
         $($name:ident($t:ty) = $variants:pat $(if $variant_if:expr)? => $variant_expr:expr$(,)*)*
-    }) => {
+    }) => {paste::paste! {
         $(#[$config])*
         #[repr(transparent)]
         pub struct $wrapper(GenericASTNode);
+
+        #[derive(derive_more::From)]
+        $vis enum [<$wrapper Enum>]<'lt> {
+            $([<$name:camel>](&'lt $t),)*
+        }
+
+        #[derive(derive_more::From)]
+        $vis enum [<$wrapper EnumMut>]<'lt> {
+            $([<$name:camel>](&'lt mut $t),)*
+        }
 
         #[allow(unsafe_code)]
         unsafe impl $crate::graph::NodeUnion for $wrapper {
@@ -60,26 +105,21 @@ macro_rules! wrapper {
         }
 
         impl $wrapper {
-            paste::paste! {
-                $(
-                #[inline]
-                pub fn [<as_ $name>](&self) -> Option<&$t> {
-                    match self {
-                        $wrapper($variants) $(if $variant_if)? => $variant_expr,
-                        _ => None,
-                    }
+            pub fn as_enum(&self) -> [<$wrapper Enum>] {
+                match self {
+                    $($wrapper($variants) $(if $variant_if)? => $variant_expr,)*
+                    _ => unreachable!()
                 }
-                #[inline]
-                pub fn [<as_ $name _mut>](&mut self) -> Option<&mut $t> {
-                    match self {
-                        $wrapper($variants) $(if $variant_if)? => $variant_expr,
-                        _ => None
-                    }
+            }
+
+            pub fn as_enum_mut(&mut self) -> [<$wrapper EnumMut>] {
+                match self {
+                    $($wrapper($variants) $(if $variant_if)? => $variant_expr,)*
+                    _ => unreachable!()
                 }
-                )*
             }
         }
-    }
+    }}
 }
 
 #[macro_export]

@@ -22,9 +22,9 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper TopLevel {
-        enum(EnumDeclaration) = GenericASTNode::Enum(x) => Some(x),
-        struct(StructDeclaration) = GenericASTNode::Struct(x) => Some(x),
-        function(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => Some(x),
+        enum(EnumDeclaration) = GenericASTNode::Enum(x) => x.into(),
+        struct(StructDeclaration) = GenericASTNode::Struct(x) => x.into(),
+        function(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => x.into(),
     }
 }
 

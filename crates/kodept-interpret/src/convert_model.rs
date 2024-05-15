@@ -2,21 +2,22 @@ use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use Identifier::TypeReference;
-use kodept_ast::{
-    BlockLevel, BodiedFunctionDeclaration, Body, Expression, ExpressionBlock, Identifier,
-    IfExpression, InitializedVariable, Lambda, Literal, Operation, Term,
-};
 use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
+use kodept_ast::{
+    BlockLevel, BlockLevelEnum, BodiedFunctionDeclaration, Body, BodyEnum, Expression,
+    ExpressionBlock, ExpressionEnum, Identifier, IfExpression, InitializedVariable, Lambda,
+    Literal, LiteralEnum, Operation, OperationEnum, ParameterEnum, Term, TermEnum,
+};
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
-use kodept_inference::Environment;
-use kodept_inference::language::{app, lambda, Language, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
+use kodept_inference::language::{app, lambda, r#let, var, Language};
 use kodept_inference::r#type::MonomorphicType;
+use kodept_inference::Environment;
+use Identifier::TypeReference;
 
-use crate::node_family::TypeDerivableNode;
+use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
 
@@ -38,24 +39,15 @@ impl TypeDerivableNode {
 
 impl ToModelFrom<TypeDerivableNode> for ConversionHelper<'_> {
     fn convert(self, node: &TypeDerivableNode) -> Result<Language, InferError> {
-        if let Some(node) = node.as_function() {
-            self.convert(node)
-        } else if let Some(node) = node.as_expression_block() {
-            self.convert(node)
-        } else if let Some(node) = node.as_init_var() {
-            self.convert(node)
-        } else if let Some(node) = node.as_lambda() {
-            self.convert(node)
-        } else if let Some(_node) = node.as_application() {
-            todo!()
-        } else if let Some(_node) = node.as_if_expr() {
-            todo!()
-        } else if let Some(_node) = node.as_reference() {
-            todo!()
-        } else if let Some(node) = node.as_literal() {
-            self.convert(node)
-        } else {
-            unreachable!()
+        match node.as_enum() {
+            TypeDerivableNodeEnum::Function(x) => self.convert(x),
+            TypeDerivableNodeEnum::ExpressionBlock(x) => self.convert(x),
+            TypeDerivableNodeEnum::InitVar(x) => self.convert(x),
+            TypeDerivableNodeEnum::Lambda(x) => self.convert(x),
+            TypeDerivableNodeEnum::Application(_) => todo!(),
+            TypeDerivableNodeEnum::IfExpr(x) => self.convert(x),
+            TypeDerivableNodeEnum::Reference(_) => todo!(),
+            TypeDerivableNodeEnum::Literal(x) => self.convert(x),
         }
     }
 }
@@ -102,25 +94,20 @@ trait ExtractName {
 
 impl ToModelFrom<Body> for ConversionHelper<'_> {
     fn convert(self, node: &Body) -> Result<Language, InferError> {
-        if let Some(node) = node.as_simple() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_block() {
-            return self.convert(node);
+        match node.as_enum() {
+            BodyEnum::Block(x) => self.convert(x),
+            BodyEnum::Simple(x) => self.convert(x),
         }
-        unreachable!()
     }
 }
 
 impl ToModelFrom<BlockLevel> for ConversionHelper<'_> {
     fn convert(self, node: &BlockLevel) -> Result<Language, InferError> {
-        if let Some(node) = node.as_func() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_operation() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_init_var() {
-            return self.convert(node);
+        match node.as_enum() {
+            BlockLevelEnum::Func(x) => self.convert(x),
+            BlockLevelEnum::InitVar(x) => self.convert(x),
+            BlockLevelEnum::Operation(x) => self.convert(x),
         }
-        unreachable!()
     }
 }
 
@@ -132,12 +119,9 @@ impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
             .parameters(self.ast, self.token)
             .into_iter()
             .map(|it| {
-                let name = if let Some(it) = it.as_typed() {
-                    &it.name
-                } else if let Some(it) = it.as_untyped() {
-                    &it.name
-                } else {
-                    unreachable!()
+                let name = match it.as_enum() {
+                    ParameterEnum::Typed(x) => &x.name,
+                    ParameterEnum::Untyped(x) => &x.name,
                 };
                 scope
                     .var(name)
@@ -154,28 +138,27 @@ impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
 
 impl ToModelFrom<Operation> for ConversionHelper<'_> {
     fn convert(self, node: &Operation) -> Result<Language, InferError> {
-        if let Some(node) = node.as_block() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_expression() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_application() {
-            let expr = self.convert(node.expr(self.ast, self.token))?;
-            let mut params = node
-                .params(self.ast, self.token)
-                .into_iter()
-                .rev()
-                .map(|it| self.convert(it))
-                .peekable();
-            return if params.peek().is_some() {
-                params.try_fold(expr, |acc, next| Ok(app(next?, acc).into()))
-            } else {
-                Ok(app(unit(), expr).into())
-            };
-        } else if let Some(_node) = node.as_access() {
-        } else if let Some(_node) = node.as_binary() {
-        } else if let Some(_node) = node.as_unary() {
+        match node.as_enum() {
+            OperationEnum::Application(node) => {
+                let expr = self.convert(node.expr(self.ast, self.token))?;
+                let mut params = node
+                    .params(self.ast, self.token)
+                    .into_iter()
+                    .rev()
+                    .map(|it| self.convert(it))
+                    .peekable();
+                return if params.peek().is_some() {
+                    params.try_fold(expr, |acc, next| Ok(app(next?, acc).into()))
+                } else {
+                    Ok(app(unit(), expr).into())
+                };
+            }
+            OperationEnum::Access(_) => todo!(),
+            OperationEnum::Unary(_) => todo!(),
+            OperationEnum::Binary(_) => todo!(),
+            OperationEnum::Block(x) => self.convert(x),
+            OperationEnum::Expression(x) => self.convert(x),
         }
-        unreachable!()
     }
 }
 
@@ -213,54 +196,50 @@ impl ToModelFrom<InitializedVariable> for ConversionHelper<'_> {
 
 impl ToModelFrom<Expression> for ConversionHelper<'_> {
     fn convert(self, node: &Expression) -> Result<Language, InferError> {
-        if let Some(node) = node.as_term() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_if() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_literal() {
-            return self.convert(node);
-        } else if let Some(node) = node.as_lambda() {
-            return self.convert(node);
+        match node.as_enum() {
+            ExpressionEnum::Lambda(x) => self.convert(x),
+            ExpressionEnum::If(x) => self.convert(x),
+            ExpressionEnum::Literal(x) => self.convert(x),
+            ExpressionEnum::Term(x) => self.convert(x),
         }
-        unreachable!()
     }
 }
 
 impl ToModelFrom<IfExpression> for ConversionHelper<'_> {
-    fn convert(self, node: &IfExpression) -> Result<Language, InferError> {
+    fn convert(self, _: &IfExpression) -> Result<Language, InferError> {
         Ok(unit())
     }
 }
 
 impl ToModelFrom<Literal> for ConversionHelper<'_> {
     fn convert(self, node: &Literal) -> Result<Language, InferError> {
-        if let Some(node) = node.as_number() {
-            return Ok(Floating(node.value.clone()).into());
-        } else if let Some(node) = node.as_tuple() {
-            let items = node
-                .value(self.ast, self.token)
-                .into_iter()
-                .map(|it| self.convert(it))
-                .collect::<Result<_, _>>()?;
-            return Ok(Tuple(items).into());
+        match node.as_enum() {
+            LiteralEnum::Number(x) => Ok(Floating(x.value.clone()).into()),
+            LiteralEnum::Char(_) => todo!(),
+            LiteralEnum::String(_) => todo!(),
+            LiteralEnum::Tuple(node) => {
+                let items = node
+                    .value(self.ast, self.token)
+                    .into_iter()
+                    .map(|it| self.convert(it))
+                    .collect::<Result<_, _>>()?;
+                Ok(Tuple(items).into())
+            }
         }
-        unreachable!()
     }
 }
 
 impl ToModelFrom<Term> for ConversionHelper<'_> {
     fn convert(self, node: &Term) -> Result<Language, InferError> {
-        if let Some(node) = node.as_reference() {
-            let scope = self.scopes.lookup(node, self.ast, self.token)?;
-            return match &node.ident {
-                TypeReference { .. } => Err(InferError::Unknown),
-                Identifier::Reference { name } => Ok(scope
-                    .var(name)
-                    .ok_or(AlgorithmWError::UnknownVar(var(name)))?
-                    .into()),
-            };
+        let TermEnum::Reference(node) = node.as_enum();
+        let scope = self.scopes.lookup(node, self.ast, self.token)?;
+        match &node.ident {
+            TypeReference { .. } => Err(InferError::Unknown),
+            Identifier::Reference { name } => Ok(scope
+                .var(name)
+                .ok_or(AlgorithmWError::UnknownVar(var(name)))?
+                .into()),
         }
-        unreachable!()
     }
 }
 
@@ -281,12 +260,10 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
 
 impl ExtractName for BlockLevel {
     fn extract_name(&self, tree: &SyntaxTree, token: &PermTkn) -> Cow<str> {
-        if let Some(node) = self.as_func() {
-            node.name.as_str().into()
-        } else if let Some(node) = self.as_init_var() {
-            node.variable(tree, token).name.clone().into()
-        } else {
-            self.get_id().to_string().into()
+        match self.as_enum() {
+            BlockLevelEnum::Func(x) => x.name.as_str().into(),
+            BlockLevelEnum::InitVar(x) => x.variable(tree, token).name.clone().into(),
+            BlockLevelEnum::Operation(x) => x.get_id().to_string().into(),
         }
     }
 }

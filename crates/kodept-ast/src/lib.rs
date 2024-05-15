@@ -6,6 +6,8 @@ pub use self::node::{
     top_level::*, types::*,
 };
 
+pub use macros::ForceInto;
+
 pub mod ast_builder;
 pub mod graph;
 mod macros;

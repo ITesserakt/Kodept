@@ -15,10 +15,10 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Literal {
-        number(NumberLiteral) = GenericASTNode::Number(x) => Some(x),
-        char(CharLiteral) = GenericASTNode::Char(x) => Some(x),
-        string(StringLiteral) = GenericASTNode::String(x) => Some(x),
-        tuple(TupleLiteral) = GenericASTNode::Tuple(x) => Some(x),
+        number(NumberLiteral) = GenericASTNode::Number(x) => x.into(),
+        char(CharLiteral) = GenericASTNode::Char(x) => x.into(),
+        string(StringLiteral) = GenericASTNode::String(x) => x.into(),
+        tuple(TupleLiteral) = GenericASTNode::Tuple(x) => x.into(),
     }
 }
 

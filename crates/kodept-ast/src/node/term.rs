@@ -15,7 +15,7 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Term {
-        reference(Reference) = GenericASTNode::Reference(x) => Some(x),
+        reference(Reference) = GenericASTNode::Reference(x) => x.into(),
     }
 }
 
