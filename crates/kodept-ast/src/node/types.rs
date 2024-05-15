@@ -15,9 +15,9 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Type {
-        type_name(TypeName) = GenericASTNode::TypeName(x) => Some(x),
-        tuple(ProdType) = GenericASTNode::ProdType(x) => Some(x),
-        union(SumType) = GenericASTNode::SumType(x) => Some(x),
+        type_name(TypeName) = GenericASTNode::TypeName(x) => x.into(),
+        tuple(ProdType) = GenericASTNode::ProdType(x) => x.into(),
+        union(SumType) = GenericASTNode::SumType(x) => x.into(),
     }
 }
 
@@ -25,8 +25,8 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Parameter {
-        typed(TypedParameter) = GenericASTNode::TypedParameter(x) => Some(x),
-        untyped(UntypedParameter) = GenericASTNode::UntypedParameter(x) => Some(x),
+        typed(TypedParameter) = GenericASTNode::TypedParameter(x) => x.into(),
+        untyped(UntypedParameter) = GenericASTNode::UntypedParameter(x) => x.into(),
     }
 }
 

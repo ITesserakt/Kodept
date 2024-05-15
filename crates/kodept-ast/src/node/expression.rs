@@ -12,30 +12,149 @@ use crate::graph::tags::*;
 use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
+use crate::macros::ForceInto;
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, BlockLevel, IfExpression, Literal, Term, UntypedParameter};
+use crate::{node, wrapper, BlockLevel, UntypedParameter};
+
+pub use expression::*;
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Operation {
-        application(Application) = GenericASTNode::Application(x) => Some(x),
-        access(Access) = GenericASTNode::Access(x) => Some(x),
-        unary(Unary) = GenericASTNode::Unary(x) => Some(x),
-        binary(Binary) = GenericASTNode::Binary(x) => Some(x),
-        block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => Some(x),
-        expression(Expression) = n if Expression::contains(n) => n.try_into().ok(),
+        application(Application) = GenericASTNode::Application(x) => x.into(),
+        access(Access) = GenericASTNode::Access(x) => x.into(),
+        unary(Unary) = GenericASTNode::Unary(x) => x.into(),
+        binary(Binary) = GenericASTNode::Binary(x) => x.into(),
+        block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => x.into(),
+        expression(Expression) = n if Expression::contains(n) => n.force_into::<Expression>().into(),
     }
 }
 
-wrapper! {
+/// Manual macro expansion
+mod expression {
+    use crate::graph::{GenericASTNode, NodeId, NodeUnion};
+    use crate::macros::ForceInto;
+    use crate::traits::Identifiable;
+    use crate::utils::Skip;
+    use crate::{IfExpression, Lambda, Literal, Term};
+    use derive_more::{From, Into};
+    #[cfg(feature = "serde")]
+    use serde::{Deserialize, Serialize};
+
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Expression {
-        lambda(Lambda) = GenericASTNode::Lambda(x) => Some(x),
-        if(IfExpression) = GenericASTNode::If(x) => Some(x),
-        literal(Literal) = n if Literal::contains(n) => n.try_into().ok(),
-        term(Term) = n if Term::contains(n) => n.try_into().ok(),
+    #[repr(transparent)]
+    pub struct Expression(GenericASTNode);
+    #[derive(derive_more::From)]
+    pub enum ExpressionEnum<'lt> {
+        Lambda(&'lt Lambda),
+        If(&'lt IfExpression),
+        Literal(&'lt Literal),
+        Term(&'lt Term),
+    }
+    #[derive(derive_more::From)]
+    pub enum ExpressionEnumMut<'lt> {
+        Lambda(&'lt mut Lambda),
+        If(&'lt mut IfExpression),
+        Literal(&'lt mut Literal),
+        Term(&'lt mut Term),
+    }
+    #[allow(unsafe_code)]
+    unsafe impl NodeUnion for Expression {
+        fn contains(node: &GenericASTNode) -> bool {
+            #[allow(unused_variables)]
+            #[allow(unreachable_patterns)]
+            match node {
+                GenericASTNode::Lambda(x) => true,
+                GenericASTNode::If(x) => true,
+                n if Literal::contains(n) => true,
+                x if Term::contains(x) => true,
+                _ => false,
+            }
+        }
+    }
+    impl<'a> TryFrom<&'a GenericASTNode> for &'a Expression {
+        type Error = Skip<<&'a GenericASTNode as TryFrom<&'a GenericASTNode>>::Error>;
+
+        #[inline]
+        fn try_from(value: &'a GenericASTNode) -> Result<Self, Self::Error> {
+            if !<Expression as NodeUnion>::contains(value) {
+                return Err(Skip::Skipped);
+            }
+            Ok(<Expression as NodeUnion>::wrap(value))
+        }
+    }
+    impl<'a> TryFrom<&'a mut GenericASTNode> for &'a mut Expression {
+        type Error = Skip<<&'a mut GenericASTNode as TryFrom<&'a mut GenericASTNode>>::Error>;
+
+        #[inline]
+        fn try_from(value: &'a mut GenericASTNode) -> Result<Self, Self::Error> {
+            if !<Expression as NodeUnion>::contains(value) {
+                return Err(Skip::Skipped);
+            }
+            Ok(<Expression as NodeUnion>::wrap_mut(value))
+        }
+    }
+    impl From<Lambda> for Expression {
+        #[inline]
+        fn from(value: Lambda) -> Self {
+            let generic: GenericASTNode = value.into();
+            Expression(generic)
+        }
+    }
+    impl From<IfExpression> for Expression {
+        #[inline]
+        fn from(value: IfExpression) -> Self {
+            let generic: GenericASTNode = value.into();
+            Expression(generic)
+        }
+    }
+    impl From<Literal> for Expression {
+        #[inline]
+        fn from(value: Literal) -> Self {
+            let generic: GenericASTNode = value.into();
+            Expression(generic)
+        }
+    }
+    impl From<Term> for Expression {
+        #[inline]
+        fn from(value: Term) -> Self {
+            let generic: GenericASTNode = value.into();
+            Expression(generic)
+        }
+    }
+    impl Identifiable for Expression {
+        fn get_id(&self) -> NodeId<Self> {
+            <GenericASTNode as Identifiable>::get_id(&self.0).narrow()
+        }
+    }
+    impl Expression {
+        pub fn as_enum(&self) -> ExpressionEnum {
+            match self {
+                Expression(GenericASTNode::Lambda(x)) => x.into(),
+                Expression(GenericASTNode::If(x)) => x.into(),
+                Expression(n) if Literal::contains(n) => n.force_into::<Literal>().into(),
+                Expression(x) if Term::contains(x) => x.force_into::<Term>().into(),
+                _ => unreachable!(),
+            }
+        }
+
+        pub fn as_enum_mut(&mut self) -> ExpressionEnumMut {
+            match self {
+                Expression(GenericASTNode::Lambda(x)) => x.into(),
+                Expression(GenericASTNode::If(x)) => x.into(),
+                Expression(n) => {
+                    if Literal::contains(n) {
+                        n.force_into::<Literal>().into()
+                    } else if Term::contains(n) {
+                        n.force_into::<Term>().into()
+                    } else {
+                        unreachable!()
+                    }
+                }
+            }
+        }
     }
 }
 
