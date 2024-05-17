@@ -33,6 +33,7 @@ fn expand_to_string(id: usize, alphabet: &'static str) -> String {
 pub enum PrimitiveType {
     Integral,
     Floating,
+    Boolean
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq, From)]
@@ -41,10 +42,6 @@ pub struct Var(pub(crate) usize);
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
 
 pub struct Tuple(pub(crate) Vec<MonomorphicType>);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
-
-pub struct Union(pub(crate) Vec<MonomorphicType>);
 
 #[derive(Debug, Clone, PartialEq, From, Eq, Hash)]
 pub enum MonomorphicType {
@@ -56,7 +53,6 @@ pub enum MonomorphicType {
         output: Box<MonomorphicType>,
     },
     Tuple(Tuple),
-    Union(Union),
     Pointer(Box<MonomorphicType>),
     Constant(usize),
 }
@@ -108,9 +104,6 @@ impl MonomorphicType {
             MonomorphicType::Tuple(Tuple(vec)) => vec
                 .iter()
                 .fold(HashSet::new(), |acc, next| acc.bitor(&next.free_types())),
-            MonomorphicType::Union(Union(vec)) => vec
-                .iter()
-                .fold(HashSet::new(), |acc, next| acc.bitor(&next.free_types())),
             MonomorphicType::Pointer(t) => t.free_types(),
         }
     }
@@ -126,9 +119,6 @@ impl MonomorphicType {
                 output: Box::new(output.rename(old, new)),
             },
             MonomorphicType::Tuple(Tuple(vec)) => MonomorphicType::Tuple(Tuple(
-                vec.into_iter().map(|it| it.rename(old, new)).collect(),
-            )),
-            MonomorphicType::Union(Union(vec)) => MonomorphicType::Union(Union(
                 vec.into_iter().map(|it| it.rename(old, new)).collect(),
             )),
             MonomorphicType::Pointer(t) => MonomorphicType::Pointer(Box::new(t.rename(old, new))),
@@ -152,9 +142,6 @@ impl MonomorphicType {
             MonomorphicType::Tuple(Tuple(vec)) => {
                 MonomorphicType::Tuple(Tuple(vec.iter().map(|it| it.substitute(from)).collect()))
             }
-            MonomorphicType::Union(Union(vec)) => {
-                MonomorphicType::Union(Union(vec.iter().map(|it| it.substitute(from)).collect()))
-            }
             MonomorphicType::Pointer(t) => MonomorphicType::Pointer(Box::new(t.substitute(from))),
         }
     }
@@ -169,7 +156,7 @@ impl MonomorphicType {
                 vec.append(&mut output.extract_vars());
                 vec
             }
-            MonomorphicType::Tuple(Tuple(vec)) | MonomorphicType::Union(Union(vec)) => {
+            MonomorphicType::Tuple(Tuple(vec)) => {
                 vec.iter().flat_map(MonomorphicType::extract_vars).collect()
             }
             MonomorphicType::Pointer(t) => t.extract_vars(),
@@ -261,17 +248,6 @@ impl Tuple {
     }
 }
 
-impl Union {
-    #[must_use]
-    pub const fn bottom() -> Union {
-        Union(vec![])
-    }
-
-    pub fn push(&mut self, value: MonomorphicType) {
-        self.0.push(value);
-    }
-}
-
 impl Display for Var {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "'{}", expand_to_string(self.0, LOWER_ALPHABET))
@@ -288,7 +264,6 @@ impl Display for MonomorphicType {
                 _ => write!(f, "{input} -> {output}"),
             },
             MonomorphicType::Tuple(Tuple(vec)) => write!(f, "({})", vec.iter().join(", ")),
-            MonomorphicType::Union(Union(vec)) => write!(f, "({})", vec.iter().join(" | ")),
             MonomorphicType::Pointer(t) => write!(f, "*{t}"),
             MonomorphicType::Constant(id) => {
                 write!(f, "{}", expand_to_string(*id, UPPER_ALPHABET))

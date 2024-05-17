@@ -1,4 +1,4 @@
-pub use tree::*;
+pub use main::*;
 pub use utils::*;
 
 use crate::graph::nodes::Inaccessible;
@@ -43,7 +43,7 @@ mod stage {
     }
 }
 
-mod tree {
+mod main {
     use std::fmt::{Display, Formatter};
 
     use kodept_core::{ConvertibleToMut, ConvertibleToRef};
@@ -301,12 +301,8 @@ mod utils {
         type Item = (&'arena Inaccessible, VisitSide);
 
         fn next(&mut self) -> Option<Self::Item> {
-            let Some((next, descend)) = self.stack.pop_back() else {
-                return None;
-            };
-            let Some(current) = self.graph.node_weight(next) else {
-                return None;
-            };
+            let (next, descend) = self.stack.pop_back()?;
+            let current = self.graph.node_weight(next)?;
             if matches!(descend, TraverseState::Exit) {
                 return Some((current, VisitSide::Exiting));
             }
@@ -316,7 +312,7 @@ mod utils {
                 .extend(self.graph.children(next).map(|it| it.1));
             self.edges_buffer.reverse();
             let edges_iter = self.edges_buffer.iter();
-            return if edges_iter.len() != 0 {
+            if edges_iter.len() != 0 {
                 self.stack.push_back((next, TraverseState::Exit));
                 for child in edges_iter {
                     self.stack.push_back((*child, TraverseState::DescendDeeper));
@@ -324,7 +320,7 @@ mod utils {
                 Some((current, VisitSide::Entering))
             } else {
                 Some((current, VisitSide::Leaf))
-            };
+            }
         }
 
         fn size_hint(&self) -> (usize, Option<usize>) {

@@ -102,7 +102,6 @@ impl GenericASTNode {
             GenericASTNode::Unary(_) => "Unary",
             GenericASTNode::AbstractFunction(_) => "AbstractFunction",
             GenericASTNode::ProdType(_) => "ProdType",
-            GenericASTNode::SumType(_) => "SumType",
         }
     }
 }

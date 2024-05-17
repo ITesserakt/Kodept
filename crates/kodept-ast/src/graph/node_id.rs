@@ -18,9 +18,9 @@ pub struct NodeId<Node>(Key<Node>);
 pub type GenericNodeId = NodeId<GenericASTNode>;
 pub type GenericNodeKey = Key<GenericASTNode>;
 
-impl Into<Key<GenericASTNode>> for GenericNodeId {
-    fn into(self) -> Key<GenericASTNode> {
-        self.0
+impl From<GenericNodeId> for Key<GenericASTNode> {
+    fn from(value: GenericNodeId) -> Self {
+        value.0
     }
 }
 

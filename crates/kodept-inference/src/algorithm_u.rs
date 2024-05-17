@@ -1,4 +1,4 @@
-use crate::r#type::{MonomorphicType, Tuple, Union, Var};
+use crate::r#type::{MonomorphicType, Tuple, Var};
 use crate::substitution::Substitutions;
 
 #[derive(Debug)]
@@ -24,9 +24,6 @@ impl AlgorithmU {
             }
             (var, MonomorphicType::Pointer(t)) => AlgorithmU::occurs_check(var, t),
             (var, MonomorphicType::Tuple(Tuple(vec))) => {
-                vec.iter().any(|it| AlgorithmU::occurs_check(var, it))
-            }
-            (var, MonomorphicType::Union(Union(vec))) => {
                 vec.iter().any(|it| AlgorithmU::occurs_check(var, it))
             }
             _ => false,
@@ -79,11 +76,6 @@ impl AlgorithmU {
             }
             (MonomorphicType::Pointer(p1), MonomorphicType::Pointer(p2)) => p1.unify(p2),
             (MonomorphicType::Tuple(vec1), MonomorphicType::Tuple(vec2))
-                if vec1.0.len() == vec2.0.len() =>
-            {
-                AlgorithmU::unify_vec(&vec1.0, &vec2.0)
-            }
-            (MonomorphicType::Union(vec1), MonomorphicType::Union(vec2))
                 if vec1.0.len() == vec2.0.len() =>
             {
                 AlgorithmU::unify_vec(&vec1.0, &vec2.0)

@@ -17,7 +17,6 @@ wrapper! {
     pub wrapper Type {
         type_name(TypeName) = GenericASTNode::TypeName(x) => x.into(),
         tuple(ProdType) = GenericASTNode::ProdType(x) => x.into(),
-        union(SumType) = GenericASTNode::SumType(x) => x.into(),
     }
 }
 
@@ -42,14 +41,6 @@ node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ProdType {;
-        pub types: Vec<Type>,
-    }
-}
-
-node! {
-    #[derive(Debug, PartialEq)]
-    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct SumType {;
         pub types: Vec<Type>,
     }
 }
@@ -117,13 +108,7 @@ impl PopulateTree for rlt::Type {
                 .with_children_from(x.inner.iter().as_slice(), context)
                 .with_rlt(context, self)
                 .id()
-                .cast(),
-            rlt::Type::Union(x) => builder
-                .add_node(SumType::uninit())
-                .with_children_from(x.inner.iter().as_slice(), context)
-                .with_rlt(context, self)
-                .id()
-                .cast(),
+                .cast()
         }
     }
 }

@@ -26,11 +26,17 @@ impl<T> Inaccessible<T> {
     }
 }
 
-impl PermTkn {
+impl Default for PermTkn {
     /// Value of this type should be a singleton in one thread
     /// If this contract violated, function will panic
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self(TLCellOwner::new())
+    }
+}
+
+impl PermTkn {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
