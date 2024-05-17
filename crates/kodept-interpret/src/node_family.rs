@@ -11,7 +11,7 @@ use kodept_ast::{
 };
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::language::var;
-use kodept_inference::r#type::{MonomorphicType, PolymorphicType, Tuple, Union};
+use kodept_inference::r#type::{MonomorphicType, PolymorphicType, Tuple};
 use kodept_macros::error::report::{ReportMessage, Severity};
 
 use crate::node_family::Errors::Undefined;
@@ -112,13 +112,12 @@ impl HasRestrictedType for TypeRestrictedNode {
                     .fold(a0, |acc, next| acc.merge(next));
                 // TODO: add full lambda type
             }
-            TypeRestrictedNodeEnum::Variable(node) => match node.assigned_type(ast, token) {
-                Some(ty) => {
+            TypeRestrictedNodeEnum::Variable(node) => {
+                if let Some(ty) = node.assigned_type(ast, token) {
                     let model = var(&node.name).into();
                     a0.push(Rc::new(model), Rc::new(convert(ty, scope, ast, token)?));
                 }
-                _ => {}
-            },
+            }
             TypeRestrictedNodeEnum::Reference(Reference {
                 ident: TypeReference { name },
                 ..
@@ -129,7 +128,7 @@ impl HasRestrictedType for TypeRestrictedNode {
             _ => {}
         };
 
-        return Ok(a0);
+        Ok(a0)
     }
 }
 
@@ -171,19 +170,6 @@ fn convert(
                 .collect();
             let types = types?;
             Ok(MonomorphicType::Tuple(Tuple::new(types)).into())
-        }
-        TypeEnum::Union(tuple) => {
-            let types: Result<Vec<_>, _> = tuple
-                .types(ast, token)
-                .into_iter()
-                .map(|it| match convert(it, scope.clone(), ast, token) {
-                    Ok(PolymorphicType::Monomorphic(x)) => Ok(x),
-                    Err(e) => Err(e),
-                    _ => Err(Errors::TooComplex),
-                })
-                .collect();
-            let types = types?;
-            Ok(MonomorphicType::Union(Union::new(types)).into())
         }
     };
 }

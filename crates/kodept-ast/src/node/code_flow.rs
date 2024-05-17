@@ -6,6 +6,7 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::Identity;
+use crate::graph::tags::PRIMARY;
 use crate::graph::NodeId;
 use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
@@ -23,10 +24,10 @@ node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct IfExpression {;
-        pub condition: Identity<Operation>,
-        pub body: Identity<Body>,
-        pub elifs: Vec<ElifExpression>,
-        pub elses: Option<ElseExpression>,
+        pub condition: Identity<Operation> as PRIMARY,
+        pub body: Identity<Body> as 0,
+        pub elifs: Vec<ElifExpression> as 0,
+        pub elses: Option<ElseExpression> as 0,
     }
 }
 

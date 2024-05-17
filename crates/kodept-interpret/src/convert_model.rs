@@ -5,14 +5,14 @@ use std::rc::Rc;
 use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::{
-    BlockLevel, BlockLevelEnum, BodiedFunctionDeclaration, Body, BodyEnum, Expression,
+    Application, BlockLevel, BlockLevelEnum, BodiedFunctionDeclaration, Body, BodyEnum, Expression,
     ExpressionBlock, ExpressionEnum, Identifier, IfExpression, InitializedVariable, Lambda,
-    Literal, LiteralEnum, Operation, OperationEnum, ParameterEnum, Term, TermEnum,
+    Literal, LiteralEnum, Operation, OperationEnum, ParameterEnum, Reference, Term, TermEnum,
 };
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::language::{app, lambda, r#let, var, Language};
+use kodept_inference::language::{app, lambda, r#if, r#let, var, Language};
 use kodept_inference::r#type::MonomorphicType;
 use kodept_inference::Environment;
 use Identifier::TypeReference;
@@ -44,9 +44,9 @@ impl ToModelFrom<TypeDerivableNode> for ConversionHelper<'_> {
             TypeDerivableNodeEnum::ExpressionBlock(x) => self.convert(x),
             TypeDerivableNodeEnum::InitVar(x) => self.convert(x),
             TypeDerivableNodeEnum::Lambda(x) => self.convert(x),
-            TypeDerivableNodeEnum::Application(_) => todo!(),
+            TypeDerivableNodeEnum::Application(x) => self.convert(x),
             TypeDerivableNodeEnum::IfExpr(x) => self.convert(x),
-            TypeDerivableNodeEnum::Reference(_) => todo!(),
+            TypeDerivableNodeEnum::Reference(x) => self.convert(x),
             TypeDerivableNodeEnum::Literal(x) => self.convert(x),
         }
     }
@@ -129,7 +129,7 @@ impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
             })
             .peekable();
         if bindings.peek().is_some() {
-            bindings.try_fold(expr, |acc, next| Ok(lambda(next?, acc).into()))
+            bindings.try_rfold(expr, |acc, next| Ok(lambda(next?, acc).into()))
         } else {
             Ok(lambda(var("()"), expr).into())
         }
@@ -139,25 +139,29 @@ impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
 impl ToModelFrom<Operation> for ConversionHelper<'_> {
     fn convert(self, node: &Operation) -> Result<Language, InferError> {
         match node.as_enum() {
-            OperationEnum::Application(node) => {
-                let expr = self.convert(node.expr(self.ast, self.token))?;
-                let mut params = node
-                    .params(self.ast, self.token)
-                    .into_iter()
-                    .rev()
-                    .map(|it| self.convert(it))
-                    .peekable();
-                return if params.peek().is_some() {
-                    params.try_fold(expr, |acc, next| Ok(app(next?, acc).into()))
-                } else {
-                    Ok(app(unit(), expr).into())
-                };
-            }
+            OperationEnum::Application(node) => self.convert(node),
             OperationEnum::Access(_) => todo!(),
             OperationEnum::Unary(_) => todo!(),
             OperationEnum::Binary(_) => todo!(),
             OperationEnum::Block(x) => self.convert(x),
             OperationEnum::Expression(x) => self.convert(x),
+        }
+    }
+}
+
+impl ToModelFrom<Application> for ConversionHelper<'_> {
+    fn convert(self, node: &Application) -> Result<Language, InferError> {
+        let expr = self.convert(node.expr(self.ast, self.token))?;
+        let mut params = node
+            .params(self.ast, self.token)
+            .into_iter()
+            .rev()
+            .map(|it| self.convert(it))
+            .peekable();
+        if params.peek().is_some() {
+            params.try_fold(expr, |acc, next| Ok(app(next?, acc).into()))
+        } else {
+            Ok(app(unit(), expr).into())
         }
     }
 }
@@ -206,8 +210,24 @@ impl ToModelFrom<Expression> for ConversionHelper<'_> {
 }
 
 impl ToModelFrom<IfExpression> for ConversionHelper<'_> {
-    fn convert(self, _: &IfExpression) -> Result<Language, InferError> {
-        Ok(unit())
+    fn convert(self, node: &IfExpression) -> Result<Language, InferError> {
+        let condition = self.convert(node.condition(self.ast, self.token))?;
+        let body = self.convert(node.body(self.ast, self.token))?;
+        let otherwise = {
+            let elifs = node.elifs(self.ast, self.token);
+            let elses = node.elses(self.ast, self.token);
+            let last = elses
+                .map(|it| self.convert(it.body(self.ast, self.token)))
+                .unwrap_or(Ok(unit()))?;
+
+            elifs.into_iter().try_fold(last, |acc, next| {
+                let condition = self.convert(next.condition(self.ast, self.token))?;
+                let body = self.convert(next.body(self.ast, self.token))?;
+                Result::<_, InferError>::Ok(r#if(condition, body, acc).into())
+            })?
+        };
+
+        Ok(r#if(condition, body, otherwise).into())
     }
 }
 
@@ -215,7 +235,7 @@ impl ToModelFrom<Literal> for ConversionHelper<'_> {
     fn convert(self, node: &Literal) -> Result<Language, InferError> {
         match node.as_enum() {
             LiteralEnum::Number(x) => Ok(Floating(x.value.clone()).into()),
-            LiteralEnum::Char(_) => todo!(),
+            LiteralEnum::Char(x) => Ok(Floating(x.value.clone()).into()),
             LiteralEnum::String(_) => todo!(),
             LiteralEnum::Tuple(node) => {
                 let items = node
@@ -232,6 +252,12 @@ impl ToModelFrom<Literal> for ConversionHelper<'_> {
 impl ToModelFrom<Term> for ConversionHelper<'_> {
     fn convert(self, node: &Term) -> Result<Language, InferError> {
         let TermEnum::Reference(node) = node.as_enum();
+        self.convert(node)
+    }
+}
+
+impl ToModelFrom<Reference> for ConversionHelper<'_> {
+    fn convert(self, node: &Reference) -> Result<Language, InferError> {
         let scope = self.scopes.lookup(node, self.ast, self.token)?;
         match &node.ident {
             TypeReference { .. } => Err(InferError::Unknown),

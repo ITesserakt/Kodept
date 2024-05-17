@@ -37,17 +37,9 @@ pub enum RLTFamily {
     Else(rlt::ElseExpr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RLTAccessor {
     links: SecondaryMap<GenericNodeKey, RLTFamily>,
-}
-
-impl Default for RLTAccessor {
-    fn default() -> Self {
-        Self {
-            links: SecondaryMap::default(),
-        }
-    }
 }
 
 impl RLTAccessor {

@@ -8,9 +8,7 @@ use crate::structure::rlt::new_types::*;
 pub enum Type {
     Reference(TypeName),
     #[from(ignore)]
-    Tuple(Enclosed<Box<[Type]>>),
-    #[from(ignore)]
-    Union(Enclosed<Box<[Type]>>),
+    Tuple(Enclosed<Box<[Type]>>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,8 +32,7 @@ impl Located for Type {
     fn location(&self) -> CodePoint {
         match self {
             Type::Reference(x) => x.location(),
-            Type::Tuple(x) => x.left.location(),
-            Type::Union(x) => x.left.location(),
+            Type::Tuple(x) => x.left.location()
         }
     }
 }

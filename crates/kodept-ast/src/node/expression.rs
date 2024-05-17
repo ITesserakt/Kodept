@@ -16,7 +16,7 @@ use crate::macros::ForceInto;
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper, BlockLevel, UntypedParameter};
 
-pub use expression::*;
+pub use expression_impl::*;
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -32,7 +32,7 @@ wrapper! {
 }
 
 /// Manual macro expansion
-mod expression {
+mod expression_impl {
     use crate::graph::{GenericASTNode, NodeId, NodeUnion};
     use crate::macros::ForceInto;
     use crate::traits::Identifiable;

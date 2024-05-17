@@ -1,4 +1,8 @@
 module Testing {
+    fun if_(condition, f, g) =>
+        if condition => f()
+        else => g()
+
     fun compose(f, g) => \x => f(g(x))
 
     enum struct Bool { True, False }

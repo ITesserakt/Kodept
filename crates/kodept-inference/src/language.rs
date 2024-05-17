@@ -34,7 +34,15 @@ pub enum Literal {
     Integral(String),
     Floating(String),
     Tuple(Vec<Language>),
-    Union(Vec<Language>),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum Special {
+    If {
+        condition: Box<Language>,
+        body: Box<Language>,
+        otherwise: Box<Language>,
+    },
 }
 
 #[derive(Debug, From, Display, PartialEq, Eq, Hash)]
@@ -44,6 +52,7 @@ pub enum Language {
     Lambda(Lambda),
     Let(Let),
     Literal(Literal),
+    Special(Special),
 }
 
 pub fn var<V: Into<Var>>(id: V) -> Var {
@@ -81,6 +90,18 @@ where
     }
 }
 
+pub fn r#if(
+    condition: impl Into<Language>,
+    body: impl Into<Language>,
+    otherwise: impl Into<Language>,
+) -> Special {
+    Special::If {
+        condition: Box::new(condition.into()),
+        body: Box::new(body.into()),
+        otherwise: Box::new(otherwise.into()),
+    }
+}
+
 impl Display for App {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.arg.as_ref() {
@@ -114,7 +135,18 @@ impl Display for Literal {
         match self {
             Literal::Integral(n) | Literal::Floating(n) => write!(f, "{n}"),
             Literal::Tuple(t) => write!(f, "({})", t.iter().join(", ")),
-            Literal::Union(u) => write!(f, "({})", u.iter().join(" | ")),
+        }
+    }
+}
+
+impl Display for Special {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Special::If {
+                condition,
+                body,
+                otherwise,
+            } => write!(f, "if ({condition}) ({body}) ({otherwise})"),
         }
     }
 }
@@ -128,8 +160,8 @@ impl<S: Into<String>> From<S> for Var {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::language::{app, lambda, Language, Literal, r#let, var};
-    use crate::r#type::{fun1, Tuple, Union, var as t_var};
+    use crate::language::{app, lambda, r#let, var, Language, Literal};
+    use crate::r#type::{fun1, var as t_var, Tuple, Union};
 
     #[test]
     fn test_infer_language() {

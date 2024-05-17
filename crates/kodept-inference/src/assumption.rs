@@ -85,11 +85,12 @@ impl Assumptions {
 }
 
 impl Display for Assumptions {
+    #[allow(unstable_name_collisions)]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let out = self
             .value
             .iter()
-            .map(|(key, value)| format!("{key} => {value}"))
+            .map(|(key, value)| format!("{key} :: {value}"))
             .intersperse(", ".to_string())
             .collect::<String>();
 

@@ -153,7 +153,6 @@ macro_rules! make_ast_node_adaptor {
             Unary($wrapper<$($life, )* Unary>),
             AbstractFunction($wrapper<$($life, )* AbstractFunctionDeclaration>),
             ProdType($wrapper<$($life, )* ProdType>),
-            SumType($wrapper<$($life, )* SumType>),
         }
     };
 }
@@ -188,7 +187,6 @@ macro_rules! functor_map {
             $ty::Unary($var) => $mapping,
             $ty::AbstractFunction($var) => $mapping,
             $ty::ProdType($var) => $mapping,
-            $ty::SumType($var) => $mapping,
         }
     };
 }
@@ -197,7 +195,7 @@ macro_rules! functor_map {
 macro_rules! node {
     ($(#[$config:meta])* $vis:vis struct $name:ident {
         $($field_vis:vis $field_name:ident: $field_type:ty,)*;
-        $($graph_vis:vis $graph_name:ident: $graph_type:ty$( as $tag:tt)*,)*
+        $($graph_vis:vis $graph_name:ident: $graph_type:ty$( as $tag:tt)?,)*
     }) => {
         #[cfg(feature = "serde")]
         $(#[$config])*
@@ -237,7 +235,7 @@ macro_rules! node {
         }
 
         $crate::with_children! [$name => {
-            $($graph_vis $graph_name: $graph_type $(as $tag)?,)*
+            $($graph_vis $graph_name: $graph_type $( as $tag)?,)*
         }];
     };
     ($(#[$config:meta])* $vis:vis struct $name:ident;) => {
