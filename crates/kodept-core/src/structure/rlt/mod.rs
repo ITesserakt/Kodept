@@ -1,6 +1,7 @@
 pub use self::{
     block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
     top_level::*, types::*,
+    context::*
 };
 
 mod block_level;
@@ -13,3 +14,4 @@ pub mod new_types;
 mod term;
 mod top_level;
 mod types;
+mod context;

@@ -21,7 +21,4 @@ fun rule110(a, b, c) =>
     elif and(not(a), and(not(b), c))      => ::Main::Bool::True
     else                                  => ::Main::Bool::False
 
-fun main => (
-    not(::Main::Bool::True),
-    not(not(::Main::Bool::True))
-)
+fun main => rule110(Bool::True, Bool::True, Bool::False)
