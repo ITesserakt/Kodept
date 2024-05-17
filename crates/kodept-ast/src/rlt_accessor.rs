@@ -30,6 +30,7 @@ pub enum RLTFamily {
     Expression(rlt::Expression),
     Term(rlt::Term),
     Reference(rlt::Reference),
+    Contextual(rlt::ContextualReference),
     Literal(rlt::Literal),
     CodeFlow(rlt::CodeFlow),
     If(rlt::IfExpr),
@@ -113,6 +114,7 @@ impl Located for RLTFamily {
             RLTFamily::If(x) => x.location(),
             RLTFamily::Elif(x) => x.location(),
             RLTFamily::Else(x) => x.location(),
+            RLTFamily::Contextual(x) => x.location()
         }
     }
 }

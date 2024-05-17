@@ -138,7 +138,11 @@ pub fn inspect<I: Debug, O: Debug, E: Debug, P>(mut parser: P) -> impl FnMut(I) 
 where
     P: Parser<I, O, E>,
 {
-    move |input| dbg!(parser.parse(input))
+    move |input| {
+        let (rest, result) = parser.parse(input)?;
+        dbg!(&result);
+        Ok((rest, result))
+    }
 }
 
 #[inline]

@@ -22,7 +22,7 @@ fn replace_with<N: Identifiable + Into<GenericASTNode>>(
         Change::replace(id, Application::uninit()),
         Change::add(
             id,
-            Reference::uninit(Identifier::Reference {
+            Reference::uninit(Default::default(), Identifier::Reference {
                 name: function_name.to_string(),
             }),
             tags::PRIMARY,
