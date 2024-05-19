@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.core
 
-import arrow.core.Eval
+import arrow.eval.Eval
 
 class ProgramCodeHolder(private val text: Map<Filepath, Eval<String>>) {
     operator fun get(filepath: Filepath) = Accessor(filepath)

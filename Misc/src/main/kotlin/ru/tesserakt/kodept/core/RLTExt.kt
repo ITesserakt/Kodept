@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.core
 
-import arrow.core.Eval
+import arrow.eval.Eval
 import com.github.h0tk3y.betterParse.lexer.CharToken
 import com.github.h0tk3y.betterParse.lexer.LiteralToken
 import com.github.h0tk3y.betterParse.lexer.TokenMatch

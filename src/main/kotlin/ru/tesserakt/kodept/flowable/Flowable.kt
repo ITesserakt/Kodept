@@ -1,10 +1,9 @@
 package ru.tesserakt.kodept.flowable
 
-import arrow.core.Eval
 import arrow.core.IorNel
 import arrow.core.flatMap
 import arrow.core.rightIor
-import arrow.typeclasses.Semigroup
+import arrow.eval.Eval
 import com.github.h0tk3y.betterParse.lexer.TokenMatchesSequence
 import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.error.Report
@@ -51,5 +50,5 @@ interface Flowable<T : Flowable.Data> {
 
 internal inline fun <T> Iterable<T>.foldAST(ast: AST, f: (T, AST) -> ParseResult): ParseResult =
     fold(ast.rightIor() as ParseResult) { acc: ParseResult, t: T ->
-        acc.flatMap(Semigroup.nonEmptyList()) { f(t, it) }
+        acc.flatMap({ a, b -> a + b }) { f(t, it) }
     }

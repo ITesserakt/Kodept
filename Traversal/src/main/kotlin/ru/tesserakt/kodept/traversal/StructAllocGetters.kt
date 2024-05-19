@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.traversal
 
-import arrow.core.continuations.EagerEffect
-import arrow.core.continuations.eagerEffect
+import arrow.core.raise.EagerEffect
+import arrow.core.raise.eagerEffect
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.InsecureModifications.setRawLexem

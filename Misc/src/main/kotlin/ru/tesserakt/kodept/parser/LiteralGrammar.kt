@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.parser
 
-import arrow.core.Eval
+import arrow.eval.Eval
 import com.github.h0tk3y.betterParse.combinators.map
 import com.github.h0tk3y.betterParse.combinators.or
 import com.github.h0tk3y.betterParse.combinators.use

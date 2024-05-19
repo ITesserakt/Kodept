@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.core
 
-import arrow.core.Eval
+import arrow.eval.Eval
 import arrow.core.NonEmptyList
 
 /**

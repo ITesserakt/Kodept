@@ -4,4 +4,12 @@ build*/
 gradlew*
 .vscode/
 .fleet/
-*bin/
+*bin/# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml

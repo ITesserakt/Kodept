@@ -4,8 +4,7 @@ import arrow.core.*
 import arrow.core.raise.EagerEffect
 import arrow.core.raise.eagerEffect
 import arrow.core.raise.getOrElse
-import arrow.typeclasses.Semigroup
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.error.Report
@@ -34,11 +33,11 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
         .flatten()
 
     private val transformed = flowable.ast.mapWithFilename { either ->
-        logger.info("Analyzing ${this.name}...")
+        logger.info { "Analyzing ${this.name}..." }
 
-        either.flatMap(Semigroup.nonEmptyList()) { ast ->
+        either.flatMap({ a, b -> a + b }) { ast ->
             sorted.foldAST(ast) { value, acc ->
-                logger.trace("Executing $value")
+                logger.trace { "Executing $value" }
                 when (value) {
                     is Transformer<*> -> executeTransformer(acc, value)
                     is Analyzer -> unwrap { value.analyzeWithCaching(acc).andThen { acc }.invoke() }
@@ -47,6 +46,7 @@ class TransformedContent(flowable: Flowable.Data.ErroneousAST) : Flowable<Transf
         }
     }
 
+    @Suppress("CANDIDATE_CHOSEN_USING_OVERLOAD_RESOLUTION_BY_LAMBDA_ANNOTATION")
     private fun Filepath.executeTransformer(tree: AST, transformer: Transformer<*>) = unwrap {
         eagerEffect {
             val changes = tree

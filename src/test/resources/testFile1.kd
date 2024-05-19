@@ -6,19 +6,6 @@ module A {
     fun id(x) => x
 }
 
-module B {
-    struct Int
-    struct Wrapper(value: Int)
-
-    trait Num [a] {
-        abstract fun plus(self: a, other: a): a
-    }
-
-    extend Int with Num[Int] {
-        fun plus(self: Int, other: Int): Int => //...
-    }
-}
-
 module Prelude {
     foreign type Ptr => "java.math.BigInteger"
     foreign fun prim_inc(n: Ptr): Ptr => "kotlin.math.inc"

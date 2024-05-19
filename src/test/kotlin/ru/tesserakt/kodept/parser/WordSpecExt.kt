@@ -25,7 +25,7 @@ suspend inline fun <T : Any, U : T> WordSpecShouldContainerScope.test(
     parser: Parser<T>,
     element: String,
     shouldParse: U?,
-    crossinline equality: (Any, Any) -> Unit = Any::shouldBe,
+    crossinline equality: (Any, Any) -> Unit = { a, b -> a.shouldBe(b) },
 ) = element.let {
     if (it.length > 20) "${it.take(20)}..." else if (it.isEmpty() || it.isBlank()) "<empty string>" else it
 }.invoke {

@@ -8,7 +8,7 @@ import com.github.ajalt.clikt.parameters.groups.provideDelegate
 import com.github.ajalt.clikt.parameters.groups.required
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.path
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.FileLoader
 import ru.tesserakt.kodept.core.Loader

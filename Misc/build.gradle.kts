@@ -19,7 +19,7 @@ dependencies {
 
     implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
 
-    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
+    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.4.0")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
 }

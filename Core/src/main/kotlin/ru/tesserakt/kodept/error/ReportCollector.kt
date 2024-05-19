@@ -1,6 +1,7 @@
 package ru.tesserakt.kodept.error
 
 import arrow.core.NonEmptyList
+import arrow.core.toNonEmptyListOrNull
 import ru.tesserakt.kodept.core.CodePoint
 import ru.tesserakt.kodept.core.Filepath
 
@@ -34,7 +35,7 @@ class ReportCollector {
     fun <T> Sequence<T>.reportEach(f: (T) -> Report) = map(f).report()
 
     val collectedReports get() = reports
-    val definitelyCollected get() = NonEmptyList.fromListUnsafe(collectedReports)
+    val definitelyCollected get() = collectedReports.toNonEmptyListOrNull()!!
     val hasReports get() = reports.isNotEmpty()
     val hasErrors get() = errors
 }

@@ -1,6 +1,6 @@
 package ru.tesserakt.kodept.flowable
 
-import arrow.core.Eval
+import arrow.eval.Eval
 import arrow.core.IorNel
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.convert

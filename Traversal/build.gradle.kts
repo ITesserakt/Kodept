@@ -19,8 +19,8 @@ dependencies {
     implementation(project(":Misc"))
 
     testImplementation(project(":kotest-extensions"))
-    testImplementation("io.mockk:mockk:1.13.2")
-    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.3.0")
+    testImplementation("io.mockk:mockk:1.13.11")
+    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.4.0")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
 }

@@ -20,21 +20,21 @@ private object RecurseUp : FlowControl
 private interface Resolver<T : AST.Named, R : AST.Node> {
     fun T.handle(node: AST.Node): Either<FlowControl, R>
 
-    fun T.handleOrRecurseUp(node: AST.Node): Either<FlowError, R> = handle(node).handleErrorWith { control ->
-        when (control) {
-            is Multiple -> control.left()
+    fun T.handleOrRecurseUp(node: AST.Node): Either<FlowError, R> = handle(node).recover { a ->
+        when (a) {
+            is Multiple -> a.left()
             NotFound -> NotFound.left()
-            RecurseUp -> node.parent.rightIfNotNull { NotFound }.flatMap { handleOrRecurseUp(it) }
-        }
+            RecurseUp -> (node.parent?.right() ?: NotFound.left()).flatMap { handleOrRecurseUp(it) }
+        }.bind()
     }
 
     context (Filepath)
     fun followContext(context: AST.ResolutionContext, node: T) = if (context.fromRoot && context.chain.isNotEmpty()) {
         node.walkDownTop(::identity).filterIsInstance<AST.FileDecl>()
             .first().modules.filter { it.name == context.chain.first().name }.onlyUnique { NotFound }.let { m ->
-                val module = m.handleError {
+                val module: Either<FlowControl, AST.Named> = m.getOrElse {
                     node.walkDownTop(::identity).filterIsInstance<AST.ModuleDecl>().first()
-                }.widen<_, AST.Named, _>()
+                }.right()
                 context.chain.drop(if (m.isRight()) 1 else 0).fold(module) { acc, next ->
                     acc.flatMap { next.handle(it) }
                 }

@@ -3,6 +3,7 @@ package ru.tesserakt.kodept.traversal
 import arrow.core.NonEmptyList
 import arrow.core.raise.EagerEffect
 import arrow.core.raise.eagerEffect
+import arrow.core.toNonEmptyListOrNull
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.core.RLT
 import ru.tesserakt.kodept.core.accessRLT
@@ -21,7 +22,7 @@ object VariableUniqueness : Analyzer() {
 
             Report(
                 ast.filepath,
-                NonEmptyList.fromList(points).orNull(),
+                points.toNonEmptyListOrNull(),
                 Report.Severity.ERROR,
                 SemanticError.DuplicatedVariable(vars.first().reference.name)
             )

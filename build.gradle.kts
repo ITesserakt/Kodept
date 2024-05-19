@@ -6,7 +6,7 @@ val arrowVersion: String by extra
 val serializationVersion: String by extra
 
 plugins {
-    kotlin("jvm") version "1.8.20"
+    kotlin("jvm") version "1.9.23"
     application
     id("org.graalvm.buildtools.native") version "0.9.20"
 }
@@ -24,20 +24,26 @@ dependencies {
     implementation(project(":Misc"))
     implementation(project(":Traversal"))
 
+    implementation("io.arrow-kt:arrow-eval:$arrowVersion")
+
     implementation("com.github.h0tk3y.betterParse:better-parse:$betterParseVersion")
-    implementation("org.slf4j:slf4j-simple:2.0.5")
-    implementation("com.github.ajalt.clikt:clikt:3.5.2")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.12")
+    implementation("com.github.ajalt.clikt:clikt:4.4.0")
 
     testImplementation(project(":kotest-extensions"))
-    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.3.0")
+    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.4.0")
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
 }
 
 allprojects {
     tasks.withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions.jvmTarget = "11"
         kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+    }
+
+    tasks.withType<JavaCompile> {
+        sourceCompatibility = "11"
     }
 
     tasks.withType<Test> {

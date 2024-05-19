@@ -1,8 +1,6 @@
 package ru.tesserakt.kodept.parser
 
-import arrow.core.NonEmptyList
-import arrow.core.None
-import arrow.core.Some
+import arrow.core.*
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.grammar.parser
@@ -16,7 +14,7 @@ import ru.tesserakt.kodept.lexer.ExpressionToken.*
 object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
     private infix fun <E, A : E, B : E, R : E> Parser<Tuple2<A, List<Tuple2<TokenMatch, B>>>>.leftFold(construct: (E, RLT.Symbol, B) -> R) =
         map { (a, tail) ->
-            when (val rest = NonEmptyList.fromList(tail)) {
+            when (val rest = tail.toNonEmptyListOrNone()) {
                 None -> a
                 is Some -> {
                     val (op, b) = rest.value.head
@@ -51,7 +49,7 @@ object OperatorGrammar : Grammar<RLT.ExpressionNode>() {
     val logicExpr by bitExpr * zeroOrMore((AND_LOGIC or OR_LOGIC) * bitExpr) leftFold RLT::BinaryOperation
     val parameters by LPAREN and strictTrailing(parser { application }, COMMA) * RPAREN
     val application: Parser<RLT.ExpressionNode> by logicExpr * optional(parameters) map { (head, tail) ->
-        when (val rest = tail?.t2?.let(NonEmptyList.Companion::fromList)) {
+        when (val rest = tail?.t2?.toNonEmptyListOrNone()) {
             None -> RLT.Application(head, emptyList())
             is Some -> RLT.Application(head, rest.value.map(RLT::Parameter))
             null -> head

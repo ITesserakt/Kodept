@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.flowable
 
-import arrow.core.Eval
-import mu.KotlinLogging
+import arrow.eval.Eval
+import io.github.oshai.kotlinlogging.KotlinLogging
 import ru.tesserakt.kodept.CompilationContext
 import ru.tesserakt.kodept.core.CodeSource
 import ru.tesserakt.kodept.core.ProgramCodeHolder
@@ -21,7 +21,7 @@ class StringContent : Flowable<StringContent.Data> {
     private val text = sources.map {
         it.withFilename {
             Eval.later {
-                logger.info("Loading ${it.name}...")
+                logger.info { "Loading ${it.name}..." }
                 contents.bufferedReader().use(Reader::readText)
             }
         }

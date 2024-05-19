@@ -1,7 +1,7 @@
 package ru.tesserakt.kodept.traversal.inference
 
 import arrow.core.*
-import arrow.typeclasses.Semigroup
+import arrow.core.raise.fold
 import ru.tesserakt.kodept.core.AST
 import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.traversal.BinaryOperatorDesugaring
@@ -9,7 +9,6 @@ import ru.tesserakt.kodept.traversal.ReferenceResolver
 import ru.tesserakt.kodept.traversal.TypeReferenceResolver
 import ru.tesserakt.kodept.traversal.UnaryOperatorDesugaring
 import ru.tesserakt.kodept.traversal.inference.Assumptions.Companion.fold
-import kotlin.math.exp
 
 fun AST.Expression.convert(): Pair<Assumptions, Language> = when (this) {
     is AST.BinaryOperator -> BinaryOperatorDesugaring.contract(this)
@@ -115,7 +114,7 @@ fun AST.Expression.convert(): Pair<Assumptions, Language> = when (this) {
         is AST.ForeignFunctionDecl -> {
             val v = Language.Var(mangle())
             val (ctx, params) = r.params.map { it.convert() }.unzip().mapLeft { it.fold() }
-            val nonEmptyParams = NonEmptyList.fromList(params).getOrElse { nonEmptyListOf(Language.Literal.unit) }
+            val nonEmptyParams = params.toNonEmptyListOrNull() ?: nonEmptyListOf(Language.Literal.unit)
             val types = NonEmptyList.fromListUnsafe(List(params.size) { MonomorphicType.Var() })
             val ret = r.returns?.evalType() ?: MonomorphicType.Tuple.unit
             Assumptions(v to MonomorphicType.Fn.uncurry(types, ret), *nonEmptyParams.zip(types).toTypedArray()).combine(
@@ -163,6 +162,6 @@ private fun AST.TypeLike.evalType(): MonomorphicType = when (this) {
         }
         else -> constantTypes.getOrPut(r.name) { MonomorphicType.Constant(r.name) }
     }
-    is AST.TypeReference -> TypeReferenceResolver.contract()
+    is AST.TypeReference -> TypeReferenceResolver.contract(this)
     is AST.UnionType -> TODO()
 }

@@ -1,9 +1,6 @@
 package ru.tesserakt.kodept.error
 
-import arrow.core.NonEmptyList
-import arrow.core.flatten
-import arrow.core.nel
-import arrow.core.unzip
+import arrow.core.*
 import com.github.h0tk3y.betterParse.parser.*
 import ru.tesserakt.kodept.core.Filepath
 import ru.tesserakt.kodept.core.toCodePoint
@@ -62,7 +59,7 @@ context (ErrorResultConfig)
         )
     }
     val eofReport =
-        NonEmptyList.fromList(expanded.filterIsInstance<UnexpectedEof>()).orNull()?.let { unexpectedEoves ->
+        expanded.filterIsInstance<UnexpectedEof>().toNonEmptyListOrNull()?.let { unexpectedEoves ->
             Report(
                 filename,
                 null,
