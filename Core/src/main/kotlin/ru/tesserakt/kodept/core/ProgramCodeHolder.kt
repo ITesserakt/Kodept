@@ -8,7 +8,7 @@ class ProgramCodeHolder(private val text: Map<Filepath, Eval<String>>) {
 
     inner class Accessor(accessToken: Filepath) {
         private val cached = text[accessToken] ?: throw IllegalArgumentException("Unknown file passed: $accessToken")
-        private val lines = cached.map { it.lines() }
+        private val lines = cached.map { it.lines() }.memoize()
 
         val filename = accessToken
 

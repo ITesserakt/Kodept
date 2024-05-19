@@ -11,6 +11,7 @@ import ru.tesserakt.kodept.error.CompilerCrash
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
+import java.math.BigInteger
 import kotlin.reflect.KClass
 
 object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
@@ -75,6 +76,13 @@ object ForeignFunctionResolver : Transformer<AST.ForeignFunctionDecl>() {
 
             node.copy(action = function)
         }
+
+    init {
+        exportFunction("kotlin.math.inc", BigInteger::inc)
+        exportFunction({ println(it[0]) }, "kotlin.println", listOf(BigInteger::class), Unit::class)
+        exportFunction("kotlin.math.dec", BigInteger::dec)
+        exportFunction("kotlin.math.eq") { a: BigInteger, b: BigInteger -> a == b }
+    }
 }
 
 inline fun <reified R> ForeignFunctionResolver.exportFunction(fnRef: String, crossinline f: () -> R) =

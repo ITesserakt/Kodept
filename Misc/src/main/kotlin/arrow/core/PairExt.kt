@@ -22,3 +22,10 @@ inline fun <A, B, C, D, E> ((A, B, C, D) -> E).curry(): (Tuple4<A, B, C, D>) -> 
 
 inline fun <A, B, C> ((A, B) -> C).curryPair(): (Pair<A, B>) -> C = { this(it.first, it.second) }
 inline fun <A, B, C, D> ((A, B, C) -> D).curryPair(): (Triple<A, B, C>) -> D = { this(it.first, it.second, it.third) }
+
+inline fun <A, B> Tuple2<A, B>?.orNull() = this ?: Tuple2(null, null)
+inline fun <A, B, C> Tuple2<A, Tuple2<B, C>>.flatten() = Tuple3(t1, t2.t1, t2.t2)
+inline fun <A, B, C> Tuple3<A, B, C>?.orNull() = this ?: Tuple3(null, null, null)
+
+@JvmName("orNullA?BC?")
+inline fun <A, B, C> Tuple3<A, List<B>, C>?.orNull() = this ?: Tuple3(null, emptyList(), null)

@@ -4,6 +4,7 @@ import arrow.core.raise.eagerEffect
 import arrow.core.raise.recover
 import arrow.core.nel
 import ru.tesserakt.kodept.core.AST
+import ru.tesserakt.kodept.core.Tree
 import ru.tesserakt.kodept.error.Report
 import ru.tesserakt.kodept.error.ReportCollector
 import ru.tesserakt.kodept.error.SemanticError
@@ -23,17 +24,20 @@ object TypeInferenceAnalyzer : Analyzer() {
     override fun ReportCollector.analyze(ast: AST) = eagerEffect {
         var context = Assumptions.empty()
 
-        ast.flatten().forEach { node ->
+        ast.flatten(Tree.SearchMode.Preorder).forEach { node ->
             if (node is AST.FunctionDecl) {
                 val (lambda, ctxWithParams) = node.convert()
-                val (_, type) = (lambda infer ctxWithParams.combine(context)).bind()
-                val generalized = ctxWithParams.generalize(type)
-                context = context.and(Language.Var(node.name), generalized)
+                val bind = Language.Var("${node.name}\$${node.id}")
+                val (ctx, type) = (lambda infer ctxWithParams
+                    .combine(context)
+                    .and(bind, MonomorphicType.Var())).bind()
+                val generalized = ctxWithParams.combine(ctx).combine(context).generalize(type)
+                context = context.and(bind, generalized)
                 with(ast.filepath) {
                     report(
                         node.rlt.position.nel(),
                         Report.Severity.NOTE,
-                        SemanticNote.TypeOfFunction("$lambda : $generalized")
+                        SemanticNote.TypeOfFunction(generalized.toString())
                     )
                 }
             }
@@ -48,7 +52,7 @@ object TypeInferenceAnalyzer : Analyzer() {
                 )
 
                 is Errors.InfiniteType -> failWithReport(
-                    null, Report.Severity.ERROR, SemanticError.InfiniteType(it.type.toString())
+                    null, Report.Severity.ERROR, SemanticError.InfiniteType(it.type.toString(), it.with.toString())
                 )
 
                 is Errors.UnknownVariable -> failWithReport(

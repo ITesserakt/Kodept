@@ -1,6 +1,7 @@
 package ru.tesserakt.kodept.traversal.inference
 
 import arrow.core.tail
+import ru.tesserakt.kodept.core.AST
 import java.math.BigDecimal
 import java.math.BigInteger
 
@@ -59,6 +60,12 @@ sealed interface Language {
             val unit = Tuple(emptyList())
         }
     }
+
+    data class TypedMagic(val magic: AST.Intrinsics, val type: MonomorphicType): Language {
+        override fun toString(): String = "intrinsic call"
+    }
+
+    data class If(val condition: Language, val body: Language, val el: Language): Language
 
     override fun toString(): String
 }

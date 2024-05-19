@@ -12,6 +12,6 @@ sealed class SemanticNote(final override val code: String, override val message:
 
     data class TypeOfFunction(val type: String) : SemanticNote(
         "KSeN2",
-        "Type of function inferred to $type"
+        "Type of function was inferred to $type"
     )
 }

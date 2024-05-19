@@ -22,7 +22,7 @@ private inline fun <reified N : AST.Node> Sequence<AST.Node>.generateReports(
         .reportEach(action)
 }
 
-val emptyBlockAnalyzer = object : Analyzer() {
+object EmptyBlockAnalyzer : Analyzer() {
     override fun ReportCollector.analyze(ast: AST): EagerEffect<UnrecoverableError, Unit> = eagerEffect {
         val emptyStructures = ast.fastFlatten {
             it is AST.StructDecl && it.alloc.isEmpty() ||

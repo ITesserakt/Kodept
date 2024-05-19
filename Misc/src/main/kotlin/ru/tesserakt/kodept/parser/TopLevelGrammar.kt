@@ -1,13 +1,14 @@
 package ru.tesserakt.kodept.parser
 
 import arrow.core.NonEmptyList
+import arrow.core.flatten
+import arrow.core.orNull
 import com.github.h0tk3y.betterParse.combinators.map
 import com.github.h0tk3y.betterParse.combinators.or
 import com.github.h0tk3y.betterParse.combinators.times
 import com.github.h0tk3y.betterParse.combinators.unaryMinus
 import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.parser.Parser
-import com.github.h0tk3y.betterParse.utils.Tuple3
 import ru.tesserakt.kodept.core.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.*
 import ru.tesserakt.kodept.lexer.ExpressionToken.Companion.CLASS
@@ -36,7 +37,7 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     val traitStatement by TRAIT * TYPE * optionalWithStart(
         LBRACE, strictTrailing(ObjectLevelGrammar.traitLevel or FunctionGrammar) * RBRACE
     ) map { (traitToken, name, it) ->
-        val (lb, rest, rb) = it?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
+        val (lb, rest, rb) = it?.flatten().orNull()
         RLT.Trait(traitToken.keyword(), name.type(), lb?.symbol(), rest, rb?.symbol())
     }
 
@@ -45,17 +46,12 @@ object TopLevelGrammar : Grammar<RLT.TopLevelNode>() {
     ) * optionalWithStart(
         LBRACE, strictTrailing(FunctionGrammar) * RBRACE
     ) map { (structToken, name, allocated, rest) ->
-        val (lp, alloc, rp) = allocated?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
-        val (lb, rest, rb) = rest?.let { Tuple3(it.t1, it.t2.t1, it.t2.t2) } ?: Tuple3(null, emptyList(), null)
+        val (lp, alloc, rp) = allocated?.flatten().orNull()
+        val (lb, rest, rb) = rest?.flatten().orNull()
         RLT.Struct(
-            structToken.keyword(),
-            name.type(),
-            lp?.symbol(),
-            alloc.map { RLT.TypedParameter(it.t1.identifier(), it.t2) },
-            rp?.symbol(),
-            lb?.symbol(),
-            rest,
-            rb?.symbol()
+            structToken.keyword(), name.type(),
+            lp?.symbol(), alloc.map { RLT.TypedParameter(it.t1.identifier(), it.t2) }, rp?.symbol(),
+            lb?.symbol(), rest, rb?.symbol()
         )
     }
 

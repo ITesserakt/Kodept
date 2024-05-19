@@ -24,11 +24,11 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
         val (s1, t1) = AlgorithmW(context, func).run().bind()
         val (s2, t2) = AlgorithmW(context.substitute(s1), arg).run().bind()
         val s3 = AlgorithmU(t1.substitute(s1), MonomorphicType.Fn(t2, beta)).run().bind()
-        s3 compose s2 compose s1 to beta.substitute(s3)
+        s3 compose s2 compose s1 to beta.substitute(s3 compose s2 compose s1)
     }
 
     fun Language.Lambda.run(): AlgorithmWResult = eagerEffect {
-        val beta = MonomorphicType.Var()
+        val beta = context[bind]?.instantiate() ?: MonomorphicType.Var()
         val (s1, t1) = AlgorithmW(context + (bind to beta), expr).run().bind()
         s1 to MonomorphicType.Fn(beta.substitute(s1), t1)
     }
@@ -49,6 +49,15 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
         }
     }
 
+    fun Language.If.run(): AlgorithmWResult = eagerEffect {
+        val (s1, t1) = AlgorithmW(context, condition).run().bind()
+        val s2 = AlgorithmU(t1, PrimitiveType.Bool).run().bind()
+        val (s3, t2) = AlgorithmW(context.substitute(s2 compose s1), body).run().bind()
+        val (s4, t3) = AlgorithmW(context.substitute(s2 compose s1), el).run().bind()
+        val s5 = AlgorithmU(t2, t3).run().bind()
+        s5 compose s4 compose s3 compose s2 compose s1 to t2
+    }
+
     fun run() = eagerEffect {
         when (expression) {
             is Language.App -> expression.run().bind()
@@ -58,6 +67,8 @@ class AlgorithmW(private val context: Assumptions, private val expression: Langu
             is Language.Literal.Tuple -> expression.run().bind()
             is Language.Literal.Floating -> Substitution.empty() to PrimitiveType.Floating
             is Language.Literal.Number -> Substitution.empty() to PrimitiveType.Number
+            is Language.TypedMagic -> Substitution.empty() to expression.type
+            is Language.If -> expression.run().bind()
         }
     }
 }

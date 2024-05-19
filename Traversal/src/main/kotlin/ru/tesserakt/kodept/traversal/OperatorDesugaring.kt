@@ -14,11 +14,9 @@ object BinaryOperatorDesugaring : Transformer<AST.BinaryOperator>() {
         with(accessRLT<RLT.BinaryOperation>()?.op ?: accessRLT<RLT.CompoundAssignment>()?.compoundOperator ?: rlt) {
             AST.FunctionCall(
                 AST.Reference(
-                    functionName,
-                    AST.ResolutionContext(true, (listOf("Prelude") + listOfNotNull(traitName)).map(AST::Type))
+                    functionName, AST.ResolutionContext(true, listOfNotNull("Prelude", traitName).map(AST::Type))
                 ).withRLT().move(), listOf(
-                    left,
-                    right
+                    left, right
                 ).move()
             ).withRLT()
         }
@@ -71,8 +69,7 @@ object UnaryOperatorDesugaring : Transformer<AST.UnaryOperator>() {
         with(accessRLT<RLT.UnaryOperation>()!!.op) {
             AST.FunctionCall(
                 AST.Reference(
-                    functionName,
-                    AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
+                    functionName, AST.ResolutionContext(true, listOf("Prelude", traitName).map(AST::Type))
                 ).withRLT().move(), listOf(expr.move())
             ).withRLT()
         }

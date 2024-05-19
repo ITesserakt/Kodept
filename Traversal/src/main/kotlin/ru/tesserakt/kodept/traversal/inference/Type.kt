@@ -22,6 +22,10 @@ sealed class PrimitiveType : MonomorphicType() {
     object Floating : PrimitiveType() {
         override fun toString() = ":floating:"
     }
+
+    object Bool: PrimitiveType() {
+        override fun toString() = ":bool:"
+    }
 }
 
 sealed class MonomorphicType : PolymorphicType() {
@@ -60,8 +64,17 @@ sealed class MonomorphicType : PolymorphicType() {
         }
     }
 
-    data class Constant(val id: Int) : MonomorphicType() {
-        override fun toString(): String = id.expandToString(('Z'.downTo('A')).toList())
+    data class Union(val items: List<MonomorphicType>): MonomorphicType() {
+        override fun toString(): String = items.joinToString(separator = " | ", prefix = "(", postfix = ")")
+
+        companion object {
+            val void = Union(emptyList())
+        }
+    }
+
+    data class Constant(val name: String) : MonomorphicType() {
+        override fun toString(): String = name
+        constructor(id: Int): this(id.expandToString(('Z'.downTo('A')).toList()))
     }
 
     fun substitute(subst: Set<Substitution>): MonomorphicType = when (this) {
@@ -70,6 +83,7 @@ sealed class MonomorphicType : PolymorphicType() {
         is Fn -> Fn(input.substitute(subst), output.substitute(subst))
         is Tuple -> Tuple(items.map { it.substitute(subst) })
         is Constant -> this
+        is Union -> Union(items.map { it.substitute(subst) })
     }
 
     fun freeTypes(): Set<Var> = when (this) {
@@ -78,6 +92,7 @@ sealed class MonomorphicType : PolymorphicType() {
         is PrimitiveType -> emptySet()
         is Tuple -> items.fold(emptySet()) { acc, next -> acc + next.freeTypes() }
         is Constant -> emptySet()
+        is Union -> items.fold(emptySet()) { acc, next -> acc + next.freeTypes() }
     }
 
     fun rename(old: Int, new: Int): MonomorphicType = when (this) {
@@ -86,6 +101,7 @@ sealed class MonomorphicType : PolymorphicType() {
         is Var -> if (id == old) Var(new) else this
         is Tuple -> Tuple(items.map { it.rename(old, new) })
         is Constant -> this
+        is Union -> Union(items.map { it.rename(old, new) })
     }
 }
 
