@@ -1,36 +1,59 @@
 use std::convert::Infallible;
 
-use kodept_ast::graph::{tags, Change, ChangeSet, GenericASTNode};
+use kodept_ast::{Access, Application, Binary, BinaryExpressionKind, BitKind, ComparisonKind, EqKind, Expression, Identifier, LogicKind, MathKind, Operation, Reference, ReferenceContext, Term, Unary, UnaryExpressionKind};
+use kodept_ast::graph::{Change, ChangeSet, GenericASTNode, tags};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_ast::{Application, Binary, BinaryExpressionKind, Identifier, Reference};
-use kodept_macros::traits::Context;
 use kodept_macros::Macro;
+use kodept_macros::traits::Context;
 
 #[derive(Default)]
-pub struct BinaryOperatorExpander {}
+pub struct BinaryOperatorExpander;
+
+#[derive(Default)]
+pub struct UnaryOperatorExpander;
+
+#[derive(Default)]
+pub struct AccessExpander;
 
 fn replace_with<N: Identifiable + Into<GenericASTNode>>(
     replaced: &N,
     function_name: &'static str,
 ) -> ChangeSet {
-    // <function_name>(<left>, <right>)
+    // ::Prelude::<function_name>(<left>, <right>)
     let id = replaced.get_id().widen();
 
     ChangeSet::from_iter([
         Change::replace(id, Application::uninit()),
-        Change::add(
-            id,
-            Reference::uninit(Default::default(), Identifier::Reference {
-                name: function_name.to_string(),
-            }),
-            tags::PRIMARY,
+        Change::add::<_, _, { tags::PRIMARY }>(
+            id.narrow::<Application>(),
+            Reference::uninit(
+                ReferenceContext::global(["Prelude"]),
+                Identifier::Reference {
+                    name: function_name.to_string(),
+                },
+            )
+            .map_into::<Term>()
+            .map_into::<Expression>()
+            .map_into::<Operation>(),
         ),
     ])
 }
 
 impl BinaryOperatorExpander {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl UnaryOperatorExpander {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl AccessExpander {
     pub fn new() -> Self {
         Self::default()
     }
@@ -45,20 +68,68 @@ impl Macro for BinaryOperatorExpander {
         guard: VisitGuard<Self::Node>,
         _context: &mut impl Context,
     ) -> Execution<Self::Error, ChangeSet> {
-        let (node, side) = guard.allow_all();
-        if !matches!(side, VisitSide::Exiting | VisitSide::Leaf) {
-            Execution::Skipped?;
-        }
+        let node = guard.allow_only(VisitSide::Entering)?;
+
+        Execution::Completed(match &node.kind {
+            BinaryExpressionKind::Math(x) => match x {
+                MathKind::Add => replace_with(&*node, "__add_internal"),
+                MathKind::Sub => replace_with(&*node, "__sub_internal"),
+                MathKind::Mul => replace_with(&*node, "__mul_internal"),
+                MathKind::Pow => replace_with(&*node, "__pow_internal"),
+                MathKind::Div => replace_with(&*node, "__div_internal"),
+                MathKind::Mod => replace_with(&*node, "__mod_internal"),
+            },
+            BinaryExpressionKind::Cmp(x) => match x {
+                ComparisonKind::Less => replace_with(&*node, "__less_internal"),
+                ComparisonKind::LessEq => replace_with(&*node, "__less_eq_internal"),
+                ComparisonKind::Greater => replace_with(&*node, "__greater_internal"),
+                ComparisonKind::GreaterEq => replace_with(&*node, "__greater_internal"),
+            },
+            BinaryExpressionKind::Eq(x) => match x {
+                EqKind::Eq => replace_with(&*node, "__eq_internal"),
+                EqKind::NEq => replace_with(&*node, "__neq_internal")
+            },
+            BinaryExpressionKind::Bit(x) => match x {
+                BitKind::Or => replace_with(&*node, "__or_internal"),
+                BitKind::And => replace_with(&*node, "__and_internal"),
+                BitKind::Xor => replace_with(&*node, "__xor_internal"),
+            },
+            BinaryExpressionKind::Logic(x) => match x {
+                LogicKind::Disj => replace_with(&*node, "__dis_internal"),
+                LogicKind::Conj => replace_with(&*node, "__con_internal"),
+            },
+            BinaryExpressionKind::ComplexComparison => replace_with(&*node, "__cmp_internal"),
+        })
+    }
+}
+
+impl Macro for UnaryOperatorExpander {
+    type Error = Infallible;
+    type Node = Unary;
+
+    fn transform(
+        &mut self,
+        guard: VisitGuard<Self::Node>,
+        context: &mut impl Context,
+    ) -> Execution<Self::Error, ChangeSet> {
+        let node = guard.allow_only(VisitSide::Entering)?;
 
         Execution::Completed(match node.kind {
-            BinaryExpressionKind::Pow => replace_with(&*node, "pow"),
-            BinaryExpressionKind::Mul => replace_with(&*node, "mul"),
-            BinaryExpressionKind::Add => replace_with(&*node, "add"),
-            BinaryExpressionKind::ComplexComparison => replace_with(&*node, "cmp"),
-            BinaryExpressionKind::CompoundComparison => replace_with(&*node, "cmp"),
-            BinaryExpressionKind::Comparison => replace_with(&*node, "cmp"),
-            BinaryExpressionKind::Bit => replace_with(&*node, "bit"),
-            BinaryExpressionKind::Logic => replace_with(&*node, "lgc"),
+            UnaryExpressionKind::Neg => replace_with(&*node, "__neg_internal"),
+            UnaryExpressionKind::Not => replace_with(&*node, "__not_internal"),
+            UnaryExpressionKind::Inv => replace_with(&*node, "__inv_internal"),
+            UnaryExpressionKind::Plus => replace_with(&*node, "__plus_internal"),
         })
+    }
+}
+
+impl Macro for AccessExpander {
+    type Error = Infallible;
+    type Node = Access;
+
+    fn transform(&mut self, guard: VisitGuard<Self::Node>, context: &mut impl Context) -> Execution<Self::Error, ChangeSet> {
+        let node = guard.allow_only(VisitSide::Entering)?;
+        
+        Execution::Completed(replace_with(&*node, "compose"))
     }
 }

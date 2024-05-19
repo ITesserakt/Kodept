@@ -5,8 +5,6 @@ use derive_more::{From, Into, IsVariant};
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::{GenericASTNode, PermTkn, RefMut};
-use crate::utils::Execution;
-use crate::utils::Execution::{Completed, Skipped};
 
 #[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy, Debug)]
 #[repr(u8)]
@@ -26,9 +24,9 @@ impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
         Self(side, access, token)
     }
 
-    pub fn allow_only<E>(self, matches: VisitSide) -> Execution<E, Access<'arena, 'token, N>> {
+    pub fn allow_only(self, matches: VisitSide) -> Option<Access<'arena, 'token, N>> {
         self.0.guard(matches)?;
-        Completed(Access(self.2, self.1))
+        Some(Access(self.2, self.1))
     }
 
     pub fn allow_all(self) -> (Access<'arena, 'token, N>, VisitSide) {
@@ -37,12 +35,8 @@ impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
 }
 
 impl VisitSide {
-    pub fn guard<E>(self, guarded: VisitSide) -> Execution<E> {
-        if self != guarded {
-            Skipped
-        } else {
-            Completed(())
-        }
+    pub fn guard(self, guarded: VisitSide) -> Option<()> {
+        (self != guarded).then_some(())
     }
 }
 

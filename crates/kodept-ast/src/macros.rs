@@ -1,5 +1,31 @@
-use crate::graph::GenericASTNode;
 use kodept_core::ConvertibleTo;
+
+use crate::graph::{GenericASTNode, NodeId};
+
+#[repr(transparent)]
+pub struct Uninit<T>(T);
+
+impl<T> Uninit<T> {
+    pub fn new(value: T) -> Self {
+        Self(value)
+    }
+
+    #[allow(private_bounds)]
+    pub fn unwrap(self, id: NodeId<T>) -> T
+    where
+        T: crate::graph::Identifiable,
+    {
+        self.0.set_id(id);
+        self.0
+    }
+
+    pub fn map_into<U>(self) -> Uninit<U>
+    where
+        T: Into<U>,
+    {
+        Uninit(self.0.into())
+    }
+}
 
 pub trait ForceInto {
     type Output<T: 'static>;
@@ -214,11 +240,13 @@ macro_rules! node {
         impl $crate::node_properties::Node for $name {}
 
         impl $name {
-            pub fn uninit($($field_name: $field_type,)*) -> Self {
-                Self {
+            pub fn uninit($($field_name: $field_type,)*) -> $crate::Uninit<Self> {
+                $crate::Uninit::new(Self {
                     id: Default::default(),
-                    $($field_name, )*
-                }
+                    $(
+                    $field_name,
+                    )*
+                })
             }
         }
 

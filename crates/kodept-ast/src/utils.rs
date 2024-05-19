@@ -51,6 +51,16 @@ impl<E, R> Execution<E, R> {
     }
 }
 
+impl<R> Execution<Infallible, R> {
+    pub fn unwrap(self) -> Option<R> {
+        match self {
+            Execution::Failed(_) => unreachable!(),
+            Execution::Completed(x) => Some(x),
+            Execution::Skipped => None
+        }
+    }
+}
+
 impl<E, R> FromResidual for Execution<E, R> {
     fn from_residual(residual: <Self as Try>::Residual) -> Self {
         match residual {
@@ -65,6 +75,15 @@ impl<E1: Into<E2>, E2, R> FromResidual<Result<Infallible, E1>> for Execution<E2,
         match residual {
             Ok(_) => unreachable!(),
             Err(e) => Self::Failed(e.into()),
+        }
+    }
+}
+
+impl<E, R> FromResidual<Option<Infallible>> for Execution<E, R> {
+    fn from_residual(residual: Option<Infallible>) -> Self {
+        match residual {
+            None => Self::Skipped,
+            Some(_) => unreachable!()
         }
     }
 }

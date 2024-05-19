@@ -20,16 +20,17 @@ wrapper! {
 }
 
 #[derive(Debug, PartialEq, Default)]
-pub struct Context {
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub struct ReferenceContext {
     global: bool,
-    items: Vec<Identifier>
+    items: Vec<String>
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Reference {
-        pub context: Context,
+        pub context: ReferenceContext,
         pub ident: Identifier,;
     }
 }
@@ -41,6 +42,22 @@ pub enum Identifier {
     TypeReference { name: String },
     #[from(ignore)]
     Reference { name: String },
+}
+
+impl ReferenceContext {
+    pub fn global(items: impl IntoIterator<Item: Into<String>>) -> Self {
+        Self {
+            global: true,
+            items: items.into_iter().map(|it| it.into()).collect(),
+        }
+    }
+    
+    pub fn local(items: impl IntoIterator<Item: Into<String>>) -> Self {
+        Self {
+            global: false,
+            items: items.into_iter().map(|it| it.into()).collect(),
+        }
+    }
 }
 
 impl PopulateTree for rlt::Term {
@@ -71,10 +88,10 @@ impl PopulateTree for rlt::ContextualReference {
             },
         };
         let (from_root, refs) = self.context.clone().unfold();
-        let ctx = Context {
+        let ctx = ReferenceContext {
             global: from_root.is_some(),
             items: refs.into_iter().map(|it| match it {
-                rlt::Reference::Type(x) => Identifier::TypeReference { name: context.get_chunk_located(&x).to_string() },
+                rlt::Reference::Type(x) => context.get_chunk_located(&x).to_string(),
                 rlt::Reference::Identifier(_) => panic!("Context built with ordinary references is unsupported")
             }).collect(),
         };

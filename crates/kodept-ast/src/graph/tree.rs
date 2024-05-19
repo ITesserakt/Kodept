@@ -50,15 +50,16 @@ mod main {
     use slotgraph::export::{Config, Direction, Dot};
     use slotgraph::SubDiGraph;
 
+    use crate::graph::{Change, ChangeSet, GenericASTNode, Identifiable, NodeId, PermTkn};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::{ChildTag, TAGS_DESC};
+    use crate::graph::tree::{ChildScope, DfsIter, Graph};
     use crate::graph::tree::stage::{
         CanAccess, FullAccess, ModificationAccess, NoAccess, ViewingAccess,
     };
-    use crate::graph::tree::{ChildScope, DfsIter, Graph};
     use crate::graph::utils::OptVec;
-    use crate::graph::{Change, ChangeSet, GenericASTNode, Identifiable, NodeId, PermTkn};
     use crate::node_properties::{Node, NodeWithParent};
+    use crate::Uninit;
 
     #[derive(Debug)]
     pub struct SyntaxTree<Permission = NoAccess> {
@@ -103,14 +104,13 @@ mod main {
 
     #[allow(private_bounds)]
     impl<U: CanAccess> SyntaxTree<U> {
-        pub fn add_node<T>(&mut self, node: T) -> ChildScope<'_, T, U>
+        pub fn add_node<T>(&mut self, node: Uninit<T>) -> ChildScope<'_, T, U>
         where
-            T: Into<GenericASTNode>,
+            T: Identifiable + Into<GenericASTNode>,
         {
-            let id = self.graph.add_node(Inaccessible::new(node));
-            let node_ref = &self.graph[id];
-            node_ref.ro(self.stage.tkn()).set_id(id.into());
-
+            let id = self
+                .graph
+                .add_node_with_key(|id| Inaccessible::new(node.unwrap(id.into())));
             ChildScope::new(self, id.into())
         }
 
@@ -133,18 +133,15 @@ mod main {
                     child,
                     tag,
                 } => {
-                    let (_, id) =
-                        self.graph
-                            .add_child(parent_id.into(), tag, Inaccessible::new(child));
-                    self.graph[id].ro(self.stage.tkn()).set_id(id.into())
+                    let child_id = self
+                        .graph
+                        .add_node_with_key(|id| Inaccessible::new(child.unwrap(id.into())));
+                    self.graph.add_edge(parent_id.into(), child_id, tag);
                 }
                 Change::Replace { from_id, to } => {
                     match self.graph.node_weight_mut(from_id.into()) {
                         None => {}
-                        Some(x) => {
-                            *x = Inaccessible::new(to);
-                            x.ro(self.stage.tkn()).set_id(from_id);
-                        }
+                        Some(x) => *x = Inaccessible::new(to.unwrap(from_id)),
                     };
                 }
                 Change::DeleteSelf { node_id } => {
@@ -256,14 +253,14 @@ mod utils {
     use std::iter::FusedIterator;
 
     use kodept_core::structure::span::CodeHolder;
-    use slotgraph::export::NodeCount;
     use slotgraph::{Key, NodeKey};
+    use slotgraph::export::NodeCount;
 
+    use crate::graph::{GenericASTNode, HasChildrenMarker, NodeId, SyntaxTree};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::ChildTag;
-    use crate::graph::tree::stage::{CanAccess, FullAccess};
     use crate::graph::tree::Graph;
-    use crate::graph::{GenericASTNode, HasChildrenMarker, NodeId, SyntaxTree};
+    use crate::graph::tree::stage::{CanAccess, FullAccess};
     use crate::rlt_accessor::RLTFamily;
     use crate::traits::{Linker, PopulateTree};
     use crate::visit_side::VisitSide;
@@ -384,8 +381,8 @@ mod utils {
 
 #[cfg(test)]
 mod tests {
-    use crate::graph::SyntaxTreeBuilder;
     use crate::FileDeclaration;
+    use crate::graph::SyntaxTreeBuilder;
 
     #[test]
     fn test_tree_creation() {

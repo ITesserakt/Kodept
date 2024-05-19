@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::rc::Weak;
 
 use kodept_core::ConvertibleToRef;
@@ -42,10 +41,6 @@ pub trait Accessor {
 
     fn tree(&self) -> Weak<SyntaxTree>;
 }
-
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct LinkGuard<I>(I);
 
 pub(crate) trait PopulateTree {
     type Output: Into<GenericASTNode>;

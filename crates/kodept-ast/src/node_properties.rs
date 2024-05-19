@@ -1,6 +1,7 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::{Change, GenericASTNode, PermTkn, Identifiable, SyntaxTree};
+use crate::Uninit;
 
 pub trait NodeWithParent {
     type Parent;
@@ -33,10 +34,10 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
         tree.parent_of_mut(id, token)
     }
 
-    fn replace_with(&self, other: Self) -> Change {
+    fn replace_with(&self, other: Uninit<Self>) -> Change {
         Change::Replace {
             from_id: self.get_id().widen(),
-            to: other.into(),
+            to: other.map_into(),
         }
     }
 
