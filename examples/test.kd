@@ -1,13 +1,12 @@
-module Testing {
-    fun if_(condition, f, g) =>
-        if condition => f()
-        else => g()
-
+module Prelude {
     fun compose(f, g) => \x => f(g(x))
 
     enum struct Bool { True, False }
 }
 
-module Testing2 {
-    struct Int
+module Testing {
+    struct String
+    struct Person(name: String)
+
+    fun get_name(p: Person) => p.name
 }

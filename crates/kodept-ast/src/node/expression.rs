@@ -2,21 +2,20 @@ use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::structure::rlt;
+use BinaryExpressionKind::*;
+pub use expression_impl::*;
+use kodept_core::structure::{rlt};
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
-use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
 
-use crate::graph::tags::*;
-use crate::graph::NodeId;
+use crate::{BlockLevel, node, UntypedParameter, wrapper};
 use crate::graph::{GenericASTNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
+use crate::graph::NodeId;
+use crate::graph::tags::*;
 use crate::macros::ForceInto;
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, BlockLevel, UntypedParameter};
-
-pub use expression_impl::*;
 
 wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
@@ -33,14 +32,15 @@ wrapper! {
 
 /// Manual macro expansion
 mod expression_impl {
+    use derive_more::{From, Into};
+    #[cfg(feature = "serde")]
+    use serde::{Deserialize, Serialize};
+
+    use crate::{IfExpression, Lambda, Literal, Term};
     use crate::graph::{GenericASTNode, NodeId, NodeUnion};
     use crate::macros::ForceInto;
     use crate::traits::Identifiable;
     use crate::utils::Skip;
-    use crate::{IfExpression, Lambda, Literal, Term};
-    use derive_more::{From, Into};
-    #[cfg(feature = "serde")]
-    use serde::{Deserialize, Serialize};
 
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -224,15 +224,55 @@ pub enum UnaryExpressionKind {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum BinaryExpressionKind {
-    Pow,
-    Mul,
+pub enum ComparisonKind {
+    Less,
+    LessEq,
+    Greater,
+    GreaterEq,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub enum EqKind {
+    Eq,
+    NEq,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub enum LogicKind {
+    Disj,
+    Conj,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub enum BitKind {
+    Or,
+    And,
+    Xor,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub enum MathKind {
     Add,
+    Sub,
+    Mul,
+    Pow,
+    Div,
+    Mod,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub enum BinaryExpressionKind {
+    Math(MathKind),
+    Cmp(ComparisonKind),
+    Eq(EqKind),
+    Bit(BitKind),
+    Logic(LogicKind),
     ComplexComparison,
-    CompoundComparison,
-    Comparison,
-    Bit,
-    Logic,
 }
 
 impl PopulateTree for rlt::ExpressionBlock {
@@ -261,48 +301,103 @@ impl PopulateTree for rlt::Operation {
     ) -> NodeId<Self::Output> {
         match self {
             rlt::Operation::Block(x) => x.convert(builder, context).cast(),
-            rlt::Operation::Access { left, right, .. } => builder
-                .add_node(Access::uninit())
-                .with_children_from::<LEFT, _>([left.as_ref()], context)
-                .with_children_from::<RIGHT, _>([right.as_ref()], context)
-                .with_rlt(context, self)
-                .id()
-                .cast(),
-            rlt::Operation::TopUnary { operator, expr } => builder
-                .add_node(Unary::uninit(match operator {
-                    UnaryOperationSymbol::Neg(_) => Neg,
-                    UnaryOperationSymbol::Not(_) => Not,
-                    UnaryOperationSymbol::Inv(_) => Inv,
-                    UnaryOperationSymbol::Plus(_) => Plus,
-                }))
-                .with_children_from([expr.as_ref()], context)
-                .with_rlt(context, self)
-                .id()
-                .cast(),
+            rlt::Operation::Access { left, right, .. } => {
+                build_access(self, builder, context, left, right)
+            }
+            rlt::Operation::TopUnary { operator, expr } => {
+                build_unary(self, builder, context, operator, expr)
+            }
             rlt::Operation::Binary {
                 left,
                 operation,
                 right,
-            } => builder
-                .add_node(Binary::uninit(match operation {
-                    BinaryOperationSymbol::Pow(_) => Pow,
-                    BinaryOperationSymbol::Mul(_) => Mul,
-                    BinaryOperationSymbol::Add(_) => Add,
-                    BinaryOperationSymbol::ComplexComparison(_) => ComplexComparison,
-                    BinaryOperationSymbol::CompoundComparison(_) => CompoundComparison,
-                    BinaryOperationSymbol::Comparison(_) => Comparison,
-                    BinaryOperationSymbol::Bit(_) => Bit,
-                    BinaryOperationSymbol::Logic(_) => Logic,
-                }))
-                .with_children_from::<LEFT, _>([left.as_ref()], context)
-                .with_children_from::<RIGHT, _>([right.as_ref()], context)
-                .with_rlt(context, self)
-                .id()
-                .cast(),
+            } => build_binary(self, builder, context, left, operation, right),
             rlt::Operation::Application(x) => x.convert(builder, context).cast(),
             rlt::Operation::Expression(x) => x.convert(builder, context).cast(),
         }
     }
+}
+
+fn build_binary(
+    node: &rlt::Operation,
+    builder: &mut SyntaxTreeBuilder,
+    context: &mut (impl Linker + CodeHolder + Sized),
+    left: &Box<rlt::Operation>,
+    operation: &BinaryOperationSymbol,
+    right: &Box<rlt::Operation>,
+) -> NodeId<Operation> {
+    let binding = context.get_chunk_located(operation);
+    let op_text = binding.as_ref();
+    
+    builder
+        .add_node(Binary::uninit(match (operation, op_text) {
+            (BinaryOperationSymbol::Pow(_), _) => Math(MathKind::Pow),
+            (BinaryOperationSymbol::Mul(_), "*") => Math(MathKind::Mul),
+            (BinaryOperationSymbol::Mul(_), "/") => Math(MathKind::Div),
+            (BinaryOperationSymbol::Mul(_), "%") => Math(MathKind::Mod),
+            (BinaryOperationSymbol::Add(_), "+") => Math(MathKind::Add),
+            (BinaryOperationSymbol::Add(_), "-") => Math(MathKind::Sub),
+            (BinaryOperationSymbol::ComplexComparison(_), _) => ComplexComparison,
+            (BinaryOperationSymbol::CompoundComparison(_), "<=") => Cmp(ComparisonKind::LessEq),
+            (BinaryOperationSymbol::CompoundComparison(_), ">=") => Cmp(ComparisonKind::GreaterEq),
+            (BinaryOperationSymbol::CompoundComparison(_), "!=") => Eq(EqKind::NEq),
+            (BinaryOperationSymbol::CompoundComparison(_), "==") => Eq(EqKind::Eq),
+            (BinaryOperationSymbol::Comparison(_), "<") => Cmp(ComparisonKind::Less),
+            (BinaryOperationSymbol::Comparison(_), ">") => Cmp(ComparisonKind::Greater),
+            (BinaryOperationSymbol::Bit(_), "|") => Bit(BitKind::Or),
+            (BinaryOperationSymbol::Bit(_), "&") => Bit(BitKind::And),
+            (BinaryOperationSymbol::Bit(_), "^") => Bit(BitKind::Xor),
+            (BinaryOperationSymbol::Logic(_), "||") => Logic(LogicKind::Disj),
+            (BinaryOperationSymbol::Logic(_), "&&") => Logic(LogicKind::Conj),
+            
+            (BinaryOperationSymbol::Mul(_), x) => panic!("Unknown mul operator found: {x}"),
+            (BinaryOperationSymbol::Add(_), x) => panic!("Unknown add operator found: {x}"),
+            (BinaryOperationSymbol::CompoundComparison(_), x) => panic!("Unknown cmp operator found: {x}"),
+            (BinaryOperationSymbol::Comparison(_), x) => panic!("Unknown cmp operator found: {x}"),
+            (BinaryOperationSymbol::Bit(_), x) => panic!("Unknown bit operator found: {x}"),
+            (BinaryOperationSymbol::Logic(_), x) => panic!("Unknown logic operator found: {x}"),
+        }))
+        .with_children_from::<LEFT, _>([left.as_ref()], context)
+        .with_children_from::<RIGHT, _>([right.as_ref()], context)
+        .with_rlt(context, node)
+        .id()
+        .cast()
+}
+
+fn build_unary(
+    node: &rlt::Operation,
+    builder: &mut SyntaxTreeBuilder,
+    context: &mut (impl Linker + CodeHolder + Sized),
+    operator: &UnaryOperationSymbol,
+    expr: &Box<rlt::Operation>,
+) -> NodeId<Operation> {
+    builder
+        .add_node(Unary::uninit(match operator {
+            UnaryOperationSymbol::Neg(_) => Neg,
+            UnaryOperationSymbol::Not(_) => Not,
+            UnaryOperationSymbol::Inv(_) => Inv,
+            UnaryOperationSymbol::Plus(_) => Plus,
+        }))
+        .with_children_from([expr.as_ref()], context)
+        .with_rlt(context, node)
+        .id()
+        .cast()
+}
+
+fn build_access(
+    node: &rlt::Operation,
+    builder: &mut SyntaxTreeBuilder,
+    context: &mut (impl Linker + CodeHolder + Sized),
+    left: &Box<rlt::Operation>,
+    right: &Box<rlt::Operation>,
+) -> NodeId<Operation> {
+    builder
+        .add_node(Access::uninit())
+        .with_children_from::<LEFT, _>([left.as_ref()], context)
+        .with_children_from::<RIGHT, _>([right.as_ref()], context)
+        .with_rlt(context, node)
+        .id()
+        .cast()
 }
 
 impl PopulateTree for rlt::Application {

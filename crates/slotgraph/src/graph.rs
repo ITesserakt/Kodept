@@ -58,6 +58,10 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
     pub fn add_node(&mut self, data: N) -> NodeKey {
         NodeKey(self.nodes.insert(data))
     }
+    
+    pub fn add_node_with_key(&mut self, f: impl FnOnce(NodeKey) -> N) -> NodeKey {
+        NodeKey(self.nodes.insert_with_key(|it| f(NodeKey(it))))
+    }
 
     pub fn add_edge(&mut self, from: NodeKey, to: NodeKey, weight: E) -> EdgeKey {
         EdgeKey(self.edges.insert(Edge::new(from, to, weight)))

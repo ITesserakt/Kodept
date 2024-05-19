@@ -1,6 +1,7 @@
 use crate::graph::tags::ChildTag;
 use crate::graph::utils::OptVec;
-use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::{GenericASTNode, GenericNodeId, HasChildrenMarker, NodeId};
+use crate::Uninit;
 
 pub type ChangeSet = OptVec<Change>;
 
@@ -8,22 +9,22 @@ pub type ChangeSet = OptVec<Change>;
 pub enum Change {
     /// Child removed
     Delete {
-        parent_id: NodeId<GenericASTNode>,
-        child_id: NodeId<GenericASTNode>,
+        parent_id: GenericNodeId,
+        child_id: GenericNodeId,
     },
     /// Child added
     Add {
-        parent_id: NodeId<GenericASTNode>,
-        child: GenericASTNode,
+        parent_id: GenericNodeId,
+        child: Uninit<GenericASTNode>,
         tag: ChildTag,
     },
     /// Replace itself with other node
     Replace {
-        from_id: NodeId<GenericASTNode>,
-        to: GenericASTNode,
+        from_id: GenericNodeId,
+        to: Uninit<GenericASTNode>,
     },
     /// Delete itself from ast hierarchy
-    DeleteSelf { node_id: NodeId<GenericASTNode> },
+    DeleteSelf { node_id: GenericNodeId },
 }
 
 impl Change {
@@ -33,22 +34,22 @@ impl Change {
         }
     }
 
-    pub fn add<T, U>(to: NodeId<T>, element: U, tag: ChildTag) -> Change
+    pub fn add<T, U, const TAG: ChildTag>(to: NodeId<T>, element: Uninit<U>) -> Change
     where
-        T: Into<GenericASTNode>,
+        T: Into<GenericASTNode> + HasChildrenMarker<U, TAG>,
         U: Into<GenericASTNode>,
     {
         Change::Add {
             parent_id: to.widen(),
-            child: element.into(),
-            tag,
+            child: element.map_into(),
+            tag: TAG,
         }
     }
 
-    pub fn replace<T: Into<GenericASTNode>>(node: NodeId<GenericASTNode>, with: T) -> Change {
+    pub fn replace<T: Into<GenericASTNode>>(node: NodeId<GenericASTNode>, with: Uninit<T>) -> Change {
         Change::Replace {
             from_id: node.widen(),
-            to: with.into(),
+            to: with.map_into(),
         }
     }
 }
