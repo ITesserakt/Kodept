@@ -29,6 +29,17 @@ class AlgorithmU(val a: MonomorphicType, val b: MonomorphicType) {
                     acc compose (x.substitute(acc) unify y.substitute(acc)).bind()
                 }
             }
+            a is MonomorphicType.Union && b is MonomorphicType.Union && a.items.size == b.items.size -> {
+                a.items.zip(b.items).fold(emptySet()) { acc, (x, y) ->
+                    acc compose (x.substitute(acc) unify y.substitute(acc)).bind()
+                }
+            }
+            a is MonomorphicType.Constant && b is PrimitiveType.Number && a.name == "Ptr" -> Substitution(b, a).single()
+            b is MonomorphicType.Constant && a is PrimitiveType.Number && b.name == "Ptr" -> Substitution(a, b).single()
+            a is MonomorphicType.Constant && b is PrimitiveType.Bool && a.name == "Bool" -> Substitution(b, a).single()
+            b is MonomorphicType.Constant && a is PrimitiveType.Bool && b.name == "Bool" -> Substitution(a, b).single()
+            a is MonomorphicType.Constant && b is PrimitiveType.Bool && a.name == "PrimBool" -> Substitution(b, a).single()
+            b is MonomorphicType.Constant && a is PrimitiveType.Bool && b.name == "PrimBool" -> Substitution(a, b).single()
             else -> shift(Errors.CannotUnify(a, b))
         }
     }

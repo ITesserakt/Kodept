@@ -9,6 +9,7 @@ value class Assumptions(private val value: Map<Language, PolymorphicType>) : Map
     fun combine(other: Assumptions) = Assumptions(value + other.value)
     fun and(bind: Language, type: PolymorphicType) = Assumptions(value + (bind to type))
     operator fun plus(elem: Pair<Language, PolymorphicType>) = and(elem.first, elem.second)
+    constructor(vararg values: Pair<Language, PolymorphicType>): this(values.toMap())
 
     companion object : Monoid<Assumptions> {
         override fun empty(): Assumptions = Assumptions(emptyMap())

@@ -1,14 +1,56 @@
-module Prelude =>
+module A {
+    fun const(x) => \y => x
+    fun compose(f, g) => \x => f(g(x))
+    fun curry(f, a, b) => f (a, b)
+    fun duplicate(x) => (x, x)
+    fun id(x) => x
+}
 
-fun const(x) => \y => x
+module B {
+    struct Int
+    struct Wrapper(value: Int)
 
-fun compose(f, g) => \x => g(f(x))
+    trait Num [a] {
+        abstract fun plus(self: a, other: a): a
+    }
 
-fun curry(f, a, b) => f (a, b)
+    extend Int with Num[Int] {
+        fun plus(self: Int, other: Int): Int => //...
+    }
+}
 
-fun duplicate(x) => (x, x)
+module Prelude {
+    foreign type Ptr => "java.math.BigInteger"
+    foreign fun prim_inc(n: Ptr): Ptr => "kotlin.math.inc"
+    foreign fun prim_println(value: Ptr) => "kotlin.println"
+    fun unchurchNum(f) => f(\x => prim_inc(x), 0)
+    enum struct Bool { True, False }
+    fun unchurchBool(f) => f(::Bool::True, ::Bool::False)
+    fun println(v) => prim_println(v)
 
-fun id(x) => x
+    fun true(x, y) => x
+    fun false(x, y) => y
 
-fun main {
+    fun if_(cond, true, false) => cond(true, false)
+    fun and(p, q) => if_(p, q, false)
+    fun or(p, q) => if_(p, true, q)
+    fun not(p) => if_(p, false, true)
+    fun eq(p, q) => p(q, not(q))
+
+    trait Eq {
+        fun eq(self, other) => ::Prelude::eq(self, other)
+    }
+
+    fun zero(f, x) => x
+    fun succ(n, f, x) => f(n(f, x))
+    fun plus(m, n, f, x) => n(f, m(f, x))
+    fun mult(m, n, f) => m(n(f))
+    fun pred(n, f, x) => n(\g, h => h(g(f)), \u => x, \v => v)
+
+    trait Num {
+        fun plus(self, other) => ::Prelude::plus(self, other)
+        fun times(self, other) => mult(self, other)
+    }
+
+    fun main => println(plus(zero, succ(zero)))
 }

@@ -117,7 +117,8 @@ object ReferenceResolver : Transformer<AST.Reference>(), Resolver<AST.Reference,
             .mapLeft { it as FlowError }
 
     private fun AST.Reference.handleStruct(struct: AST.StructDecl) =
-        struct.children().filterIsInstance<AST.Referable>().filter { it.name == this.name }.onlyUnique { RecurseUp }
+        struct.children().filterIsInstance<AST.Referable>().filter { it !is AST.Parameter && it.name == this.name }
+            .onlyUnique { RecurseUp }
 
     override fun AST.Reference.handle(node: AST.Node) = when (node) {
         is AST.ExpressionList -> handleBlock(node)

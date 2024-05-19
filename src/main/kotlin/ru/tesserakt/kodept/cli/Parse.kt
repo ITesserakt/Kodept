@@ -22,16 +22,11 @@ sealed class LoadConfig(name: String) : OptionGroup(name) {
 }
 
 class FileConfig : LoadConfig("Options for loading programs from file or directory") {
-    private val file by option(help = "File or directory to process")
-        .path(mustExist = true)
-        .required()
-        .validate {
-            require(it.isAbsolute) { "Provided path should be absolute" }
-        }
-    private val ext by option("-e", "--extension", help = "File extension to work with")
-        .default("kd")
-    private val anyExt by option("-a", "--any-extension", help = "Accept all files in the given path")
-        .flag()
+    private val file by option(help = "File or directory to process").path(mustExist = true).required().validate {
+        require(it.isAbsolute) { "Provided path should be absolute" }
+    }
+    private val ext by option("-e", "--extension", help = "File extension to work with").default("kd")
+    private val anyExt by option("-a", "--any-extension", help = "Accept all files in the given path").flag()
 
     override val loader by lazy {
         FileLoader {
@@ -43,21 +38,20 @@ class FileConfig : LoadConfig("Options for loading programs from file or directo
 }
 
 class MemoryConfig : LoadConfig("Options for loading from console") {
-    private val text by option("-t", "--text")
-        .prompt("Enter program text:\n", promptSuffix = "")
-
-    override val loader by lazy { MemoryLoader.singleSnippet(text) }
+    override val loader by lazy {
+        val text = generateSequence { readlnOrNull() }.joinToString("\n")
+        MemoryLoader.singleSnippet(text)
+    }
 }
 
 class Parse : CliktCommand(
-    help = "- parse files and do operations (see available commands)",
-    invokeWithoutSubcommand = true
+    help = "- parse files and do operations (see available commands)", invokeWithoutSubcommand = true
 ) {
-    private val allErrors by option("--all", help = "Show all errors while parsing")
-        .flag("--less", defaultForHelp = "--less")
+    private val allErrors by option("--all", help = "Show all errors while parsing").flag(
+        "--less", defaultForHelp = "--less"
+    )
     private val loadConfig by option(help = "Config to load programs").groupChoice(
-        "file" to FileConfig(),
-        "console" to MemoryConfig()
+        "file" to FileConfig(), "console" to MemoryConfig()
     ).required()
     private val contextFn by requireObject<(Loader) -> CompilationContext>()
     private val context by lazy { contextFn(loadConfig.loader) }
@@ -68,15 +62,11 @@ class Parse : CliktCommand(
 
         val result = context workflow {
             val sources = readSources()
-            sources
-                .then { tokenize() }
-                .then { parse(!allErrors) }
-                .then { dropUnusedInfo() }
+            sources.then { tokenize() }.then { parse(!allErrors) }.then { dropUnusedInfo() }
                 .also { sources.bind().holder }
         }
 
-        if (subcommand != null)
-            currentContext.findOrSetObject { Triple(context, result.first, result.second) }
+        if (subcommand != null) currentContext.findOrSetObject { Triple(context, result.first, result.second) }
         else using(reportOptions.processor, result.second, logger) {
             result.first.ast.forEach { it.value.printReportsOr { "" } }
         }

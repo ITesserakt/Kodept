@@ -11,7 +11,9 @@ val defaultTransformers = setOf(
     TypeReferenceResolver,
     ForeignFunctionResolver,
     BinaryOperatorDesugaring,
-    UnaryOperatorDesugaring
+    UnaryOperatorDesugaring,
+    StructAllocGetters,
+    StructCtorGenerator
 )
 
 val defaultAnalyzers = setOf(

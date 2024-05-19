@@ -53,6 +53,9 @@ sealed class SemanticError(final override val code: String, override val message
     data class ReferenceCannotBeTyped(val refName: String) :
         SemanticError("KSeE15", "Type inference fails to type `$refName`. Consider type in manually")
 
-    data class InfiniteType(val name: String) :
-        SemanticError("KSeE16", "Cannot construct infinite type $name")
+    data class InfiniteType(val name: String, val with: String) :
+        SemanticError("KSeE16", "Cannot construct infinite type $name ~ $with")
+
+    data class WrongConstructor(val name: String) :
+        SemanticError("KSeE17", "Function `new` of struct `$name` should be simple and not contain `self` parameter")
 }

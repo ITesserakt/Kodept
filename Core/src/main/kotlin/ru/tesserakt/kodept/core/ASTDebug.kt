@@ -74,4 +74,6 @@ fun AST.Node.asString(indent: String = "    "): String = when (this) {
         |${rest.joinToString("\n") { it.asString() }.prependIndent(indent)}
         |}
     """.trimMargin()
+    is AST.Intrinsics.AccessVariable -> "access\$${obj.name}::>${variable.name}"
+    is AST.Intrinsics.Construct -> "ctor\$$${obj.name}(${params.joinToString { it.asString() }})"
 }

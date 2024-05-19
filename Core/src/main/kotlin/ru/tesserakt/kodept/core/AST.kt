@@ -95,16 +95,6 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
 
         @PublishedApi
         internal fun build(): AST {
-            val potentialToUpdate = nodes.filterIsInstance<NodeBase>().flatMap { it.childCells() }
-
-            changes.forEach { (k, v) ->
-                if (v !is NodeWithParent) return@forEach
-                potentialToUpdate.filter { it.id == k.id }.forEach { cell ->
-                    if (cell.id == v.id) cell.value.added()
-                    cell.update(v)
-                }
-            }
-
             val newNodes = nodes.mutate { mutator ->
                 for ((old, new) in changes) {
                     mutator -= old.gatherChildren().toSet()
@@ -112,7 +102,16 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
                 }
                 mutator += adds
             }
-            return AST(newNodes, filepath)
+
+            val potentialToUpdate = newNodes.filterIsInstance<NodeBase>().flatMap { it.childCells() }
+            changes.forEach { (k, v) ->
+                if (v !is NodeWithParent) return@forEach
+                potentialToUpdate.filter { it.id == k.id }.forEach { cell ->
+                    if (cell.id == v.id) cell.value.added()
+                    cell.update(v)
+                }
+            }
+            return AST(newNodes.mutate { it += adds }, filepath)
         }
     }
 
@@ -818,6 +817,24 @@ data class AST(private val nodes: PersistentSet<Node>, val filepath: Filepath) {
             type.move(), forTrait.move(), rest.move()
         )
     }
+
+    sealed class Intrinsics: Leaf(), Expression {
+        data class Construct(val objCell: Cell<TypeReferable>, val paramCells: List<Cell<ResolvedReference>>): Intrinsics() {
+            val obj by objCell
+            val params by paramCells
+            override fun deepCopy() = Construct(objCell.deepCopy(), paramCells.map { it.deepCopy() })
+
+            constructor(obj: TypeReferable, params: List<ResolvedReference>): this(obj.move(), params.move())
+        }
+
+        data class AccessVariable(val objCell: Cell<TopLevel>, val variableCell: Cell<Parameter>): Intrinsics() {
+            val obj by objCell
+            val variable by variableCell
+            override fun deepCopy() = AccessVariable(objCell.deepCopy(), variableCell.deepCopy())
+
+            constructor(obj: TopLevel, variable: Parameter): this(obj.move(), variable.move())
+        }
+    }
 }
 
 object InsecureModifications {
@@ -826,6 +843,9 @@ object InsecureModifications {
 
     context (RLT.Node)
     fun <N : AST.NodeBase> N.withRLT() = apply { this.rltSpecial = this@Node }
+
+    fun <N: AST.NodeBase> N.setRawLexem(value: RLT.Node) = apply { this.rltSpecial = value }
+    fun <N: AST.Leaf> N.setRawLexem(value: RLT.Node) = apply { this.rltSpecial = value }
 }
 
 inline fun <reified T : RLT.Node> AST.Node.accessRLT() = rlt as? T
