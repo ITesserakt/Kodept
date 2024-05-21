@@ -10,6 +10,7 @@ pub mod parse_error;
 pub mod read_code_source;
 pub mod traversing;
 pub mod utils;
+pub mod stage;
 
 pub fn top_parser(input: TokenStream) -> ParseResult<RLT> {
     match file::grammar(input) {

@@ -14,6 +14,7 @@ use kodept::codespan_settings::CodespanSettings;
 use kodept::macro_context::{DefaultContext, ErrorReported};
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
+use kodept::stage::PredefinedTraverseSet;
 use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
@@ -22,7 +23,6 @@ use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 
-use crate::stage::PredefinedTraverseSet;
 use crate::WideError;
 
 #[derive(Parser, Debug)]

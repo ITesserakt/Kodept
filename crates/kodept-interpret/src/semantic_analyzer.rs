@@ -14,11 +14,11 @@ use kodept_macros::traits::Context;
 
 use crate::scope::{ScopeError, ScopeTree};
 
-pub struct ScopeAnalyzer(ScopeTree, usize);
+pub struct ScopeAnalyzer(ScopeTree);
 
 impl Default for ScopeAnalyzer {
     fn default() -> Self {
-        Self(ScopeTree::new(), 0)
+        Self(ScopeTree::new())
     }
 }
 
@@ -96,8 +96,7 @@ impl Macro for ScopeAnalyzer {
         };
         match &*node {
             GenericASTNode::Struct(StructDeclaration { name, .. }) => {
-                scope.insert_type(name, Constant(self.1).into())?;
-                self.1 += 1;
+                scope.insert_type(name, Constant(name.clone()).into())?;
             }
             GenericASTNode::TypedParameter(TypedParameter { name, .. }) => {
                 scope.insert_var(name)?;
@@ -107,13 +106,11 @@ impl Macro for ScopeAnalyzer {
             }
             GenericASTNode::TypeName(TypeName { name, .. }) => {
                 if let Some(GenericASTNode::Enum(_)) = tree.parent_of(node.get_id(), node.token()) {
-                    scope.insert_type(name, Constant(self.1).into())?;
-                    self.1 += 1;
+                    scope.insert_type(name, Constant(name.clone()).into())?;
                 }
             }
             GenericASTNode::Enum(EnumDeclaration { name, .. }) => {
-                scope.insert_type(name, Constant(self.1).into())?;
-                self.1 += 1;
+                scope.insert_type(name, Constant(name.clone()).into())?;
             }
             GenericASTNode::Variable(Variable { name, .. }) => scope.insert_var(name)?,
             GenericASTNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {

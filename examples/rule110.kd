@@ -2,16 +2,16 @@ module Main =>
 
 enum struct Bool { False, True }
 
-fun not(self) =>
+fun not(self: Bool) =>
     if self => ::Main::Bool::False
     else => ::Main::Bool::True
 
-fun and(a, b) =>
+fun and(a: Bool, b: Bool) =>
     if a => if b => ::Main::Bool::False
             else => ::Main::Bool::True
     else => ::Main::Bool::True
 
-fun rule110(a, b, c) =>
+fun rule110(a: Bool, b: Bool, c: Bool) =>
     if   and(a,      and(b,      c))      => ::Main::Bool::False
     elif and(a,      and(b,      not(c))) => ::Main::Bool::True
     elif and(a,      and(not(b), c))      => ::Main::Bool::True
@@ -21,4 +21,4 @@ fun rule110(a, b, c) =>
     elif and(not(a), and(not(b), c))      => ::Main::Bool::True
     else                                  => ::Main::Bool::False
 
-fun main => rule110(Bool::True, Bool::True, Bool::False)
+fun main => rule110(::Main::Bool::True, ::Main::Bool::True, ::Main::Bool::False)

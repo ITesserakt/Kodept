@@ -8,6 +8,8 @@ pub(crate) use crate::graph::traits::Identifiable;
 pub use crate::graph::tree::{SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView};
 pub use crate::graph::utils::RefMut;
 
+pub(crate) use children::macros::with_children;
+
 mod changes;
 mod children;
 mod generic_node;

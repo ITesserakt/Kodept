@@ -1,10 +1,12 @@
-use crate::r#type::{MonomorphicType, Tuple, Var};
+use MonomorphicType::*;
+
+use crate::r#type::{MonomorphicType, Tuple, TVar};
 use crate::substitution::Substitutions;
 
 #[derive(Debug)]
 pub enum AlgorithmUError {
     InfiniteType {
-        type_var: Var,
+        type_var: TVar,
         with: MonomorphicType,
     },
     CannotUnify {
@@ -16,13 +18,13 @@ pub enum AlgorithmUError {
 struct AlgorithmU;
 
 impl AlgorithmU {
-    fn occurs_check(var: &Var, with: &MonomorphicType) -> bool {
+    fn occurs_check(var: &TVar, with: &MonomorphicType) -> bool {
         match (var, with) {
-            (Var(a), MonomorphicType::Var(Var(b))) if *a == *b => true,
-            (var, MonomorphicType::Fn { input, output }) => {
+            (TVar(a), MonomorphicType::Var(TVar(b))) if *a == *b => true,
+            (var, Fn { input, output }) => {
                 AlgorithmU::occurs_check(var, input) || AlgorithmU::occurs_check(var, output)
             }
-            (var, MonomorphicType::Pointer(t)) => AlgorithmU::occurs_check(var, t),
+            (var, Pointer(t)) => AlgorithmU::occurs_check(var, t),
             (var, MonomorphicType::Tuple(Tuple(vec))) => {
                 vec.iter().any(|it| AlgorithmU::occurs_check(var, it))
             }
@@ -64,22 +66,22 @@ impl AlgorithmU {
             (a @ MonomorphicType::Var(_), b) => Ok(Substitutions::single(b.clone(), a.clone())),
             (a, b @ MonomorphicType::Var(_)) => Ok(Substitutions::single(a.clone(), b.clone())),
             (
-                MonomorphicType::Fn {
+                Fn {
                     input: input1,
                     output: output1,
                 },
-                MonomorphicType::Fn { input, output },
+                Fn { input, output },
             ) => {
                 let s1 = input1.unify(input)?;
                 let s2 = output1.substitute(&s1).unify(&output.substitute(&s1))?;
                 Ok(s2.compose(&s1))
             }
-            (MonomorphicType::Pointer(p1), MonomorphicType::Pointer(p2)) => p1.unify(p2),
+            (Pointer(p1), Pointer(p2)) => p1.unify(p2),
             (MonomorphicType::Tuple(vec1), MonomorphicType::Tuple(vec2))
                 if vec1.0.len() == vec2.0.len() =>
             {
                 AlgorithmU::unify_vec(&vec1.0, &vec2.0)
-            }
+            },
             _ => Err(AlgorithmUError::CannotUnify {
                 from: lhs.clone(),
                 to: rhs.clone(),

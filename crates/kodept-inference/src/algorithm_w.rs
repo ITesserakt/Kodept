@@ -2,12 +2,12 @@ use std::rc::Rc;
 
 use derive_more::From;
 
+use crate::{Environment, language};
 use crate::algorithm_u::AlgorithmUError;
 use crate::assumption::Assumptions;
 use crate::language::{Language, Literal, Special};
-use crate::r#type::{fun1, var, MonomorphicType, PrimitiveType, Tuple};
+use crate::r#type::{fun1, MonomorphicType, PrimitiveType, Tuple, var};
 use crate::substitution::Substitutions;
-use crate::{language, Environment};
 
 #[derive(From, Debug)]
 pub enum AlgorithmWError {
@@ -50,35 +50,42 @@ impl<'e> AlgorithmW<'e> {
         }
     }
 
-    fn apply_app(&mut self, app: &language::App) -> AWResult {
+    fn apply_app(&mut self, language::App { arg, func }: &language::App) -> AWResult {
         let v = self.env.new_var();
-        let (s1, t1) = app.func.infer_w(self)?;
-        let (s2, t2) = app.arg.infer_w(self)?;
-        let s3 = t1.substitute(&s1).unify(&fun1(t2, var(v.clone())))?;
-        Ok((s3.compose(&s2).compose(&s1), var(v).substitute(&s3)))
+        let (s1, t1) = func.infer_w(self)?;
+        let (s2, t2) = arg.infer_w(self)?;
+        let s3 = (t1 & &s2).unify(&fun1(t2, var(v.clone())))?;
+        Ok((&s3 + s2 + s1, var(v) & s3))
     }
 
-    fn apply_lambda(&mut self, lambda: &language::Lambda) -> AWResult {
+    fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> AWResult {
         let v = self.env.new_var();
-        let var_bind = lambda.bind.clone();
+        let var_bind = bind.clone();
         let mut new_context = self.context.clone();
         new_context.push(var_bind, Rc::new(MonomorphicType::Var(v.clone()).into()));
         let (s1, t1) = AlgorithmW {
             context: &mut new_context,
             env: self.env,
         }
-        .apply(&lambda.expr)?;
-        let resulting_fn = fun1(var(v).substitute(&s1), t1);
+        .apply(&expr)?;
+        let resulting_fn = fun1(var(v) & &s1, t1);
         Ok((s1, resulting_fn))
     }
 
-    fn apply_let(&mut self, l: &language::Let) -> AWResult {
-        let (s1, t1) = l.binder.infer_w(self)?;
-        let var_bind = l.bind.clone();
+    fn apply_let(
+        &mut self,
+        language::Let {
+            binder,
+            bind,
+            usage,
+        }: &language::Let,
+    ) -> AWResult {
+        let (s1, t1) = binder.infer_w(self)?;
+        let var_bind = bind.clone();
         let poly_type = self.context.substitute_mut(&s1).generalize(t1);
         let mut new_context = self.context.clone();
         new_context
-            .filter_all(match l.bind.as_ref() {
+            .filter_all(match bind.as_ref() {
                 Language::Var(v) => v,
                 _ => unreachable!(),
             })
@@ -88,8 +95,8 @@ impl<'e> AlgorithmW<'e> {
             context: &mut new_context,
             env: self.env,
         }
-        .apply(l.usage.as_ref())?;
-        Ok((s2.compose(&s1), t2))
+        .apply(usage.as_ref())?;
+        Ok((s2 + s1, t2))
     }
 
     fn apply_tuple(&mut self, tuple: &[Language]) -> AWResult {
@@ -101,7 +108,7 @@ impl<'e> AlgorithmW<'e> {
                     self.context.substitute_mut(&s);
                     let (s1, t1) = next.infer_w(self)?;
                     t.push(t1);
-                    Ok((s.compose(&s1), t))
+                    Ok((s + s1, t))
                 },
             )
             .map(|(s, t)| (s, t.into()))
@@ -109,14 +116,17 @@ impl<'e> AlgorithmW<'e> {
 
     fn apply_special(&mut self, special: &Special) -> AWResult {
         match special {
-            Special::If { condition, body, otherwise } => {
+            Special::If {
+                condition,
+                body,
+                otherwise,
+            } => {
                 let (s1, t_cond) = condition.infer_w(self)?;
-                let s2 = t_cond.unify(&PrimitiveType::Boolean.into())?;
-                let (s3, t1) = body.infer_w(self)?;
-                let (s4, t2) = otherwise.infer_w(self)?;
-                let s5 = t1.unify(&t2)?;
-                let s6 = s4.compose(&s5);
-                Ok((s1.compose(&s2).compose(&s3).compose(&s6), t1.substitute(&s6)))
+                let (s2, t_true) = body.infer_w(self)?;
+                let (s3, t_false) = otherwise.infer_w(self)?;
+                let s4 = (t_cond & &s1).unify(&PrimitiveType::Boolean.into())?;
+                let s5 = (&t_true & &s3).unify(&(t_false & &s3))?;
+                Ok((s5 + &s4 + s3 + s2 + s1, t_true & s4))
             }
         }
     }
