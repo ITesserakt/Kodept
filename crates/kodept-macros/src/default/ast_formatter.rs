@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use codespan_reporting::diagnostic::Severity;
 
-use kodept_ast::graph::{ChangeSet, GenericASTNode};
+use kodept_ast::graph::{ChangeSet, AnyNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Completed;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
@@ -33,7 +33,7 @@ impl<W: Write> ASTFormatter<W> {
 
 impl<W: Write> Macro for ASTFormatter<W> {
     type Error = IOError;
-    type Node = GenericASTNode;
+    type Node = AnyNode;
 
     fn transform(
         &mut self,

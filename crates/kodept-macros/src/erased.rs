@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use kodept_ast::graph::{ChangeSet, GenericASTNode, PermTkn, RefMut, RefNode};
+use kodept_ast::graph::{ChangeSet, AnyNode, PermTkn, RefMut, RefNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::ConvertibleToRef;
@@ -33,7 +33,7 @@ impl<C, T, E: Into<ReportMessage>> CanErase<C> for T
 where
     T: Macro<Error = E> + 'static,
     C: Context,
-    GenericASTNode: ConvertibleToRef<T::Node>,
+    AnyNode: ConvertibleToRef<T::Node>,
 {
     type Error = UnrecoverableError;
 
@@ -50,7 +50,7 @@ impl<C, T, E: Into<ReportMessage>> ErasedMacro<C> for T
 where
     C: Context,
     T: Macro<Error = E> + 'static,
-    GenericASTNode: ConvertibleToRef<T::Node>,
+    AnyNode: ConvertibleToRef<T::Node>,
 {
     fn transform(
         &mut self,

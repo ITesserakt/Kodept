@@ -6,7 +6,7 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
+use crate::graph::{AnyNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
 use crate::{node, wrapper};
@@ -15,10 +15,10 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Literal {
-        number(NumberLiteral) = GenericASTNode::Number(x) => x.into(),
-        char(CharLiteral) = GenericASTNode::Char(x) => x.into(),
-        string(StringLiteral) = GenericASTNode::String(x) => x.into(),
-        tuple(TupleLiteral) = GenericASTNode::Tuple(x) => x.into(),
+        number(NumberLiteral) = AnyNode::Number(x) => x.into(),
+        char(CharLiteral) = AnyNode::Char(x) => x.into(),
+        string(StringLiteral) = AnyNode::String(x) => x.into(),
+        tuple(TupleLiteral) = AnyNode::Tuple(x) => x.into(),
     }
 }
 

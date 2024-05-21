@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 
 use kodept_ast::{Access, Application, Binary, BinaryExpressionKind, BitKind, ComparisonKind, EqKind, Expression, Identifier, LogicKind, MathKind, Operation, Reference, ReferenceContext, Term, Unary, UnaryExpressionKind};
-use kodept_ast::graph::{Change, ChangeSet, GenericASTNode, tags};
+use kodept_ast::graph::{Change, ChangeSet, AnyNode, tags};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
@@ -17,7 +17,7 @@ pub struct UnaryOperatorExpander;
 #[derive(Default)]
 pub struct AccessExpander;
 
-fn replace_with<N: Identifiable + Into<GenericASTNode>>(
+fn replace_with<N: Identifiable + Into<AnyNode>>(
     replaced: &N,
     function_name: &'static str,
 ) -> ChangeSet {

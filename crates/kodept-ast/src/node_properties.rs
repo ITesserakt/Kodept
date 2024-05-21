@@ -1,6 +1,6 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{Change, GenericASTNode, PermTkn, Identifiable, SyntaxTree};
+use crate::graph::{Change, AnyNode, PermTkn, Identifiable, SyntaxTree};
 use crate::Uninit;
 
 pub trait NodeWithParent {
@@ -8,11 +8,11 @@ pub trait NodeWithParent {
 }
 
 #[allow(private_bounds)]
-pub trait Node: Identifiable + Into<GenericASTNode> {
+pub trait Node: Identifiable + Into<AnyNode> {
     fn parent<'b>(&self, tree: &'b SyntaxTree, token: &'b PermTkn) -> &'b Self::Parent
     where
         Self: NodeWithParent,
-        GenericASTNode: ConvertibleToRef<Self::Parent>,
+        AnyNode: ConvertibleToRef<Self::Parent>,
     {
         let id = self.get_id();
         tree.parent_of(id, token)
@@ -28,7 +28,7 @@ pub trait Node: Identifiable + Into<GenericASTNode> {
     ) -> &'b mut Self::Parent
     where
         Self: NodeWithParent,
-        GenericASTNode: ConvertibleToMut<Self::Parent>,
+        AnyNode: ConvertibleToMut<Self::Parent>,
     {
         let id = self.get_id();
         tree.parent_of_mut(id, token)

@@ -10,7 +10,7 @@ use kodept_core::structure::span::CodeHolder;
 use UnaryExpressionKind::*;
 
 use crate::{BlockLevel, node, UntypedParameter, wrapper};
-use crate::graph::{GenericASTNode, NodeUnion};
+use crate::graph::{AnyNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::graph::NodeId;
 use crate::graph::tags::*;
@@ -21,11 +21,11 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Operation {
-        application(Application) = GenericASTNode::Application(x) => x.into(),
-        access(Access) = GenericASTNode::Access(x) => x.into(),
-        unary(Unary) = GenericASTNode::Unary(x) => x.into(),
-        binary(Binary) = GenericASTNode::Binary(x) => x.into(),
-        block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => x.into(),
+        application(Application) = AnyNode::Application(x) => x.into(),
+        access(Access) = AnyNode::Access(x) => x.into(),
+        unary(Unary) = AnyNode::Unary(x) => x.into(),
+        binary(Binary) = AnyNode::Binary(x) => x.into(),
+        block(ExpressionBlock) = AnyNode::ExpressionBlock(x) => x.into(),
         expression(Expression) = n if Expression::contains(n) => n.force_into::<Expression>().into(),
     }
 }
@@ -37,7 +37,7 @@ mod expression_impl {
     use serde::{Deserialize, Serialize};
 
     use crate::{IfExpression, Lambda, Literal, Term};
-    use crate::graph::{GenericASTNode, NodeId, NodeUnion};
+    use crate::graph::{AnyNode, NodeId, NodeUnion};
     use crate::macros::ForceInto;
     use crate::traits::Identifiable;
     use crate::utils::Skip;
@@ -45,7 +45,7 @@ mod expression_impl {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     #[repr(transparent)]
-    pub struct Expression(GenericASTNode);
+    pub struct Expression(AnyNode);
     #[derive(derive_more::From)]
     pub enum ExpressionEnum<'lt> {
         Lambda(&'lt Lambda),
@@ -62,34 +62,34 @@ mod expression_impl {
     }
     #[allow(unsafe_code)]
     unsafe impl NodeUnion for Expression {
-        fn contains(node: &GenericASTNode) -> bool {
+        fn contains(node: &AnyNode) -> bool {
             #[allow(unused_variables)]
             #[allow(unreachable_patterns)]
             match node {
-                GenericASTNode::Lambda(x) => true,
-                GenericASTNode::If(x) => true,
+                AnyNode::Lambda(x) => true,
+                AnyNode::If(x) => true,
                 n if Literal::contains(n) => true,
                 x if Term::contains(x) => true,
                 _ => false,
             }
         }
     }
-    impl<'a> TryFrom<&'a GenericASTNode> for &'a Expression {
-        type Error = Skip<<&'a GenericASTNode as TryFrom<&'a GenericASTNode>>::Error>;
+    impl<'a> TryFrom<&'a AnyNode> for &'a Expression {
+        type Error = Skip<<&'a AnyNode as TryFrom<&'a AnyNode>>::Error>;
 
         #[inline]
-        fn try_from(value: &'a GenericASTNode) -> Result<Self, Self::Error> {
+        fn try_from(value: &'a AnyNode) -> Result<Self, Self::Error> {
             if !<Expression as NodeUnion>::contains(value) {
                 return Err(Skip::Skipped);
             }
             Ok(<Expression as NodeUnion>::wrap(value))
         }
     }
-    impl<'a> TryFrom<&'a mut GenericASTNode> for &'a mut Expression {
-        type Error = Skip<<&'a mut GenericASTNode as TryFrom<&'a mut GenericASTNode>>::Error>;
+    impl<'a> TryFrom<&'a mut AnyNode> for &'a mut Expression {
+        type Error = Skip<<&'a mut AnyNode as TryFrom<&'a mut AnyNode>>::Error>;
 
         #[inline]
-        fn try_from(value: &'a mut GenericASTNode) -> Result<Self, Self::Error> {
+        fn try_from(value: &'a mut AnyNode) -> Result<Self, Self::Error> {
             if !<Expression as NodeUnion>::contains(value) {
                 return Err(Skip::Skipped);
             }
@@ -99,41 +99,41 @@ mod expression_impl {
     impl From<Lambda> for Expression {
         #[inline]
         fn from(value: Lambda) -> Self {
-            let generic: GenericASTNode = value.into();
+            let generic: AnyNode = value.into();
             Expression(generic)
         }
     }
     impl From<IfExpression> for Expression {
         #[inline]
         fn from(value: IfExpression) -> Self {
-            let generic: GenericASTNode = value.into();
+            let generic: AnyNode = value.into();
             Expression(generic)
         }
     }
     impl From<Literal> for Expression {
         #[inline]
         fn from(value: Literal) -> Self {
-            let generic: GenericASTNode = value.into();
+            let generic: AnyNode = value.into();
             Expression(generic)
         }
     }
     impl From<Term> for Expression {
         #[inline]
         fn from(value: Term) -> Self {
-            let generic: GenericASTNode = value.into();
+            let generic: AnyNode = value.into();
             Expression(generic)
         }
     }
     impl Identifiable for Expression {
         fn get_id(&self) -> NodeId<Self> {
-            <GenericASTNode as Identifiable>::get_id(&self.0).narrow()
+            <AnyNode as Identifiable>::get_id(&self.0).narrow()
         }
     }
     impl Expression {
         pub fn as_enum(&self) -> ExpressionEnum {
             match self {
-                Expression(GenericASTNode::Lambda(x)) => x.into(),
-                Expression(GenericASTNode::If(x)) => x.into(),
+                Expression(AnyNode::Lambda(x)) => x.into(),
+                Expression(AnyNode::If(x)) => x.into(),
                 Expression(n) if Literal::contains(n) => n.force_into::<Literal>().into(),
                 Expression(x) if Term::contains(x) => x.force_into::<Term>().into(),
                 _ => unreachable!(),
@@ -142,8 +142,8 @@ mod expression_impl {
 
         pub fn as_enum_mut(&mut self) -> ExpressionEnumMut {
             match self {
-                Expression(GenericASTNode::Lambda(x)) => x.into(),
-                Expression(GenericASTNode::If(x)) => x.into(),
+                Expression(AnyNode::Lambda(x)) => x.into(),
+                Expression(AnyNode::If(x)) => x.into(),
                 Expression(n) => {
                     if Literal::contains(n) {
                         n.force_into::<Literal>().into()

@@ -5,7 +5,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
 use kodept_core::ConvertibleToRef;
 
-use crate::graph::{GenericASTNode, GenericNodeKey};
+use crate::graph::{AnyNode, GenericNodeKey};
 use crate::traits::Identifiable;
 
 #[derive(Clone, From, TryInto, Debug)]
@@ -46,7 +46,7 @@ pub struct RLTAccessor {
 impl RLTAccessor {
     pub fn access<A, B>(&self, node: &A) -> Option<&B>
     where
-        A: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
         RLTFamily: ConvertibleToRef<B>,
     {
         self.links
@@ -56,15 +56,15 @@ impl RLTAccessor {
 
     pub fn access_unknown<A>(&self, node: &A) -> Option<&RLTFamily>
     where
-        A: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
     {
         self.links.get(node.get_id().widen().into())
     }
 
     pub fn save_existing<A, B>(&mut self, new: &A, existing: &B)
     where
-        A: Identifiable + Into<GenericASTNode>,
-        B: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
+        B: Identifiable + Into<AnyNode>,
     {
         match self.links.get(existing.get_id().widen().into()) {
             None => None,
@@ -75,7 +75,7 @@ impl RLTAccessor {
     pub fn save<A, B>(&mut self, key: &A, value: &B)
     where
         B: Into<RLTFamily> + Clone,
-        A: Identifiable + Into<GenericASTNode>
+        A: Identifiable + Into<AnyNode>
     {
         self.links.insert(key.get_id().widen().into(), value.clone().into());
     }

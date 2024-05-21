@@ -9,7 +9,7 @@ use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, NodeUnion};
+use crate::graph::{AnyNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
@@ -19,8 +19,8 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper BlockLevel {
-        func(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => x.into(),
-        init_var(InitializedVariable) = GenericASTNode::InitializedVariable(x) => x.into(),
+        func(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
+        init_var(InitializedVariable) = AnyNode::InitializedVariable(x) => x.into(),
         operation(Operation) = n if Operation::contains(n) => n.force_into::<Operation>().into(),
     }
 }
@@ -29,7 +29,7 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Body {
-        block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => x.into(),
+        block(ExpressionBlock) = AnyNode::ExpressionBlock(x) => x.into(),
         simple(BlockLevel) = x if BlockLevel::contains(x) => x.force_into::<BlockLevel>().into(),
     }
 }

@@ -1,6 +1,6 @@
 use tracing::warn;
 
-use kodept_ast::graph::{ChangeSet, GenericASTNode};
+use kodept_ast::graph::{ChangeSet, AnyNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Skipped;
 use kodept_ast::visit_side::VisitGuard;
@@ -22,7 +22,7 @@ pub fn warn_about_broken_rlt<T>() {
 
 pub trait Macro {
     type Error: Into<ReportMessage>;
-    type Node: TryFrom<GenericASTNode>;
+    type Node: TryFrom<AnyNode>;
 
     #[allow(unused_variables)]
     fn transform(

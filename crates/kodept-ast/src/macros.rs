@@ -1,6 +1,6 @@
 use kodept_core::ConvertibleTo;
 
-use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::{AnyNode, NodeId};
 
 #[repr(transparent)]
 pub struct Uninit<T>(T);
@@ -37,7 +37,7 @@ pub trait ForceInto {
         Self: ConvertibleTo<Self::Output<T>>;
 }
 
-impl<'a> ForceInto for &'a GenericASTNode {
+impl<'a> ForceInto for &'a AnyNode {
     type Output<T: 'static> = &'a T;
 
     #[inline]
@@ -45,11 +45,11 @@ impl<'a> ForceInto for &'a GenericASTNode {
     where
         Self: ConvertibleTo<Self::Output<T>>,
     {
-        self.try_as().expect("Cannot convert GenericASTNode")
+        self.try_as().expect("Cannot convert $crate::graph::AnyNode")
     }
 }
 
-impl<'a> ForceInto for &'a mut GenericASTNode {
+impl<'a> ForceInto for &'a mut AnyNode {
     type Output<T: 'static> = &'a mut T;
 
     #[inline]
@@ -58,21 +58,8 @@ impl<'a> ForceInto for &'a mut GenericASTNode {
         T: 'static,
         Self: ConvertibleTo<Self::Output<T>>,
     {
-        self.try_as().expect("Cannot convert GenericASTNode")
+        self.try_as().expect("Cannot convert $crate::graph::AnyNode")
     }
-}
-
-pub trait WrapperOps {
-    type Enum<'a>
-    where
-        Self: 'a;
-    type EnumMut<'a>
-    where
-        Self: 'a;
-
-    fn contains(node: &GenericASTNode) -> bool;
-    fn as_enum<'a>(&'a self) -> Self::Enum<'a>;
-    fn as_enum_mut<'a>(&'a mut self) -> Self::EnumMut<'a>;
 }
 
 pub mod implementation {
@@ -83,7 +70,7 @@ pub mod implementation {
     }) => {paste::paste! {
         $(#[$config])*
         #[repr(transparent)]
-        $vis struct $wrapper(GenericASTNode);
+        $vis struct $wrapper($crate::graph::AnyNode);
 
         #[derive(derive_more::From)]
         $vis enum [<$wrapper Enum>]<'lt> {
@@ -97,7 +84,7 @@ pub mod implementation {
 
         #[allow(unsafe_code)]
         unsafe impl $crate::graph::NodeUnion for $wrapper {
-            fn contains(node: &GenericASTNode) -> bool {
+            fn contains(node: &$crate::graph::AnyNode) -> bool {
                 #[allow(unused_variables)]
                 #[allow(unreachable_patterns)]
                 match node {
@@ -107,11 +94,11 @@ pub mod implementation {
             }
         }
 
-        impl<'a> TryFrom<&'a GenericASTNode> for &'a $wrapper {
-            type Error = $crate::utils::Skip<<&'a GenericASTNode as TryFrom<&'a GenericASTNode>>::Error>;
+        impl<'a> TryFrom<&'a $crate::graph::AnyNode> for &'a $wrapper {
+            type Error = $crate::utils::Skip<<&'a $crate::graph::AnyNode as TryFrom<&'a $crate::graph::AnyNode>>::Error>;
 
             #[inline]
-            fn try_from(value: &'a GenericASTNode) -> Result<Self, Self::Error> {
+            fn try_from(value: &'a $crate::graph::AnyNode) -> Result<Self, Self::Error> {
                 if !<$wrapper as $crate::graph::NodeUnion>::contains(value) {
                     return Err($crate::utils::Skip::Skipped);
                 }
@@ -119,11 +106,11 @@ pub mod implementation {
             }
         }
 
-        impl<'a> TryFrom<&'a mut GenericASTNode> for &'a mut $wrapper {
-            type Error = $crate::utils::Skip<<&'a mut GenericASTNode as TryFrom<&'a mut GenericASTNode>>::Error>;
+        impl<'a> TryFrom<&'a mut $crate::graph::AnyNode> for &'a mut $wrapper {
+            type Error = $crate::utils::Skip<<&'a mut $crate::graph::AnyNode as TryFrom<&'a mut $crate::graph::AnyNode>>::Error>;
 
             #[inline]
-            fn try_from(value: &'a mut GenericASTNode) -> Result<Self, Self::Error> {
+            fn try_from(value: &'a mut $crate::graph::AnyNode) -> Result<Self, Self::Error> {
                 if !<$wrapper as $crate::graph::NodeUnion>::contains(value) {
                     return Err($crate::utils::Skip::Skipped);
                 }
@@ -135,7 +122,7 @@ pub mod implementation {
         impl From<$t> for $wrapper {
             #[inline]
             fn from(value: $t) -> Self {
-                let generic: GenericASTNode = value.into();
+                let generic: $crate::graph::AnyNode = value.into();
                 $wrapper(generic)
             }
         }
@@ -143,7 +130,7 @@ pub mod implementation {
 
         impl $crate::traits::Identifiable for $wrapper {
             fn get_id(&self) -> $crate::graph::NodeId<Self> {
-                <GenericASTNode as $crate::traits::Identifiable>::get_id(&self.0).narrow()
+                <$crate::graph::AnyNode as $crate::traits::Identifiable>::get_id(&self.0).narrow()
             }
         }
 

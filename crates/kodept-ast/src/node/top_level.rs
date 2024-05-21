@@ -6,7 +6,7 @@ use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
+use crate::graph::{AnyNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
 use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
@@ -22,9 +22,9 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper TopLevel {
-        enum(EnumDeclaration) = GenericASTNode::Enum(x) => x.into(),
-        struct(StructDeclaration) = GenericASTNode::Struct(x) => x.into(),
-        function(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => x.into(),
+        enum(EnumDeclaration) = AnyNode::Enum(x) => x.into(),
+        struct(StructDeclaration) = AnyNode::Struct(x) => x.into(),
+        function(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
     }
 }
 

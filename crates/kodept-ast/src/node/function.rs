@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::{GenericASTNode, NodeId};
+use crate::graph::{AnyNode, NodeId};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
@@ -15,8 +15,8 @@ wrapper! {
     #[derive(Debug, PartialEq, From)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper FunctionDeclaration {
-        bodied(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => x.into(),
-        abstract(AbstractFunctionDeclaration) = GenericASTNode::AbstractFunction(x) => x.into(),
+        bodied(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
+        abstract(AbstractFunctionDeclaration) = AnyNode::AbstractFunction(x) => x.into(),
     }
 }
 

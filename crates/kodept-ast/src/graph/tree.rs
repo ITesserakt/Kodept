@@ -50,7 +50,7 @@ mod main {
     use slotgraph::export::{Config, Direction, Dot};
     use slotgraph::SubDiGraph;
 
-    use crate::graph::{Change, ChangeSet, GenericASTNode, Identifiable, NodeId, PermTkn};
+    use crate::graph::{Change, ChangeSet, AnyNode, Identifiable, NodeId, PermTkn};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::{ChildTag, TAGS_DESC};
     use crate::graph::tree::{ChildScope, DfsIter, Graph};
@@ -106,7 +106,7 @@ mod main {
     impl<U: CanAccess> SyntaxTree<U> {
         pub fn add_node<T>(&mut self, node: Uninit<T>) -> ChildScope<'_, T, U>
         where
-            T: Identifiable + Into<GenericASTNode>,
+            T: Identifiable + Into<AnyNode>,
         {
             let id = self
                 .graph
@@ -182,7 +182,7 @@ mod main {
             tag: ChildTag,
         ) -> OptVec<&U>
         where
-            GenericASTNode: ConvertibleToRef<U>,
+            AnyNode: ConvertibleToRef<U>,
         {
             self.graph
                 .children(id.into())
@@ -193,7 +193,7 @@ mod main {
 
         pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut PermTkn) -> Option<&mut T>
         where
-            GenericASTNode: ConvertibleToMut<T>,
+            AnyNode: ConvertibleToMut<T>,
         {
             let node_ref = self.graph.node_weight(id.into())?;
             node_ref.rw(token).try_as_mut()
@@ -203,7 +203,7 @@ mod main {
             &'a self,
             id: NodeId<T>,
             token: &'a PermTkn,
-        ) -> Option<&GenericASTNode> {
+        ) -> Option<&AnyNode> {
             let mut parents = self.graph.parents(id.into());
             if let (Some((_, parent_id)), None) = (parents.next(), parents.next()) {
                 Some(self.graph[parent_id].ro(token))
@@ -219,7 +219,7 @@ mod main {
         ) -> &mut T::Parent
         where
             T: NodeWithParent + Node,
-            GenericASTNode: ConvertibleToMut<T::Parent>,
+            AnyNode: ConvertibleToMut<T::Parent>,
         {
             let mut parents = self.graph.parents(id.into());
             let (Some((_, parent_id)), None) = (parents.next(), parents.next()) else {
@@ -256,7 +256,7 @@ mod utils {
     use slotgraph::{Key, NodeKey};
     use slotgraph::export::NodeCount;
 
-    use crate::graph::{GenericASTNode, HasChildrenMarker, NodeId, SyntaxTree};
+    use crate::graph::{AnyNode, HasChildrenMarker, NodeId, SyntaxTree};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::ChildTag;
     use crate::graph::tree::Graph;
@@ -334,7 +334,7 @@ mod utils {
 
         fn add_child_by_ref<U, const TAG: ChildTag>(&mut self, child_id: NodeKey)
         where
-            U: Into<GenericASTNode>,
+            U: Into<AnyNode>,
             T: HasChildrenMarker<U, TAG>,
         {
             self.tree.graph.add_edge(self.id.into(), child_id, TAG);
@@ -344,7 +344,7 @@ mod utils {
         pub fn with_rlt<U>(self, context: &mut impl Linker, rlt_node: &U) -> Self
         where
             U: Into<RLTFamily> + Clone,
-            T: Into<GenericASTNode>,
+            T: Into<AnyNode>,
             S: CanAccess,
         {
             let element = &self.tree.graph[NodeKey::from(self.id)];
@@ -380,12 +380,12 @@ mod utils {
 }
 
 mod subtree {
-    use crate::graph::GenericASTNode;
+    use crate::graph::AnyNode;
     use crate::graph::tree::Graph;
     
     #[derive(Default, Debug)]
     pub struct SubSyntaxTree {
-        graph: Graph<GenericASTNode>
+        graph: Graph<AnyNode>
     }
     
     impl SubSyntaxTree {

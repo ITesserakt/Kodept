@@ -9,7 +9,7 @@ use smallvec::SmallVec;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::nodes::Inaccessible;
-use crate::graph::{GenericASTNode, PermTkn};
+use crate::graph::{AnyNode, PermTkn};
 
 #[repr(transparent)]
 pub struct RefMut<'a, T> {
@@ -85,7 +85,7 @@ impl<T> FromOptVec for Vec<T> {
 
 impl<'a, T> RefMut<'a, T>
 where
-    GenericASTNode: ConvertibleToMut<T>,
+    AnyNode: ConvertibleToMut<T>,
 {
     pub fn borrow_mut<'b>(&'b self, token: &'a mut PermTkn) -> &'a mut T {
         self.node
@@ -97,7 +97,7 @@ where
 
 impl<'a, T> RefMut<'a, T>
 where
-    GenericASTNode: ConvertibleToRef<T>,
+    AnyNode: ConvertibleToRef<T>,
 {
     pub fn borrow(&self, token: &'a PermTkn) -> &T {
         self.node

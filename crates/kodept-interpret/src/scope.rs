@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 
-use kodept_ast::graph::{GenericASTNode, GenericNodeId, PermTkn, SyntaxTree};
+use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::PolymorphicType;
@@ -51,7 +51,7 @@ impl ScopeTree {
 
     pub fn push_scope<N>(&mut self, from: &N, name: Option<impl Into<String>>)
     where
-        N: Identifiable + Into<GenericASTNode>,
+        N: Identifiable + Into<AnyNode>,
     {
         let behaviour = match &self.current_scope {
             None => InsertBehavior::AsRoot,
@@ -88,7 +88,7 @@ impl ScopeTree {
 
     fn of_node<N>(&self, node: &N, ast: &SyntaxTree, token: &PermTkn) -> Result<Id, ScopeError>
     where
-        N: Identifiable + Into<GenericASTNode>,
+        N: Identifiable + Into<AnyNode>,
     {
         let parents = {
             let mut current = node.get_id().widen();
@@ -119,7 +119,7 @@ impl ScopeTree {
         token: &PermTkn,
     ) -> Result<ScopeSearch, ScopeError>
     where
-        N: Identifiable + Into<GenericASTNode>,
+        N: Identifiable + Into<AnyNode>,
     {
         let start = self.of_node(node, ast, token)?;
         Ok(ScopeSearch {

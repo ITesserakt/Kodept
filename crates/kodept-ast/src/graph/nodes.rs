@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 use derive_more::{Deref, DerefMut, From};
 use qcell::{TLCell, TLCellOwner};
 
-use crate::graph::GenericASTNode;
+use crate::graph::AnyNode;
 
 type CellImpl<T> = TLCell<Ghost, T>;
 type CellOwnerImpl = TLCellOwner<Ghost>;
@@ -13,12 +13,12 @@ pub struct Ghost;
 
 #[derive(Deref, From)]
 #[repr(transparent)]
-pub struct Inaccessible<T = GenericASTNode>(CellImpl<T>);
+pub struct Inaccessible<T = AnyNode>(CellImpl<T>);
 
 #[derive(Deref, DerefMut, From)]
 pub struct PermTkn(CellOwnerImpl);
 
-pub type RefNode<'arena, T = GenericASTNode> = &'arena Inaccessible<T>;
+pub type RefNode<'arena, T = AnyNode> = &'arena Inaccessible<T>;
 
 impl<T> Inaccessible<T> {
     pub fn new<U: Into<T>>(data: U) -> Self {
