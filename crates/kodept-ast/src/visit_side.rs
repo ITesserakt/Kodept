@@ -4,7 +4,7 @@ use derive_more::{From, Into, IsVariant};
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{GenericASTNode, PermTkn, RefMut};
+use crate::graph::{AnyNode, PermTkn, RefMut};
 
 #[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy, Debug)]
 #[repr(u8)]
@@ -42,7 +42,7 @@ impl VisitSide {
 
 impl<'arena, 'token, N: 'arena> Deref for Access<'arena, 'token, N>
 where
-    GenericASTNode: ConvertibleToRef<N>,
+    AnyNode: ConvertibleToRef<N>,
 {
     type Target = N;
 
@@ -53,7 +53,7 @@ where
 
 impl<'arena, 'token, N: 'arena> DerefMut for Access<'arena, 'token, N>
 where
-    GenericASTNode: ConvertibleToMut<N>,
+    AnyNode: ConvertibleToMut<N>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.1.borrow_mut(self.0)

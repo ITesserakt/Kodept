@@ -7,7 +7,7 @@ use codespan_reporting::term::termcolor::WriteColor;
 use replace_with::replace_with_or_abort;
 use thiserror::Error;
 
-use kodept_ast::graph::{GenericASTNode, SyntaxTree};
+use kodept_ast::graph::{AnyNode, SyntaxTree};
 use kodept_ast::rlt_accessor::{RLTAccessor, RLTFamily};
 use kodept_ast::traits::{Accessor, Identifiable, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
@@ -47,7 +47,7 @@ impl DefaultContext {
 impl Linker for DefaultContext {
     fn link<A, B>(&mut self, ast: &A, with: &B)
     where
-        A: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
         B: Into<RLTFamily> + Clone,
     {
         self.rlt_accessor.save(ast, with);
@@ -55,8 +55,8 @@ impl Linker for DefaultContext {
 
     fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
     where
-        A: Identifiable + Into<GenericASTNode>,
-        B: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
+        B: Identifiable + Into<AnyNode>,
     {
         self.rlt_accessor.save_existing(&a, b);
         a
@@ -66,7 +66,7 @@ impl Linker for DefaultContext {
 impl Accessor for DefaultContext {
     fn access<A, B>(&self, ast: &A) -> Option<&B>
     where
-        A: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
         RLTFamily: ConvertibleToRef<B>,
     {
         self.rlt_accessor.access(ast)
@@ -74,7 +74,7 @@ impl Accessor for DefaultContext {
 
     fn access_unknown<A>(&self, ast: &A) -> Option<RLTFamily>
     where
-        A: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
     {
         self.rlt_accessor.access_unknown(ast).cloned()
     }

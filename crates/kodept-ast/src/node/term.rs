@@ -6,7 +6,7 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
+use crate::graph::{AnyNode, SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
 use crate::{node, wrapper};
@@ -15,7 +15,7 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Term {
-        reference(Reference) = GenericASTNode::Reference(x) => x.into(),
+        reference(Reference) = AnyNode::Reference(x) => x.into(),
     }
 }
 

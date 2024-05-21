@@ -7,7 +7,7 @@ use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::Identity;
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
+use crate::graph::{AnyNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper};
 
@@ -15,8 +15,8 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Type {
-        type_name(TypeName) = GenericASTNode::TypeName(x) => x.into(),
-        tuple(ProdType) = GenericASTNode::ProdType(x) => x.into(),
+        type_name(TypeName) = AnyNode::TypeName(x) => x.into(),
+        tuple(ProdType) = AnyNode::ProdType(x) => x.into(),
     }
 }
 
@@ -24,8 +24,8 @@ wrapper! {
     #[derive(Debug, PartialEq, From, Into)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper Parameter {
-        typed(TypedParameter) = GenericASTNode::TypedParameter(x) => x.into(),
-        untyped(UntypedParameter) = GenericASTNode::UntypedParameter(x) => x.into(),
+        typed(TypedParameter) = AnyNode::TypedParameter(x) => x.into(),
+        untyped(UntypedParameter) = AnyNode::UntypedParameter(x) => x.into(),
     }
 }
 

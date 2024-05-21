@@ -4,7 +4,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::structure::{rlt, Located};
 
-use crate::graph::{GenericASTNode};
+use crate::graph::{AnyNode};
 use crate::graph::{SyntaxTree, SyntaxTreeBuilder};
 use crate::rlt_accessor::{RLTAccessor, RLTFamily};
 use crate::traits::{Identifiable, Linker, PopulateTree};
@@ -40,7 +40,7 @@ where
 impl<C: CodeHolder> Linker for ASTLinker<'_, C> {
     fn link<A, B>(&mut self, ast: &A, with: &B)
     where
-        A: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
         B: Into<RLTFamily> + Clone,
     {
         self.access.save(ast, with)
@@ -48,8 +48,8 @@ impl<C: CodeHolder> Linker for ASTLinker<'_, C> {
 
     fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
     where
-        A: Identifiable + Into<GenericASTNode>,
-        B: Identifiable + Into<GenericASTNode>,
+        A: Identifiable + Into<AnyNode>,
+        B: Identifiable + Into<AnyNode>,
     {
         self.access.save_existing(&a, b);
         a

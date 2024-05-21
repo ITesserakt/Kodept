@@ -1,6 +1,6 @@
 pub use crate::graph::changes::*;
 pub use crate::graph::children::*;
-pub use crate::graph::generic_node::*;
+pub use crate::graph::any_node::*;
 pub use crate::graph::identity::Identity;
 pub use crate::graph::node_id::{NodeId, GenericNodeId, GenericNodeKey};
 pub use crate::graph::nodes::{PermTkn, RefNode};
@@ -12,7 +12,7 @@ pub(crate) use children::macros::with_children;
 
 mod changes;
 mod children;
-mod generic_node;
+mod any_node;
 mod identity;
 mod node_id;
 mod nodes;

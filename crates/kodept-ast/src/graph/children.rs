@@ -1,6 +1,6 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{GenericASTNode};
+use crate::graph::{AnyNode};
 use crate::graph::{PermTkn, SyntaxTree};
 use crate::graph::tags::ChildTag;
 use crate::graph::utils::FromOptVec;
@@ -26,14 +26,14 @@ pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
         token: &'b PermTkn,
     ) -> ChildrenRef<'b, Self, Child, TAG>
     where
-        GenericASTNode: ConvertibleToRef<Child>,
+        AnyNode: ConvertibleToRef<Child>,
     {
         Self::Container::unwrap(tree.children_of(self.get_id(), token, TAG))
     }
 
     fn get_children_mut<'b>(&self, tree: &'b SyntaxTree) -> ChildrenMut<'b, Self, Child, TAG>
     where
-        GenericASTNode: ConvertibleToMut<Child>,
+        AnyNode: ConvertibleToMut<Child>,
     {
         Self::Container::unwrap_mut(tree.children_of_raw(self.get_id(), TAG))
     }

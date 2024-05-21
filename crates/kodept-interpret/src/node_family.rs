@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use derive_more::{From, Into};
 
-use kodept_ast::graph::{GenericASTNode, NodeUnion, PermTkn, SyntaxTree};
+use kodept_ast::graph::{AnyNode, NodeUnion, PermTkn, SyntaxTree};
 use kodept_ast::Identifier::TypeReference;
 use kodept_ast::{
     wrapper, AbstractFunctionDeclaration, Application, BodiedFunctionDeclaration, ExpressionBlock,
@@ -20,13 +20,13 @@ use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 wrapper! {
     #[derive(From, Into, PartialEq, Debug)]
     pub wrapper TypeDerivableNode {
-        function(BodiedFunctionDeclaration) = GenericASTNode::BodiedFunction(x) => x.into(),
-        expression_block(ExpressionBlock) = GenericASTNode::ExpressionBlock(x) => x.into(),
-        init_var(InitializedVariable) = GenericASTNode::InitializedVariable(x) => x.into(),
-        lambda(Lambda) = GenericASTNode::Lambda(x) => x.into(),
-        application(Application) = GenericASTNode::Application(x) => x.into(),
-        if_expr(IfExpression) = GenericASTNode::If(x) => x.into(),
-        reference(Reference) = GenericASTNode::Reference(x@Reference{ ident: Identifier::Reference { .. }, .. }) => x.into(),
+        function(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
+        expression_block(ExpressionBlock) = AnyNode::ExpressionBlock(x) => x.into(),
+        init_var(InitializedVariable) = AnyNode::InitializedVariable(x) => x.into(),
+        lambda(Lambda) = AnyNode::Lambda(x) => x.into(),
+        application(Application) = AnyNode::Application(x) => x.into(),
+        if_expr(IfExpression) = AnyNode::If(x) => x.into(),
+        reference(Reference) = AnyNode::Reference(x@Reference{ ident: Identifier::Reference { .. }, .. }) => x.into(),
 
         literal(Literal) = x if Literal::contains(x) => x.force_into::<Literal>().into(),
     }
@@ -35,10 +35,10 @@ wrapper! {
 wrapper! {
     #[derive(From, Into)]
     pub wrapper TypeRestrictedNode {
-        typed_parameter(TypedParameter) = GenericASTNode::TypedParameter(x) => x.into(),
-        function(AbstractFunctionDeclaration) = GenericASTNode::AbstractFunction(x) => x.into(),
-        variable(Variable) = GenericASTNode::Variable(x) => x.into(),
-        reference(Reference) = GenericASTNode::Reference(x@Reference { ident: TypeReference { .. }, .. }) => x.into(),
+        typed_parameter(TypedParameter) = AnyNode::TypedParameter(x) => x.into(),
+        function(AbstractFunctionDeclaration) = AnyNode::AbstractFunction(x) => x.into(),
+        variable(Variable) = AnyNode::Variable(x) => x.into(),
+        reference(Reference) = AnyNode::Reference(x@Reference { ident: TypeReference { .. }, .. }) => x.into(),
 
         // Literals are not suitable here because they don't have name
     }

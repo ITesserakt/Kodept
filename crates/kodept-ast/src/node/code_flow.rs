@@ -8,7 +8,7 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::Identity;
 use crate::graph::tags::PRIMARY;
 use crate::graph::NodeId;
-use crate::graph::{GenericASTNode, SyntaxTreeBuilder};
+use crate::graph::{AnyNode, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
 use crate::{node, wrapper, Body, Operation};
 
@@ -16,7 +16,7 @@ wrapper! {
     #[derive(Debug, PartialEq, From)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub wrapper CodeFlow {
-        if(IfExpression) = GenericASTNode::If(x) => x.into()
+        if(IfExpression) = AnyNode::If(x) => x.into()
     }
 }
 

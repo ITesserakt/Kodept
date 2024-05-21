@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use slotgraph::{Key, NodeKey};
 
-use crate::graph::{GenericASTNode, NodeUnion};
+use crate::graph::{AnyNode, NodeUnion};
 
 #[derive(Display, From)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -15,10 +15,10 @@ use crate::graph::{GenericASTNode, NodeUnion};
 #[repr(transparent)]
 pub struct NodeId<Node>(Key<Node>);
 
-pub type GenericNodeId = NodeId<GenericASTNode>;
-pub type GenericNodeKey = Key<GenericASTNode>;
+pub type GenericNodeId = NodeId<AnyNode>;
+pub type GenericNodeKey = Key<AnyNode>;
 
-impl From<GenericNodeId> for Key<GenericASTNode> {
+impl From<GenericNodeId> for Key<AnyNode> {
     fn from(value: GenericNodeId) -> Self {
         value.0
     }
@@ -42,7 +42,7 @@ impl<T> NodeId<T> {
     }
 }
 
-impl<T: Into<GenericASTNode>> NodeId<T> {
+impl<T: Into<AnyNode>> NodeId<T> {
     pub fn widen(self) -> GenericNodeId {
         NodeId(self.0.coerce())
     }
@@ -58,7 +58,7 @@ impl<T> NodeId<T> {
 }
 
 impl GenericNodeId {
-    pub fn narrow<T: TryFrom<GenericASTNode>>(self) -> NodeId<T> {
+    pub fn narrow<T: TryFrom<AnyNode>>(self) -> NodeId<T> {
         NodeId(self.0.coerce())
     }
 }

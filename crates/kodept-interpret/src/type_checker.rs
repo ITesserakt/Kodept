@@ -5,7 +5,7 @@ use derive_more::From;
 use tracing::debug;
 
 use kodept_ast::BodiedFunctionDeclaration;
-use kodept_ast::graph::{ChangeSet, GenericASTNode};
+use kodept_ast::graph::{ChangeSet, AnyNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::ConvertibleToRef;
@@ -87,7 +87,7 @@ impl From<InferError> for ReportMessage {
 
 impl Macro for TypeChecker {
     type Error = InferError;
-    type Node = GenericASTNode;
+    type Node = AnyNode;
 
     fn transform(
         &mut self,

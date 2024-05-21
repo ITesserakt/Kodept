@@ -4,7 +4,7 @@ use kodept_ast::{
     AbstractFunctionDeclaration, BodiedFunctionDeclaration, EnumDeclaration, ModuleDeclaration,
     StructDeclaration, TypedParameter, TypeName, UntypedParameter, Variable,
 };
-use kodept_ast::graph::{ChangeSet, GenericASTNode};
+use kodept_ast::graph::{ChangeSet, AnyNode};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
@@ -33,25 +33,25 @@ impl ScopeAnalyzer {
 
     fn divide_by_scopes(
         &mut self,
-        node: &GenericASTNode,
+        node: &AnyNode,
         side: VisitSide,
     ) -> Result<(), ScopeError> {
         let divide = match node {
-            GenericASTNode::Module(ModuleDeclaration { name, .. }) => Some(Some(name)),
-            GenericASTNode::Struct(StructDeclaration { name, .. }) => Some(Some(name)),
-            GenericASTNode::Enum(EnumDeclaration { name, .. }) => Some(Some(name)),
-            GenericASTNode::AbstractFunction(AbstractFunctionDeclaration { name, .. }) => {
+            AnyNode::Module(ModuleDeclaration { name, .. }) => Some(Some(name)),
+            AnyNode::Struct(StructDeclaration { name, .. }) => Some(Some(name)),
+            AnyNode::Enum(EnumDeclaration { name, .. }) => Some(Some(name)),
+            AnyNode::AbstractFunction(AbstractFunctionDeclaration { name, .. }) => {
                 Some(Some(name))
             }
-            GenericASTNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
+            AnyNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
                 Some(Some(name))
             }
-            GenericASTNode::File(_) => Some(None),
-            GenericASTNode::ExpressionBlock(_) => Some(None),
-            GenericASTNode::Lambda(_) => Some(None),
-            GenericASTNode::If(_) => Some(None),
-            GenericASTNode::Elif(_) => Some(None),
-            GenericASTNode::Else(_) => Some(None),
+            AnyNode::File(_) => Some(None),
+            AnyNode::ExpressionBlock(_) => Some(None),
+            AnyNode::Lambda(_) => Some(None),
+            AnyNode::If(_) => Some(None),
+            AnyNode::Elif(_) => Some(None),
+            AnyNode::Else(_) => Some(None),
             _ => None,
         };
 
@@ -69,7 +69,7 @@ impl ScopeAnalyzer {
 
 impl Macro for ScopeAnalyzer {
     type Error = ScopeError;
-    type Node = GenericASTNode;
+    type Node = AnyNode;
 
     fn transform(
         &mut self,
@@ -95,28 +95,28 @@ impl Macro for ScopeAnalyzer {
             return Execution::Skipped;
         };
         match &*node {
-            GenericASTNode::Struct(StructDeclaration { name, .. }) => {
+            AnyNode::Struct(StructDeclaration { name, .. }) => {
                 scope.insert_type(name, Constant(name.clone()).into())?;
             }
-            GenericASTNode::TypedParameter(TypedParameter { name, .. }) => {
+            AnyNode::TypedParameter(TypedParameter { name, .. }) => {
                 scope.insert_var(name)?;
             }
-            GenericASTNode::UntypedParameter(UntypedParameter { name, .. }) => {
+            AnyNode::UntypedParameter(UntypedParameter { name, .. }) => {
                 scope.insert_var(name)?;
             }
-            GenericASTNode::TypeName(TypeName { name, .. }) => {
-                if let Some(GenericASTNode::Enum(_)) = tree.parent_of(node.get_id(), node.token()) {
+            AnyNode::TypeName(TypeName { name, .. }) => {
+                if let Some(AnyNode::Enum(_)) = tree.parent_of(node.get_id(), node.token()) {
                     scope.insert_type(name, Constant(name.clone()).into())?;
                 }
             }
-            GenericASTNode::Enum(EnumDeclaration { name, .. }) => {
+            AnyNode::Enum(EnumDeclaration { name, .. }) => {
                 scope.insert_type(name, Constant(name.clone()).into())?;
             }
-            GenericASTNode::Variable(Variable { name, .. }) => scope.insert_var(name)?,
-            GenericASTNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
+            AnyNode::Variable(Variable { name, .. }) => scope.insert_var(name)?,
+            AnyNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
                 scope.insert_var(name)?;
             }
-            GenericASTNode::AbstractFunction(AbstractFunctionDeclaration { name, .. }) => {
+            AnyNode::AbstractFunction(AbstractFunctionDeclaration { name, .. }) => {
                 scope.insert_var(name)?
             }
             _ => {}
