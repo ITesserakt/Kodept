@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
+use std::ops::Add;
 
 use derive_more::Display;
 use itertools::Itertools;
@@ -59,6 +60,38 @@ impl Substitutions {
             substituted: from,
             replacement: to,
         }]))
+    }
+}
+
+impl Add for &Substitutions {
+    type Output = Substitutions;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.compose(rhs)
+    }
+}
+
+impl Add for Substitutions {
+    type Output = Substitutions;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.compose(&rhs)
+    }
+}
+
+impl Add<&Substitutions> for Substitutions {
+    type Output = Substitutions;
+
+    fn add(self, rhs: &Substitutions) -> Self::Output {
+        self.compose(rhs)
+    }
+}
+
+impl Add<Substitutions> for &Substitutions {
+    type Output = Substitutions;
+
+    fn add(self, rhs: Substitutions) -> Self::Output {
+        self.compose(&rhs)
     }
 }
 

@@ -4,25 +4,43 @@ use derive_more::{From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::graph::node_id::GenericNodeId;
-use crate::graph::Identifiable;
-use crate::make_ast_node_adaptor;
 use crate::*;
+use crate::graph::Identifiable;
+use crate::graph::node_id::GenericNodeId;
 
-type Identity<T> = T;
-
-make_ast_node_adaptor!(GenericASTNode, lifetimes: [], Identity, configs: [
-    derive(Debug, PartialEq, From, TryInto),
-    try_into(owned, ref, ref_mut),
-    cfg_attr(feature = "serde", derive(Serialize, Deserialize))
-]);
-
-#[macro_export]
-macro_rules! generic_ast_node_map {
-    ($self:expr, |$var:ident| $mapping:expr) => {
-        $crate::functor_map!(GenericASTNode, $self, |$var| $mapping)
-    };
+#[derive(Debug, PartialEq, From, TryInto)]
+#[try_into(owned, ref, ref_mut)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum GenericASTNode {
+    File(FileDeclaration),
+    Module(ModuleDeclaration),
+    Struct(StructDeclaration),
+    Enum(EnumDeclaration),
+    TypedParameter(TypedParameter),
+    UntypedParameter(UntypedParameter),
+    TypeName(TypeName),
+    Variable(Variable),
+    InitializedVariable(InitializedVariable),
+    BodiedFunction(BodiedFunctionDeclaration),
+    ExpressionBlock(ExpressionBlock),
+    Application(Application),
+    Lambda(Lambda),
+    Reference(Reference),
+    Access(Access),
+    Number(NumberLiteral),
+    Char(CharLiteral),
+    String(StringLiteral),
+    Tuple(TupleLiteral),
+    If(IfExpression),
+    Elif(ElifExpression),
+    Else(ElseExpression),
+    Binary(Binary),
+    Unary(Unary),
+    AbstractFunction(AbstractFunctionDeclaration),
+    ProdType(ProdType),
 }
+
+pub type AnyNode = GenericASTNode;
 
 #[allow(unsafe_code)]
 /// # Safety
@@ -64,16 +82,17 @@ unsafe impl NodeUnion for GenericASTNode {
 impl Identifiable for GenericASTNode {
     #[inline]
     fn get_id(&self) -> GenericNodeId {
-        generic_ast_node_map!(self, |x| x.get_id().widen())
+        functor_map!(GenericASTNode, self, |x| x.get_id().widen())
     }
 
     #[inline]
     fn set_id(&self, value: GenericNodeId) {
-        generic_ast_node_map!(self, |x| x.set_id(value.narrow()))
+        functor_map!(GenericASTNode, self, |x| x.set_id(value.narrow()))
     }
 }
 
 impl GenericASTNode {
+    #[inline]
     pub fn name(&self) -> &'static str {
         match self {
             GenericASTNode::File(_) => "File",

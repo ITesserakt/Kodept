@@ -1,4 +1,4 @@
-use crate::r#type::Var;
+use crate::r#type::TVar;
 
 pub mod algorithm_u;
 pub mod algorithm_w;
@@ -13,8 +13,8 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn new_var(&mut self) -> Var {
-        let result = Var(self.variable_index);
+    pub fn new_var(&mut self) -> TVar {
+        let result = TVar(self.variable_index);
         self.variable_index += 1;
         result
     }

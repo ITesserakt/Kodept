@@ -1,18 +1,19 @@
+use std::collections::VecDeque;
+
 use nom::branch::alt;
 use nom::multi::{many0, many1};
-use nom::sequence::tuple;
 use nom::Parser;
+use nom::sequence::tuple;
 use nom_supreme::ParserExt;
-use std::collections::VecDeque;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::{Context, ContextualReference};
 
-use crate::lexer::Symbol::DoubleColon;
-use crate::lexer::{Identifier::*, Token};
-use crate::parser::nom::{match_token};
-use crate::token_stream::TokenStream;
 use crate::{function, match_token, ParseResult};
+use crate::lexer::{Identifier::*, Token};
+use crate::lexer::Symbol::DoubleColon;
+use crate::parser::nom::match_token;
+use crate::token_stream::TokenStream;
 
 /// |      | Global   | Local     |
 /// | ---- | -------- | --------- |
@@ -60,23 +61,22 @@ fn global_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
 }
 
 fn local_type_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
-    tuple((
-        type_ref,
-        many1(match_token(DoubleColon).precedes(type_ref)),
-    ))
-    .map(|it| (it.0, VecDeque::from(it.1)))
-    .map(|(first, mut rest)| {
-        let start = Context::Local;
-        let last = rest.pop_back().expect("Used many1 parser, so this is unreachable");
-        rest.push_front(first);
-        let context = rest.into_iter().fold(start, |acc, next| Context::Inner {
-            parent: Box::new(acc),
-            needle: next,
-        });
-        (context, last)
-    })
-    .context(function!())
-    .parse(input)
+    tuple((type_ref, many1(match_token(DoubleColon).precedes(type_ref))))
+        .map(|it| (it.0, VecDeque::from(it.1)))
+        .map(|(first, mut rest)| {
+            let start = Context::Local;
+            let last = rest
+                .pop_back()
+                .expect("Used many1 parser, so this is unreachable");
+            rest.push_front(first);
+            let context = rest.into_iter().fold(start, |acc, next| Context::Inner {
+                parent: Box::new(acc),
+                needle: next,
+            });
+            (context, last)
+        })
+        .context(function!())
+        .parse(input)
 }
 
 fn local_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {

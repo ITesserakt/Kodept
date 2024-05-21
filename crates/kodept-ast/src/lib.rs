@@ -1,12 +1,14 @@
 #![feature(try_trait_v2)]
 #![feature(iter_array_chunks)]
 
+pub use macros::{ForceInto, Uninit};
+pub(crate) use macros::implementation::{functor_map, node};
+pub(crate) use graph::with_children;
+
 pub use self::node::{
     block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
     top_level::*, types::*,
 };
-
-pub use macros::{ForceInto, Uninit};
 
 pub mod ast_builder;
 pub mod graph;

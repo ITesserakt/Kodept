@@ -10,7 +10,6 @@ use kodept_core::code_source::CodeSource;
 use crate::cli::commands::{Commands, Execute, Graph};
 
 mod cli;
-mod stage;
 
 type WideError = anyhow::Error;
 

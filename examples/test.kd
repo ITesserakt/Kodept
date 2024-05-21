@@ -8,5 +8,5 @@ module Testing {
     struct String
     struct Person(name: String)
 
-    fun get_name(p: Person) => p.name
+    fun get_name(p: Person) => 1
 }

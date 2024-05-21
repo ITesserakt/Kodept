@@ -48,7 +48,6 @@ pub type ChildrenMut<'a, T, Child, const TAG: ChildTag> =
 pub type ContainerT<T> = <T as FromOptVec>::T;
 
 pub mod macros {
-    #[macro_export]
     macro_rules! with_children {
         ($t:ty => {$($vis:vis $name:ident: $c_t:ty as $tag:tt,)*}) => {
             paste::paste! {
@@ -80,4 +79,6 @@ pub mod macros {
             } }
         }
     }
+    
+    pub(crate) use with_children;
 }

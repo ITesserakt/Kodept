@@ -1,5 +1,5 @@
-pub use main::*;
-pub use utils::*;
+pub use main::{SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView};
+pub use utils::{ChildScope, DfsIter};
 
 use crate::graph::nodes::Inaccessible;
 use crate::graph::tags::ChildTag;
@@ -95,7 +95,7 @@ mod main {
             }
 
             let mapping = self.graph.map(
-                |id, node| format!("{} [{:?}]", node.ro(&self.stage.0).name(), id),
+                |id, node| format!("{} [{}]", node.ro(&self.stage.0).name(), id),
                 |_, &edge| TAGS_DESC[edge as usize],
             );
             Wrapper(mapping, config)
@@ -375,6 +375,22 @@ mod utils {
                 self.add_child_by_ref(child_id.into());
             }
             self
+        }
+    }
+}
+
+mod subtree {
+    use crate::graph::GenericASTNode;
+    use crate::graph::tree::Graph;
+    
+    #[derive(Default, Debug)]
+    pub struct SubSyntaxTree {
+        graph: Graph<GenericASTNode>
+    }
+    
+    impl SubSyntaxTree {
+        pub fn new() -> Self {
+            Self::default()
         }
     }
 }

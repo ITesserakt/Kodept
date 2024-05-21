@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::key::CommonKey;
 use crate::Key;
 use petgraph::prelude::EdgeRef;
@@ -98,5 +99,12 @@ impl<E, T: EdgeType> EdgeType for Edge<E, T> {
 impl<T> From<NodeKey> for Key<T> {
     fn from(value: NodeKey) -> Self {
         value.0.into()
+    }
+}
+
+impl Display for NodeKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use slotmap::Key;
+        write!(f, "{:?}", self.0.data())
     }
 }

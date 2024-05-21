@@ -110,7 +110,7 @@ impl Macro for UnaryOperatorExpander {
     fn transform(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        context: &mut impl Context,
+        _: &mut impl Context,
     ) -> Execution<Self::Error, ChangeSet> {
         let node = guard.allow_only(VisitSide::Entering)?;
 
@@ -127,7 +127,7 @@ impl Macro for AccessExpander {
     type Error = Infallible;
     type Node = Access;
 
-    fn transform(&mut self, guard: VisitGuard<Self::Node>, context: &mut impl Context) -> Execution<Self::Error, ChangeSet> {
+    fn transform(&mut self, guard: VisitGuard<Self::Node>, _: &mut impl Context) -> Execution<Self::Error, ChangeSet> {
         let node = guard.allow_only(VisitSide::Entering)?;
         
         Execution::Completed(replace_with(&*node, "compose"))

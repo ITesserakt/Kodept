@@ -228,18 +228,19 @@ impl Debug for ScopeTree {
 
 impl Debug for Scope {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.start_from_id)?;
         if let Some(name) = &self.name {
-            write!(f, " [{name}]")?;
+            write!(f, "[{:?}:{name}]", self.start_from_id)?;
+        } else {
+            write!(f, "[{:?}]", self.start_from_id)?;
         }
         if !self.types.is_empty() {
             write!(
                 f,
                 " {{{}}}",
                 self.types
-                    .iter()
-                    .map(|(name, ty)| format!("{name} => {ty}"))
-                    .intersperse(", ".to_string())
+                    .keys()
+                    .map(|it| it.as_ref())
+                    .intersperse(", ")
                     .collect::<String>()
             )?;
         }

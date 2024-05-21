@@ -68,6 +68,9 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
     }
 
     pub fn remove_node(&mut self, id: NodeKey) -> Option<N> {
+        self.edges.retain(move |_, edge| {
+            edge.to == id || edge.from == id
+        });
         self.nodes.remove(id.0)
     }
 

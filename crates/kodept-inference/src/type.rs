@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
-use std::ops::{BitOr, Sub};
+use std::ops::{BitAnd, BitOr, Sub};
 
 use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::Itertools;
 use nonempty_collections::NEVec;
 
-use crate::{Environment, LOWER_ALPHABET, UPPER_ALPHABET};
+use crate::{Environment, LOWER_ALPHABET};
 use crate::substitution::Substitutions;
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
@@ -33,11 +33,11 @@ fn expand_to_string(id: usize, alphabet: &'static str) -> String {
 pub enum PrimitiveType {
     Integral,
     Floating,
-    Boolean
+    Boolean,
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq, From)]
-pub struct Var(pub(crate) usize);
+pub struct TVar(pub(crate) usize);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
 
@@ -46,7 +46,7 @@ pub struct Tuple(pub(crate) Vec<MonomorphicType>);
 #[derive(Debug, Clone, PartialEq, From, Eq, Hash)]
 pub enum MonomorphicType {
     Primitive(PrimitiveType),
-    Var(Var),
+    Var(TVar),
     #[from(ignore)]
     Fn {
         input: Box<MonomorphicType>,
@@ -54,7 +54,7 @@ pub enum MonomorphicType {
     },
     Tuple(Tuple),
     Pointer(Box<MonomorphicType>),
-    Constant(usize),
+    Constant(String),
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
@@ -63,7 +63,7 @@ pub enum PolymorphicType {
     Monomorphic(MonomorphicType),
     #[from(ignore)]
     Binding {
-        bind: Var,
+        bind: TVar,
         binding_type: Box<PolymorphicType>,
     },
 }
@@ -90,13 +90,13 @@ pub fn fun<M: Into<MonomorphicType>>(input: NEVec<MonomorphicType>, output: M) -
         .rfold(fun1(last.clone(), output), fun1)
 }
 
-pub fn var<V: Into<Var>>(id: V) -> MonomorphicType {
+pub fn var<V: Into<TVar>>(id: V) -> MonomorphicType {
     MonomorphicType::Var(id.into())
 }
 
 impl MonomorphicType {
     #[must_use]
-    pub fn free_types(&self) -> HashSet<Var> {
+    pub fn free_types(&self) -> HashSet<TVar> {
         match self {
             MonomorphicType::Primitive(_) | MonomorphicType::Constant(_) => HashSet::new(),
             MonomorphicType::Var(x) => HashSet::from([x.clone()]),
@@ -110,7 +110,7 @@ impl MonomorphicType {
 
     fn rename(self, old: usize, new: usize) -> Self {
         match self {
-            MonomorphicType::Var(Var(id)) if id == old => Var(new).into(),
+            MonomorphicType::Var(TVar(id)) if id == old => TVar(new).into(),
             MonomorphicType::Primitive(_)
             | MonomorphicType::Var(_)
             | MonomorphicType::Constant(_) => self,
@@ -149,7 +149,7 @@ impl MonomorphicType {
     fn extract_vars(&self) -> Vec<usize> {
         match self {
             MonomorphicType::Primitive(_) | MonomorphicType::Constant(_) => vec![],
-            MonomorphicType::Var(Var(x)) => vec![*x],
+            MonomorphicType::Var(TVar(x)) => vec![*x],
             MonomorphicType::Fn { input, output } => {
                 let mut vec = vec![];
                 vec.append(&mut input.extract_vars());
@@ -180,7 +180,7 @@ impl MonomorphicType {
 }
 
 impl PolymorphicType {
-    fn collect(&self) -> (Vec<Var>, MonomorphicType) {
+    fn collect(&self) -> (Vec<TVar>, MonomorphicType) {
         let mut result = vec![];
         let mut current = self;
         loop {
@@ -195,7 +195,7 @@ impl PolymorphicType {
     }
 
     #[must_use]
-    pub fn free_types(&self) -> HashSet<Var> {
+    pub fn free_types(&self) -> HashSet<TVar> {
         match self {
             PolymorphicType::Monomorphic(t) => t.free_types(),
             PolymorphicType::Binding { bind, binding_type } => binding_type
@@ -237,6 +237,70 @@ impl PolymorphicType {
     }
 }
 
+impl BitAnd<Substitutions> for PolymorphicType {
+    type Output = PolymorphicType;
+
+    fn bitand(self, rhs: Substitutions) -> Self::Output {
+        self.substitute(&rhs)
+    }
+}
+
+impl BitAnd<&Substitutions> for PolymorphicType {
+    type Output = PolymorphicType;
+
+    fn bitand(self, rhs: &Substitutions) -> Self::Output {
+        self.substitute(rhs)
+    }
+}
+
+impl BitAnd<Substitutions> for &PolymorphicType {
+    type Output = PolymorphicType;
+
+    fn bitand(self, rhs: Substitutions) -> Self::Output {
+        self.substitute(&rhs)
+    }
+}
+
+impl BitAnd<&Substitutions> for &PolymorphicType {
+    type Output = PolymorphicType;
+
+    fn bitand(self, rhs: &Substitutions) -> Self::Output {
+        self.substitute(&rhs)
+    }
+}
+
+impl BitAnd<Substitutions> for MonomorphicType {
+    type Output = MonomorphicType;
+
+    fn bitand(self, rhs: Substitutions) -> Self::Output {
+        self.substitute(&rhs)
+    }
+}
+
+impl BitAnd<&Substitutions> for MonomorphicType {
+    type Output = MonomorphicType;
+
+    fn bitand(self, rhs: &Substitutions) -> Self::Output {
+        self.substitute(rhs)
+    }
+}
+
+impl BitAnd<Substitutions> for &MonomorphicType {
+    type Output = MonomorphicType;
+
+    fn bitand(self, rhs: Substitutions) -> Self::Output {
+        self.substitute(&rhs)
+    }
+}
+
+impl BitAnd<&Substitutions> for &MonomorphicType {
+    type Output = MonomorphicType;
+
+    fn bitand(self, rhs: &Substitutions) -> Self::Output {
+        self.substitute(&rhs)
+    }
+}
+
 impl Tuple {
     #[must_use]
     pub const fn unit() -> Tuple {
@@ -248,7 +312,7 @@ impl Tuple {
     }
 }
 
-impl Display for Var {
+impl Display for TVar {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "'{}", expand_to_string(self.0, LOWER_ALPHABET))
     }
@@ -265,9 +329,7 @@ impl Display for MonomorphicType {
             },
             MonomorphicType::Tuple(Tuple(vec)) => write!(f, "({})", vec.iter().join(", ")),
             MonomorphicType::Pointer(t) => write!(f, "*{t}"),
-            MonomorphicType::Constant(id) => {
-                write!(f, "{}", expand_to_string(*id, UPPER_ALPHABET))
-            }
+            MonomorphicType::Constant(id) => write!(f, "{id}"),
         }
     }
 }
