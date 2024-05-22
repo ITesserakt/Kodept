@@ -61,13 +61,8 @@ impl<'e> AlgorithmW<'e> {
     fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> AWResult {
         let v = self.env.new_var();
         let var_bind = bind.clone();
-        let mut new_context = self.context.clone();
-        new_context.push(var_bind, Rc::new(MonomorphicType::Var(v.clone()).into()));
-        let (s1, t1) = AlgorithmW {
-            context: &mut new_context,
-            env: self.env,
-        }
-        .apply(&expr)?;
+        self.context.push(var_bind, Rc::new(MonomorphicType::Var(v.clone()).into()));
+        let (s1, t1) = expr.infer_w(self)?;
         let resulting_fn = fun1(var(v) & &s1, t1);
         Ok((s1, resulting_fn))
     }
