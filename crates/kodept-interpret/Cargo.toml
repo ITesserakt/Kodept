@@ -19,7 +19,7 @@ derive_more.workspace = true
 extend.workspace = true
 tracing.workspace = true
 id_tree.workspace = true
-paste = "1.0.14"
+ref-cast = "1.0.23"
 slotmap = "1.0.7"
 
 [dependencies.kodept-macros]

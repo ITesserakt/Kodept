@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use kodept_ast::{Access, Application, Binary, BinaryExpressionKind, BitKind, ComparisonKind, EqKind, Expression, Identifier, LogicKind, MathKind, Operation, Reference, ReferenceContext, Term, Unary, UnaryExpressionKind};
+use kodept_ast::{Acc, Appl, BinExpr, BinaryExpressionKind, BitKind, ComparisonKind, EqKind, Expression, Identifier, LogicKind, MathKind, Operation, Ref, ReferenceContext, Term, UnExpr, UnaryExpressionKind};
 use kodept_ast::graph::{Change, ChangeSet, AnyNode, tags};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
@@ -25,10 +25,10 @@ fn replace_with<N: Identifiable + Into<AnyNode>>(
     let id = replaced.get_id().widen();
 
     ChangeSet::from_iter([
-        Change::replace(id, Application::uninit()),
+        Change::replace(id, Appl::uninit()),
         Change::add::<_, _, { tags::PRIMARY }>(
-            id.narrow::<Application>(),
-            Reference::uninit(
+            id.narrow::<Appl>(),
+            Ref::uninit(
                 ReferenceContext::global(["Prelude"]),
                 Identifier::Reference {
                     name: function_name.to_string(),
@@ -61,7 +61,7 @@ impl AccessExpander {
 
 impl Macro for BinaryOperatorExpander {
     type Error = Infallible;
-    type Node = Binary;
+    type Node = BinExpr;
 
     fn transform(
         &mut self,
@@ -105,7 +105,7 @@ impl Macro for BinaryOperatorExpander {
 
 impl Macro for UnaryOperatorExpander {
     type Error = Infallible;
-    type Node = Unary;
+    type Node = UnExpr;
 
     fn transform(
         &mut self,
@@ -125,7 +125,7 @@ impl Macro for UnaryOperatorExpander {
 
 impl Macro for AccessExpander {
     type Error = Infallible;
-    type Node = Access;
+    type Node = Acc;
 
     fn transform(&mut self, guard: VisitGuard<Self::Node>, _: &mut impl Context) -> Execution<Self::Error, ChangeSet> {
         let node = guard.allow_only(VisitSide::Entering)?;

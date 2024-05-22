@@ -1,4 +1,3 @@
-use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -6,10 +5,10 @@ use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{AnyNode, SyntaxTreeBuilder};
+use crate::graph::{SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, wrapper, BodiedFunctionDeclaration, TypeName, TypedParameter};
+use crate::{node, BodyFnDecl, TyName, TyParam, node_sub_enum};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -18,45 +17,45 @@ pub enum EnumKind {
     Heap,
 }
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper TopLevel {
-        enum(EnumDeclaration) = AnyNode::Enum(x) => x.into(),
-        struct(StructDeclaration) = AnyNode::Struct(x) => x.into(),
-        function(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
+    pub enum TopLevel {
+        Enum(EnumDecl),
+        Struct(StructDecl),
+        Fn(BodyFnDecl)
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct StructDeclaration {
+    pub struct StructDecl {
         pub name: String,;
-        pub parameters: Vec<TypedParameter>,
-        pub contents: Vec<BodiedFunctionDeclaration>,
+        pub parameters: Vec<TyParam>,
+        pub contents: Vec<BodyFnDecl>,
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct EnumDeclaration {
+    pub struct EnumDecl {
         pub kind: EnumKind,
         pub name: String,;
-        pub contents: Vec<TypeName>,
+        pub contents: Vec<TyName>,
     }
 }
 
 impl PopulateTree for Struct {
-    type Output = StructDeclaration;
+    type Output = StructDecl;
 
     fn convert(
         &self,
         builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
-        let node = StructDeclaration::uninit(context.get_chunk_located(&self.id).to_string());
+        let node = StructDecl::uninit(context.get_chunk_located(&self.id).to_string());
         builder
             .add_node(node)
             .with_children_from(self.body.iter().flat_map(|x| x.inner.as_ref()), context)
@@ -70,7 +69,7 @@ impl PopulateTree for Struct {
 }
 
 impl PopulateTree for Enum {
-    type Output = EnumDeclaration;
+    type Output = EnumDecl;
 
     fn convert(
         &self,
@@ -81,7 +80,7 @@ impl PopulateTree for Enum {
             Enum::Stack { id, contents, .. } => (EnumKind::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumKind::Heap, id, contents),
         };
-        let node = EnumDeclaration::uninit(kind, context.get_chunk_located(name).to_string());
+        let node = EnumDecl::uninit(kind, context.get_chunk_located(name).to_string());
         builder
             .add_node(node)
             .with_children_from(

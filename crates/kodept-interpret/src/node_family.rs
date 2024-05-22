@@ -1,14 +1,11 @@
 use std::rc::Rc;
 
-use derive_more::{From, Into};
+use derive_more::{From};
 
-use kodept_ast::graph::{AnyNode, NodeUnion, PermTkn, SyntaxTree};
+use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::Identifier::TypeReference;
-use kodept_ast::{
-    wrapper, AbstractFunctionDeclaration, Application, BodiedFunctionDeclaration, ExpressionBlock,
-    ForceInto, Identifier, IfExpression, InitializedVariable, Lambda, Literal, Reference, Type,
-    TypeEnum, TypedParameter, Variable,
-};
+use kodept_ast::{AbstFnDecl, Appl, BodyFnDecl, Exprs, IfExpr, InitVar, Lambda, Lit, Ref, Type, TypeEnum, TyParam, VarDecl, node_sub_enum};
+use kodept_ast::traits::AsEnum;
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::language::var;
 use kodept_inference::r#type::{MonomorphicType, PolymorphicType, Tuple};
@@ -17,30 +14,26 @@ use kodept_macros::error::report::{ReportMessage, Severity};
 use crate::node_family::Errors::Undefined;
 use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 
-wrapper! {
-    #[derive(From, Into, PartialEq, Debug)]
-    pub wrapper TypeDerivableNode {
-        function(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
-        expression_block(ExpressionBlock) = AnyNode::ExpressionBlock(x) => x.into(),
-        init_var(InitializedVariable) = AnyNode::InitializedVariable(x) => x.into(),
-        lambda(Lambda) = AnyNode::Lambda(x) => x.into(),
-        application(Application) = AnyNode::Application(x) => x.into(),
-        if_expr(IfExpression) = AnyNode::If(x) => x.into(),
-        reference(Reference) = AnyNode::Reference(x@Reference{ ident: Identifier::Reference { .. }, .. }) => x.into(),
-
-        literal(Literal) = x if Literal::contains(x) => x.force_into::<Literal>().into(),
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
+    pub enum TypeDerivableNode {
+        Function(BodyFnDecl),
+        ExpressionBlock(Exprs),
+        InitVar(InitVar),
+        Lambda(Lambda),
+        Application(Appl),
+        IfExpr(IfExpr),
+        Reference(Ref),
+        Literal(forward Lit)
     }
 }
 
-wrapper! {
-    #[derive(From, Into)]
-    pub wrapper TypeRestrictedNode {
-        typed_parameter(TypedParameter) = AnyNode::TypedParameter(x) => x.into(),
-        function(AbstractFunctionDeclaration) = AnyNode::AbstractFunction(x) => x.into(),
-        variable(Variable) = AnyNode::Variable(x) => x.into(),
-        reference(Reference) = AnyNode::Reference(x@Reference { ident: TypeReference { .. }, .. }) => x.into(),
-
-        // Literals are not suitable here because they don't have name
+node_sub_enum! {
+    pub enum TypeRestrictedNode {
+        TypedParameter(TyParam),
+        Function(AbstFnDecl),
+        Variable(VarDecl),
+        Reference(Ref)
     }
 }
 
@@ -118,7 +111,7 @@ impl HasRestrictedType for TypeRestrictedNode {
                     a0.push(Rc::new(model), Rc::new(convert(ty, scope, ast, token)?));
                 }
             }
-            TypeRestrictedNodeEnum::Reference(Reference {
+            TypeRestrictedNodeEnum::Reference(Ref {
                 ident: TypeReference { name },
                 ..
             }) => {
@@ -132,7 +125,7 @@ impl HasRestrictedType for TypeRestrictedNode {
     }
 }
 
-impl HasRestrictedType for TypedParameter {
+impl HasRestrictedType for TyParam {
     fn type_of(
         &self,
         ast: &SyntaxTree,
@@ -155,7 +148,7 @@ fn convert(
     token: &PermTkn,
 ) -> Result<PolymorphicType, Errors> {
     return match ty.as_enum() {
-        TypeEnum::TypeName(constant) => scope
+        TypeEnum::TyName(constant) => scope
             .ty(&constant.name)
             .ok_or(Undefined(constant.name.clone())),
         TypeEnum::Tuple(tuple) => {

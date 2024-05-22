@@ -1,4 +1,4 @@
-use derive_more::{From, Into};
+use derive_more::{From};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -6,16 +6,16 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{AnyNode, SyntaxTreeBuilder};
+use crate::graph::{SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, wrapper};
+use crate::{node, node_sub_enum};
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
-    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Term {
-        reference(Reference) = AnyNode::Reference(x) => x.into(),
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    pub enum Term {
+        Ref(Ref)
     }
 }
 
@@ -29,7 +29,7 @@ pub struct ReferenceContext {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct Reference {
+    pub struct Ref {
         pub context: ReferenceContext,
         pub ident: Identifier,;
     }
@@ -76,7 +76,7 @@ impl PopulateTree for rlt::Term {
 }
 
 impl PopulateTree for rlt::ContextualReference {
-    type Output = Reference;
+    type Output = Ref;
 
     fn convert(&self, builder: &mut SyntaxTreeBuilder, context: &mut (impl Linker + CodeHolder)) -> NodeId<Self::Output> {
         let ident = match &self.inner {
@@ -95,14 +95,14 @@ impl PopulateTree for rlt::ContextualReference {
                 rlt::Reference::Identifier(_) => panic!("Context built with ordinary references is unsupported")
             }).collect(),
         };
-        builder.add_node(Reference::uninit(ctx, ident))
+        builder.add_node(Ref::uninit(ctx, ident))
             .with_rlt(context, self)
             .id()
     }
 }
 
 impl PopulateTree for rlt::Reference {
-    type Output = Reference;
+    type Output = Ref;
 
     fn convert(
         &self,
@@ -118,7 +118,7 @@ impl PopulateTree for rlt::Reference {
             },
         };
         builder
-            .add_node(Reference::uninit(Default::default(), ident))
+            .add_node(Ref::uninit(Default::default(), ident))
             .with_rlt(context, self)
             .id()
     }

@@ -1,4 +1,3 @@
-use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -7,32 +6,32 @@ use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::Identity;
 use crate::graph::NodeId;
-use crate::graph::{AnyNode, SyntaxTreeBuilder};
+use crate::graph::{SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper};
+use crate::{node, node_sub_enum};
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Type {
-        type_name(TypeName) = AnyNode::TypeName(x) => x.into(),
-        tuple(ProdType) = AnyNode::ProdType(x) => x.into(),
+    pub enum Type {
+        TyName(TyName),
+        Tuple(ProdTy)
     }
 }
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Parameter {
-        typed(TypedParameter) = AnyNode::TypedParameter(x) => x.into(),
-        untyped(UntypedParameter) = AnyNode::UntypedParameter(x) => x.into(),
+    pub enum Param {
+        Ty(TyParam),
+        NonTy(NonTyParam)
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct TypeName {
+    pub struct TyName {
         pub name: String,;
     }
 }
@@ -40,7 +39,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct ProdType {;
+    pub struct ProdTy {;
         pub types: Vec<Type>,
     }
 }
@@ -48,7 +47,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct TypedParameter {
+    pub struct TyParam {
         pub name: String,;
         pub parameter_type: Identity<Type>,
     }
@@ -57,34 +56,34 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct UntypedParameter {
+    pub struct NonTyParam {
         pub name: String,;
     }
 }
 
 impl PopulateTree for rlt::new_types::TypeName {
-    type Output = TypeName;
+    type Output = TyName;
 
     fn convert(
         &self,
         builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
-        let node = TypeName::uninit(context.get_chunk_located(self).to_string());
+        let node = TyName::uninit(context.get_chunk_located(self).to_string());
 
         builder.add_node(node).with_rlt(context, self).id()
     }
 }
 
 impl PopulateTree for rlt::TypedParameter {
-    type Output = TypedParameter;
+    type Output = TyParam;
 
     fn convert(
         &self,
         builder: &mut SyntaxTreeBuilder,
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
-        let node = TypedParameter::uninit(context.get_chunk_located(&self.id).to_string());
+        let node = TyParam::uninit(context.get_chunk_located(&self.id).to_string());
         builder
             .add_node(node)
             .with_children_from([&self.parameter_type], context)
@@ -104,7 +103,7 @@ impl PopulateTree for rlt::Type {
         match self {
             rlt::Type::Reference(x) => x.convert(builder, context).cast(),
             rlt::Type::Tuple(x) => builder
-                .add_node(ProdType::uninit())
+                .add_node(ProdTy::uninit())
                 .with_children_from(x.inner.iter().as_slice(), context)
                 .with_rlt(context, self)
                 .id()
@@ -114,7 +113,7 @@ impl PopulateTree for rlt::Type {
 }
 
 impl PopulateTree for rlt::UntypedParameter {
-    type Output = UntypedParameter;
+    type Output = NonTyParam;
 
     fn convert(
         &self,
@@ -122,7 +121,7 @@ impl PopulateTree for rlt::UntypedParameter {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(UntypedParameter::uninit(
+            .add_node(NonTyParam::uninit(
                 context.get_chunk_located(&self.id).to_string(),
             ))
             .with_rlt(context, self)
@@ -131,7 +130,7 @@ impl PopulateTree for rlt::UntypedParameter {
 }
 
 impl PopulateTree for rlt::Parameter {
-    type Output = Parameter;
+    type Output = Param;
 
     fn convert(
         &self,

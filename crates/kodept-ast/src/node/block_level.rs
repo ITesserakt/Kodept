@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use derive_more::{From, Into, IsVariant};
+use derive_more::{IsVariant};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -9,35 +9,34 @@ use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{AnyNode, NodeUnion};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, BodiedFunctionDeclaration, ExpressionBlock, Operation, Type};
-use crate::macros::{ForceInto};
+use crate::{node, BodyFnDecl, Exprs, Operation, Type, node_sub_enum};
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper BlockLevel {
-        func(BodiedFunctionDeclaration) = AnyNode::BodiedFunction(x) => x.into(),
-        init_var(InitializedVariable) = AnyNode::InitializedVariable(x) => x.into(),
-        operation(Operation) = n if Operation::contains(n) => n.force_into::<Operation>().into(),
+    pub enum BlockLevel {
+        Fn(BodyFnDecl),
+        InitVar(InitVar),
+        Op(forward Operation),
+        Block(Exprs)
     }
 }
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Body {
-        block(ExpressionBlock) = AnyNode::ExpressionBlock(x) => x.into(),
-        simple(BlockLevel) = x if BlockLevel::contains(x) => x.force_into::<BlockLevel>().into(),
+    pub enum Body {
+        Block(Exprs),
+        Simple(forward BlockLevel)
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct Variable {
+    pub struct VarDecl {
         pub kind: VariableKind,
         pub name: String,;
         pub assigned_type: Option<Type>,
@@ -47,9 +46,9 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct InitializedVariable {
+    pub struct InitVar {
         ;
-        pub variable: Identity<Variable>,
+        pub variable: Identity<VarDecl>,
         pub expr: Identity<Operation>,
     }
 }
@@ -86,7 +85,7 @@ impl PopulateTree for BlockLevelNode {
     ) -> NodeId<Self::Output> {
         match self {
             BlockLevelNode::InitVar(x) => x.convert(builder, context).cast(),
-            BlockLevelNode::Block(x) => todo!(),
+            BlockLevelNode::Block(x) => x.convert(builder, context).cast(),
             BlockLevelNode::Function(x) => x.convert(builder, context).cast(),
             BlockLevelNode::Operation(x) => x.convert(builder, context).cast(),
         }
@@ -94,7 +93,7 @@ impl PopulateTree for BlockLevelNode {
 }
 
 impl PopulateTree for rlt::InitializedVariable {
-    type Output = InitializedVariable;
+    type Output = InitVar;
 
     fn convert(
         &self,
@@ -102,7 +101,7 @@ impl PopulateTree for rlt::InitializedVariable {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(InitializedVariable::uninit())
+            .add_node(InitVar::uninit())
             .with_children_from([&self.expression], context)
             .with_children_from([&self.variable], context)
             .with_rlt(context, self)
@@ -111,7 +110,7 @@ impl PopulateTree for rlt::InitializedVariable {
 }
 
 impl PopulateTree for rlt::Variable {
-    type Output = Variable;
+    type Output = VarDecl;
 
     fn convert(
         &self,
@@ -127,7 +126,7 @@ impl PopulateTree for rlt::Variable {
             } => (VariableKind::Mutable, id, assigned_type),
         };
         builder
-            .add_node(Variable::uninit(
+            .add_node(VarDecl::uninit(
                 kind,
                 context.get_chunk_located(name).to_string(),
             ))
