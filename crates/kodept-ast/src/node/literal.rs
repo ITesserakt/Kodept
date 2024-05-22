@@ -1,4 +1,3 @@
-use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -6,26 +5,26 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::NodeId;
-use crate::graph::{AnyNode, SyntaxTreeBuilder};
+use crate::graph::{SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, wrapper};
+use crate::{node, node_sub_enum};
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
-    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Literal {
-        number(NumberLiteral) = AnyNode::Number(x) => x.into(),
-        char(CharLiteral) = AnyNode::Char(x) => x.into(),
-        string(StringLiteral) = AnyNode::String(x) => x.into(),
-        tuple(TupleLiteral) = AnyNode::Tuple(x) => x.into(),
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    pub enum Lit {
+        Num(NumLit),
+        Char(CharLit),
+        Str(StrLit),
+        Tuple(TupleLit)
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct NumberLiteral {
+    pub struct NumLit {
         pub value: String,;
     }
 }
@@ -33,7 +32,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct CharLiteral {
+    pub struct CharLit {
         pub value: String,;
     }
 }
@@ -41,7 +40,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct StringLiteral {
+    pub struct StrLit {
         pub value: String,;
     }
 }
@@ -49,13 +48,13 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct TupleLiteral {;
-        pub value: Vec<Literal>,
+    pub struct TupleLit {;
+        pub value: Vec<Lit>,
     }
 }
 
 impl PopulateTree for rlt::Literal {
-    type Output = Literal;
+    type Output = Lit;
 
     fn convert(
         &self,
@@ -64,7 +63,7 @@ impl PopulateTree for rlt::Literal {
     ) -> NodeId<Self::Output> {
         let mut from_num = |x| {
             builder
-                .add_node(NumberLiteral::uninit(
+                .add_node(NumLit::uninit(
                     context.get_chunk_located(x).to_string(),
                 ))
                 .with_rlt(context, self)
@@ -78,21 +77,21 @@ impl PopulateTree for rlt::Literal {
             rlt::Literal::Hex(x) => from_num(x),
             rlt::Literal::Floating(x) => from_num(x),
             rlt::Literal::Char(x) => builder
-                .add_node(CharLiteral::uninit(
+                .add_node(CharLit::uninit(
                     context.get_chunk_located(x).to_string(),
                 ))
                 .with_rlt(context, self)
                 .id()
                 .cast(),
             rlt::Literal::String(x) => builder
-                .add_node(StringLiteral::uninit(
+                .add_node(StrLit::uninit(
                     context.get_chunk_located(x).to_string(),
                 ))
                 .with_rlt(context, self)
                 .id()
                 .cast(),
             rlt::Literal::Tuple(x) => builder
-                .add_node(TupleLiteral::uninit())
+                .add_node(TupleLit::uninit())
                 .with_children_from(x.inner.as_ref(), context)
                 .with_rlt(context, self)
                 .id()

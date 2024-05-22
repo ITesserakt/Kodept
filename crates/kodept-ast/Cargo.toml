@@ -19,16 +19,18 @@ default = []
 serde = ["dep:serde", "slotgraph/serde", "dep:once_cell_serde"]
 
 [dependencies]
+constcat = "0.5.0"
 derive_more.workspace = true
-serde = { version = "1.0.188", optional = true, features = ["derive"] }
-tracing = "0.1.37"
+once_cell_serde = { version = "1.17.1", optional = true, features = ["serde"] }
 paste = "1.0.14"
 qcell = "0.5.4"
+ref-cast = "1.0.23"
+serde = { version = "1.0.188", optional = true, features = ["derive"] }
 slotgraph = { path = "../slotgraph" }
 slotmap = "1.0.7"
-strum = "0.26.2"
-once_cell_serde = { version = "1.17.1", optional = true, features = ["serde"] }
 smallvec = "1.13.2"
+strum = { version = "0.26.2", features = ["derive"] }
+tracing = "0.1.37"
 
 [dependencies.kodept-core]
 path = "../kodept-core"

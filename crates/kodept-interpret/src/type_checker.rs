@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use derive_more::From;
 use tracing::debug;
+use kodept_ast::BodyFnDecl;
 
-use kodept_ast::BodiedFunctionDeclaration;
 use kodept_ast::graph::{ChangeSet, AnyNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
@@ -114,7 +114,7 @@ impl Macro for TypeChecker {
                 self.constraints.push(Assumptions::empty());
             }
             if matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
-                let fnc: &BodiedFunctionDeclaration = fnc;
+                let fnc: &BodyFnDecl = fnc;
                 let model = Rc::new(self.to_model(&tree, node.token(), fnc)?);
                 let mut assumptions = if side == VisitSide::Leaf {
                     Assumptions::empty()
@@ -125,7 +125,7 @@ impl Macro for TypeChecker {
                 debug!("{assumptions}");
                 context.add_report(
                     context
-                        .access(&*fnc)
+                        .access(fnc)
                         .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]),
                     TypeInfo { name: &fnc.name, ty: assumptions.get(&model).expect("No assumption found") }
                 );

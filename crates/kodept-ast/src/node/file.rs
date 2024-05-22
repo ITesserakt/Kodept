@@ -19,16 +19,16 @@ pub enum ModuleKind {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct FileDeclaration {
+    pub struct FileDecl {
         ;
-        pub modules: Vec<ModuleDeclaration>,
+        pub modules: Vec<ModDecl>,
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct ModuleDeclaration {
+    pub struct ModDecl {
         pub kind: ModuleKind,
         pub name: String,;
         pub contents: Vec<TopLevel>,
@@ -36,7 +36,7 @@ node! {
 }
 
 impl PopulateTree for File {
-    type Output = FileDeclaration;
+    type Output = FileDecl;
 
     fn convert(
         &self,
@@ -44,7 +44,7 @@ impl PopulateTree for File {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(FileDeclaration::uninit())
+            .add_node(FileDecl::uninit())
             .with_children_from(self.0.iter(), context)
             .with_rlt(context, self)
             .id()
@@ -52,7 +52,7 @@ impl PopulateTree for File {
 }
 
 impl PopulateTree for Module {
-    type Output = ModuleDeclaration;
+    type Output = ModDecl;
 
     fn convert(
         &self,
@@ -63,7 +63,7 @@ impl PopulateTree for Module {
             Module::Global { id, rest, .. } => (ModuleKind::Global, id, rest),
             Module::Ordinary { id, rest, .. } => (ModuleKind::Ordinary, id, rest),
         };
-        let node = ModuleDeclaration::uninit(kind, context.get_chunk_located(name).to_string());
+        let node = ModDecl::uninit(kind, context.get_chunk_located(name).to_string());
         builder
             .add_node(node)
             .with_children_from(rest.iter(), context)

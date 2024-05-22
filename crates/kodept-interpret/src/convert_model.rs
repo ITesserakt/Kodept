@@ -2,20 +2,20 @@ use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use kodept_ast::graph::{PermTkn, SyntaxTree};
-use kodept_ast::traits::Identifiable;
+use Identifier::TypeReference;
 use kodept_ast::{
-    Application, BlockLevel, BlockLevelEnum, BodiedFunctionDeclaration, Body, BodyEnum, Expression,
-    ExpressionBlock, ExpressionEnum, Identifier, IfExpression, InitializedVariable, Lambda,
-    Literal, LiteralEnum, Operation, OperationEnum, ParameterEnum, Reference, Term, TermEnum,
+    Appl, BlockLevel, BlockLevelEnum, Body, BodyEnum, BodyFnDecl, CodeFlowEnum, Expression,
+    ExpressionEnum, Exprs, Identifier, IfExpr, InitVar, Lambda, Lit, LitEnum, Operation,
+    OperationEnum, ParamEnum, Ref, Term, TermEnum,
 };
+use kodept_ast::graph::{PermTkn, SyntaxTree};
+use kodept_ast::traits::{AsEnum, Identifiable};
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
-use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::language::{app, lambda, r#if, r#let, var, Language};
-use kodept_inference::r#type::MonomorphicType;
 use kodept_inference::Environment;
-use Identifier::TypeReference;
+use kodept_inference::language::{app, lambda, Language, r#if, r#let, var};
+use kodept_inference::language::Literal::{Floating, Tuple};
+use kodept_inference::r#type::MonomorphicType;
 
 use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
@@ -104,15 +104,16 @@ impl ToModelFrom<Body> for ConversionHelper<'_> {
 impl ToModelFrom<BlockLevel> for ConversionHelper<'_> {
     fn convert(self, node: &BlockLevel) -> Result<Language, InferError> {
         match node.as_enum() {
-            BlockLevelEnum::Func(x) => self.convert(x),
+            BlockLevelEnum::Fn(x) => self.convert(x),
             BlockLevelEnum::InitVar(x) => self.convert(x),
-            BlockLevelEnum::Operation(x) => self.convert(x),
+            BlockLevelEnum::Op(x) => self.convert(x),
+            BlockLevelEnum::Block(x) => self.convert(x),
         }
     }
 }
 
-impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
-    fn convert(self, node: &BodiedFunctionDeclaration) -> Result<Language, InferError> {
+impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
+    fn convert(self, node: &BodyFnDecl) -> Result<Language, InferError> {
         let expr = self.convert(node.body(self.ast, self.token))?;
         let scope = self.scopes.lookup(node, self.ast, self.token)?;
         let mut bindings = node
@@ -120,8 +121,8 @@ impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
             .into_iter()
             .map(|it| {
                 let name = match it.as_enum() {
-                    ParameterEnum::Typed(x) => &x.name,
-                    ParameterEnum::Untyped(x) => &x.name,
+                    ParamEnum::Ty(x) => &x.name,
+                    ParamEnum::NonTy(x) => &x.name,
                 };
                 scope
                     .var(name)
@@ -139,18 +140,18 @@ impl ToModelFrom<BodiedFunctionDeclaration> for ConversionHelper<'_> {
 impl ToModelFrom<Operation> for ConversionHelper<'_> {
     fn convert(self, node: &Operation) -> Result<Language, InferError> {
         match node.as_enum() {
-            OperationEnum::Application(node) => self.convert(node),
-            OperationEnum::Access(_) => todo!(),
+            OperationEnum::Appl(node) => self.convert(node),
+            OperationEnum::Acc(_) => todo!(),
             OperationEnum::Unary(_) => todo!(),
             OperationEnum::Binary(_) => todo!(),
             OperationEnum::Block(x) => self.convert(x),
-            OperationEnum::Expression(x) => self.convert(x),
+            OperationEnum::Expr(x) => self.convert(x),
         }
     }
 }
 
-impl ToModelFrom<Application> for ConversionHelper<'_> {
-    fn convert(self, node: &Application) -> Result<Language, InferError> {
+impl ToModelFrom<Appl> for ConversionHelper<'_> {
+    fn convert(self, node: &Appl) -> Result<Language, InferError> {
         let expr = self.convert(node.expr(self.ast, self.token))?;
         let mut params = node
             .params(self.ast, self.token)
@@ -166,8 +167,8 @@ impl ToModelFrom<Application> for ConversionHelper<'_> {
     }
 }
 
-impl ToModelFrom<ExpressionBlock> for ConversionHelper<'_> {
-    fn convert(self, node: &ExpressionBlock) -> Result<Language, InferError> {
+impl ToModelFrom<Exprs> for ConversionHelper<'_> {
+    fn convert(self, node: &Exprs) -> Result<Language, InferError> {
         let on_empty = unit();
         let mut items = VecDeque::from(node.items(self.ast, self.token));
         let Some(last_item) = items.pop_front() else {
@@ -186,8 +187,8 @@ impl ToModelFrom<ExpressionBlock> for ConversionHelper<'_> {
     }
 }
 
-impl ToModelFrom<InitializedVariable> for ConversionHelper<'_> {
-    fn convert(self, node: &InitializedVariable) -> Result<Language, InferError> {
+impl ToModelFrom<InitVar> for ConversionHelper<'_> {
+    fn convert(self, node: &InitVar) -> Result<Language, InferError> {
         let expr = self.convert(node.expr(self.ast, self.token))?;
         let scope = self.scopes.lookup(node, self.ast, self.token)?;
         let variable = node.variable(self.ast, self.token);
@@ -202,15 +203,17 @@ impl ToModelFrom<Expression> for ConversionHelper<'_> {
     fn convert(self, node: &Expression) -> Result<Language, InferError> {
         match node.as_enum() {
             ExpressionEnum::Lambda(x) => self.convert(x),
-            ExpressionEnum::If(x) => self.convert(x),
-            ExpressionEnum::Literal(x) => self.convert(x),
+            ExpressionEnum::CodeFlow(x) => match x.as_enum() {
+                CodeFlowEnum::If(x) => self.convert(x),
+            },
+            ExpressionEnum::Lit(x) => self.convert(x),
             ExpressionEnum::Term(x) => self.convert(x),
         }
     }
 }
 
-impl ToModelFrom<IfExpression> for ConversionHelper<'_> {
-    fn convert(self, node: &IfExpression) -> Result<Language, InferError> {
+impl ToModelFrom<IfExpr> for ConversionHelper<'_> {
+    fn convert(self, node: &IfExpr) -> Result<Language, InferError> {
         let condition = self.convert(node.condition(self.ast, self.token))?;
         let body = self.convert(node.body(self.ast, self.token))?;
         let otherwise = {
@@ -231,13 +234,13 @@ impl ToModelFrom<IfExpression> for ConversionHelper<'_> {
     }
 }
 
-impl ToModelFrom<Literal> for ConversionHelper<'_> {
-    fn convert(self, node: &Literal) -> Result<Language, InferError> {
+impl ToModelFrom<Lit> for ConversionHelper<'_> {
+    fn convert(self, node: &Lit) -> Result<Language, InferError> {
         match node.as_enum() {
-            LiteralEnum::Number(x) => Ok(Floating(x.value.clone()).into()),
-            LiteralEnum::Char(x) => Ok(Floating(x.value.clone()).into()),
-            LiteralEnum::String(_) => todo!(),
-            LiteralEnum::Tuple(node) => {
+            LitEnum::Num(x) => Ok(Floating(x.value.clone()).into()),
+            LitEnum::Char(x) => Ok(Floating(x.value.clone()).into()),
+            LitEnum::Str(_) => todo!(),
+            LitEnum::Tuple(node) => {
                 let items = node
                     .value(self.ast, self.token)
                     .into_iter()
@@ -251,13 +254,13 @@ impl ToModelFrom<Literal> for ConversionHelper<'_> {
 
 impl ToModelFrom<Term> for ConversionHelper<'_> {
     fn convert(self, node: &Term) -> Result<Language, InferError> {
-        let TermEnum::Reference(node) = node.as_enum();
+        let TermEnum::Ref(node) = node.as_enum();
         self.convert(node)
     }
 }
 
-impl ToModelFrom<Reference> for ConversionHelper<'_> {
-    fn convert(self, node: &Reference) -> Result<Language, InferError> {
+impl ToModelFrom<Ref> for ConversionHelper<'_> {
+    fn convert(self, node: &Ref) -> Result<Language, InferError> {
         let scope = self.scopes.lookup(node, self.ast, self.token)?;
         match &node.ident {
             TypeReference { .. } => Err(InferError::Unknown),
@@ -287,9 +290,9 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
 impl ExtractName for BlockLevel {
     fn extract_name(&self, tree: &SyntaxTree, token: &PermTkn) -> Cow<str> {
         match self.as_enum() {
-            BlockLevelEnum::Func(x) => x.name.as_str().into(),
+            BlockLevelEnum::Fn(x) => x.name.as_str().into(),
             BlockLevelEnum::InitVar(x) => x.variable(tree, token).name.clone().into(),
-            BlockLevelEnum::Operation(x) => x.get_id().to_string().into(),
+            _ => self.get_id().to_string().into(),
         }
     }
 }

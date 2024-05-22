@@ -397,14 +397,14 @@ mod subtree {
 
 #[cfg(test)]
 mod tests {
-    use crate::FileDeclaration;
+    use crate::FileDecl;
     use crate::graph::SyntaxTreeBuilder;
 
     #[test]
     fn test_tree_creation() {
         let mut builder = SyntaxTreeBuilder::new();
 
-        let id = builder.add_node(FileDeclaration::uninit()).id();
+        let id = builder.add_node(FileDecl::uninit()).id();
 
         let tree = builder.build();
         let children = tree.children_of_raw(id, 0);

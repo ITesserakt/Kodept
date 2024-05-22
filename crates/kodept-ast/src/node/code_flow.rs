@@ -1,4 +1,3 @@
-use derive_more::From;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -8,33 +7,32 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::Identity;
 use crate::graph::tags::PRIMARY;
 use crate::graph::NodeId;
-use crate::graph::{AnyNode, SyntaxTreeBuilder};
+use crate::graph::{SyntaxTreeBuilder};
 use crate::traits::{Linker, PopulateTree};
-use crate::{node, wrapper, Body, Operation};
+use crate::{node, Body, Operation, node_sub_enum};
 
-wrapper! {
-    #[derive(Debug, PartialEq, From)]
-    #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper CodeFlow {
-        if(IfExpression) = AnyNode::If(x) => x.into()
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
+    pub enum CodeFlow {
+        If(IfExpr)
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct IfExpression {;
+    pub struct IfExpr {;
         pub condition: Identity<Operation> as PRIMARY,
         pub body: Identity<Body> as 0,
-        pub elifs: Vec<ElifExpression> as 0,
-        pub elses: Option<ElseExpression> as 0,
+        pub elifs: Vec<ElifExpr> as 0,
+        pub elses: Option<ElseExpr> as 0,
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct ElifExpression {;
+    pub struct ElifExpr {;
         pub condition: Identity<Operation>,
         pub body: Identity<Body>,
     }
@@ -43,13 +41,13 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct ElseExpression {;
+    pub struct ElseExpr {;
         pub body: Identity<Body>,
     }
 }
 
 impl PopulateTree for rlt::IfExpr {
-    type Output = IfExpression;
+    type Output = IfExpr;
 
     fn convert(
         &self,
@@ -57,7 +55,7 @@ impl PopulateTree for rlt::IfExpr {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(IfExpression::uninit())
+            .add_node(IfExpr::uninit())
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
             .with_children_from(self.elif.as_ref(), context)
@@ -68,7 +66,7 @@ impl PopulateTree for rlt::IfExpr {
 }
 
 impl PopulateTree for rlt::ElifExpr {
-    type Output = ElifExpression;
+    type Output = ElifExpr;
 
     fn convert(
         &self,
@@ -76,7 +74,7 @@ impl PopulateTree for rlt::ElifExpr {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(ElifExpression::uninit())
+            .add_node(ElifExpr::uninit())
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
             .with_rlt(context, self)
@@ -85,7 +83,7 @@ impl PopulateTree for rlt::ElifExpr {
 }
 
 impl PopulateTree for rlt::ElseExpr {
-    type Output = ElseExpression;
+    type Output = ElseExpr;
 
     fn convert(
         &self,
@@ -93,7 +91,7 @@ impl PopulateTree for rlt::ElseExpr {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(ElseExpression::uninit())
+            .add_node(ElseExpr::uninit())
             .with_children_from([&self.body], context)
             .with_rlt(context, self)
             .id()

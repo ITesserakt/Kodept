@@ -11,10 +11,6 @@ pub trait ConvertibleToMut<Output>: ConvertibleToRef<Output> {
     fn try_as_mut(&mut self) -> Option<&mut Output>;
 }
 
-pub trait ConvertibleTo<Output> {
-    fn try_as(self) -> Option<Output>;
-}
-
 impl<T, U> ConvertibleToRef<U> for T
 where
     for<'a> &'a U: TryFrom<&'a T>,
@@ -30,15 +26,6 @@ where
     T: ConvertibleToRef<U>,
 {
     fn try_as_mut(&mut self) -> Option<&mut U> {
-        self.try_into().ok()
-    }
-}
-
-impl<T, U> ConvertibleTo<U> for T
-where
-    U: TryFrom<T>,
-{
-    fn try_as(self) -> Option<U> {
         self.try_into().ok()
     }
 }

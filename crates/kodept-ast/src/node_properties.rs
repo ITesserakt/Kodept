@@ -1,7 +1,32 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{Change, AnyNode, PermTkn, Identifiable, SyntaxTree};
-use crate::Uninit;
+use crate::graph::{Change, AnyNode, PermTkn, Identifiable, SyntaxTree, NodeId};
+
+#[repr(transparent)]
+pub struct Uninit<T>(T);
+
+impl<T> Uninit<T> {
+    pub fn new(value: T) -> Self {
+        Self(value)
+    }
+
+    #[allow(private_bounds)]
+    pub fn unwrap(self, id: NodeId<T>) -> T
+        where
+            T: crate::graph::Identifiable,
+    {
+        self.0.set_id(id);
+        self.0
+    }
+
+    #[inline]
+    pub fn map_into<U>(self) -> Uninit<U>
+        where
+            T: Into<U>,
+    {
+        Uninit(self.0.into())
+    }
+}
 
 pub trait NodeWithParent {
     type Parent;

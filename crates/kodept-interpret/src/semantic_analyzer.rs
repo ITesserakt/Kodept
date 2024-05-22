@@ -1,8 +1,8 @@
 use tracing::debug;
 
 use kodept_ast::{
-    AbstractFunctionDeclaration, BodiedFunctionDeclaration, EnumDeclaration, ModuleDeclaration,
-    StructDeclaration, TypedParameter, TypeName, UntypedParameter, Variable,
+    AbstFnDecl, BodyFnDecl, EnumDecl, ModDecl,
+    StructDecl, TyParam, TyName, NonTyParam, VarDecl,
 };
 use kodept_ast::graph::{ChangeSet, AnyNode};
 use kodept_ast::traits::Identifiable;
@@ -37,21 +37,21 @@ impl ScopeAnalyzer {
         side: VisitSide,
     ) -> Result<(), ScopeError> {
         let divide = match node {
-            AnyNode::Module(ModuleDeclaration { name, .. }) => Some(Some(name)),
-            AnyNode::Struct(StructDeclaration { name, .. }) => Some(Some(name)),
-            AnyNode::Enum(EnumDeclaration { name, .. }) => Some(Some(name)),
-            AnyNode::AbstractFunction(AbstractFunctionDeclaration { name, .. }) => {
+            AnyNode::ModDecl(ModDecl { name, .. }) => Some(Some(name)),
+            AnyNode::StructDecl(StructDecl { name, .. }) => Some(Some(name)),
+            AnyNode::EnumDecl(EnumDecl { name, .. }) => Some(Some(name)),
+            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => {
                 Some(Some(name))
             }
-            AnyNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
+            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => {
                 Some(Some(name))
             }
-            AnyNode::File(_) => Some(None),
-            AnyNode::ExpressionBlock(_) => Some(None),
+            AnyNode::FileDecl(_) => Some(None),
+            AnyNode::Exprs(_) => Some(None),
             AnyNode::Lambda(_) => Some(None),
-            AnyNode::If(_) => Some(None),
-            AnyNode::Elif(_) => Some(None),
-            AnyNode::Else(_) => Some(None),
+            AnyNode::IfExpr(_) => Some(None),
+            AnyNode::ElifExpr(_) => Some(None),
+            AnyNode::ElseExpr(_) => Some(None),
             _ => None,
         };
 
@@ -95,28 +95,28 @@ impl Macro for ScopeAnalyzer {
             return Execution::Skipped;
         };
         match &*node {
-            AnyNode::Struct(StructDeclaration { name, .. }) => {
+            AnyNode::StructDecl(StructDecl { name, .. }) => {
                 scope.insert_type(name, Constant(name.clone()).into())?;
             }
-            AnyNode::TypedParameter(TypedParameter { name, .. }) => {
+            AnyNode::TyParam(TyParam { name, .. }) => {
                 scope.insert_var(name)?;
             }
-            AnyNode::UntypedParameter(UntypedParameter { name, .. }) => {
+            AnyNode::NonTyParam(NonTyParam { name, .. }) => {
                 scope.insert_var(name)?;
             }
-            AnyNode::TypeName(TypeName { name, .. }) => {
-                if let Some(AnyNode::Enum(_)) = tree.parent_of(node.get_id(), node.token()) {
+            AnyNode::TyName(TyName { name, .. }) => {
+                if let Some(AnyNode::EnumDecl(_)) = tree.parent_of(node.get_id(), node.token()) {
                     scope.insert_type(name, Constant(name.clone()).into())?;
                 }
             }
-            AnyNode::Enum(EnumDeclaration { name, .. }) => {
+            AnyNode::EnumDecl(EnumDecl { name, .. }) => {
                 scope.insert_type(name, Constant(name.clone()).into())?;
             }
-            AnyNode::Variable(Variable { name, .. }) => scope.insert_var(name)?,
-            AnyNode::BodiedFunction(BodiedFunctionDeclaration { name, .. }) => {
+            AnyNode::VarDecl(VarDecl { name, .. }) => scope.insert_var(name)?,
+            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => {
                 scope.insert_var(name)?;
             }
-            AnyNode::AbstractFunction(AbstractFunctionDeclaration { name, .. }) => {
+            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => {
                 scope.insert_var(name)?
             }
             _ => {}

@@ -1,167 +1,46 @@
-use derive_more::{From, Into};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use BinaryExpressionKind::*;
-pub use expression_impl::*;
 use kodept_core::structure::{rlt};
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
 use UnaryExpressionKind::*;
 
-use crate::{BlockLevel, node, UntypedParameter, wrapper};
-use crate::graph::{AnyNode, NodeUnion};
+use crate::{BlockLevel, CodeFlow, Lit, node, node_sub_enum, NonTyParam, Term};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::graph::NodeId;
 use crate::graph::tags::*;
-use crate::macros::ForceInto;
 use crate::traits::{Linker, PopulateTree};
 
-wrapper! {
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub wrapper Operation {
-        application(Application) = AnyNode::Application(x) => x.into(),
-        access(Access) = AnyNode::Access(x) => x.into(),
-        unary(Unary) = AnyNode::Unary(x) => x.into(),
-        binary(Binary) = AnyNode::Binary(x) => x.into(),
-        block(ExpressionBlock) = AnyNode::ExpressionBlock(x) => x.into(),
-        expression(Expression) = n if Expression::contains(n) => n.force_into::<Expression>().into(),
+    pub enum Operation {
+        Appl(Appl),
+        Acc(Acc),
+        Unary(UnExpr),
+        Binary(BinExpr),
+        Block(Exprs),
+        Expr(forward Expression),
     }
 }
 
-/// Manual macro expansion
-mod expression_impl {
-    use derive_more::{From, Into};
-    #[cfg(feature = "serde")]
-    use serde::{Deserialize, Serialize};
-
-    use crate::{IfExpression, Lambda, Literal, Term};
-    use crate::graph::{AnyNode, NodeId, NodeUnion};
-    use crate::macros::ForceInto;
-    use crate::traits::Identifiable;
-    use crate::utils::Skip;
-
-    #[derive(Debug, PartialEq, From, Into)]
+node_sub_enum! {
+    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    #[repr(transparent)]
-    pub struct Expression(AnyNode);
-    #[derive(derive_more::From)]
-    pub enum ExpressionEnum<'lt> {
-        Lambda(&'lt Lambda),
-        If(&'lt IfExpression),
-        Literal(&'lt Literal),
-        Term(&'lt Term),
-    }
-    #[derive(derive_more::From)]
-    pub enum ExpressionEnumMut<'lt> {
-        Lambda(&'lt mut Lambda),
-        If(&'lt mut IfExpression),
-        Literal(&'lt mut Literal),
-        Term(&'lt mut Term),
-    }
-    #[allow(unsafe_code)]
-    unsafe impl NodeUnion for Expression {
-        fn contains(node: &AnyNode) -> bool {
-            #[allow(unused_variables)]
-            #[allow(unreachable_patterns)]
-            match node {
-                AnyNode::Lambda(x) => true,
-                AnyNode::If(x) => true,
-                n if Literal::contains(n) => true,
-                x if Term::contains(x) => true,
-                _ => false,
-            }
-        }
-    }
-    impl<'a> TryFrom<&'a AnyNode> for &'a Expression {
-        type Error = Skip<<&'a AnyNode as TryFrom<&'a AnyNode>>::Error>;
-
-        #[inline]
-        fn try_from(value: &'a AnyNode) -> Result<Self, Self::Error> {
-            if !<Expression as NodeUnion>::contains(value) {
-                return Err(Skip::Skipped);
-            }
-            Ok(<Expression as NodeUnion>::wrap(value))
-        }
-    }
-    impl<'a> TryFrom<&'a mut AnyNode> for &'a mut Expression {
-        type Error = Skip<<&'a mut AnyNode as TryFrom<&'a mut AnyNode>>::Error>;
-
-        #[inline]
-        fn try_from(value: &'a mut AnyNode) -> Result<Self, Self::Error> {
-            if !<Expression as NodeUnion>::contains(value) {
-                return Err(Skip::Skipped);
-            }
-            Ok(<Expression as NodeUnion>::wrap_mut(value))
-        }
-    }
-    impl From<Lambda> for Expression {
-        #[inline]
-        fn from(value: Lambda) -> Self {
-            let generic: AnyNode = value.into();
-            Expression(generic)
-        }
-    }
-    impl From<IfExpression> for Expression {
-        #[inline]
-        fn from(value: IfExpression) -> Self {
-            let generic: AnyNode = value.into();
-            Expression(generic)
-        }
-    }
-    impl From<Literal> for Expression {
-        #[inline]
-        fn from(value: Literal) -> Self {
-            let generic: AnyNode = value.into();
-            Expression(generic)
-        }
-    }
-    impl From<Term> for Expression {
-        #[inline]
-        fn from(value: Term) -> Self {
-            let generic: AnyNode = value.into();
-            Expression(generic)
-        }
-    }
-    impl Identifiable for Expression {
-        fn get_id(&self) -> NodeId<Self> {
-            <AnyNode as Identifiable>::get_id(&self.0).narrow()
-        }
-    }
-    impl Expression {
-        pub fn as_enum(&self) -> ExpressionEnum {
-            match self {
-                Expression(AnyNode::Lambda(x)) => x.into(),
-                Expression(AnyNode::If(x)) => x.into(),
-                Expression(n) if Literal::contains(n) => n.force_into::<Literal>().into(),
-                Expression(x) if Term::contains(x) => x.force_into::<Term>().into(),
-                _ => unreachable!(),
-            }
-        }
-
-        pub fn as_enum_mut(&mut self) -> ExpressionEnumMut {
-            match self {
-                Expression(AnyNode::Lambda(x)) => x.into(),
-                Expression(AnyNode::If(x)) => x.into(),
-                Expression(n) => {
-                    if Literal::contains(n) {
-                        n.force_into::<Literal>().into()
-                    } else if Term::contains(n) {
-                        n.force_into::<Term>().into()
-                    } else {
-                        unreachable!()
-                    }
-                }
-            }
-        }
+    pub enum Expression {
+        Lambda(Lambda),
+        CodeFlow(forward CodeFlow),
+        Lit(forward Lit),
+        Term(forward Term)
     }
 }
 
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct Application {;
+    pub struct Appl {;
         pub expr: Identity<Operation> as PRIMARY,
         pub params: Vec<Operation> as SECONDARY,
     }
@@ -170,7 +49,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct Access {;
+    pub struct Acc {;
         pub left: Identity<Operation> as LEFT,
         pub right: Identity<Operation> as RIGHT,
     }
@@ -179,7 +58,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct Unary {
+    pub struct UnExpr {
         pub kind: UnaryExpressionKind,;
         pub expr: Identity<Operation>,
     }
@@ -188,7 +67,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct Binary {
+    pub struct BinExpr {
         pub kind: BinaryExpressionKind,;
         pub left: Identity<Operation> as LEFT,
         pub right: Identity<Operation> as RIGHT,
@@ -200,7 +79,7 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Lambda {;
         // binds somehow wrapped in operation causing expr to fail => tags required
-        pub binds: Vec<UntypedParameter> as PRIMARY,
+        pub binds: Vec<NonTyParam> as PRIMARY,
         pub expr: Identity<Operation> as SECONDARY,
     }
 }
@@ -208,7 +87,7 @@ node! {
 node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-    pub struct ExpressionBlock {;
+    pub struct Exprs {;
         pub items: Vec<BlockLevel>,
     }
 }
@@ -276,7 +155,7 @@ pub enum BinaryExpressionKind {
 }
 
 impl PopulateTree for rlt::ExpressionBlock {
-    type Output = ExpressionBlock;
+    type Output = Exprs;
 
     fn convert(
         &self,
@@ -284,7 +163,7 @@ impl PopulateTree for rlt::ExpressionBlock {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(ExpressionBlock::uninit())
+            .add_node(Exprs::uninit())
             .with_children_from(self.expression.as_ref(), context)
             .with_rlt(context, self)
             .id()
@@ -330,7 +209,7 @@ fn build_binary(
     let op_text = binding.as_ref();
     
     builder
-        .add_node(Binary::uninit(match (operation, op_text) {
+        .add_node(BinExpr::uninit(match (operation, op_text) {
             (BinaryOperationSymbol::Pow(_), _) => Math(MathKind::Pow),
             (BinaryOperationSymbol::Mul(_), "*") => Math(MathKind::Mul),
             (BinaryOperationSymbol::Mul(_), "/") => Math(MathKind::Div),
@@ -372,7 +251,7 @@ fn build_unary(
     expr: &Box<rlt::Operation>,
 ) -> NodeId<Operation> {
     builder
-        .add_node(Unary::uninit(match operator {
+        .add_node(UnExpr::uninit(match operator {
             UnaryOperationSymbol::Neg(_) => Neg,
             UnaryOperationSymbol::Not(_) => Not,
             UnaryOperationSymbol::Inv(_) => Inv,
@@ -392,7 +271,7 @@ fn build_access(
     right: &Box<rlt::Operation>,
 ) -> NodeId<Operation> {
     builder
-        .add_node(Access::uninit())
+        .add_node(Acc::uninit())
         .with_children_from::<LEFT, _>([left.as_ref()], context)
         .with_children_from::<RIGHT, _>([right.as_ref()], context)
         .with_rlt(context, node)
@@ -401,7 +280,7 @@ fn build_access(
 }
 
 impl PopulateTree for rlt::Application {
-    type Output = Application;
+    type Output = Appl;
 
     fn convert(
         &self,
@@ -409,7 +288,7 @@ impl PopulateTree for rlt::Application {
         context: &mut (impl Linker + CodeHolder),
     ) -> NodeId<Self::Output> {
         builder
-            .add_node(Application::uninit())
+            .add_node(Appl::uninit())
             .with_children_from::<PRIMARY, _>([&self.expr], context)
             .with_children_from::<SECONDARY, _>(
                 self.params
@@ -440,7 +319,7 @@ impl PopulateTree for rlt::Expression {
                 .cast(),
             rlt::Expression::Term(x) => x.convert(builder, context).cast(),
             rlt::Expression::Literal(x) => x.convert(builder, context).cast(),
-            rlt::Expression::If(x) => x.convert(builder, context).cast(),
+            rlt::Expression::If(x) => x.convert(builder, context).cast::<CodeFlow>().cast(),
         }
     }
 }

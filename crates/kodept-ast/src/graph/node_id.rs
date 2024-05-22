@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use slotgraph::{Key, NodeKey};
 
-use crate::graph::{AnyNode, NodeUnion};
+use crate::graph::{AnyNode, SubEnum};
 
 #[derive(Display, From)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -40,6 +40,13 @@ impl<T> NodeId<T> {
     pub fn null() -> Self {
         Self(Key::null())
     }
+
+    pub fn cast<U>(self) -> NodeId<U>
+    where
+        U: TryFrom<T> + SubEnum,
+    {
+        NodeId(self.0.coerce())
+    }
 }
 
 impl<T: Into<AnyNode>> NodeId<T> {
@@ -48,12 +55,12 @@ impl<T: Into<AnyNode>> NodeId<T> {
     }
 }
 
-impl<T> NodeId<T> {
-    pub fn cast<U>(self) -> NodeId<U>
+impl GenericNodeId {
+    pub fn coerce<U>(self) -> NodeId<U>
     where
-        U: From<T> + NodeUnion,
+        U: SubEnum,
     {
-        NodeId(self.0.coerce())
+        NodeId(self.0.coerce_unchecked())
     }
 }
 

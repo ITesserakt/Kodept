@@ -17,6 +17,13 @@ impl<T: crate::graph::Identifiable> Identifiable for T {
     }
 }
 
+#[allow(clippy::wrong_self_convention)]
+pub trait AsEnum {
+    type Enum;
+    
+    fn as_enum(self) -> Self::Enum; 
+}
+
 pub trait Linker {
     fn link<A, B>(&mut self, ast: &A, with: &B)
     where 
