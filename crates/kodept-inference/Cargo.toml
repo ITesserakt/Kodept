@@ -17,7 +17,7 @@ workspace = true
 [dependencies]
 derive_more.workspace = true
 itertools.workspace = true
-nonempty-collections = "0.1"
+nonempty-collections = "0.2"
 
 [dev-dependencies]
-rstest = "0.18.2"
+rstest = "0.19.0"
