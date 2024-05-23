@@ -61,9 +61,13 @@ impl<'e> AlgorithmW<'e> {
     fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> AWResult {
         let v = self.env.new_var();
         let var_bind = bind.clone();
-        self.context.push(var_bind, Rc::new(MonomorphicType::Var(v.clone()).into()));
-        let (s1, t1) = expr.infer_w(self)?;
-        let resulting_fn = fun1(var(v) & &s1, t1);
+        let mut new_context = self.context.clone();
+        new_context.push(var_bind.clone(), Rc::new(MonomorphicType::Var(v.clone()).into()));
+        let (s1, t1) = AlgorithmW {
+            context: &mut new_context,
+            env: self.env,
+        }.apply(expr)?;
+        let resulting_fn = fun1(var(v) & &s1, t1 & &s1);
         Ok((s1, resulting_fn))
     }
 
@@ -80,7 +84,7 @@ impl<'e> AlgorithmW<'e> {
         let poly_type = self.context.substitute_mut(&s1).generalize(t1);
         let mut new_context = self.context.clone();
         new_context
-            .filter_all(match bind.as_ref() {
+            .retain_all(match bind.as_ref() {
                 Language::Var(v) => v,
                 _ => unreachable!(),
             })
@@ -141,6 +145,7 @@ impl Language {
         env: &mut Environment,
     ) -> Result<MonomorphicType, AlgorithmWError> {
         let (s, t) = AlgorithmW { context, env }.apply(&self)?;
+        let t = t.substitute(&s);
         let poly_type = context.generalize(t.clone());
         context.substitute_mut(&s).push(self, Rc::new(poly_type));
         Ok(t)

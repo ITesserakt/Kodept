@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use itertools::Itertools;
 
-use crate::{Environment, language};
+use crate::language;
 use crate::language::Language;
 use crate::r#type::{MonomorphicType, PolymorphicType};
 use crate::substitution::Substitutions;
@@ -27,23 +27,26 @@ impl Assumptions {
         self
     }
 
-    pub fn push(&mut self, expr: RLanguage, t: RPolymorphicType) -> &mut Self {
+    pub fn push(&mut self, expr: RLanguage, t: RPolymorphicType) {
         match self.value.entry(expr) {
             Entry::Occupied(slot) if slot.get() == &t => {}
             Entry::Occupied(mut slot) => {
-                let mut env = Environment::default();
-                let s0 = slot
-                    .get()
-                    .instantiate(&mut env)
-                    .unify(&t.instantiate(&mut env))
-                    .expect("Given assumption cannot be unified with the old one");
-                slot.insert(Rc::new(t.substitute(&s0)));
+                slot.insert(t);
             }
+            // I don't know is it applicable anymore
+            // Entry::Occupied(mut slot) => {
+            //     let mut env = Environment::default();
+            //     let s0 = slot
+            //         .get()
+            //         .instantiate(&mut env)
+            //         .unify(&t.instantiate(&mut env))
+            //         .expect("Given assumption cannot be unified with the old one");
+            //     slot.insert(Rc::new(t.substitute(&s0)));
+            // }
             Entry::Vacant(slot) => {
                 slot.insert(t);
             }
         };
-        self
     }
 
     #[must_use]
@@ -69,8 +72,12 @@ impl Assumptions {
         Self::default()
     }
 
+    pub fn remove(&mut self, key: &Language) -> Option<RPolymorphicType> {
+        self.value.remove(key)
+    }
+
     /// Removes all assumptions about specified var
-    pub fn filter_all(&mut self, var: &language::Var) -> &mut Self {
+    pub fn retain_all(&mut self, var: &language::Var) -> &mut Self {
         self.value
             .retain(|it, _| !matches!(it.as_ref(), Language::Var(v) if v == var));
         self

@@ -596,8 +596,8 @@ version = "0.2.0"
 dependencies = [
  "derive_more",
  "itertools",
- "nonempty-collections 0.1.5",
- "rstest 0.18.2",
+ "nonempty-collections",
+ "rstest 0.19.0",
 ]
 
 [[package]]
@@ -641,7 +641,7 @@ dependencies = [
  "kodept-core",
  "nom",
  "nom-supreme",
- "nonempty-collections 0.2.5",
+ "nonempty-collections",
  "rstest 0.18.2",
  "thiserror",
 ]
@@ -751,12 +751,6 @@ dependencies = [
  "memchr",
  "nom",
 ]
-
-[[package]]
-name = "nonempty-collections"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e43b402eeca61e02116e70f2e70a60005ded2d8025c425788feb6e8fd36ddf60"
 
 [[package]]
 name = "nonempty-collections"
