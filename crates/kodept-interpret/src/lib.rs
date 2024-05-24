@@ -1,7 +1,10 @@
 #![feature(iter_intersperse)]
 
+use std::marker::PhantomData;
+
 use kodept_macros::error::report::{ReportMessage, Severity};
 
+use crate::operator_desugaring::{AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander};
 use crate::scope::ScopeError;
 
 mod convert_model;
@@ -13,6 +16,19 @@ mod symbol;
 pub mod type_checker;
 // mod typing;
 mod utils;
+
+#[derive(Copy, Clone)]
+pub struct Witness(PhantomData<()>);
+
+impl Witness {
+    pub fn fact(_: AccessExpander, _: BinaryOperatorExpander, _: UnaryOperatorExpander) -> Witness {
+        Witness(PhantomData)
+    }
+
+    pub fn prove<T>(self) -> T {
+        panic!("Cannot prove contract")
+    }
+}
 
 pub enum Errors {
     UnresolvedReference(Path),

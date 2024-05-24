@@ -23,6 +23,7 @@ use kodept_macros::traits::Context;
 use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeTree};
 use crate::type_checker::InferError::Unknown;
+use crate::Witness;
 
 pub struct TypeInfo<'a> {
     name: &'a str,
@@ -35,10 +36,11 @@ impl From<TypeInfo<'_>> for ReportMessage {
     }
 }
 
-pub struct TypeChecker {
-    pub(crate) symbols: Rc<ScopeTree>,
+pub struct TypeChecker<'a> {
+    pub(crate) symbols: &'a ScopeTree,
     env: Environment,
     constraints: Vec<Assumptions>,
+    evidence: Witness
 }
 
 #[derive(From, Debug)]
@@ -48,12 +50,13 @@ pub enum InferError {
     Unknown,
 }
 
-impl TypeChecker {
-    pub fn new(symbols: Rc<ScopeTree>) -> Self {
+impl<'a> TypeChecker<'a> {
+    pub fn new(symbols: &'a ScopeTree, evidence: Witness) -> Self {
         Self {
             symbols,
             env: Default::default(),
             constraints: Default::default(),
+            evidence
         }
     }
 }
@@ -85,7 +88,7 @@ impl From<InferError> for ReportMessage {
     }
 }
 
-impl Macro for TypeChecker {
+impl Macro for TypeChecker<'_> {
     type Error = InferError;
     type Node = AnyNode;
 
@@ -115,7 +118,7 @@ impl Macro for TypeChecker {
             }
             if matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
                 let fnc: &BodyFnDecl = fnc;
-                let model = Rc::new(self.to_model(&tree, node.token(), fnc)?);
+                let model = Rc::new(self.to_model(&tree, node.token(), fnc, self.evidence)?);
                 let mut assumptions = if side == VisitSide::Leaf {
                     Assumptions::empty()
                 } else {

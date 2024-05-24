@@ -20,6 +20,7 @@ use kodept_inference::r#type::MonomorphicType;
 use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
+use crate::Witness;
 
 impl TypeDerivableNode {
     pub fn type_of<'a>(
@@ -29,8 +30,9 @@ impl TypeDerivableNode {
         scopes: &'a ScopeTree,
         assumptions: &mut Assumptions,
         environment: &mut Environment,
+        evidence: Witness,
     ) -> Result<(Rc<Language>, MonomorphicType), InferError> {
-        let helper = ConversionHelper { scopes, ast, token };
+        let helper = ConversionHelper { scopes, ast, token, evidence };
         let model = Rc::new(helper.convert(self)?);
         let derived_type = Language::infer_with_env(model.clone(), assumptions, environment)?;
         Ok((model, derived_type))
@@ -52,13 +54,14 @@ impl ToModelFrom<TypeDerivableNode> for ConversionHelper<'_> {
     }
 }
 
-impl TypeChecker {
+impl TypeChecker<'_> {
     #[allow(private_bounds)]
     pub(crate) fn to_model<'a, N>(
         &'a self,
         ast: &'a SyntaxTree,
         token: &'a PermTkn,
         node: &N,
+        evidence: Witness,
     ) -> Result<Language, InferError>
     where
         ConversionHelper<'a>: ToModelFrom<N>,
@@ -67,6 +70,7 @@ impl TypeChecker {
             scopes: &self.symbols,
             ast,
             token,
+            evidence
         };
         helper.convert(node)
     }
@@ -77,6 +81,7 @@ struct ConversionHelper<'a> {
     scopes: &'a ScopeTree,
     ast: &'a SyntaxTree,
     token: &'a PermTkn,
+    evidence: Witness
 }
 
 #[inline]
@@ -141,9 +146,9 @@ impl ToModelFrom<Operation> for ConversionHelper<'_> {
     fn convert(self, node: &Operation) -> Result<Language, InferError> {
         match node.as_enum() {
             OperationEnum::Appl(node) => self.convert(node),
-            OperationEnum::Acc(_) => todo!(),
-            OperationEnum::Unary(_) => todo!(),
-            OperationEnum::Binary(_) => todo!(),
+            OperationEnum::Acc(_) => self.evidence.prove(),
+            OperationEnum::Unary(_) => self.evidence.prove(),
+            OperationEnum::Binary(_) => self.evidence.prove(),
             OperationEnum::Block(x) => self.convert(x),
             OperationEnum::Expr(x) => self.convert(x),
         }

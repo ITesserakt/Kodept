@@ -9,7 +9,7 @@ use smallvec::SmallVec;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 use crate::graph::nodes::Inaccessible;
-use crate::graph::{AnyNode, PermTkn};
+use crate::graph::{AnyNode, Identifiable, PermTkn};
 
 #[repr(transparent)]
 pub struct RefMut<'a, T> {
@@ -88,10 +88,18 @@ where
     AnyNode: ConvertibleToMut<T>,
 {
     pub fn borrow_mut<'b>(&'b self, token: &'a mut PermTkn) -> &'a mut T {
-        self.node
-            .rw(token)
-            .try_as_mut()
-            .expect("Node has wrong type")
+        let read = self.node.rw(token);
+        let disc = read.describe();
+        let id = read.get_id();
+        match read.try_as_mut() {
+            None => panic!(
+                "Node [{}] has wrong type: expected `{}`, actual `{}`",
+                id,
+                type_name::<T>(),
+                disc
+            ),
+            Some(x) => x,
+        }
     }
 }
 
@@ -100,10 +108,16 @@ where
     AnyNode: ConvertibleToRef<T>,
 {
     pub fn borrow(&self, token: &'a PermTkn) -> &T {
-        self.node
-            .ro(token)
-            .try_as_ref()
-            .expect("Node has wrong type")
+        let read = self.node.ro(token);
+        match read.try_as_ref() {
+            None => panic!(
+                "Node [{}] has wrong type: expected `{}`, actual `{}`",
+                read.get_id(),
+                type_name::<T>(),
+                read.describe()
+            ),
+            Some(x) => x,
+        }
     }
 }
 
