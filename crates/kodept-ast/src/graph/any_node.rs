@@ -11,6 +11,7 @@ use crate::*;
 
 #[derive(Debug, PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
 #[strum_discriminants(derive(VariantArray, Display))]
+#[strum_discriminants(cfg_attr(feature = "serde", derive(Serialize, Deserialize)))]
 #[strum_discriminants(name(AnyNodeD))]
 #[try_into(owned, ref, ref_mut)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -4,7 +4,7 @@ use Execution::{Completed, Failed, Skipped};
 use kodept_ast::graph::{AnyNode, ChangeSet, PermTkn, RefMut, RefNode};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::{ConvertibleToMut};
+use kodept_core::{ConvertibleToRef};
 use kodept_core::structure::Located;
 use kodept_macros::error::report::{Report, ReportMessage};
 use kodept_macros::Macro;
@@ -42,23 +42,23 @@ impl<N, Head, Tail> RunMacros for HCons<Head, Tail>
 where
     Head: Macro<Node = N>,
     Tail: RunMacros,
-    AnyNode: ConvertibleToMut<N>,
+    AnyNode: ConvertibleToRef<N>,
 {
     type Error = ReportMessage;
 
     #[inline]
     fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet> {
-        let head = if let Some(_) = pack.node.rw(pack.token).try_as_mut() {
+        let head = if let Some(_) = pack.node.ro(pack.token).try_as_ref() {
             let guard = VisitGuard::new(pack.side, RefMut::new(pack.node), pack.token);
             self.head.transform(guard, pack.ctx)
         } else {
             Skipped
         };
-        let tail = self.tail.apply(pack).map_err(|e| e.into());
+        let tail = self.tail.apply(pack);
         
         match (head, tail) {
             (Failed(e), _) => Failed(e.into()),
-            (_, Failed(e)) => Failed(e),
+            (_, Failed(e)) => Failed(e.into()),
             (Skipped, Skipped) => Skipped,
             (Completed(full), Skipped) => Completed(full),
             (Skipped, Completed(full)) => Completed(full),
@@ -72,7 +72,7 @@ where
 
 fn run_macros(
     context: &mut impl MutableContext,
-    macros: &mut impl RunMacros<Error: Into<ReportMessage>>,
+    macros: &mut impl RunMacros,
 ) -> Result<(), UnrecoverableError> {
     let mut token = PermTkn::new();
     let mut changes = ChangeSet::new();
@@ -106,7 +106,7 @@ where
     Self: Sized,
 {
     #[allow(private_bounds)]
-    type Inputs: RunMacros<Error: Into<ReportMessage>>;
+    type Inputs: RunMacros;
 
     fn into_contents(self) -> Self::Inputs;
 

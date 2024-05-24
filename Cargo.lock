@@ -511,9 +511,9 @@ checksum = "f8478577c03552c21db0e2724ffb8986a5ce7af88107e6be5d2ee6e158c12800"
 
 [[package]]
 name = "itertools"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -540,18 +540,16 @@ dependencies = [
  "derive_more",
  "dhat",
  "extend",
- "id_tree",
  "itertools",
  "kodept-ast",
  "kodept-core",
  "kodept-interpret",
  "kodept-macros",
  "kodept-parse",
- "nom",
  "nom-supreme",
  "rayon",
  "replace_with",
- "rstest 0.19.0",
+ "rstest",
  "tempfile",
  "thiserror",
  "tracing",
@@ -560,7 +558,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "constcat",
  "derive_more",
@@ -569,7 +567,7 @@ dependencies = [
  "paste",
  "qcell",
  "ref-cast",
- "rstest 0.19.0",
+ "rstest",
  "serde",
  "slotgraph",
  "slotmap",
@@ -580,23 +578,20 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "derive_more",
- "itertools",
  "pathdiff",
- "thiserror",
- "tracing",
 ]
 
 [[package]]
 name = "kodept-inference"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "derive_more",
  "itertools",
  "nonempty-collections",
- "rstest 0.19.0",
+ "rstest",
 ]
 
 [[package]]
@@ -604,7 +599,6 @@ name = "kodept-interpret"
 version = "0.1.0"
 dependencies = [
  "derive_more",
- "extend",
  "id_tree",
  "kodept-ast",
  "kodept-core",
@@ -622,17 +616,14 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "derive_more",
- "extend",
- "itertools",
  "kodept-ast",
  "kodept-core",
- "petgraph",
  "tracing",
 ]
 
 [[package]]
 name = "kodept-parse"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "derive_more",
  "enum-iterator",
@@ -641,7 +632,7 @@ dependencies = [
  "nom",
  "nom-supreme",
  "nonempty-collections",
- "rstest 0.18.2",
+ "rstest",
  "thiserror",
 ]
 
@@ -989,43 +980,14 @@ checksum = "e3a8614ee435691de62bcffcf4a66d91b3594bf1428a5722e79103249a095690"
 
 [[package]]
 name = "rstest"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97eeab2f3c0a199bc4be135c36c924b6590b88c377d416494288c14f2db30199"
-dependencies = [
- "futures",
- "futures-timer",
- "rstest_macros 0.18.2",
- "rustc_version",
-]
-
-[[package]]
-name = "rstest"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d5316d2a1479eeef1ea21e7f9ddc67c191d497abc8fc3ba2467857abbb68330"
 dependencies = [
  "futures",
  "futures-timer",
- "rstest_macros 0.19.0",
+ "rstest_macros",
  "rustc_version",
-]
-
-[[package]]
-name = "rstest_macros"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d428f8247852f894ee1be110b375111b586d4fa431f6c46e64ba5a0dcccbe605"
-dependencies = [
- "cfg-if",
- "glob",
- "proc-macro2",
- "quote",
- "regex",
- "relative-path",
- "rustc_version",
- "syn 2.0.63",
- "unicode-ident",
 ]
 
 [[package]]
@@ -1163,7 +1125,7 @@ name = "slotgraph"
 version = "0.1.0"
 dependencies = [
  "petgraph",
- "rstest 0.19.0",
+ "rstest",
  "serde",
  "slotmap",
 ]

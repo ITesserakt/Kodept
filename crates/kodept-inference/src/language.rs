@@ -161,16 +161,16 @@ impl<S: Into<String>> From<S> for Var {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use crate::language::{app, lambda, r#let, var, Language, Literal};
-    use crate::r#type::{fun1, var as t_var, Tuple, Union};
+    use crate::r#type::{fun1, var as t_var, Tuple};
 
     #[test]
     fn test_infer_language() {
-        //λz. let x = (z | z) in (λy. (y, y)) x
+        //λz. let x = (z, z) in (λy. (y, y)) x
         let expr: Language = lambda(
             "z",
             r#let(
                 "x",
-                Literal::Union(vec![var("z").into(), var("z").into()]),
+                Literal::Tuple(vec![var("z").into(), var("z").into()]),
                 app(
                     var("x"),
                     lambda("y", Literal::Tuple(vec![var("y").into(), var("y").into()])),
@@ -186,8 +186,8 @@ mod tests {
             fun1(
                 t_var(0),
                 Tuple(vec![
-                    Union(vec![t_var(0), t_var(0)]).into(),
-                    Union(vec![t_var(0), t_var(0)]).into()
+                    Tuple(vec![t_var(0), t_var(0)]).into(),
+                    Tuple(vec![t_var(0), t_var(0)]).into()
                 ])
             )
         );

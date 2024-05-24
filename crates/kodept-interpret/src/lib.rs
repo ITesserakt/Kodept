@@ -14,8 +14,6 @@ mod scope;
 pub mod semantic_analyzer;
 mod symbol;
 pub mod type_checker;
-// mod typing;
-mod utils;
 
 #[derive(Copy, Clone)]
 pub struct Witness(PhantomData<()>);

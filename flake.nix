@@ -62,7 +62,7 @@
         inherit inputs pkgs;
         modules = [
           ({ pkgs, config, ... }: {
-             packages = with pkgs; [ xdot rustup graphviz ];
+             packages = with pkgs; [ xdot rustup graphviz cargo-depgraph ];
              pre-commit.hooks.clippy.enable = true;
              languages.rust = {
                enable = true;

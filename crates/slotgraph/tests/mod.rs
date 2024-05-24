@@ -3,6 +3,7 @@ use petgraph::Direction;
 use rstest::rstest;
 use slotgraph::{DiGraph, UnGraph};
 
+#[allow(non_snake_case)]
 #[rstest]
 fn test_undirected() {
     let mut graph = UnGraph::new();

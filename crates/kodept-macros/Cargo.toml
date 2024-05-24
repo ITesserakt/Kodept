@@ -18,10 +18,7 @@ workspace = true
 codespan = "0.11.1"
 codespan-reporting = "0.11.1"
 derive_more.workspace = true
-extend.workspace = true
-tracing = "0.1.37"
-itertools.workspace = true
-petgraph = "0.6.4"
+tracing.workspace = true
 
 [dependencies.kodept-core]
 path = "../kodept-core"
@@ -29,4 +26,4 @@ version = "0.2"
 
 [dependencies.kodept-ast]
 path = "../kodept-ast"
-version = "0.3"
+version = "0.4"
