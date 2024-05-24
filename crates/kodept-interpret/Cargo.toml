@@ -16,7 +16,6 @@ workspace = true
 
 [dependencies]
 derive_more.workspace = true
-extend.workspace = true
 tracing.workspace = true
 id_tree.workspace = true
 ref-cast = "1.0.23"
@@ -28,7 +27,7 @@ version = "0.1"
 
 [dependencies.kodept-ast]
 path = "../kodept-ast"
-version = "0.3"
+version = "0.4"
 
 [dependencies.kodept-core]
 path = "../kodept-core"

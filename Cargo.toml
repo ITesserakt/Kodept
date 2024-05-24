@@ -27,7 +27,7 @@ members = [
 nom = "7.1"
 thiserror = "1.0"
 extend = "1.2"
-itertools = "0.12"
+itertools = "0.13"
 id_tree = "1.8.0"
 tracing = "0.1.40"
 
@@ -51,15 +51,13 @@ codespan-reporting = "0.11.1"
 derive_more.workspace = true
 dhat = { version = "0.3", optional = true }
 extend.workspace = true
-id_tree.workspace = true
 itertools.workspace = true
-nom.workspace = true
 nom-supreme = "0.8.0"
 rayon = { version = "1.10.0", optional = true }
 replace_with = "0.1.7"
 thiserror.workspace = true
 tracing.workspace = true
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt"] }
 
 [dependencies.kodept-core]
 path = "crates/kodept-core"
@@ -71,7 +69,7 @@ version = "0.1"
 
 [dependencies.kodept-ast]
 path = "crates/kodept-ast"
-version = "0.3"
+version = "0.4"
 
 [dependencies.kodept-macros]
 path = "crates/kodept-macros"

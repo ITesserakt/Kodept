@@ -20,7 +20,7 @@ struct AlgorithmU;
 impl AlgorithmU {
     fn occurs_check(var: &TVar, with: &MonomorphicType) -> bool {
         match (var, with) {
-            (TVar(a), MonomorphicType::Var(TVar(b))) if *a == *b => true,
+            (TVar(a), Var(TVar(b))) if *a == *b => true,
             (var, Fn { input, output }) => {
                 AlgorithmU::occurs_check(var, input) || AlgorithmU::occurs_check(var, output)
             }
@@ -51,20 +51,20 @@ impl AlgorithmU {
     ) -> Result<Substitutions, AlgorithmUError> {
         match (lhs, rhs) {
             (a, b) if a == b => Ok(Substitutions::empty()),
-            (MonomorphicType::Var(var), b) if AlgorithmU::occurs_check(var, b) => {
+            (Var(var), b) if AlgorithmU::occurs_check(var, b) => {
                 Err(AlgorithmUError::InfiniteType {
                     type_var: var.clone(),
                     with: b.clone(),
                 })
             }
-            (a, MonomorphicType::Var(var)) if AlgorithmU::occurs_check(var, a) => {
+            (a, Var(var)) if AlgorithmU::occurs_check(var, a) => {
                 Err(AlgorithmUError::InfiniteType {
                     type_var: var.clone(),
                     with: a.clone(),
                 })
             }
-            (a @ MonomorphicType::Var(_), b) => Ok(Substitutions::single(b.clone(), a.clone())),
-            (a, b @ MonomorphicType::Var(_)) => Ok(Substitutions::single(a.clone(), b.clone())),
+            (a @ Var(_), b) => Ok(Substitutions::single(b.clone(), a.clone())),
+            (a, b @ Var(_)) => Ok(Substitutions::single(a.clone(), b.clone())),
             (
                 Fn {
                     input: input1,
@@ -81,7 +81,7 @@ impl AlgorithmU {
                 if vec1.0.len() == vec2.0.len() =>
             {
                 AlgorithmU::unify_vec(&vec1.0, &vec2.0)
-            },
+            }
             _ => Err(AlgorithmUError::CannotUnify {
                 from: lhs.clone(),
                 to: rhs.clone(),
@@ -110,8 +110,8 @@ mod tests {
 
     #[test]
     fn test_tautology_example_on_constants() {
-        let a = Constant(1);
-        let b = Constant(1);
+        let a = Constant("A".to_string());
+        let b = Constant("A".to_string());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(s.0, HashSet::new());
@@ -119,8 +119,8 @@ mod tests {
 
     #[test]
     fn test_different_constants_should_not_unify() {
-        let a = Constant(1);
-        let b = Constant(2);
+        let a = Constant("A".to_string());
+        let b = Constant("B".to_string());
 
         let e = a.unify(&b).unwrap_err();
         assert!(matches!(e, AlgorithmUError::CannotUnify { .. }))
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn test_variables_should_be_always_unified() {
         let a = var(1);
-        let b = Constant(1);
+        let b = Constant("A".to_string());
 
         let s1 = a.unify(&b).unwrap();
         let s2 = b.unify(&a).unwrap();
@@ -161,11 +161,11 @@ mod tests {
 
     #[test]
     fn test_simple_function_unifying() {
-        let a = fun(nev![var(1), Constant(0)], Tuple::unit());
+        let a = fun(nev![var(1), Constant("A".to_string())], Tuple::unit());
         let b = fun(nev![var(1), var(2)], Tuple::unit());
 
         let s = a.unify(&b).unwrap();
-        assert_eq!(s, Substitutions::single(Constant(0), var(2)));
+        assert_eq!(s, Substitutions::single(Constant("A".to_string()), var(2)));
     }
 
     #[test]
@@ -179,8 +179,11 @@ mod tests {
 
     #[test]
     fn test_functions_with_different_arity_should_not_unify() {
-        let a = fun(nev![Constant(1)], Tuple::unit());
-        let b = fun(nev![Constant(1), Constant(2)], Tuple::unit());
+        let a = fun(nev![Constant("A".to_string())], Tuple::unit());
+        let b = fun(
+            nev![Constant("A".to_string()), Constant("B".to_string())],
+            Tuple::unit(),
+        );
 
         let s = a.unify(&b).unwrap_err();
         assert!(matches!(s, AlgorithmUError::CannotUnify { .. }))
@@ -192,14 +195,17 @@ mod tests {
             nev![fun1(var(1), PrimitiveType::Integral), var(1)],
             Tuple::unit(),
         );
-        let b = fun(nev![var(2), Constant(0)], Tuple::unit());
+        let b = fun(nev![var(2), Constant("A".to_string())], Tuple::unit());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(
             s.0,
             HashSet::from([
-                Substitution::new(Constant(0), var(1)),
-                Substitution::new(fun1(Constant(0), PrimitiveType::Integral), var(2))
+                Substitution::new(Constant("A".to_string()), var(1)),
+                Substitution::new(
+                    fun1(Constant("A".to_string()), PrimitiveType::Integral),
+                    var(2)
+                )
             ])
         )
     }
@@ -217,7 +223,7 @@ mod tests {
     fn test_transitive_substitutions() {
         let a = var(1);
         let b = var(2);
-        let c = Constant(0);
+        let c = Constant("A".to_string());
 
         let s1 = a.unify(&b).unwrap();
         let s2 = b.unify(&a).unwrap();
@@ -233,8 +239,8 @@ mod tests {
     #[test]
     fn test_different_substitutions_of_same_variable() {
         let a = var(1);
-        let b = Constant(1);
-        let c = Constant(2);
+        let b = Constant("A".to_string());
+        let c = Constant("B".to_string());
 
         let s = a.unify(&b).unwrap();
         let e = a.substitute(&s).unify(&c).unwrap_err();
@@ -245,8 +251,14 @@ mod tests {
 
     #[test]
     fn test_complex_unification() {
-        let a = fun1(fun1(fun1(Constant(0), var(1)), var(2)), var(3));
-        let b = fun1(var(3), fun1(var(2), fun1(var(1), Constant(0))));
+        let a = fun1(
+            fun1(fun1(Constant("A".to_string()), var(1)), var(2)),
+            var(3),
+        );
+        let b = fun1(
+            var(3),
+            fun1(var(2), fun1(var(1), Constant("A".to_string()))),
+        );
 
         let s1 = a.unify(&b).unwrap();
         let s2 = b.unify(&a).unwrap();

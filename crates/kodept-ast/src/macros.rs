@@ -11,18 +11,12 @@ pub mod implementation {
             )*
             $vis struct $wrapper($crate::graph::AnyNode);
 
-            $(
-            #[$config]
-            )*
             $vis enum [<$wrapper Enum>]<'lt> {
                 $(
                     $name(&'lt $crate::ty!($modifier $($t)?)),
                 )*
             }
 
-            $(
-            #[$config]
-            )*
             $vis enum [<$wrapper EnumMut>]<'lt> {
                 $(
                     $name(&'lt mut $crate::ty!($modifier $($t)?)),
