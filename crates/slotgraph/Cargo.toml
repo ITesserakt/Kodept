@@ -2,6 +2,11 @@
 name = "slotgraph"
 version = "0.1.0"
 edition = "2021"
+authors = ["Владимир Никитин <potryas85@mail.ru>"]
+description = "Graph implementation built with slotmap and petgraph"
+repository = "https://github.com/ITesserakt/Kodept"
+categories = ["data-structures"]
+license = "Apache-2.0"
 
 [dependencies]
 slotmap = "1.0.7"
