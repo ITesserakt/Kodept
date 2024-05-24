@@ -14,7 +14,7 @@ use kodept::codespan_settings::CodespanSettings;
 use kodept::macro_context::{DefaultContext, ErrorReported};
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
-use kodept::stage::PredefinedTraverseSet;
+use kodept::steps::common;
 use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
@@ -61,7 +61,8 @@ impl Commands {
         let tokenizer = Tokenizer::new(source.contents());
         let tokens = tokenizer.into_vec();
         let token_stream = TokenStream::new(&tokens);
-        let result = final_parser(top_parser)(token_stream).map_err(|e: ParseError| e.to_diagnostics());
+        let result =
+            final_parser(top_parser)(token_stream).map_err(|e: ParseError| e.to_diagnostics());
         result
     }
 }
@@ -70,18 +71,18 @@ impl Execute {
     #[cfg(feature = "parallel")]
     pub fn exec(
         self,
-        sources: impl ParallelIterator<Item=ReadCodeSource>,
+        sources: impl ParallelIterator<Item = ReadCodeSource>,
         settings: CodespanSettings,
     ) -> Result<(), WideError> {
         sources.try_for_each_with(settings, |settings, source| {
             self.exec_for_source(source, settings)
         })
     }
-    
+
     #[cfg(not(feature = "parallel"))]
     pub fn exec(
         self,
-        sources: impl Iterator<Item=ReadCodeSource>,
+        sources: impl Iterator<Item = ReadCodeSource>,
         mut settings: CodespanSettings,
     ) -> Result<(), WideError> {
         for source in sources {
@@ -99,19 +100,15 @@ impl Execute {
             .or_emit_diagnostics(settings, &source)?
             .0;
         let (tree, accessor) = ASTBuilder.recursive_build(&rlt, &source);
-        let context = DefaultContext::new(
+        let mut context = DefaultContext::new(
             source.with_filename(|_| ReportCollector::new()),
             accessor,
             tree.build(),
         );
-        let set = PredefinedTraverseSet::default();
-        let context = set
-            .into_inner()
-            .traverse(context)
-            .or_else(|(errors, context)| {
-                errors.unwrap_report().emit(settings, &source)?;
-                Result::<_, WideError>::Ok(context)
-            })?;
+        common::run_common_steps(&mut context).or_else(|error| {
+            error.unwrap_report().emit(settings, &source)?;
+            Result::<_, WideError>::Ok(())
+        })?;
         context.emit_diagnostics(settings, &source);
 
         Ok(())
@@ -121,7 +118,7 @@ impl Execute {
 impl Graph {
     #[cfg(feature = "parallel")]
     pub fn exec(
-        sources: impl ParallelIterator<Item=ReadCodeSource>,
+        sources: impl ParallelIterator<Item = ReadCodeSource>,
         settings: CodespanSettings,
         output_path: PathBuf,
     ) -> Result<(), WideError> {
@@ -129,10 +126,10 @@ impl Graph {
             Graph::exec_for_source(source, settings, &output_path)
         })
     }
-    
+
     #[cfg(not(feature = "parallel"))]
     pub fn exec(
-        sources: impl Iterator<Item=ReadCodeSource>,
+        sources: impl Iterator<Item = ReadCodeSource>,
         mut settings: CodespanSettings,
         output_path: PathBuf,
     ) -> Result<(), WideError> {

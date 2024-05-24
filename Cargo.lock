@@ -549,7 +549,6 @@ dependencies = [
  "kodept-parse",
  "nom",
  "nom-supreme",
- "petgraph",
  "rayon",
  "replace_with",
  "rstest 0.19.0",

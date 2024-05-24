@@ -55,7 +55,6 @@ id_tree.workspace = true
 itertools.workspace = true
 nom.workspace = true
 nom-supreme = "0.8.0"
-petgraph = "0.6.4"
 rayon = { version = "1.10.0", optional = true }
 replace_with = "0.1.7"
 thiserror.workspace = true

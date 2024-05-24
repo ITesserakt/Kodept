@@ -9,18 +9,14 @@ use kodept::loader::Loader;
 use kodept::macro_context::DefaultContext;
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
-use kodept::stage::PredefinedTraverseSet;
+use kodept::steps::common::run_common_steps;
 use kodept::top_parser;
 use kodept_ast::ast_builder::ASTBuilder;
-use kodept_ast::traits::{Accessor, Identifiable, Linker};
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
-use kodept_core::ConvertibleToRef;
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::CodeHolder;
-use kodept_macros::erased::ErasedMacro;
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::traits::{FileContextual, MutableContext, Reporter};
 use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
@@ -69,9 +65,11 @@ fn test_typing(#[case] name: &str) {
     let (ast, rlt_accessor) = ASTBuilder.recursive_build(&rlt.0, &provider);
     let ast = ast.build();
 
-    let context = DefaultContext::new(source.with_filename(|_| ReportCollector::new()), rlt_accessor, ast);
-    
-    PredefinedTraverseSet::default().into_inner().traverse(context)
-        .map_err(|it| it.0)
-        .expect("Success");
+    let mut context = DefaultContext::new(
+        source.with_filename(|_| ReportCollector::new()),
+        rlt_accessor,
+        ast,
+    );
+
+    run_common_steps(&mut context).expect("Success");
 }

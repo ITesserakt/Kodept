@@ -1,0 +1,121 @@
+use std::convert::Infallible;
+
+use Execution::{Completed, Failed, Skipped};
+use kodept_ast::graph::{AnyNode, ChangeSet, PermTkn, RefMut, RefNode};
+use kodept_ast::utils::Execution;
+use kodept_ast::visit_side::{VisitGuard, VisitSide};
+use kodept_core::{ConvertibleToMut};
+use kodept_core::structure::Located;
+use kodept_macros::error::report::{Report, ReportMessage};
+use kodept_macros::Macro;
+use kodept_macros::traits::{Context, MutableContext, UnrecoverableError};
+
+use crate::steps::hlist::{HCons, HList, HNil};
+
+pub mod common;
+mod hlist;
+mod pipeline;
+
+struct Pack<'arena, 'token, C: Context> {
+    node: RefNode<'arena>,
+    token: &'token mut PermTkn,
+    side: VisitSide,
+    ctx: &'arena mut C,
+}
+
+trait RunMacros: HList {
+    type Error: Into<ReportMessage>;
+
+    fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet>;
+}
+
+impl RunMacros for HNil {
+    type Error = Infallible;
+
+    #[inline]
+    fn apply<C: Context>(&mut self, _: Pack<C>) -> Execution<Self::Error, ChangeSet> {
+        Skipped
+    }
+}
+
+impl<N, Head, Tail> RunMacros for HCons<Head, Tail>
+where
+    Head: Macro<Node = N>,
+    Tail: RunMacros,
+    AnyNode: ConvertibleToMut<N>,
+{
+    type Error = ReportMessage;
+
+    #[inline]
+    fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet> {
+        let head = if let Some(_) = pack.node.rw(pack.token).try_as_mut() {
+            let guard = VisitGuard::new(pack.side, RefMut::new(pack.node), pack.token);
+            self.head.transform(guard, pack.ctx)
+        } else {
+            Skipped
+        };
+        let tail = self.tail.apply(pack).map_err(|e| e.into());
+        
+        match (head, tail) {
+            (Failed(e), _) => Failed(e.into()),
+            (_, Failed(e)) => Failed(e),
+            (Skipped, Skipped) => Skipped,
+            (Completed(full), Skipped) => Completed(full),
+            (Skipped, Completed(full)) => Completed(full),
+            (Completed(mut part1), Completed(part2)) => {
+                part1.extend(part2);
+                Completed(part1)
+            }
+        }
+    }
+}
+
+fn run_macros(
+    context: &mut impl MutableContext,
+    macros: &mut impl RunMacros<Error: Into<ReportMessage>>,
+) -> Result<(), UnrecoverableError> {
+    let mut token = PermTkn::new();
+    let mut changes = ChangeSet::new();
+
+    for (node, side) in context.tree().upgrade().unwrap().dfs() {
+        match macros.apply(Pack {
+            node,
+            token: &mut token,
+            side,
+            ctx: context,
+        }) {
+            Failed(e) => {
+                let location = context
+                    .access_unknown(node.ro(&token))
+                    .map_or(vec![], |it| vec![it.location()]);
+                context.report_and_fail(location, e)?;
+            }
+            Completed(next) => changes.extend(next),
+            Skipped => continue,
+        }
+    }
+
+    match context.modify_tree(|tree| tree.apply_changes(changes, &token)) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(Report::new(&context.file_path(), vec![], e).into()),
+    }
+}
+
+pub trait Step
+where
+    Self: Sized,
+{
+    #[allow(private_bounds)]
+    type Inputs: RunMacros<Error: Into<ReportMessage>>;
+
+    fn into_contents(self) -> Self::Inputs;
+
+    fn apply_with_context<C: MutableContext>(
+        self,
+        ctx: &mut C,
+    ) -> Result<Self::Inputs, UnrecoverableError> {
+        let mut contents = self.into_contents();
+        run_macros(ctx, &mut contents)?;
+        Ok(contents)
+    }
+}

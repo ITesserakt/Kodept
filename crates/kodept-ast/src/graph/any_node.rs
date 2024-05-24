@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use derive_more::{From, TryInto};
+use derive_more::{From, TryInto, Display};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
@@ -10,7 +10,7 @@ use crate::graph::Identifiable;
 use crate::*;
 
 #[derive(Debug, PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
-#[strum_discriminants(derive(VariantArray))]
+#[strum_discriminants(derive(VariantArray, Display))]
 #[strum_discriminants(name(AnyNodeD))]
 #[try_into(owned, ref, ref_mut)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
