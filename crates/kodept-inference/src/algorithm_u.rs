@@ -1,11 +1,17 @@
+use std::fmt::{Display, Formatter};
+
+use itertools::Itertools;
 use thiserror::Error;
 
 use MonomorphicType::*;
 
 use crate::algorithm_u::AlgorithmUError::{InfiniteType, UnificationFail};
-use crate::r#type::{MonomorphicType, Tuple, TVar};
+use crate::r#type::{MonomorphicType, TVar};
 use crate::substitution::Substitutions;
-use crate::traits::Substitutable;
+use crate::traits::FreeTypeVars;
+
+#[derive(Debug, Error)]
+pub struct UnificationMismatch(pub Vec<MonomorphicType>, pub Vec<MonomorphicType>);
 
 #[derive(Debug, Error)]
 pub enum AlgorithmUError {
@@ -13,36 +19,42 @@ pub enum AlgorithmUError {
     UnificationFail(MonomorphicType, MonomorphicType),
     #[error("Cannot construct an infinite type: {0} ~ {1}")]
     InfiniteType(TVar, MonomorphicType),
+    #[error(transparent)]
+    UnificationMismatch(#[from] UnificationMismatch),
 }
 
 struct AlgorithmU;
 
 impl AlgorithmU {
-    fn occurs_check(var: &TVar, with: &MonomorphicType) -> bool {
-        match (var, with) {
-            (TVar(a), Var(TVar(b))) if *a == *b => true,
-            (var, Fn { input, output }) => {
-                AlgorithmU::occurs_check(var, input) || AlgorithmU::occurs_check(var, output)
-            }
-            (var, Pointer(t)) => AlgorithmU::occurs_check(var, t),
-            (var, MonomorphicType::Tuple(Tuple(vec))) => {
-                vec.iter().any(|it| AlgorithmU::occurs_check(var, it))
-            }
-            _ => false,
-        }
+    fn occurs_check(var: &TVar, with: impl FreeTypeVars) -> bool {
+        with.free_types().contains(var)
     }
 
     fn unify_vec(
         vec1: &[MonomorphicType],
         vec2: &[MonomorphicType],
     ) -> Result<Substitutions, AlgorithmUError> {
-        vec1.iter()
-            .zip(vec2.iter())
-            .try_fold(Substitutions::empty(), |acc, (x, y)| {
-                x.substitute(&acc)
-                    .unify(&y.substitute(&acc))
-                    .map(|it| acc.compose(&it))
-            })
+        match (vec1, vec2) {
+            ([], []) => Ok(Substitutions::empty()),
+            ([t1, ts1 @ ..], [t2, ts2 @ ..]) => {
+                let s1 = t1.unify(t2)?;
+                let s2 = Self::unify_vec(ts1, ts2)?;
+                Ok(s1 + s2)
+            }
+            (t1, t2) => Err(UnificationMismatch(
+                t1.into_iter().cloned().collect(),
+                t2.into_iter().cloned().collect(),
+            )
+            .into()),
+        }
+    }
+
+    fn bind(var: &TVar, ty: &MonomorphicType) -> Result<Substitutions, AlgorithmUError> {
+        match ty {
+            Var(v) if var == v => Ok(Substitutions::empty()),
+            _ if Self::occurs_check(var, ty) => Err(InfiniteType(var.clone(), ty.clone())),
+            _ => Ok(Substitutions::single(var.clone(), ty.clone())),
+        }
     }
 
     fn apply(
@@ -51,27 +63,14 @@ impl AlgorithmU {
     ) -> Result<Substitutions, AlgorithmUError> {
         match (lhs, rhs) {
             (a, b) if a == b => Ok(Substitutions::empty()),
-            (Var(var), b) if AlgorithmU::occurs_check(var, b) => Err(InfiniteType(*var, b.clone())),
-            (a, Var(var)) if AlgorithmU::occurs_check(var, a) => Err(InfiniteType(*var, a.clone())),
-            (Var(a), b) => Ok(Substitutions::single(a.clone(), b.clone())),
-            (a, Var(b)) => Ok(Substitutions::single(b.clone(), a.clone())),
-            (
-                Fn {
-                    input: input1,
-                    output: output1,
-                },
-                Fn { input, output },
-            ) => {
-                let s1 = input1.unify(input)?;
-                let s2 = output1.substitute(&s1).unify(&output.substitute(&s1))?;
-                Ok(s2.compose(&s1))
-            }
-            (Pointer(p1), Pointer(p2)) => p1.unify(p2),
-            (MonomorphicType::Tuple(vec1), MonomorphicType::Tuple(vec2))
-                if vec1.0.len() == vec2.0.len() =>
-            {
-                AlgorithmU::unify_vec(&vec1.0, &vec2.0)
-            }
+            (Var(var), b) => Self::bind(var, b),
+            (a, Var(var)) => Self::bind(var, a),
+            (Fn(i1, o1), Fn(i2, o2)) => Self::unify_vec(
+                &[i1.as_ref().clone(), i2.as_ref().clone()],
+                &[o1.as_ref().clone(), o2.as_ref().clone()],
+            ),
+            (Tuple(t1), Tuple(t2)) => Self::unify_vec(&t1.0, &t2.0),
+            (Pointer(t1), Pointer(t2)) => t1.unify(t2),
             _ => Err(UnificationFail(lhs.clone(), rhs.clone())),
         }
     }
@@ -83,6 +82,17 @@ impl MonomorphicType {
     }
 }
 
+impl Display for UnificationMismatch {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Cannot unify types: [{}] with [{}]; different structure",
+            self.0.iter().join(", "),
+            self.1.iter().join(", ")
+        )
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
@@ -91,8 +101,8 @@ mod tests {
     use nonempty_collections::nev;
 
     use crate::algorithm_u::AlgorithmUError;
-    use crate::r#type::{fun, fun1, MonomorphicType, PrimitiveType, Tuple, TVar, var};
     use crate::r#type::MonomorphicType::Constant;
+    use crate::r#type::{fun, fun1, var, MonomorphicType, PrimitiveType, TVar, Tuple};
     use crate::substitution::Substitutions;
     use crate::traits::Substitutable;
 

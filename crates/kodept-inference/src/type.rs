@@ -1,5 +1,4 @@
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::{HashSet};
 use std::fmt::{Display, Formatter};
 use std::iter::once;
 use std::ops::BitAnd;
@@ -53,10 +52,7 @@ pub enum MonomorphicType {
     Primitive(PrimitiveType),
     Var(TVar),
     #[from(ignore)]
-    Fn {
-        input: Box<MonomorphicType>,
-        output: Box<MonomorphicType>,
-    },
+    Fn(Box<MonomorphicType>, Box<MonomorphicType>),
     Tuple(Tuple),
     Pointer(Box<MonomorphicType>),
     Constant(String),
@@ -77,10 +73,7 @@ pub fn fun1<M: Into<MonomorphicType>, N: Into<MonomorphicType>>(
     input: N,
     output: M,
 ) -> MonomorphicType {
-    MonomorphicType::Fn {
-        input: Box::new(input.into()),
-        output: Box::new(output.into()),
-    }
+    MonomorphicType::Fn(Box::new(input.into()), Box::new(output.into()))
 }
 
 pub fn fun<M: Into<MonomorphicType>>(input: NEVec<MonomorphicType>, output: M) -> MonomorphicType {
@@ -106,10 +99,7 @@ impl MonomorphicType {
             MonomorphicType::Primitive(_)
             | MonomorphicType::Var(_)
             | MonomorphicType::Constant(_) => self,
-            MonomorphicType::Fn { input, output } => MonomorphicType::Fn {
-                input: Box::new(input.rename(old, new)),
-                output: Box::new(output.rename(old, new)),
-            },
+            MonomorphicType::Fn(input, output) => MonomorphicType::Fn(Box::new(input.rename(old, new)), Box::new(output.rename(old, new))),
             MonomorphicType::Tuple(Tuple(vec)) => MonomorphicType::Tuple(Tuple(
                 vec.into_iter().map(|it| it.rename(old, new)).collect(),
             )),
@@ -121,7 +111,7 @@ impl MonomorphicType {
         match self {
             MonomorphicType::Primitive(_) | MonomorphicType::Constant(_) => vec![],
             MonomorphicType::Var(TVar(x)) => vec![*x],
-            MonomorphicType::Fn { input, output } => {
+            MonomorphicType::Fn(input, output) => {
                 concat([input.extract_vars(), output.extract_vars()])
             }
             MonomorphicType::Tuple(Tuple(vec)) => {
@@ -284,8 +274,8 @@ impl Display for MonomorphicType {
         match self {
             MonomorphicType::Primitive(p) => write!(f, "{p}"),
             MonomorphicType::Var(v) => write!(f, "{v}"),
-            MonomorphicType::Fn { input, output } => match input.as_ref() {
-                MonomorphicType::Fn { .. } => write!(f, "({input}) -> {output}"),
+            MonomorphicType::Fn(input, output) => match input.as_ref() {
+                MonomorphicType::Fn(_, _) => write!(f, "({input}) -> {output}"),
                 _ => write!(f, "{input} -> {output}"),
             },
             MonomorphicType::Tuple(Tuple(vec)) => write!(f, "({})", vec.iter().join(", ")),

@@ -637,6 +637,7 @@ dependencies = [
  "kodept-core",
  "kodept-inference",
  "kodept-macros",
+ "nonempty-collections",
  "ref-cast",
  "slotmap",
  "tracing",
