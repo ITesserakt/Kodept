@@ -13,8 +13,8 @@ use kodept_macros::traits::{Context, MutableContext, UnrecoverableError};
 use crate::steps::hlist::{HCons, HList, HNil};
 
 pub mod common;
-mod hlist;
-mod pipeline;
+pub mod hlist;
+pub mod pipeline;
 
 struct Pack<'arena, 'token, C: Context> {
     node: RefNode<'arena>,

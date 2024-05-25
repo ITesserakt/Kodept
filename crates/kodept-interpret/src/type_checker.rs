@@ -55,6 +55,10 @@ impl<'a> TypeChecker<'a> {
             evidence
         }
     }
+    
+    pub fn into_inner(self) -> Vec<Assumptions> {
+        self.constraints
+    }
 }
 
 impl From<InferError> for ReportMessage {
