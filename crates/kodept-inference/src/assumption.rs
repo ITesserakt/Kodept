@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::ops::Add;
-use std::rc::Rc;
 
 use itertools::Itertools;
 
@@ -13,9 +12,6 @@ use crate::language::{Language, Var};
 use crate::r#type::{MonomorphicType, PolymorphicType};
 use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
-
-type RLanguage = Rc<Language>;
-type RPolymorphicType = Rc<PolymorphicType>;
 
 type Name = Var;
 

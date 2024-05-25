@@ -1,9 +1,10 @@
 use std::ops::Deref;
 
 use derive_more::From;
-use kodept_ast::BodyFnDecl;
+use tracing::debug;
 
-use kodept_ast::graph::{ChangeSet, AnyNode};
+use kodept_ast::BodyFnDecl;
+use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::ConvertibleToRef;
@@ -11,7 +12,7 @@ use kodept_core::structure::{Located, rlt};
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::Environment;
-use kodept_inference::r#type::{PolymorphicType};
+use kodept_inference::r#type::PolymorphicType;
 use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::Macro;
 use kodept_macros::traits::Context;
@@ -21,22 +22,37 @@ use crate::scope::{ScopeError, ScopeTree};
 use crate::type_checker::InferError::Unknown;
 use crate::Witness;
 
+pub struct CannotInfer(AlgorithmWError);
+
 pub struct TypeInfo<'a> {
     name: &'a str,
-    ty: &'a PolymorphicType
+    ty: &'a PolymorphicType,
 }
 
 impl From<TypeInfo<'_>> for ReportMessage {
     fn from(value: TypeInfo<'_>) -> Self {
-        Self::new(Severity::Note, "TC001", format!("Type of function `{}` inferred to: {}", value.name, value.ty))
+        Self::new(
+            Severity::Note,
+            "TC001",
+            format!(
+                "Type of function `{}` inferred to: {}",
+                value.name, value.ty
+            ),
+        )
+    }
+}
+
+impl From<CannotInfer> for ReportMessage {
+    fn from(value: CannotInfer) -> Self {
+        Self::new(Severity::Warning, "TC002", value.0.to_string())
     }
 }
 
 pub struct TypeChecker<'a> {
     pub(crate) symbols: &'a ScopeTree,
     env: Environment,
-    constraints: Vec<Assumptions>,
-    evidence: Witness
+    constraints: Assumptions,
+    evidence: Witness,
 }
 
 #[derive(From, Debug)]
@@ -52,12 +68,12 @@ impl<'a> TypeChecker<'a> {
             symbols,
             env: Default::default(),
             constraints: Default::default(),
-            evidence
+            evidence,
         }
     }
-    
+
     pub fn into_inner(self) -> Vec<Assumptions> {
-        self.constraints
+        vec![self.constraints]
     }
 }
 
@@ -73,7 +89,7 @@ impl From<InferError> for ReportMessage {
 
 impl Macro for TypeChecker<'_> {
     type Error = InferError;
-    type Node = AnyNode;
+    type Node = BodyFnDecl;
 
     fn transform(
         &mut self,
@@ -84,40 +100,29 @@ impl Macro for TypeChecker<'_> {
         let Some(tree) = context.tree().upgrade() else {
             return Execution::Skipped;
         };
-        if let Some(restricted) = node.deref().try_as_ref() {
-            if matches!(side, VisitSide::Leaf | VisitSide::Entering) {
-                let restricted: &TypeRestrictedNode = restricted;
-                let current_a = self.constraints.pop().unwrap_or_default();
-                let current_a = current_a.merge(
-                    restricted
-                        .type_of(&tree, node.token(), &self.symbols)
-                        .map_err(|_| Unknown)?,
-                );
-                self.constraints.push(current_a);
+        if matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
+            let model = self.to_model(&tree, node.token(), &*node, self.evidence)?;
+            debug!(
+                "Built compatible model for function {}: {}",
+                node.name, model
+            );
+            let mut assumptions = &mut self.constraints;
+            let fn_location = context
+                .access(&*node)
+                .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]);
+            match model.infer(&assumptions) {
+                Ok(ty) => {
+                    context.add_report(
+                        fn_location,
+                        TypeInfo {
+                            name: &node.name,
+                            ty: &ty,
+                        },
+                    );
+                    assumptions.push(model, ty);
+                }
+                Err(e) => context.add_report(fn_location, CannotInfer(e)),
             }
-        } else if let Some(fnc) = node.deref().try_as_ref() {
-            if side == VisitSide::Entering {
-                self.constraints.push(Assumptions::empty());
-            }
-            if matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
-                let fnc: &BodyFnDecl = fnc;
-                let model = self.to_model(&tree, node.token(), fnc, self.evidence)?;
-                let mut assumptions = if side == VisitSide::Leaf {
-                    Assumptions::empty()
-                } else {
-                    self.constraints.pop().unwrap_or_default()
-                };
-                let ty = model.infer(&assumptions)?;
-                context.add_report(
-                    context
-                        .access(fnc)
-                        .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]),
-                    TypeInfo { name: &fnc.name, ty: &ty }
-                );
-                assumptions.push(model, ty);
-            }
-        } else {
-            return Execution::Skipped;
         }
 
         Execution::Completed(ChangeSet::new())

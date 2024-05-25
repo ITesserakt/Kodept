@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::VecDeque;
+use nonempty_collections::nev;
 
 use Identifier::TypeReference;
 use kodept_ast::{
@@ -14,7 +14,7 @@ use kodept_inference::assumption::Assumptions;
 use kodept_inference::Environment;
 use kodept_inference::language::{app, lambda, Language, r#if, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::r#type::{PolymorphicType};
+use kodept_inference::r#type::PolymorphicType;
 
 use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
@@ -31,7 +31,12 @@ impl TypeDerivableNode {
         environment: &mut Environment,
         evidence: Witness,
     ) -> Result<(Language, PolymorphicType), InferError> {
-        let helper = ConversionHelper { scopes, ast, token, evidence };
+        let helper = ConversionHelper {
+            scopes,
+            ast,
+            token,
+            evidence,
+        };
         let model = helper.convert(self)?;
         let derived_type = model.infer_with_env(assumptions, environment)?;
         Ok((model, derived_type))
@@ -69,7 +74,7 @@ impl TypeChecker<'_> {
             scopes: &self.symbols,
             ast,
             token,
-            evidence
+            evidence,
         };
         helper.convert(node)
     }
@@ -80,7 +85,7 @@ struct ConversionHelper<'a> {
     scopes: &'a ScopeTree,
     ast: &'a SyntaxTree,
     token: &'a PermTkn,
-    evidence: Witness
+    evidence: Witness,
 }
 
 #[inline]
@@ -130,7 +135,7 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
                 };
                 scope
                     .var(name)
-                    .ok_or(AlgorithmWError::UnknownVar(var(name)))
+                    .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))
             })
             .peekable();
         if bindings.peek().is_some() {
@@ -174,20 +179,18 @@ impl ToModelFrom<Appl> for ConversionHelper<'_> {
 impl ToModelFrom<Exprs> for ConversionHelper<'_> {
     fn convert(self, node: &Exprs) -> Result<Language, InferError> {
         let on_empty = unit();
-        let mut items = VecDeque::from(node.items(self.ast, self.token));
-        let Some(last_item) = items.pop_front() else {
+        let mut items = node.items(self.ast, self.token);
+        let Some(last_item) = items.pop() else {
             return Ok(on_empty);
         };
-        let mut needle = self.convert(last_item)?;
 
-        for item in items {
+        let needle = self.convert(last_item)?;
+        items.into_iter().try_rfold(needle, |needle, item| {
             let name = item.extract_name(self.ast, self.token);
             let item = self.convert(item)?;
 
-            needle = r#let(var(name), item, needle).into();
-        }
-
-        Ok(needle)
+            Ok(r#let(var(name), item, needle).into())
+        })
     }
 }
 
@@ -198,7 +201,7 @@ impl ToModelFrom<InitVar> for ConversionHelper<'_> {
         let variable = node.variable(self.ast, self.token);
         let bind = scope
             .var(&variable.name)
-            .ok_or(AlgorithmWError::UnknownVar(var(&variable.name)))?;
+            .ok_or(AlgorithmWError::UnknownVar(nev![var(&variable.name)]))?;
         Ok(r#let(bind.clone(), expr, bind).into())
     }
 }
@@ -270,7 +273,7 @@ impl ToModelFrom<Ref> for ConversionHelper<'_> {
             TypeReference { .. } => Err(InferError::Unknown),
             Identifier::Reference { name } => Ok(scope
                 .var(name)
-                .ok_or(AlgorithmWError::UnknownVar(var(name)))?
+                .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))?
                 .into()),
         }
     }
@@ -285,7 +288,7 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
             .map(|it| {
                 scope
                     .var(&it.name)
-                    .ok_or(AlgorithmWError::UnknownVar(var(&it.name)))
+                    .ok_or(AlgorithmWError::UnknownVar(nev![var(&it.name)]))
             })
             .try_fold(expr, |acc, next| Ok(lambda(next?, acc).into()))
     }

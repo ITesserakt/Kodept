@@ -45,10 +45,7 @@ impl Substitutable for MonomorphicType {
         match self {
             Primitive(_) | Constant(_) => self.clone(),
             Var(x) => subst.get(x).unwrap_or(self).clone(),
-            Fn { input, output } => Fn {
-                input: Box::new(input.substitute(subst)),
-                output: Box::new(output.substitute(subst)),
-            },
+            Fn(input, output) => Fn(Box::new(input.substitute(subst)), Box::new(output.substitute(subst))),
             Tuple(inner) => Tuple(crate::r#type::Tuple(inner.0.substitute(subst))),
             Pointer(inner) => Pointer(Box::new(inner.substitute(subst))),
         }
@@ -135,7 +132,7 @@ impl FreeTypeVars for &MonomorphicType {
         match self {
             Primitive(_) | Constant(_) => HashSet::new(),
             Var(x) => HashSet::from([x.clone()]),
-            Fn { input, output } => &input.free_types() | &output.free_types(),
+            Fn(input, output) => &input.free_types() | &output.free_types(),
             Tuple(crate::r#type::Tuple(vec)) => vec.free_types(),
             Pointer(x) => x.free_types(),
         }

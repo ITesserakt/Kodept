@@ -1,6 +1,8 @@
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 
 use itertools::{concat, Itertools};
+use nonempty_collections::{IteratorExt, NEVec, NonEmptyIterator};
 use thiserror::Error;
 use tracing::debug;
 
@@ -19,8 +21,7 @@ use crate::{language, Environment};
 pub enum AlgorithmWError {
     #[error(transparent)]
     AlgorithmU(#[from] AlgorithmUError),
-    #[error("Unknown reference: {0}")]
-    UnknownVar(Var),
+    UnknownVar(NEVec<Var>),
     #[error(transparent)]
     FailedConstraints(#[from] ConstraintsSolverError),
 }
@@ -62,9 +63,9 @@ impl<'e> AlgorithmW<'e> {
     }
 
     fn apply_app(&mut self, language::App { arg, func }: &language::App) -> AWResult {
+        let tv = self.env.new_var();
         let (as1, cs1, t1) = self.apply(func)?;
         let (as2, cs2, t2) = self.apply(arg)?;
-        let tv = self.env.new_var();
 
         Ok((
             as1 + as2,
@@ -154,13 +155,13 @@ impl Language {
         table: &Assumptions,
     ) -> Result<(Substitutions, MonomorphicType), AlgorithmWError> {
         let (a, c, t) = context.apply(self)?;
-        if let Some(&unbound) = &a
+        if let Some(iter) = a
             .keys()
             .collect::<HashSet<_>>()
             .difference(&table.keys().collect())
-            .next()
+            .to_nonempty_iter()
         {
-            Err(UnknownVar(unbound.clone()))?;
+            return Err(UnknownVar(iter.cloned().cloned().collect()));
         }
         let explicits: Vec<_> = table
             .iter()
@@ -201,5 +202,15 @@ impl Language {
 
     pub fn infer(&self, table: &Assumptions) -> Result<PolymorphicType, AlgorithmWError> {
         self.infer_with_env(table, &mut Environment::default())
+    }
+}
+
+impl Display for AlgorithmWError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AlgorithmWError::AlgorithmU(x) => write!(f, "{x}"),
+            UnknownVar(vs) => write!(f, "Unknown references: [{}]", vs.iter().into_iter().join(", ")),
+            AlgorithmWError::FailedConstraints(x) => write!(f, "{x}"),
+        }
     }
 }

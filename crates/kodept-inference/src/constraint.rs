@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
-use std::iter;
 
 use derive_more::Display;
 use itertools::Itertools;
@@ -80,16 +79,10 @@ impl Display for ConstraintsSolverError {
 
 impl Constraint {
     fn pairs(vec: &[Constraint]) -> impl Iterator<Item = Pair> {
-        let mut idx = 0;
-
-        iter::from_fn(move || {
-            if vec.len() <= idx {
-                return None;
-            }
+        vec.into_iter().enumerate().map(move |(index, next)| {
             let mut copy = Vec::from_iter(vec);
-            let item = copy.swap_remove(idx);
-            idx += 1;
-            Some((item, copy))
+            copy.swap_remove(index);
+            (next, copy)
         })
     }
 
@@ -118,13 +111,13 @@ impl Constraint {
             ExplicitInstance { t, s } => {
                 let t2 = s.instantiate(env);
                 let mut cs: Vec<_> = cs.into_iter().cloned().collect();
-                cs.insert(0, Eq(EqConstraint { t1: t.clone(), t2 }));
+                cs.push(Eq(EqConstraint { t1: t.clone(), t2 }));
                 Self::solve(&cs, env)
             }
             ImplicitInstance { t1, ctx, t2 } => {
                 let s = t2.generalize(ctx);
                 let mut cs: Vec<_> = cs.into_iter().cloned().collect();
-                cs.insert(0, ExplicitInstance { t: t1.clone(), s });
+                cs.push(ExplicitInstance { t: t1.clone(), s });
                 Self::solve(&cs, env)
             }
         }
@@ -149,7 +142,7 @@ impl Display for Constraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Eq(x) => write!(f, "{x}"),
-            ExplicitInstance { t, s } => write!(f, "{t} ≼ {s}"),
+            ExplicitInstance { t, s } => write!(f, "{t} ≼ ({s})"),
             ImplicitInstance { t1, ctx, t2 } => {
                 write!(f, "{t1} ≤{{{}}} {t2}", ctx.iter().join(", "))
             }

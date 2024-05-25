@@ -125,7 +125,7 @@ impl Display for Lambda {
 
 impl Display for Let {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "let {} = {} in {}", self.bind, self.binder, self.usage)
+        write!(f, "(let {} = {} in {})", self.bind, self.binder, self.usage)
     }
 }
 
@@ -166,11 +166,7 @@ mod tests {
     #[test]
     fn test_infer_language() {
         // λz. let x = (z, z) in (λy. (y, y)) x
-        // fun _(z) {
-        //   val x = (z, z)
-        //   
-        // }
-        // ∀a, b, c => a -> (b, (c, b))
+        // ∀a, b, c => a -> ((a, a), (a, a))
         let expr: Language = lambda(
             "z",
             r#let(
@@ -202,9 +198,9 @@ mod tests {
 
     #[test]
     fn test_church_encoding() {
-        //zero = \f. \x. x
-        //one  = \f. \x. f x
-        //plus = \m. \n. \f. \x. m f (n f x)
+        //zero = \f. \x. x                   :: a -> b -> b
+        //one  = \f. \x. f x                 :: (a -> b) -> a -> b
+        //plus = \m. \n. \f. \x. m f (n f x) :: (a -> b -> c) -> (a -> d -> b) -> a -> d -> c
 
         let zero: Language = lambda("f", lambda("x", var("x"))).into();
         let one: Language = lambda("f", lambda("x", app(var("x"), var("f")))).into();

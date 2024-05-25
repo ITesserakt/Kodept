@@ -1,0 +1,28 @@
+module Base =>
+
+// Identity function
+fun id(x) => x
+
+// Reverses order of arguments
+fun flip(f, x, y) => f(y, x)
+
+// Always returns the first argument
+fun const(a, b) => a
+
+// Composes two functions, f and g
+fun compose(f, g) => \x => f(g(x))
+
+fun succ(n, f, x) => f(n(f, x))
+
+fun s(f, g) => \x => f(x, g(x))
+
+fun fix(f) => {
+    val x = f(x)
+    x
+}
+
+fun let_bound() {
+    val sub = id(id(id))
+    val inner = id(3)
+    sub(inner)
+}
