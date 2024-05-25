@@ -1,0 +1,19 @@
+---
+source: tests/infrastructure.rs
+expression: "common_steps(&mut context).expect(\"Success\")"
+---
+[
+    Assumptions {
+        value: {
+            Var(
+                Var {
+                    name: "name",
+                },
+            ): Monomorphic(
+                Constant(
+                    "String",
+                ),
+            ),
+        },
+    },
+]

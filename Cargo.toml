@@ -81,7 +81,8 @@ version = "0.1"
 
 [dev-dependencies]
 tempfile = "3.7.0"
-rstest = "0.19.0"
+insta = "1.39.0"
+kodept-inference = { path = "crates/kodept-inference", version = "0.2" }
 
 [features]
 profiler = ["dep:dhat"]
