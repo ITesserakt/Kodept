@@ -164,7 +164,7 @@ impl ToModelFrom<Appl> for ConversionHelper<'_> {
             .map(|it| self.convert(it))
             .peekable();
         if params.peek().is_some() {
-            params.try_fold(expr, |acc, next| Ok(app(next?, acc).into()))
+            params.try_rfold(expr, |acc, next| Ok(app(next?, acc).into()))
         } else {
             Ok(app(unit(), expr).into())
         }
