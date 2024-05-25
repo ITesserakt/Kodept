@@ -1,6 +1,7 @@
 use crate::code_point::CodePoint;
 use crate::structure::Located;
 use crate::structure::rlt::new_types::Enclosed;
+use crate::structure::rlt::Operation;
 use crate::structure::span::Span;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -11,7 +12,7 @@ pub enum Literal {
     Floating(Span),
     Char(Span),
     String(Span),
-    Tuple(Enclosed<Box<[Literal]>>),
+    Tuple(Enclosed<Box<[Operation]>>),
 }
 
 impl Located for Literal {
