@@ -1,6 +1,6 @@
 use tracing::warn;
 
-use kodept_ast::graph::{ChangeSet, AnyNode};
+use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Skipped;
 use kodept_ast::visit_side::VisitGuard;
@@ -31,5 +31,18 @@ pub trait Macro {
         context: &mut impl Context,
     ) -> Execution<Self::Error, ChangeSet> {
         Skipped
+    }
+}
+
+impl<M: Macro> Macro for &mut M {
+    type Error = M::Error;
+    type Node = M::Node;
+
+    fn transform(
+        &mut self,
+        guard: VisitGuard<Self::Node>,
+        context: &mut impl Context,
+    ) -> Execution<Self::Error, ChangeSet> {
+        M::transform(self, guard, context)
     }
 }
