@@ -1,18 +1,18 @@
+use thiserror::Error;
+
 use MonomorphicType::*;
 
+use crate::algorithm_u::AlgorithmUError::{InfiniteType, UnificationFail};
 use crate::r#type::{MonomorphicType, Tuple, TVar};
 use crate::substitution::Substitutions;
+use crate::traits::Substitutable;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum AlgorithmUError {
-    InfiniteType {
-        type_var: TVar,
-        with: MonomorphicType,
-    },
-    CannotUnify {
-        from: MonomorphicType,
-        to: MonomorphicType,
-    },
+    #[error("Cannot unify types: {0} with {1}")]
+    UnificationFail(MonomorphicType, MonomorphicType),
+    #[error("Cannot construct an infinite type: {0} ~ {1}")]
+    InfiniteType(TVar, MonomorphicType),
 }
 
 struct AlgorithmU;
@@ -51,20 +51,10 @@ impl AlgorithmU {
     ) -> Result<Substitutions, AlgorithmUError> {
         match (lhs, rhs) {
             (a, b) if a == b => Ok(Substitutions::empty()),
-            (Var(var), b) if AlgorithmU::occurs_check(var, b) => {
-                Err(AlgorithmUError::InfiniteType {
-                    type_var: var.clone(),
-                    with: b.clone(),
-                })
-            }
-            (a, Var(var)) if AlgorithmU::occurs_check(var, a) => {
-                Err(AlgorithmUError::InfiniteType {
-                    type_var: var.clone(),
-                    with: a.clone(),
-                })
-            }
-            (a @ Var(_), b) => Ok(Substitutions::single(b.clone(), a.clone())),
-            (a, b @ Var(_)) => Ok(Substitutions::single(a.clone(), b.clone())),
+            (Var(var), b) if AlgorithmU::occurs_check(var, b) => Err(InfiniteType(*var, b.clone())),
+            (a, Var(var)) if AlgorithmU::occurs_check(var, a) => Err(InfiniteType(*var, a.clone())),
+            (Var(a), b) => Ok(Substitutions::single(a.clone(), b.clone())),
+            (a, Var(b)) => Ok(Substitutions::single(b.clone(), a.clone())),
             (
                 Fn {
                     input: input1,
@@ -82,10 +72,7 @@ impl AlgorithmU {
             {
                 AlgorithmU::unify_vec(&vec1.0, &vec2.0)
             }
-            _ => Err(AlgorithmUError::CannotUnify {
-                from: lhs.clone(),
-                to: rhs.clone(),
-            }),
+            _ => Err(UnificationFail(lhs.clone(), rhs.clone())),
         }
     }
 }
@@ -99,14 +86,15 @@ impl MonomorphicType {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use std::collections::HashSet;
+    use std::collections::HashMap;
 
     use nonempty_collections::nev;
 
     use crate::algorithm_u::AlgorithmUError;
-    use crate::r#type::{fun, fun1, PrimitiveType, Tuple, var};
+    use crate::r#type::{fun, fun1, MonomorphicType, PrimitiveType, Tuple, TVar, var};
     use crate::r#type::MonomorphicType::Constant;
-    use crate::substitution::{Substitution, Substitutions};
+    use crate::substitution::Substitutions;
+    use crate::traits::Substitutable;
 
     #[test]
     fn test_tautology_example_on_constants() {
@@ -114,7 +102,7 @@ mod tests {
         let b = Constant("A".to_string());
 
         let s = a.unify(&b).unwrap();
-        assert_eq!(s.0, HashSet::new());
+        assert_eq!(s.into_inner(), HashMap::new());
     }
 
     #[test]
@@ -123,7 +111,7 @@ mod tests {
         let b = Constant("B".to_string());
 
         let e = a.unify(&b).unwrap_err();
-        assert!(matches!(e, AlgorithmUError::CannotUnify { .. }))
+        assert!(matches!(e, AlgorithmUError::UnificationFail(..)))
     }
 
     #[test]
@@ -132,31 +120,34 @@ mod tests {
         let b = var(0);
 
         let s = a.unify(&b).unwrap();
-        assert_eq!(s.0, HashSet::new());
+        assert_eq!(s.into_inner(), HashMap::new());
     }
 
     #[test]
     fn test_variables_should_be_always_unified() {
-        let a = var(1);
+        let a = TVar(1);
         let b = Constant("A".to_string());
 
-        let s1 = a.unify(&b).unwrap();
-        let s2 = b.unify(&a).unwrap();
+        let s1 = MonomorphicType::Var(a).unify(&b).unwrap();
+        let s2 = b.unify(&MonomorphicType::Var(a)).unwrap();
 
         assert_eq!(s1, s2);
-        assert_eq!(s1, Substitutions::single(b, a))
+        assert_eq!(s1, Substitutions::single(a, b))
     }
 
     #[test]
     fn test_aliasing() {
-        let a = var(1);
-        let b = var(2);
+        let a = TVar(1);
+        let b = TVar(2);
 
-        let s1 = a.unify(&b).unwrap();
-        let s2 = b.unify(&a).unwrap();
+        let a_ = MonomorphicType::Var(a);
+        let b_ = MonomorphicType::Var(b);
 
-        assert_eq!(s1, Substitutions::single(b.clone(), a.clone()));
-        assert_eq!(s2, Substitutions::single(a, b))
+        let s1 = a_.unify(&b_).unwrap();
+        let s2 = b_.unify(&a_).unwrap();
+
+        assert_eq!(s1, Substitutions::single(a, b_.clone()));
+        assert_eq!(s2, Substitutions::single(b, a_))
     }
 
     #[test]
@@ -165,7 +156,7 @@ mod tests {
         let b = fun(nev![var(1), var(2)], Tuple::unit());
 
         let s = a.unify(&b).unwrap();
-        assert_eq!(s, Substitutions::single(Constant("A".to_string()), var(2)));
+        assert_eq!(s, Substitutions::single(TVar(2), Constant("A".to_string())));
     }
 
     #[test]
@@ -174,7 +165,7 @@ mod tests {
         let b = fun(nev![var(2)], Tuple::unit());
 
         let s = a.unify(&b).unwrap();
-        assert_eq!(s, Substitutions::single(var(2), var(1)));
+        assert_eq!(s, Substitutions::single(TVar(1), var(2)));
     }
 
     #[test]
@@ -186,7 +177,7 @@ mod tests {
         );
 
         let s = a.unify(&b).unwrap_err();
-        assert!(matches!(s, AlgorithmUError::CannotUnify { .. }))
+        assert!(matches!(s, AlgorithmUError::UnificationFail(..)))
     }
 
     #[test]
@@ -199,12 +190,12 @@ mod tests {
 
         let s = a.unify(&b).unwrap();
         assert_eq!(
-            s.0,
-            HashSet::from([
-                Substitution::new(Constant("A".to_string()), var(1)),
-                Substitution::new(
-                    fun1(Constant("A".to_string()), PrimitiveType::Integral),
-                    var(2)
+            s.into_inner(),
+            HashMap::from([
+                (TVar(1), Constant("A".to_string())),
+                (
+                    TVar(2),
+                    fun1(Constant("A".to_string()), PrimitiveType::Integral)
                 )
             ])
         )
@@ -230,10 +221,10 @@ mod tests {
         let s3 = c.unify(&b.substitute(&s2)).unwrap();
         let s4 = a.substitute(&s1).unify(&c).unwrap();
 
-        assert_eq!(s1, Substitutions::single(b.clone(), a.clone()));
-        assert_eq!(s2, Substitutions::single(a.clone(), b.clone()));
-        assert_eq!(s3, Substitutions::single(c.clone(), a));
-        assert_eq!(s4, Substitutions::single(c, b));
+        assert_eq!(s1, Substitutions::single(TVar(1), b.clone()));
+        assert_eq!(s2, Substitutions::single(TVar(2), a.clone()));
+        assert_eq!(s3, Substitutions::single(TVar(1), c.clone()));
+        assert_eq!(s4, Substitutions::single(TVar(2), c));
     }
 
     #[test]
@@ -245,8 +236,8 @@ mod tests {
         let s = a.unify(&b).unwrap();
         let e = a.substitute(&s).unify(&c).unwrap_err();
 
-        assert_eq!(s, Substitutions::single(b, a));
-        assert!(matches!(e, AlgorithmUError::CannotUnify { .. }))
+        assert_eq!(s, Substitutions::single(TVar(1), b));
+        assert!(matches!(e, AlgorithmUError::UnificationFail(..)))
     }
 
     #[test]

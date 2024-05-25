@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
 
 use derive_more::{Display, From};
 use itertools::Itertools;
@@ -7,7 +6,7 @@ use itertools::Itertools;
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
 #[display(fmt = "{name}")]
 pub struct Var {
-    name: String,
+    pub name: String,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -18,14 +17,14 @@ pub struct App {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Lambda {
-    pub bind: Rc<Language>, // only vars,
+    pub bind: Var,
     pub expr: Box<Language>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Let {
     pub binder: Box<Language>,
-    pub bind: Rc<Language>, // only vars,
+    pub bind: Var,
     pub usage: Box<Language>,
 }
 
@@ -72,7 +71,7 @@ where
     E: Into<Language>,
 {
     Lambda {
-        bind: Rc::new(Var::from(bind).into()),
+        bind: bind.into(),
         expr: Box::new(expr.into()),
     }
 }
@@ -85,7 +84,7 @@ where
 {
     Let {
         binder: Box::new(binder.into()),
-        bind: Rc::new(Var::from(bind).into()),
+        bind: bind.into(),
         usage: Box::new(usage.into()),
     }
 }
@@ -160,12 +159,18 @@ impl<S: Into<String>> From<S> for Var {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::language::{app, lambda, r#let, var, Language, Literal};
-    use crate::r#type::{fun1, var as t_var, Tuple};
+    use crate::assumption::Assumptions;
+    use crate::language::{app, lambda, Language, Literal, r#let, var};
+    use crate::r#type::{fun1, Tuple, var as t_var};
 
     #[test]
     fn test_infer_language() {
-        //λz. let x = (z, z) in (λy. (y, y)) x
+        // λz. let x = (z, z) in (λy. (y, y)) x
+        // fun _(z) {
+        //   val x = (z, z)
+        //   
+        // }
+        // ∀a, b, c => a -> (b, (c, b))
         let expr: Language = lambda(
             "z",
             r#let(
@@ -179,8 +184,9 @@ mod tests {
         )
         .into();
 
-        let t = expr.infer_type().unwrap();
+        let t = expr.infer(&Assumptions::empty()).unwrap();
 
+        println!("{}\n{}", expr, t);
         assert_eq!(
             t,
             fun1(
@@ -190,9 +196,8 @@ mod tests {
                     Tuple(vec![t_var(0), t_var(0)]).into()
                 ])
             )
+            .into()
         );
-
-        println!("{}\n{}", expr, t.minimize());
     }
 
     #[test]
@@ -221,18 +226,10 @@ mod tests {
         )
         .into();
 
-        let zt = zero.infer_type().unwrap();
-        let ot = one.infer_type().unwrap();
-        let pt = plus.infer_type().unwrap();
+        let zt = zero.infer(&Assumptions::empty()).unwrap();
+        let ot = one.infer(&Assumptions::empty()).unwrap();
+        let pt = plus.infer(&Assumptions::empty()).unwrap();
 
-        println!(
-            "{}\n{}\n\n{}\n{}\n\n{}\n{}",
-            zero,
-            zt.minimize(),
-            one,
-            ot.minimize(),
-            plus,
-            pt.minimize()
-        );
+        println!("{}\n{}\n\n{}\n{}\n\n{}\n{}", zero, zt, one, ot, plus, pt);
     }
 }
