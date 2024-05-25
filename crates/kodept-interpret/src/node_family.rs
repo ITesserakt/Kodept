@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use derive_more::{From};
 
 use kodept_ast::graph::{PermTkn, SyntaxTree};
@@ -108,7 +106,7 @@ impl HasRestrictedType for TypeRestrictedNode {
             TypeRestrictedNodeEnum::Variable(node) => {
                 if let Some(ty) = node.assigned_type(ast, token) {
                     let model = var(&node.name).into();
-                    a0.push(Rc::new(model), Rc::new(convert(ty, scope, ast, token)?));
+                    a0.push(model, convert(ty, scope, ast, token)?);
                 }
             }
             TypeRestrictedNodeEnum::Reference(Ref {
@@ -116,7 +114,7 @@ impl HasRestrictedType for TypeRestrictedNode {
                 ..
             }) => {
                 let ty = scope.ty(name).ok_or(Undefined(name.clone()))?;
-                a0.push(Rc::new(var(name).into()), Rc::new(ty));
+                a0.push(var(name).into(), ty);
             }
             _ => {}
         };
@@ -136,7 +134,7 @@ impl HasRestrictedType for TyParam {
         let scope = scopes.lookup(self, ast, token)?;
         let ty = self.parameter_type(ast, token);
         let model = var(&self.name).into();
-        a0.push(Rc::new(model), Rc::new(convert(ty, scope, ast, token)?));
+        a0.push(model, convert(ty, scope, ast, token)?);
         Ok(a0)
     }
 }

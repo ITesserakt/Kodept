@@ -1,27 +1,36 @@
-use std::rc::Rc;
+use std::collections::HashSet;
 
-use derive_more::From;
+use itertools::{concat, Itertools};
+use thiserror::Error;
+use tracing::debug;
 
-use crate::{Environment, language};
 use crate::algorithm_u::AlgorithmUError;
-use crate::assumption::Assumptions;
-use crate::language::{Language, Literal, Special};
-use crate::r#type::{fun1, MonomorphicType, PrimitiveType, Tuple, var};
+use crate::algorithm_w::AlgorithmWError::UnknownVar;
+use crate::assumption::{Assumptions, Assumptions2};
+use crate::constraint::{eq_cst, explicit_cst, implicit_cst, Constraint, ConstraintsSolverError};
+use crate::language::{Language, Literal, Special, Var};
+use crate::r#type::PrimitiveType::Boolean;
+use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
 use crate::substitution::Substitutions;
+use crate::traits::Substitutable;
+use crate::{language, Environment};
 
-#[derive(From, Debug)]
+#[derive(Debug, Error)]
 pub enum AlgorithmWError {
-    AlgorithmU(AlgorithmUError),
-    #[from(ignore)]
-    UnknownVar(language::Var),
+    #[error(transparent)]
+    AlgorithmU(#[from] AlgorithmUError),
+    #[error("Unknown reference: {0}")]
+    UnknownVar(Var),
+    #[error(transparent)]
+    FailedConstraints(#[from] ConstraintsSolverError),
 }
 
 struct AlgorithmW<'e> {
-    context: &'e mut Assumptions,
+    context: HashSet<TVar>,
     env: &'e mut Environment,
 }
 
-type AWResult = Result<(Substitutions, MonomorphicType), AlgorithmWError>;
+type AWResult = Result<(Assumptions2, Vec<Constraint>, MonomorphicType), AlgorithmWError>;
 
 impl<'e> AlgorithmW<'e> {
     fn apply(&mut self, expression: &Language) -> AWResult {
@@ -32,43 +41,52 @@ impl<'e> AlgorithmW<'e> {
             Language::Let(x) => self.apply_let(x),
             Language::Special(x) => self.apply_special(x),
             Language::Literal(x) => match x {
-                Literal::Integral(_) => {
-                    Ok((Substitutions::empty(), PrimitiveType::Integral.into()))
-                }
-                Literal::Floating(_) => {
-                    Ok((Substitutions::empty(), PrimitiveType::Floating.into()))
-                }
+                Literal::Integral(_) => Ok((
+                    Assumptions2::empty(),
+                    vec![],
+                    PrimitiveType::Integral.into(),
+                )),
+                Literal::Floating(_) => Ok((
+                    Assumptions2::empty(),
+                    vec![],
+                    PrimitiveType::Floating.into(),
+                )),
                 Literal::Tuple(vec) => self.apply_tuple(vec),
             },
         }
     }
 
-    fn apply_var(&mut self, var: &language::Var) -> AWResult {
-        match self.context.get(&Language::Var(var.clone())) {
-            None => Err(AlgorithmWError::UnknownVar(var.clone())),
-            Some(x) => Ok((Substitutions::empty(), x.instantiate(self.env))),
-        }
+    fn apply_var(&mut self, var: &Var) -> AWResult {
+        let fresh = self.env.new_var();
+        Ok((Assumptions2::single(&var.name, fresh), vec![], fresh.into()))
     }
 
     fn apply_app(&mut self, language::App { arg, func }: &language::App) -> AWResult {
-        let v = self.env.new_var();
-        let (s1, t1) = func.infer_w(self)?;
-        let (s2, t2) = arg.infer_w(self)?;
-        let s3 = (t1 & &s2).unify(&fun1(t2, var(v.clone())))?;
-        Ok((&s3 + s2 + s1, var(v) & s3))
+        let (as1, cs1, t1) = self.apply(func)?;
+        let (as2, cs2, t2) = self.apply(arg)?;
+        let tv = self.env.new_var();
+
+        Ok((
+            as1 + as2,
+            concat([cs1, cs2, vec![eq_cst(t1, fun1(t2, tv))]]),
+            tv.into(),
+        ))
     }
 
     fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> AWResult {
-        let v = self.env.new_var();
-        let var_bind = bind.clone();
-        let mut new_context = self.context.clone();
-        new_context.push(var_bind.clone(), Rc::new(MonomorphicType::Var(v.clone()).into()));
-        let (s1, t1) = AlgorithmW {
-            context: &mut new_context,
-            env: self.env,
-        }.apply(expr)?;
-        let resulting_fn = fun1(var(v) & &s1, t1 & &s1);
-        Ok((s1, resulting_fn))
+        let tv = self.env.new_var();
+        let (as1, cs1, t1) = self.apply(expr)?;
+        self.context.insert(tv);
+
+        let mut as_ = as1.clone();
+        as_.remove(bind);
+        let eq_cs = as1
+            .get(bind)
+            .into_iter()
+            .map(|it| eq_cst(it.clone(), tv))
+            .collect();
+
+        Ok((as_, concat([cs1, eq_cs]), fun1(tv, t1)))
     }
 
     fn apply_let(
@@ -79,38 +97,28 @@ impl<'e> AlgorithmW<'e> {
             usage,
         }: &language::Let,
     ) -> AWResult {
-        let (s1, t1) = binder.infer_w(self)?;
-        let var_bind = bind.clone();
-        let poly_type = self.context.substitute_mut(&s1).generalize(t1);
-        let mut new_context = self.context.clone();
-        new_context
-            .retain_all(match bind.as_ref() {
-                Language::Var(v) => v,
-                _ => unreachable!(),
-            })
-            .push(var_bind, Rc::new(poly_type));
+        let (as1, cs1, t1) = self.apply(binder)?;
+        let (as2, cs2, t2) = self.apply(usage)?;
 
-        let (s2, t2) = AlgorithmW {
-            context: &mut new_context,
-            env: self.env,
-        }
-        .apply(usage.as_ref())?;
-        Ok((s2 + s1, t2))
+        let mut as_ = as1 + &as2;
+        as_.remove(bind);
+        let im_cs = as2
+            .get(bind)
+            .into_iter()
+            .map(|it| implicit_cst(it.clone(), self.context.clone(), t1.clone()))
+            .collect();
+
+        Ok((as_, concat([cs1, cs2, im_cs]), t2))
     }
 
     fn apply_tuple(&mut self, tuple: &[Language]) -> AWResult {
-        tuple
-            .iter()
-            .try_fold(
-                (Substitutions::empty(), Tuple::unit()),
-                |(s, mut t), next| {
-                    self.context.substitute_mut(&s);
-                    let (s1, t1) = next.infer_w(self)?;
-                    t.push(t1);
-                    Ok((s + s1, t))
-                },
-            )
-            .map(|(s, t)| (s, t.into()))
+        let ctx: Vec<_> = tuple.into_iter().map(|it| self.apply(it)).try_collect()?;
+        let (a, c, t): (Vec<_>, Vec<_>, Vec<_>) = ctx.into_iter().multiunzip();
+        Ok((
+            Assumptions2::merge_many(a.into_iter()),
+            c.into_iter().flatten().collect(),
+            Tuple(t).into(),
+        ))
     }
 
     fn apply_special(&mut self, special: &Special) -> AWResult {
@@ -120,12 +128,20 @@ impl<'e> AlgorithmW<'e> {
                 body,
                 otherwise,
             } => {
-                let (s1, t_cond) = condition.infer_w(self)?;
-                let (s2, t_true) = body.infer_w(self)?;
-                let (s3, t_false) = otherwise.infer_w(self)?;
-                let s4 = (t_cond & &s1).unify(&PrimitiveType::Boolean.into())?;
-                let s5 = (&t_true & &s3).unify(&(t_false & &s3))?;
-                Ok((s5 + &s4 + s3 + s2 + s1, t_true & s4))
+                let (as1, cs1, t1) = self.apply(condition)?;
+                let (as2, cs2, t2) = self.apply(body)?;
+                let (as3, cs3, t3) = self.apply(otherwise)?;
+
+                Ok((
+                    as1 + as2 + as3,
+                    concat([
+                        cs1,
+                        cs2,
+                        cs3,
+                        vec![eq_cst(t1, Boolean), eq_cst(t2.clone(), t3)],
+                    ]),
+                    t2,
+                ))
             }
         }
     }
@@ -135,40 +151,55 @@ impl Language {
     fn infer_w(
         &self,
         context: &mut AlgorithmW,
+        table: &Assumptions,
     ) -> Result<(Substitutions, MonomorphicType), AlgorithmWError> {
-        context.apply(self)
+        let (a, c, t) = context.apply(self)?;
+        if let Some(&unbound) = &a
+            .keys()
+            .collect::<HashSet<_>>()
+            .difference(&table.keys().collect())
+            .next()
+        {
+            Err(UnknownVar(unbound.clone()))?;
+        }
+        let explicits: Vec<_> = table
+            .iter()
+            .flat_map(|(k, s)| {
+                a.get(k)
+                    .into_iter()
+                    .map(|t| explicit_cst(t.clone(), s.clone()))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        debug!("Inferred raw type and constraints: ");
+        debug!(
+            "[{}] ++ [{}], {t}",
+            c.iter().join(", "),
+            explicits.iter().join(", ")
+        );
+        let substitutions = Constraint::solve(&concat([c, explicits]), context.env)?;
+        let t = t.substitute(&substitutions);
+        debug!("Inferred type and substitutions: ");
+        debug!("{}, {}", substitutions, t);
+        Ok((substitutions, t))
     }
 
     pub fn infer_with_env(
-        self: Rc<Self>,
-        context: &mut Assumptions,
+        &self,
+        context: &Assumptions,
         env: &mut Environment,
-    ) -> Result<MonomorphicType, AlgorithmWError> {
-        let (s, t) = AlgorithmW { context, env }.apply(&self)?;
-        let t = t.substitute(&s);
-        let poly_type = context.generalize(t.clone());
-        context.substitute_mut(&s).push(self, Rc::new(poly_type));
-        Ok(t)
-    }
-
-    pub fn infer(self: Rc<Self>) -> Result<(Assumptions, MonomorphicType), AlgorithmWError> {
-        let mut assumptions = Assumptions::empty();
-        let t = Self::infer_with_env(
-            self,
-            &mut assumptions,
-            &mut Environment { variable_index: 0 },
-        )?;
-        Ok((assumptions, t))
-    }
-
-    pub fn infer_type(&self) -> Result<MonomorphicType, AlgorithmWError> {
-        let mut context = Assumptions::empty();
-        let mut env = Environment::default();
-        AlgorithmW {
-            context: &mut context,
-            env: &mut env,
+    ) -> Result<PolymorphicType, AlgorithmWError> {
+        let mut ctx = AlgorithmW {
+            context: Default::default(),
+            env,
+        };
+        match self.infer_w(&mut ctx, context) {
+            Ok((s, t)) => Ok(t.substitute(&s).normalize()),
+            Err(e) => Err(e),
         }
-        .apply(self)
-        .map(|it| it.1)
+    }
+
+    pub fn infer(&self, table: &Assumptions) -> Result<PolymorphicType, AlgorithmWError> {
+        self.infer_with_env(table, &mut Environment::default())
     }
 }

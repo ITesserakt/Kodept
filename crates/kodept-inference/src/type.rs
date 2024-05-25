@@ -1,14 +1,19 @@
-use std::collections::HashSet;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashSet};
 use std::fmt::{Display, Formatter};
 use std::iter::once;
-use std::ops::{BitAnd, BitOr, Sub};
+use std::ops::BitAnd;
 
 use derive_more::{Constructor, Display as DeriveDisplay, From};
-use itertools::Itertools;
+use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 
-use crate::{Environment, LOWER_ALPHABET};
+use PolymorphicType::Monomorphic;
+
+use crate::r#type::PolymorphicType::Binding;
 use crate::substitution::Substitutions;
+use crate::traits::{FreeTypeVars, Substitutable};
+use crate::{Environment, LOWER_ALPHABET};
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {
@@ -36,7 +41,7 @@ pub enum PrimitiveType {
     Boolean,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, From)]
+#[derive(Debug, Copy, Clone, PartialEq, Hash, Eq, From)]
 pub struct TVar(pub(crate) usize);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
@@ -95,19 +100,6 @@ pub fn var<V: Into<TVar>>(id: V) -> MonomorphicType {
 }
 
 impl MonomorphicType {
-    #[must_use]
-    pub fn free_types(&self) -> HashSet<TVar> {
-        match self {
-            MonomorphicType::Primitive(_) | MonomorphicType::Constant(_) => HashSet::new(),
-            MonomorphicType::Var(x) => HashSet::from([x.clone()]),
-            MonomorphicType::Fn { input, output } => input.free_types().bitor(&output.free_types()),
-            MonomorphicType::Tuple(Tuple(vec)) => vec
-                .iter()
-                .fold(HashSet::new(), |acc, next| acc.bitor(&next.free_types())),
-            MonomorphicType::Pointer(t) => t.free_types(),
-        }
-    }
-
     fn rename(self, old: usize, new: usize) -> Self {
         match self {
             MonomorphicType::Var(TVar(id)) if id == old => TVar(new).into(),
@@ -125,36 +117,12 @@ impl MonomorphicType {
         }
     }
 
-    #[must_use]
-    pub fn substitute(&self, from: &Substitutions) -> MonomorphicType {
-        match self {
-            MonomorphicType::Primitive(_) | MonomorphicType::Constant(_) => self.clone(),
-            MonomorphicType::Var(_) => from
-                .0
-                .iter()
-                .find(|it| it.substituted.eq(self))
-                .map(|it| it.replacement.clone())
-                .unwrap_or(self.clone()),
-            MonomorphicType::Fn { input, output } => MonomorphicType::Fn {
-                input: Box::new(input.substitute(from)),
-                output: Box::new(output.substitute(from)),
-            },
-            MonomorphicType::Tuple(Tuple(vec)) => {
-                MonomorphicType::Tuple(Tuple(vec.iter().map(|it| it.substitute(from)).collect()))
-            }
-            MonomorphicType::Pointer(t) => MonomorphicType::Pointer(Box::new(t.substitute(from))),
-        }
-    }
-
     fn extract_vars(&self) -> Vec<usize> {
         match self {
             MonomorphicType::Primitive(_) | MonomorphicType::Constant(_) => vec![],
             MonomorphicType::Var(TVar(x)) => vec![*x],
             MonomorphicType::Fn { input, output } => {
-                let mut vec = vec![];
-                vec.append(&mut input.extract_vars());
-                vec.append(&mut output.extract_vars());
-                vec
+                concat([input.extract_vars(), output.extract_vars()])
             }
             MonomorphicType::Tuple(Tuple(vec)) => {
                 vec.iter().flat_map(MonomorphicType::extract_vars).collect()
@@ -163,19 +131,17 @@ impl MonomorphicType {
         }
     }
 
-    #[must_use]
-    pub fn minimize(self) -> MonomorphicType {
-        let mut vars = self.extract_vars();
-        vars.sort_unstable();
-        vars.dedup();
+    pub fn generalize(&self, free: &HashSet<TVar>) -> PolymorphicType {
+        let diff: Vec<_> = self.free_types().difference(free).copied().collect();
+        diff.into_iter()
+            .rfold(self.clone().into(), |acc, next| Binding {
+                bind: next,
+                binding_type: Box::new(acc),
+            })
+    }
 
-        if let Some(0) = vars.first() {
-            return self;
-        }
-
-        vars.into_iter()
-            .zip(0..)
-            .fold(self, |acc, (old, new)| acc.rename(old, new))
+    pub fn normalize(self) -> PolymorphicType {
+        self.generalize(&HashSet::new()).normalize()
     }
 }
 
@@ -185,8 +151,8 @@ impl PolymorphicType {
         let mut current = self;
         loop {
             match current {
-                PolymorphicType::Monomorphic(ty) => return (result, ty.clone()),
-                PolymorphicType::Binding { bind, binding_type } => {
+                Monomorphic(ty) => return (result, ty.clone()),
+                Binding { bind, binding_type } => {
                     result.push(bind.clone());
                     current = binding_type.as_ref();
                 }
@@ -194,44 +160,39 @@ impl PolymorphicType {
         }
     }
 
-    #[must_use]
-    pub fn free_types(&self) -> HashSet<TVar> {
+    pub fn normalize(self) -> Self {
         match self {
-            PolymorphicType::Monomorphic(t) => t.free_types(),
-            PolymorphicType::Binding { bind, binding_type } => binding_type
-                .free_types()
-                .sub(&HashSet::from([bind.clone()])),
-        }
-    }
-
-    #[must_use]
-    pub fn substitute(&self, from: &Substitutions) -> PolymorphicType {
-        match self {
-            PolymorphicType::Monomorphic(t) => PolymorphicType::Monomorphic(t.substitute(from)),
-            PolymorphicType::Binding { bind, binding_type } => PolymorphicType::Binding {
-                bind: bind.clone(),
-                binding_type: Box::new(
-                    binding_type.substitute(&Substitutions(
-                        from.0
-                            .iter()
-                            .filter(|it| it.replacement != MonomorphicType::Var(bind.clone()))
-                            .cloned()
-                            .collect(),
-                    )),
-                ),
-            },
+            Monomorphic(_) => self,
+            Binding { .. } => {
+                let (_, body) = self.collect();
+                let mut free = body.extract_vars();
+                free.sort_unstable();
+                free.dedup();
+                let len = free.len();
+                let body = free
+                    .iter()
+                    .zip(0usize..)
+                    .fold(body, |acc, (&old, new)| acc.rename(old, new));
+                free.into_iter()
+                    .zip(0usize..len)
+                    .map(|it| TVar(it.1))
+                    .rfold(body.into(), |acc, next| Binding {
+                        bind: next,
+                        binding_type: Box::new(acc),
+                    })
+            }
         }
     }
 
     pub fn instantiate(&self, env: &mut Environment) -> MonomorphicType {
         match self {
-            PolymorphicType::Monomorphic(t) => t.clone(),
-            PolymorphicType::Binding { bind, binding_type } => match binding_type.as_ref() {
-                PolymorphicType::Monomorphic(t) => t.substitute(&Substitutions::single(
+            Monomorphic(t) => t.clone(),
+            Binding { bind, binding_type } => match binding_type.as_ref() {
+                Monomorphic(t) => t.substitute(&Substitutions::single(
+                    env.new_var(),
                     MonomorphicType::Var(bind.clone()),
-                    MonomorphicType::Var(env.new_var()),
                 )),
-                PolymorphicType::Binding { .. } => binding_type.instantiate(env),
+                Binding { .. } => binding_type.instantiate(env),
             },
         }
     }
@@ -314,7 +275,7 @@ impl Tuple {
 
 impl Display for TVar {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "'{}", expand_to_string(self.0, LOWER_ALPHABET))
+        write!(f, "{}", expand_to_string(self.0, LOWER_ALPHABET))
     }
 }
 
@@ -337,19 +298,17 @@ impl Display for MonomorphicType {
 impl Display for PolymorphicType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            PolymorphicType::Monomorphic(t) => write!(f, "{t}"),
-            PolymorphicType::Binding { .. } => {
+            Monomorphic(t) => write!(f, "{t}"),
+            Binding { .. } => {
                 let (bindings, t) = self.collect();
-                let pretty_bindings = || bindings.into_iter().rev().map(|it| it.0).zip(0usize..);
-                let renamed =
-                    pretty_bindings.clone()().fold(t, |acc, (old, new)| acc.rename(old, new));
                 write!(
                     f,
                     "∀{} => {}",
-                    pretty_bindings()
-                        .map(|it| format!("'{}", expand_to_string(it.1, LOWER_ALPHABET)))
+                    bindings
+                        .into_iter()
+                        .map(|it| format!("{}", expand_to_string(it.0, LOWER_ALPHABET)))
                         .join(", "),
-                    renamed
+                    t
                 )
             }
         }

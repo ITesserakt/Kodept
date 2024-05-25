@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::collections::VecDeque;
-use std::rc::Rc;
 
 use Identifier::TypeReference;
 use kodept_ast::{
@@ -15,7 +14,7 @@ use kodept_inference::assumption::Assumptions;
 use kodept_inference::Environment;
 use kodept_inference::language::{app, lambda, Language, r#if, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::r#type::MonomorphicType;
+use kodept_inference::r#type::{PolymorphicType};
 
 use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
@@ -31,10 +30,10 @@ impl TypeDerivableNode {
         assumptions: &mut Assumptions,
         environment: &mut Environment,
         evidence: Witness,
-    ) -> Result<(Rc<Language>, MonomorphicType), InferError> {
+    ) -> Result<(Language, PolymorphicType), InferError> {
         let helper = ConversionHelper { scopes, ast, token, evidence };
-        let model = Rc::new(helper.convert(self)?);
-        let derived_type = Language::infer_with_env(model.clone(), assumptions, environment)?;
+        let model = helper.convert(self)?;
+        let derived_type = model.infer_with_env(assumptions, environment)?;
         Ok((model, derived_type))
     }
 }

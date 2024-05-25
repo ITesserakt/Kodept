@@ -6,6 +6,8 @@ pub mod assumption;
 pub mod language;
 pub mod substitution;
 pub mod r#type;
+pub mod constraint;
+pub mod traits;
 
 #[derive(Default)]
 pub struct Environment {
