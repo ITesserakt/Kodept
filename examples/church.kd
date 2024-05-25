@@ -18,9 +18,9 @@ fun zero(f, x) => x
 // ∀a, b, c ⇒ ((a → b) → c → a) → (a → b) → c → b
 fun succ(n, f, x) => f(n(f, x))
 // ∀a, b, c, d ⇒ (a → b → c) → (a → c → d) → a → b → d
-fun plus(m, n, f, x) => n(f, m(f, x))
+fun plus(m, n, f, x) => m(f, n(f, x))
 // ∀a, b, c ⇒ (a → b) → (c → a) → c → b
-fun mult(m, n, f) => m(n(f))
+fun mult(m, n, f, x) => m(n(f), x)
 // ∀a, b, c, d, e, f, g ⇒
 // (((a → b) → (b → c) → c) → (d → d) → (e → f ) → g) → a → f → g
 fun pred(n, f, x) => n(\g, h => h(g(f)), \u => x, \v => v)
