@@ -8,7 +8,7 @@ use crate::graph::NodeId;
 use crate::graph::{SyntaxTreeBuilder};
 use crate::traits::Linker;
 use crate::traits::PopulateTree;
-use crate::{node, node_sub_enum};
+use crate::{node, node_sub_enum, Operation};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -49,7 +49,7 @@ node! {
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct TupleLit {;
-        pub value: Vec<Lit>,
+        pub value: Vec<Operation>,
     }
 }
 

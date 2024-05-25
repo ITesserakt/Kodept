@@ -7,10 +7,11 @@ use kodept_core::structure::rlt;
 use crate::{function, match_token, ParseResult};
 use crate::lexer::{Literal::*, Token};
 use crate::parser::nom::{comma_separated0, paren_enclosed};
+use crate::parser::operator;
 use crate::token_stream::TokenStream;
 
 fn tuple_literal(input: TokenStream) -> ParseResult<rlt::Literal> {
-    paren_enclosed(comma_separated0(grammar))
+    paren_enclosed(comma_separated0(operator::grammar))
         .context(function!())
         .map(|it| rlt::Literal::Tuple(it.into()))
         .parse(input)
