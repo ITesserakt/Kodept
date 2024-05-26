@@ -1,12 +1,10 @@
 module Prelude {
-    fun compose(f, g) => \x => f(g(x))
-
-    enum struct Bool { True, False }
 }
 
 module Testing {
-    struct String
-    struct Person(name: String)
-
-    fun get_name(p: Person) => 1
+    fun test(m) {
+        val y = m
+        val x = y(1)
+        x
+    }
 }

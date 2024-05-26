@@ -3,7 +3,6 @@ use std::hash::Hash;
 
 use Constraint::{ExplicitInstance, ImplicitInstance};
 use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
-use PolymorphicType::{Binding, Monomorphic};
 
 use crate::constraint::Constraint::Eq;
 use crate::constraint::{Constraint, EqConstraint};
@@ -28,13 +27,10 @@ pub trait ActiveTVars {
 // -------------------------------------------------------------------------------------------------
 
 impl Substitutable for TVar {
-    type Output = Self;
+    type Output = HashSet<TVar>;
 
-    fn substitute(&self, subst: &Substitutions) -> TVar {
-        match subst.get(self) {
-            Some(Var(x)) => x.clone(),
-            _ => self.clone(),
-        }
+    fn substitute(&self, subst: &Substitutions) -> Self::Output {
+        subst.get(self).unwrap_or(&Var(*self)).free_types()
     }
 }
 
@@ -45,7 +41,10 @@ impl Substitutable for MonomorphicType {
         match self {
             Primitive(_) | Constant(_) => self.clone(),
             Var(x) => subst.get(x).unwrap_or(self).clone(),
-            Fn(input, output) => Fn(Box::new(input.substitute(subst)), Box::new(output.substitute(subst))),
+            Fn(input, output) => Fn(
+                Box::new(input.substitute(subst)),
+                Box::new(output.substitute(subst)),
+            ),
             Tuple(inner) => Tuple(crate::r#type::Tuple(inner.0.substitute(subst))),
             Pointer(inner) => Pointer(Box::new(inner.substitute(subst))),
         }
@@ -56,16 +55,11 @@ impl Substitutable for PolymorphicType {
     type Output = Self;
 
     fn substitute(&self, subst: &Substitutions) -> PolymorphicType {
-        match self {
-            Monomorphic(x) => x.substitute(subst).into(),
-            Binding { bind, binding_type } => Binding {
-                bind: bind.clone(),
-                binding_type: Box::new({
-                    let mut s_ = subst.clone();
-                    s_.remove(bind);
-                    binding_type.substitute(&s_)
-                }),
-            },
+        let mut s = subst.clone();
+        self.bindings.iter().for_each(|it| s.remove(it));
+        Self {
+            bindings: self.bindings.clone(),
+            binding_type: self.binding_type.substitute(&s),
         }
     }
 }
@@ -108,14 +102,17 @@ impl<T: Substitutable> Substitutable for Vec<T> {
     }
 }
 
-impl<T: Substitutable> Substitutable for HashSet<T>
-    where
-        T::Output: Hash + std::cmp::Eq,
+impl<T: Substitutable<Output = HashSet<T>>> Substitutable for HashSet<T>
+where
+    T: Hash + std::cmp::Eq,
 {
-    type Output = HashSet<T::Output>;
+    type Output = HashSet<T>;
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output {
-        self.iter().map(|it| it.substitute(subst)).collect()
+        self.iter()
+            .map(|it| it.substitute(subst))
+            .flatten()
+            .collect()
     }
 }
 
@@ -141,14 +138,11 @@ impl FreeTypeVars for &MonomorphicType {
 
 impl FreeTypeVars for &PolymorphicType {
     fn free_types(self) -> HashSet<TVar> {
-        match self {
-            Monomorphic(x) => x.free_types(),
-            Binding { bind, binding_type } => {
-                let mut set = binding_type.free_types();
-                set.remove(bind);
-                set
-            }
-        }
+        let mut free = self.binding_type.free_types();
+        self.bindings.iter().for_each(|it| {
+            free.remove(it);
+        });
+        free
     }
 }
 

@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+
 use nonempty_collections::nev;
 
 use Identifier::TypeReference;
@@ -10,15 +11,16 @@ use kodept_ast::{
 use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::{AsEnum, Identifiable};
 use kodept_inference::algorithm_w::AlgorithmWError;
-use kodept_inference::assumption::Assumptions;
-use kodept_inference::Environment;
-use kodept_inference::language::{app, lambda, Language, r#if, r#let, var};
+use kodept_inference::assumption::Environment;
+use kodept_inference::InferState;
+use kodept_inference::language::{app, bounded, BVar, lambda, Language, r#if, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::r#type::PolymorphicType;
+use kodept_inference::r#type::{PolymorphicType, unit_type};
 
-use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
+use crate::node_family::{convert, TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
+use crate::type_checker::InferError::Unknown;
 use crate::Witness;
 
 impl TypeDerivableNode {
@@ -27,8 +29,8 @@ impl TypeDerivableNode {
         ast: &'a SyntaxTree,
         token: &'a PermTkn,
         scopes: &'a ScopeTree,
-        assumptions: &mut Assumptions,
-        environment: &mut Environment,
+        assumptions: &mut Environment,
+        environment: &mut InferState,
         evidence: Witness,
     ) -> Result<(Language, PolymorphicType), InferError> {
         let helper = ConversionHelper {
@@ -97,7 +99,7 @@ trait ToModelFrom<N> {
     fn convert(self, node: &N) -> Result<Language, InferError>;
 }
 
-trait ExtractName {
+pub(crate) trait ExtractName {
     fn extract_name(&self, tree: &SyntaxTree, token: &PermTkn) -> Cow<str>;
 }
 
@@ -129,19 +131,31 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
             .parameters(self.ast, self.token)
             .into_iter()
             .map(|it| {
-                let name = match it.as_enum() {
-                    ParamEnum::Ty(x) => &x.name,
-                    ParamEnum::NonTy(x) => &x.name,
+                let (name, ty) = match it.as_enum() {
+                    ParamEnum::Ty(x) => (&x.name, Some(x.parameter_type(self.ast, self.token))),
+                    ParamEnum::NonTy(x) => (&x.name, None),
                 };
-                scope
+                let assigned_ty = match ty {
+                    None => None,
+                    Some(ty) => Some(
+                        convert(ty, scope.clone(), self.ast, self.token).map_err(|_| Unknown)?,
+                    ),
+                };
+                let var = scope
                     .var(name)
-                    .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))
+                    .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))?;
+                Ok(match assigned_ty {
+                    None => var.into(),
+                    Some(ty) => bounded(var, ty),
+                })
             })
             .peekable();
         if bindings.peek().is_some() {
-            bindings.try_rfold(expr, |acc, next| Ok(lambda(next?, acc).into()))
+            bindings.try_rfold(expr, |acc, next: Result<BVar, InferError>| {
+                Ok(lambda(next?, acc).into())
+            })
         } else {
-            Ok(lambda(var("()"), expr).into())
+            Ok(lambda(bounded("()", unit_type()), expr).into())
         }
     }
 }
@@ -186,6 +200,12 @@ impl ToModelFrom<Exprs> for ConversionHelper<'_> {
 
         let needle = self.convert(last_item)?;
         items.into_iter().try_rfold(needle, |needle, item| {
+            if let BlockLevelEnum::InitVar(v) = item.as_enum() {
+                if let Language::Let(l) = self.convert(v)? {
+                    return Ok(r#let(l.bind, *l.binder, needle).into());
+                }
+            }
+            
             let name = item.extract_name(self.ast, self.token);
             let item = self.convert(item)?;
 
@@ -202,7 +222,15 @@ impl ToModelFrom<InitVar> for ConversionHelper<'_> {
         let bind = scope
             .var(&variable.name)
             .ok_or(AlgorithmWError::UnknownVar(nev![var(&variable.name)]))?;
-        Ok(r#let(bind.clone(), expr, bind).into())
+        let assigned_ty = variable
+            .assigned_type(self.ast, self.token)
+            .map(|it| convert(it, scope, self.ast, self.token))
+            .map_or(Ok(None), |it| it.map(Some))
+            .map_err(|_| Unknown)?;
+        let var = assigned_ty
+            .map(|it| bounded(bind.clone(), it))
+            .unwrap_or(bind.clone().into());
+        Ok(r#let(var, expr, bind).into())
     }
 }
 
@@ -270,7 +298,7 @@ impl ToModelFrom<Ref> for ConversionHelper<'_> {
     fn convert(self, node: &Ref) -> Result<Language, InferError> {
         let scope = self.scopes.lookup(node, self.ast, self.token)?;
         match &node.ident {
-            TypeReference { .. } => Err(InferError::Unknown),
+            TypeReference { .. } => Err(Unknown),
             Identifier::Reference { name } => Ok(scope
                 .var(name)
                 .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))?
@@ -297,9 +325,15 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
 impl ExtractName for BlockLevel {
     fn extract_name(&self, tree: &SyntaxTree, token: &PermTkn) -> Cow<str> {
         match self.as_enum() {
-            BlockLevelEnum::Fn(x) => x.name.as_str().into(),
+            BlockLevelEnum::Fn(x) => x.extract_name(tree, token),
             BlockLevelEnum::InitVar(x) => x.variable(tree, token).name.clone().into(),
             _ => self.get_id().to_string().into(),
         }
+    }
+}
+
+impl ExtractName for BodyFnDecl {
+    fn extract_name(&self, _: &SyntaxTree, _: &PermTkn) -> Cow<str> {
+        self.name.as_str().into()
     }
 }

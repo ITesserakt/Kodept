@@ -10,11 +10,11 @@ pub mod constraint;
 pub mod traits;
 
 #[derive(Default)]
-pub struct Environment {
+pub struct InferState {
     variable_index: usize,
 }
 
-impl Environment {
+impl InferState {
     pub fn new_var(&mut self) -> TVar {
         let result = TVar(self.variable_index);
         self.variable_index += 1;

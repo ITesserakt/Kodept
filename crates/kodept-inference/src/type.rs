@@ -1,5 +1,5 @@
-use std::collections::{HashSet};
-use std::fmt::{Display, Formatter};
+use std::collections::HashSet;
+use std::fmt::{Debug, Display, Formatter};
 use std::iter::once;
 use std::ops::BitAnd;
 
@@ -7,12 +7,9 @@ use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 
-use PolymorphicType::Monomorphic;
-
-use crate::r#type::PolymorphicType::Binding;
 use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
-use crate::{Environment, LOWER_ALPHABET};
+use crate::{InferState, LOWER_ALPHABET};
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {
@@ -33,21 +30,21 @@ fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     result
 }
 
-#[derive(Debug, Clone, PartialEq, DeriveDisplay, Eq, Hash)]
+#[derive(Clone, PartialEq, DeriveDisplay, Eq, Hash)]
 pub enum PrimitiveType {
     Integral,
     Floating,
     Boolean,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Hash, Eq, From)]
+#[derive(Copy, Clone, PartialEq, Hash, Eq, From)]
 pub struct TVar(pub(crate) usize);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Constructor)]
+#[derive(Clone, PartialEq, Eq, Hash, Constructor)]
 
 pub struct Tuple(pub(crate) Vec<MonomorphicType>);
 
-#[derive(Debug, Clone, PartialEq, From, Eq, Hash)]
+#[derive(Clone, PartialEq, From, Eq, Hash)]
 pub enum MonomorphicType {
     Primitive(PrimitiveType),
     Var(TVar),
@@ -58,15 +55,10 @@ pub enum MonomorphicType {
     Constant(String),
 }
 
-#[derive(Debug, Clone, PartialEq, From)]
-#[from(forward)]
-pub enum PolymorphicType {
-    Monomorphic(MonomorphicType),
-    #[from(ignore)]
-    Binding {
-        bind: TVar,
-        binding_type: Box<PolymorphicType>,
-    },
+#[derive(Clone, PartialEq)]
+pub struct PolymorphicType {
+    pub(crate) bindings: Vec<TVar>,
+    pub(crate) binding_type: MonomorphicType,
 }
 
 pub fn fun1<M: Into<MonomorphicType>, N: Into<MonomorphicType>>(
@@ -92,6 +84,10 @@ pub fn var<V: Into<TVar>>(id: V) -> MonomorphicType {
     MonomorphicType::Var(id.into())
 }
 
+pub fn unit_type() -> MonomorphicType {
+    MonomorphicType::Tuple(Tuple(vec![]))
+}
+
 impl MonomorphicType {
     fn rename(self, old: usize, new: usize) -> Self {
         match self {
@@ -99,7 +95,10 @@ impl MonomorphicType {
             MonomorphicType::Primitive(_)
             | MonomorphicType::Var(_)
             | MonomorphicType::Constant(_) => self,
-            MonomorphicType::Fn(input, output) => MonomorphicType::Fn(Box::new(input.rename(old, new)), Box::new(output.rename(old, new))),
+            MonomorphicType::Fn(input, output) => MonomorphicType::Fn(
+                Box::new(input.rename(old, new)),
+                Box::new(output.rename(old, new)),
+            ),
             MonomorphicType::Tuple(Tuple(vec)) => MonomorphicType::Tuple(Tuple(
                 vec.into_iter().map(|it| it.rename(old, new)).collect(),
             )),
@@ -123,11 +122,10 @@ impl MonomorphicType {
 
     pub fn generalize(&self, free: &HashSet<TVar>) -> PolymorphicType {
         let diff: Vec<_> = self.free_types().difference(free).copied().collect();
-        diff.into_iter()
-            .rfold(self.clone().into(), |acc, next| Binding {
-                bind: next,
-                binding_type: Box::new(acc),
-            })
+        PolymorphicType {
+            bindings: diff,
+            binding_type: self.clone(),
+        }
     }
 
     pub fn normalize(self) -> PolymorphicType {
@@ -136,54 +134,38 @@ impl MonomorphicType {
 }
 
 impl PolymorphicType {
-    fn collect(&self) -> (Vec<TVar>, MonomorphicType) {
-        let mut result = vec![];
-        let mut current = self;
-        loop {
-            match current {
-                Monomorphic(ty) => return (result, ty.clone()),
-                Binding { bind, binding_type } => {
-                    result.push(bind.clone());
-                    current = binding_type.as_ref();
-                }
-            }
-        }
-    }
-
     pub fn normalize(self) -> Self {
-        match self {
-            Monomorphic(_) => self,
-            Binding { .. } => {
-                let (_, body) = self.collect();
-                let mut free = body.extract_vars();
-                free.sort_unstable();
-                free.dedup();
-                let len = free.len();
-                let body = free
-                    .iter()
-                    .zip(0usize..)
-                    .fold(body, |acc, (&old, new)| acc.rename(old, new));
-                free.into_iter()
-                    .zip(0usize..len)
-                    .map(|it| TVar(it.1))
-                    .rfold(body.into(), |acc, next| Binding {
-                        bind: next,
-                        binding_type: Box::new(acc),
-                    })
-            }
+        let mut free = self.binding_type.extract_vars();
+        free.sort_unstable();
+        free.dedup();
+        let len = free.len();
+        let binding_type = free
+            .iter()
+            .zip(0usize..)
+            .fold(self.binding_type, |acc, (&old, new)| acc.rename(old, new));
+        let bindings = free
+            .into_iter()
+            .zip(0usize..len)
+            .map(|it| TVar(it.1))
+            .collect();
+        Self {
+            bindings,
+            binding_type,
         }
     }
 
-    pub fn instantiate(&self, env: &mut Environment) -> MonomorphicType {
-        match self {
-            Monomorphic(t) => t.clone(),
-            Binding { bind, binding_type } => match binding_type.as_ref() {
-                Monomorphic(t) => t.substitute(&Substitutions::single(
-                    env.new_var(),
-                    MonomorphicType::Var(bind.clone()),
-                )),
-                Binding { .. } => binding_type.instantiate(env),
-            },
+    pub fn instantiate(&self, env: &mut InferState) -> MonomorphicType {
+        let fresh = self.bindings.iter().map(|it| (*it, env.new_var()));
+        let s0 = Substitutions::from_iter(fresh);
+        self.binding_type.substitute(&s0)
+    }
+}
+
+impl<S: Into<MonomorphicType>> From<S> for PolymorphicType {
+    fn from(value: S) -> Self {
+        Self {
+            bindings: vec![],
+            binding_type: value.into(),
         }
     }
 }
@@ -287,20 +269,35 @@ impl Display for MonomorphicType {
 
 impl Display for PolymorphicType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Monomorphic(t) => write!(f, "{t}"),
-            Binding { .. } => {
-                let (bindings, t) = self.collect();
-                write!(
-                    f,
-                    "∀{} => {}",
-                    bindings
-                        .into_iter()
-                        .map(|it| format!("{}", expand_to_string(it.0, LOWER_ALPHABET)))
-                        .join(", "),
-                    t
-                )
-            }
+        if self.bindings.is_empty() {
+            return write!(f, "{}", self.binding_type);
         }
+        write!(
+            f,
+            "∀{} => {}",
+            self.bindings
+                .iter()
+                .map(|it| format!("{}", expand_to_string(it.0, LOWER_ALPHABET)))
+                .join(", "),
+            self.binding_type
+        )
+    }
+}
+
+impl Debug for TVar {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for MonomorphicType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for PolymorphicType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
     }
 }

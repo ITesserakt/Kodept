@@ -11,10 +11,10 @@ use ConstraintsSolverError::AlgorithmU;
 use crate::algorithm_u::AlgorithmUError;
 use crate::constraint::Constraint::Eq;
 use crate::constraint::ConstraintsSolverError::Ambiguous;
-use crate::Environment;
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
 use crate::substitution::Substitutions;
 use crate::traits::{ActiveTVars, FreeTypeVars, Substitutable};
+use crate::InferState;
 
 #[derive(Debug, Error)]
 pub enum ConstraintsSolverError {
@@ -31,7 +31,7 @@ pub struct EqConstraint {
 }
 
 /// Types of constraints used in algorithm W
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Constraint {
     /// t1 should be unified with t2
     Eq(EqConstraint),
@@ -81,7 +81,7 @@ impl Constraint {
     fn pairs(vec: &[Constraint]) -> impl Iterator<Item = Pair> {
         vec.into_iter().enumerate().map(move |(index, next)| {
             let mut copy = Vec::from_iter(vec);
-            copy.swap_remove(index);
+            copy.remove(index);
             (next, copy)
         })
     }
@@ -100,32 +100,38 @@ impl Constraint {
 
     fn solve_pair(
         (c, cs): Pair,
-        env: &mut Environment,
+        env: &mut InferState,
     ) -> Result<Substitutions, ConstraintsSolverError> {
-        match c {
+        let result = match c {
             Eq(EqConstraint { t1, t2 }) => {
                 let s1 = t1.unify(t2)?;
+                println!("[{}] | {c} => {s1}", cs.iter().join(", "));
                 let s2 = Self::solve(&cs.substitute(&s1), env)?;
                 Ok(s2 + s1)
             }
             ExplicitInstance { t, s } => {
                 let t2 = s.instantiate(env);
                 let mut cs: Vec<_> = cs.into_iter().cloned().collect();
-                cs.push(Eq(EqConstraint { t1: t.clone(), t2 }));
+                let c1 = Eq(EqConstraint { t1: t.clone(), t2 });
+                println!("[{}] | {c} => {c1}", cs.iter().join(", "));
+                cs.push(c1);
                 Self::solve(&cs, env)
             }
             ImplicitInstance { t1, ctx, t2 } => {
                 let s = t2.generalize(ctx);
                 let mut cs: Vec<_> = cs.into_iter().cloned().collect();
-                cs.push(ExplicitInstance { t: t1.clone(), s });
+                let c1 = ExplicitInstance { t: t1.clone(), s };
+                println!("[{}] | {c} => {c1}", cs.iter().join(", "));
+                cs.push(c1);
                 Self::solve(&cs, env)
             }
-        }
+        }?;
+        Ok(result)
     }
 
     pub fn solve(
         iter: &[Constraint],
-        env: &mut Environment,
+        env: &mut InferState,
     ) -> Result<Substitutions, ConstraintsSolverError> {
         if iter.is_empty() {
             return Ok(Substitutions::empty());
@@ -147,6 +153,12 @@ impl Display for Constraint {
                 write!(f, "{t1} ≤{{{}}} {t2}", ctx.iter().join(", "))
             }
         }
+    }
+}
+
+impl Debug for Constraint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
