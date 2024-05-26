@@ -1,16 +1,12 @@
-use derive_more::{From};
+use derive_more::From;
 
+use kodept_ast::{AbstFnDecl, Appl, BodyFnDecl, Exprs, IfExpr, InitVar, Lambda, Lit, node_sub_enum, Ref, TyParam, Type, TypeEnum, VarDecl};
 use kodept_ast::graph::{PermTkn, SyntaxTree};
-use kodept_ast::Identifier::TypeReference;
-use kodept_ast::{AbstFnDecl, Appl, BodyFnDecl, Exprs, IfExpr, InitVar, Lambda, Lit, Ref, Type, TypeEnum, TyParam, VarDecl, node_sub_enum};
 use kodept_ast::traits::AsEnum;
-use kodept_inference::assumption::Assumptions;
-use kodept_inference::language::var;
-use kodept_inference::r#type::{MonomorphicType, PolymorphicType, Tuple};
-use kodept_macros::error::report::{ReportMessage, Severity};
+use kodept_inference::r#type::{MonomorphicType, Tuple};
 
 use crate::node_family::Errors::Undefined;
-use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
+use crate::scope::{ScopeError, ScopeSearch};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -44,107 +40,12 @@ pub enum Errors {
     Scope(ScopeError),
 }
 
-impl From<Errors> for ReportMessage {
-    fn from(value: Errors) -> Self {
-        match value {
-            Errors::TooComplex => {
-                Self::new(Severity::Bug, "TI006", "Still in development".to_string())
-            }
-            Undefined(reference) => Self::new(
-                Severity::Error,
-                "TI007",
-                format!("Undefined reference: {reference}"),
-            ),
-            Errors::Scope(e) => e.into(),
-        }
-    }
-}
-
-impl TypeRestrictedNode {
-    pub fn type_of(
-        &self,
-        ast: &SyntaxTree,
-        token: &PermTkn,
-        scopes: &ScopeTree,
-    ) -> Result<Assumptions, Errors> {
-        <Self as HasRestrictedType>::type_of(self, ast, token, scopes)
-    }
-}
-
-trait HasRestrictedType {
-    fn type_of(
-        &self,
-        ast: &SyntaxTree,
-        token: &PermTkn,
-        scopes: &ScopeTree,
-    ) -> Result<Assumptions, Errors>;
-}
-
-impl HasRestrictedType for TypeRestrictedNode {
-    fn type_of(
-        &self,
-        ast: &SyntaxTree,
-        token: &PermTkn,
-        scopes: &ScopeTree,
-    ) -> Result<Assumptions, Errors> {
-        let mut a0 = Assumptions::empty();
-        let scope = scopes.lookup(self, ast, token)?;
-
-        match self.as_enum() {
-            TypeRestrictedNodeEnum::TypedParameter(x) => return x.type_of(ast, token, scopes),
-            TypeRestrictedNodeEnum::Function(node) => {
-                let assumptions: Result<Vec<_>, _> = node
-                    .parameters(ast, token)
-                    .into_iter()
-                    .map(|it| it.type_of(ast, token, scopes))
-                    .collect();
-                a0 = assumptions?
-                    .into_iter()
-                    .fold(a0, |acc, next| acc.merge(next));
-                // TODO: add full lambda type
-            }
-            TypeRestrictedNodeEnum::Variable(node) => {
-                if let Some(ty) = node.assigned_type(ast, token) {
-                    let model = var(&node.name).into();
-                    a0.push(model, convert(ty, scope, ast, token)?);
-                }
-            }
-            TypeRestrictedNodeEnum::Reference(Ref {
-                ident: TypeReference { name },
-                ..
-            }) => {
-                let ty = scope.ty(name).ok_or(Undefined(name.clone()))?;
-                a0.push(var(name).into(), ty);
-            }
-            _ => {}
-        };
-
-        Ok(a0)
-    }
-}
-
-impl HasRestrictedType for TyParam {
-    fn type_of(
-        &self,
-        ast: &SyntaxTree,
-        token: &PermTkn,
-        scopes: &ScopeTree,
-    ) -> Result<Assumptions, Errors> {
-        let mut a0 = Assumptions::empty();
-        let scope = scopes.lookup(self, ast, token)?;
-        let ty = self.parameter_type(ast, token);
-        let model = var(&self.name).into();
-        a0.push(model, convert(ty, scope, ast, token)?);
-        Ok(a0)
-    }
-}
-
-fn convert(
+pub(crate) fn convert(
     ty: &Type,
     scope: ScopeSearch,
     ast: &SyntaxTree,
     token: &PermTkn,
-) -> Result<PolymorphicType, Errors> {
+) -> Result<MonomorphicType, Errors> {
     return match ty.as_enum() {
         TypeEnum::TyName(constant) => scope
             .ty(&constant.name)
@@ -154,9 +55,8 @@ fn convert(
                 .types(ast, token)
                 .into_iter()
                 .map(|it| match convert(it, scope.clone(), ast, token) {
-                    Ok(PolymorphicType::Monomorphic(x)) => Ok(x),
+                    Ok(x) => Ok(x),
                     Err(e) => Err(e),
-                    _ => Err(Errors::TooComplex),
                 })
                 .collect();
             let types = types?;

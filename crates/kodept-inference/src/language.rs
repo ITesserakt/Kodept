@@ -1,41 +1,48 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 use derive_more::{Display, From};
 use itertools::Itertools;
+use crate::r#type::MonomorphicType;
 
-#[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
+pub struct  BVar {
+    pub var: Var,
+    pub ty: Option<MonomorphicType>
+}
+
+#[derive(Display, Clone, PartialEq, Eq, Hash)]
 #[display(fmt = "{name}")]
 pub struct Var {
     pub name: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct App {
     pub arg: Box<Language>,
     pub func: Box<Language>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Lambda {
-    pub bind: Var,
+    pub bind: BVar,
     pub expr: Box<Language>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Let {
     pub binder: Box<Language>,
-    pub bind: Var,
+    pub bind: BVar,
     pub usage: Box<Language>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum Literal {
     Integral(String),
     Floating(String),
     Tuple(Vec<Language>),
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum Special {
     If {
         condition: Box<Language>,
@@ -67,7 +74,7 @@ pub fn app<N: Into<Language>, M: Into<Language>>(arg: N, func: M) -> App {
 
 pub fn lambda<B, E>(bind: B, expr: E) -> Lambda
 where
-    Var: From<B>,
+    BVar: From<B>,
     E: Into<Language>,
 {
     Lambda {
@@ -80,7 +87,7 @@ pub fn r#let<V, B, U>(bind: V, binder: B, usage: U) -> Let
 where
     B: Into<Language>,
     U: Into<Language>,
-    Var: From<V>,
+    BVar: From<V>,
 {
     Let {
         binder: Box::new(binder.into()),
@@ -98,6 +105,22 @@ pub fn r#if(
         condition: Box::new(condition.into()),
         body: Box::new(body.into()),
         otherwise: Box::new(otherwise.into()),
+    }
+}
+
+pub fn bounded(v: impl Into<Var>, t: impl Into<MonomorphicType>) -> BVar {
+    BVar {
+        var: v.into(),
+        ty: Some(t.into()),
+    }
+}
+
+impl<S: Into<Var>> From<S> for BVar {
+    fn from(value: S) -> Self {
+        Self {
+            var: value.into(),
+            ty: None,
+        }
     }
 }
 
@@ -150,6 +173,57 @@ impl Display for Special {
     }
 }
 
+impl Display for BVar {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.ty {
+            None => write!(f, "{}", self.var),
+            Some(ty) => write!(f, "{} :: {}", self.var, ty)
+        }
+    }
+}
+
+impl Debug for App {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for Lambda {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for Let {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for Literal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for Special {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for BVar {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
+impl Debug for Var {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
+}
+
 impl<S: Into<String>> From<S> for Var {
     fn from(value: S) -> Self {
         Self { name: value.into() }
@@ -159,7 +233,7 @@ impl<S: Into<String>> From<S> for Var {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use crate::assumption::Assumptions;
+    use crate::assumption::Environment;
     use crate::language::{app, lambda, Language, Literal, r#let, var};
     use crate::r#type::{fun1, Tuple, var as t_var};
 
@@ -180,7 +254,7 @@ mod tests {
         )
         .into();
 
-        let t = expr.infer(&Assumptions::empty()).unwrap();
+        let t = expr.infer(&Environment::empty()).unwrap();
 
         println!("{}\n{}", expr, t);
         assert_eq!(
@@ -222,9 +296,9 @@ mod tests {
         )
         .into();
 
-        let zt = zero.infer(&Assumptions::empty()).unwrap();
-        let ot = one.infer(&Assumptions::empty()).unwrap();
-        let pt = plus.infer(&Assumptions::empty()).unwrap();
+        let zt = zero.infer(&Environment::empty()).unwrap();
+        let ot = one.infer(&Environment::empty()).unwrap();
+        let pt = plus.infer(&Environment::empty()).unwrap();
 
         println!("{}\n{}\n\n{}\n{}\n\n{}\n{}", zero, zt, one, ot, plus, pt);
     }

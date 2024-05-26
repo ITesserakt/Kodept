@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 
 use itertools::Itertools;
 
 use crate::r#type::{MonomorphicType, TVar};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 #[repr(transparent)]
 pub struct Substitutions(HashMap<TVar, MonomorphicType>);
 
@@ -48,6 +48,10 @@ impl Substitutions {
     #[cfg(test)]
     pub(crate) fn into_inner(self) -> HashMap<TVar, MonomorphicType> {
         self.0
+    }
+    
+    pub fn from_iter<M: Into<MonomorphicType>>(iter: impl Iterator<Item = (TVar, M)>) -> Self {
+        Self(HashMap::from_iter(iter.map(|(a, b)| (a, b.into()))))
     }
 }
 
@@ -93,5 +97,11 @@ impl Display for Substitutions {
                 .map(|it| format!("{} := {}", it.0, it.1))
                 .join(", ")
         )
+    }
+}
+
+impl Debug for Substitutions {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
     }
 }

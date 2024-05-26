@@ -66,8 +66,8 @@ impl AlgorithmU {
             (Var(var), b) => Self::bind(var, b),
             (a, Var(var)) => Self::bind(var, a),
             (Fn(i1, o1), Fn(i2, o2)) => Self::unify_vec(
-                &[i1.as_ref().clone(), i2.as_ref().clone()],
-                &[o1.as_ref().clone(), o2.as_ref().clone()],
+                &[i1.as_ref().clone(), o1.as_ref().clone()],
+                &[i2.as_ref().clone(), o2.as_ref().clone()],
             ),
             (Tuple(t1), Tuple(t2)) => Self::unify_vec(&t1.0, &t2.0),
             (Pointer(t1), Pointer(t2)) => t1.unify(t2),

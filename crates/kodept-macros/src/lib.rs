@@ -1,4 +1,4 @@
-use tracing::warn;
+use tracing::{instrument, warn};
 
 use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::utils::Execution;

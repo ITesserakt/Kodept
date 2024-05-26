@@ -18,7 +18,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::CodeHolder;
-use kodept_inference::assumption::Assumptions;
+use kodept_inference::assumption::Environment;
 use kodept_interpret::operator_desugaring::*;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
@@ -60,7 +60,7 @@ fn get_rlt(source: &ReadCodeSource) -> RLT {
     result
 }
 
-fn common_steps(ctx: &mut impl MutableContext) -> Result<Vec<Assumptions>, UnrecoverableError> {
+fn common_steps(ctx: &mut impl MutableContext) -> Result<Vec<Environment>, UnrecoverableError> {
     Pipeline
         .define_step(HCons {
             head: AccessExpander::new(),

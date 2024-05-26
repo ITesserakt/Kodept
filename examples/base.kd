@@ -12,8 +12,6 @@ fun const(a, b) => a
 // Composes two functions, f and g
 fun compose(f, g) => \x => f(g(x))
 
-fun succ(n, f, x) => f(n(f, x))
-
 fun s(f, g) => \x => f(x, g(x))
 
 fun fix(f) => {
@@ -21,8 +19,6 @@ fun fix(f) => {
     x
 }
 
-fun let_bound() {
-    val sub = id(id(id))
-    val inner = id(3)
-    sub(inner)
+fun let_bound {
+    (id(id(id)))(id(3))
 }

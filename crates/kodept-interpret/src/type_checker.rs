@@ -10,12 +10,13 @@ use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_core::ConvertibleToRef;
 use kodept_core::structure::{Located, rlt};
 use kodept_inference::algorithm_w::AlgorithmWError;
-use kodept_inference::assumption::Assumptions;
-use kodept_inference::Environment;
+use kodept_inference::assumption::Environment;
+use kodept_inference::InferState;
 use kodept_inference::r#type::PolymorphicType;
 use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::Macro;
 use kodept_macros::traits::Context;
+use crate::convert_model::ExtractName;
 
 use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeTree};
@@ -50,8 +51,8 @@ impl From<CannotInfer> for ReportMessage {
 
 pub struct TypeChecker<'a> {
     pub(crate) symbols: &'a ScopeTree,
-    env: Environment,
-    constraints: Assumptions,
+    env: InferState,
+    constraints: Environment,
     evidence: Witness,
 }
 
@@ -72,7 +73,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    pub fn into_inner(self) -> Vec<Assumptions> {
+    pub fn into_inner(self) -> Vec<Environment> {
         vec![self.constraints]
     }
 }
@@ -119,7 +120,7 @@ impl Macro for TypeChecker<'_> {
                             ty: &ty,
                         },
                     );
-                    assumptions.push(model, ty);
+                    assumptions.push(node.extract_name(&*tree, node.token()), ty);
                 }
                 Err(e) => context.add_report(fn_location, CannotInfer(e)),
             }
