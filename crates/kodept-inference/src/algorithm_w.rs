@@ -6,16 +6,16 @@ use nonempty_collections::{IteratorExt, NEVec, NonEmptyIterator};
 use thiserror::Error;
 use tracing::debug;
 
+use crate::{InferState, language};
 use crate::algorithm_u::AlgorithmUError;
 use crate::algorithm_w::AlgorithmWError::UnknownVar;
-use crate::assumption::{Environment, AssumptionSet};
-use crate::constraint::{eq_cst, explicit_cst, implicit_cst, Constraint, ConstraintsSolverError};
+use crate::assumption::{AssumptionSet, Environment};
+use crate::constraint::{Constraint, ConstraintsSolverError, eq_cst, explicit_cst, implicit_cst};
 use crate::language::{Language, Literal, Special, Var};
+use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, Tuple, TVar};
 use crate::r#type::PrimitiveType::Boolean;
-use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
 use crate::substitution::Substitutions;
 use crate::traits::Substitutable;
-use crate::{language, InferState};
 
 #[derive(Debug, Error)]
 pub enum AlgorithmWError {
@@ -27,7 +27,7 @@ pub enum AlgorithmWError {
 }
 
 struct AlgorithmW<'e> {
-    context: HashSet<TVar>,
+    monomorphic_set: HashSet<TVar>,
     env: &'e mut InferState,
 }
 
@@ -59,7 +59,11 @@ impl<'e> AlgorithmW<'e> {
 
     fn apply_var(&mut self, var: &Var) -> AWResult {
         let fresh = self.env.new_var();
-        Ok((AssumptionSet::single(var.clone(), fresh), vec![], fresh.into()))
+        Ok((
+            AssumptionSet::single(var.clone(), fresh),
+            vec![],
+            fresh.into(),
+        ))
     }
 
     fn apply_app(&mut self, language::App { arg, func }: &language::App) -> AWResult {
@@ -76,7 +80,7 @@ impl<'e> AlgorithmW<'e> {
 
     fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> AWResult {
         let tv = self.env.new_var();
-        self.context.insert(tv);
+        self.monomorphic_set.insert(tv);
         let (as1, cs1, t1) = self.apply(expr)?;
 
         let mut as_ = as1.clone();
@@ -110,10 +114,14 @@ impl<'e> AlgorithmW<'e> {
         let im_cs = as2
             .get(&bind.var)
             .into_iter()
-            .map(|it| implicit_cst(it.clone(), self.context.clone(), t1.clone()))
+            .map(|it| implicit_cst(it.clone(), self.monomorphic_set.clone(), t1.clone()))
             .collect();
         let bound = bind.ty.as_ref().map_or(vec![], |it| {
-            vec![implicit_cst(it.clone(), self.context.clone(), t1.clone())]
+            vec![implicit_cst(
+                it.clone(),
+                self.monomorphic_set.clone(),
+                t1.clone(),
+            )]
         });
 
         Ok((as_, concat([cs1, cs2, im_cs, bound]), t2))
@@ -180,11 +188,7 @@ impl Language {
             })
             .collect();
         debug!("Inferred raw type and constraints: ");
-        debug!(
-            "[{}] ++ [{}], {t}",
-            c.iter().join(", "),
-            explicits.iter().join(", ")
-        );
+        debug!("{c:?} ++ {explicits:?}, {t}");
         let substitutions = Constraint::solve(&concat([c, explicits]), context.env)?;
         let t = t.substitute(&substitutions);
         debug!("Inferred type and substitutions: ");
@@ -198,7 +202,7 @@ impl Language {
         env: &mut InferState,
     ) -> Result<PolymorphicType, AlgorithmWError> {
         let mut ctx = AlgorithmW {
-            context: Default::default(),
+            monomorphic_set: Default::default(),
             env,
         };
         match self.infer_w(&mut ctx, context) {
