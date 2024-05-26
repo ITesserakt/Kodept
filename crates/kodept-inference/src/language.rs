@@ -1,8 +1,14 @@
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
 
 use derive_more::{Display, From};
 use itertools::Itertools;
+use crate::r#type::MonomorphicType;
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct  BVar {
+    pub var: Var,
+    pub ty: Option<MonomorphicType>
+}
 
 #[derive(Debug, Display, Clone, PartialEq, Eq, Hash)]
 #[display(fmt = "{name}")]
@@ -18,14 +24,14 @@ pub struct App {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Lambda {
-    pub bind: Rc<Language>, // only vars,
+    pub bind: BVar, // only vars,
     pub expr: Box<Language>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Let {
     pub binder: Box<Language>,
-    pub bind: Rc<Language>, // only vars,
+    pub bind: BVar, // only vars,
     pub usage: Box<Language>,
 }
 
@@ -68,11 +74,11 @@ pub fn app<N: Into<Language>, M: Into<Language>>(arg: N, func: M) -> App {
 
 pub fn lambda<B, E>(bind: B, expr: E) -> Lambda
 where
-    Var: From<B>,
+    BVar: From<B>,
     E: Into<Language>,
 {
     Lambda {
-        bind: Rc::new(Var::from(bind).into()),
+        bind: bind.into(),
         expr: Box::new(expr.into()),
     }
 }
@@ -81,11 +87,11 @@ pub fn r#let<V, B, U>(bind: V, binder: B, usage: U) -> Let
 where
     B: Into<Language>,
     U: Into<Language>,
-    Var: From<V>,
+    BVar: From<V>,
 {
     Let {
         binder: Box::new(binder.into()),
-        bind: Rc::new(Var::from(bind).into()),
+        bind: bind.into(),
         usage: Box::new(usage.into()),
     }
 }
@@ -114,6 +120,31 @@ impl Display for App {
                 _ => write!(f, "{} ({})", self.func, self.arg),
             },
             _ => write!(f, "{} ({})", self.func, self.arg),
+        }
+    }
+}
+
+pub fn bounded(v: impl Into<Var>, t: impl Into<MonomorphicType>) -> BVar {
+    BVar {
+        var: v.into(),
+        ty: Some(t.into()),
+    }
+}
+
+impl<S: Into<Var>> From<S> for BVar {
+    fn from(value: S) -> Self {
+        Self {
+            var: value.into(),
+            ty: None,
+        }
+    }
+}
+
+impl Display for BVar {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.ty {
+            None => write!(f, "{}", self.var),
+            Some(ty) => write!(f, "{} :: {}", self.var, ty)
         }
     }
 }

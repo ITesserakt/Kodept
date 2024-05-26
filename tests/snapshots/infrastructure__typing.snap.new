@@ -1,0 +1,148 @@
+---
+source: tests/infrastructure.rs
+assertion_line: 117
+expression: "common_steps(&mut context).expect(\"Success\")"
+---
+[
+    Assumptions {
+        value: {
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "f",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "g",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "x",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: App(
+                                        App {
+                                            arg: App(
+                                                App {
+                                                    arg: Var(
+                                                        Var {
+                                                            name: "x",
+                                                        },
+                                                    ),
+                                                    func: Var(
+                                                        Var {
+                                                            name: "g",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            func: Var(
+                                                Var {
+                                                    name: "f",
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    4,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        2,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            3,
+                        ),
+                        binding_type: Monomorphic(
+                            Fn {
+                                input: Fn {
+                                    input: Var(
+                                        TVar(
+                                            4,
+                                        ),
+                                    ),
+                                    output: Var(
+                                        TVar(
+                                            3,
+                                        ),
+                                    ),
+                                },
+                                output: Fn {
+                                    input: Fn {
+                                        input: Var(
+                                            TVar(
+                                                2,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                4,
+                                            ),
+                                        ),
+                                    },
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                2,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                3,
+                                            ),
+                                        ),
+                                    },
+                                },
+                            },
+                        ),
+                    },
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "p",
+                        },
+                        ty: Some(
+                            Constant(
+                                "Person",
+                            ),
+                        ),
+                    },
+                    expr: Literal(
+                        Floating(
+                            "1",
+                        ),
+                    ),
+                },
+            ): Monomorphic(
+                Fn {
+                    input: Constant(
+                        "Person",
+                    ),
+                    output: Primitive(
+                        Floating,
+                    ),
+                },
+            ),
+        },
+    },
+]
