@@ -9,7 +9,7 @@ use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
-use kodept_inference::r#type::PolymorphicType;
+use kodept_inference::r#type::{MonomorphicType, PolymorphicType};
 use kodept_macros::error::report::{ReportMessage, Severity};
 
 use crate::scope::ScopeError::{Duplicate, NoScope};
@@ -31,7 +31,7 @@ pub struct ScopeTree {
 pub struct Scope {
     start_from_id: GenericNodeId,
     name: Option<String>,
-    types: HashMap<String, PolymorphicType>,
+    types: HashMap<String, MonomorphicType>,
     variables: HashMap<String, Var>,
 }
 
@@ -143,7 +143,7 @@ impl Scope {
     pub fn insert_type(
         &mut self,
         name: impl Into<String> + Clone,
-        ty: PolymorphicType,
+        ty: MonomorphicType,
     ) -> Result<(), ScopeError> {
         if self.types.insert(name.clone().into(), ty).is_some() {
             return Err(Duplicate(name.into()));
@@ -170,7 +170,7 @@ impl Scope {
         self.variables.get(name.as_ref()).cloned()
     }
 
-    fn lookup_type(&self, name: impl AsRef<str>) -> Option<PolymorphicType> {
+    fn lookup_type(&self, name: impl AsRef<str>) -> Option<MonomorphicType> {
         self.types.get(name.as_ref()).cloned()
     }
 }
@@ -209,7 +209,7 @@ impl ScopeSearch<'_> {
         }
     }
 
-    pub fn ty(&self, name: impl AsRef<str> + Clone) -> Option<PolymorphicType> {
+    pub fn ty(&self, name: impl AsRef<str> + Clone) -> Option<MonomorphicType> {
         if self.exclusive {
             let scope = self.tree.get(&self.current_pos).expect("Tree corrupted");
             return scope.data().lookup_type(name);

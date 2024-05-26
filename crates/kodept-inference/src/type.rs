@@ -94,6 +94,10 @@ pub fn var<V: Into<TVar>>(id: V) -> MonomorphicType {
     MonomorphicType::Var(id.into())
 }
 
+pub fn unit_type() -> MonomorphicType {
+    MonomorphicType::Tuple(Tuple(vec![]))
+}
+
 impl MonomorphicType {
     #[must_use]
     pub fn free_types(&self) -> HashSet<TVar> {

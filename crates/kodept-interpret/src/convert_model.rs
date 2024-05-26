@@ -13,13 +13,14 @@ use kodept_ast::traits::{AsEnum, Identifiable};
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Assumptions;
 use kodept_inference::Environment;
-use kodept_inference::language::{app, lambda, Language, r#if, r#let, var};
+use kodept_inference::language::{app, bounded, BVar, lambda, Language, r#if, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::r#type::MonomorphicType;
+use kodept_inference::r#type::{MonomorphicType, unit_type};
 
-use crate::node_family::{TypeDerivableNode, TypeDerivableNodeEnum};
+use crate::node_family::{convert, TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
+use crate::type_checker::InferError::Unknown;
 use crate::Witness;
 
 impl TypeDerivableNode {
@@ -125,19 +126,31 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
             .parameters(self.ast, self.token)
             .into_iter()
             .map(|it| {
-                let name = match it.as_enum() {
-                    ParamEnum::Ty(x) => &x.name,
-                    ParamEnum::NonTy(x) => &x.name,
+                let (name, ty) = match it.as_enum() {
+                    ParamEnum::Ty(x) => (&x.name, Some(x.parameter_type(self.ast, self.token))),
+                    ParamEnum::NonTy(x) => (&x.name, None),
                 };
-                scope
+                let assigned_ty = match ty {
+                    None => None,
+                    Some(ty) => Some(
+                        convert(ty, scope.clone(), self.ast, self.token).map_err(|_| Unknown)?,
+                    ),
+                };
+                let var = scope
                     .var(name)
-                    .ok_or(AlgorithmWError::UnknownVar(var(name)))
+                    .ok_or(AlgorithmWError::UnknownVar(var(name)))?;
+                Ok(match assigned_ty {
+                    None => var.into(),
+                    Some(ty) => bounded(var, ty),
+                })
             })
             .peekable();
         if bindings.peek().is_some() {
-            bindings.try_rfold(expr, |acc, next| Ok(lambda(next?, acc).into()))
+            bindings.try_rfold(expr, |acc, next: Result<BVar, InferError>| {
+                Ok(lambda(next?, acc).into())
+            })
         } else {
-            Ok(lambda(var("()"), expr).into())
+            Ok(lambda(bounded("()", unit_type()), expr).into())
         }
     }
 }
@@ -175,20 +188,24 @@ impl ToModelFrom<Appl> for ConversionHelper<'_> {
 impl ToModelFrom<Exprs> for ConversionHelper<'_> {
     fn convert(self, node: &Exprs) -> Result<Language, InferError> {
         let on_empty = unit();
-        let mut items = VecDeque::from(node.items(self.ast, self.token));
-        let Some(last_item) = items.pop_front() else {
+        let mut items = node.items(self.ast, self.token);
+        let Some(last_item) = items.pop() else {
             return Ok(on_empty);
         };
-        let mut needle = self.convert(last_item)?;
 
-        for item in items {
+        let needle = self.convert(last_item)?;
+        items.into_iter().try_rfold(needle, |needle, item| {
+            if let BlockLevelEnum::InitVar(v) = item.as_enum() {
+                if let Language::Let(l) = self.convert(v)? {
+                    return Ok(r#let(l.bind, *l.binder, needle).into());
+                }
+            }
+            
             let name = item.extract_name(self.ast, self.token);
             let item = self.convert(item)?;
 
-            needle = r#let(var(name), item, needle).into();
-        }
-
-        Ok(needle)
+            Ok(r#let(var(name), item, needle).into())
+        })
     }
 }
 
@@ -200,7 +217,15 @@ impl ToModelFrom<InitVar> for ConversionHelper<'_> {
         let bind = scope
             .var(&variable.name)
             .ok_or(AlgorithmWError::UnknownVar(var(&variable.name)))?;
-        Ok(r#let(bind.clone(), expr, bind).into())
+        let assigned_ty = variable
+            .assigned_type(self.ast, self.token)
+            .map(|it| convert(it, scope, self.ast, self.token))
+            .map_or(Ok(None), |it| it.map(Some))
+            .map_err(|_| Unknown)?;
+        let var = assigned_ty
+            .map(|it| bounded(bind.clone(), it))
+            .unwrap_or(bind.clone().into());
+        Ok(r#let(var, expr, bind).into())
     }
 }
 

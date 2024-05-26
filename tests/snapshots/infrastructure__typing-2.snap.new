@@ -1,0 +1,1076 @@
+---
+source: tests/infrastructure.rs
+assertion_line: 117
+expression: "common_steps(&mut context).expect(\"Success\")"
+---
+[
+    Assumptions {
+        value: {
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "f",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "g",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "x",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: App(
+                                        App {
+                                            arg: App(
+                                                App {
+                                                    arg: Var(
+                                                        Var {
+                                                            name: "x",
+                                                        },
+                                                    ),
+                                                    func: Var(
+                                                        Var {
+                                                            name: "g",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            func: Var(
+                                                Var {
+                                                    name: "f",
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    4,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        6,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            5,
+                        ),
+                        binding_type: Monomorphic(
+                            Fn {
+                                input: Fn {
+                                    input: Var(
+                                        TVar(
+                                            6,
+                                        ),
+                                    ),
+                                    output: Var(
+                                        TVar(
+                                            5,
+                                        ),
+                                    ),
+                                },
+                                output: Fn {
+                                    input: Fn {
+                                        input: Var(
+                                            TVar(
+                                                4,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                6,
+                                            ),
+                                        ),
+                                    },
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                4,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                5,
+                                            ),
+                                        ),
+                                    },
+                                },
+                            },
+                        ),
+                    },
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "n",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "f",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "x",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: App(
+                                        App {
+                                            arg: App(
+                                                App {
+                                                    arg: Var(
+                                                        Var {
+                                                            name: "x",
+                                                        },
+                                                    ),
+                                                    func: App(
+                                                        App {
+                                                            arg: Var(
+                                                                Var {
+                                                                    name: "f",
+                                                                },
+                                                            ),
+                                                            func: Var(
+                                                                Var {
+                                                                    name: "n",
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            func: Var(
+                                                Var {
+                                                    name: "f",
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    22,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        23,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            21,
+                        ),
+                        binding_type: Monomorphic(
+                            Fn {
+                                input: Fn {
+                                    input: Fn {
+                                        input: Var(
+                                            TVar(
+                                                23,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                22,
+                                            ),
+                                        ),
+                                    },
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                21,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                23,
+                                            ),
+                                        ),
+                                    },
+                                },
+                                output: Fn {
+                                    input: Fn {
+                                        input: Var(
+                                            TVar(
+                                                23,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                22,
+                                            ),
+                                        ),
+                                    },
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                21,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                22,
+                                            ),
+                                        ),
+                                    },
+                                },
+                            },
+                        ),
+                    },
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "x",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "y",
+                                },
+                                ty: None,
+                            },
+                            expr: Var(
+                                Var {
+                                    name: "y",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    15,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        16,
+                    ),
+                    binding_type: Monomorphic(
+                        Fn {
+                            input: Var(
+                                TVar(
+                                    15,
+                                ),
+                            ),
+                            output: Fn {
+                                input: Var(
+                                    TVar(
+                                        16,
+                                    ),
+                                ),
+                                output: Var(
+                                    TVar(
+                                        16,
+                                    ),
+                                ),
+                            },
+                        },
+                    ),
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "n",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "f",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "x",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: App(
+                                        App {
+                                            arg: Lambda(
+                                                Lambda {
+                                                    bind: BVar {
+                                                        var: Var {
+                                                            name: "v",
+                                                        },
+                                                        ty: None,
+                                                    },
+                                                    expr: Var(
+                                                        Var {
+                                                            name: "v",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            func: App(
+                                                App {
+                                                    arg: Lambda(
+                                                        Lambda {
+                                                            bind: BVar {
+                                                                var: Var {
+                                                                    name: "u",
+                                                                },
+                                                                ty: None,
+                                                            },
+                                                            expr: Var(
+                                                                Var {
+                                                                    name: "x",
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                    func: App(
+                                                        App {
+                                                            arg: Lambda(
+                                                                Lambda {
+                                                                    bind: BVar {
+                                                                        var: Var {
+                                                                            name: "h",
+                                                                        },
+                                                                        ty: None,
+                                                                    },
+                                                                    expr: Lambda(
+                                                                        Lambda {
+                                                                            bind: BVar {
+                                                                                var: Var {
+                                                                                    name: "g",
+                                                                                },
+                                                                                ty: None,
+                                                                            },
+                                                                            expr: App(
+                                                                                App {
+                                                                                    arg: App(
+                                                                                        App {
+                                                                                            arg: Var(
+                                                                                                Var {
+                                                                                                    name: "f",
+                                                                                                },
+                                                                                            ),
+                                                                                            func: Var(
+                                                                                                Var {
+                                                                                                    name: "g",
+                                                                                                },
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    func: Var(
+                                                                                        Var {
+                                                                                            name: "h",
+                                                                                        },
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                            func: Var(
+                                                                Var {
+                                                                    name: "n",
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    47,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        49,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            48,
+                        ),
+                        binding_type: Binding {
+                            bind: TVar(
+                                40,
+                            ),
+                            binding_type: Binding {
+                                bind: TVar(
+                                    46,
+                                ),
+                                binding_type: Binding {
+                                    bind: TVar(
+                                        39,
+                                    ),
+                                    binding_type: Binding {
+                                        bind: TVar(
+                                            41,
+                                        ),
+                                        binding_type: Monomorphic(
+                                            Fn {
+                                                input: Fn {
+                                                    input: Fn {
+                                                        input: Fn {
+                                                            input: Var(
+                                                                TVar(
+                                                                    47,
+                                                                ),
+                                                            ),
+                                                            output: Var(
+                                                                TVar(
+                                                                    46,
+                                                                ),
+                                                            ),
+                                                        },
+                                                        output: Fn {
+                                                            input: Fn {
+                                                                input: Var(
+                                                                    TVar(
+                                                                        39,
+                                                                    ),
+                                                                ),
+                                                                output: Var(
+                                                                    TVar(
+                                                                        47,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                            output: Var(
+                                                                TVar(
+                                                                    46,
+                                                                ),
+                                                            ),
+                                                        },
+                                                    },
+                                                    output: Fn {
+                                                        input: Fn {
+                                                            input: Var(
+                                                                TVar(
+                                                                    48,
+                                                                ),
+                                                            ),
+                                                            output: Var(
+                                                                TVar(
+                                                                    40,
+                                                                ),
+                                                            ),
+                                                        },
+                                                        output: Fn {
+                                                            input: Fn {
+                                                                input: Var(
+                                                                    TVar(
+                                                                        49,
+                                                                    ),
+                                                                ),
+                                                                output: Var(
+                                                                    TVar(
+                                                                        49,
+                                                                    ),
+                                                                ),
+                                                            },
+                                                            output: Var(
+                                                                TVar(
+                                                                    41,
+                                                                ),
+                                                            ),
+                                                        },
+                                                    },
+                                                },
+                                                output: Fn {
+                                                    input: Var(
+                                                        TVar(
+                                                            39,
+                                                        ),
+                                                    ),
+                                                    output: Fn {
+                                                        input: Var(
+                                                            TVar(
+                                                                40,
+                                                            ),
+                                                        ),
+                                                        output: Var(
+                                                            TVar(
+                                                                41,
+                                                            ),
+                                                        ),
+                                                    },
+                                                },
+                                            },
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "x",
+                        },
+                        ty: None,
+                    },
+                    expr: Var(
+                        Var {
+                            name: "x",
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    12,
+                ),
+                binding_type: Monomorphic(
+                    Fn {
+                        input: Var(
+                            TVar(
+                                12,
+                            ),
+                        ),
+                        output: Var(
+                            TVar(
+                                12,
+                            ),
+                        ),
+                    },
+                ),
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "x",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "y",
+                                },
+                                ty: None,
+                            },
+                            expr: Var(
+                                Var {
+                                    name: "x",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    13,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        14,
+                    ),
+                    binding_type: Monomorphic(
+                        Fn {
+                            input: Var(
+                                TVar(
+                                    13,
+                                ),
+                            ),
+                            output: Fn {
+                                input: Var(
+                                    TVar(
+                                        14,
+                                    ),
+                                ),
+                                output: Var(
+                                    TVar(
+                                        13,
+                                    ),
+                                ),
+                            },
+                        },
+                    ),
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "f",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "x",
+                                },
+                                ty: None,
+                            },
+                            expr: Var(
+                                Var {
+                                    name: "x",
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    18,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        17,
+                    ),
+                    binding_type: Monomorphic(
+                        Fn {
+                            input: Var(
+                                TVar(
+                                    17,
+                                ),
+                            ),
+                            output: Fn {
+                                input: Var(
+                                    TVar(
+                                        18,
+                                    ),
+                                ),
+                                output: Var(
+                                    TVar(
+                                        18,
+                                    ),
+                                ),
+                            },
+                        },
+                    ),
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "m",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "n",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "f",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: Lambda(
+                                        Lambda {
+                                            bind: BVar {
+                                                var: Var {
+                                                    name: "x",
+                                                },
+                                                ty: None,
+                                            },
+                                            expr: App(
+                                                App {
+                                                    arg: App(
+                                                        App {
+                                                            arg: Var(
+                                                                Var {
+                                                                    name: "x",
+                                                                },
+                                                            ),
+                                                            func: App(
+                                                                App {
+                                                                    arg: Var(
+                                                                        Var {
+                                                                            name: "f",
+                                                                        },
+                                                                    ),
+                                                                    func: Var(
+                                                                        Var {
+                                                                            name: "m",
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                    func: App(
+                                                        App {
+                                                            arg: Var(
+                                                                Var {
+                                                                    name: "f",
+                                                                },
+                                                            ),
+                                                            func: Var(
+                                                                Var {
+                                                                    name: "n",
+                                                                },
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    27,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        31,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            28,
+                        ),
+                        binding_type: Binding {
+                            bind: TVar(
+                                29,
+                            ),
+                            binding_type: Monomorphic(
+                                Fn {
+                                    input: Fn {
+                                        input: Var(
+                                            TVar(
+                                                27,
+                                            ),
+                                        ),
+                                        output: Fn {
+                                            input: Var(
+                                                TVar(
+                                                    28,
+                                                ),
+                                            ),
+                                            output: Var(
+                                                TVar(
+                                                    31,
+                                                ),
+                                            ),
+                                        },
+                                    },
+                                    output: Fn {
+                                        input: Fn {
+                                            input: Var(
+                                                TVar(
+                                                    27,
+                                                ),
+                                            ),
+                                            output: Fn {
+                                                input: Var(
+                                                    TVar(
+                                                        31,
+                                                    ),
+                                                ),
+                                                output: Var(
+                                                    TVar(
+                                                        29,
+                                                    ),
+                                                ),
+                                            },
+                                        },
+                                        output: Fn {
+                                            input: Var(
+                                                TVar(
+                                                    27,
+                                                ),
+                                            ),
+                                            output: Fn {
+                                                input: Var(
+                                                    TVar(
+                                                        28,
+                                                    ),
+                                                ),
+                                                output: Var(
+                                                    TVar(
+                                                        29,
+                                                    ),
+                                                ),
+                                            },
+                                        },
+                                    },
+                                },
+                            ),
+                        },
+                    },
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "m",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "n",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "f",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: App(
+                                        App {
+                                            arg: App(
+                                                App {
+                                                    arg: Var(
+                                                        Var {
+                                                            name: "f",
+                                                        },
+                                                    ),
+                                                    func: Var(
+                                                        Var {
+                                                            name: "n",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                            func: Var(
+                                                Var {
+                                                    name: "m",
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    36,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        35,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            37,
+                        ),
+                        binding_type: Monomorphic(
+                            Fn {
+                                input: Fn {
+                                    input: Var(
+                                        TVar(
+                                            37,
+                                        ),
+                                    ),
+                                    output: Var(
+                                        TVar(
+                                            36,
+                                        ),
+                                    ),
+                                },
+                                output: Fn {
+                                    input: Fn {
+                                        input: Var(
+                                            TVar(
+                                                35,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                37,
+                                            ),
+                                        ),
+                                    },
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                35,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                36,
+                                            ),
+                                        ),
+                                    },
+                                },
+                            },
+                        ),
+                    },
+                },
+            },
+            Lambda(
+                Lambda {
+                    bind: BVar {
+                        var: Var {
+                            name: "f",
+                        },
+                        ty: None,
+                    },
+                    expr: Lambda(
+                        Lambda {
+                            bind: BVar {
+                                var: Var {
+                                    name: "a",
+                                },
+                                ty: None,
+                            },
+                            expr: Lambda(
+                                Lambda {
+                                    bind: BVar {
+                                        var: Var {
+                                            name: "b",
+                                        },
+                                        ty: None,
+                                    },
+                                    expr: App(
+                                        App {
+                                            arg: Var(
+                                                Var {
+                                                    name: "b",
+                                                },
+                                            ),
+                                            func: App(
+                                                App {
+                                                    arg: Var(
+                                                        Var {
+                                                            name: "a",
+                                                        },
+                                                    ),
+                                                    func: Var(
+                                                        Var {
+                                                            name: "f",
+                                                        },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ): Binding {
+                bind: TVar(
+                    10,
+                ),
+                binding_type: Binding {
+                    bind: TVar(
+                        8,
+                    ),
+                    binding_type: Binding {
+                        bind: TVar(
+                            9,
+                        ),
+                        binding_type: Monomorphic(
+                            Fn {
+                                input: Fn {
+                                    input: Var(
+                                        TVar(
+                                            8,
+                                        ),
+                                    ),
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                9,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                10,
+                                            ),
+                                        ),
+                                    },
+                                },
+                                output: Fn {
+                                    input: Var(
+                                        TVar(
+                                            8,
+                                        ),
+                                    ),
+                                    output: Fn {
+                                        input: Var(
+                                            TVar(
+                                                9,
+                                            ),
+                                        ),
+                                        output: Var(
+                                            TVar(
+                                                10,
+                                            ),
+                                        ),
+                                    },
+                                },
+                            },
+                        ),
+                    },
+                },
+            },
+        },
+    },
+]
