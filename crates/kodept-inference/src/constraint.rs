@@ -208,4 +208,26 @@ mod tests {
             ])
         )
     }
+    
+    #[test]
+    fn test_2() {
+        let mut env = InferState::default();
+        let [t0, t1, t2, t3, t4] = [0, 1, 2, 3, 4].map(TVar);
+        env.variable_index = 5;
+        
+        let cs = vec![
+            eq_cst(t1, fun1(t2, t3)),
+            implicit_cst(t4, [t0], t3),
+            implicit_cst(t2, [t0], t3),
+            eq_cst(t0, t1)
+        ];
+        
+        let result = Constraint::solve(cs, &mut env).unwrap();
+        assert_eq!(result, Substitutions::from_iter([
+            (t0, fun1(t3, t3)),
+            (t2, t3.into()),
+            (t4, t3.into()),
+            (t1, fun1(t3, t3))
+        ]));
+    }
 }
