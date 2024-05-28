@@ -94,7 +94,7 @@ impl<T: Substitutable> Substitutable for &T {
     }
 }
 
-impl<T: Substitutable> Substitutable for Vec<T> {
+impl<T: Substitutable> Substitutable for [T] {
     type Output = Vec<T::Output>;
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output {

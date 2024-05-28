@@ -8,7 +8,7 @@ use MonomorphicType::*;
 use crate::algorithm_u::AlgorithmUError::{InfiniteType, UnificationFail};
 use crate::r#type::{MonomorphicType, TVar};
 use crate::substitution::Substitutions;
-use crate::traits::FreeTypeVars;
+use crate::traits::{FreeTypeVars, Substitutable};
 
 #[derive(Debug, Error)]
 pub struct UnificationMismatch(pub Vec<MonomorphicType>, pub Vec<MonomorphicType>);
@@ -38,7 +38,7 @@ impl AlgorithmU {
             ([], []) => Ok(Substitutions::empty()),
             ([t1, ts1 @ ..], [t2, ts2 @ ..]) => {
                 let s1 = t1.unify(t2)?;
-                let s2 = Self::unify_vec(ts1, ts2)?;
+                let s2 = Self::unify_vec(&ts1.substitute(&s1), &ts2.substitute(&s1))?;
                 Ok(s1 + s2)
             }
             (t1, t2) => Err(UnificationMismatch(
@@ -256,15 +256,14 @@ mod tests {
             fun1(fun1(Constant("A".to_string()), var(1)), var(2)),
             var(3),
         );
-        let b = fun1(
-            var(3),
-            fun1(var(2), fun1(var(1), Constant("A".to_string()))),
-        );
+        let b = fun(nev![var(3), var(2), var(1)], Constant("A".to_string()));
 
         let s1 = a.unify(&b).unwrap();
         let s2 = b.unify(&a).unwrap();
 
         assert_eq!(s1, s2);
-        assert_eq!(a.substitute(&s1), b.substitute(&s2));
+        assert_eq!(a.substitute(&s1), b.substitute(&s1));
+        let h = fun1(Constant("A".to_string()), Constant("A".to_string()));
+        assert_eq!(a.substitute(&s1), fun1(fun1(h.clone(), h.clone()), fun1(h.clone(), h)))
     }
 }

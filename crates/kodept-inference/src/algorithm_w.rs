@@ -67,8 +67,8 @@ impl<'e> AlgorithmW<'e> {
     }
 
     fn apply_app(&mut self, language::App { arg, func }: &language::App) -> AWResult {
-        let (as2, cs2, t2) = self.apply(arg)?;
         let (as1, cs1, t1) = self.apply(func)?;
+        let (as2, cs2, t2) = self.apply(arg)?;
         let tv = self.env.new_var();
 
         Ok((
@@ -109,11 +109,12 @@ impl<'e> AlgorithmW<'e> {
         let (as1, cs1, t1) = self.apply(binder)?;
         let (as2, cs2, t2) = self.apply(usage)?;
 
-        let mut as_ = as1 + &as2;
+        let mut as_ = as1.clone() + &as2;
         as_.remove(&bind.var);
         let im_cs = as2
             .get(&bind.var)
             .into_iter()
+            .chain(as1.get(&bind.var).into_iter()) // support for fix
             .map(|it| implicit_cst(it.clone(), self.monomorphic_set.clone(), t1.clone()))
             .collect();
         let bound = bind.ty.as_ref().map_or(vec![], |it| {
@@ -131,7 +132,7 @@ impl<'e> AlgorithmW<'e> {
         let ctx: Vec<_> = tuple.into_iter().map(|it| self.apply(it)).try_collect()?;
         let (a, c, t): (Vec<_>, Vec<_>, Vec<_>) = ctx.into_iter().multiunzip();
         Ok((
-            AssumptionSet::merge_many(a.into_iter()),
+            AssumptionSet::merge_many(a),
             c.into_iter().flatten().collect(),
             Tuple(t).into(),
         ))
@@ -189,7 +190,7 @@ impl Language {
             .collect();
         debug!("Inferred raw type and constraints: ");
         debug!("{c:?} ++ {explicits:?}, {t}");
-        let substitutions = Constraint::solve(&concat([c, explicits]), context.env)?;
+        let substitutions = Constraint::solve(concat([c, explicits]), context.env)?;
         let t = t.substitute(&substitutions);
         debug!("Inferred type and substitutions: ");
         debug!("{}, {}", substitutions, t);

@@ -15,7 +15,7 @@ use kodept_inference::assumption::Environment;
 use kodept_inference::InferState;
 use kodept_inference::language::{app, bounded, BVar, lambda, Language, r#if, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::r#type::{PolymorphicType, unit_type};
+use kodept_inference::r#type::PolymorphicType;
 
 use crate::node_family::{convert, TypeDerivableNode, TypeDerivableNodeEnum};
 use crate::scope::ScopeTree;
@@ -155,7 +155,7 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
                 Ok(lambda(next?, acc).into())
             })
         } else {
-            Ok(lambda(bounded("()", unit_type()), expr).into())
+            Ok(expr)
         }
     }
 }
@@ -205,7 +205,7 @@ impl ToModelFrom<Exprs> for ConversionHelper<'_> {
                     return Ok(r#let(l.bind, *l.binder, needle).into());
                 }
             }
-            
+
             let name = item.extract_name(self.ast, self.token);
             let item = self.convert(item)?;
 
