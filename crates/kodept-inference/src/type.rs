@@ -1,15 +1,14 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
-use std::iter::once;
 use std::ops::BitAnd;
 
 use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 
+use crate::InferState;
 use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
-use crate::{InferState, LOWER_ALPHABET};
 
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {
@@ -69,15 +68,15 @@ pub fn fun1<M: Into<MonomorphicType>, N: Into<MonomorphicType>>(
 }
 
 pub fn fun<M: Into<MonomorphicType>>(input: NEVec<MonomorphicType>, output: M) -> MonomorphicType {
-    if input.tail.is_empty() {
-        return fun1(input.head, output);
+    match (input.head, input.tail.as_slice()) {
+        (x, []) => fun1(x, output),
+        (x, [xs @ .., last]) => fun1(
+            x,
+            xs.iter().fold(fun1(last.clone(), output), |acc, next| {
+                fun1(next.clone(), acc)
+            }),
+        ),
     }
-
-    let (first, body, last) = input.split();
-    once(first)
-        .chain(body)
-        .cloned()
-        .rfold(fun1(last.clone(), output), fun1)
 }
 
 pub fn var<V: Into<TVar>>(id: V) -> MonomorphicType {
@@ -247,7 +246,7 @@ impl Tuple {
 
 impl Display for TVar {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", expand_to_string(self.0, LOWER_ALPHABET))
+        write!(f, "τ{}", self.0)
     }
 }
 
@@ -275,10 +274,7 @@ impl Display for PolymorphicType {
         write!(
             f,
             "∀{} => {}",
-            self.bindings
-                .iter()
-                .map(|it| format!("{}", expand_to_string(it.0, LOWER_ALPHABET)))
-                .join(", "),
+            self.bindings.iter().join(", "),
             self.binding_type
         )
     }

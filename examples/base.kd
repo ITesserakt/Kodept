@@ -22,3 +22,9 @@ fun fix(f) => {
 fun let_bound {
     (id(id(id)))(id(3))
 }
+
+fun tuples(z) {
+    val x = (z, z)
+    val w = \y => ((y, y))
+    w(x)
+}

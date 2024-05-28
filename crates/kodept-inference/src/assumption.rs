@@ -20,6 +20,10 @@ where
 pub type AssumptionSet = TypeTable<Vec<MonomorphicType>, Var>;
 pub type Environment = TypeTable<PolymorphicType, Var>;
 
+pub trait TypeTableOps {
+    fn merge(&mut self, other: Self);
+}
+
 impl<K: Hash + Eq, V> Default for TypeTable<V, K> {
     fn default() -> Self {
         Self(HashMap::new())
@@ -42,10 +46,6 @@ impl<K: Hash + Eq, V> TypeTable<V, K> {
     pub fn keys(&self) -> impl Iterator<Item = &K> {
         self.0.keys()
     }
-
-    pub fn merge(&mut self, other: Self) {
-        self.0.extend(other.0)
-    }
 }
 
 impl AssumptionSet {
@@ -67,18 +67,30 @@ impl AssumptionSet {
     pub fn single(key: impl Into<Var>, value: impl Into<MonomorphicType>) -> Self {
         Self(HashMap::from([(key.into(), vec![value.into()])]))
     }
+    
+    pub fn merge_many(iter: impl IntoIterator<Item = AssumptionSet>) -> AssumptionSet {
+        iter.into_iter().fold(AssumptionSet::empty(), AssumptionSet::add)
+    }
+}
 
-    pub fn merge_many(vec: impl Iterator<Item =AssumptionSet>) -> AssumptionSet {
-        vec.fold(AssumptionSet::empty(), |mut acc, next| {
-            acc.0.extend(next.0);
-            acc
-        })
+impl TypeTableOps for AssumptionSet {
+    fn merge(&mut self, other: Self) {
+        for (k, v) in other.0 {
+            self.0.entry(k).or_default().extend(v)
+        }
+    }
+}
+
+impl TypeTableOps for Environment {
+    fn merge(&mut self, other: Self) {
+        self.0.extend(other.0)
     }
 }
 
 impl<K, V> Add for TypeTable<V, K>
 where
     K: Hash + Eq,
+    Self: TypeTableOps,
 {
     type Output = Self;
 
@@ -91,7 +103,7 @@ where
 impl<K, V> Add<&TypeTable<V, K>> for TypeTable<V, K>
 where
     K: Hash + Eq,
-    Self: Clone,
+    Self: Clone + TypeTableOps,
 {
     type Output = Self;
 

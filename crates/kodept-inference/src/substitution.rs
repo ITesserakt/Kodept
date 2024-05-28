@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
+use std::mem::take;
 use std::ops::Add;
 
 use itertools::Itertools;
@@ -13,17 +14,23 @@ pub struct Substitutions(HashMap<TVar, MonomorphicType>);
 impl Substitutions {
     #[must_use]
     pub fn compose(&self, other: &Substitutions) -> Self {
-        let mapped: HashSet<_> = other
+        let mut copy = self.clone();
+        copy.merge(other.clone());
+        copy
+    }
+    
+    pub fn merge(&mut self, other: Substitutions) {
+        let a: HashSet<_> = other
             .0
             .iter()
-            .map(|(key, ty)| (key.clone(), ty & self))
+            .map(|(key, ty)| (key.clone(), ty & &*self))
             .collect();
-        let set: HashSet<_> = self
-            .0
-            .iter()
-            .map(|it| (it.0.clone(), it.1.clone()))
+        let b: HashSet<_> = take(&mut self.0)
+            .into_iter()
+            .map(|(key, ty)| (key, ty & &other))
             .collect();
-        Substitutions(mapped.union(&set).cloned().collect())
+
+        self.0 = b.union(&a).cloned().collect()
     }
 
     #[must_use]
@@ -50,8 +57,8 @@ impl Substitutions {
         self.0
     }
     
-    pub fn from_iter<M: Into<MonomorphicType>>(iter: impl Iterator<Item = (TVar, M)>) -> Self {
-        Self(HashMap::from_iter(iter.map(|(a, b)| (a, b.into()))))
+    pub fn from_iter<M: Into<MonomorphicType>>(iter: impl IntoIterator<Item = (TVar, M)>) -> Self {
+        Self(HashMap::from_iter(iter.into_iter().map(|(a, b)| (a, b.into()))))
     }
 }
 
@@ -66,16 +73,18 @@ impl Add for &Substitutions {
 impl Add for Substitutions {
     type Output = Substitutions;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        self.compose(&rhs)
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.merge(rhs);
+        self
     }
 }
 
 impl Add<&Substitutions> for Substitutions {
     type Output = Substitutions;
 
-    fn add(self, rhs: &Substitutions) -> Self::Output {
-        self.compose(rhs)
+    fn add(mut self, rhs: &Substitutions) -> Self::Output {
+        self.merge(rhs.clone());
+        self
     }
 }
 

@@ -233,6 +233,7 @@ impl<S: Into<String>> From<S> for Var {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    use std::collections::HashSet;
     use crate::assumption::Environment;
     use crate::language::{app, lambda, Language, Literal, r#let, var};
     use crate::r#type::{fun1, Tuple, var as t_var};
@@ -265,8 +266,7 @@ mod tests {
                     Tuple(vec![t_var(0), t_var(0)]).into(),
                     Tuple(vec![t_var(0), t_var(0)]).into()
                 ])
-            )
-            .into()
+            ).generalize(&HashSet::new())
         );
     }
 

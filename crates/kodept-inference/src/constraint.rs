@@ -1,8 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 use std::fmt::{Debug, Display, Formatter};
 
 use derive_more::Display;
-use itertools::Itertools;
+use itertools::Either::{Left, Right};
+use itertools::{Either, Itertools};
 use thiserror::Error;
 
 use Constraint::{ExplicitInstance, ImplicitInstance};
@@ -48,8 +49,6 @@ pub enum Constraint {
     },
 }
 
-type Pair<'a> = (&'a Constraint, Vec<&'a Constraint>);
-
 impl Display for ConstraintsSolverError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -78,69 +77,57 @@ impl Display for ConstraintsSolverError {
 }
 
 impl Constraint {
-    fn pairs(vec: &[Constraint]) -> impl Iterator<Item = Pair> {
-        vec.into_iter().enumerate().map(move |(index, next)| {
-            let mut copy = Vec::from_iter(vec);
-            copy.remove(index);
-            (next, copy)
-        })
-    }
-
-    fn solvable(pair: &Pair) -> bool {
-        match pair {
-            (Eq(EqConstraint { .. }), _) => true,
-            (ExplicitInstance { .. }, _) => true,
-            (ImplicitInstance { ctx, t2, .. }, cs) => {
+    fn solvable(c: &Constraint, cs: &VecDeque<Constraint>) -> bool {
+        match c {
+            Eq(EqConstraint { .. }) => true,
+            ExplicitInstance { .. } => true,
+            ImplicitInstance { ctx, t2, .. } => {
                 let v1 = &t2.free_types() - ctx;
-                let active = cs.iter().map(|it| *it).active_vars();
+                let active = cs.active_vars();
                 (&v1 & &active).is_empty()
             }
         }
     }
 
     fn solve_pair(
-        (c, cs): Pair,
+        c: Constraint,
         env: &mut InferState,
-    ) -> Result<Substitutions, ConstraintsSolverError> {
-        let result = match c {
-            Eq(EqConstraint { t1, t2 }) => {
-                let s1 = t1.unify(t2)?;
-                println!("[{}] | {c} => {s1}", cs.iter().join(", "));
-                let s2 = Self::solve(&cs.substitute(&s1), env)?;
-                Ok(s2 + s1)
-            }
+    ) -> Result<Either<Substitutions, Constraint>, ConstraintsSolverError> {
+        match c {
+            Eq(EqConstraint { t1, t2 }) => Ok(Left(t1.unify(&t2)?)),
             ExplicitInstance { t, s } => {
                 let t2 = s.instantiate(env);
-                let mut cs: Vec<_> = cs.into_iter().cloned().collect();
-                let c1 = Eq(EqConstraint { t1: t.clone(), t2 });
-                println!("[{}] | {c} => {c1}", cs.iter().join(", "));
-                cs.push(c1);
-                Self::solve(&cs, env)
+                Ok(Right(Eq(EqConstraint { t1: t, t2 })))
             }
             ImplicitInstance { t1, ctx, t2 } => {
-                let s = t2.generalize(ctx);
-                let mut cs: Vec<_> = cs.into_iter().cloned().collect();
-                let c1 = ExplicitInstance { t: t1.clone(), s };
-                println!("[{}] | {c} => {c1}", cs.iter().join(", "));
-                cs.push(c1);
-                Self::solve(&cs, env)
+                let s = t2.generalize(&ctx);
+                Ok(Right(ExplicitInstance { t: t1, s }))
             }
-        }?;
-        Ok(result)
+        }
     }
 
     pub fn solve(
-        iter: &[Constraint],
+        constraints: Vec<Constraint>,
         env: &mut InferState,
     ) -> Result<Substitutions, ConstraintsSolverError> {
-        if iter.is_empty() {
-            return Ok(Substitutions::empty());
+        let mut cs = VecDeque::from(constraints);
+        let mut s0 = Substitutions::empty();
+
+        // solver should always find suitable constraint to solve
+        while let Some(c) = cs.pop_back() {
+            if Self::solvable(&c, &cs) {
+                match Self::solve_pair(c, env)? {
+                    Left(s) => {
+                        cs = cs.make_contiguous().substitute(&s).into();
+                        s0 = s0 + s;
+                    }
+                    Right(c) => cs.push_front(c),
+                }
+            } else {
+                cs.push_front(c)
+            }
         }
-        if let Some(next) = Self::pairs(iter).find(Self::solvable) {
-            Self::solve_pair(next, env)
-        } else {
-            Err(Ambiguous(iter.to_vec()))
-        }
+        Ok(s0)
     }
 }
 
@@ -171,12 +158,12 @@ pub fn eq_cst(t1: impl Into<MonomorphicType>, t2: impl Into<MonomorphicType>) ->
 
 pub fn implicit_cst(
     t1: impl Into<MonomorphicType>,
-    ctx: HashSet<TVar>,
+    ctx: impl Into<HashSet<TVar>>,
     t2: impl Into<MonomorphicType>,
 ) -> Constraint {
     ImplicitInstance {
         t1: t1.into(),
-        ctx,
+        ctx: ctx.into(),
         t2: t2.into(),
     }
 }
@@ -185,5 +172,40 @@ pub fn explicit_cst(t: impl Into<MonomorphicType>, s: impl Into<PolymorphicType>
     ExplicitInstance {
         t: t.into(),
         s: s.into(),
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use crate::constraint::{eq_cst, implicit_cst, Constraint};
+    use crate::r#type::MonomorphicType::Var;
+    use crate::r#type::PrimitiveType::Boolean;
+    use crate::r#type::{fun1, TVar};
+    use crate::substitution::Substitutions;
+    use crate::InferState;
+
+    #[test]
+    fn test_1() {
+        let mut env = InferState::default();
+        let [t1, t2, t3, t4, t5] = [1, 2, 3, 4, 5].map(TVar);
+        env.variable_index = 6;
+        let cs = vec![
+            eq_cst(t2, fun1(Boolean, t3)),
+            implicit_cst(t4, [t5], t3),
+            implicit_cst(t2, [t5], t1),
+            eq_cst(t5, t1),
+        ];
+
+        let result = Constraint::solve(cs, &mut env).unwrap();
+        assert_eq!(
+            result,
+            Substitutions::from_iter([
+                (t4, Var(t3)),
+                (t1, fun1(Boolean, t3)),
+                (t5, fun1(Boolean, t3)),
+                (t2, fun1(Boolean, t3))
+            ])
+        )
     }
 }
