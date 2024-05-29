@@ -1,24 +1,19 @@
-use std::ops::Deref;
-
 use derive_more::From;
 use tracing::debug;
 
 use kodept_ast::BodyFnDecl;
-use kodept_ast::graph::{AnyNode, ChangeSet};
+use kodept_ast::graph::ChangeSet;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::ConvertibleToRef;
 use kodept_core::structure::{Located, rlt};
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::assumption::Environment;
-use kodept_inference::InferState;
 use kodept_inference::r#type::PolymorphicType;
 use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::Macro;
 use kodept_macros::traits::Context;
-use crate::convert_model::ExtractName;
 
-use crate::node_family::TypeRestrictedNode;
+use crate::convert_model::ExtractName;
 use crate::scope::{ScopeError, ScopeTree};
 use crate::type_checker::InferError::Unknown;
 use crate::Witness;
@@ -51,7 +46,6 @@ impl From<CannotInfer> for ReportMessage {
 
 pub struct TypeChecker<'a> {
     pub(crate) symbols: &'a ScopeTree,
-    env: InferState,
     constraints: Environment,
     evidence: Witness,
 }
@@ -67,7 +61,6 @@ impl<'a> TypeChecker<'a> {
     pub fn new(symbols: &'a ScopeTree, evidence: Witness) -> Self {
         Self {
             symbols,
-            env: Default::default(),
             constraints: Default::default(),
             evidence,
         }
@@ -107,7 +100,7 @@ impl Macro for TypeChecker<'_> {
                 "Built compatible model for function {}: {}",
                 node.name, model
             );
-            let mut assumptions = &mut self.constraints;
+            let assumptions = &mut self.constraints;
             let fn_location = context
                 .access(&*node)
                 .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]);

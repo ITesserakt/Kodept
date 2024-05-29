@@ -197,7 +197,7 @@ impl Language {
         Ok((substitutions, t))
     }
 
-    pub fn infer_with_env(
+    pub(crate) fn infer_with_env(
         &self,
         context: &Environment,
         env: &mut InferState,

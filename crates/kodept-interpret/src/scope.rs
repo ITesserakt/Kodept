@@ -5,11 +5,12 @@ use std::fmt::{Debug, Formatter};
 
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
+use itertools::Itertools;
 
 use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
-use kodept_inference::r#type::{MonomorphicType, PolymorphicType};
+use kodept_inference::r#type::{MonomorphicType};
 use kodept_macros::error::report::{ReportMessage, Severity};
 
 use crate::scope::ScopeError::{Duplicate, NoScope};
@@ -239,9 +240,7 @@ impl Debug for Scope {
                 " {{{}}}",
                 self.types
                     .keys()
-                    .map(|it| it.as_ref())
-                    .intersperse(", ")
-                    .collect::<String>()
+                    .join(", ")
             )?;
         }
         if !self.variables.is_empty() {
@@ -251,8 +250,7 @@ impl Debug for Scope {
                 self.variables
                     .keys()
                     .cloned()
-                    .intersperse(", ".to_string())
-                    .collect::<String>()
+                    .join(", ")
             )?;
         }
         Ok(())

@@ -11,54 +11,14 @@ use kodept_ast::{
 use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::{AsEnum, Identifiable};
 use kodept_inference::algorithm_w::AlgorithmWError;
-use kodept_inference::assumption::Environment;
-use kodept_inference::InferState;
 use kodept_inference::language::{app, bounded, BVar, lambda, Language, r#if, r#let, var};
 use kodept_inference::language::Literal::{Floating, Tuple};
-use kodept_inference::r#type::PolymorphicType;
 
-use crate::node_family::{convert, TypeDerivableNode, TypeDerivableNodeEnum};
+use crate::node_family::convert;
 use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
 use crate::type_checker::InferError::Unknown;
 use crate::Witness;
-
-impl TypeDerivableNode {
-    pub fn type_of<'a>(
-        &self,
-        ast: &'a SyntaxTree,
-        token: &'a PermTkn,
-        scopes: &'a ScopeTree,
-        assumptions: &mut Environment,
-        environment: &mut InferState,
-        evidence: Witness,
-    ) -> Result<(Language, PolymorphicType), InferError> {
-        let helper = ConversionHelper {
-            scopes,
-            ast,
-            token,
-            evidence,
-        };
-        let model = helper.convert(self)?;
-        let derived_type = model.infer_with_env(assumptions, environment)?;
-        Ok((model, derived_type))
-    }
-}
-
-impl ToModelFrom<TypeDerivableNode> for ConversionHelper<'_> {
-    fn convert(self, node: &TypeDerivableNode) -> Result<Language, InferError> {
-        match node.as_enum() {
-            TypeDerivableNodeEnum::Function(x) => self.convert(x),
-            TypeDerivableNodeEnum::ExpressionBlock(x) => self.convert(x),
-            TypeDerivableNodeEnum::InitVar(x) => self.convert(x),
-            TypeDerivableNodeEnum::Lambda(x) => self.convert(x),
-            TypeDerivableNodeEnum::Application(x) => self.convert(x),
-            TypeDerivableNodeEnum::IfExpr(x) => self.convert(x),
-            TypeDerivableNodeEnum::Reference(x) => self.convert(x),
-            TypeDerivableNodeEnum::Literal(x) => self.convert(x),
-        }
-    }
-}
 
 impl TypeChecker<'_> {
     #[allow(private_bounds)]
@@ -137,9 +97,7 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
                 };
                 let assigned_ty = match ty {
                     None => None,
-                    Some(ty) => Some(
-                        convert(ty, scope.clone(), self.ast, self.token).map_err(|_| Unknown)?,
-                    ),
+                    Some(ty) => Some(convert(ty, scope.clone(), self.ast, self.token)?),
                 };
                 let var = scope
                     .var(name)
@@ -225,8 +183,7 @@ impl ToModelFrom<InitVar> for ConversionHelper<'_> {
         let assigned_ty = variable
             .assigned_type(self.ast, self.token)
             .map(|it| convert(it, scope, self.ast, self.token))
-            .map_or(Ok(None), |it| it.map(Some))
-            .map_err(|_| Unknown)?;
+            .map_or(Ok(None), |it| it.map(Some))?;
         let var = assigned_ty
             .map(|it| bounded(bind.clone(), it))
             .unwrap_or(bind.clone().into());

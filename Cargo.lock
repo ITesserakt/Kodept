@@ -633,6 +633,7 @@ version = "0.1.1"
 dependencies = [
  "derive_more",
  "id_tree",
+ "itertools",
  "kodept-ast",
  "kodept-core",
  "kodept-inference",

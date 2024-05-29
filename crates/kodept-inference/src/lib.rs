@@ -10,7 +10,7 @@ pub mod constraint;
 pub mod traits;
 
 #[derive(Default)]
-pub struct InferState {
+pub(crate) struct InferState {
     variable_index: usize,
 }
 
