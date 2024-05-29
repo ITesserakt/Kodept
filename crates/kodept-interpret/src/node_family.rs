@@ -1,55 +1,29 @@
-use derive_more::From;
+use nonempty_collections::nev;
 
-use kodept_ast::{AbstFnDecl, Appl, BodyFnDecl, Exprs, IfExpr, InitVar, Lambda, Lit, node_sub_enum, Ref, TyParam, Type, TypeEnum, VarDecl};
+use kodept_ast::{Type, TypeEnum};
 use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::AsEnum;
+use kodept_inference::algorithm_w::AlgorithmWError;
+use kodept_inference::language::var;
 use kodept_inference::r#type::{MonomorphicType, Tuple};
 
-use crate::node_family::Errors::Undefined;
-use crate::scope::{ScopeError, ScopeSearch};
-
-node_sub_enum! {
-    #[derive(Debug, PartialEq)]
-    pub enum TypeDerivableNode {
-        Function(BodyFnDecl),
-        ExpressionBlock(Exprs),
-        InitVar(InitVar),
-        Lambda(Lambda),
-        Application(Appl),
-        IfExpr(IfExpr),
-        Reference(Ref),
-        Literal(forward Lit)
-    }
-}
-
-node_sub_enum! {
-    pub enum TypeRestrictedNode {
-        TypedParameter(TyParam),
-        Function(AbstFnDecl),
-        Variable(VarDecl),
-        Reference(Ref)
-    }
-}
-
-#[derive(From)]
-pub enum Errors {
-    #[from(ignore)]
-    TooComplex,
-    #[from(ignore)]
-    Undefined(String),
-    Scope(ScopeError),
-}
+use crate::scope::ScopeSearch;
+use crate::type_checker::InferError;
 
 pub(crate) fn convert(
     ty: &Type,
     scope: ScopeSearch,
     ast: &SyntaxTree,
     token: &PermTkn,
-) -> Result<MonomorphicType, Errors> {
+) -> Result<MonomorphicType, InferError> {
     return match ty.as_enum() {
-        TypeEnum::TyName(constant) => scope
-            .ty(&constant.name)
-            .ok_or(Undefined(constant.name.clone())),
+        TypeEnum::TyName(constant) => {
+            scope
+                .ty(&constant.name)
+                .ok_or(InferError::AlgorithmW(AlgorithmWError::UnknownVar(nev![
+                    var(&constant.name)
+                ])))
+        }
         TypeEnum::Tuple(tuple) => {
             let types: Result<Vec<_>, _> = tuple
                 .types(ast, token)

@@ -31,7 +31,7 @@ pub(crate) mod macros {
         }
     };
 }
-    
+
     macro_rules! hlist_pat {
     () => { $crate::steps::hlist::HNil };
     (...) => { _ };
@@ -45,15 +45,5 @@ pub(crate) mod macros {
     };
 }
     
-    #[allow(non_snake_case)]
-    macro_rules! HList {
-    () => { $crate::steps::hlist::HNil };
-    (...$Rest:ty) => { $Rest };
-    ($A:ty) => { $crate::steps::hlist::macros::HList![$A,] };
-    ($A:ty, $($tok:tt)*) => {
-        $crate::steps::hlist::HCons<$A, $crate::steps::hlist::macros::HList![$($tok)*]>
-    };
-}
-    
-    pub(crate) use {hlist, hlist_pat, HList};
+    pub(crate) use {hlist, hlist_pat};
 }

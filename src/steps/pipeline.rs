@@ -3,6 +3,7 @@ use crate::steps::{RunMacros, Step};
 pub struct Pipeline;
 
 impl Pipeline {
+    #[allow(private_bounds)]
     pub fn define_step<H>(self, inputs: H) -> impl Step<Inputs = H>
     where
         H: RunMacros,
