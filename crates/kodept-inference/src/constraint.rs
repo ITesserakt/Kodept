@@ -106,7 +106,7 @@ impl Constraint {
         }
     }
 
-    pub fn solve(
+    pub(crate) fn solve(
         constraints: Vec<Constraint>,
         env: &mut InferState,
     ) -> Result<Substitutions, ConstraintsSolverError> {
