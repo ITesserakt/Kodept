@@ -2,20 +2,20 @@ use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 use itertools::{concat, Itertools};
-use nonempty_collections::{IteratorExt, NEVec, NonEmptyIterator};
+use nonempty_collections::NEVec;
 use thiserror::Error;
 use tracing::debug;
 
 use crate::{InferState, language};
 use crate::algorithm_u::AlgorithmUError;
 use crate::algorithm_w::AlgorithmWError::UnknownVar;
-use crate::assumption::{AssumptionSet, Environment};
+use crate::assumption::AssumptionSet;
 use crate::constraint::{Constraint, ConstraintsSolverError, eq_cst, explicit_cst, implicit_cst};
 use crate::language::{Language, Literal, Special, Var};
 use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, Tuple, TVar};
 use crate::r#type::PrimitiveType::Boolean;
 use crate::substitution::Substitutions;
-use crate::traits::Substitutable;
+use crate::traits::{EnvironmentProvider, Substitutable};
 
 #[derive(Debug, Error)]
 pub enum AlgorithmWError {
@@ -168,26 +168,28 @@ impl Language {
     fn infer_w(
         &self,
         context: &mut AlgorithmW,
-        table: &Environment,
+        table: &mut impl EnvironmentProvider<Var>,
     ) -> Result<(Substitutions, MonomorphicType), AlgorithmWError> {
         let (a, c, t) = context.apply(self)?;
-        if let Some(iter) = a
-            .keys()
-            .collect::<HashSet<_>>()
-            .difference(&table.keys().collect())
-            .to_nonempty_iter()
-        {
-            return Err(UnknownVar(iter.cloned().cloned().collect()));
+        let (not_found, explicits) = a.keys().fold(
+            (Vec::new(), Vec::new()),
+            |(mut not_found, mut cst), next| {
+                match table.get(next) {
+                    None => not_found.push(next.clone()),
+                    Some(s) => cst.extend(
+                        a.get(next)
+                            .into_iter()
+                            .map(|it| explicit_cst(it.clone(), s.clone().into_owned())),
+                    ),
+                }
+                (not_found, cst)
+            },
+        );
+
+        if let Some(not_found) = NEVec::from_vec(not_found) {
+            return Err(UnknownVar(not_found));
         }
-        let explicits: Vec<_> = table
-            .iter()
-            .flat_map(|(k, s)| {
-                a.get(k)
-                    .into_iter()
-                    .map(|t| explicit_cst(t.clone(), s.clone()))
-                    .collect::<Vec<_>>()
-            })
-            .collect();
+
         debug!("Inferred raw type and constraints: ");
         debug!("{c:?} ++ {explicits:?}, {t}");
         let substitutions = Constraint::solve(concat([c, explicits]), context.env)?;
@@ -199,7 +201,7 @@ impl Language {
 
     pub(crate) fn infer_with_env(
         &self,
-        context: &Environment,
+        context: &mut impl EnvironmentProvider<Var>,
         env: &mut InferState,
     ) -> Result<PolymorphicType, AlgorithmWError> {
         let mut ctx = AlgorithmW {
@@ -212,7 +214,10 @@ impl Language {
         }
     }
 
-    pub fn infer(&self, table: &Environment) -> Result<PolymorphicType, AlgorithmWError> {
+    pub fn infer(
+        &self,
+        table: &mut impl EnvironmentProvider<Var>,
+    ) -> Result<PolymorphicType, AlgorithmWError> {
         self.infer_with_env(table, &mut InferState::default())
     }
 }

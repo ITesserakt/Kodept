@@ -3,10 +3,11 @@ use std::ops::{ControlFlow, FromResidual, Try};
 
 use derive_more::From;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, From)]
 pub enum Skip<E> {
     Failed(E),
     #[default]
+    #[from(ignore)]
     Skipped,
 }
 

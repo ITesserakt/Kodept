@@ -99,10 +99,10 @@ impl Macro for ScopeAnalyzer {
                 scope.insert_type(name, Constant(name.clone()).into())?;
             }
             AnyNode::TyParam(TyParam { name, .. }) => {
-                scope.insert_var(name)?;
+                scope.insert_var(node.get_id(), name)?;
             }
             AnyNode::NonTyParam(NonTyParam { name, .. }) => {
-                scope.insert_var(name)?;
+                scope.insert_var(node.get_id(), name)?;
             }
             AnyNode::TyName(TyName { name, .. }) => {
                 if let Some(AnyNode::EnumDecl(_)) = tree.parent_of(node.get_id(), node.token()) {
@@ -112,12 +112,12 @@ impl Macro for ScopeAnalyzer {
             AnyNode::EnumDecl(EnumDecl { name, .. }) => {
                 scope.insert_type(name, Constant(name.clone()).into())?;
             }
-            AnyNode::VarDecl(VarDecl { name, .. }) => scope.insert_var(name)?,
+            AnyNode::VarDecl(VarDecl { name, .. }) => scope.insert_var(node.get_id(), name)?,
             AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => {
-                scope.insert_var(name)?;
+                scope.insert_var(node.get_id(), name)?;
             }
             AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => {
-                scope.insert_var(name)?
+                scope.insert_var(node.get_id(), name)?
             }
             _ => {}
         }

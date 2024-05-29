@@ -10,7 +10,7 @@ use itertools::Itertools;
 use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
-use kodept_inference::r#type::{MonomorphicType};
+use kodept_inference::r#type::MonomorphicType;
 use kodept_macros::error::report::{ReportMessage, Severity};
 
 use crate::scope::ScopeError::{Duplicate, NoScope};
@@ -33,12 +33,12 @@ pub struct Scope {
     start_from_id: GenericNodeId,
     name: Option<String>,
     types: HashMap<String, MonomorphicType>,
-    variables: HashMap<String, Var>,
+    variables: HashMap<String, GenericNodeId>,
 }
 
 #[derive(Clone, Debug)]
 pub struct ScopeSearch<'a> {
-    tree: &'a Tree<Scope>,
+    tree: &'a ScopeTree,
     current_pos: Id,
     exclusive: bool,
 }
@@ -124,7 +124,7 @@ impl ScopeTree {
     {
         let start = self.of_node(node, ast, token)?;
         Ok(ScopeSearch {
-            tree: &self.tree,
+            tree: self,
             current_pos: start,
             exclusive: false,
         })
@@ -152,12 +152,12 @@ impl Scope {
         Ok(())
     }
 
-    pub fn insert_var(&mut self, name: impl Into<String> + Clone) -> Result<(), ScopeError> {
-        if self
-            .variables
-            .insert(name.clone().into(), var(name.clone()))
-            .is_some()
-        {
+    pub fn insert_var(
+        &mut self,
+        id: GenericNodeId,
+        name: impl Into<String> + Clone,
+    ) -> Result<(), ScopeError> {
+        if self.variables.insert(name.clone().into(), id).is_some() {
             return Err(Duplicate(name.into()));
         }
         Ok(())
@@ -167,8 +167,9 @@ impl Scope {
         self.start_from_id
     }
 
-    fn lookup_var(&self, name: impl AsRef<str>) -> Option<Var> {
-        self.variables.get(name.as_ref()).cloned()
+    fn lookup_var(&self, name: impl Into<String>) -> Option<Var> {
+        let name = name.into();
+        self.variables.get(&name).map(|_| var(&name))
     }
 
     fn lookup_type(&self, name: impl AsRef<str>) -> Option<MonomorphicType> {
@@ -187,10 +188,10 @@ impl ScopeSearch<'_> {
     fn bubble_up<T>(&self, f: impl Fn(&Scope) -> Option<T>) -> Result<Option<T>, NodeIdError> {
         let mut current_pos = &self.current_pos;
         loop {
-            let scope = self.tree.get(current_pos)?;
+            let scope = self.tree.tree.get(current_pos)?;
             match f(scope.data()) {
                 None => {
-                    current_pos = match self.tree.ancestor_ids(current_pos)?.next() {
+                    current_pos = match self.tree.tree.ancestor_ids(current_pos)?.next() {
                         None => return Ok(None),
                         Some(parent_id) => parent_id,
                     }
@@ -200,9 +201,13 @@ impl ScopeSearch<'_> {
         }
     }
 
-    pub fn var(&self, name: impl AsRef<str> + Clone) -> Option<Var> {
+    pub fn var(&self, name: impl Into<String> + Clone) -> Option<Var> {
         if self.exclusive {
-            let scope = self.tree.get(&self.current_pos).expect("Tree corrupted");
+            let scope = self
+                .tree
+                .tree
+                .get(&self.current_pos)
+                .expect("Tree corrupted");
             return scope.data().lookup_var(name);
         } else {
             self.bubble_up(|scope| scope.lookup_var(name.clone()))
@@ -210,14 +215,36 @@ impl ScopeSearch<'_> {
         }
     }
 
+    pub fn id_of_var(&self, name: impl AsRef<str>) -> Option<GenericNodeId> {
+        if self.exclusive {
+            let scope = self
+                .tree
+                .tree
+                .get(&self.current_pos)
+                .expect("Tree corrupted");
+            return scope.data().variables.get(name.as_ref()).copied();
+        } else {
+            self.bubble_up(|scope| scope.variables.get(name.as_ref()).copied())
+                .expect("Tree corrupted")
+        }
+    }
+
     pub fn ty(&self, name: impl AsRef<str> + Clone) -> Option<MonomorphicType> {
         if self.exclusive {
-            let scope = self.tree.get(&self.current_pos).expect("Tree corrupted");
+            let scope = self
+                .tree
+                .tree
+                .get(&self.current_pos)
+                .expect("Tree corrupted");
             return scope.data().lookup_type(name);
         } else {
             self.bubble_up(|scope| scope.lookup_type(name.clone()))
                 .expect("Tree corrupted")
         }
+    }
+
+    pub fn as_tree(&self) -> &ScopeTree {
+        self.tree
     }
 }
 
@@ -235,23 +262,10 @@ impl Debug for Scope {
             write!(f, "[{:?}]", self.start_from_id)?;
         }
         if !self.types.is_empty() {
-            write!(
-                f,
-                " {{{}}}",
-                self.types
-                    .keys()
-                    .join(", ")
-            )?;
+            write!(f, " {{{}}}", self.types.keys().join(", "))?;
         }
         if !self.variables.is_empty() {
-            write!(
-                f,
-                " {{{}}}",
-                self.variables
-                    .keys()
-                    .cloned()
-                    .join(", ")
-            )?;
+            write!(f, " {{{}}}", self.variables.keys().cloned().join(", "))?;
         }
         Ok(())
     }

@@ -5,8 +5,8 @@ use nonempty_collections::nev;
 use Identifier::TypeReference;
 use kodept_ast::{
     Appl, BlockLevel, BlockLevelEnum, Body, BodyEnum, BodyFnDecl, CodeFlowEnum, Expression,
-    ExpressionEnum, Exprs, Identifier, IfExpr, InitVar, Lambda, Lit, LitEnum, Operation,
-    OperationEnum, ParamEnum, Ref, Term, TermEnum,
+    ExpressionEnum, Exprs, Identifier, IfExpr, InitVar, Lambda, Lit, LitEnum, node_sub_enum,
+    Operation, OperationEnum, ParamEnum, Ref, Term, TermEnum,
 };
 use kodept_ast::graph::{PermTkn, SyntaxTree};
 use kodept_ast::traits::{AsEnum, Identifiable};
@@ -19,6 +19,57 @@ use crate::scope::ScopeTree;
 use crate::type_checker::{InferError, TypeChecker};
 use crate::type_checker::InferError::Unknown;
 use crate::Witness;
+
+node_sub_enum! {
+    pub(crate) enum ModelConvertibleNode {
+        Body(forward Body),
+        Block(forward BlockLevel),
+        Fn(BodyFnDecl),
+        Op(forward Operation),
+        Appl(Appl),
+        Exprs(Exprs),
+        InitVar(InitVar),
+        Expr(forward Expression),
+        If(IfExpr),
+        Lit(forward Lit),
+        Term(forward Term),
+        Ref(Ref),
+        Lambda(Lambda)
+    }
+}
+
+impl ModelConvertibleNode {
+    pub fn to_model(
+        &self,
+        scopes: &ScopeTree,
+        ast: &SyntaxTree,
+        token: &PermTkn,
+        evidence: Witness,
+    ) -> Result<Language, InferError> {
+        let helper = ConversionHelper {
+            scopes,
+            ast,
+            token,
+            evidence,
+        };
+
+        match self.as_enum() {
+            ModelConvertibleNodeEnum::Body(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Block(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Fn(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Op(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Appl(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Exprs(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::InitVar(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Expr(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::If(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Lit(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Term(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Ref(x) => helper.convert(x),
+            ModelConvertibleNodeEnum::Lambda(x) => helper.convert(x),
+        }
+    }
+}
 
 impl TypeChecker<'_> {
     #[allow(private_bounds)]
@@ -97,7 +148,7 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
                 };
                 let assigned_ty = match ty {
                     None => None,
-                    Some(ty) => Some(convert(ty, scope.clone(), self.ast, self.token)?),
+                    Some(ty) => Some(convert(ty, &scope, self.ast, self.token)?),
                 };
                 let var = scope
                     .var(name)
@@ -182,7 +233,7 @@ impl ToModelFrom<InitVar> for ConversionHelper<'_> {
             .ok_or(AlgorithmWError::UnknownVar(nev![var(&variable.name)]))?;
         let assigned_ty = variable
             .assigned_type(self.ast, self.token)
-            .map(|it| convert(it, scope, self.ast, self.token))
+            .map(|it| convert(it, &scope, self.ast, self.token))
             .map_or(Ok(None), |it| it.map(Some))?;
         let var = assigned_ty
             .map(|it| bounded(bind.clone(), it))
