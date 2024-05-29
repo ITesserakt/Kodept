@@ -1,13 +1,15 @@
 use std::fmt::Debug;
 
-use derive_more::{From, TryInto, Display};
+use derive_more::{Display, From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
 
-use crate::graph::node_id::GenericNodeId;
-use crate::graph::Identifiable;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
+
 use crate::*;
+use crate::graph::Identifiable;
+use crate::graph::node_id::GenericNodeId;
 
 #[derive(Debug, PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
 #[strum_discriminants(derive(VariantArray, Display))]
@@ -114,5 +116,16 @@ impl AnyNode {
     #[inline]
     pub fn name(&self) -> &'static str {
         self.into()
+    }
+
+    pub fn try_cast<T>(&self) -> Option<&T>
+    where
+        AnyNode: ConvertibleToRef<T>,
+    {
+        self.try_as_ref()
+    }
+    
+    pub fn tru_cast_mut<T>(&mut self) -> Option<&mut T> where AnyNode: ConvertibleToMut<T> {
+        self.try_as_mut()
     }
 }

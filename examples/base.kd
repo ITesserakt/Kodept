@@ -1,8 +1,5 @@
 module Base =>
 
-// Identity function
-fun id(x) => x
-
 // Reverses order of arguments
 fun flip(f, x, y) => f(y, x)
 
@@ -28,3 +25,6 @@ fun tuples(z) {
     val w = \y => ((y, y))
     w(x)
 }
+
+// Identity function
+fun id(x) => x

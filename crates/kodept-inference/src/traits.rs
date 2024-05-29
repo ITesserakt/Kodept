@@ -1,13 +1,14 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::hash::Hash;
 
 use Constraint::{ExplicitInstance, ImplicitInstance};
 use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
 
-use crate::constraint::Constraint::Eq;
 use crate::constraint::{Constraint, EqConstraint};
-use crate::r#type::MonomorphicType::Fn;
+use crate::constraint::Constraint::Eq;
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
+use crate::r#type::MonomorphicType::Fn;
 use crate::substitution::Substitutions;
 
 pub(crate) trait Substitutable {
@@ -22,6 +23,10 @@ pub(crate) trait FreeTypeVars {
 
 pub(crate) trait ActiveTVars {
     fn active_vars(self) -> HashSet<TVar>;
+}
+
+pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
+    fn get(&mut self, key: &Key) -> Option<Cow<PolymorphicType>>;
 }
 
 // -------------------------------------------------------------------------------------------------

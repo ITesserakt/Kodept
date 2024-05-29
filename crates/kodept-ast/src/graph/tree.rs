@@ -50,7 +50,7 @@ mod main {
     use slotgraph::export::{Config, Direction, Dot};
     use slotgraph::SubDiGraph;
 
-    use crate::graph::{Change, ChangeSet, AnyNode, Identifiable, NodeId, PermTkn};
+    use crate::graph::{AnyNode, Change, ChangeSet, Identifiable, NodeId, PermTkn};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::{ChildTag, TAGS_DESC};
     use crate::graph::tree::{ChildScope, DfsIter, Graph};
@@ -191,6 +191,14 @@ mod main {
                 .collect()
         }
 
+        pub fn get<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&T>
+        where
+            AnyNode: ConvertibleToRef<T>,
+        {
+            let node_ref = self.graph.node_weight(id.into())?;
+            node_ref.ro(token).try_as_ref()
+        }
+
         pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut PermTkn) -> Option<&mut T>
         where
             AnyNode: ConvertibleToMut<T>,
@@ -199,11 +207,7 @@ mod main {
             node_ref.rw(token).try_as_mut()
         }
 
-        pub fn parent_of<'a, T>(
-            &'a self,
-            id: NodeId<T>,
-            token: &'a PermTkn,
-        ) -> Option<&AnyNode> {
+        pub fn parent_of<'a, T>(&'a self, id: NodeId<T>, token: &'a PermTkn) -> Option<&AnyNode> {
             let mut parents = self.graph.parents(id.into());
             if let (Some((_, parent_id)), None) = (parents.next(), parents.next()) {
                 Some(self.graph[parent_id].ro(token))
@@ -382,12 +386,12 @@ mod utils {
 mod subtree {
     use crate::graph::AnyNode;
     use crate::graph::tree::Graph;
-    
+
     #[derive(Default, Debug)]
     pub struct SubSyntaxTree {
-        graph: Graph<AnyNode>
+        graph: Graph<AnyNode>,
     }
-    
+
     impl SubSyntaxTree {
         pub fn new() -> Self {
             Self::default()
