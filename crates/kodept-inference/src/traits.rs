@@ -10,17 +10,17 @@ use crate::r#type::MonomorphicType::Fn;
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
 use crate::substitution::Substitutions;
 
-pub trait Substitutable {
+pub(crate) trait Substitutable {
     type Output;
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output;
 }
 
-pub trait FreeTypeVars {
+pub(crate) trait FreeTypeVars {
     fn free_types(self) -> HashSet<TVar>;
 }
 
-pub trait ActiveTVars {
+pub(crate) trait ActiveTVars {
     fn active_vars(self) -> HashSet<TVar>;
 }
 

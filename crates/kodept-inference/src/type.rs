@@ -10,6 +10,7 @@ use crate::InferState;
 use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
 
+#[allow(dead_code)]
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     if id == 0 {
         return alphabet
@@ -133,7 +134,7 @@ impl MonomorphicType {
 }
 
 impl PolymorphicType {
-    pub fn normalize(self) -> Self {
+    pub(crate) fn normalize(self) -> Self {
         let mut free = self.binding_type.extract_vars();
         free.sort_unstable();
         free.dedup();
@@ -153,7 +154,7 @@ impl PolymorphicType {
         }
     }
 
-    pub fn instantiate(&self, env: &mut InferState) -> MonomorphicType {
+    pub(crate) fn instantiate(&self, env: &mut InferState) -> MonomorphicType {
         let fresh = self.bindings.iter().map(|it| (*it, env.new_var()));
         let s0 = Substitutions::from_iter(fresh);
         self.binding_type.substitute(&s0)
