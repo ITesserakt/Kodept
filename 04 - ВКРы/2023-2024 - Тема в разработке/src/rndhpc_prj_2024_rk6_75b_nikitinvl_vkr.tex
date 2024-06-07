@@ -1,6 +1,9 @@
 %\documentclass[12pt]{report}
 \documentclass[utf8, 14pt]{G7-32}
-\usepackage{textcomp}  % ГОСТ 7.32-2001
+\usepackage{textcomp}
+\usepackage{import}
+\usepackage{G2-105}
+\usepackage{color}  % ГОСТ 7.32-2001
 %----------------------------------------------------------
 % Значения констант по КП, НИРС, ВКР
 \input{doc-spec/constants_id}
@@ -121,7 +124,7 @@
 %----------------------------------------------------------
 % Список литературы
     \bibliographystyle{utf8gost705u}
-    \addcontentsline{toc}{chapter}{Литература}
+    \addcontentsline{toc}{chapter}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}
     \bibliography{bibliography}
 %----------------------------------------------------------
     \subsubsection*{Выходные данные}

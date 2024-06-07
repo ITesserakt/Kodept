@@ -1,5 +1,11 @@
 { pkgs, lib, config, inputs, ... }:
 
 {
-    packages = with pkgs; [ texliveFull just mermaid-cli python3 ];
+    packages = with pkgs; [ 
+    	texliveFull
+    	just
+    	mermaid-cli
+    	watchexec
+    	inkscape
+    ];
 }

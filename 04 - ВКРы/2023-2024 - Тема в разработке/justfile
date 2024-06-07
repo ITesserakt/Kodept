@@ -1,6 +1,6 @@
 #!/usr/bin/env just --justfile
 
-PROJECT_NAME := 'rndhpc_prj_2024_rk6_75b_nikitinvl_kp'
+PROJECT_NAME := 'rndhpc_prj_2024_rk6_75b_nikitinvl_vkr'
 OUTDIR := replace(justfile_directory() / 'out', ' ', '\ ')
 SRCDIR := replace(justfile_directory() / 'src/', ' ', '\ ')
 DOCDIR := replace(justfile_directory() / 'doc/', ' ', '\ ')
@@ -18,9 +18,10 @@ clean:
 mk_folder:
     mkdir -p {{OUTDIR}}
     mkdir -p {{OUTDIR}}/chapters
+    mkdir -p {{ SRCDIR }}/figures/.generated
 
 [private]
-build_pdf:
+build_pdf: mk_folder
     cd {{ SRCDIR }} && latexmk -quiet -outdir={{ OUTDIR }} -pdf {{ PROJECT_NAME }} --shell-escape
 
 [private]
@@ -31,20 +32,39 @@ build_gls:
 build_bib:
     cd {{ OUTDIR }} && bibtex {{ PROJECT_NAME }}
 
-build: mk_folder build_pdf build_gls build_bib && build_pdf
+build: build_pdf build_gls build_bib && build_pdf
 
 rebuild: clean compile build
+
+watch: clean compile
+	watchexec -d 2000 -w {{ SRCDIR }} -r  -- just build
 
 dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
 
-compile_mermaid file ext='.pdf':
-    mmdc -i {{ SRCDIR / 'mermaid' / file }} -o {{ SRCDIR / 'figures' / without_extension(file) + ext }} -b transparent -f -C {{ SRCDIR / 'mermaid' / 'mermaid.css' }}
+compile_mermaid file ext='.pdf': mk_folder
+    mmdc                                                                           \
+    	-i {{ SRCDIR / 'mermaid' / file }}                                         \
+    	-o {{ SRCDIR / 'figures' / '.generated' / without_extension(file) + ext }} \
+    	-b transparent                                                             \
+    	-f                                                                         \
+    	-C {{ SRCDIR / 'mermaid' / 'mermaid.css' }}                                \
+    	-t neutral
+
+compile_inkscape file: mk_folder
+	inkscape                                                                                    \
+		-D                                                                                      \
+		-d 300                                                                                  \
+		-z                                                                                      \
+		--file={{ SRCDIR / 'inkscape' / file }}                                                 \
+		--export-pdf={{ SRCDIR / 'figures' / '.generated' / without_extension(file) + '.pdf' }} \
+		--export-latex
 
 compile:
-    #!/usr/bin/env python3
-    from glob import glob
-    from subprocess import run
-    from os import path
-    for file in glob("{{replace(SRCDIR, '\ ', ' ')}}mermaid/*.mmd"):
-        run(['just', 'compile_mermaid', path.basename(file)])
+  #!/usr/bin/env sh
+  for f in {{ SRCDIR }}mermaid/*.mmd; do 
+    just compile_mermaid `basename "$f"`
+  done
+  for f in {{ SRCDIR }}inkscape/*.svg; do 
+    just compile_inkscape `basename "$f"`
+  done

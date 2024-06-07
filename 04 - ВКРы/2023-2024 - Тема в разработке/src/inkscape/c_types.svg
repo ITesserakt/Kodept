@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25)"
+   sodipodi:docname="c_types.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="2.0327316"
+     inkscape:cx="426.76564"
+     inkscape:cy="319.02884"
+     inkscape:window-width="2048"
+     inkscape:window-height="1211"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="470.51975"
+       y="219.05847"
+       width="122.53692"
+       height="35.238771"
+       id="rect266" />
+    <rect
+       x="218.7006"
+       y="349.73141"
+       width="124.78344"
+       height="54.99444"
+       id="rect265" />
+    <rect
+       x="396.85039"
+       y="221.81228"
+       width="193.0585"
+       height="148.91698"
+       id="rect8" />
+    <rect
+       x="270.83887"
+       y="283.0701"
+       width="170.79289"
+       height="148.59921"
+       id="rect7" />
+    <rect
+       x="113.27809"
+       y="292.73152"
+       width="124.91374"
+       height="253.34974"
+       id="rect6" />
+    <rect
+       x="365.61058"
+       y="200.57968"
+       width="140.92277"
+       height="26.287421"
+       id="rect5" />
+    <rect
+       x="205.26571"
+       y="204.16302"
+       width="87.161376"
+       height="27.12256"
+       id="rect4" />
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker3"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path3" />
+    </marker>
+    <rect
+       x="296.73044"
+       y="125.93104"
+       width="54.019315"
+       height="22.451004"
+       id="rect1" />
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle-8"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7-6" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker3-8"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path3-2" />
+    </marker>
+  </defs>
+  <g
+     inkscape:label="Слой 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,9.8966106,-3.1417918)"
+       id="text1"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect1);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.623622"><tspan
+         x="296.73047"
+         y="142.50059"
+         id="tspan16">Типы</tspan></text>
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.465;stroke-dasharray:none;marker-start:url(#ConcaveTriangle);marker-end:url(#marker3)"
+       d="m 132.03825,49.854028 c 0,-8.225883 -37.771097,-2.14532 -37.841145,-12.807856 0.06991,10.642169 -31.270699,4.169297 -31.270699,12.804428"
+       id="path2"
+       sodipodi:nodetypes="ccc" />
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text4"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect4);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.623622"><tspan
+         x="205.26562"
+         y="220.73106"
+         id="tspan17">Базовые</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,21.122346,0.44613895)"
+       id="text5"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect5);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.623622"><tspan
+         x="365.61133"
+         y="217.14903"
+         id="tspan18">Производные</tspan></text>
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.465;stroke-dasharray:none;marker-start:url(#ConcaveTriangle-8);marker-end:url(#marker3-8)"
+       d="m 82.618424,71.500693 c 0,-8.225883 -19.62197,-0.365394 -19.692018,-11.02793 0.06991,10.642169 -23.941036,2.24198 -23.941036,10.877111"
+       id="path2-8"
+       sodipodi:nodetypes="ccc" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,-0.09518175,-2.8006695)"
+       id="text6"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect6);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.623622;stroke-dasharray:none"><tspan
+         x="113.27734"
+         y="309.30137"
+         id="tspan19">Целые
+</tspan><tspan
+         x="113.27734"
+         y="332.63475"
+         id="tspan20">- char,
+</tspan><tspan
+         x="113.27734"
+         y="355.96812"
+         id="tspan21">- (unsigned) int,
+</tspan><tspan
+         x="113.27734"
+         y="379.3015"
+         id="tspan22">- enum</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,-3.3853092,-0.09713059)"
+       id="text7"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect7);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.623622;stroke-dasharray:none"><tspan
+         x="270.83984"
+         y="299.63926"
+         id="tspan23">С плавающей точкой
+</tspan><tspan
+         x="270.83984"
+         y="322.97264"
+         id="tspan24">- float, double
+</tspan><tspan
+         x="270.83984"
+         y="346.30601"
+         id="tspan25">- complex
+</tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,13.171834,0.72554122)"
+       id="text8"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18.6667px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;shape-inside:url(#rect8);display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.623622;stroke-dasharray:none"><tspan
+         x="396.84961"
+         y="238.38145"
+         id="tspan26">- массив
+</tspan><tspan
+         x="396.84961"
+         y="261.71483"
+         id="tspan27">- struct
+</tspan><tspan
+         x="396.84961"
+         y="285.0482"
+         id="tspan28">- union
+</tspan><tspan
+         x="396.84961"
+         y="308.38157"
+         id="tspan29">- указатель на функцию
+</tspan><tspan
+         x="396.84961"
+         y="331.71495"
+         id="tspan30">- указатель</tspan></text>
+    <rect
+       style="fill:none;fill-opacity:1;stroke:none;stroke-width:0.839572;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.839572, 0.839572;stroke-dashoffset:0"
+       id="rect276"
+       width="127.66656"
+       height="4.6028504"
+       x="26.892439"
+       y="102.53732"
+       ry="2.3014252" />
+  </g>
+</svg>

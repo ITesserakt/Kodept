@@ -9,7 +9,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/arch}
+    \includegraphics[width=\textwidth]{figures/.generated/arch}
     \caption{Архитектура большинства современных компиляторов}
     \label{fig:arch}
 \end{figure}
@@ -40,7 +40,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/modules}
+    \includegraphics[width=\textwidth]{figures/.generated/modules}
     \caption{Иерархия модулей в проекте}
     \label{fig:modules}
 \end{figure}
@@ -154,7 +154,7 @@
 \section{Организация доступа к элементам абстрактного синтаксического дерева}
 \label{sec:ast_access}
 
-С помощью модуля \lstinline{kodept-macros} организовывается анализ AST.
+С помощью модуля \lstinline{kodept-macros} организовывается анализ AST\@.
 Во время этого элементы, составляющие дерево, могут быть изменены.
 К сожалению, из-за специфики Rust, в момент времени может существовать только 1 ссылка на объект, допускающая изменение (exclusive mutable access).
 Иногда разработчику не обойтись без разделяемого изменяемого состояния.
@@ -207,7 +207,7 @@ Interior mutability позволяет изменять внутренние д�
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{figures/scopes}
+    \includegraphics[width=\textwidth]{figures/.generated/scopes}
     \caption{Дерево областей видимости}
     \label{fig:scopes}
 \end{figure}
