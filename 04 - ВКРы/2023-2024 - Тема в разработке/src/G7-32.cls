@@ -43,8 +43,8 @@
 \input{GostBase.clo}
 %\RequirePackage[left=20mm,right=10mm,top=20mm,bottom=25mm,headsep=20pt]{geometry}
 % возможно, что эту строку следует раскомментировать
-%\RequirePackage[left=30mm,right=10mm,top=20mm,bottom=20mm,headsep=0pt]{geometry}
-\RequirePackage[left=20mm,right=10mm,top=20mm,bottom=25mm,headsep=0pt]{geometry}
+\RequirePackage[left=30mm,right=10mm,top=20mm,bottom=20mm,headsep=0pt]{geometry}
+%\RequirePackage[left=20mm,right=10mm,top=20mm,bottom=25mm,headsep=0pt]{geometry}
 \RequirePackage{G7-32}
 
 \endinput
