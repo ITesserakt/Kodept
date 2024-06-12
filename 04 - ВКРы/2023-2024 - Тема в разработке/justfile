@@ -16,17 +16,17 @@ clean:
 
 [private]
 mk_folder:
-    mkdir -p {{OUTDIR}}
-    mkdir -p {{OUTDIR}}/chapters
-    mkdir -p {{ SRCDIR }}/figures/.generated
+    @mkdir -p {{OUTDIR}}
+    @mkdir -p {{OUTDIR}}/chapters
+    @mkdir -p {{ SRCDIR }}/figures/.generated
 
 [private]
 build_pdf: mk_folder
-    cd {{ SRCDIR }} && latexmk -quiet -outdir={{ OUTDIR }} -pdf {{ PROJECT_NAME }} --shell-escape
+    cd {{ SRCDIR }} && xelatex -output-directory={{ OUTDIR }} -interaction=batchmode -halt-on-error {{ PROJECT_NAME }}
 
 [private]
 build_gls:
-    cd {{ OUTDIR }} && makeglossaries-lite {{ PROJECT_NAME }}
+    cd {{ OUTDIR }} && makeglossaries-lite -q {{ PROJECT_NAME }}
 
 [private]
 build_bib:
@@ -42,15 +42,6 @@ watch: clean compile
 dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
 
-compile_mermaid file ext='.pdf': mk_folder
-    mmdc                                                                           \
-    	-i {{ SRCDIR / 'mermaid' / file }}                                         \
-    	-o {{ SRCDIR / 'figures' / '.generated' / without_extension(file) + ext }} \
-    	-b transparent                                                             \
-    	-f                                                                         \
-    	-C {{ SRCDIR / 'mermaid' / 'mermaid.css' }}                                \
-    	-t neutral
-
 compile_inkscape file: mk_folder
 	inkscape                                                                                    \
 		-D                                                                                      \
@@ -60,11 +51,14 @@ compile_inkscape file: mk_folder
 		--export-pdf={{ SRCDIR / 'figures' / '.generated' / without_extension(file) + '.pdf' }} \
 		--export-latex
 
-compile:
+compile_uml: mk_folder
+	plantuml                               \
+		-tlatex:nopreamble                 \
+		-theme plain                       \
+		{{ 'src' / 'plantuml' / '*.puml' }}
+
+compile: compile_uml
   #!/usr/bin/env sh
-  for f in {{ SRCDIR }}mermaid/*.mmd; do 
-    just compile_mermaid `basename "$f"`
-  done
   for f in {{ SRCDIR }}inkscape/*.svg; do 
     just compile_inkscape `basename "$f"`
   done

@@ -8,16 +8,17 @@
 \appendix
 
 % команды далее необходимы для того, чтобы нумерация элементов текста в приложениях была корректной.
-\renewcommand{\theequation}{\thechapter.\arabic{equation}}
-\renewcommand{\thefigure}{\thechapter.\arabic{figure}}
-\renewcommand{\thetable}{\thechapter.\arabic{table}}
+\newcommand{\thechaptersmall}{\Asbuk{chapter}\unskip}
+\renewcommand{\theequation}{\thechaptersmall.\arabic{equation}}
+\renewcommand{\thefigure}{\thechaptersmall.\arabic{figure}}
+\renewcommand{\thetable}{\thechaptersmall.\arabic{table}}
 % -------
 \renewcommand{\appendixname}{ПРИЛОЖЕНИЯ}
 \def\chaptername{ПРИЛОЖЕНИЕ}
-\def\thechapter{\Asbuk{chapter}\unskip}
-\renewcommand{\thesection}{\thechapter.\arabic{section}\unskip}
+\def\thechapter{ПРИЛОЖЕНИЕ \thechaptersmall}
+\renewcommand{\thesection}{\thechaptersmall.\arabic{section}\unskip}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\addcontentsline{toc}{chapter}{ПРИЛОЖЕНИЯ}
+%\addcontentsline{toc}{chapter}{ПРИЛОЖЕНИЯ}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ПРИЛОЖЕНИЕ
 \fancyhead[C]{\thepage \\ \textbf{\leftmark}}

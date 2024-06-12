@@ -10,76 +10,66 @@
 %
 \ProvidesPackage{G7-32}[2003/07/07 v1.00 Titles for GOST 7.32-2001]
 
+
+\def\@FullOrganisationName{\csname FullOrganisationName\endcsname}
+
+
 %стандартные части
 \newcommand\Executors{%список исполнителей
- \chapter*{\CYRS\cyrp\cyri\cyrs\cyro\cyrk~%
-           \cyri\cyrs\cyrp\cyro\cyrl\cyrn\cyri\cyrt\cyre\cyrl\cyre\cyr\cyrishrt}%
+    \chapter*{Список~исполнителей}%
 }
 \newcommand\Referat{%реферат
- \chapter*{\CYRR\cyre\cyrf\cyre\cyrr\cyra\cyrt}%
+    \chapter*{Реферат}%
 }
-\addto\captionsrussian{%содержание
- \def\contentsname{%
-  \CYRS\cyro\cyrd\cyre\cyrr\cyrzh\cyra\cyrn\cyri\cyre}%
-}
+%\addto\captionsrussian{%содержание
+% \def\contentsname{Содержание}%
+%}
 \newcommand\NormRefs{%нормативные ссылки
- \chapter*{\CYRN\cyro\cyrr\cyrm\cyra\cyrt\cyri\cyrv\cyrn\cyrery\cyre~%
-           \cyrs\cyrs\cyrery\cyrl\cyrk\cyri}%
+    \chapter*{Нормативные ссылки}%
 }
 \newcommand\Defines{%определения
- \chapter*{\CYRO\cyrp\cyrr\cyre\cyrd\cyre\cyrl\cyre\cyrn\cyri\cyrya}%
+    \chapter*{Определения}%
 }
 \newcommand\Abbreviations{%обозначения и сокращения
- \chapter*{\CYRO\cyrb\cyro\cyrz\cyrn\cyra\cyrch\cyre\cyrn\cyri\cyrya~\cyri~%
-           \cyrs\cyro\cyrk\cyrr\cyra\cyrshch\cyre\cyrn\cyri\cyrya}%
+    \chapter*{Обозначения~и~сокращения}%
 }
 \newcommand\Introduction{%введение
- \chapter{\CYRV\cyrv\cyre\cyrd\cyre\cyrn\cyri\cyre}%
+    \chapter{Введение}%
 }
 \newcommand\Conclusion{%заключение
- \chapter{\CYRZ\cyra\cyrk\cyrl\cyryu\cyrch\cyre\cyrn\cyri\cyre}%
+    \chapter{Заключение}%
 }
-\addto\captionsrussian{%список использованных источников
- \def\bibname{%
-  \CYRS\CYRP\CYRI\CYRS\CYRO\CYRK~
-  \CYRI\CYRS\CYRP\CYRO\CYRL\CYRSFTSN\CYRZ\CYRO\CYRV\CYRA\CYRN\CYRN\CYRERY\CYRH~
-  \CYRI\CYRS\CYRT\CYRO\CYRCH\CYRN\CYRI\CYRK\CYRO\CYRV}%
-}
+%\addto\captionsrussian{%список использованных источников
+% \def\bibname{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}%
+%}
 
 %Элементы оформления титульной страницы
-\newcommand\Nir@UdkName{\CYRU\CYRD\CYRK}
+\newcommand\Nir@UdkName{УДК}
 
 \newcommand\Nir@No{%
- \No~\cyrg\cyro\cyrs\cyrr\cyre\cyrg\cyri\cyrs\cyrt\cyrr\cyra\cyrc\cyri\cyri%
+    \No~госрегистрации%
 }
 
 \newcommand\Nir@Confirm{
- {\small\CYRU\CYRT\CYRV\CYRE\CYRR\CYRZH\CYRD\CYRA\CYRYU}%
+        {\small УТВЕРЖДАЮ}%
 }
 
 \newcommand\Nir@InventarNo{
- \CYRI\cyrn\cyrv.~\No
+    Инв.~\No
 }
 
 \newcommand\Nir@Otchet{{%
- \small\CYRO\CYRT\CYRCH\CYRYO\CYRT \\
- \CYRO{} \CYRN\CYRA\CYRU\CYRCH\CYRN\CYRO-%
- \CYRI\CYRS\CYRS\CYRL\CYRE\CYRD\CYRO\CYRV\CYRA\CYRT\CYRE\CYRL\CYRSFTSN\CYRS\CYRK\CYRO\CYRISHRT{} %
- \CYRR\CYRA\CYRB\CYRO\CYRT\CYRE%
-}}
+    \small ОТЧЁТ \\ О НАУЧНО-ИССЛЕДОВАТЕЛЬСКОЙ РАБОТЕ}}
 
 \newcommand\Nir@AnnOtchet{ %отчёт аннотационный!?
 }
 
 \newcommand\Nir@MainBegin{%
- \CYRR\cyru\cyrk\cyro\cyrv\cyro\cyrd\cyri\cyrt\cyre\cyrl\cyrsftsn{} %
- \CYRN\CYRI\CYRR%
+    Руководитель НИР
 }
 
 \newcommand\Nir@OrgLongName{%
- \CYRP\cyro\cyrl\cyrn\cyro\cyre~
- \cyrn\cyra\cyrz\cyrv\cyra\cyrn\cyri\cyre~
- \cyro\cyrr\cyrg\cyra\cyrn\cyri\cyrz\cyra\cyrc\cyri\cyri%
+    \@FullOrganisationName%
 }
 
 \newcommand\Nir@StageNo{ % номер этапа работ
@@ -92,66 +82,64 @@
 
 
 \newcommand\Nir@BossPost{%
- \CYRK\cyrt\cyro \newline
- \cyru\cyrt\cyrv\cyre\cyrr\cyrzh\cyrd\cyra\cyre\cyrt%
+    @Кто \newline утверждает@%
 }
 
-\newcommand\Nir@BossName{\CYRF.~\CYRI.~\CYRO}
+\newcommand\Nir@BossName{Ф.~И.~О}
 \newcommand\Nir@Year{\the\year}
-\newcommand\Nir@Town{\CYRG\cyro\cyrr\cyro\cyrd}
+\newcommand\Nir@Town{@Город@}
 \newcommand\Nir@ManagerPost{%
- \cyrb\cyro\cyrl\cyrsftsn\cyrsh\cyro\cyrishrt{}
- \cyrn\cyra\cyrch\cyra\cyrl\cyrsftsn\cyrn\cyri\cyrk%
+    @научy.рук.@%
 }
 
-\newcommand\Nir@ManagerName{\CYRI\cyrv\cyra\cyrn\cyro\cyrv}
+\newcommand\Nir@ManagerName{@Иванов И.И.@}%\ScientificAdviser}
 
-\newcommand\NirTitle[1]{
- \thispagestyle{empty}
- \begin{centering}
-  \linespread{1.1}\normalsize
-  {\Nir@OrgLongName}
+\newcommand\NirTitle[1]{%
+    \thispagestyle{empty}
+    \begin{centering}
+    \linespread{1.1}\normalsize
+    {\Nir@OrgLongName}
 
-  \vfill
-  \begin{tabular}{p{80mm}p{80mm}}
+    \vfill
+    \begin{tabular}{p{80mm}p{80mm}}
     \Nir@UdkName \newline
     \Nir@No \newline
     \Nir@InventarNo \newline
-   &
+    &
     \Nir@Confirm
 
     \vspace{5mm}
     \Nir@BossPost \newline \newline
     \underline{~~~~~~~~~~~~~~~~~} \Nir@BossName \newline
     <<\underline{~~~~}>>\underline{~~~~~~~~~~~~~~~~~} \Nir@Year~\cyrg.
-  \end{tabular}
-  \vfill
+    \end{tabular}
+    \vfill
 
-\Nir@AnnOtchet \Nir@Otchet
+    \Nir@AnnOtchet \Nir@Otchet
 
-  \vspace{8mm}
-  #1
-  \vspace{8mm}
+    \vspace{8mm}
+    #1
+    \vspace{8mm}
 
-\Nir@StageNo~~\Nir@StageTitle 
+    \Nir@StageNo~~\Nir@StageTitle
 
-(\Nir@StageType)
+    (\Nir@StageType)
 
 
 
-  \vfill
-  \begin{tabular}{p{80mm}p{80mm}}
+    \vfill
+    \begin{tabular}{p{80mm}p{80mm}}
     \Nir@MainBegin, \newline
     \Nir@ManagerPost
-   &
+    &
     ~\newline\underline{~~~~~~~~~~~~~~~~~~~} \Nir@ManagerName \newline
-  \end{tabular}
-  \vfill
-  \vfill
-  \Nir@Town~\Nir@Year
+    \end{tabular}
+    \vfill
+    \vfill
+    \Nir@Town~\Nir@Year
 
- \end{centering}
- \linespread{\Gost@LineSpread}\normalsize
+    \end{centering}
+    \linespread{\Gost@LineSpread}\normalsize
 }
 
 %Эти команды нужно вызвать для корректного определения титульной страницы

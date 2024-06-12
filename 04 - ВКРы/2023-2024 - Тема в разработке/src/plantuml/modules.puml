@@ -1,0 +1,24 @@
+@startuml
+
+[kodept]
+[kodept-parse]
+[kodept-interpret]
+[kodept-inference]
+[kodept-macros]
+[kodept-ast]
+[kodept-core]
+[slotgraph]
+
+[kodept] --> [kodept-interpret]
+[kodept] --> [kodept-parse]
+
+[kodept-interpret] --> [kodept-inference]
+[kodept-interpret] --> [kodept-macros]
+[kodept-macros] --> [kodept-ast]
+
+[kodept-ast] --> [slotgraph]
+[kodept-ast] --> [kodept-core]
+
+[kodept-parse] --> [kodept-core]
+
+@enduml

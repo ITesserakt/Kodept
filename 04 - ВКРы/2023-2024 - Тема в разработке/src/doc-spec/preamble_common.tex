@@ -4,8 +4,18 @@
 %----------------------------------------------------------
 \newcommand{\doclicense}{\includegraphics[width=0.09\textwidth]{doc-spec/by.eps}\xspace}%\ccShareAlike
 
-\usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
+%\usepackage[T2A]{fontenc}
+%\usepackage[utf8]{inputenc}
+\usepackage{fontspec}
+\setmainfont{CMU Serif}
+\setsansfont{CMU Sans Serif}% шрифт без засечек
+\setmonofont{CMU Typewriter Text}% моноширинный шрифт
+\newfontfamily{\cyrillicfonttt}{CMU Typewriter Text}
+
+\usepackage{polyglossia}
+\setmainlanguage{russian}
+\setdefaultlanguage{russian}
+\setotherlanguage{english}
 % Переносы приходится выключать, т.к. при попытке прохождения нормоконтроля TestVkr будет воспринимать перенесённые слова как два слова.
 %\usepackage[russian]{babel} %% это необходимо для включения переносов english
 \usepackage{float}
@@ -14,8 +24,7 @@
 \usepackage{pdflscape}
 \usepackage{bm}
 % необходимо для возможности копирования и поиска в готовом PDF
-%\usepackage{cmap} 
-\usepackage{array}
+\usepackage{cmap}
 \usepackage{multicol}
 \usepackage{relsize}
 \usepackage{booktabs}
@@ -42,15 +51,15 @@
     pdfmenubar=true,        % show Acrobat’s menu?
     pdffitwindow=false,     % window fit to page when opened
     pdfstartview={FitH},    % fits the width of the page to the window
-    pdftitle={\Title},    	% title
+    pdftitle={\Title},        % title
     pdfauthor={\Author},    % author
 %		pdfcopyright={Copyright © \Year, \Author. Все права защищены.},
-		pdfcopyright={CC BY 4.0, \Year, \Author.},
-		pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
+    pdfcopyright={CC BY 4.0, \Year, \Author.},
+    pdflicenseurl={http://creativecommons.org/licenses/by/4.0/},
     pdfsubject={\SubjectOfResearch},   % subject of the document
-    pdfcreator={\pdftexbanner},   % creator of the document
+%    pdfcreator={\pdftexbanner},   % creator of the document
 %		pdfpublisher={Computer-aided design department, Bauman Moscow State Technical University},
-		pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
+    pdfcaptionwriter={Ass. Prof., PhD. Alexandr P. Sokolov},
     pdfproducer={\Author(\gitAuthorEmail), \group, \Year, Computer-aided design department, Bauman Moscow State Technical University}, % producer of the document
     pdfkeywords={\keywordsru, \keywordsen}, % producer of the document
     pdfnewwindow=true,      % links in new window
@@ -69,7 +78,7 @@
 \makeglossaries
 %----------------------------------------------------------
 % поддержка inparaenum
-\usepackage{paralist} 
+\usepackage{paralist}
 %----------------------------------------------------------
 % нужно для определения окружения description
 %\usepackage{enumitem} 
@@ -78,7 +87,7 @@
 \usepackage{pdfpages}
 \includepdfset{turn=true,scale=0.95,pages=-,pagecommand={\pagestyle{fancy}}}
 %----------------------------------------------------------
-\usepackage{graphicx}
+%\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{tikzmark}
 \usetikzlibrary{matrix,automata,graphs}
@@ -126,7 +135,7 @@
 \renewcommand{\headrulewidth}{0.0pt}
 \renewcommand{\footrulewidth}{0.0pt}
 %\renewcommand{\chaptermark}[1]{\markboth{ \chaptername\ \thechapter }{}} 
-\renewcommand{\chaptermark}[1]{\markboth{}{}} 
+\renewcommand{\chaptermark}[1]{\markboth{}{}}
 \fancyhead[C]{}
 \fancyfoot[C]{\authorSIDheader}%[white]}
 %\setlength{\headheight}{17pt}%
@@ -135,11 +144,11 @@
 %----------------------------------------%
 %Необходимо для того, чтобы при использовании команды \thispagestyle{plain} стиль plain был переопределён на этот
 \fancypagestyle{plain}{%
-\fancyhf{}% clear all header and footer fields
-\renewcommand{\headrulewidth}{0pt}%
-\renewcommand{\footrulewidth}{0pt}%
-\fancyhead[C]{}
-\fancyfoot[C]{\authorSIDheader}%[white]}
+    \fancyhf{}% clear all header and footer fields
+    \renewcommand{\headrulewidth}{0pt}%
+    \renewcommand{\footrulewidth}{0pt}%
+    \fancyhead[C]{}
+    \fancyfoot[C]{\authorSIDheader}%[white]}
 }
 %----------------------------------------------------------
 %\usepackage[hpos=0.98\paperwidth, % .98 to prevent bleed
@@ -196,41 +205,50 @@
 %\usepackage{enumitem}
 %----------------------------------------------------------
 %Необходимо для сокращения размера шрифта подписей и сокращения отступов между рисунком и подписью к нему
-\usepackage[margin=5pt,font={small, singlespacing}, labelfont={small}, justification=centering, labelsep=period]{caption}
-\captionsetup{belowskip=0pt}
+%\usepackage[margin=5pt,font={small, singlespacing}, labelfont={small}, justification=centering, labelsep=period]{caption}
+%\captionsetup{belowskip=0pt}
+%
+%\captionsetup[figure]{justification=raggedright, singlelinecheck=false, indention=0.5em, format=hang}
+%
+%\DeclareCaptionFormat{custom}
+%{%
+%    #1#2\par #3
+%}
+%
+%\captionsetup[table]{format=custom, singlelinecheck=false, justification=raggedleft, indention=0.5em, position=top, aboveskip=5pt}
 %----------------------------------------------------------
 % подключение листингов и определение языков
 \usepackage{listings}
 
 \lstset
 {%
-		extendedchars=\true, % включаем не латиницу
-		frame=tb, % рамка сверху и снизу
-		escapechar=|, % |«выпадаем» в LATEX|
-		xleftmargin=0.5cm,
-		xrightmargin=0.5cm,
-		columns=fullflexible,
+    extendedchars=\true, % включаем не латиницу
+    frame=tb, % рамка сверху и снизу
+    escapechar=|, % |«выпадаем» в LATEX|
+    xleftmargin=0.5cm,
+    xrightmargin=0.5cm,
+    columns=fullflexible,
 %		aboveskip=5pt,
-		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-		numbersep=4pt,                   % how far the line-numbers are from the code
-		showspaces=false,
-		showstringspaces=false,
-		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
-		breaklines=true,                 % sets automatic line breaking
-		basicstyle=\color{black}\small\sffamily,%\ttfamily,% \sffamily
-		commentstyle=\color{gray}\itshape, % шрифт для комментариев
-		stringstyle=\color{orange},
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,                   % how far the line-numbers are from the code
+    showspaces=false,
+    showstringspaces=false,
+    breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    breaklines=true,                 % sets automatic line breaking
+    basicstyle=\color{black}\small\ttfamily,%\ttfamily,% \sffamily
+    commentstyle=\color{gray}\itshape, % шрифт для комментариев
+    stringstyle=\color{orange},
 %		stringstyle=\bfseries, % шрифт для строк
-		numberstyle=\footnotesize\color{gray},
+    numberstyle=\footnotesize\color{gray},
 %		numberstyle=\ttfamily\small\color{gray}, % the style that is used for the line-numbers
-		keywordstyle=\color{blue}\bfseries,
+    keywordstyle=\color{blue}\bfseries,
 %		directivestyle=\color{red},
 %		emph={int,char,double,float,unsigned,bool,string},
-		emphstyle={\color{blue}\bfseries},
-		tabsize=2,
+    emphstyle={\color{blue}\bfseries},
+    tabsize=2,
 %		morecomment=[l]{//},
 %		otherkeywords={=,==,:,&},
-		texcl=true,
+    texcl=true,
 }
 
 \lstloadlanguages{Python, C++}
@@ -241,7 +259,7 @@
 %----------------------------------------------------------
 % необходимо для того, чтобы доопределить спецификатор P, для 
 % использования в таблицах при форматировании
-%\usepackage{array}
+\usepackage{array}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
 %----------------------------------------%
 % необходимо для того, чтобы допускались разрывы страниц внутри align align*
@@ -281,39 +299,39 @@
 \theoremstyle{theoremstyle}
 
 %\declaretheoremstyle[
-  %headfont=\normalfont\bfseries,
+%headfont=\normalfont\bfseries,
 %%	numberwithin=section,
-  %bodyfont=\normalfont,
-  %spaceabove=1em plus 0.75em minus 0.25em,
-  %spacebelow=1em plus 0.75em minus 0.25em,
-  %qed={$\blacksquare$},
-	%headpunct={\newline},
+%bodyfont=\normalfont,
+%spaceabove=1em plus 0.75em minus 0.25em,
+%spacebelow=1em plus 0.75em minus 0.25em,
+%qed={$\blacksquare$},
+%headpunct={\newline},
 %%  qed={$\square$},
 %]{taskstyle}
 %
 %\declaretheorem[
-  %style=taskstyle,
-  %title=Задача,
-  %refname={задача,задачи},
-  %Refname={Задача,Задачи}
+%style=taskstyle,
+%title=Задача,
+%refname={задача,задачи},
+%Refname={Задача,Задачи}
 %]{task}
 %
 %\declaretheoremstyle[
-  %headfont=\normalfont\bfseries,
-	%numberwithin=task,
-  %bodyfont=\normalfont,
-  %spaceabove=1em plus 0.75em minus 0.25em,
-  %spacebelow=1em plus 0.75em minus 0.25em,
-	%headpunct={\newline},
+%headfont=\normalfont\bfseries,
+%numberwithin=task,
+%bodyfont=\normalfont,
+%spaceabove=1em plus 0.75em minus 0.25em,
+%spacebelow=1em plus 0.75em minus 0.25em,
+%headpunct={\newline},
 %%  qed={$\blacksquare$},
-  %qed={$\square$},
+%qed={$\square$},
 %]{variantstyle}
 %
 %\declaretheorem[
-  %style=variantstyle,
-  %title=Вариант,
-  %refname={вариант,варианты},
-  %Refname={Зариант,Варианты}
+%style=variantstyle,
+%title=Вариант,
+%refname={вариант,варианты},
+%Refname={Зариант,Варианты}
 %]{variant}
 
 %----------------------------------------------------------

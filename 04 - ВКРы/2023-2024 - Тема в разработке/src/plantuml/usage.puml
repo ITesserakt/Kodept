@@ -1,0 +1,15 @@
+@startuml
+'https://plantuml.com/use-case-diagram
+
+
+:Пользователь: as U
+:Разработчик: as D
+
+(Скомпилировать код) as (Compile)
+
+D --> (Compile)
+U --> (Compile)
+
+D --> (Сохранить структуру \n AST в файл)
+
+@enduml

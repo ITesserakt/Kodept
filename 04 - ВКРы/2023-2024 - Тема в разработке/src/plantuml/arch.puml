@@ -1,0 +1,14 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+:Исходный код<
+
+:Frontend;
+
+:Middle-end;
+
+:Backend;
+
+:Исполняемый файл>
+
+@enduml

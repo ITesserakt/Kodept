@@ -1,0 +1,31 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+start
+
+:<latex>$\mathcal{W}_c(\Gamma, e)$</latex><
+note
+Входные данные
+end note
+
+:<latex>$\mathcal{A}, \mathcal{C} \vdash e: \tau$</latex>|
+note
+Применение
+правил вывода
+end note
+
+if (<latex>$dom(\mathcal{A}) \subseteq dom(\Gamma)$</latex>) is (да) then
+  :<latex>$\mathcal{S} = solve(\mathcal{C} \cup (\mathcal{A} \preceq \Gamma))$</latex>|
+else (нет)
+  :Сообщение об ошибке;
+  end
+endif
+
+:<latex>$\mathcal{S}, \mathcal{S}\tau$</latex> >
+note
+Результат работы
+end note
+
+stop
+
+@enduml
