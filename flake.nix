@@ -14,18 +14,23 @@
       pkgs = (import nixpkgs) {
         inherit system;
       };
-
-      toolchain = fenix.packages.${system}.latest;
+      
+	  rust_pkgs = fenix.packages.${system};
+      toolchain = with rust_pkgs; combine [
+      	latest.rustc
+      	latest.cargo
+      	targets.x86_64-unknown-linux-musl.latest.rust-std
+      ];
 
       toolchain_win = with fenix.packages.${system}; combine [
         minimal.rustc
         minimal.cargo
-        targets.x86_64-pc-windows-gnu.latest.rust-std
+        targets.x86_64-pc-windows-musl.latest.rust-std
       ];
 
       naersk' = naersk.lib.${system}.override {
-        cargo = toolchain.toolchain;
-        rustc = toolchain.toolchain;
+        cargo = toolchain;
+        rustc = toolchain;
       };
 
       naersk_win = naersk.lib.${system}.override {
@@ -39,6 +44,9 @@
         nativeBuildInputs = with pkgs; [ pkgsStatic.stdenv.cc ];
         doCheck = true;
         doDoc = false;
+        
+        RUSTFLAGS = "-C target-feature=+crt-static";
+        CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
       };
 
       packages.${flake-utils.lib.system.x86_64-windows}.default = naersk_win.buildPackage {
@@ -51,7 +59,7 @@
           pkgsCross.mingwW64.windows.pthreads
         ];
 
-        CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+        CARGO_BUILD_TARGET = "x86_64-pc-windows-musl";
         CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER = pkgs.writeScript "wine-wrapper" ''
           export WINEPREFIX = "$(mktemp -d)"
           exec wine64 $@
@@ -62,11 +70,18 @@
         inherit inputs pkgs;
         modules = [
           ({ pkgs, config, ... }: {
-             packages = with pkgs; [ xdot rustup graphviz cargo-depgraph cargo-insta ];
+             packages = with pkgs; [ 
+               xdot 
+               # rustup 
+               graphviz 
+               cargo-depgraph 
+               cargo-insta 
+             ];
+             
              pre-commit.hooks.clippy.enable = true;
              languages.rust = {
                enable = true;
-               toolchain = toolchain;
+               toolchain = rust_pkgs.latest;
              };
            })
         ];

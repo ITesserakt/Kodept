@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::Path;
+use std::rc::Rc;
 
 use insta::assert_debug_snapshot;
 use nom_supreme::final_parser::final_parser;
@@ -14,15 +15,17 @@ use kodept::steps::pipeline::Pipeline;
 use kodept::steps::Step;
 use kodept::top_parser;
 use kodept_ast::ast_builder::ASTBuilder;
+use kodept_ast::graph::GenericNodeKey;
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::CodeHolder;
 use kodept_inference::assumption::Environment;
+use kodept_inference::language::Language;
 use kodept_interpret::operator_desugaring::*;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
-use kodept_interpret::Witness;
+use kodept_interpret::{Cache, Witness};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{MutableContext, UnrecoverableError};
 use kodept_parse::ParseError;
@@ -60,7 +63,7 @@ fn get_rlt(source: &ReadCodeSource) -> RLT {
     result
 }
 
-fn common_steps(ctx: &mut impl MutableContext) -> Result<Vec<Environment>, UnrecoverableError> {
+fn common_steps(ctx: &mut impl MutableContext) -> Result<Cache<Rc<Language>>, UnrecoverableError> {
     Pipeline
         .define_step(HCons {
             head: AccessExpander::new(),
@@ -114,7 +117,11 @@ fn test_typing(name: &str) {
         ast,
     );
 
-    assert_debug_snapshot!(common_steps(&mut context).expect("Success"));
+	let contents = common_steps(&mut context).expect("Success");
+	let mut values: Vec<(_, _)> = contents.into_iter().collect();
+	values.sort_by_key(|it| it.0);
+
+    assert_debug_snapshot!(values);
 }
 
 #[test]
