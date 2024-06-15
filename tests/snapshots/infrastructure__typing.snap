@@ -1,19 +1,15 @@
 ---
 source: tests/infrastructure.rs
-expression: "common_steps(&mut context).expect(\"Success\")"
+expression: values
 ---
 [
-    Assumptions {
-        value: {
-            Var(
-                Var {
-                    name: "name",
-                },
-            ): Monomorphic(
-                Constant(
-                    "String",
-                ),
-            ),
+    (
+        Key {
+            key_data: 4v1,
+            type: PhantomData<kodept_ast::graph::any_node::AnyNode>,
         },
-    },
+        Lambda(
+            λm. (let y = m in (let x = y 1 in x)),
+        ),
+    ),
 ]
