@@ -1,3 +1,5 @@
+use slotmap::SparseSecondaryMap;
+use kodept_ast::graph::GenericNodeKey;
 use crate::operator_desugaring::{AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander};
 
 mod convert_model;
@@ -22,3 +24,5 @@ impl Witness {
 }
 
 pub(crate) type Path = String;
+
+pub type Cache<T> = SparseSecondaryMap<GenericNodeKey, T>;

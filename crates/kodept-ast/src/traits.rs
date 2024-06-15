@@ -34,6 +34,11 @@ pub trait Linker {
     where 
         A: Identifiable + Into<AnyNode>,
         B: Identifiable + Into<AnyNode>;
+
+    fn link_by_id<A, B>(&mut self, ast_id: NodeId<A>, with: &B)
+    where
+        B: Into<RLTFamily> + Clone,
+        A: Into<AnyNode>;
 }
 
 pub trait Accessor {

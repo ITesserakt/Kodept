@@ -168,7 +168,7 @@ impl Language {
     fn infer_w(
         &self,
         context: &mut AlgorithmW,
-        table: &mut impl EnvironmentProvider<Var>,
+        table: &impl EnvironmentProvider<Var>,
     ) -> Result<(Substitutions, MonomorphicType), AlgorithmWError> {
         let (a, c, t) = context.apply(self)?;
         let (not_found, explicits) = a.keys().fold(
@@ -201,7 +201,7 @@ impl Language {
 
     pub(crate) fn infer_with_env(
         &self,
-        context: &mut impl EnvironmentProvider<Var>,
+        context: &impl EnvironmentProvider<Var>,
         env: &mut InferState,
     ) -> Result<PolymorphicType, AlgorithmWError> {
         let mut ctx = AlgorithmW {
@@ -216,7 +216,7 @@ impl Language {
 
     pub fn infer(
         &self,
-        table: &mut impl EnvironmentProvider<Var>,
+        table: &impl EnvironmentProvider<Var>,
     ) -> Result<PolymorphicType, AlgorithmWError> {
         self.infer_with_env(table, &mut InferState::default())
     }

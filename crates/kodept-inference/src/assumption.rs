@@ -170,7 +170,7 @@ impl Display for Environment {
 }
 
 impl EnvironmentProvider<Var> for Environment {
-    fn get(&mut self, key: &Var) -> Option<Cow<PolymorphicType>> {
+    fn get(&self, key: &Var) -> Option<Cow<PolymorphicType>> {
         self.0.get(key).map(Cow::Borrowed)
     }
 }

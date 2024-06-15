@@ -7,7 +7,7 @@ use codespan_reporting::term::termcolor::WriteColor;
 use replace_with::replace_with_or_abort;
 use thiserror::Error;
 
-use kodept_ast::graph::{AnyNode, SyntaxTree};
+use kodept_ast::graph::{AnyNode, NodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::{RLTAccessor, RLTFamily};
 use kodept_ast::traits::{Accessor, Identifiable, Linker};
 use kodept_core::file_relative::{CodePath, FileRelative};
@@ -60,6 +60,14 @@ impl Linker for DefaultContext {
     {
         self.rlt_accessor.save_existing(&a, b);
         a
+    }
+
+    fn link_by_id<A, B>(&mut self, ast_id: NodeId<A>, with: &B)
+    where
+        B: Into<RLTFamily> + Clone,
+        A: Into<AnyNode>
+    {
+        self.rlt_accessor.save_by_id(ast_id, with)
     }
 }
 
