@@ -43,19 +43,19 @@ fn replace_with<N: Identifiable + Into<AnyNode>>(
 
 impl BinaryOperatorExpander {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
 impl UnaryOperatorExpander {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
 impl AccessExpander {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

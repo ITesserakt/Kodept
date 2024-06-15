@@ -72,7 +72,7 @@
           ({ pkgs, config, ... }: {
              packages = with pkgs; [ 
                xdot 
-               # rustup 
+               rustup
                graphviz 
                cargo-depgraph 
                cargo-insta 

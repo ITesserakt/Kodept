@@ -108,7 +108,7 @@ pub(crate) fn convert(
                 })
                 .collect();
             let types = types?;
-            Ok(MonomorphicType::Tuple(Tuple::new(types)).into())
+            Ok(MonomorphicType::Tuple(Tuple::new(types)))
         }
     };
 }

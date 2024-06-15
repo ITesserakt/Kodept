@@ -26,7 +26,7 @@ pub(crate) trait ActiveTVars {
 }
 
 pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
-    fn get(&mut self, key: &Key) -> Option<Cow<PolymorphicType>>;
+    fn get(&self, key: &Key) -> Option<Cow<PolymorphicType>>;
 }
 
 // -------------------------------------------------------------------------------------------------

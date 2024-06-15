@@ -5,7 +5,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
 use kodept_core::ConvertibleToRef;
 
-use crate::graph::{AnyNode, GenericNodeKey};
+use crate::graph::{AnyNode, GenericNodeKey, NodeId};
 use crate::traits::Identifiable;
 
 #[derive(Clone, From, TryInto, Debug)]
@@ -78,6 +78,13 @@ impl RLTAccessor {
         A: Identifiable + Into<AnyNode>
     {
         self.links.insert(key.get_id().widen().into(), value.clone().into());
+    }
+
+    pub fn save_by_id<A, B>(&mut self, ast_id: NodeId<A>, with: &B)
+    where
+        B: Into<RLTFamily> + Clone,
+        A: Into<AnyNode> {
+        self.links.insert(ast_id.widen().into(), with.clone().into());
     }
 }
 

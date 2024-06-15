@@ -1,9 +1,9 @@
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
 use derive_more::From;
-use slotmap::SparseSecondaryMap;
 
 use kodept_ast::BodyFnDecl;
 use kodept_ast::graph::{ChangeSet, GenericNodeId, GenericNodeKey, PermTkn, SyntaxTree};
@@ -19,11 +19,11 @@ use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::Macro;
 use kodept_macros::traits::Context;
 
+use crate::{Cache, Witness};
 use crate::convert_model::ModelConvertibleNode;
 use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 use crate::type_checker::InferError::Unknown;
-use crate::Witness;
 
 pub struct CannotInfer;
 
@@ -53,7 +53,7 @@ impl From<CannotInfer> for ReportMessage {
 
 pub struct TypeChecker<'a> {
     pub(crate) symbols: &'a ScopeTree,
-    models: SparseSecondaryMap<GenericNodeKey, Rc<Language>>,
+    models: Rc<RefCell<Cache<Rc<Language>>>>,
     evidence: Witness,
 }
 
@@ -61,7 +61,7 @@ struct RecursiveTypeChecker<'a> {
     search: ScopeSearch<'a>,
     token: &'a PermTkn,
     tree: &'a SyntaxTree,
-    models: &'a mut SparseSecondaryMap<GenericNodeKey, Rc<Language>>,
+    models: Rc<RefCell<Cache<Rc<Language>>>>,
     evidence: Witness,
 }
 
@@ -74,7 +74,7 @@ pub enum InferError {
 
 impl EnvironmentProvider<GenericNodeKey> for RecursiveTypeChecker<'_> {
     // TODO: handle error properly
-    fn get(&mut self, key: &GenericNodeKey) -> Option<Cow<PolymorphicType>> {
+    fn get(&self, key: &GenericNodeKey) -> Option<Cow<PolymorphicType>> {
         let id: GenericNodeId = (*key).into();
         let node = self.tree.get(id, self.token).expect("Node not found");
 
@@ -93,19 +93,20 @@ impl EnvironmentProvider<GenericNodeKey> for RecursiveTypeChecker<'_> {
 
         let model = self
             .models
+            .borrow_mut()
             .entry(*key)
             .expect("Node not found")
             .or_insert_with(|| {
                 Rc::new(
                     node.try_cast::<ModelConvertibleNode>()
-                        .and_then(|node| {
+                        .map(|node| {
                             node.to_model(
                                 self.search.as_tree(),
                                 self.tree,
                                 self.token,
                                 self.evidence,
                             )
-                            .ok()
+                            .expect("Cannot build model for model")
                         })
                         .expect("Cannot build model for node"),
                 )
@@ -119,7 +120,7 @@ impl EnvironmentProvider<GenericNodeKey> for RecursiveTypeChecker<'_> {
 }
 
 impl EnvironmentProvider<Var> for RecursiveTypeChecker<'_> {
-    fn get(&mut self, key: &Var) -> Option<Cow<PolymorphicType>> {
+    fn get(&self, key: &Var) -> Option<Cow<PolymorphicType>> {
         let id = self.search.id_of_var(&key.name)?;
         let key: GenericNodeKey = id.into();
         self.get(&key)
@@ -135,8 +136,8 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    pub fn into_inner(self) -> SparseSecondaryMap<GenericNodeKey, Rc<Language>> {
-        self.models
+    pub fn into_inner(self) -> Cache<Rc<Language>> {
+        Rc::try_unwrap(self.models).expect("Cannot unwrap models").into_inner()
     }
 }
 
@@ -164,12 +165,12 @@ impl Macro for TypeChecker<'_> {
             return Execution::Skipped;
         };
         if matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
-            let search = self.symbols.lookup(&*node, &*tree, node.token())?;
-            let mut rec = RecursiveTypeChecker {
+            let search = self.symbols.lookup(&*node, &tree, node.token())?;
+            let rec = RecursiveTypeChecker {
                 search,
                 token: node.token(),
-                tree: &*tree,
-                models: &mut self.models,
+                tree: &tree,
+                models: self.models.clone(),
                 evidence: self.evidence,
             };
             let fn_location = context
