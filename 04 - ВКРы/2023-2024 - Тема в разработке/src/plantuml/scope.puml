@@ -1,0 +1,14 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+class Scope {
+    start_from_id: usize
+    name: Option<String>
+    types: HashMap<String, MonomorphicType>
+    variables: HashMap<String, usize>
+
+    Option<String> get_var(name: String)
+    Option<MonomorphicType> get_type(name: String)
+}
+
+@enduml

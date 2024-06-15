@@ -1,0 +1,14 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+class Function {
+    parameters: Vec<Parameter>
+}
+
+class Parameter {
+    name: String
+}
+
+Function *- Parameter
+
+@enduml

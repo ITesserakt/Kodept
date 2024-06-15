@@ -36,9 +36,6 @@ build: build_pdf build_gls build_bib && build_pdf
 
 rebuild: clean compile build
 
-watch: clean compile
-	watchexec -d 2000 -w {{ SRCDIR }} -r  -- just build
-
 dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
 
@@ -52,9 +49,10 @@ compile_inkscape file: mk_folder
 		--export-latex
 
 compile_uml: mk_folder
-	plantuml                               \
-		-tlatex:nopreamble                 \
-		-theme plain                       \
+	plantuml                                      \
+		-tlatex:nopreamble                        \
+		-theme plain                              \
+		-config {{ 'thirdparty' / 'config.cfg' }} \
 		{{ 'src' / 'plantuml' / '*.puml' }}
 
 compile: compile_uml

@@ -9,9 +9,27 @@
     ];
 
     scripts.plantuml.exec = ''
-    	cd $DEVENV_ROOT
     	${pkgs.jre8}/bin/java -jar "thirdparty/plantuml.jar" -o "$DEVENV_ROOT/src/figures/.generated/" $@
     '';
 
     env.GRAPHVIZ_DOT = "${pkgs.graphviz}/bin/dot";
+
+    processes = {
+    	assemble-pdf.exec = ''
+    		just clean
+    		just build_pdf
+    		just build_gls
+    		just build_bib
+    		watchexec -d 2000 -i "*.puml" -w src -r -- just build_pdf
+    	'';
+    	
+    	compile_figs.exec = ''
+    		watchexec -d 2000 -w src/plantuml -w src/inkscape -r -- just compile
+    	'';
+    	
+    	open-viewer.exec = ''${pkgs.evince}/bin/evince out/rndhpc_prj_2024_rk6_75b_nikitinvl_vkr.pdf'';
+    	open-viewer.process-compose = {
+    		is_foreground = true;
+    	};
+    };
 }

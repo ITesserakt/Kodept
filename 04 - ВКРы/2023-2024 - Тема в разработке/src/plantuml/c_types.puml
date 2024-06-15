@@ -1,0 +1,24 @@
+@startwbs
+'https://plantuml.com/wbs-diagram
+
+* <b>Типы</b>
+** "Базовые" as B
+
+***< Целые
+****_ int
+****_ char
+****_ enum
+
+*** С плавающей запятой
+****_ float
+****_ double
+****_ complex
+
+** Производные
+***_ "массив" as M
+***_ "struct" as St
+***_ union
+***_ указатель \n на функцию
+***_ указатель
+
+@endwbs

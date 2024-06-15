@@ -1,15 +1,22 @@
 @startuml
 'https://plantuml.com/use-case-diagram
 
-
 :Пользователь: as U
 :Разработчик: as D
 
-(Скомпилировать код) as (Compile)
+(Обработать файл) as (Compile)
+(Сохранить \n структуру \n AST в файл) as (Save)
+(Получить AST) as (AST)
+(Проверить семантику) as (Semantics)
 
-D --> (Compile)
 U --> (Compile)
 
-D --> (Сохранить структуру \n AST в файл)
+(Compile) .right.> (AST): включает
+(Save) ..> (AST): включает
+(Compile) ..> (Semantics): включает
+
+
+D -left-|> U
+D --> (Save)
 
 @enduml
