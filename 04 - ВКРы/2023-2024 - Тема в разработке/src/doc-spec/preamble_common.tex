@@ -13,8 +13,8 @@
 \newfontfamily{\cyrillicfonttt}{CMU Typewriter Text}
 
 \usepackage{polyglossia}
-\setmainlanguage{russian}
-\setdefaultlanguage{russian}
+\setmainlanguage[forceheadingpunctuation=false]{russian}
+\setdefaultlanguage[forceheadingpunctuation=false]{russian}
 \setotherlanguage{english}
 % Переносы приходится выключать, т.к. при попытке прохождения нормоконтроля TestVkr будет воспринимать перенесённые слова как два слова.
 %\usepackage[russian]{babel} %% это необходимо для включения переносов english
@@ -341,3 +341,14 @@
 \newtheorem{remark}{Замечание}
 \newtheorem{description}{Описание}
 %%----------------------------------------------------------
+
+\usepackage{titletoc}
+\titlecontents{chapter}
+[0pt]
+{}%
+{\contentsmargin{0pt}
+\thecontentslabel\enspace%
+\normalsize}
+{\contentsmargin{0pt}\normalsize}
+{\titlerule*[.5pc]{.}\contentspage}
+[]
