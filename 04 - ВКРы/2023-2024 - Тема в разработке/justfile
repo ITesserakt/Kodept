@@ -32,9 +32,9 @@ build_gls:
 build_bib:
     cd {{ OUTDIR }} && bibtex {{ PROJECT_NAME }}
 
-build: build_pdf build_gls build_bib build_pdf
+build: build_pdf build_gls build_bib && build_pdf
 
-rebuild: clean compile build
+rebuild: clean compile build && build_pdf
 
 dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
