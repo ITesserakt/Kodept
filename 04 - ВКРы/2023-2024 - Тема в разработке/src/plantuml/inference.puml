@@ -1,0 +1,62 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+object Language
+
+note left of Language: 2.5
+
+object MonomorphicType
+
+note left of MonomorphicType: 2.6
+
+object PolymorphicType
+
+note left of PolymorphicType: 2.7
+
+object PrimitiveType {
+    Integer
+    Floating
+    Boolean
+}
+
+PrimitiveType --* MonomorphicType
+
+MonomorphicType --o PolymorphicType
+
+object Constraint
+
+note left of Constraint: 2.15
+
+object AlgorithmW
+
+object AlgorithmU
+
+MonomorphicType --> AlgorithmU
+
+object Substitutions
+
+note left of Substitutions: 2.11
+
+Substitutions --o "0..*" MonomorphicType
+
+Constraint --o PolymorphicType
+Constraint --o MonomorphicType
+
+object AssumptionSet
+
+note left of AssumptionSet: 2.16
+
+AssumptionSet ---o "0..*" MonomorphicType
+
+object Environment
+
+note left of Environment: 2.8
+
+Environment --o "0..*" PolymorphicType
+
+Environment --> AlgorithmW
+Language --> AlgorithmW
+
+AlgorithmW .up.> AlgorithmU
+
+@enduml

@@ -1,18 +1,18 @@
 @startuml
 'https://plantuml.com/class-diagram
 
-class SyntaxTree {
+object SyntaxTree {
     -nodes: Graph<ASTNode, Tag>
     &ASTNode get_node(id: usize)
     Vec<& ASTNode> get_children(id: usize)
 }
 
-class Function {
+object Function {
     -id: usize
     Vec<Parameter> parameters(...)
 }
 
-class Parameter {
+object Parameter {
     -id: usize
     name: String
 }

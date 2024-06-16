@@ -1,7 +1,7 @@
 @startuml
 'https://plantuml.com/class-diagram
 
-class Scope {
+object Scope {
     start_from_id: usize
     name: Option<String>
     types: HashMap<String, MonomorphicType>

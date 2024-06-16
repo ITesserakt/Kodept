@@ -1,23 +1,30 @@
 @startuml
 'https://plantuml.com/state-diagram
 
-state "Лексический анализ" as Le
-Le: исходный код программы
-state "Синтаксический анализ" as Sy
-Sy: поток токенов
-state "Семантический анализ" as Se
-Se: абстрактное синтаксическое \n дерево
-state "Генерация промежуточного \n представления" as IR
-IR: символьные таблицы
-state "Генерация машинного кода" as Ge
-Ge: промежуточное представление
+scale 0.9
 
-[*] --> Le
-Le --> Sy
-Sy --> Se
-Sy --> IR
-Se --> IR
-IR --> Ge
-Ge --> [*]
+state Frontend {
+    state "Лексический анализ" as Le
+
+    state "Синтаксический анализ" as Sy
+}
+
+state "Middle-end" as M {
+    state "Семантический анализ" as Se
+
+    state "Генерация промежуточного представления" as IR
+}
+
+state Backend {
+    state "Генерация машинного кода" as Ge
+}
+
+[*] -right-> Le:исходный код
+Le --> Sy: поток токенов
+Sy --> Se: AST
+Sy --> IR: AST
+Se --> IR: символьные таблицы
+IR --> Ge: промежуточное представление
+Ge --> [*]: объектный файл
 
 @enduml

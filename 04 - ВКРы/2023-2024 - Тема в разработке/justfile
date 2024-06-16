@@ -32,7 +32,7 @@ build_gls:
 build_bib:
     cd {{ OUTDIR }} && bibtex {{ PROJECT_NAME }}
 
-build: build_pdf build_gls build_bib && build_pdf
+build: build_pdf build_gls build_bib build_pdf
 
 rebuild: clean compile build
 
@@ -40,7 +40,7 @@ dist: rebuild
     cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}
 
 compile_inkscape file: mk_folder
-	inkscape                                                                                    \
+	@inkscape                                                                                    \
 		-D                                                                                      \
 		-d 300                                                                                  \
 		-z                                                                                      \
@@ -48,14 +48,14 @@ compile_inkscape file: mk_folder
 		--export-pdf={{ SRCDIR / 'figures' / '.generated' / without_extension(file) + '.pdf' }} \
 		--export-latex
 
-compile_uml: mk_folder
-	plantuml                                      \
+compile_uml theme: mk_folder
+	@plantuml                                     \
 		-tlatex:nopreamble                        \
-		-theme plain                              \
+		-theme {{ theme }}                        \
 		-config {{ 'thirdparty' / 'config.cfg' }} \
 		{{ 'src' / 'plantuml' / '*.puml' }}
 
-compile: compile_uml
+compile: (compile_uml "_none_")
   #!/usr/bin/env sh
   for f in {{ SRCDIR }}inkscape/*.svg; do 
     just compile_inkscape `basename "$f"`

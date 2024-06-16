@@ -1,14 +1,33 @@
 @startuml
 'https://plantuml.com/activity-diagram-beta
 
-:Исходный код<
+object ASTNode
 
-:Frontend;
+object ScopeTree
+object SyntaxTree
+object Scope
+object SemanticAnalyzer
+object TypeChecker
+object TypedSymbol
 
-:Middle-end;
+object AlgorithmW
 
-:Backend;
+ASTNode "0..*" --* SyntaxTree
 
-:Исполняемый файл>
+Scope "0..*" --* ScopeTree
+
+SemanticAnalyzer --o ScopeTree
+
+SemanticAnalyzer <.. TypeChecker
+
+SemanticAnalyzer --> SyntaxTree: использует
+
+TypeChecker --> AlgorithmW: использует
+
+TypeChecker <.. "0..*" TypedSymbol
+
+TypeChecker -left-> SyntaxTree: использует
+
+TypeChecker -right-o ScopeTree
 
 @enduml
