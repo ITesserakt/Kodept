@@ -1,0 +1,55 @@
+\mode<presentation>
+
+% Settings
+\newcommand{\titleheaderskip}{0.5cm} % 0.5cm is good for completely full slide
+\newcommand{\titlefootertopmargin}{0.0cm} % 0.0 is good for completely full slide
+
+% Изменения внесены согласно Приказу от 13.02.2023 № 01-02/137 «Об утверждении правил использования элементов фирменного стиля МГТУ им. Н.Э. Баумана» введён в действие Брендбук университета
+
+\definecolor{bblue}{HTML}{006cdc}%{176dea} % Приказ 01-02/137
+\definecolor{hpink}{HTML}{c40054}
+\definecolor{hbrown}{HTML}{7f0001}
+\definecolor{horange}{HTML}{ed6d00}
+\definecolor{hyellow}{HTML}{eac31b}%{fcc800}
+\definecolor{hgreen}{HTML}{62b230}
+\definecolor{hblue}{HTML}{30b5c5}
+
+\setbeamercolor*{title page header}{fg=black}
+\setbeamercolor*{pretitle}{fg=white}
+\setbeamerfont*{pretitle}{size=\huge}
+\setbeamerfont*{title}{size=\huge}
+\setbeamercolor*{author}{fg=black}
+\setbeamerfont*{author}{size=\small}
+\setbeamercolor*{date}{fg=black}
+\setbeamerfont*{date}{size=\scriptsize}
+\setbeamerfont*{institute}{size=\normalsize}
+\setbeamercolor*{date in head/foot}{fg=bblue}
+\setbeamercolor*{frametitle}{fg=black}
+\setbeamerfont*{frametitle}{size=\Large}
+\setbeamercolor*{framesubtitle}{fg=black}
+\setbeamerfont*{framesubtitle}{size=\normalsize}
+
+%\setbeamercolor{block title}{bg=}
+%\setbeamercolor{block body}{bg=}
+
+\setbeamertemplate{itemize item}{\color{bblue}$\bullet$}
+\setbeamertemplate{itemize subitem}{\color{bblue}$\blacktriangleright$}
+
+%----------------------------------------------------------
+% Оформление/форматирование подписей
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+% Подписи должны нумероваться
+\setbeamertemplate{caption}[numbered]
+% Теоремы должны нумероваться
+\setbeamertemplate{theorems}[numbered]
+%----------------------------------------------------------
+\resetcounteronoverlays{caption}
+\resetcounteronoverlays{theorems}
+\resetcounteronoverlays{lstlisting}
+\resetcounteronoverlays{algorithm}
+%----------------------------------------------------------
+\usepackage[margin=10pt,font={footnotesize, singlespacing}, labelfont={footnotesize}, justification=centering, labelsep=period]{caption}
+\captionsetup{belowskip=0pt}
+%----------------------------------------------------------
+
+\mode<all>

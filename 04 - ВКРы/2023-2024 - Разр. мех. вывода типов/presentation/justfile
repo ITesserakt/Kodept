@@ -1,0 +1,39 @@
+#!/usr/bin/env just --justfile
+
+PROJECT_NAME := 'rndhpc_prj_2024_rk6_85b_nikitinvl_vkr_presentation'
+OUTDIR := replace(justfile_directory() / 'out', ' ', '\ ')
+SRCDIR := replace(justfile_directory() / 'src/', ' ', '\ ')
+DOCDIR := replace(justfile_directory() / '../doc', ' ', '\ ')
+
+export BIBINPUTS := replace(SRCDIR, '\ ', ' ')
+export BSTINPUTS := replace(SRCDIR, '\ ', ' ')
+
+default:
+    just --choose
+
+clean:
+    rm -rf {{OUTDIR}}
+
+[private]
+mk_folder:
+    mkdir -p {{OUTDIR}}
+    mkdir -p {{OUTDIR}}/chapters
+
+[private]
+build_pdf:
+    cd {{ SRCDIR }} && xelatex -interaction=batchmode -halt-on-error -output-directory={{ OUTDIR }} {{ PROJECT_NAME }}
+
+[private]
+build_gls:
+    cd {{ OUTDIR }} && makeglossaries-lite -q {{ PROJECT_NAME }}
+
+[private]
+build_bib:
+    cd {{ OUTDIR }} && bibtex {{ PROJECT_NAME }}
+
+build: mk_folder build_pdf build_gls && build_pdf
+
+rebuild: clean build
+
+dist: rebuild
+    cp {{ OUTDIR }}/{{ PROJECT_NAME }}.pdf {{ DOCDIR }}

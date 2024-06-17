@@ -1,0 +1,96 @@
+\mode<presentation>
+
+% следующий код добавляет водяной знак в форме герба РК6 МГТУ в фон
+\usepackage{background}
+\backgroundsetup{%
+    placement=center,
+    scale=1,
+    contents={%
+		\parbox[c][0.8\textheight][c]{0.35\textwidth}{\centering\includegraphics[width=0.35\textwidth]{pictures/bmstu_rk6_logo3.png}}
+		},
+    opacity=0.05,
+		angle = 1,
+		color=black
+}
+
+\def\@titlepagestyle{brief} % brief (краткая, по-умолчанию) / detail (подробная)
+\def\titlepagestyle{\@titlepagestyle} % brief (краткая) / detail (подробная)
+
+% Модификация фона
+\setbeamertemplate{background}{%
+  \begin{tikzpicture}
+    \ifthenelse{\equal{\titlepagestyle}{brief}}{%
+    \ifnum \value{page}=1% только для титульной страницы
+			\useasboundingbox (0,0) rectangle(\the\paperwidth,\the\paperheight);
+
+			\node[inner sep=0pt, opacity=0.35] at (14.4,3.4) {\includegraphics[width=0.65\textwidth]{pictures/Logo_White_No-BG.png}};
+    \fi
+    }{}
+    \ifthenelse{\equal{\titlepagestyle}{detail}}{%
+    \ifnum \value{page}=1% только для титульной страницы
+			\useasboundingbox (0,0) rectangle(\the\paperwidth,\the\paperheight);
+
+			\node[inner sep=0pt] at (12.5,4.8) {\includegraphics[width=1.00\textwidth]{pictures/bmstu_building_lighter.jpeg}};
+			\node[inner sep=0pt] at (14.3,1.5) {\includegraphics[width=0.2\textwidth]{pictures/Logo_Color_No-BG.pdf}};
+	
+			\node (v1) at (0,0) {};
+			\node (v2) at (10,0) {};
+			\node (v3) at (12,\the\paperheight) {};
+			\node (v4) at (0,\the\paperheight) {};
+			\path[fill=white] (v1.center)--(v2.center)--(v3.center)--(v4.center)--(v1.center);
+	
+			\node (v5) at (9.7,0) {};
+			\node (v6) at (11.7,\the\paperheight) {};
+			\path[fill=bblue] (v5.center)--(v2.center)--(v3.center)--(v6.center)--(v5.center);
+    \fi
+    }{}
+
+  \end{tikzpicture}
+  \ifnum \value{page}>1\relax% для всех остальных страниц
+    \BgMaterial
+  \fi
+}
+
+%\setbeamertemplate{title page}[default]
+
+% Вёрстка титульной страницы (Title page)
+\defbeamertemplate*{title page}{bmstu}[1][]
+{
+    \begin{beamercolorbox}[wd=12cm,leftskip=-0.2cm,sep=5pt,#1]{institute}
+      \usebeamerfont{institute}\insertinstitute\par
+    \end{beamercolorbox}
+
+    \vskip\titleheaderskip%
+    \begin{beamercolorbox}[wd=12cm,leftskip=-0.2cm,sep=5pt,#1]{title page header}
+      \usebeamerfont{title}\inserttitle\par
+    \end{beamercolorbox}%
+
+    \ifx\insertsubtitle\empty
+    \else
+      \vskip0.5cm%
+      \begin{beamercolorbox}[wd=10.5cm,leftskip=-0.4cm,sep=5pt,#1]{subtitle page header}
+        \usebeamerfont{subtitle}\insertsubtitle\par
+      \end{beamercolorbox}%
+    \fi
+
+    \vskip0.5cm%
+    \begin{beamercolorbox}[wd=10.0cm,leftskip=-0.4cm,sep=5pt,#1]{title page header}
+      \textcolor{bblue}{\rule{10.0cm}{2pt}}
+    \end{beamercolorbox}%
+
+    \begin{beamercolorbox}[wd=10cm,leftskip=-0.4cm,sep=5pt,#1]{author}
+      \usebeamerfont{author}\insertauthor\par
+    \end{beamercolorbox}
+		
+    \begin{beamercolorbox}[wd=7cm,leftskip=-0.4cm,sep=5pt,#1]{authoremail}
+      \usebeamerfont{author}\href{mailto:\AuthorEmail}{\AuthorEmail}\par
+    \end{beamercolorbox}
+
+    \vskip\titlefootertopmargin
+    \begin{beamercolorbox}[wd=10cm,leftskip=-0.4cm,sep=5pt,#1]{date}
+      \usebeamerfont{date}\insertdate\par
+    \end{beamercolorbox}
+}
+%----------------------------------------------------------
+\mode
+<all>

@@ -1,0 +1,407 @@
+\mode<presentation>
+
+% Requirement
+\RequirePackage{tikz}
+%\RequirePackage{mathabx} % этот пакет использовался только для символа \drsh -> в шаблоне НЕ ПОДКЛЮЧАТЬ
+%\RequirePackage{MnSymbol} %несовместим с mathabx и FiraSansCondensed -> в шаблоне НЕ ПОДКЛЮЧАТЬ
+%\RequirePackage[strings]{underscore}
+\RequirePackage{relsize}
+\RequirePackage{xspace}
+
+\let\kappaori=\kappa
+\let\kappa=\varkappa
+
+% Settings
+\usecolortheme{bmstu}
+\useinnertheme{bmstu}
+\useoutertheme{bmstu}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+% Base configuration of hyperref
+\RequirePackage{hyperxmp}
+\RequirePackage{hyperref}
+\hypersetup{%
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,
+    citecolor=purple,
+    linkcolor=red,      % color of internal links (change box color with linkbordercolor)
+    urlcolor=green,
+    filecolor=black      % color of file links
+}
+%----------------------------------------%
+%\RequirePackage[russian]{babel} % для XeLaTeX - не нужно, теперь используется пакет polyglossia
+\RequirePackage{bm}
+\RequirePackage{float}
+%\usepackage{algpseudocode}      % для окружения algorithmic
+%\usepackage{algorithm}          % для нумерации алгоритмов
+\RequirePackage{cmap} % необходимо для возможности копирования и поиска в готовом PDF
+%----------------------------------------%
+\RequirePackage[normalem]{ulem}
+%----------------------------------------------------------------
+\RequirePackage[style=long4colheader, translate=babel, section=section]{glossaries}
+\RequirePackage[abbreviations, toc=false, xindy, automake]{glossaries-extra}
+\setglossarystyle{treenoname}%+
+\makeglossaries
+%----------------------------------------------------------
+% добавление поддержки команды вывода текста на полях \marginnote
+\RequirePackage{marginnote}
+% добавление поддержки команды \color
+\RequirePackage{xcolor}
+%Вывод восклицательного знака на полях для указания о необходимости внесения корректировки
+\newcommand{\messnote}[1]{\marginnote{\color[rgb]{1,0,0}\Huge\textbf{!}\pdfcomment{#1}}[-1.0cm]}
+%----------------------------------------------------------
+\RequirePackage{amsthm}
+\RequirePackage{thmtools}
+
+\declaretheoremstyle[
+  headfont=\normalfont\bfseries,
+  numberwithin=section,
+  bodyfont=\normalfont,
+  spaceabove=1em plus 0.75em minus 0.25em,
+  spacebelow=0em plus 0.75em minus 0.25em,
+%  qed={$\blacksquare$},
+%  qed={$\natural$},%\sharp},%$\square$},
+	headpunct={\newline},%Punctuation after theorem head
+]{thrmstyle}
+%--------------------------------------------------
+% Example of text or comment for filling rules
+\newcommand\textexample[1]{\textcolor{gray}{\textit{#1}}}
+
+% Fonts for formulas
+%\usefonttheme{serif} %
+\usepackage{fontspec}
+
+% Serif - с засечками, для текстов (книги, статьи и т.п.)
+% Sans Serif - без засечек, для презентаций
+
+% РАБОТАЕТ
+\setmainfont{CMU Serif}
+\setsansfont{CMU Sans Serif}% шрифт без засечек
+\setmonofont{CMU Typewriter Text}% моноширинный шрифт
+
+% РАБОТАЕТ
+% [Mapping=tex-text]
+%\setmainfont{CMU Serif}
+%\setsansfont[BoldFont = {Fira Sans Condensed Medium}]{Fira Sans Condensed Light}% шрифт без засечек
+%\setmonofont{CMU Typewriter Text}% моноширинный шрифт
+
+% РАБОТАЕТ (похож на Times New Roman)
+%\setmainfont{Droid Serif}
+%\setsansfont{Droid Sans}% шрифт без засечек
+%\setmonofont{CMU Typewriter Text}% моноширинный шрифт
+
+%\setmainfont{Times New Roman}
+%\setsansfont{Fira Sans Condensed Light}% шрифт без засечек
+%\setmonofont{Fira Mono}% моноширинный шрифт
+
+% Артемий Лебедев - так себе, нет italic
+% Коммерческий шрифт МГТУ
+% Определение локального, вспомогательного шрифта.
+\newfontfamily\myalssector{CMU Serif}
+
+% Неплохо
+%\setmainfont[%
+%% Path = /font/FiraSansCondensed/,
+% Extension = .ttf ,
+% Mapping=tex-text,
+% BoldFont = {FiraSansCondensed-Medium.ttf},
+% ItalicFont= {FiraSansCondensed-LightItalic.ttf},
+% BoldItalicFont= {FiraSansCondensed-SemiBoldItalic.ttf},
+% SlantedFont = {},
+% BoldSlantedFont = {},
+% SwashFont = {FiraSansCondensed-LightItalic.ttf},
+% BoldSwashFont = {FiraSansCondensed-SemiBoldItalic.ttf},
+% SmallCapsFont = {},
+% UprightFont = {},
+% ]{FiraSansCondensed-Light.ttf} % может быть стоит сделать Regular, но склоняюсь к этому
+
+%\setmathrm{Cambria Math}
+\setmathsf{CMU Serif}
+%\setmathtt{Cambria Math}
+
+\RequirePackage{polyglossia}
+\setdefaultlanguage{english}
+\setmainlanguage{russian}
+%\setotherlanguage{russian}
+\setotherlanguage[spelling=old,babelshorthands=true]{english}
+
+\newcommand{\RU}[1]{\foreignlanguage{russian}{#1}}
+
+%\setmainfont[%
+% BoldFont={ALS_Sector-Bold.otf},
+% ItalicFont={ALS_Sector-Regular.otf},
+% BoldItalicFont={ALS_Sector-Bold.otf}
+% ]{ALS_Sector-Regular.otf}
+
+% очень хорошо, строгий, без засечеч, крупноват
+%\setmainfont[%
+% BoldFont = {DejaVuSansCondensed-Bold.ttf} ,
+% ItalicFont= {DejaVuSansCondensed-Oblique.ttf} ,
+% BoldItalicFont= {DejaVuSansCondensed-BoldOblique.ttf} ,
+% ]{DejaVuSansCondensed.ttf}
+
+% Special label for items using arrows
+\newcommand*\arrowitem{\item[$\textcolor{bblue}\rightarrow$]}
+
+% Centering text in tabular columns
+\RequirePackage{array}
+\newcolumntype{P}[1]{>{\centering}p{#1}}
+%--------------------------------------------------
+% Special graphic objects definition
+\newcommand*{\vertbar}{\rule[-1ex]{0.3pt}{2.5ex}}
+\newcommand*{\horzbar}{\rule[.5ex]{2.5ex}{0.5pt}}
+%--------------------------------------------------
+% команда для вывода ссылки на литературу в виде сноски
+% возможность вставлять ссылки непосредственно на странице, где сослались
+\usepackage{bibentry}
+\newcommand{\footcite}[1]{\footnote{\bibentry{#1}}}
+
+%%***natbib, bibentry***%
+% Следующий код необходим для того, чтобы исправить конфликт между пакетами natbib+bibentry и стилем оформления ссылок согласно российскому ГОСТу cp1251gost705u
+\ifx\undefined\selectlanguageifdefined
+\def\selectlanguageifdefined#1{}\else\fi
+\ifx\undefined\BibEmph
+\def\BibEmph#1{\emph{#1}}\else\fi
+
+%----------------------------------------------------------
+% Выбор стиля оформления источников литературы
+{\catcode`\_=11
+\bibliographystyle{common_doc_spec/utf8gost705u}
+}
+%----------------------------------------------------------
+\RequirePackage{listings}
+% включаем кириллицу и добавляем некоторые опции
+% подгружаемые языки — подробнее в документации listings
+\lstloadlanguages{[LaTeX]TeX, bash, [ISO]C++, make}
+\renewcommand{\lstlistingname}{Исходный код}
+
+\lstset{language=[LaTeX]TeX,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+}
+
+\lstset{language=[ISO]C++,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		breaklines=true,                 % sets automatic line breaking
+		frame=tb, % рамка сверху и снизу
+    basicstyle=\ttfamily,
+    keywordstyle=\color{blue}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    commentstyle=\color{green}\ttfamily,
+    morecomment=[l][\color{magenta}]{\#}
+}
+
+\lstset{language=bash,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		breaklines=true,                 % sets automatic line breaking
+		frame=tb, % рамка сверху и снизу
+		basicstyle=\ttfamily,
+		keywordstyle=\color{black}\ttfamily,
+		stringstyle=\color{red}\ttfamily,
+		commentstyle=\color{green}\ttfamily,
+		morecomment=[l][\color{magenta}]{\#}
+}
+%----------------------------------------------------------
+
+\lstdefinelanguage{ALGO}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		escapechar=\&,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,                   % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+    xrightmargin=\parindent,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{brown}\bfseries]{[}{]},
+    morecomment=[s][\color{pink}\bfseries]{@}{@},
+%    morecomment=[s][\color{gray}\bfseries]{*}{*},
+    keywordstyle={\color{blue}\bfseries},
+    morecomment=[l]{;},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={>}
+}
+
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstdefinelanguage{aINISyntax}
+{
+		style=mystyle,
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		escapeinside=”,
+    basicstyle=\ttfamily\scriptsize,
+		frame=single,
+    columns=fullflexible,
+		numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}]{'}{'},
+		keywords={ID, TEXT}%, edge_id, binname, entry_func, strategy, parallelization, branching},
+    keywordstyle={\color{black}\bfseries},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={|,:},
+%		literate=
+%		{=}{\textcolor{brown}{=}\bfseries}1
+%		{->}{\textcolor{brown}{->}\bfseries}1
+%		{[}{\textcolor{brown}{[}\bfseries}1
+%		{]}{\textcolor{brown}{]}\bfseries}1
+%		{(}{\textcolor{red}{(}\bfseries}1
+%		{)}{\textcolor{red}{)}\bfseries}1
+}
+
+\lstdefinelanguage{aINIFormat}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		%escapeinside=”,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,             % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,            % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    morecomment=[s][\color{black}\bfseries]{[}{]},
+%    morecomment=[s][\color{purple}\bfseries]{=[}{]},
+%    morecomment=[s][\color{pink}\bfseries]{[[}{]]},
+    keywordstyle={\color{red}\bfseries},
+    morecomment=[l]{//},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={[,]},
+		literate=
+		{\$}{\textcolor{brown}{\$}}1
+		{=}{\textcolor{brown}{=}}1
+		{*}{\textcolor{brown}{*}}1
+		{-}{\textcolor{brown}{-}}1
+}
+
+\lstdefinelanguage{tmlSyntax}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		%escapeinside=”,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,             % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,            % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    keywordstyle={\color{red}\bfseries},
+    morecomment=[l]{},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={[,],AND,OR,:},
+		literate=
+		{\%\#}{\textcolor{brown}{\%\#}}2
+		{\#\%}{\textcolor{brown}{\#\%}}2
+}
+
+\lstdefinelanguage{tmlExample}
+{
+		keepspaces=true,
+		texcl=true,
+		extendedchars=\true, % включаем не латиницу
+		%escapeinside=”,
+    basicstyle=\ttfamily\small,
+		frame=single,
+    columns=fullflexible,
+		numbers=left,             % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,            % how far the line-numbers are from the code
+		xleftmargin=0.5cm,
+		xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+		breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{blue}\bfseries]{@}{@},
+    keywordstyle={\color{red}\bfseries},
+    morecomment=[l]{},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={[,],AND,OR,:},
+		literate=
+		{\%\#}{\textcolor{brown}{\%\#}}2
+		{\#\%}{\textcolor{brown}{\#\%}}2
+}
+
+\lstdefinelanguage{aDOTExample}
+{
+	extendedchars=true,
+	escapechar=\#,
+	%escapeinside=Ф,
+    basicstyle=\ttfamily\small,
+	frame=single,
+    columns=fullflexible,
+	numbers=left, % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt, % how far the line-numbers are from the code
+	xleftmargin=0.5cm,
+	xrightmargin=0.5cm,
+    numberstyle=\scriptsize\color{gray}, % the style that is used for the line-numbers
+	breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+    morecomment=[s][\color{gray}\bfseries]{[}{]},
+    morecomment=[s][\color{blue}\bfseries]{__}{__},
+    morecomment=[l]{//},
+	keywords={digraph, module, entry_func, edge, predicate, function, morphism, morphisms, selector, parallelism, threading, pseudo-parallelism},
+    keywordstyle={\color{black}\bfseries},
+    commentstyle=\color{gray}\itshape,
+    otherkeywords={},
+	literate=
+%		{\$}{\textcolor{brown}{\$}}1
+	{=}{\textcolor{brown}{=}}1
+	{->}{\textcolor{brown}{->}}1
+	{[}{\textcolor{red}{[}}1
+	{]}{\textcolor{red}{]}}1
+}
+%--------------------------------------------------
+\mode<all>

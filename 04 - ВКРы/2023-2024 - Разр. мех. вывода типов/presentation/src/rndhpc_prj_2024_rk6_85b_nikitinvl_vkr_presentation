@@ -1,0 +1,140 @@
+%----------------------------------------------------------
+%\pdfminorversion=7
+%----------------------------------------------------------
+\documentclass[9pt, aspectratio=169]{beamer}
+\setbeamersize{text margin left=0.6cm,text margin right=1.3cm}
+%----------------------------------------------------------
+% Стиль презентации (выбрать понравившийся)
+\usetheme{bmstu}
+%------------------------------------------
+% определения значений стандартных параметров
+\input{doc-spec/constants_id.tex}
+%------------------------------------------
+% определения значений стандартных общих параметров для различных документов, в т.ч. различных типов
+\input{common_doc_spec/common_constants_id.tex}
+%------------------------------------------
+% общая кастомизируемая преамбула для презентаций
+\input{common_doc_spec/common_preamble.tex}
+%------------------------------------------
+% дополнительные параметры, имеющие отношение к данному документу
+\input{common_doc_spec/common_definitions.tex}
+%------------------------------------------
+% база терминов!
+\input{doc-spec/abbreviations.tex}
+%---------------------------------------------
+\includeonly{%
+,intro
+,taskstatement
+,method
+,software
+,calculation
+,conclusion
+}
+%---------------------------------------------
+% выключает разворачивание терминов и аббревиатур при первом использовании в том числе, - всегда термины и аббревиатуры будут выводиться кратко
+\glsunsetall
+%----------------------------------------------------------
+% Это следует использовать и визуализировать с помощью Dual-side PDF Viewer - dspdfviewer-1.15.1.2)
+%\setbeameroption{show notes on second screen=right} % Both
+%----------------------------------------------------------
+%\setbeameroption{hide notes} % Only slides
+%\setbeameroption{show only notes} % Only notes
+%\setbeameroption{show notes} % Both
+%\setbeamertemplate{note page}{\pagecolor{yellow!5}\insertnote}
+%---------------------------------------------
+
+\begin{document}
+%----------------------------------------------------------
+% blocks
+%\addtobeamertemplate{block begin}{\pgfsetfillopacity{0.05}}{\pgfsetfillopacity{1}}
+%\addtobeamertemplate{block alerted begin}{\pgfsetfillopacity{0.05}}{\pgfsetfillopacity{1}}
+%\addtobeamertemplate{block example begin}{\pgfsetfillopacity{0.05}}{\pgfsetfillopacity{1}}
+%---------------------------------------------
+% создание стандартной титульной страницы
+\input{common_doc_spec/common_title}
+%---------------------------------------------
+\section*{Содержание доклада}
+%---------------------------------------------
+\begin{frame}
+
+{\smaller[1]
+\setcounter{tocdepth}{1}
+\tableofcontents}
+\setcounter{tocdepth}{2}
+
+\end{frame}
+%---------------------------------------------
+\section{Введение}
+\include{intro}
+%---------------------------------------------
+\section{Постановка задачи}
+\include{taskstatement}
+%---------------------------------------------
+\section{Программная реализация}
+\include{software}
+%---------------------------------------------
+\section{Тестирование и отладка}
+\include{calculation}
+%---------------------------------------------
+\section*{Заключение}
+\include{conclusion}
+%---------------------------------------------
+\def\secname{}
+
+%\begin{frame}
+
+%\begin{center}
+%\LARGE
+%Спасибо за внимание!
+%\vspace{1cm}
+
+%Вопросы?
+%\end{center}
+
+%\end{frame}
+
+\setbeamercolor{background canvas}{bg=bblue}
+\setbeamertemplate{background}{%
+  \begin{tikzpicture}
+	\useasboundingbox (0,0) rectangle(\the\paperwidth,\the\paperheight);
+
+	\node[inner sep=0pt, opacity=0.35] at (14.4,3.4) {\includegraphics[width=0.65\textwidth]{pictures/Logo_White_No-BG.png}};
+  \end{tikzpicture}
+}
+\begin{frame}[t]
+\thispagestyle{empty}
+
+    \vspace{3.0cm}%\vskip\titleheaderskip%
+    \ifthenelse{\equal{\titlepagestyle}{detail}}{\vspace{-2.0cm}}{}
+    \begin{beamercolorbox}[wd=11cm,leftskip=-0.4cm,sep=5pt]{pretitle}
+     \myalssector\Huge
+     \textbf{Спасибо за внимание!}\par
+
+     \ifthenelse{\equal{\titlepagestyle}{detail}}{\vspace{1cm}\textbf{Вопросы?}}{}
+    \end{beamercolorbox}%
+
+    %\vfill
+    \vspace{2.5cm}%\vskip\titleheaderskip%
+    \begin{beamercolorbox}[wd=11cm,leftskip=-0.4cm,sep=5pt]{}
+     \myalssector\textcolor{white}{\href{mailto:\AuthorEmail}{\AuthorEmail}}\par
+    \end{beamercolorbox}%
+
+\end{frame}
+%----------------------------------------------------------
+% Создание титульной страницы
+\setbeamercolor{background canvas}{bg=white}
+%---------------------------------------------
+%\section*{Приложение. Основная терминология}
+%%---------------------------------------------
+%\begin{frame}[allowframebreaks=0.9,t]
+%
+%\printglossary[style=index, type=\acronymtype, title=Аббревиатуры, nopostdot=false]
+%%\printglossary[style=index, type=main, title=Термины и определения, nopostdot=true]
+%
+%\end{frame}
+%---------------------------------------------
+\end{document}
+%---------------------------------------------
+
+
+
