@@ -1,6 +1,6 @@
 #!/usr/bin/env just --justfile
 
-PROJECT_NAME := 'rndhpc_prj_2024_rk6_75b_nikitinvl_vkr'
+PROJECT_NAME := 'rndhpc_prj_2024_rk6_85b_nikitinvl_vkr'
 OUTDIR := replace(justfile_directory() / 'out', ' ', '\ ')
 SRCDIR := replace(justfile_directory() / 'src/', ' ', '\ ')
 DOCDIR := replace(justfile_directory() / 'doc/', ' ', '\ ')
