@@ -1,22 +1,27 @@
 @startuml
 'https://plantuml.com/use-case-diagram
 
+left to right direction
+
 :Пользователь: as U
 :Разработчик: as D
 
-(Обработать файл) as (Compile)
-(Сохранить \n структуру \n AST в файл) as (Save)
-(Получить AST) as (AST)
-(Проверить семантику) as (Semantics)
+rectangle "Прототип компилятора" {
+    usecase "Обработать файл" as Compile
+    usecase "Сохранить \n структуру \n AST в файл" as Save
+    usecase "Получить AST" as AST
+    usecase "Проверить семантику" as Semantics
+}
 
-U --> (Compile)
+U --> Compile
 
-(Compile) .right.> (AST): включает
-(Save) ..> (AST): включает
-(Compile) ..> (Semantics): включает
+D --> Save
 
+D --left-|> U
 
-D -left-|> U
-D --> (Save)
+Compile .left.> "включает" AST
+Compile .right.> "включает" Semantics
+
+Save .right.> "включает" AST
 
 @enduml
