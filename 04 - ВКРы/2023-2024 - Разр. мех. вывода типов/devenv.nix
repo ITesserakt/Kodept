@@ -31,5 +31,17 @@
     	open-viewer.process-compose = {
     		is_foreground = true;
     	};
+
+		assemble-pdf_pres.exec = ''
+			cd presentation
+			just clean
+			just build_pdf
+			just build_gls
+			just build_bib
+			watchexec -d 2000 -i "*.puml" -w src -r -- just build_pdf
+		'';
+
+    	open-viewer_pres.exec = ''${pkgs.evince}/bin/evince presentation/out/rndhpc_prj_2024_rk6_85b_nikitinvl_vkr_presentation.pdf'';
+    	open-viewer_pres.process-compose.is_foreground = true;
     };
 }
