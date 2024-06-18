@@ -59,10 +59,10 @@
 Слева от знака $\vdash$ записывается контекст: $x: integer \vdash (x + 1): integer$~--- если терм $x$ имеет тип числа, то $x + 1$ тоже имеет тип числа.
 Таким образом, суждение обозначается так:
 
-\begin{equation}
+\begin{equation*}
     \Gamma \vdash P,
-    \label{eq:judgment}
-\end{equation}
+%    \label{eq:judgment}
+\end{equation*}
 \begin{eqrem}
     & $\Gamma$~--- контекст, \\
     & $P$~--- предположение. \\
@@ -293,10 +293,10 @@ Java создавалась под сильным влиянием идей об
 Однако возникает проблема, что функция $f$ не является ни типом, ни термом.
 Решением этой проблемы является добавление новой категории $K$ видов (англ. kinds):
 
-\begin{equation}
-    \label{eq:kinds}
+\begin{equation*}
+%    \label{eq:kinds}
     K \coloneqq * ~|~ * \to *,
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & $*$~--- категория типов.
 \end{eqrem}
@@ -337,14 +337,14 @@ Java создавалась под сильным влиянием идей об
 
 Конструкция вида $(s_1, s_2)$, где $s \in \left\{ *, \square \right\}$ означает следующее:
 
-\begin{equation}
-    \label{eq:type_system_rules}
+\begin{equation*}
+%    \label{eq:type_system_rules}
     \frac{
         \Gamma \vdash A: s_1 ~~ \Gamma, x: A \vdash B: s_2
     }{
         \Gamma \vdash (\prod x: A. B): s_2
     },
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & $\prod x: A. B$ означает декартово произведение всех типов (видов) $B$, образованных от переменной $x$ с типом (видом) $A$.
 \end{eqrem}
@@ -419,8 +419,8 @@ void foo(int a) { }
 
 Далее введено определение типа $\tau$.
 
-\begin{equation}
-    \label{eq:types}
+\begin{equation*}
+%    \label{eq:types}
     \begin{aligned}
         \tau_1, \tau_2 \coloneqq ~ &\text{Integer} ~|~ \text{Real} ~|~ \text{Boolean} \\
         &| ~ \alpha \\
@@ -428,7 +428,7 @@ void foo(int a) { }
         &| ~ (\tau_1, \tau_2, \ldots, \tau_n) \\
         &| ~ C,
     \end{aligned}
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & $C$~--- имя типа (константа), определенное пользователем,                                               \\
     & $\alpha$~--- переменная типа,                                                                           \\
@@ -500,10 +500,10 @@ void foo(int a) { }
 
 Композиция подстановок:
 
-\begin{equation}
-    \label{eq:subst_comp}
+\begin{equation*}
+%    \label{eq:subst_comp}
     \mathcal{S}_1 \circ \mathcal{S}_2 = \mathcal{S}_1 \cup \left[ \alpha_i \coloneqq \mathcal{S}_1 \tau_i \right]
-\end{equation}
+\end{equation*}
 
 Применение подстановки $\mathcal{S} \tau$~--- операция замены всех вхождений очередной $\alpha_i$ из подстановки $\mathcal{S}$ на $\tau_i$ в типе $\tau$.
 
@@ -525,8 +525,8 @@ void foo(int a) { }
 Унификацией называется процесс поиска такой подстановки $\mathcal{S}$ для двух типов $\tau_1$ и $\tau_2$, что $\mathcal{S} \tau_1 = \mathcal{S} \tau_2$.
 Для решения этой задачи существует алгоритм $\mathcal{U}$:
 
-\begin{equation}
-    \label{eq:algo_u}
+\begin{equation*}
+%    \label{eq:algo_u}
     \begin{aligned}
         \mathcal{U}(\tau_1, \tau_1) &= \left[  \right], \\
         \mathcal{U}(\alpha_1, \tau_2) &= \left[ \alpha_1 \coloneqq \tau_2 \right] \text{ если } \alpha_1 \notin \tau_2, \\
@@ -534,7 +534,7 @@ void foo(int a) { }
         \mathcal{U}(\tau^{in}_1 \to \tau^{out}_1, \tau^{in}_2 \to \tau^{out}_2) &= \mathcal{U}(\tau^{in}_1, \tau^{in}_2) \cup \mathcal{U}(\tau^{out}_1, \tau^{out}_2), \\
         \mathcal{U}((\tau_1^A, \ldots, \tau_n^A), (\tau_1^B, \ldots, \tau_n^B)) &= \bigcup_{i = 1}^{n} \mathcal{U}(\tau_i^A, \tau_i^B)
     \end{aligned}
-\end{equation}
+\end{equation*}
 
 
 \section{Использование ограничений при выводе типов}
@@ -548,14 +548,14 @@ void foo(int a) { }
 
 Под ограничением $c$ будем понимать следующее определение:
 
-\begin{equation}
+\begin{equation*}
     \label{eq:cst}
     \begin{aligned}
         c \coloneqq ~ &\tau_1 \equiv \tau_2, \\
         &| ~ \tau_1 \leq_{\mathcal{M}} \tau_2, \\
         &| ~ \tau \preceq \sigma
     \end{aligned}
-\end{equation}
+\end{equation*}
 
 \begin{itemize}
     \item Ограничение эквивалентности ($\tau_1 \equiv \tau_2$) говорит, что типы $\tau_1$ и $\tau_2$ должны быть унифицированы.
@@ -585,8 +585,8 @@ void foo(int a) { }
 Неявное ограничение на экземпляр использует контекст $\mathcal{M}$.
 Он может быть получен для каждого терма $e$ следующим образом:
 
-\begin{equation}
-    \label{eq:monomorphic_set}
+\begin{equation*}
+%    \label{eq:monomorphic_set}
     \begin{aligned}
         \mathcal{M}(x) &= \emptyset, \\
         \mathcal{M}(e_1(e_2)) &= \mathcal{M}(e_1) \cup \mathcal{M}(e_2), \\
@@ -596,7 +596,7 @@ void foo(int a) { }
         \mathcal{M}((e_1, e_2)) &= \mathcal{M}(e_1) \cup \mathcal{M}(e_2), \\
         \mathcal{M}(\text{if } e_1 \text{ then } e_2 \text{ otherwise } e_3) &= \mathcal{M}(e_1) \cup \mathcal{M}(e_2) \cup \mathcal{M}(e_3), \\
     \end{aligned}
-\end{equation}
+\end{equation*}
 
 \subsection{Правила вывода}
 \label{subsec:inference_rules}
@@ -607,72 +607,72 @@ void foo(int a) { }
 
 Правило для варианта терма $e = x$:
 
-\begin{equation}
-    \label{eq:var_infer}
+\begin{equation*}
+%    \label{eq:var_infer}
     \frac{}{\left\{ x: \left\{ \beta \right\} \right\}, \emptyset \vdash e: \beta}
-\end{equation}
+\end{equation*}
 
 Правило для варианта терма $e = e_1(e_2)$:
 
-\begin{equation}
-    \label{eq:app_infer}
+\begin{equation*}
+%    \label{eq:app_infer}
     \frac{
         \mathcal{A}_1, \mathcal{C}_1 \vdash e_1: \tau_1 ~~ \mathcal{A}_2, \mathcal{C}_2 \vdash e_2: \tau_2
     }{
         \mathcal{A}_1 \cup \mathcal{A}_2, \mathcal{C}_1 \cup \mathcal{C}_2 \cup \left\{ \tau_1 \equiv \tau_2 \to \beta \right\} \vdash e: \beta
     }
-\end{equation}
+\end{equation*}
 
 Правило для варианта терма $e = \lambda x: \tau. e_1$:
 
-\begin{equation}
-    \label{eq:abs_infer}
+\begin{equation*}
+%    \label{eq:abs_infer}
     \frac{
         \mathcal{A}, \mathcal{C} \vdash e_1: \tau''
     }{
         \mathcal{A} \backslash x, \mathcal{C} \cup \left\{ \tau' \equiv \beta ~|~ x: \tau' \in \mathcal{A} \right\} \cup \left\{ \beta \equiv \tau \right\} \vdash e: (\beta \to \tau'')
     }
-\end{equation}
+\end{equation*}
 
 Правило для варианта терма $e = \text{let } x: \tau = e_1 \text{ in } e_2$:
 
-\begin{equation}
-    \label{eq:let_infer}
+\begin{equation*}
+%    \label{eq:let_infer}
     \frac{
         \mathcal{A}_1, \mathcal{C}_1 \vdash e_1: \tau_1 ~~ \mathcal{A}_2, \mathcal{C}_2 \vdash e_2: \tau_2
     }{
         \mathcal{A}_1 \cup \mathcal{A}_2 \backslash x, \mathcal{C}_1 \cup \mathcal{C}_2 \cup \left\{ \tau' \leq_{\mathcal{M}} \tau_1 ~|~ x: \tau' \in \mathcal{A}_2 \right\} \cup \left\{ \tau \leq_{\mathcal{M}} \tau_1 \right\} \vdash e: \tau_2
     }
-\end{equation}
+\end{equation*}
 
 Правило для варианта терма $e = \text{:num:}$:
 
-\begin{equation}
-    \label{eq:num_infer}
+\begin{equation*}
+%    \label{eq:num_infer}
     \frac{}{\emptyset, \emptyset, \vdash e: \text{Integer}}
-\end{equation}
+\end{equation*}
 
 Правило для варианта терма $e = (e_1, e_2)$:
 
-\begin{equation}
-    \label{eq:tuple_infer}
+\begin{equation*}
+%    \label{eq:tuple_infer}
     \frac{
         \mathcal{A}_1, \mathcal{C}_1 \vdash e_1: \tau_1 ~~ \mathcal{A}_2, \mathcal{C}_2 \vdash e_2: \tau_2
     }{
         \mathcal{A}_1 \cup \mathcal{A}_2, \mathcal{C}_1 \cup \mathcal{C}_2 \vdash e: (\tau_1, \tau_2)
     }
-\end{equation}
+\end{equation*}
 
 Правило для варианта терма $e = \text{if } e_1 \text{ then } e_2 \text{ otherwise } e_3$:
 
-\begin{equation}
-    \label{eq:if_infer}
+\begin{equation*}
+%    \label{eq:if_infer}
     \frac{
         \mathcal{A}_1, \mathcal{C}_1 \vdash e_1: \tau_1 ~~ \mathcal{A}_2, \mathcal{C}_2 \vdash e_2: \tau_2 ~~ \mathcal{A}_3, \mathcal{C}_3 \vdash e_3: \tau_3
     }{
         \mathcal{A}_1 \cup \mathcal{A}_2 \cup \mathcal{A}_3, \mathcal{C}_1 \cup \mathcal{C}_2 \cup \mathcal{C}_3 \cup \left\{ \tau_1 \equiv \text{Boolean}, \tau_2 \equiv \tau_3 \right\} \vdash e: \tau_3
     }
-\end{equation}
+\end{equation*}
 
 Продемонстрируем применение правил вывода на примере следующего выражения:
 
@@ -709,14 +709,14 @@ void foo(int a) { }
 
 К набору ограничений сама по себе может быть применена подстановка согласно следующему правилу:
 
-\begin{equation}
-    \label{eq:consts_subst}
+\begin{equation*}
+%    \label{eq:consts_subst}
     \begin{aligned}
         \mathcal{S} (\tau_1 \equiv \tau_2)             &= \mathcal{S} \tau_1 \equiv \mathcal{S} \tau_2, \\
         \mathcal{S} (\tau \preceq \sigma)              &= \mathcal{S} \tau \preceq \mathcal{S} \sigma,  \\
         \mathcal{S} (\tau_1 \leq_{\mathcal{M}} \tau_2) &= \mathcal{S} \tau_1 \leq_{\mathcal{S} \mathcal{M}} \mathcal{S} \tau_2,
     \end{aligned}
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & $\mathcal{S} \mathcal{M}$~--- применение подстановки к каждому типу из множества $\mathcal{M}$, \\
     & $\mathcal{S} \sigma = \forall A. \mathcal{S} \tau$.                                             \\
@@ -753,8 +753,8 @@ void foo(int a) { }
 
 Рассмотрим решение множества ограничений~\ref{eq:consts_example}:
 
-\begin{equation}
-    \label{eq:consts_solve}
+\begin{equation*}
+%    \label{eq:consts_solve}
     \begin{aligned}
         &solve(\mathcal{C}_{example}) = \\
         &= solve(\left\{ \tau_2 \equiv \text{I} \to \tau_3, \tau_4 \leq_{\left\{ \tau_5 \right\}} \tau_3, \tau_2 \leq_{\left\{ \tau_5 \right\}} \tau_1, \tau_5 \equiv \tau_1 \right\}) &= \\
@@ -768,7 +768,7 @@ void foo(int a) { }
         &= solve(\emptyset)                                                                                                                                      \circ \left[ \tau_4 \coloneqq \tau_3 \right] \circ \left[ \tau_1 \coloneqq \text{I} \to \tau_3 \right] \circ \left[ \tau_5 \coloneqq \tau_1 \right] \circ \left[ \tau_2 \coloneqq \text{I} \to \tau_3 \right] &= \\
         &= \left[ \tau_4 \coloneqq \tau_3, \tau_1 \coloneqq \text{I} \to \tau_3, \tau_5 \coloneqq \text{I} \to \tau_3, \tau_2 \coloneqq \text{I} \to \tau_3 \right],
     \end{aligned}
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & $\text{I} = \text{Integer}$.\\
 \end{eqrem}

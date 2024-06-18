@@ -98,8 +98,7 @@
     \underbracket{\text{\lstinline{[TC002]:}}}_{\text{код}}~
     \underbracket{\text{\lstinline{Unimplemented}}}_{\text{основное описание}}\\
     &\underset{\text{место в исходном файле}}{\text{\lstinline{examples/test.kd:9:10}}}\\
-    &\text{\lstinline{// code...}}\\
-    &~~~~~~\text{\lstinline{TTTT}}
+    &\text{\lstinline{// code...}}
 \end{align*}
 \begin{eqrem}
     & важность~--- уровень важности диагностики, может быть \texttt{note}, \texttt{info}, \texttt{error} и пр., \\
@@ -280,41 +279,41 @@ frontend, отвечающий за обработку исходного вод
 
 Правило преобразования функции с телом \lstinline{BodyFnDecl [name, expr, parameters ]}, где \lstinline{parameters}~--- параметры функции, \lstinline{expr}~--- тело функции:
 
-\begin{equation}
-    \label{eq:conv_bfn}
+\begin{equation*}
+%    \label{eq:conv_bfn}
     \begin{cases}
         \underline{expr} \text{ если параметров нет}, \\
         \lambda \underline{p1}. \lambda \underline{p2}. \cdots. \underline{expr},
     \end{cases}
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & \texttt{p1, p2} $\in$ \texttt{parameters}.
 \end{eqrem}
 
 Правило для преобразования применения \lstinline{Appl [ expr, parameters ]}:
 
-\begin{equation}
-    \label{eq:conv_appl}
+\begin{equation*}
+%    \label{eq:conv_appl}
     \begin{cases}
         \underline{expr} \text{ если параметров нет}, \\
         ((\underline{expr}(\underline{p1}))(\underline{p2}))\ldots,
     \end{cases}
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & \texttt{p1, p2} $\in$ \texttt{parameters}.
 \end{eqrem}
 
 Правило для преобразования набора выражений \lstinline{Exprs [ items ]}:
 
-\begin{align}
-    \label{eq:conv_exprs}
+\begin{align*}
+%    \label{eq:conv_exprs}
     \begin{cases}
     ()
         &\text{ если список \lstinline{items} пуст},\\
         \text{let } n = \underline{i1} \text{ in } (\underline{i2}) &\text{ если } \underline{i1} \ne \text{ let } x = e_1 \text{ in } e_2,\\
         \text{let } x = e_1 \text{ in } \underline{i2} &\text{иначе},
     \end{cases}
-\end{align}
+\end{align*}
 \begin{eqrem}
     & \texttt{i1, i2} $\in$ \texttt{items},                                             \\
     & \texttt{n}~--- имя элемента \texttt{i1} (если есть, иначе~--- идентификатор вершины).
@@ -322,17 +321,17 @@ frontend, отвечающий за обработку исходного вод
 
 Правило для преобразования объявления инициализированной переменной \lstinline{InitVar [ name, expr ]}:
 
-\begin{equation}
-    \label{eq:conv_initvar}
+\begin{equation*}
+%    \label{eq:conv_initvar}
     \text{let } name = \underline{expr} \text{ in } name
-\end{equation}
+\end{equation*}
 
 Правило для преобразования условного выражения \lstinline{IfExpr [ condition, body, elifs, else ]}, где \lstinline{elifs}~--- список с элементами вида \lstinline{ElifExpr [ condition, body ]}, \lstinline{else} имеет вид \lstinline{ElseExpr [ body ]}:
 
-\begin{equation}
-    \label{eq:conv_if}
+\begin{equation*}
+%    \label{eq:conv_if}
     \text{if } \underline{condition} \text{ then } \underline{body} \text{ otherwise } e_1,
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & $e_i = \text{ if } \underline{efi.condition} \text{ then } \underline{efi.body} \text{ otherwise } e_{i + 1}$, \\
     & $e_n = \underline{else}$,                                                                                      \\
@@ -345,13 +344,13 @@ frontend, отвечающий за обработку исходного вод
 
 Правило для преобразования лямбда-функции \lstinline{Lambda [ binds, expr ]}, где \lstinline{binds}~--- список параметров лямбда-функции:
 
-\begin{equation}
-    \label{eq:conv_lambda}
+\begin{equation*}
+%    \label{eq:conv_lambda}
     \begin{cases}
         \underline{expr} \text{ если параметров нет}, \\
         \lambda \underline{b1}. \lambda \underline{b2}. \cdots. \underline{expr},
     \end{cases}
-\end{equation}
+\end{equation*}
 \begin{eqrem}
     & \texttt{b1, b2} $\in$ \texttt{binds}.
 \end{eqrem}
