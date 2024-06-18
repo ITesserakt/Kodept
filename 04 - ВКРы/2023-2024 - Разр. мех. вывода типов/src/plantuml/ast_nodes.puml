@@ -1,6 +1,8 @@
 @startuml
 'https://plantuml.com/activity-diagram-beta
 
+scale 0.31
+
 node FileDecl
 node ModDecl
 node EnumDecl

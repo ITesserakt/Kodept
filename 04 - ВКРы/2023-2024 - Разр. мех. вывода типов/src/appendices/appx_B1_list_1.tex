@@ -1,50 +1,36 @@
 \section*{Элементы абстрактного синтаксического дерева}
 
-Ниже приведены схемы классов, представляющих собой вершины в абстрактном синтаксическом дереве.
-Для каждого класса дан небольшой пример синтаксиса, который этот класс описывает.
-
-\begin{table}[H]
+\begin{figure}
     \centering
-    \caption{Описание структуры классов, представляющих собой вершины AST с примерами синтаксиса языка Kodept}
-    \label{tab:nodes_ast}
-    \begin{tabular}{|p{0.15\textwidth}|p{0.35\textwidth}|p{0.45\textwidth}|}
-        \hline
-        \textbf{Имя \newline класса} & \textbf{Дочерние вершины} & \textbf{Пример синтаксиса} \\\hline
-        \texttt{FileDecl} & \begin{itemize} \item Vec<ModDecl> \end{itemize} & Необходим для объединения множества модулей в файле в одну вершину \\\hline
-        \texttt{ModDecl} & \begin{itemize} \item Vec<EnumDecl или StructDecl или BodyFnDecl> \end{itemize} & \verb|module Test {  }| \\\hline
-        \texttt{EnumDecl} & \begin{itemize} \item Vec<TyName> \end{itemize} & \verb|enum struct Bool {True, False}| \\\hline
-        \texttt{StructDecl} & \begin{itemize} \item Vec<TyParam> \item Vec<BodyFnDecl> \end{itemize} & \verb|struct Person(age: Int) {  }| \\\hline
-        \texttt{EnumDecl} & \begin{itemize} \item Vec<TyName> \end{itemize} & \verb|enum struct Bool {True, False}| \\\hline
-        \texttt{BodyFnDecl} & \begin{itemize} \item Vec<TyParam или UnTyParam> \item BlockLevel \item Option<Type> \end{itemize} & \verb|fun foo(a: Int) {  }| \\\hline
-        \texttt{AbstFnDecl} & \begin{itemize} \item Vec<TyName> \item Option<Type> \end{itemize} & \verb|fun special(a: Int)| \\\hline
-        \texttt{Exprs} & \begin{itemize} \item Vec<TyName> \end{itemize} & \verb|enum struct Bool {True, False}| \\\hline
-    \end{tabular}
-\end{table}
+    \input{figures/.generated/ast_nodes}
+    \caption{UML-диаграмма }
+    \label{fig:ast_nodes}
+\end{figure}
 
-\begin{lstlisting}[label=lst:nodes, caption={Имена всех вершин, составляющих абстрактное синтаксическое дерево}, language=C]
-    File, // root element
-    Module, // module {name} {rest}
-    Struct, // struct {name}({params}) {rest}
-    Enum, // enum {name} {rest}
-    TypedParameter, // {name}: {type}
-    UntypedParameter, // {name}
-    Variable, // val {name}: {type}
-    InitializedVar, // val {name}: {type} = {expr}
-    BodiedFunction, // fun {name}({params}) => {expr}
-    ExpressionBlock, // {  {expr1}; {expr2}; ... }
-    Application, // {expr}({expr})
-    Lambda, // \textbackslash {binds} => {expr}
-    Reference, // {name}
-    Access, // {expr}.{expr}
-    Number, // number literal
-    Char, // char literal
-    String, // string literal
-    Tuple, // ({expr1}, {expr2}, ...)
-    If, // if {expr} => {expr} {другие ветки}
-    Elif, // elif {expr} => {expr}
-    Else, // else {expr}
-    Binary, // binary operator: +, -, *, /, \%, \textasciicircum
-    Unary, // unary operator: -, +, !, \texttildelow
-    AbstractFunction, // abstract fun {name}({params}): {type}
-    ProdType, // ({type1}, {type2}, ...)
-\end{lstlisting}
+%\begin{lstlisting}[label=lst:nodes, caption={Имена всех вершин, составляющих абстрактное синтаксическое дерево}, language=C]
+%    File, // root element
+%    Module, // module {name} {rest}
+%    Struct, // struct {name}({params}) {rest}
+%    Enum, // enum {name} {rest}
+%    TypedParameter, // {name}: {type}
+%    UntypedParameter, // {name}
+%    Variable, // val {name}: {type}
+%    InitializedVar, // val {name}: {type} = {expr}
+%    BodiedFunction, // fun {name}({params}) => {expr}
+%    ExpressionBlock, // {  {expr1}; {expr2}; ... }
+%    Application, // {expr}({expr})
+%    Lambda, // \textbackslash {binds} => {expr}
+%    Reference, // {name}
+%    Access, // {expr}.{expr}
+%    Number, // number literal
+%    Char, // char literal
+%    String, // string literal
+%    Tuple, // ({expr1}, {expr2}, ...)
+%    If, // if {expr} => {expr} {другие ветки}
+%    Elif, // elif {expr} => {expr}
+%    Else, // else {expr}
+%    Binary, // binary operator: +, -, *, /, \%, \textasciicircum
+%    Unary, // unary operator: -, +, !, \texttildelow
+%    AbstractFunction, // abstract fun {name}({params}): {type}
+%    ProdType, // ({type1}, {type2}, ...)
+%\end{lstlisting}
