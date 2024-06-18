@@ -53,7 +53,7 @@ compile_uml theme: mk_folder
 		-tlatex:nopreamble                        \
 		-theme {{ theme }}                        \
 		-config {{ 'thirdparty' / 'config.cfg' }} \
-		{{ 'src' / 'plantuml' / '*.puml' }}
+		{{ 'src' / 'plantuml' / '**' / '*.puml' }}
 
 compile: (compile_uml "_none_")
   #!/usr/bin/env sh

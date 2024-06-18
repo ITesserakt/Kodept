@@ -1,0 +1,131 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+node FileDecl
+node ModDecl
+node EnumDecl
+node StructDecl
+node BodyFnDecl
+node TyParam
+node NonTyParam
+node Exprs
+node TyName
+node InitVar
+node VarDecl
+node ProdTy
+node Appl
+node Acc
+node UnExpr
+node BinExpr
+node Lambda
+node NumLit
+node CharLit
+node StrLit
+node TupleLit
+node Ref
+node TypeReference
+node Reference
+node IfExpr
+node ElifExpr
+node ElseExpr
+
+rectangle Param
+rectangle BlockLevel
+rectangle Operation
+rectangle Body
+rectangle Type
+rectangle Expression
+rectangle Term
+rectangle Lit
+rectangle CodeFlow
+
+FileDecl *-- "1..*" ModDecl
+
+ModDecl *-- "0..*" EnumDecl
+ModDecl *-- "0..*" StructDecl
+ModDecl *-- "0..*" BodyFnDecl
+
+EnumDecl *-- "0..*" TyName
+
+StructDecl *-- "0..*" TyParam
+StructDecl *-- "0..*" BodyFnDecl
+
+Param <-- TyParam
+Param <-- NonTyParam
+
+BlockLevel <-- Exprs
+BlockLevel <-- BodyFnDecl
+BlockLevel <-- InitVar
+BlockLevel <-- Operation
+
+BodyFnDecl *-- "0..*" Param
+BodyFnDecl *-- "0..*" Body
+
+Body <-- Exprs
+Body <-- BlockLevel
+
+InitVar *-- VarDecl
+InitVar *-- Operation
+
+VarDecl *-- "0..1" Type
+
+Type <-- TyName
+Type <-- ProdTy
+
+ProdTy *-- "0..*" Type
+
+TyParam *-- Type
+
+Operation <-- Appl
+Operation <-- Acc
+Operation <-- UnExpr
+Operation <-- BinExpr
+Operation <-- Exprs
+Operation <-- Expression
+
+Expression <-- Lambda
+Expression <-- CodeFlow
+Expression <-- Lit
+Expression <-- Term
+
+Appl *-- "0..*" Operation
+Appl *-- Operation
+
+Acc *-- "left" Operation
+Acc *-- "right" Operation
+
+UnExpr *-- Operation
+
+BinExpr *-- "left" Operation
+BinExpr *-- "right" Operation
+
+Lambda *-- "0..*" NonTyParam
+Lambda *-- Operation
+
+Exprs *-- "0..*" BlockLevel
+
+Lit <-- NumLit
+Lit <-- CharLit
+Lit <-- StrLit
+Lit <-- TupleLit
+
+TupleLit *-- "0..*" Operation
+
+Term <-- Ref
+
+Ref *-- TypeReference
+Ref *-- Reference
+
+CodeFlow <-- IfExpr
+
+IfExpr *-- Operation
+IfExpr *-- Body
+IfExpr *-- "0..*" ElifExpr
+IfExpr *-- "0..1" ElseExpr
+
+ElifExpr *-- Operation
+ElifExpr *-- Body
+
+ElseExpr *-- Body
+
+@enduml
