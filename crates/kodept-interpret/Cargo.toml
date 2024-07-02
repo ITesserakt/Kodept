@@ -15,6 +15,7 @@ rust-version = "1.74.0"
 workspace = true
 
 [dependencies]
+chashmap = "2.2.2"
 derive_more.workspace = true
 tracing.workspace = true
 id_tree.workspace = true
