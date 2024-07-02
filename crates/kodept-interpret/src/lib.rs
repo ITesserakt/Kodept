@@ -1,5 +1,5 @@
-use slotmap::SparseSecondaryMap;
 use kodept_ast::graph::GenericNodeKey;
+use crate::conc_cache::ConcSecSlotMap;
 use crate::operator_desugaring::{AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander};
 
 mod convert_model;
@@ -9,6 +9,7 @@ mod scope;
 pub mod semantic_analyzer;
 mod symbol;
 pub mod type_checker;
+mod conc_cache;
 
 #[derive(Copy, Clone)]
 pub struct Witness(());
@@ -25,4 +26,4 @@ impl Witness {
 
 pub(crate) type Path = String;
 
-pub type Cache<T> = SparseSecondaryMap<GenericNodeKey, T>;
+pub type Cache<T> = ConcSecSlotMap<GenericNodeKey, T>;

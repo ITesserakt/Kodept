@@ -1,29 +1,28 @@
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
 use derive_more::From;
 
-use kodept_ast::BodyFnDecl;
 use kodept_ast::graph::{ChangeSet, GenericNodeId, GenericNodeKey, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::structure::{Located, rlt};
+use kodept_ast::BodyFnDecl;
+use kodept_core::structure::{rlt, Located};
 use kodept_inference::algorithm_w::AlgorithmWError;
 use kodept_inference::language::{Language, Var};
 use kodept_inference::r#type::PolymorphicType;
 use kodept_inference::traits::EnvironmentProvider;
 use kodept_macros::error::report::{ReportMessage, Severity};
-use kodept_macros::Macro;
 use kodept_macros::traits::Context;
+use kodept_macros::Macro;
 
-use crate::{Cache, Witness};
 use crate::convert_model::ModelConvertibleNode;
 use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 use crate::type_checker::InferError::Unknown;
+use crate::{Cache, Witness};
 
 pub struct CannotInfer;
 
@@ -53,7 +52,7 @@ impl From<CannotInfer> for ReportMessage {
 
 pub struct TypeChecker<'a> {
     pub(crate) symbols: &'a ScopeTree,
-    models: Rc<RefCell<Cache<Rc<Language>>>>,
+    models: Cache<Rc<Language>>,
     evidence: Witness,
 }
 
@@ -61,7 +60,7 @@ struct RecursiveTypeChecker<'a> {
     search: ScopeSearch<'a>,
     token: &'a PermTkn,
     tree: &'a SyntaxTree,
-    models: Rc<RefCell<Cache<Rc<Language>>>>,
+    models: &'a Cache<Rc<Language>>,
     evidence: Witness,
 }
 
@@ -93,25 +92,21 @@ impl EnvironmentProvider<GenericNodeKey> for RecursiveTypeChecker<'_> {
 
         let model = self
             .models
-            .borrow_mut()
-            .entry(*key)
-            .expect("Node not found")
-            .or_insert_with(|| {
-                Rc::new(
-                    node.try_cast::<ModelConvertibleNode>()
-                        .map(|node| {
-                            node.to_model(
-                                self.search.as_tree(),
-                                self.tree,
-                                self.token,
-                                self.evidence,
-                            )
-                            .expect("Cannot build model for model")
-                        })
-                        .expect("Cannot build model for node"),
-                )
-            })
-            .clone();
+            .get(*key)
+            .map(|it| it.clone())
+            .unwrap_or_else(|| {
+                let model = node
+                    .try_cast::<ModelConvertibleNode>()
+                    .map(|node| {
+                        node.to_model(self.search.as_tree(), self.tree, self.token, self.evidence)
+                            .expect("Cannot build model")
+                    })
+                    .expect("Cannot build model");
+                let model = Rc::new(model);
+                self.models.insert(*key, model.clone());
+                model
+            });
+
         match model.infer(self) {
             Ok(x) => Some(Cow::Owned(x)),
             Err(_) => None,
@@ -137,7 +132,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn into_inner(self) -> Cache<Rc<Language>> {
-        Rc::try_unwrap(self.models).expect("Cannot unwrap models").into_inner()
+        self.models
     }
 }
 
@@ -170,7 +165,7 @@ impl Macro for TypeChecker<'_> {
                 search,
                 token: node.token(),
                 tree: &tree,
-                models: self.models.clone(),
+                models: &self.models,
                 evidence: self.evidence,
             };
             let fn_location = context
