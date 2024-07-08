@@ -1,21 +1,20 @@
-use std::collections::HashSet;
-use std::fmt::{Display, Formatter};
-
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
+use std::collections::HashSet;
+use std::fmt::{Display, Formatter};
 use thiserror::Error;
 use tracing::debug;
 
-use crate::{InferState, language};
 use crate::algorithm_u::AlgorithmUError;
 use crate::algorithm_w::AlgorithmWError::UnknownVar;
 use crate::assumption::AssumptionSet;
-use crate::constraint::{Constraint, ConstraintsSolverError, eq_cst, explicit_cst, implicit_cst};
+use crate::constraint::{eq_cst, explicit_cst, implicit_cst, Constraint, ConstraintsSolverError};
 use crate::language::{Language, Literal, Special, Var};
-use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, Tuple, TVar};
 use crate::r#type::PrimitiveType::Boolean;
+use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
 use crate::substitution::Substitutions;
 use crate::traits::{EnvironmentProvider, Substitutable};
+use crate::{language, InferState};
 
 #[derive(Debug, Error)]
 pub enum AlgorithmWError {
@@ -24,6 +23,14 @@ pub enum AlgorithmWError {
     UnknownVar(NEVec<Var>),
     #[error(transparent)]
     FailedConstraints(#[from] ConstraintsSolverError),
+}
+
+#[derive(Debug, Error)]
+pub enum CompoundInferError<E> {
+    #[error(transparent)]
+    AlgoW(#[from] AlgorithmWError),
+    Both(AlgorithmWError, NEVec<E>),
+    Foreign(NEVec<E>)
 }
 
 struct AlgorithmW<'e> {
@@ -165,45 +172,52 @@ impl<'e> AlgorithmW<'e> {
 }
 
 impl Language {
-    fn infer_w(
+    fn infer_w<E>(
         &self,
         context: &mut AlgorithmW,
-        table: &impl EnvironmentProvider<Var>,
-    ) -> Result<(Substitutions, MonomorphicType), AlgorithmWError> {
+        table: &impl EnvironmentProvider<Var, Error = E>,
+    ) -> Result<(Substitutions, MonomorphicType), CompoundInferError<E>> {
         let (a, c, t) = context.apply(self)?;
-        let (not_found, explicits) = a.keys().fold(
-            (Vec::new(), Vec::new()),
-            |(mut not_found, mut cst), next| {
-                match table.get(next) {
-                    None => not_found.push(next.clone()),
-                    Some(s) => cst.extend(
+        let (errors, not_found, explicits) = a.keys().fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut errors, mut not_found, mut cst), next| {
+                match table.maybe_get(next) {
+                    Ok(None) => not_found.push(next.clone()),
+                    Ok(Some(s)) => cst.extend(
                         a.get(next)
                             .into_iter()
                             .map(|it| explicit_cst(it.clone(), s.clone().into_owned())),
                     ),
+                    Err(e) => errors.push(e),
                 }
-                (not_found, cst)
+                (errors, not_found, cst)
             },
         );
 
         if let Some(not_found) = NEVec::from_vec(not_found) {
-            return Err(UnknownVar(not_found));
+            if let Some(errors) = NEVec::from_vec(errors) {
+                return Err(CompoundInferError::Both(UnknownVar(not_found), errors))
+            }
+            return Err(CompoundInferError::AlgoW(UnknownVar(not_found)))
+        } else if let Some(errors) = NEVec::from_vec(errors) {
+            return Err(CompoundInferError::Foreign(errors))
         }
 
         debug!("Inferred raw type and constraints: ");
         debug!("{c:?} ++ {explicits:?}, {t}");
-        let substitutions = Constraint::solve(concat([c, explicits]), context.env)?;
+        let substitutions = Constraint::solve(concat([c, explicits]), context.env)
+            .map_err(AlgorithmWError::FailedConstraints)?;
         let t = t.substitute(&substitutions);
         debug!("Inferred type and substitutions: ");
         debug!("{}, {}", substitutions, t);
         Ok((substitutions, t))
     }
 
-    pub(crate) fn infer_with_env(
+    pub(crate) fn infer_with_env<E>(
         &self,
-        context: &impl EnvironmentProvider<Var>,
+        context: &impl EnvironmentProvider<Var, Error = E>,
         env: &mut InferState,
-    ) -> Result<PolymorphicType, AlgorithmWError> {
+    ) -> Result<PolymorphicType, CompoundInferError<E>> {
         let mut ctx = AlgorithmW {
             monomorphic_set: Default::default(),
             env,
@@ -214,10 +228,10 @@ impl Language {
         }
     }
 
-    pub fn infer(
+    pub fn infer<E>(
         &self,
-        table: &impl EnvironmentProvider<Var>,
-    ) -> Result<PolymorphicType, AlgorithmWError> {
+        table: &impl EnvironmentProvider<Var, Error = E>,
+    ) -> Result<PolymorphicType, CompoundInferError<E>> {
         self.infer_with_env(table, &mut InferState::default())
     }
 }

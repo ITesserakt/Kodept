@@ -16,7 +16,7 @@ use kodept_inference::language::Literal::{Floating, Tuple};
 
 use crate::node_family::convert;
 use crate::scope::ScopeTree;
-use crate::type_checker::{InferError, TypeChecker};
+use crate::type_checker::{InferError};
 use crate::type_checker::InferError::Unknown;
 use crate::Witness;
 
@@ -68,28 +68,6 @@ impl ModelConvertibleNode {
             ModelConvertibleNodeEnum::Ref(x) => helper.convert(x),
             ModelConvertibleNodeEnum::Lambda(x) => helper.convert(x),
         }
-    }
-}
-
-impl TypeChecker<'_> {
-    #[allow(private_bounds)]
-    pub(crate) fn to_model<'a, N>(
-        &'a self,
-        ast: &'a SyntaxTree,
-        token: &'a PermTkn,
-        node: &N,
-        evidence: Witness,
-    ) -> Result<Language, InferError>
-    where
-        ConversionHelper<'a>: ToModelFrom<N>,
-    {
-        let helper = ConversionHelper {
-            scopes: &self.symbols,
-            ast,
-            token,
-            evidence,
-        };
-        helper.convert(node)
     }
 }
 

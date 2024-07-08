@@ -52,7 +52,7 @@ fn main() -> Result<(), WideError> {
         });
 
     match cli_arguments.subcommands {
-        None => Execute.exec(sources, settings)?,
+        None => Execute.exec(sources, settings, cli_arguments.compilation_config)?,
         Some(Commands::Graph(_)) => Graph::exec(sources, settings, cli_arguments.output)?,
     };
     Ok(())

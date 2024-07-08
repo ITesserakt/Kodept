@@ -1,3 +1,5 @@
+use std::num::NonZeroU16;
+use derive_more::Constructor;
 use tracing::info;
 
 use kodept_interpret::operator_desugaring::{
@@ -12,7 +14,15 @@ use crate::steps::hlist::macros::{hlist, hlist_pat};
 use crate::steps::pipeline::Pipeline;
 use crate::steps::Step;
 
-pub fn run_common_steps(ctx: &mut impl MutableContext) -> Result<(), UnrecoverableError> {
+#[derive(Constructor)]
+pub struct Config {
+    recursion_depth: NonZeroU16,
+}
+
+pub fn run_common_steps(
+    ctx: &mut impl MutableContext,
+    config: &Config,
+) -> Result<(), UnrecoverableError> {
     info!("Step 1: Simplify AST");
     let hlist_pat![a, b, c] = Pipeline
         .define_step(hlist![
@@ -30,7 +40,11 @@ pub fn run_common_steps(ctx: &mut impl MutableContext) -> Result<(), Unrecoverab
 
     info!("Step 3: Infer and check types");
     Pipeline
-        .define_step(hlist![TypeChecker::new(&scopes, Witness::fact(a, b, c))])
+        .define_step(hlist![TypeChecker::new(
+            &scopes,
+            config.recursion_depth,
+            Witness::fact(a, b, c)
+        )])
         .apply_with_context(ctx)?;
 
     Ok(())

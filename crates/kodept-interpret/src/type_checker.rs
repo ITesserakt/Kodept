@@ -1,27 +1,32 @@
-use std::borrow::Cow;
-use std::collections::HashSet;
-use std::rc::Rc;
-
 use derive_more::From;
+use nonempty_collections::{nev, IteratorExt, NEVec, NonEmptyIterator};
+use std::borrow::Cow;
+use std::cell::Cell;
+use std::collections::HashSet;
+use std::num::NonZeroU16;
+use std::rc::Rc;
+use std::sync::atomic::{AtomicU16, Ordering};
 
-use kodept_ast::graph::{ChangeSet, GenericNodeId, GenericNodeKey, PermTkn, SyntaxTree};
+use kodept_ast::graph::{AnyNodeD, ChangeSet, GenericNodeId, GenericNodeKey, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::BodyFnDecl;
 use kodept_core::structure::{rlt, Located};
-use kodept_inference::algorithm_w::AlgorithmWError;
+use kodept_inference::algorithm_w::{AlgorithmWError, CompoundInferError};
 use kodept_inference::language::{Language, Var};
 use kodept_inference::r#type::PolymorphicType;
 use kodept_inference::traits::EnvironmentProvider;
 use kodept_macros::error::report::{ReportMessage, Severity};
 use kodept_macros::traits::Context;
 use kodept_macros::Macro;
+use RecursiveTypeCheckingError::{AlgoWError, MutuallyRecursive, NodeNotFound};
 
 use crate::convert_model::ModelConvertibleNode;
 use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 use crate::type_checker::InferError::Unknown;
+use crate::type_checker::RecursiveTypeCheckingError::InconvertibleToModel;
 use crate::{Cache, Witness};
 
 pub struct CannotInfer;
@@ -54,6 +59,7 @@ pub struct TypeChecker<'a> {
     pub(crate) symbols: &'a ScopeTree,
     models: Cache<Rc<Language>>,
     evidence: Witness,
+    recursion_depth: NonZeroU16,
 }
 
 struct RecursiveTypeChecker<'a> {
@@ -62,6 +68,7 @@ struct RecursiveTypeChecker<'a> {
     tree: &'a SyntaxTree,
     models: &'a Cache<Rc<Language>>,
     evidence: Witness,
+    current_recursion_depth: Cell<u16>,
 }
 
 #[derive(From, Debug)]
@@ -71,63 +78,177 @@ pub enum InferError {
     Unknown,
 }
 
+#[derive(Debug, From)]
+enum RecursiveTypeCheckingError {
+    NodeNotFound(GenericNodeId),
+    InconvertibleToModel(AnyNodeD),
+    MutuallyRecursive,
+    #[from]
+    ScopeError(ScopeError),
+    #[from]
+    AlgoWError(AlgorithmWError),
+}
+
+#[derive(From, Debug)]
+struct RecursiveTypeCheckingErrors {
+    errors: NEVec<RecursiveTypeCheckingError>,
+}
+
+impl From<RecursiveTypeCheckingError> for RecursiveTypeCheckingErrors {
+    fn from(value: RecursiveTypeCheckingError) -> Self {
+        Self {
+            errors: nev![value],
+        }
+    }
+}
+
+impl From<ScopeError> for RecursiveTypeCheckingErrors {
+    fn from(value: ScopeError) -> Self {
+        Self {
+            errors: nev![value.into()],
+        }
+    }
+}
+
+impl From<InferError> for RecursiveTypeCheckingErrors {
+    fn from(value: InferError) -> Self {
+        Self {
+            errors: match value {
+                InferError::AlgorithmW(e) => nev![e.into()],
+                InferError::Scope(e) => nev![e.into()],
+                Unknown => panic!("Unknown error happened"),
+            },
+        }
+    }
+}
+
+impl From<AlgorithmWError> for RecursiveTypeCheckingErrors {
+    fn from(value: AlgorithmWError) -> Self {
+        Self {
+            errors: nev![value.into()],
+        }
+    }
+}
+
+impl From<RecursiveTypeCheckingError> for ReportMessage {
+    fn from(value: RecursiveTypeCheckingError) -> Self {
+        match value {
+            NodeNotFound(id) => Self::new(
+                Severity::Bug,
+                "TC005",
+                format!("Cannot find node with given id: {id}"),
+            ),
+            InconvertibleToModel(desc) => Self::new(
+                Severity::Bug,
+                "TC006",
+                format!("Cannot convert node with description `{desc}` to model"),
+            ),
+            RecursiveTypeCheckingError::ScopeError(e) => e.into(),
+            AlgoWError(e) => InferError::from(e).into(),
+            MutuallyRecursive => Self::new(
+                Severity::Error,
+                "TC007",
+                "Cannot type check due to mutual recursion".to_string(),
+            )
+            .with_notes(vec![
+                "Adjust `recursion_depth` CLI option if needed".to_string()
+            ]),
+        }
+    }
+}
+
+fn flatten(
+    value: CompoundInferError<RecursiveTypeCheckingErrors>,
+) -> NEVec<RecursiveTypeCheckingError> {
+    match value {
+        CompoundInferError::AlgoW(e) => nev![e.into()],
+        CompoundInferError::Both(e, es) => {
+            let errors: Vec<_> = es.into_iter().flat_map(|it| it.errors).collect();
+            if let Some(mut errors) = NEVec::from_vec(errors) {
+                errors.push(e.into());
+                errors
+            } else {
+                nev![e.into()]
+            }
+        }
+        CompoundInferError::Foreign(es) => es
+            .into_iter()
+            .flat_map(|it| it.errors)
+            .to_nonempty_iter()
+            .unwrap()
+            .collect(),
+    }
+}
+
+impl RecursiveTypeCheckingErrors {
+    fn to_report_messages(self) -> Vec<ReportMessage> {
+        self.errors.into_iter().map(ReportMessage::from).collect()
+    }
+}
+
 impl EnvironmentProvider<GenericNodeKey> for RecursiveTypeChecker<'_> {
-    // TODO: handle error properly
-    fn get(&self, key: &GenericNodeKey) -> Option<Cow<PolymorphicType>> {
+    type Error = RecursiveTypeCheckingErrors;
+
+    fn maybe_get(&self, key: &GenericNodeKey) -> Result<Option<Cow<PolymorphicType>>, Self::Error> {
         let id: GenericNodeId = (*key).into();
-        let node = self.tree.get(id, self.token).expect("Node not found");
+        let node = self.tree.get(id, self.token).ok_or(NodeNotFound(id))?;
 
         if let Some(node) = node.try_cast::<TypeRestrictedNode>() {
-            let search = self
-                .search
-                .as_tree()
-                .lookup(node, self.tree, self.token)
-                .ok()?;
+            let search = self.search.as_tree().lookup(node, self.tree, self.token)?;
             match node.type_of(&search, self.tree, self.token) {
-                Execution::Failed(_) => return None,
-                Execution::Completed(x) => return Some(Cow::Owned(x.generalize(&HashSet::new()))),
+                Execution::Failed(e) => return Err(e.into()),
+                Execution::Completed(x) => {
+                    return Ok(Some(Cow::Owned(x.generalize(&HashSet::new()))))
+                }
                 Execution::Skipped => {}
             };
         }
 
-        let model = self
-            .models
-            .get(*key)
-            .map(|it| it.clone())
-            .unwrap_or_else(|| {
+        let depth = self.current_recursion_depth.get();
+        match depth.checked_sub(1) {
+            None => return Err(MutuallyRecursive.into()),
+            Some(x) => self.current_recursion_depth.set(x)
+        }
+        
+        let model = match self.models.get(*key) {
+            Some(x) => x.clone(),
+            None => {
                 let model = node
                     .try_cast::<ModelConvertibleNode>()
-                    .map(|node| {
-                        node.to_model(self.search.as_tree(), self.tree, self.token, self.evidence)
-                            .expect("Cannot build model")
-                    })
-                    .expect("Cannot build model");
+                    .ok_or(InconvertibleToModel(node.describe()))?
+                    .to_model(self.search.as_tree(), self.tree, self.token, self.evidence)?;
                 let model = Rc::new(model);
                 self.models.insert(*key, model.clone());
                 model
-            });
+            }
+        };
 
         match model.infer(self) {
-            Ok(x) => Some(Cow::Owned(x)),
-            Err(_) => None,
+            Ok(x) => Ok(Some(Cow::Owned(x))),
+            Err(e) => Err(RecursiveTypeCheckingErrors { errors: flatten(e) }),
         }
     }
 }
 
 impl EnvironmentProvider<Var> for RecursiveTypeChecker<'_> {
-    fn get(&self, key: &Var) -> Option<Cow<PolymorphicType>> {
-        let id = self.search.id_of_var(&key.name)?;
+    type Error = RecursiveTypeCheckingErrors;
+
+    fn maybe_get(&self, key: &Var) -> Result<Option<Cow<PolymorphicType>>, Self::Error> {
+        let Some(id) = self.search.id_of_var(&key.name) else {
+            return Ok(None);
+        };
         let key: GenericNodeKey = id.into();
-        self.get(&key)
+        self.maybe_get(&key)
     }
 }
 
 impl<'a> TypeChecker<'a> {
-    pub fn new(symbols: &'a ScopeTree, evidence: Witness) -> Self {
+    pub fn new(symbols: &'a ScopeTree, recursion_depth: NonZeroU16, evidence: Witness) -> Self {
         Self {
             symbols,
             models: Default::default(),
             evidence,
+            recursion_depth,
         }
     }
 
@@ -159,31 +280,38 @@ impl Macro for TypeChecker<'_> {
         let Some(tree) = context.tree().upgrade() else {
             return Execution::Skipped;
         };
-        if matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
-            let search = self.symbols.lookup(&*node, &tree, node.token())?;
-            let rec = RecursiveTypeChecker {
-                search,
-                token: node.token(),
-                tree: &tree,
-                models: &self.models,
-                evidence: self.evidence,
-            };
-            let fn_location = context
-                .access(&*node)
-                .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]);
-            let key: GenericNodeKey = node.get_id().widen().into();
-            match rec.get(&key) {
-                Some(ty) => {
-                    context.add_report(
-                        fn_location,
-                        TypeInfo {
-                            name: &node.name,
-                            ty: &ty,
-                        },
-                    );
-                }
-                None => context.add_report(fn_location, CannotInfer),
+        if !matches!(side, VisitSide::Leaf | VisitSide::Exiting) {
+            return Execution::Skipped;
+        }
+
+        let search = self.symbols.lookup(&*node, &tree, node.token())?;
+        let rec = RecursiveTypeChecker {
+            search,
+            token: node.token(),
+            tree: &tree,
+            models: &self.models,
+            evidence: self.evidence,
+            current_recursion_depth: Cell::new(self.recursion_depth.get()),
+        };
+        let fn_location = context
+            .access(&*node)
+            .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]);
+        let key: GenericNodeKey = node.get_id().widen().into();
+        match rec.maybe_get(&key) {
+            Ok(Some(ty)) => {
+                context.add_report(
+                    fn_location,
+                    TypeInfo {
+                        name: &node.name,
+                        ty: &ty,
+                    },
+                );
             }
+            Ok(None) => context.add_report(fn_location.clone(), CannotInfer),
+            Err(e) => e
+                .to_report_messages()
+                .into_iter()
+                .for_each(|it| context.add_report(fn_location.clone(), it)),
         }
 
         Execution::Completed(ChangeSet::new())

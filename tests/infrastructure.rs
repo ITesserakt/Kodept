@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Display;
+use std::num::NonZeroU16;
 use std::path::Path;
 use std::rc::Rc;
 
@@ -88,6 +89,7 @@ fn common_steps(ctx: &mut impl MutableContext) -> Result<Cache<Rc<Language>>, Un
 
     let mut type_checker = TypeChecker::new(
         &scopes,
+        NonZeroU16::new(256).unwrap(),
         Witness::fact(
             AccessExpander,
             BinaryOperatorExpander,

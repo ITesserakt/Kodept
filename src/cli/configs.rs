@@ -1,4 +1,5 @@
 use std::io::{stdin, Read};
+use std::num::NonZeroU16;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -28,6 +29,13 @@ pub struct DiagnosticConfig {
     default_value_t = false
     )]
     disable: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct CompilationConfig {
+    /// Specifies maximum number of steps while type checking a function
+    #[arg(default_value_t = NonZeroU16::new(256).unwrap(), long = "recursion_depth")]
+    pub type_checking_recursion_depth: NonZeroU16
 }
 
 #[derive(Debug, Args)]
