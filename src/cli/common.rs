@@ -4,7 +4,7 @@ use clap::Parser;
 use tracing::Level;
 
 use crate::cli::commands::Commands;
-use crate::cli::configs::{DiagnosticConfig, LoadingConfig};
+use crate::cli::configs::{CompilationConfig, DiagnosticConfig, LoadingConfig};
 
 const ABOUT_MESSAGE: &str =
     "Typechecks or interprets passed INPUT using Kodept programming language";
@@ -37,6 +37,8 @@ pub struct Kodept {
     pub diagnostic_config: DiagnosticConfig,
     #[command(flatten)]
     pub loading_config: LoadingConfig,
+    #[command(flatten)]
+    pub compilation_config: CompilationConfig,
     #[command(subcommand)]
     pub subcommands: Option<Commands>,
 }

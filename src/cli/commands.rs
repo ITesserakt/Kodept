@@ -15,6 +15,7 @@ use kodept::macro_context::{DefaultContext, ErrorReported};
 use kodept::parse_error::Reportable;
 use kodept::read_code_source::ReadCodeSource;
 use kodept::steps::common;
+use kodept::steps::common::Config;
 use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
@@ -22,7 +23,7 @@ use kodept_macros::error::report_collector::ReportCollector;
 use kodept_parse::ParseError;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
-
+use crate::cli::configs::CompilationConfig;
 use crate::WideError;
 
 #[derive(Parser, Debug)]
@@ -73,9 +74,11 @@ impl Execute {
         self,
         sources: impl ParallelIterator<Item = ReadCodeSource>,
         settings: CodespanSettings,
+        compilation_config: CompilationConfig
     ) -> Result<(), WideError> {
-        sources.try_for_each_with(settings, |settings, source| {
-            self.exec_for_source(source, settings)
+        let config = into(compilation_config);
+        sources.try_for_each_with(settings, move |settings, source| {
+            self.exec_for_source(source, settings, &config)
         })
     }
 
@@ -84,9 +87,11 @@ impl Execute {
         self,
         sources: impl Iterator<Item = ReadCodeSource>,
         mut settings: CodespanSettings,
+        compilation_config: CompilationConfig
     ) -> Result<(), WideError> {
+        let config = into(compilation_config);
         for source in sources {
-            self.exec_for_source(source, &mut settings)?;
+            self.exec_for_source(source, &mut settings, &config)?;
         }
         Ok(())
     }
@@ -95,6 +100,7 @@ impl Execute {
         &self,
         source: ReadCodeSource,
         settings: &mut CodespanSettings,
+        config: &Config,
     ) -> Result<(), WideError> {
         let rlt = Commands::build_rlt(&source)
             .or_emit_diagnostics(settings, &source)?
@@ -105,7 +111,7 @@ impl Execute {
             accessor,
             tree.build(),
         );
-        common::run_common_steps(&mut context).or_else(|error| {
+        common::run_common_steps(&mut context, config).or_else(|error| {
             error.unwrap_report().emit(settings, &source)?;
             Result::<_, WideError>::Ok(())
         })?;
@@ -167,4 +173,8 @@ impl Graph {
         }
         Ok(File::create(output_path.join(filename))?)
     }
+}
+
+fn into(config: CompilationConfig) -> Config {
+    Config::new(config.type_checking_recursion_depth)
 }

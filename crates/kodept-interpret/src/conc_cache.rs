@@ -16,7 +16,7 @@ struct ForeignKey {
 }
 
 pub struct GuardWrapper<'a, V> {
-    read_guard: ReadGuard<'a, u32, Slot<V>>
+    read_guard: ReadGuard<'a, u32, Slot<V>>,
 }
 
 impl<V> Deref for GuardWrapper<'_, V> {
@@ -28,7 +28,7 @@ impl<V> Deref for GuardWrapper<'_, V> {
 }
 
 pub struct MutGuardWrapper<'a, V> {
-    write_guard: WriteGuard<'a, u32, Slot<V>>
+    write_guard: WriteGuard<'a, u32, Slot<V>>,
 }
 
 impl<V> Deref for MutGuardWrapper<'_, V> {
@@ -97,7 +97,7 @@ impl<K: Key, V> ConcSecSlotMap<K, V> {
                     return Some(Slot {
                         value,
                         version: slot.version,
-                    })
+                    });
                 }
 
                 if is_older_version(kd.version.get(), slot.version) {
@@ -108,12 +108,12 @@ impl<K: Key, V> ConcSecSlotMap<K, V> {
                 return Some(Slot {
                     value,
                     version: kd.version.get(),
-                })
+                });
             }
             return Some(Slot {
                 value,
                 version: kd.version.get(),
-            })
+            });
         });
         last.map(|it| it.value)
     }
@@ -128,9 +128,9 @@ impl<K: Key, V> ConcSecSlotMap<K, V> {
                     removed = Some(slot.value);
                     return None;
                 }
-                return Some(slot)
+                return Some(slot);
             }
-            return None
+            return None;
         });
         removed
     }
@@ -141,20 +141,30 @@ impl<K: Key, V> ConcSecSlotMap<K, V> {
 
     pub fn get(&self, key: K) -> Option<GuardWrapper<V>> {
         let kd: ForeignKey = key.data().into();
-        self.slots.get(&kd.index)
+        self.slots
+            .get(&kd.index)
             .filter(|it| it.version == kd.version.get())
-            .map(|it| GuardWrapper {
-                read_guard: it,
-            })
+            .map(|it| GuardWrapper { read_guard: it })
     }
 
     pub fn get_mut(&self, key: K) -> Option<MutGuardWrapper<V>> {
         let kd: ForeignKey = key.data().into();
-        self.slots.get_mut(&kd.index)
+        self.slots
+            .get_mut(&kd.index)
             .filter(|it| it.version == kd.version.get())
-            .map(|it| MutGuardWrapper {
-                write_guard: it,
-            })
+            .map(|it| MutGuardWrapper { write_guard: it })
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = (K, V)> {
+        self.slots.into_iter().map(|it| {
+            (
+                K::from(KeyData::from(ForeignKey {
+                    index: it.0,
+                    version: it.1.version.try_into().unwrap(),
+                })),
+                it.1.value,
+            )
+        })
     }
 }
 

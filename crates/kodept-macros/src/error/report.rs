@@ -12,6 +12,7 @@ pub struct ReportMessage {
     pub code: String,
     pub message: String,
     pub additional_message: String,
+    pub notes: Vec<String>
 }
 
 #[derive(Debug)]
@@ -26,6 +27,7 @@ impl ReportMessage {
             code: code.into(),
             message,
             additional_message: "here".to_string(),
+            notes: vec![]
         }
     }
 
@@ -33,6 +35,13 @@ impl ReportMessage {
     pub fn with_additional_message(self, additional_message: String) -> Self {
         Self {
             additional_message,
+            ..self
+        }
+    }
+    
+    pub fn with_notes(self, notes: Vec<String>) -> Self {
+        Self {
+            notes,
             ..self
         }
     }
@@ -52,7 +61,8 @@ impl Report {
         let msg = message.into();
         let diagnostic = Diagnostic::new(msg.severity)
             .with_code(msg.code)
-            .with_message(msg.message);
+            .with_message(msg.message)
+            .with_notes(msg.notes);
         let diagnostic = if let [p] = points.as_slice() {
             diagnostic.with_labels(vec![Label::primary((), p.as_range())])
         } else if let [p, s @ ..] = points.as_slice() {

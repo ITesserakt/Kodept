@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use Constraint::{ExplicitInstance, ImplicitInstance};
@@ -26,7 +27,14 @@ pub(crate) trait ActiveTVars {
 }
 
 pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
-    fn get(&self, key: &Key) -> Option<Cow<PolymorphicType>>;
+    type Error;
+    
+    #[deprecated]
+    fn get(&self, key: &Key) -> Option<Cow<PolymorphicType>> where Self::Error: Debug {
+        self.maybe_get(key).unwrap()
+    }
+    
+    fn maybe_get(&self, key: &Key) -> Result<Option<Cow<PolymorphicType>>, Self::Error>; 
 }
 
 // -------------------------------------------------------------------------------------------------

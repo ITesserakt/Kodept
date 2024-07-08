@@ -1,5 +1,6 @@
 use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::ops::Add;
@@ -170,7 +171,9 @@ impl Display for Environment {
 }
 
 impl EnvironmentProvider<Var> for Environment {
-    fn get(&self, key: &Var) -> Option<Cow<PolymorphicType>> {
-        self.0.get(key).map(Cow::Borrowed)
+    type Error = Infallible;
+
+    fn maybe_get(&self, key: &Var) -> Result<Option<Cow<PolymorphicType>>, Self::Error> {
+        Ok(self.0.get(key).map(Cow::Borrowed))
     }
 }
