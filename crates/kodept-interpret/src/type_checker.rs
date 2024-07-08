@@ -5,7 +5,6 @@ use std::cell::Cell;
 use std::collections::HashSet;
 use std::num::NonZeroU16;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicU16, Ordering};
 
 use kodept_ast::graph::{AnyNodeD, ChangeSet, GenericNodeId, GenericNodeKey, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
