@@ -4,7 +4,7 @@ use kodept_core::structure::span::Span;
 
 use crate::lexer::Token;
 
-#[derive(Debug, Clone, PartialEq, Constructor)]
+#[derive(Debug, Clone, PartialEq, Constructor, Copy)]
 pub struct TokenMatch<'t> {
     pub token: Token<'t>,
     pub span: Span,

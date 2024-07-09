@@ -15,8 +15,11 @@ workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["peg"]
 enum-iter = ["dep:enum-iterator"]
+peg = ["dep:peg"]
+pest = ["dep:pest_typed", "dep:pest_typed_derive"]
+trace = ["peg/trace"]
 
 [dependencies]
 derive_more.workspace = true
@@ -25,7 +28,11 @@ extend.workspace = true
 nom.workspace = true
 nom-supreme = "0.8.0"
 nonempty-collections = "0.2.5"
+peg = { version = "0.8.3", optional = true }
+pest_typed = { version = "0.15.0", optional = true }
+pest_typed_derive = { version = "0.15.0", optional = true }
 thiserror = "1.0.44"
+tracing = "0.1.40"
 
 [dependencies.kodept-core]
 path = "../kodept-core"
@@ -33,3 +40,11 @@ version = "0.2"
 
 [dev-dependencies]
 rstest = "0.19.0"
+criterion = "0.5.1"
+lazy_static = "1.5.0"
+similar-asserts = "1.5.0"
+
+[[bench]]
+name = "tokenizer"
+harness = false
+required-features = ["peg", "pest"]

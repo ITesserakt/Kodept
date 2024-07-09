@@ -11,6 +11,8 @@ pub mod token_match;
 pub mod token_stream;
 pub mod tokenizer;
 
+pub mod grammar;
+
 pub type TokenizationError<'t> = ErrorTree<&'t str>;
 pub type ParseError<'t> =
     GenericErrorTree<TokenStream<'t>, &'static str, &'static str, TokenVerificationError>;

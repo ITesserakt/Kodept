@@ -1,6 +1,6 @@
 use nom::{
     branch::alt,
-    bytes::complete::{is_a, is_not, take},
+    bytes::complete::{is_a, is_not},
     bytes::complete::take_while,
     character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of},
     combinator::{map, opt, recognize, value},
@@ -172,9 +172,9 @@ fn literal(input: Span) -> TokenizationResult<Literal> {
         )),
         opt(tuple((tag_no_case("e"), opt(one_of("-+")), digit1))),
     )));
-    let char_p = delimited(char('\''), char('\'').not().recognize(), char('\''));
+    let char_p = delimited(char('\''), anychar.recognize(), char('\''));
     let string = delimited(char('"'), is_not(r#"""#).opt(), char('"'));
-
+    
     context(
         "literal",
         alt((
@@ -250,8 +250,7 @@ pub(crate) fn token(input: Span) -> TokenizationResult<Token> {
             map(symbol, Token::Symbol),
             map(identifier, Token::Identifier),
             map(literal, Token::Literal),
-            map(operator, Token::Operator),
-            value(Token::Unknown, take(1usize)),
+            map(operator, Token::Operator)
         )),
     )(input)
 }
