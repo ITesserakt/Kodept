@@ -70,21 +70,31 @@ peg::parser! {grammar grammar() for str {
 
     rule number<T>(prefix_lower: char, prefix_upper: char, digits: rule<T>) -> &'input str = i:$(
         "0" [c if c == prefix_lower || c == prefix_upper] (
-            [^'0'] digits() (digits() {  } / "_")* digits() /
+            ([^'0' | '_'] (digits() {  } / "_")+) /
             digits() {  }
         )
     ) { i }
+    
+    rule bin_lit() -> Literal<'input> = 
+        i:number('b', 'B', <['0'..='1']>) { Literal::Binary(i) }
+    rule oct_lit() -> Literal<'input> = 
+        i:number('c', 'C', <['0'..='7']>) { Literal::Octal(i) }
+    rule hex_lit() -> Literal<'input> = 
+        i:number('x', 'X', <['0'..='9' | 'a'..='f' | 'A'..='F']>) { Literal::Hex(i) }
+    
+    rule sign() = ['+' | '-']
+    rule floating_lit() =
+        ['0'..='9']+ ("." ['0'..='9']*)? / "." ['0'..='9']+
+    rule e_notation() =
+        ['e' | 'E'] sign()? ['0'..='9']+
 
     rule literal() -> Literal<'input> =
-        i:number('b', 'B', <['0'..'1']>)                           { Literal::Binary(i) }  /
-        i:number('o', 'O', <['0'..'7']>)                           { Literal::Octal(i) }   /
-        i:number('x', 'X', <['0'..='9' | 'a'..='f' | 'A'..='F']>)  { Literal::Hex(i) }     /
-        i:$(['+' | '-']? whitespace()* (
-            ['0'..='9']+ ("." ['0'..='9']*)? /
-            "." ['0'..='9']+
-        ) (['e' | 'E'] ['+' | '-']? ['0'..='9']+)?)                { Literal::Floating(i) } /
-        "'" i:$(!"'" [_]) "'"                                      { Literal::Char(i) }     /
-        "\"" i:$((!"\"" [_])*) "\""                                { Literal::String(i) }
+        bin_lit()                                                                        /
+        oct_lit()                                                                        /
+        hex_lit()                                                                        /
+        i:$(sign()? whitespace()* floating_lit() e_notation()?) { Literal::Floating(i) } /
+        "'" i:$(!"'" [_]) "'"                                   { Literal::Char(i) }     /
+        "\"" i:$((!"\"" [_])*) "\""                             { Literal::String(i) }
 
     rule operator() -> Operator =
         "."   { Operator::Dot }                                            /
