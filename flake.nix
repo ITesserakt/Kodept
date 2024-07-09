@@ -73,9 +73,9 @@
              packages = with pkgs; [ 
                xdot 
                rustup
-               graphviz 
-               cargo-depgraph 
-               cargo-insta 
+               graphviz
+               cargo-insta
+               gnuplot
              ];
              
              pre-commit.hooks.clippy.enable = true;

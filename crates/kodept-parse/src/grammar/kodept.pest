@@ -1,0 +1,112 @@
+//
+// Created by intellij-pest on 2024-07-08
+//! Full grammar for the Kodept programming language using PEG
+// Author: ITesserakt
+//
+
+/// UTILITIES
+/// --------------------------------------------------------------------------------------------------------------------
+
+/// PRIMITIVE TOKENS
+/// --------------------------------------------------------------------------------------------------------------------
+
+comment = @{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+multiline_comment = @{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+COMMENT = _{ comment | multiline_comment }
+
+WHITESPACE = _{ WHITE_SPACE | NEWLINE }
+
+keyword = ${
+    "fun"       |
+    "val"       |
+    "var"       |
+    "match"     |
+    "while"     |
+    "module"    |
+    "extend"    |
+    "return"    |
+    "\\"        |
+    "if"        |
+    "elif"      |
+    "else"      |
+    "abstract"  |
+    "trait"     |
+    "struct"    |
+    "class"     |
+    "enum"      |
+    "foreign"   |
+    "type"      |
+    "with"
+}
+
+symbol = ${
+    ","  |
+    ";"  |
+    "{"  |
+    "}"  |
+    "["  |
+    "]"  |
+    "("  |
+    ")"  |
+    "_"  |
+    "::" |
+    ":"
+}
+
+identifier = ${ "_"? ~ (LOWERCASE_LETTER | UPPERCASE_LETTER) ~ ("_" | ALPHABETIC | NUMBER)* }
+
+literal = ${
+    // Binary number
+    (^"0b" ~ ((!"0" ~ ASCII_BIN_DIGIT ~ (ASCII_BIN_DIGIT | "_")* ~ ASCII_BIN_DIGIT) | ASCII_BIN_DIGIT)) |
+    // Octal number
+    (^"0o" ~ ((!"0" ~ ASCII_OCT_DIGIT ~ (ASCII_OCT_DIGIT | "_")* ~ ASCII_OCT_DIGIT) | ASCII_OCT_DIGIT)) |
+    // Hex number
+    (^"0x" ~ ((!"0" ~ ASCII_HEX_DIGIT ~ (ASCII_HEX_DIGIT | "_")* ~ ASCII_HEX_DIGIT) | ASCII_HEX_DIGIT)) |
+    // Any floating-point number
+    (("+" | "-")? ~ WHITESPACE* ~ (
+        (ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?) |
+        ("." ~ ASCII_DIGIT+)
+    ) ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT)?) |
+    // Char
+    ("'" ~ (!"'" ~ ANY) ~ "'") |
+    // String
+    ("\"" ~ (!"\"" ~ ANY)* ~ "\"")
+}
+
+operator = ${
+    // Basic
+    "."     |
+    "=>"    |
+    // Math
+    "+"     |
+    "-"     |
+    "**"    |
+    "*"     |
+    "/"     |
+    "%"     |
+    // Comparison
+    "<=>"       |
+    "=="        |
+    "="         |
+    "!="        |
+    ">="        |
+    ">"         |
+    "<="        |
+    "<"         |
+    // Logic
+    "||"    |
+    "&&"    |
+    "!"     |
+    // Bit
+    "|" |
+    "&" |
+    "^" |
+    "~"
+}
+
+unknown = ${ ANY }
+
+token = { keyword | symbol | identifier | literal | operator | unknown }
+
+tokens = { SOI ~ token* ~ EOI }

@@ -6,7 +6,7 @@ use enum_iterator::Sequence;
 
 use crate::Span;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Ignore<'t> {
     Comment(Span<'t>),
     MultilineComment(Span<'t>),
@@ -14,7 +14,7 @@ pub enum Ignore<'t> {
     Whitespace,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum Keyword {
     Fun,
@@ -39,7 +39,7 @@ pub enum Keyword {
     Return,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum Symbol {
     Comma,
@@ -55,13 +55,13 @@ pub enum Symbol {
     Colon,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Identifier<'t> {
     Identifier(Span<'t>),
     Type(Span<'t>),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Literal<'t> {
     Binary(Span<'t>),
     Octal(Span<'t>),
@@ -71,7 +71,7 @@ pub enum Literal<'t> {
     String(Span<'t>),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum MathOperator {
     Plus,
@@ -82,7 +82,7 @@ pub enum MathOperator {
     Times,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum ComparisonOperator {
     Equals,
@@ -95,7 +95,7 @@ pub enum ComparisonOperator {
     Spaceship,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum LogicOperator {
     OrLogic,
@@ -103,7 +103,7 @@ pub enum LogicOperator {
     NotLogic,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum BitOperator {
     OrBit,
@@ -112,7 +112,7 @@ pub enum BitOperator {
     NotBit,
 }
 
-#[derive(Debug, PartialEq, Clone, From)]
+#[derive(Debug, PartialEq, Clone, From, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum Operator {
     Dot,
@@ -123,7 +123,7 @@ pub enum Operator {
     Bit(BitOperator),
 }
 
-#[derive(Debug, PartialEq, Clone, From)]
+#[derive(Debug, PartialEq, Clone, From, Copy)]
 pub enum Token<'t> {
     Ignore(Ignore<'t>),
     Keyword(Keyword),

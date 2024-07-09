@@ -12,7 +12,7 @@ use crate::token_match::TokenMatch;
 
 #[derive(Clone, Debug)]
 pub struct TokenStream<'t> {
-    slice: &'t [TokenMatch<'t>],
+    pub(crate) slice: &'t [TokenMatch<'t>],
 }
 
 impl<'t> TokenStream<'t> {
@@ -41,6 +41,8 @@ impl<'t> TokenStream<'t> {
     pub fn as_token_vec(&self) -> Vec<&Token> {
         self.slice.iter().map(|it| &it.token).collect()
     }
+    
+    pub fn len(&self) -> usize { self.slice.len() }
 }
 
 pub struct TokenStreamIterator<'t> {
@@ -132,7 +134,7 @@ impl<'t> UnspecializedInput for TokenStream<'t> {}
 
 impl<'t> InputLength for TokenStream<'t> {
     fn input_len(&self) -> usize {
-        self.slice.len()
+        self.len()
     }
 }
 
@@ -191,7 +193,7 @@ impl Display for TokenStream<'_> {
                         Literal::String(x) => x,
                     },
                     Token::Operator(x) => x.representation(),
-                    Token::Unknown => "<unknown>",
+                    Token::Unknown => "?"
                 },
             )
         }

@@ -1,78 +1,63 @@
-use std::str::Utf8Error;
+#[cfg(all(not(feature = "peg"), not(feature = "pest")))]
+pub type Tokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
-use nom_supreme::error::ErrorTree;
-use thiserror::Error;
+#[cfg(any(feature = "peg", feature = "pest"))]
+pub type Tokenizer<'t> = crate::grammar::KodeptParser<'t>;
 
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::Span;
+pub type SimpleTokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
-use crate::lexer::{token, Token};
-use crate::token_match::TokenMatch;
+mod simple_implementation {
+    use crate::lexer::{token, Token};
+    use crate::token_match::TokenMatch;
+    use kodept_core::code_point::CodePoint;
+    use kodept_core::structure::span::Span;
+    use tracing::error;
 
-#[derive(Error, Debug)]
-pub enum TokenizeError {
-    #[error("Error while tokenizing: {0}")]
-    Parse(#[from] ErrorTree<String>),
-    #[error("Error while reading: {0}")]
-    IO(#[from] std::io::Error),
-    #[error("Found not utf-8 byte at {pos}", pos = _0.valid_up_to())]
-    Utf8(#[from] Utf8Error),
-}
-
-pub struct Tokenizer<'t> {
-    buffer: &'t str,
-    pos: usize,
-    row: u32,
-    col: u16,
-}
-
-impl<'t> Tokenizer<'t> {
-    #[must_use]
-    pub const fn new(reader: &'t str) -> Self {
-        Self {
-            buffer: reader,
-            pos: 0,
-            row: 1,
-            col: 1,
-        }
+    pub struct Tokenizer<'t> {
+        buffer: &'t str,
+        pos: usize,
     }
 
-    pub fn into_vec(self) -> Vec<TokenMatch<'t>> {
-        let mut vec = self.collect::<Vec<_>>();
-        vec.shrink_to_fit();
-        vec
-    }
-}
-
-impl<'t> Iterator for Tokenizer<'t> {
-    type Item = TokenMatch<'t>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.buffer[self.pos..].is_empty() {
-            return None;
-        }
-
-        let (rest, token) = match token(&self.buffer[self.pos..]) {
-            Ok(x) => x,
-            _ => ("", Token::Unknown),
-        };
-
-        let matched_length = self.buffer.len() - rest.len() - self.pos;
-        let original_text: &str = &self.buffer[self.pos..self.pos + matched_length];
-        let span: TokenMatch =
-            TokenMatch::new(token, Span::new(CodePoint::new(matched_length, self.pos)));
-
-        for ch in original_text.chars() {
-            if ch == '\n' {
-                self.row += 1;
-                self.col = 1;
-            } else {
-                self.col += 1;
+    impl<'t> Tokenizer<'t> {
+        #[must_use]
+        pub const fn new(reader: &'t str) -> Self {
+            Self {
+                buffer: reader,
+                pos: 0,
             }
         }
-        self.pos += matched_length;
 
-        Some(span)
+        pub fn into_vec(self) -> Vec<TokenMatch<'t>> {
+            let mut vec = self.collect::<Vec<_>>();
+            vec.shrink_to_fit();
+            vec
+        }
+    }
+
+    impl<'t> Iterator for Tokenizer<'t> {
+        type Item = TokenMatch<'t>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.buffer[self.pos..].is_empty() {
+                return None;
+            }
+
+            let (rest, token) = token(&self.buffer[self.pos..]).unwrap_or_else(|e| {
+                error!(
+                    input = &self.buffer[self.pos..self.pos + 10],
+                    "Cannot parse token: {e:#?}"
+                );
+                ("", Token::Unknown)
+            });
+
+            let matched_length = self.buffer.len() - rest.len() - self.pos;
+            let span: TokenMatch =
+                TokenMatch::new(token, Span::new(CodePoint::new(matched_length, self.pos)));
+
+            self.pos += matched_length;
+
+            Some(span)
+        }
     }
 }
 
@@ -94,7 +79,7 @@ mod tests {
 
         assert_eq!(spans.len(), 26);
         assert_eq!(
-            spans.iter().map(|it| it.token.clone()).collect::<Vec<_>>(),
+            spans.iter().map(|it| it.token).collect::<Vec<_>>(),
             vec![
                 Whitespace.into(),
                 Fun.into(),
