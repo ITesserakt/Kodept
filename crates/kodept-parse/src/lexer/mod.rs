@@ -1,21 +1,21 @@
 use nom::{
     branch::alt,
-    bytes::complete::{is_a, is_not},
     bytes::complete::take_while,
+    bytes::complete::{is_a, is_not},
     character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of},
     combinator::{map, opt, recognize, value},
     error::context,
-    multi::{many0, many1, many_till},
-    Parser,
+    multi::{many1, many_till},
     sequence::{delimited, tuple},
+    Parser,
 };
-use nom_supreme::ParserExt;
 use nom_supreme::tag::complete::{tag, tag_no_case};
+use nom_supreme::ParserExt;
 
 pub use enums::*;
 
-use crate::{TokenizationError, TokenizationResult};
 use crate::Span;
+use crate::{TokenizationError, TokenizationResult};
 
 pub mod enums;
 pub mod traits;
@@ -148,22 +148,19 @@ fn literal(input: Span) -> TokenizationResult<Literal> {
         alphabet: &'static str,
     ) -> impl Parser<Span<'a>, &'a str, TokenizationError<'a>> {
         tag_no_case(prefix)
-            .precedes(
-                tuple((
-                    one_of(alphabet),
-                    many0(one_of(alphabet).or(one_of("0_"))),
-                    one_of(alphabet).or(char('0')),
-                ))
-                .recognize()
-                .or(one_of(alphabet).or(char('0')).recognize())
-                .cut(),
-            )
+            .precedes(alt((
+                one_of("0_")
+                    .not()
+                    .precedes(many1(one_of(alphabet).or(char('_'))))
+                    .recognize(),
+                one_of(alphabet).recognize(),
+            )))
             .recognize()
     }
 
-    let binary = number_parser("0b", "1");
-    let octal = number_parser("0c", "1234567");
-    let hex = number_parser("0x", "123456789ABCDEF");
+    let binary = number_parser("0b", "01");
+    let octal = number_parser("0c", "01234567");
+    let hex = number_parser("0x", "0123456789ABCDEFabcdef");
     let floating = recognize(tuple((
         opt(one_of("-+")),
         alt((
@@ -174,7 +171,7 @@ fn literal(input: Span) -> TokenizationResult<Literal> {
     )));
     let char_p = delimited(char('\''), anychar.recognize(), char('\''));
     let string = delimited(char('"'), is_not(r#"""#).opt(), char('"'));
-    
+
     context(
         "literal",
         alt((
@@ -250,7 +247,7 @@ pub(crate) fn token(input: Span) -> TokenizationResult<Token> {
             map(symbol, Token::Symbol),
             map(identifier, Token::Identifier),
             map(literal, Token::Literal),
-            map(operator, Token::Operator)
+            map(operator, Token::Operator),
         )),
     )(input)
 }

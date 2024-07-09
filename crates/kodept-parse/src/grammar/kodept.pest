@@ -58,11 +58,11 @@ identifier = ${ "_"? ~ (LOWERCASE_LETTER | UPPERCASE_LETTER) ~ ("_" | ALPHABETIC
 
 literal = ${
     // Binary number
-    (^"0b" ~ ((!"0" ~ ASCII_BIN_DIGIT ~ (ASCII_BIN_DIGIT | "_")* ~ ASCII_BIN_DIGIT) | ASCII_BIN_DIGIT)) |
+    (^"0b" ~ (!("0" | "_") ~ (ASCII_BIN_DIGIT | "_")+ | ASCII_BIN_DIGIT)) |
     // Octal number
-    (^"0o" ~ ((!"0" ~ ASCII_OCT_DIGIT ~ (ASCII_OCT_DIGIT | "_")* ~ ASCII_OCT_DIGIT) | ASCII_OCT_DIGIT)) |
+    (^"0c" ~ (!("0" | "_") ~ (ASCII_OCT_DIGIT | "_")+ | ASCII_OCT_DIGIT)) |
     // Hex number
-    (^"0x" ~ ((!"0" ~ ASCII_HEX_DIGIT ~ (ASCII_HEX_DIGIT | "_")* ~ ASCII_HEX_DIGIT) | ASCII_HEX_DIGIT)) |
+    (^"0x" ~ (!("0" | "_") ~ (ASCII_HEX_DIGIT | "_")+ | ASCII_HEX_DIGIT)) |
     // Any floating-point number
     (("+" | "-")? ~ WHITESPACE* ~ (
         (ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?) |
