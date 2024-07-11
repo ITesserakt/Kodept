@@ -1,3 +1,0 @@
-[submodule "thirdparty/pegviz"]
-	path = thirdparty/pegviz
-	url = git@github.com:fasterthanlime/pegviz.git

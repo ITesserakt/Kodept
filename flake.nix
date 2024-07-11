@@ -37,33 +37,72 @@
         cargo = toolchain_win;
         rustc = toolchain_win;
       };
-    in
+
+      pegviz_source = pkgs.fetchFromGitHub {
+        owner = "fasterthanlime";
+        repo = "pegviz";
+        rev = "c9fd73363d4bf2eca4e2ebfd31c3c49b8a16b8f5";
+        sha256 = "sha256-nkbY0flJ0hEm3jPvW7tdSKwpsX6aW1PIStOQ/TGhmxg=";
+      };
+    in rec
     {
-      packages.${system}.default = naersk'.buildPackage {
-        src = self;
-        nativeBuildInputs = with pkgs; [ pkgsStatic.stdenv.cc ];
-        doCheck = true;
-        doDoc = false;
-        
-        RUSTFLAGS = "-C target-feature=+crt-static";
-        CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+      packages.${system} = {
+        pegviz = naersk'.buildPackage {
+          src = pegviz_source;
+          doCheck = false;
+          doDoc = false;
+
+          RUSTFLAGS = "-C target-feature=+crt-static";
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+        };
+
+        kodept = naersk'.buildPackage {
+          src = self;
+          nativeBuildInputs = with pkgs; [ pkgsStatic.stdenv.cc ];
+          buildInputs = [ packages.${system}.pegviz ];
+          doCheck = true;
+          doDoc = false;
+
+          RUSTFLAGS = "-C target-feature=+crt-static";
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+        };
+
+        default = packages.${system}.kodept;
       };
 
-      packages.${flake-utils.lib.system.x86_64-windows}.default = naersk_win.buildPackage {
-        src = self;
-        strictDeps = true;
-        doCheck = false;
-        nativeBuildInputs = with pkgs; [ wineWowPackages.stable ];
-        depsBuildBuild = with pkgs; [
-          pkgsCross.mingwW64.stdenv.cc
-          pkgsCross.mingwW64.windows.pthreads
-        ];
+      packages.${flake-utils.lib.system.x86_64-windows} = {
+        pegviz = naersk_win.buildPackage {
+          src = pegviz_source;
+          doCheck = false;
+          doDoc = false;
+          strictDeps = true;
+          depsBuildBuild = with pkgs; [
+            pkgsCross.mingwW64.stdenv.cc
+            pkgsCross.mingwW64.windows.pthreads
+          ];
 
-        CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
-        CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER = pkgs.writeScript "wine-wrapper" ''
-          export WINEPREFIX = "$(mktemp -d)"
-          exec wine64 $@
-        '';
+          CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+        };
+
+        kodept = naersk_win.buildPackage {
+          src = self;
+          strictDeps = true;
+          doCheck = false;
+          nativeBuildInputs = with pkgs; [ wineWowPackages.stable ];
+          buildInputs = [ packages.${flake-utils.lib.system.x86_64-windows}.pegviz ];
+          depsBuildBuild = with pkgs; [
+            pkgsCross.mingwW64.stdenv.cc
+            pkgsCross.mingwW64.windows.pthreads
+          ];
+
+          CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+          CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER = pkgs.writeScript "wine-wrapper" ''
+            export WINEPREFIX = "$(mktemp -d)"
+            exec wine64 $@
+          '';
+        };
+
+        default = packages.${flake-utils.lib.system.x86_64-windows}.kodept;
       };
 
       devShells.${system}.default = devenv.lib.mkShell {
@@ -76,6 +115,7 @@
                graphviz
                cargo-insta
                gnuplot
+               packages.${system}.pegviz
              ];
              
              pre-commit.hooks.clippy.enable = true;
