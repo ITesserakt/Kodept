@@ -9,10 +9,3 @@ pub mod macro_context;
 pub mod parse_error;
 pub mod read_code_source;
 pub mod steps;
-
-pub fn top_parser(input: TokenStream) -> ParseResult<RLT> {
-    match file::grammar(input) {
-        Ok(x) => Ok((x.0, RLT(x.1))),
-        Err(e) => Err(e),
-    }
-}

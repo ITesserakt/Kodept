@@ -71,7 +71,7 @@ fn ignore(input: Span) -> TokenizationResult<Ignore> {
         alt((
             comment,
             value(Ignore::Whitespace, many1(is_a(" \t"))),
-            value(Ignore::Newline, many1(is_a("\n\r"))),
+            value(Ignore::Newline, one_of("\r\n")),
             multiline_comment,
         )),
     )(input)
@@ -281,7 +281,7 @@ mod tests {
         Ignore::MultilineComment("/* this is\nmultiline comment */"),
         Some(" this is not")
     )]
-    #[case::ignore_newline(ignore("\n\n\n"), Ignore::Newline, None)]
+    #[case::ignore_newline(ignore("\n\n\n"), Ignore::Newline, Some("\n\n"))]
     #[case::ignore_whitespace(ignore("   \t"), Ignore::Whitespace, None)]
     fn test_parser<T: PartialEq + Debug>(
         #[case] result: TokenizationResult<T>,
