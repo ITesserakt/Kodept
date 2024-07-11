@@ -25,7 +25,7 @@
       toolchain_win = with fenix.packages.${system}; combine [
         minimal.rustc
         minimal.cargo
-        targets.x86_64-pc-windows-musl.latest.rust-std
+        targets.x86_64-pc-windows-gnu.latest.rust-std
       ];
 
       naersk' = naersk.lib.${system}.override {
@@ -59,7 +59,7 @@
           pkgsCross.mingwW64.windows.pthreads
         ];
 
-        CARGO_BUILD_TARGET = "x86_64-pc-windows-musl";
+        CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
         CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER = pkgs.writeScript "wine-wrapper" ''
           export WINEPREFIX = "$(mktemp -d)"
           exec wine64 $@
