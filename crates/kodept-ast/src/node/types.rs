@@ -7,7 +7,7 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::Identity;
 use crate::graph::NodeId;
 use crate::graph::{SyntaxTreeBuilder};
-use crate::traits::{Linker, PopulateTree};
+use crate::traits::{AsEnum, Linker, PopulateTree};
 use crate::{node, node_sub_enum};
 
 node_sub_enum! {
@@ -58,6 +58,15 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct NonTyParam {
         pub name: String,;
+    }
+}
+
+impl Param {
+    pub fn name(&self) -> &str {
+        match self.as_enum() {
+            ParamEnum::Ty(x) => &x.name,
+            ParamEnum::NonTy(x) => &x.name
+        }
     }
 }
 

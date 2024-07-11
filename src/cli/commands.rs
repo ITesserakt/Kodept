@@ -1,18 +1,19 @@
 use std::fs::{create_dir_all, File};
 use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
-
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use codespan_reporting::diagnostic::Diagnostic;
+use derive_more::Display;
 use extend::ext;
-use nom_supreme::final_parser::final_parser;
 #[cfg(feature = "parallel")]
 use rayon::prelude::ParallelIterator;
 
-use kodept::{codespan_settings::ReportExt, top_parser};
+use crate::cli::configs::CompilationConfig;
+use crate::WideError;
 use kodept::codespan_settings::CodespanSettings;
+use kodept::codespan_settings::ReportExt;
 use kodept::macro_context::{DefaultContext, ErrorReported};
-use kodept::parse_error::Reportable;
+use kodept::parse_error::ParseErrortExt;
 use kodept::read_code_source::ReadCodeSource;
 use kodept::steps::common;
 use kodept::steps::common::Config;
@@ -20,11 +21,23 @@ use kodept_ast::ast_builder::ASTBuilder;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_parse::ParseError;
+use kodept_parse::error::parse_from_top;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
-use crate::cli::configs::CompilationConfig;
-use crate::WideError;
+
+#[derive(Debug, ValueEnum, Clone, Display)]
+enum InspectingOptions {
+    Tokenizer,
+    Parser,
+    Both,
+}
+
+#[derive(Debug, Parser)]
+pub struct InspectParser {
+    /// Controls which step will be traced
+    #[arg(default_value = "both", long = "inspect")]
+    option: InspectingOptions,
+}
 
 #[derive(Parser, Debug)]
 pub struct Graph;
@@ -36,6 +49,8 @@ pub struct Execute;
 pub enum Commands {
     /// Output AST in .dot format
     Graph(Graph),
+    /// Output parsing process in .html file
+    InspectParser(InspectParser),
 }
 
 #[ext]
@@ -62,9 +77,19 @@ impl Commands {
         let tokenizer = Tokenizer::new(source.contents());
         let tokens = tokenizer.into_vec();
         let token_stream = TokenStream::new(&tokens);
-        let result =
-            final_parser(top_parser)(token_stream).map_err(|e: ParseError| e.to_diagnostics());
-        result
+        let result = parse_from_top(token_stream).map_err(|es| {
+            es.into_iter()
+                .map(|it| it.to_diagnostic())
+                .collect::<Vec<_>>()
+        })?;
+        Ok(result)
+    }
+    
+    fn ensure_path_exists(path: &Path) -> Result<(), WideError> {
+        match create_dir_all(path) {
+            Err(e) if e.kind() != ErrorKind::AlreadyExists => Err(e)?,
+            _ => Ok(())
+        }
     }
 }
 
@@ -74,7 +99,7 @@ impl Execute {
         self,
         sources: impl ParallelIterator<Item = ReadCodeSource>,
         settings: CodespanSettings,
-        compilation_config: CompilationConfig
+        compilation_config: CompilationConfig,
     ) -> Result<(), WideError> {
         let config = into(compilation_config);
         sources.try_for_each_with(settings, move |settings, source| {
@@ -87,7 +112,7 @@ impl Execute {
         self,
         sources: impl Iterator<Item = ReadCodeSource>,
         mut settings: CodespanSettings,
-        compilation_config: CompilationConfig
+        compilation_config: CompilationConfig,
     ) -> Result<(), WideError> {
         let config = into(compilation_config);
         for source in sources {
@@ -167,11 +192,104 @@ impl Graph {
                 .to_os_string(),
             CodePath::ToMemory(name) => PathBuf::from(name).with_extension("kd.dot").into(),
         };
-        match create_dir_all(output_path) {
-            Err(e) if e.kind() != ErrorKind::AlreadyExists => Err(e)?,
-            _ => {}
-        }
+        Commands::ensure_path_exists(output_path)?;
         Ok(File::create(output_path.join(filename))?)
+    }
+}
+
+#[cfg(not(all(feature = "trace", feature = "peg")))]
+impl InspectParser {
+    #[cfg(feature = "parallel")]
+    pub fn exec(
+        self, _sources: impl ParallelIterator<Item = ReadCodeSource>,
+        _output_path: PathBuf
+    ) -> Result<(), WideError> {
+        Err(anyhow::anyhow!("Program is compiled without inspecting support"))
+    }
+    
+    #[cfg(not(feature = "parallel"))]
+    pub fn exec(
+        self, _sources: impl Iterator<Item = ReadCodeSource>,
+        _output_path: PathBuf
+    ) -> Result<(), WideError> {
+        Err(anyhow::anyhow!("Program is compiled without inspecting support"))
+    }
+}
+
+#[cfg(all(feature = "peg", feature = "trace"))]
+impl InspectParser {
+    #[cfg(feature = "parallel")]
+    pub fn exec(self, sources: impl ParallelIterator<Item = ReadCodeSource>, output_path: PathBuf) -> Result<(), WideError> {
+        let output_path = output_path.join("debug");
+        Commands::ensure_path_exists(&output_path)?;
+        sources.try_for_each(|source| {
+            self.exec_for_source(source, &output_path)
+        })
+    }
+    
+    #[cfg(not(feature = "parallel"))]
+    pub fn exec(
+        self,
+        sources: impl Iterator<Item = ReadCodeSource>,
+        output_path: PathBuf,
+    ) -> Result<(), WideError> {
+        let output_path = output_path.join("debug");
+        Commands::ensure_path_exists(&output_path)?;
+        for source in sources {
+            self.exec_for_source(source, &output_path)?
+        }
+        Ok(())
+    }
+
+    fn inspect_tokenizer<'t>(
+        &self,
+        source: &'t ReadCodeSource,
+        output_path: &Path,
+    ) -> Result<Vec<kodept_parse::token_match::TokenMatch<'t>>, WideError> {
+        use kodept_parse::tokenizer::TracedTokenizer;
+        let file = File::create(output_path.with_extension("tok.peg"))?;
+        let _gag = gag::Redirect::stdout(file)?;
+        let tokenizer = TracedTokenizer::try_new(source.contents())?;
+        Ok(tokenizer.into_vec())
+    }
+
+    fn inspect_parser(&self, tokens: TokenStream, output_path: &Path) -> Result<(), WideError> {
+        let file = File::create(output_path.with_extension("par.peg"))?;
+        let _gag = gag::Redirect::stdout(file)?;
+        let _ = parse_from_top(tokens);
+        Ok(())
+    }
+
+    fn exec_for_source(
+        &self,
+        source: ReadCodeSource,
+        output_path: &Path,
+    ) -> Result<(), WideError> {
+        let source_name = match source.path() {
+            CodePath::ToFile(x) => x
+                .file_name()
+                .expect("Cannot process file `..`")
+                .to_os_string(),
+            CodePath::ToMemory(x) => x.into(),
+        };
+        let output_path = output_path.join(source_name);
+        match self.option {
+            InspectingOptions::Tokenizer => {
+                self.inspect_tokenizer(&source, &output_path)?;
+            }
+            InspectingOptions::Parser => {
+                let tokenizer = Tokenizer::try_new(source.contents())?;
+                let tokens = tokenizer.into_vec();
+                let tokens = TokenStream::new(&tokens);
+                self.inspect_parser(tokens, &output_path)?;
+            }
+            InspectingOptions::Both => {
+                let tokens = self.inspect_tokenizer(&source, &output_path)?;
+                let tokens = TokenStream::new(&tokens);
+                self.inspect_parser(tokens, &output_path)?;
+            }
+        };
+        Ok(())
     }
 }
 

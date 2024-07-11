@@ -2,6 +2,8 @@ use crate::lexer::*;
 use crate::token_match::TokenMatch;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
+use peg::error::ParseError;
+use peg::str::LineCol;
 
 peg::parser! {grammar grammar() for str {
     rule newline() = "\n" / "\r\n" / "\r"
@@ -16,7 +18,7 @@ peg::parser! {grammar grammar() for str {
         comment()                                  /
         multiline_comment()                        /
         whitespace()+       { Ignore::Whitespace } /
-        newline()+          { Ignore::Newline }
+        newline()           { Ignore::Newline }
     ) { i }}
 
     rule keyword() -> Keyword =
@@ -74,14 +76,14 @@ peg::parser! {grammar grammar() for str {
             digits() {  }
         )
     ) { i }
-    
-    rule bin_lit() -> Literal<'input> = 
+
+    rule bin_lit() -> Literal<'input> =
         i:number('b', 'B', <['0'..='1']>) { Literal::Binary(i) }
-    rule oct_lit() -> Literal<'input> = 
+    rule oct_lit() -> Literal<'input> =
         i:number('c', 'C', <['0'..='7']>) { Literal::Octal(i) }
-    rule hex_lit() -> Literal<'input> = 
+    rule hex_lit() -> Literal<'input> =
         i:number('x', 'X', <['0'..='9' | 'a'..='f' | 'A'..='F']>) { Literal::Hex(i) }
-    
+
     rule sign() = ['+' | '-']
     rule floating_lit() =
         ['0'..='9']+ ("." ['0'..='9']*)? / "." ['0'..='9']+
@@ -153,17 +155,35 @@ peg::parser! {grammar grammar() for str {
     pub rule tokens() -> Vec<TokenMatch<'input>> = traced(<tokens_()>)
 }}
 
-pub struct Tokenizer<'t> {
+pub struct Tokenizer<'t, const TRACE: bool> {
     tokens: Vec<TokenMatch<'t>>,
     pos: usize,
 }
 
-impl<'t> Tokenizer<'t> {
-    pub fn new(input: &'t str) -> Self {
-        Self {
-            tokens: grammar::tokens(input).unwrap(),
-            pos: 0,
+impl<'t, const TRACE: bool> Tokenizer<'t, TRACE> {
+    #[cfg(feature = "trace")]
+    pub fn try_new(input: &'t str) -> Result<Self, ParseError<LineCol>> {
+        use gag::Gag;
+        let mut _gag = None;
+        if !TRACE {
+            _gag = Some(Gag::stdout())
         }
+        Ok(Self {
+            tokens: grammar::tokens(input)?,
+            pos: 0,
+        })
+    }
+
+    #[cfg(not(feature = "trace"))]
+    pub fn try_new(input: &'t str) -> Result<Self, ParseError<LineCol>> {
+        Ok(Self {
+            tokens: grammar::tokens(input)?,
+            pos: 0,
+        })
+    }
+    
+    pub fn new(input: &'t str) -> Self {
+        Self::try_new(input).unwrap()
     }
 
     pub fn into_vec(mut self) -> Vec<TokenMatch<'t>> {
@@ -172,7 +192,7 @@ impl<'t> Tokenizer<'t> {
     }
 }
 
-impl<'t> Iterator for Tokenizer<'t> {
+impl<'t, const TRACE: bool> Iterator for Tokenizer<'t, TRACE> {
     type Item = TokenMatch<'t>;
 
     fn next(&mut self) -> Option<Self::Item> {

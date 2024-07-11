@@ -12,6 +12,7 @@ pub mod token_stream;
 pub mod tokenizer;
 
 pub mod grammar;
+pub mod error;
 
 pub type TokenizationError<'t> = ErrorTree<&'t str>;
 pub type ParseError<'t> =

@@ -7,7 +7,7 @@ use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperati
 use kodept_core::structure::span::CodeHolder;
 use UnaryExpressionKind::*;
 
-use crate::{BlockLevel, CodeFlow, Lit, node, node_sub_enum, NonTyParam, Term};
+use crate::{BlockLevel, CodeFlow, Lit, node, node_sub_enum, Param, Term};
 use crate::graph::{Identity, SyntaxTreeBuilder};
 use crate::graph::NodeId;
 use crate::graph::tags::*;
@@ -79,7 +79,7 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Lambda {;
         // binds somehow wrapped in operation causing expr to fail => tags required
-        pub binds: Vec<NonTyParam> as PRIMARY,
+        pub binds: Vec<Param> as PRIMARY,
         pub expr: Identity<Operation> as SECONDARY,
     }
 }

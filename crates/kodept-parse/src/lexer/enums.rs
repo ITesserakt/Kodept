@@ -134,6 +134,12 @@ pub enum Token<'t> {
     Unknown,
 }
 
+impl Token<'_> {
+    pub fn is_ignored(&self) -> bool {
+        matches!(self, Token::Ignore(_))
+    }
+}
+
 impl Display for Token<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

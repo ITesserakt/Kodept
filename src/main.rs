@@ -25,7 +25,7 @@ fn sources_iter(loader: Loader) -> impl Iterator<Item = CodeSource> {
 #[cfg(feature = "parallel")]
 fn sources_iter(loader: Loader) -> impl ParallelIterator<Item = CodeSource> {
     loader.into_sources().into_par_iter()
-} 
+}
 
 fn main() -> Result<(), WideError> {
     #[cfg(feature = "profiler")]
@@ -54,6 +54,7 @@ fn main() -> Result<(), WideError> {
     match cli_arguments.subcommands {
         None => Execute.exec(sources, settings, cli_arguments.compilation_config)?,
         Some(Commands::Graph(_)) => Graph::exec(sources, settings, cli_arguments.output)?,
+        Some(Commands::InspectParser(cmd)) => cmd.exec(sources, cli_arguments.output)?,
     };
     Ok(())
 }
