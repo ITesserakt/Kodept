@@ -8,7 +8,6 @@ repository = "https://github.com/ITesserakt/Kodept/"
 categories = ["compilers"]
 license = "Apache-2.0"
 rust-version = "1.75.0"
-exclude = ["docs"]
 
 [workspace]
 members = [
@@ -19,7 +18,9 @@ members = [
     "crates/kodept-ast",
     "crates/kodept-macros",
     "crates/kodept-interpret",
-    "crates/slotgraph"]
+    "crates/slotgraph",
+    "thirdparty/pegviz"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
