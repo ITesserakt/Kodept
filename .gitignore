@@ -7,3 +7,5 @@ dhat-heap.json
 .devenv/
 .direnv/
 build/
+result/
+.pre-commit-config.yaml
