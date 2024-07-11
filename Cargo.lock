@@ -522,6 +522,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fc0510504f03c51ada170672ac806f1f105a88aa97a5281117e1ddc3368e51a"
 
 [[package]]
+name = "filedescriptor"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7199d965852c3bac31f779ef99cbb4537f80e952e2d6aa0ffeb30cce00f4f46e"
+dependencies = [
+ "libc",
+ "thiserror",
+ "winapi",
+]
+
+[[package]]
 name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -626,6 +637,16 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
+]
+
+[[package]]
+name = "gag"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a713bee13966e9fbffdf7193af71d54a6b35a0bb34997cd6c9519ebeb5005972"
+dependencies = [
+ "filedescriptor",
+ "tempfile",
 ]
 
 [[package]]
@@ -800,6 +821,7 @@ dependencies = [
  "derive_more",
  "dhat",
  "extend",
+ "gag",
  "insta",
  "itertools 0.13.0",
  "kodept-ast",
@@ -808,7 +830,6 @@ dependencies = [
  "kodept-interpret",
  "kodept-macros",
  "kodept-parse",
- "nom-supreme",
  "rayon",
  "replace_with",
  "tempfile",
@@ -895,6 +916,8 @@ dependencies = [
  "derive_more",
  "enum-iterator",
  "extend",
+ "gag",
+ "itertools 0.13.0",
  "kodept-core",
  "lazy_static",
  "nom",

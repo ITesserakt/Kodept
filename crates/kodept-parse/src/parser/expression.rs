@@ -10,13 +10,13 @@ use crate::lexer::Keyword::Lambda;
 use crate::lexer::Operator::Flow;
 use crate::parser::{code_flow, literal, operator, term};
 use crate::parser::nom::{comma_separated0, match_token};
-use crate::parser::parameter::untyped_parameter;
+use crate::parser::parameter::{parameter};
 use crate::token_stream::TokenStream;
 
 fn lambda(input: TokenStream) -> ParseResult<rlt::Expression> {
     tuple((
         match_token(Lambda),
-        comma_separated0(untyped_parameter),
+        comma_separated0(parameter),
         match_token(Flow),
         operator::grammar,
     ))

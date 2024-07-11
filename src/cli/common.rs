@@ -30,7 +30,7 @@ pub struct Kodept {
     )]
     verbosity: Level,
     /// Write output to specified path
-    #[arg(short = 'o', long = "out", default_value = "./")]
+    #[arg(short = 'o', long = "out", default_value = "./build")]
     pub output: PathBuf,
 
     #[command(flatten)]

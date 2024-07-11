@@ -301,8 +301,8 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
             .into_iter()
             .map(|it| {
                 scope
-                    .var(&it.name)
-                    .ok_or(AlgorithmWError::UnknownVar(nev![var(&it.name)]))
+                    .var(it.name())
+                    .ok_or(AlgorithmWError::UnknownVar(nev![var(it.name())]))
             })
             .try_fold(expr, |acc, next| Ok(lambda(next?, acc).into()))
     }

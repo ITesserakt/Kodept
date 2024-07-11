@@ -6,11 +6,11 @@ use nom_supreme::final_parser::RecreateContext;
 
 use kodept_core::code_point::CodePoint;
 
-use crate::lexer::{Identifier, Literal, Token};
 use crate::lexer::traits::ToRepresentation;
+use crate::lexer::{Identifier, Ignore, Literal, Token};
 use crate::token_match::TokenMatch;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub struct TokenStream<'t> {
     pub(crate) slice: &'t [TokenMatch<'t>],
 }
@@ -33,16 +33,22 @@ impl<'t> TokenStream<'t> {
     #[must_use]
     pub fn into_token_match(self) -> Option<TokenMatch<'t>> {
         match self.slice {
-            [x] => Some(x.clone()),
+            [x] => Some(*x),
             _ => None,
         }
     }
 
-    pub fn as_token_vec(&self) -> Vec<&Token> {
-        self.slice.iter().map(|it| &it.token).collect()
+    pub fn token_iter(&self) -> impl Iterator<Item = &Token> {
+        self.slice.iter().map(|it| &it.token)
     }
-    
-    pub fn len(&self) -> usize { self.slice.len() }
+
+    pub fn len(&self) -> usize {
+        self.slice.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice.is_empty()
+    }
 }
 
 pub struct TokenStreamIterator<'t> {
@@ -168,16 +174,20 @@ impl Display for TokenStream<'_> {
         let Some(offset) = self.slice.first().map(|it| it.span.point.offset) else {
             return write!(f, "");
         };
-        let size = self.slice.last().expect("Unreachable").span.point.offset - offset;
-        let mut output = " ".repeat(size);
-        for token_match in self.iter().take(10) {
+        let size = self.slice.last().expect("Unreachable").span.point.offset - offset + 1;
+        // FIXME: wrong size
+        let mut output = " ".repeat(size * 4);
+        for token_match in self.iter() {
             let index = token_match.span.point.offset - offset;
             let len = token_match.span.point.length;
-
+            
             output.replace_range(
                 index..index + len,
                 match token_match.token {
-                    Token::Ignore(_) => " ",
+                    Token::Ignore(Ignore::Newline) => "\n",
+                    Token::Ignore(Ignore::Whitespace) => "",
+                    Token::Ignore(Ignore::MultilineComment(x)) => x,
+                    Token::Ignore(Ignore::Comment(x)) => x,
                     Token::Keyword(x) => x.representation(),
                     Token::Symbol(x) => x.representation(),
                     Token::Identifier(x) => match x {
@@ -193,11 +203,11 @@ impl Display for TokenStream<'_> {
                         Literal::String(x) => x,
                     },
                     Token::Operator(x) => x.representation(),
-                    Token::Unknown => "?"
+                    Token::Unknown => "?",
                 },
             )
         }
-        write!(f, "{}...", output.trim())
+        write!(f, "{}", output)
     }
 }
 

@@ -10,6 +10,7 @@ module A {
         1234.123e0
         'c'
         val y = 0b1101;
-        (0o13245, 0x12_3F_FF)
+        (0c13245, 0x12_3F_FF)
+        val struct = "struct"
     }
 }

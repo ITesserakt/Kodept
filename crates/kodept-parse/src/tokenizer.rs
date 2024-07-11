@@ -4,6 +4,9 @@ pub type Tokenizer<'t> = simple_implementation::Tokenizer<'t>;
 #[cfg(any(feature = "peg", feature = "pest"))]
 pub type Tokenizer<'t> = crate::grammar::KodeptParser<'t>;
 
+#[cfg(all(feature = "peg", feature = "trace"))]
+pub type TracedTokenizer<'t> = crate::grammar::peg::Tokenizer<'t, true>;
+
 pub type SimpleTokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
 mod simple_implementation {

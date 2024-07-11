@@ -1,6 +1,6 @@
 use crate::code_point::CodePoint;
 use crate::structure::Located;
-use crate::structure::rlt::{IfExpr, Literal, Term, UntypedParameter};
+use crate::structure::rlt::{IfExpr, Literal, Parameter, Term};
 use crate::structure::rlt::block_level::BlockLevelNode;
 use crate::structure::rlt::new_types::*;
 
@@ -35,7 +35,7 @@ pub enum Operation {
 pub enum Expression {
     Lambda {
         keyword: Symbol,
-        binds: Box<[UntypedParameter]>,
+        binds: Box<[Parameter]>,
         flow: Symbol,
         expr: Box<Operation>,
     },
