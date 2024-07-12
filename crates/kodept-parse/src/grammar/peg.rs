@@ -166,7 +166,7 @@ impl<'t, const TRACE: bool> Tokenizer<'t, TRACE> {
         use gag::Gag;
         let mut _gag = None;
         if !TRACE {
-            _gag = Some(Gag::stdout())
+            _gag = Some(Gag::stdout().expect("Cannot silence stdout"))
         }
         Ok(Self {
             tokens: grammar::tokens(input)?,

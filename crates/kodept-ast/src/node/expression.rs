@@ -152,6 +152,7 @@ pub enum BinaryExpressionKind {
     Bit(BitKind),
     Logic(LogicKind),
     ComplexComparison,
+    Assign
 }
 
 impl PopulateTree for rlt::ExpressionBlock {
@@ -228,6 +229,7 @@ fn build_binary(
             (BinaryOperationSymbol::Bit(_), "^") => Bit(BitKind::Xor),
             (BinaryOperationSymbol::Logic(_), "||") => Logic(LogicKind::Disj),
             (BinaryOperationSymbol::Logic(_), "&&") => Logic(LogicKind::Conj),
+            (BinaryOperationSymbol::Assign(_), "=") => Assign,
             
             (BinaryOperationSymbol::Mul(_), x) => panic!("Unknown mul operator found: {x}"),
             (BinaryOperationSymbol::Add(_), x) => panic!("Unknown add operator found: {x}"),
@@ -235,6 +237,7 @@ fn build_binary(
             (BinaryOperationSymbol::Comparison(_), x) => panic!("Unknown cmp operator found: {x}"),
             (BinaryOperationSymbol::Bit(_), x) => panic!("Unknown bit operator found: {x}"),
             (BinaryOperationSymbol::Logic(_), x) => panic!("Unknown logic operator found: {x}"),
+            (BinaryOperationSymbol::Assign(_), x) => panic!("Unknown assign operator found: {x}")
         }))
         .with_children_from::<LEFT, _>([left.as_ref()], context)
         .with_children_from::<RIGHT, _>([right.as_ref()], context)

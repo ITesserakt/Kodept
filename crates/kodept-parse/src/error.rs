@@ -55,8 +55,7 @@ mod peg {
     }
 }
 
-#[cfg(not(feature = "peg"))]
-mod default {
+pub mod default {
     use crate::error::{point_pos, ErrorLocation, ParseError};
     use crate::lexer::Token;
     use crate::parser::error::TokenVerificationError;

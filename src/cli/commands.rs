@@ -1,15 +1,9 @@
-use std::fs::{create_dir_all, File};
-use std::io::{ErrorKind, Write};
-use std::path::{Path, PathBuf};
+use crate::cli::configs::CompilationConfig;
+use crate::WideError;
 use clap::{Parser, Subcommand, ValueEnum};
 use codespan_reporting::diagnostic::Diagnostic;
 use derive_more::Display;
 use extend::ext;
-#[cfg(feature = "parallel")]
-use rayon::prelude::ParallelIterator;
-
-use crate::cli::configs::CompilationConfig;
-use crate::WideError;
 use kodept::codespan_settings::CodespanSettings;
 use kodept::codespan_settings::ReportExt;
 use kodept::macro_context::{DefaultContext, ErrorReported};
@@ -24,6 +18,13 @@ use kodept_macros::error::report_collector::ReportCollector;
 use kodept_parse::error::parse_from_top;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
+#[cfg(feature = "parallel")]
+use rayon::prelude::ParallelIterator;
+use std::fs::{create_dir_all, File};
+use std::io::{ErrorKind, Write};
+use std::path::{Path, PathBuf};
+use std::process::Output;
+use tracing::{debug, error};
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -37,6 +38,9 @@ pub struct InspectParser {
     /// Controls which step will be traced
     #[arg(default_value = "both", long = "inspect")]
     option: InspectingOptions,
+    /// Additionally launch `pegviz` to produce html output
+    #[arg(default_value_t = true, short = 'p', long = "pegviz")]
+    use_pegviz: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -49,7 +53,7 @@ pub struct Execute;
 pub enum Commands {
     /// Output AST in .dot format
     Graph(Graph),
-    /// Output parsing process in .html file
+    /// Output parsing process files
     InspectParser(InspectParser),
 }
 
@@ -84,11 +88,11 @@ impl Commands {
         })?;
         Ok(result)
     }
-    
+
     fn ensure_path_exists(path: &Path) -> Result<(), WideError> {
         match create_dir_all(path) {
             Err(e) if e.kind() != ErrorKind::AlreadyExists => Err(e)?,
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 }
@@ -201,32 +205,40 @@ impl Graph {
 impl InspectParser {
     #[cfg(feature = "parallel")]
     pub fn exec(
-        self, _sources: impl ParallelIterator<Item = ReadCodeSource>,
-        _output_path: PathBuf
+        self,
+        _sources: impl ParallelIterator<Item = ReadCodeSource>,
+        _output_path: PathBuf,
     ) -> Result<(), WideError> {
-        Err(anyhow::anyhow!("Program is compiled without inspecting support"))
+        Err(anyhow::anyhow!(
+            "Program is compiled without inspecting support"
+        ))
     }
-    
+
     #[cfg(not(feature = "parallel"))]
     pub fn exec(
-        self, _sources: impl Iterator<Item = ReadCodeSource>,
-        _output_path: PathBuf
+        self,
+        _sources: impl Iterator<Item = ReadCodeSource>,
+        _output_path: PathBuf,
     ) -> Result<(), WideError> {
-        Err(anyhow::anyhow!("Program is compiled without inspecting support"))
+        Err(anyhow::anyhow!(
+            "Program is compiled without inspecting support"
+        ))
     }
 }
 
 #[cfg(all(feature = "peg", feature = "trace"))]
 impl InspectParser {
     #[cfg(feature = "parallel")]
-    pub fn exec(self, sources: impl ParallelIterator<Item = ReadCodeSource>, output_path: PathBuf) -> Result<(), WideError> {
+    pub fn exec(
+        self,
+        sources: impl ParallelIterator<Item = ReadCodeSource>,
+        output_path: PathBuf,
+    ) -> Result<(), WideError> {
         let output_path = output_path.join("debug");
         Commands::ensure_path_exists(&output_path)?;
-        sources.try_for_each(|source| {
-            self.exec_for_source(source, &output_path)
-        })
+        sources.try_for_each(|source| self.exec_for_source(source, &output_path))
     }
-    
+
     #[cfg(not(feature = "parallel"))]
     pub fn exec(
         self,
@@ -241,52 +253,86 @@ impl InspectParser {
         Ok(())
     }
 
-    fn inspect_tokenizer<'t>(
-        &self,
-        source: &'t ReadCodeSource,
-        output_path: &Path,
-    ) -> Result<Vec<kodept_parse::token_match::TokenMatch<'t>>, WideError> {
-        use kodept_parse::tokenizer::TracedTokenizer;
-        let file = File::create(output_path.with_extension("tok.peg"))?;
-        let _gag = gag::Redirect::stdout(file)?;
-        let tokenizer = TracedTokenizer::try_new(source.contents())?;
-        Ok(tokenizer.into_vec())
-    }
+    fn launch_pegviz<P: AsRef<Path>>(&self, input_file_path: P) -> Result<(), WideError> {
+        use std::process::{Command};
+        use tracing::{info, warn};
 
-    fn inspect_parser(&self, tokens: TokenStream, output_path: &Path) -> Result<(), WideError> {
-        let file = File::create(output_path.with_extension("par.peg"))?;
-        let _gag = gag::Redirect::stdout(file)?;
-        let _ = parse_from_top(tokens);
+        if !self.use_pegviz {
+            return Ok(());
+        }
+
+        let output_path = input_file_path.as_ref().with_extension("html");
+        let input_file = File::open(input_file_path)?;
+        let Output { status, stdout, ..} = Command::new("pegviz")
+            .args(["--output".into(), output_path])
+            .stdin(input_file)
+            .output()?;
+        let stdout = String::from_utf8(stdout)?;
+        stdout.lines().for_each(|line| {
+            match line.split_once(":") {
+                None if line.starts_with("= pegviz generated to") => info!("{}", line.strip_prefix("= ").unwrap()),
+                None => debug!("{line}"),
+                Some((a, _)) if a.contains("error") => error!("{line}"),
+                Some(_) => debug!("{line}")
+            }
+        });
+
+        match status.code() {
+            None => warn!("`pegviz` exited by signal"),
+            Some(0) => {},
+            Some(code) => Err(anyhow::anyhow!(
+                "`pegviz` exited with non-zero exit code: {code}",
+            ))?,
+        }
         Ok(())
     }
 
-    fn exec_for_source(
-        &self,
-        source: ReadCodeSource,
-        output_path: &Path,
-    ) -> Result<(), WideError> {
+    fn exec_for_source(&self, source: ReadCodeSource, output_path: &Path) -> Result<(), WideError> {
         let source_name = match source.path() {
             CodePath::ToFile(x) => x
                 .file_name()
-                .expect("Cannot process file `..`")
+                .expect("Source should be a file")
                 .to_os_string(),
             CodePath::ToMemory(x) => x.into(),
         };
-        let output_path = output_path.join(source_name);
+        let file_output_path = output_path.join(source_name);
         match self.option {
             InspectingOptions::Tokenizer => {
-                self.inspect_tokenizer(&source, &output_path)?;
+                use kodept_parse::tokenizer::TracedTokenizer;
+                let file = File::create(file_output_path.with_extension("tok.peg"))?;
+                let _gag = gag::Redirect::stdout(file)?;
+                TracedTokenizer::try_new(source.contents())?;
+
+                self.launch_pegviz(file_output_path.with_extension("tok.peg"))?;
             }
             InspectingOptions::Parser => {
                 let tokenizer = Tokenizer::try_new(source.contents())?;
                 let tokens = tokenizer.into_vec();
                 let tokens = TokenStream::new(&tokens);
-                self.inspect_parser(tokens, &output_path)?;
+
+                let file = File::create(file_output_path.with_extension("par.peg"))?;
+                let _gag = gag::Redirect::stdout(file)?;
+                let _ = parse_from_top(tokens);
+
+                self.launch_pegviz(file_output_path.with_extension("par.peg"))?;
             }
             InspectingOptions::Both => {
-                let tokens = self.inspect_tokenizer(&source, &output_path)?;
-                let tokens = TokenStream::new(&tokens);
-                self.inspect_parser(tokens, &output_path)?;
+                use kodept_parse::tokenizer::TracedTokenizer;
+                let tok_file = File::create(file_output_path.with_extension("tok.peg"))?;
+                let tokens = {
+                    let _gag = gag::Redirect::stdout(tok_file)?;
+                    let tokenizer = TracedTokenizer::try_new(source.contents())?;
+                    tokenizer.into_vec()
+                };
+
+                let parse_file = File::create(file_output_path.with_extension("par.peg"))?;
+                {
+                    let _gag1 = gag::Redirect::stdout(parse_file)?;
+                    let _ = parse_from_top(TokenStream::new(&tokens));
+                }
+
+                self.launch_pegviz(file_output_path.with_extension("tok.peg"))?;
+                self.launch_pegviz(file_output_path.with_extension("par.peg"))?;
             }
         };
         Ok(())

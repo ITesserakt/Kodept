@@ -15,7 +15,7 @@ pub type KodeptParser<'t> = peg::Tokenizer<'t, false>;
 #[cfg(all(feature = "pest", not(feature = "peg")))]
 pub type KodeptParser<'t> = pest::Tokenizer<'t>;
 
-#[cfg(all(feature = "pest", feature = "peg"))]
+#[cfg(feature = "pest")]
 pub type PestKodeptParser<'t> = pest::Tokenizer<'t>;
 
 #[cfg(feature = "peg")]

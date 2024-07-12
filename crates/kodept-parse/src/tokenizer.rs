@@ -10,6 +10,7 @@ pub type TracedTokenizer<'t> = crate::grammar::peg::Tokenizer<'t, true>;
 pub type SimpleTokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
 mod simple_implementation {
+    use std::convert::Infallible;
     use crate::lexer::{token, Token};
     use crate::token_match::TokenMatch;
     use kodept_core::code_point::CodePoint;
@@ -28,6 +29,10 @@ mod simple_implementation {
                 buffer: reader,
                 pos: 0,
             }
+        }
+        
+        pub const fn try_new(reader: &'t str) -> Result<Self, Infallible> {
+            Ok(Self::new(reader))
         }
 
         pub fn into_vec(self) -> Vec<TokenMatch<'t>> {

@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::multi::many0;
-use nom::Parser;
 use nom::sequence::{delimited, tuple};
+use nom::Parser;
 use nom_supreme::ParserExt;
 use nonempty_collections::NEVec;
 
@@ -10,10 +10,9 @@ use kodept_core::structure::rlt::new_types::{
     BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
 };
 
-use crate::{function, ParseResult};
 use crate::lexer::BitOperator::{AndBit, NotBit, OrBit, XorBit};
 use crate::lexer::ComparisonOperator::{
-    Equiv, Greater, GreaterEquals, Less, LessEquals, NotEquiv, Spaceship,
+    Equals, Equiv, Greater, GreaterEquals, Less, LessEquals, NotEquiv, Spaceship,
 };
 use crate::lexer::LogicOperator::{AndLogic, NotLogic, OrLogic};
 use crate::lexer::MathOperator::{Div, Mod, Plus, Pow, Sub, Times};
@@ -23,6 +22,7 @@ use crate::parser::expression;
 use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
+use crate::{function, ParseResult};
 
 fn left_fold<'t, I, T, P, E, F, R>(parser: P, produce: F) -> impl Parser<I, R, E> + 't
 where
@@ -249,7 +249,20 @@ fn logic_expr(input: TokenStream) -> ParseResult<rlt::Operation> {
     .parse(input)
 }
 
+fn assign_expr(input: TokenStream) -> ParseResult<rlt::Operation> {
+    right_fold(
+        logic_expr.and(match_token(Comparison(Equals)).and(assign_expr).opt()),
+        |a, op, b| rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Assign(op),
+            right: Box::new(b),
+        },
+    )
+    .context(function!())
+    .parse(input)
+}
+
 #[inline]
 pub fn grammar(input: TokenStream) -> ParseResult<rlt::Operation> {
-    logic_expr(input)
+    assign_expr(input)
 }
