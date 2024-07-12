@@ -1,10 +1,11 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-const FILENAMES: [(&str, &str); 4] = [
+const FILENAMES: [(&str, &str); 5] = [
     ("benches/benchmarking_file1.kd", "large"),
     ("benches/benchmarking_file2.kd", "simple1"),
     ("benches/benchmarking_file3.kd", "simple2"),
-    ("benches/benchmarking_file4.kd", "medium")
+    ("benches/benchmarking_file4.kd", "medium"),
+    ("benches/benchmarking_file5.kd", "half-large")
 ];
 
 fn bench_impls(c: &mut Criterion) {
