@@ -5,7 +5,10 @@ use derive_more::Display;
 use kodept_core::code_point::CodePoint;
 use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
 use tracing::error;
-use crate::tokenizer::Tokenizer;
+#[cfg(not(feature = "trace"))]
+use crate::tokenizer::Tokenizer as Tokenizer;
+#[cfg(feature = "trace")]
+use crate::tokenizer::SimpleTokenizer as Tokenizer;
 
 #[derive(Display, Copy, Clone, Debug)]
 #[display(fmt = "{line}:{col}")]

@@ -1,85 +1,30 @@
-use criterion::{Criterion, criterion_main};
-use lazy_static::lazy_static;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use kodept_parse::token_match::TokenMatch;
+const FILENAMES: [(&str, &str); 4] = [
+    ("benches/benchmarking_file1.kd", "large"),
+    ("benches/benchmarking_file2.kd", "simple1"),
+    ("benches/benchmarking_file3.kd", "simple2"),
+    ("benches/benchmarking_file4.kd", "medium")
+];
 
-const FILENAME: &str = "benches/benchmarking_file.kd";
-
-lazy_static! {
-    static ref FILE_CONTENTS: &'static str = std::fs::read_to_string(FILENAME).unwrap().leak();
-    static ref TOKENS: &'static [TokenMatch<'static>] = {
-        let tokenizer = kodept_parse::tokenizer::Tokenizer::new(*FILE_CONTENTS);
-        tokenizer.into_vec().leak()
-    };
-}
-
-mod default {
-    use criterion::{BenchmarkGroup, black_box};
-    use criterion::measurement::WallTime;
-
-    use kodept_parse::tokenizer::SimpleTokenizer as Tokenizer;
-
-    use crate::{FILE_CONTENTS};
-
-    pub fn bench_impl(c: &mut BenchmarkGroup<WallTime>) {
-        let input = *FILE_CONTENTS;
-        c.bench_function("default implementation", |b| {
-            b.iter(|| {
-                let tokenizer = Tokenizer::new(black_box(input));
-                let _ = black_box(tokenizer.into_vec());
-            })
+fn bench_impls(c: &mut Criterion) {
+    let mut group = c.benchmark_group("tokenizer");
+    for (name, description) in FILENAMES {
+        let contents = std::fs::read_to_string(name).unwrap();
+        group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
+        group.bench_with_input(
+            BenchmarkId::new("default", description),
+            &contents,
+            |b, i| b.iter(|| kodept_parse::tokenizer::SimpleTokenizer::new(i).into_vec()),
+        );
+        group.bench_with_input(BenchmarkId::new("pest", description), &contents, |b, i| {
+            b.iter(|| kodept_parse::grammar::PestKodeptParser::new(i).into_vec())
+        });
+        group.bench_with_input(BenchmarkId::new("peg", description), &contents, |b, i| {
+            b.iter(|| kodept_parse::grammar::KodeptParser::new(i).into_vec())
         });
     }
 }
 
-mod pest {
-    use criterion::{BenchmarkGroup, black_box};
-    use criterion::measurement::WallTime;
-
-    use kodept_parse::grammar::PestKodeptParser as Tokenizer;
-
-    use crate::FILE_CONTENTS;
-
-    pub fn bench_impl(c: &mut BenchmarkGroup<WallTime>) {
-        let input = *FILE_CONTENTS;
-        c.bench_function("pest implementation", |b| {
-            b.iter(|| {
-                let tokenizer = Tokenizer::new(black_box(input));
-                let _ = black_box(tokenizer.into_vec());
-                // assert_eq!(tokenizer.into_vec(), output)
-            })
-        });
-    }
-}
-
-mod peg {
-    use criterion::{BenchmarkGroup, black_box};
-    use criterion::measurement::WallTime;
-
-    use kodept_parse::grammar::KodeptParser as Tokenizer;
-
-    use crate::{FILE_CONTENTS};
-
-    pub fn bench_impl(c: &mut BenchmarkGroup<WallTime>) {
-        let input = *FILE_CONTENTS;
-        c.bench_function("peg implementation", |b| {
-            b.iter(|| {
-                let tokenizer = Tokenizer::new(black_box(input));
-                let _ = black_box(tokenizer.into_vec());
-            })
-        });
-    }
-}
-
-pub fn benches() {
-    let mut criterion = Criterion::default().configure_from_args();
-    let mut group = criterion.benchmark_group("tokenizer");
-    
-    default::bench_impl(&mut group);
-    pest::bench_impl(&mut group);
-    peg::bench_impl(&mut group);
- 
-    group.finish();
-}
-
+criterion_group!(benches, bench_impls);
 criterion_main!(benches);

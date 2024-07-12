@@ -99,6 +99,7 @@ impl Macro for BinaryOperatorExpander {
                 LogicKind::Conj => replace_with(&*node, "__con_internal"),
             },
             BinaryExpressionKind::ComplexComparison => replace_with(&*node, "__cmp_internal"),
+            BinaryExpressionKind::Assign => replace_with(&*node, "__assign_internal")
         })
     }
 }

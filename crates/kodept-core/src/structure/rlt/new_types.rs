@@ -48,6 +48,8 @@ pub enum BinaryOperationSymbol {
     Bit(Symbol),
     /// || &&
     Logic(Symbol),
+    /// =
+    Assign(Symbol)
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
@@ -79,6 +81,7 @@ impl Located for BinaryOperationSymbol {
             BinaryOperationSymbol::Comparison(x) => x.location(),
             BinaryOperationSymbol::Bit(x) => x.location(),
             BinaryOperationSymbol::Logic(x) => x.location(),
+            BinaryOperationSymbol::Assign(x) => x.location()
         }
     }
 }

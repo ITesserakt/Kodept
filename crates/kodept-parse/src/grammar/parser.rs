@@ -20,10 +20,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
     
     rule comma_separated0<T>(items: rule<T>) -> Vec<T> =
-        i:(items() ** ",") ","? { i }
-    
-    rule comma_separated1<T>(items: rule<T>) -> Vec<T> =
-        i:(items() ++ ",") ","? { i }
+        i:(items() ** [tok!(Symbol(Comma))]) [tok!(Symbol(Comma))]? { i }
 
     rule paren_enclosed<T>(inner: rule<T>) -> VerboseEnclosed<'input, T> =
         lp:[tok!(Symbol(LParen))] i:inner() rp:[tok!(Symbol(RParen))] { VerboseEnclosed::from((lp, i, rp)) }
@@ -67,11 +64,6 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// Literals grammar
     /// --------------------------------------------------------------------------------------------
     
-    rule tuple_literal() -> rlt::Literal =
-        i:paren_enclosed(<comma_separated0(<operator_grammar()>)>) { 
-            rlt::Literal::Tuple(i.into())
-        }
-    
     pub rule literal_grammar() -> rlt::Literal =
         i:[tok!(Literal(Binary(_)))] { rlt::Literal::Binary(i.span) } /
         i:[tok!(Literal(Octal(_)))] { rlt::Literal::Octal(i.span) } /
@@ -84,6 +76,11 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
     
     pub rule operator_grammar() -> rlt::Operation = precedence! {
+        a:@ op:[tok!(Operator(Comparison(Equals)))] b:(@) { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Assign(op.span.into()),
+            right: Box::new(b)
+        } }
         a:(@) op:[tok!(Operator(Logic(OrLogic)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
             operation: BinaryOperationSymbol::Logic(op.span.into()),
@@ -199,23 +196,39 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             expr: Box::new(a)
         } }
         --
-        expr:@ "" param:(@) { match param {
-            rlt::Operation::Expression(rlt::Expression::Literal(rlt::Literal::Tuple(ps))) => rlt::Operation::Application(Box::new(rlt::Application { 
-                expr,
-                params: Some(ps) 
-            })),
-            _ => expr,
-        } }
-        --
-        a:@ op:[tok!(Operator(Dot))] b:(@) { rlt::Operation::Access { 
+        a:(@) op:[tok!(Operator(Dot))] b:@ { rlt::Operation::Access { 
             left: Box::new(a),
             dot: op.span.into(),
             right: Box::new(b)
         } }
         --
-        i:expression_grammar()                                             { rlt::Operation::Expression(i) }
-        [tok!(Symbol(LParen))] i:operator_grammar() [tok!(Symbol(RParen))] { i }
+        i:application() { i }
+        i:atom()        { i }
     }
+    
+    #[cache]
+    rule atom() -> rlt::Operation =
+        i:expression_grammar()                                             { rlt::Operation::Expression(i) } /
+        i:paren_enclosed(<comma_separated0(<operator_grammar()>)>) { 
+            if i.inner.len() == 1 {
+                let mut vec = i.inner;
+                vec.pop().unwrap()
+            } else {
+                rlt::Operation::Expression(rlt::Expression::Literal(rlt::Literal::Tuple(i.into())))
+            }
+        } /
+        i:block()                                                          { rlt::Operation::Block(i) }
+
+    rule application() -> rlt::Operation =
+        a:atom() b:paren_enclosed(<comma_separated0(<operator_grammar()>)>)? { match b {
+            None => a,
+            Some(params) =>
+                rlt::Operation::Application(Box::new(rlt::Application {
+                    expr: a,
+                    params: Some(params.into())
+                }))
+            }
+        }
     
     /// Expressions grammar
     /// --------------------------------------------------------------------------------------------
@@ -231,9 +244,10 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     }
     
     pub rule expression_grammar() -> rlt::Expression = 
-        lambda()                                            /
-        i:term_grammar()    { rlt::Expression::Term(i) }    /
-        i:literal_grammar() { rlt::Expression::Literal(i) }
+        lambda()                                                   /
+        i:term_grammar()      { rlt::Expression::Term(i) }         /
+        i:literal_grammar()   { rlt::Expression::Literal(i) }      /
+        i:code_flow_grammar() { rlt::Expression::If(Box::new(i)) }
     
     /// References grammar
     /// --------------------------------------------------------------------------------------------
@@ -254,19 +268,21 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         type_ref()
     
     rule global_type_ref() -> (rlt::Context, rlt::Reference) =
-        g:[tok!(Symbol(DoubleColon))] ctx:(type_ref() ** "::") "::"? t:type_ref() {
+        g:[tok!(Symbol(DoubleColon))] ctx:(type_ref() ++ "::") {
             let start = rlt::Context::Global {
                 colon: g.span.into()   
             };
+            let mut ctx = ctx;
+            let last = ctx.pop().unwrap();
             let context = ctx.into_iter().fold(start, |acc, next| rlt::Context::Inner {
                 parent: Box::new(acc),
                 needle: next
             });
-            (context, t)
+            (context, last)
         }
     
     rule global_ref() -> (rlt::Context, rlt::Reference) =
-        g:[tok!(Symbol(DoubleColon))] ctx:(type_ref() ** "::") "::"? v:variable_ref() {
+        g:[tok!(Symbol(DoubleColon))] ctx:(type_ref() ++ (!("::" variable_ref()) "::")) "::" v:variable_ref() {
             let start = rlt::Context::Global {
                 colon: g.span.into()   
             };
@@ -278,17 +294,19 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
     
     rule local_type_ref() -> (rlt::Context, rlt::Reference) =
-        ctx:(type_ref() ++ "::") "::" t:type_ref() {
+        ctx:(type_ref() **<2,> "::") {
             let start = rlt::Context::Local;
+            let mut ctx = ctx;
+            let last = ctx.pop().unwrap();
             let context = ctx.into_iter().fold(start, |acc, next| rlt::Context::Inner {
                 parent: Box::new(acc),
                 needle: next
             });
-            (context, t)
+            (context, last)
         }
     
     rule local_ref() -> (rlt::Context, rlt::Reference) =
-        ctx:(type_ref() ++ "::") "::" v:variable_ref() {
+        ctx:(type_ref() ++ (!("::" variable_ref()) "::")) "::" v:variable_ref() {
             let start = rlt::Context::Local;
             let context = ctx.into_iter().fold(start, |acc, next| rlt::Context::Inner {
                 parent: Box::new(acc),
@@ -298,10 +316,10 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
     
     rule contextual() -> rlt::ContextualReference = i:(
-        global_type_ref() / 
-        global_ref()      /
-        local_type_ref()  /
-        local_ref()
+        global_ref()      / 
+        global_type_ref() /
+        local_ref()       /
+        local_type_ref()
     ) { rlt::ContextualReference {
         context: i.0,
         inner: i.1
@@ -310,6 +328,39 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     pub rule term_grammar() -> rlt::Term = 
         i:contextual() { rlt::Term::Contextual(i) } /
         i:ref()        { rlt::Term::Reference(i) }
+    
+    /// Code flow grammar
+    /// --------------------------------------------------------------------------------------------
+    
+    rule else() -> rlt::ElseExpr =
+        k:[tok!(Keyword(Else))] i:body() { 
+            rlt::ElseExpr {
+                keyword: k.span.into(),
+                body: i
+            }
+        }
+    
+    rule elif() -> rlt::ElifExpr =
+        k:[tok!(Keyword(Elif))] c:operator_grammar() i:body() {
+            rlt::ElifExpr {
+                keyword: k.span.into(),
+                condition: c,
+                body: i
+            }
+        }
+    
+    rule if() -> rlt::IfExpr =
+        k:[tok!(Keyword(If))] c:operator_grammar() i:body() el:elif()* es:else()? {
+            rlt::IfExpr {
+                keyword: k.span.into(),
+                condition: c,
+                body: i,
+                elif: el.into_boxed_slice(),
+                el: es
+            }
+        }
+    
+    pub rule code_flow_grammar() -> rlt::IfExpr = if()
     
     /// Block level grammar
     /// --------------------------------------------------------------------------------------------
@@ -365,6 +416,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     pub rule block_level_grammar() -> rlt::BlockLevelNode =
         i:block()            { rlt::BlockLevelNode::Block(i) }     /
         i:init_var()         { rlt::BlockLevelNode::InitVar(i) }   /
+        i:bodied()           { rlt::BlockLevelNode::Function(i) }  /
         i:operator_grammar() { rlt::BlockLevelNode::Operation(i) }
     
     /// Functions grammar
@@ -467,7 +519,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
     
     pub rule kodept() -> rlt::RLT =
-        i:traced(<file_grammar()>) ![_] { rlt::RLT(i) }
+        i:traced(<file_grammar()>) ("\r" / "\n" / "\r\n" / " ")* ![_] { rlt::RLT(i) }
 }}
 
 pub use grammar::kodept;

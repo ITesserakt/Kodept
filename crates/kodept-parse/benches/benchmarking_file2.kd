@@ -1,0 +1,26 @@
+module Base =>
+
+fun flip(f, x, y) => f(y, x)
+
+fun const(a, b) => a
+
+fun compose(f, g) => \x => f(g(x))
+
+fun s(f, g) => \x => f(x, g(x))
+
+fun fix(f) => {
+    val x = f(x)
+    x
+}
+
+fun let_bound {
+    (id(id(id)))(id(3))
+}
+
+fun tuples(z) {
+    val x = (z, z)
+    val w = \y => ((y, y))
+    w(x)
+}
+
+fun id(x) => x

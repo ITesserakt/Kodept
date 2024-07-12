@@ -1,0 +1,24 @@
+module Main =>
+
+enum struct Bool { True, False }
+
+fun and(a: Bool, b: Bool) =>
+    if a => if b => True
+            else => False
+    else => False
+
+fun not(self: Bool) =>
+    if self => False
+    else => True
+
+fun rule110(a: Bool, b: Bool, c: Bool) =>
+    if   and(a,      and(b,      c))      => False
+    elif and(a,      and(b,      not(c))) => True
+    elif and(a,      and(not(b), c))      => True
+    elif and(a,      and(not(b), not(c))) => False
+    elif and(not(a), and(b,      c))      => True
+    elif and(not(a), and(b,      not(c))) => True
+    elif and(not(a), and(not(b), c))      => True
+    else                                  => False
+
+fun main => rule110(True, True, True)
