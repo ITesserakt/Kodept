@@ -1,0 +1,503 @@
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+module A {
+    struct B;
+
+    struct C(a: B) {
+        fun foo(self, c: C) => 1
+    }
+
+    fun foo() => {
+        fun foo() => {
+            fun foo() => {
+                fun foo() => {
+                    fun foo() => {
+                        fun foo() => {
+                            fun foo() => {
+                                fun foo() => {
+                                    fun foo() => {
+                                        fun foo() => {
+                                            fun foo() => {
+                                                fun foo() => {
+                                                    fun foo() => {
+                                                        fun foo() => {
+                                                            fun foo() => {
+                                                                fun foo() => {
+
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

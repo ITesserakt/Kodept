@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput, PlotConfiguration};
-use nom::AsBytes;
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
+
 use kodept_parse::error::parse_from_top;
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
@@ -11,11 +11,12 @@ fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
     tokens
 }
 
-const FILENAMES: [(&str, &str); 4] = [
+const FILENAMES: [(&str, &str); 5] = [
     ("benches/benchmarking_file1.kd", "large"),
     ("benches/benchmarking_file2.kd", "simple1"),
     ("benches/benchmarking_file3.kd", "simple2"),
-    ("benches/benchmarking_file4.kd", "medium")
+    ("benches/benchmarking_file4.kd", "medium"),
+    ("benches/benchmarking_file5.kd", "half-large")
 ];
 
 fn bench_impls(c: &mut Criterion) {
