@@ -1,4 +1,4 @@
-#[cfg(all(not(feature = "peg"), not(feature = "pest")))]
+#[cfg(all(not(feature = "peg"), not(feature = "pest"), feature = "nom"))]
 pub type Tokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
 #[cfg(any(feature = "peg", feature = "pest"))]
@@ -7,11 +7,13 @@ pub type Tokenizer<'t> = crate::grammar::KodeptParser<'t>;
 #[cfg(all(feature = "peg", feature = "trace"))]
 pub type TracedTokenizer<'t> = crate::grammar::peg::Tokenizer<'t, true>;
 
+#[cfg(feature = "trace")]
 pub type SimpleTokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
+#[cfg(feature = "nom")]
 mod simple_implementation {
     use std::convert::Infallible;
-    use crate::lexer::{token, Token};
+    use crate::lexer::{Token, token};
     use crate::token_match::TokenMatch;
     use kodept_core::code_point::CodePoint;
     use kodept_core::structure::span::Span;

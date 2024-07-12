@@ -23,8 +23,6 @@ use rayon::prelude::ParallelIterator;
 use std::fs::{create_dir_all, File};
 use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
-use std::process::Output;
-use tracing::{debug, error};
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -201,7 +199,7 @@ impl Graph {
     }
 }
 
-#[cfg(not(all(feature = "trace", feature = "peg")))]
+#[cfg(not(all(feature = "trace")))]
 impl InspectParser {
     #[cfg(feature = "parallel")]
     pub fn exec(
@@ -226,7 +224,7 @@ impl InspectParser {
     }
 }
 
-#[cfg(all(feature = "peg", feature = "trace"))]
+#[cfg(feature = "trace")]
 impl InspectParser {
     #[cfg(feature = "parallel")]
     pub fn exec(
@@ -254,8 +252,8 @@ impl InspectParser {
     }
 
     fn launch_pegviz<P: AsRef<Path>>(&self, input_file_path: P) -> Result<(), WideError> {
-        use std::process::{Command};
-        use tracing::{info, warn};
+        use std::process::{Command, Output};
+        use tracing::{info, warn, debug, error};
 
         if !self.use_pegviz {
             return Ok(());

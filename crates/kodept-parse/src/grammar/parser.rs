@@ -9,7 +9,7 @@ use crate::lexer::BitOperator::*;
 use crate::lexer::ComparisonOperator::*;
 use crate::lexer::MathOperator::*;
 use crate::lexer::Keyword::*;
-use crate::parser::nom::VerboseEnclosed;
+use crate::parser::common::VerboseEnclosed;
 use crate::token_stream::TokenStream;
 use kodept_core::structure::*;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};

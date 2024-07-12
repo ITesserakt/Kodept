@@ -1,9 +1,12 @@
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
 
+#[cfg(feature = "nom")]
 use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
+#[cfg(feature = "nom")]
 use nom_supreme::final_parser::RecreateContext;
 
+#[cfg(feature = "nom")]
 use kodept_core::code_point::CodePoint;
 
 use crate::lexer::traits::ToRepresentation;
@@ -48,6 +51,20 @@ impl<'t> TokenStream<'t> {
 
     pub fn is_empty(&self) -> bool {
         self.slice.is_empty()
+    }
+    
+    pub fn iter_indices(&self) -> TokenStreamIndices {
+        TokenStreamIndices {
+            stream: *self,
+            position: 0,
+        }
+    }
+    
+    pub fn iter_elements(&self) -> TokenStreamIterator {
+        TokenStreamIterator {
+            stream: *self,
+            position: 0,
+        }
     }
 }
 
@@ -101,6 +118,7 @@ impl<'t> Iterator for TokenStreamIndices<'t> {
 
 impl<'t> FusedIterator for TokenStreamIndices<'t> {}
 
+#[cfg(feature = "nom")]
 impl<'t> InputIter for TokenStream<'t> {
     type Item = TokenMatch<'t>;
     type Iter = TokenStreamIndices<'t>;
@@ -136,14 +154,17 @@ impl<'t> InputIter for TokenStream<'t> {
     }
 }
 
+#[cfg(feature = "nom")]
 impl<'t> UnspecializedInput for TokenStream<'t> {}
 
+#[cfg(feature = "nom")]
 impl<'t> InputLength for TokenStream<'t> {
     fn input_len(&self) -> usize {
         self.len()
     }
 }
 
+#[cfg(feature = "nom")]
 impl<'t> InputTake for TokenStream<'t> {
     fn take(&self, count: usize) -> Self {
         TokenStream {
@@ -157,6 +178,7 @@ impl<'t> InputTake for TokenStream<'t> {
     }
 }
 
+#[cfg(feature = "nom")]
 impl<'t> RecreateContext<TokenStream<'t>> for CodePoint {
     fn recreate_context(original_input: TokenStream<'t>, tail: TokenStream<'t>) -> Self {
         if let Some((head, _)) = tail.slice.split_first() {

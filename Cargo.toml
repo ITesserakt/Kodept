@@ -64,8 +64,8 @@ version = "0.2"
 
 [dependencies.kodept-parse]
 path = "crates/kodept-parse"
-default-features = false
-version = "0.1"
+features = ["peg"]
+version = "0.2"
 
 [dependencies.kodept-ast]
 path = "crates/kodept-ast"
@@ -87,9 +87,7 @@ kodept-inference = { path = "crates/kodept-inference", version = "0.2" }
 [features]
 profiler = ["dep:dhat"]
 parallel = ["dep:rayon"]
-pest = ["kodept-parse/pest"]
-peg = ["kodept-parse/peg"]
-trace = ["dep:gag", "kodept-parse/trace"]
+trace = ["dep:gag", "kodept-parse/trace", "kodept-parse/pest"]
 
 [profile.profiler]
 debug = true
