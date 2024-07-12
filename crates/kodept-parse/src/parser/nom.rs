@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use derive_more::{Constructor, From};
+use derive_more::{Constructor};
 use nom::bytes::complete::{take, take_while};
 use nom::Err::Error;
 use nom::IResult;
@@ -11,19 +11,11 @@ use nom_supreme::error::BaseErrorKind;
 use nom_supreme::ParserExt;
 use thiserror::Error;
 
-use kodept_core::structure::rlt::new_types::Enclosed;
-
 use crate::{
     lexer::Token, ParseError, ParseResult, token_match::TokenMatch, token_stream::TokenStream,
 };
 use crate::lexer::traits::ToRepresentation;
-
-#[derive(From, Clone, Debug)]
-pub struct VerboseEnclosed<'t, T> {
-    pub left: TokenMatch<'t>,
-    pub inner: T,
-    pub right: TokenMatch<'t>,
-}
+use crate::parser::common::VerboseEnclosed;
 
 #[inline]
 pub fn any_not_ignored_token(input: TokenStream) -> ParseResult<TokenMatch> {
@@ -184,17 +176,6 @@ pub fn newline_separated<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
         match_any_token!((Token::Ignore(Newline | Whitespace) | Token::Symbol(Semicolon))),
         items_parser,
     )
-}
-
-impl<'t, T, U: From<T>> From<VerboseEnclosed<'t, T>> for Enclosed<U> {
-    #[inline]
-    fn from(value: VerboseEnclosed<'t, T>) -> Self {
-        Self {
-            left: value.left.span.into(),
-            inner: value.inner.into(),
-            right: value.right.span.into(),
-        }
-    }
 }
 
 #[inline]

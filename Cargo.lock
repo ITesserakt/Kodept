@@ -854,7 +854,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "derive_more",
  "pathdiff",
@@ -904,7 +904,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.1.7"
+version = "0.2.0"
 dependencies = [
  "criterion",
  "derive_more",

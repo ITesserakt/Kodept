@@ -22,8 +22,10 @@ pub struct ParseError<'t> {
 pub fn parse_from_top(stream: TokenStream) -> Result<RLT, Vec<ParseError>> {
     #[cfg(feature = "peg")]
     return peg::implementation(stream);
-    #[cfg(not(feature = "peg"))]
+    #[cfg(all(not(feature = "peg"), feature = "nom"))]
     return default::implementation(stream);
+    #[cfg(not(any(feature = "nom", feature = "peg")))]
+    compile_error!("Either feature `peg` or `nom` must be enabled for this crate")
 }
 
 fn point_pos(stream: TokenStream, point: CodePoint) -> usize {
@@ -55,6 +57,7 @@ mod peg {
     }
 }
 
+#[cfg(feature = "nom")]
 pub mod default {
     use crate::error::{point_pos, ErrorLocation, ParseError};
     use crate::lexer::Token;
