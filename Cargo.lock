@@ -874,7 +874,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-interpret"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "chashmap",
  "derive_more",
