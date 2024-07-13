@@ -56,4 +56,4 @@ required-features = ["peg", "pest"]
 [[bench]]
 name = "parser"
 harness = false
-required-features = ["peg"]
+required-features = ["peg", "nom"]

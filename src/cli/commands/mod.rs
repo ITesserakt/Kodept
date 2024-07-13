@@ -5,20 +5,20 @@ use crate::cli::common::Kodept;
 use crate::cli::traits::Command;
 use clap::Subcommand;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
+use itertools::Itertools;
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::ErrorReported;
+use kodept_parse::error::ParseError;
+use kodept_parse::lexer::Token;
+use kodept_parse::parse_from_top;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use itertools::Itertools;
-use kodept_parse::error::ParseError;
-use kodept_parse::lexer::Token;
-use kodept_parse::parse_from_top;
 
 mod execute;
 mod graph;
@@ -30,6 +30,7 @@ pub enum Commands {
     Graph(Graph),
     /// Output parsing process files
     InspectParser(InspectParser),
+    /// Run type checker
     Execute(Execute),
 }
 
@@ -45,9 +46,7 @@ impl Command for Commands {
         match self {
             Commands::Graph(x) => x.exec_for_source(source, settings, &mut params.output),
             Commands::InspectParser(x) => x.exec_for_source(source, settings, &mut params.output),
-            Commands::Execute(x) => {
-                x.exec_for_source(source, settings, &mut params.compilation_config)
-            }
+            Commands::Execute(x) => x.exec_for_source(source, settings, &mut ()),
         }
     }
 }
