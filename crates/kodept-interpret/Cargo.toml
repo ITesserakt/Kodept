@@ -1,6 +1,6 @@
 [package]
 name = "kodept-interpret"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
