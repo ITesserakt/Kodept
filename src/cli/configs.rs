@@ -11,7 +11,7 @@ use crate::cli::utils::{DisplayStyle, Extension};
 use kodept::codespan_settings::{CodespanSettings, StreamOutput};
 use kodept::loader::{Loader, LoadingError};
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 pub struct DiagnosticConfig {
     /// The display style to use when rendering a diagnostic
     #[arg(ignore_case = true, long = "style", default_value_t = DisplayStyle::Rich)]
@@ -31,14 +31,14 @@ pub struct DiagnosticConfig {
     disable: bool,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 pub struct CompilationConfig {
     /// Specifies maximum number of steps while type checking a function
     #[arg(default_value_t = NonZeroU16::new(256).unwrap(), long = "recursion_depth")]
     pub type_checking_recursion_depth: NonZeroU16
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 pub struct LoadingConfig {
     /// Read input from stdin
     #[arg(long = "stdin", global = true)]

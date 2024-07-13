@@ -16,7 +16,7 @@ use crate::steps::Step;
 
 #[derive(Constructor)]
 pub struct Config {
-    recursion_depth: NonZeroU16,
+    pub recursion_depth: NonZeroU16,
 }
 
 pub fn run_common_steps(

@@ -1,26 +1,9 @@
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 
-use codespan_reporting::diagnostic::Diagnostic;
-use codespan_reporting::files::{Error, Files};
-use codespan_reporting::term::termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
-use codespan_reporting::term::Config;
+use codespan_reporting::term::termcolor::{ColorSpec, StandardStream, WriteColor};
 
-use kodept_macros::error::report::Report;
-
-#[derive(Clone)]
-pub struct CodespanSettings<S = StreamOutput> {
-    pub config: Config,
-    pub stream: S,
-}
-
-pub trait ReportExt: Sized {
-    fn emit<'f, W: WriteColor, F: Files<'f, FileId = ()>>(
-        self,
-        settings: &mut CodespanSettings<W>,
-        source: &'f F,
-    ) -> Result<(), Error>;
-}
+pub type CodespanSettings = kodept_macros::error::traits::CodespanSettings<StreamOutput>;
 
 #[derive(Clone)]
 pub enum SupportColor {
@@ -32,40 +15,6 @@ pub enum SupportColor {
 pub enum StreamOutput {
     Standard(Arc<Mutex<StandardStream>>),
     NoOp,
-}
-
-impl Default for CodespanSettings<StandardStream> {
-    fn default() -> Self {
-        Self {
-            config: Default::default(),
-            stream: StandardStream::stderr(ColorChoice::Auto),
-        }
-    }
-}
-
-impl ReportExt for Report {
-    fn emit<'f, W: WriteColor, F: Files<'f, FileId = ()>>(
-        self,
-        settings: &mut CodespanSettings<W>,
-        source: &'f F,
-    ) -> Result<(), Error> {
-        codespan_reporting::term::emit(
-            &mut settings.stream,
-            &settings.config,
-            source,
-            &self.into_diagnostic(),
-        )
-    }
-}
-
-impl ReportExt for Diagnostic<()> {
-    fn emit<'f, W: WriteColor, F: Files<'f, FileId = ()>>(
-        self,
-        settings: &mut CodespanSettings<W>,
-        source: &'f F,
-    ) -> Result<(), Error> {
-        codespan_reporting::term::emit(&mut settings.stream, &settings.config, source, &self)
-    }
 }
 
 const POISON_LOCK_ERROR: &str = "Lock was poisoned";
