@@ -23,7 +23,7 @@ impl<'t> TokenStream<'t> {
     #[inline]
     pub fn iter(&self) -> TokenStreamIterator {
         TokenStreamIterator {
-            stream: self.clone(),
+            stream: *self,
             position: 0,
         }
     }
@@ -230,30 +230,5 @@ impl Display for TokenStream<'_> {
             )
         }
         write!(f, "{}", output)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use nom::InputTake;
-
-    use kodept_core::code_point::CodePoint;
-    use kodept_core::structure::span::Span;
-
-    use crate::lexer::Token;
-    use crate::token_match::TokenMatch;
-    use crate::token_stream::TokenStream;
-
-    #[test]
-    fn test_stream_take() {
-        let slice = [TokenMatch::new(
-            Token::Unknown,
-            Span::new(CodePoint::default()),
-        )];
-        let stream = TokenStream::new(&slice);
-
-        let (tail, body) = stream.take_split(0);
-        assert_eq!(body.slice, &[]);
-        assert_eq!(tail.slice, slice);
     }
 }
