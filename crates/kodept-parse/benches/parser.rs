@@ -30,7 +30,7 @@ fn bench_impls(c: &mut Criterion) {
         group.throughput(Throughput::Elements(tokens.len() as u64));
         group.bench_with_input(BenchmarkId::new("default", description), &tokens, |b, i| {
             b.iter(|| {
-                let res: Result<_, ParseError> = final_parser(grammar)(tokens);
+                let res: Result<_, ParseError> = final_parser(grammar)(*i);
                 res.expect("Success")
             })
         });

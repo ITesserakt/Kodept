@@ -51,7 +51,7 @@ similar-asserts = "1.5.0"
 [[bench]]
 name = "tokenizer"
 harness = false
-required-features = ["peg", "pest"]
+required-features = ["peg", "pest", "nom"]
 
 [[bench]]
 name = "parser"
