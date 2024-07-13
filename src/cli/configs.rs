@@ -1,5 +1,4 @@
 use std::io::{stdin, Read};
-use std::num::NonZeroU16;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -22,20 +21,13 @@ pub struct DiagnosticConfig {
     /// Adjust color output settings
     #[arg(short, long, default_value = "auto")]
     color: ColorArg,
-    /// Enable output of diagnostics to stderr
+    /// Disable output of diagnostics to stderr
     #[arg(
     conflicts_with_all = ["style", "tab_width", "color"],
     long = "disable-diagnostics",
     default_value_t = false
     )]
     disable: bool,
-}
-
-#[derive(Debug, Args, Clone)]
-pub struct CompilationConfig {
-    /// Specifies maximum number of steps while type checking a function
-    #[arg(default_value_t = NonZeroU16::new(256).unwrap(), long = "recursion_depth")]
-    pub type_checking_recursion_depth: NonZeroU16
 }
 
 #[derive(Debug, Args, Clone)]

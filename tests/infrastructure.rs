@@ -24,7 +24,7 @@ use kodept_interpret::type_checker::TypeChecker;
 use kodept_interpret::{Cache, Witness};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{MutableContext, UnrecoverableError};
-use kodept_parse::error::parse_from_top;
+use kodept_parse::parse_from_top;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::Tokenizer;
 

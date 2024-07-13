@@ -9,8 +9,6 @@ use crate::lexer::Token;
 #[cfg(feature = "nom")]
 use crate::parser::nom::TokenVerificationError;
 use crate::token_stream::TokenStream;
-#[cfg(feature = "nom")]
-use crate::token_stream::TokenStream;
 
 pub mod lexer;
 pub mod parser;

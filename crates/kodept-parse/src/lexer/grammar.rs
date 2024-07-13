@@ -40,7 +40,7 @@ pub fn soft_literal_token(literal: Span) -> impl Parser<Span, Span, crate::Token
         .verify(move |&it| it == literal)
 }
 
-fn ignore(input: Span) -> TokenizationResult<Ignore> {
+pub fn ignore(input: Span) -> TokenizationResult<Ignore> {
     let comment = not_line_ending
         .cut()
         .preceded_by(tag("//"))
@@ -62,7 +62,7 @@ fn ignore(input: Span) -> TokenizationResult<Ignore> {
     )(input)
 }
 
-fn keyword(input: Span) -> TokenizationResult<Keyword> {
+pub fn keyword(input: Span) -> TokenizationResult<Keyword> {
     context(
         "keyword",
         alt(include_literals! {
@@ -90,7 +90,7 @@ fn keyword(input: Span) -> TokenizationResult<Keyword> {
     )(input)
 }
 
-fn symbol(input: Span) -> TokenizationResult<Symbol> {
+pub fn symbol(input: Span) -> TokenizationResult<Symbol> {
     context(
         "symbol",
         alt(include_literals! {
@@ -109,7 +109,7 @@ fn symbol(input: Span) -> TokenizationResult<Symbol> {
     )(input)
 }
 
-fn identifier(input: Span) -> TokenizationResult<Identifier> {
+pub fn identifier(input: Span) -> TokenizationResult<Identifier> {
     let identifier_parser = |alphabet| {
         recognize(tuple((
             tag("_").opt(),
@@ -127,7 +127,7 @@ fn identifier(input: Span) -> TokenizationResult<Identifier> {
     )(input)
 }
 
-fn literal(input: Span) -> TokenizationResult<Literal> {
+pub fn literal(input: Span) -> TokenizationResult<Literal> {
     fn number_parser<'a>(
         prefix: &'static str,
         alphabet: &'static str,
@@ -170,7 +170,7 @@ fn literal(input: Span) -> TokenizationResult<Literal> {
     )(input)
 }
 
-fn operator(input: Span) -> TokenizationResult<Operator> {
+pub fn operator(input: Span) -> TokenizationResult<Operator> {
     context(
         "operator",
         alt((

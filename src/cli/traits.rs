@@ -25,6 +25,7 @@ impl<T: rayon::prelude::ParallelIterator> CommonIter for T {
 pub trait Command {
     type Params;
 
+    #[allow(unused_mut)]
     fn exec(
         &self,
         sources: impl CommonIter<Item = ReadCodeSource>,

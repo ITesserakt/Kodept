@@ -1,19 +1,16 @@
-use crate::cli::traits::Command;
+use std::path::PathBuf;
+use std::string::FromUtf8Error;
+
 use clap::{Parser, ValueEnum};
 use derive_more::Display;
+use thiserror::Error;
+
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
-use kodept_core::file_relative::CodePath;
-use kodept_macros::error::traits::ResultTEExt;
 use kodept_macros::error::ErrorReported;
-use kodept_parse::error::{ParseErrors};
-use kodept_parse::parse_from_top;
-use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::Tokenizer;
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::string::FromUtf8Error;
-use thiserror::Error;
+use kodept_macros::error::traits::ResultTEExt;
+
+use crate::cli::traits::Command;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -32,6 +29,7 @@ pub struct InspectParser {
     use_pegviz: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Error)]
 enum LaunchPegvizError {
     #[error(transparent)]
@@ -46,9 +44,9 @@ enum LaunchPegvizError {
 #[derive(Debug, Error)]
 enum InspectError<A> {
     #[error("Error happened while parsing")]
-    TokenizationError(ParseErrors<A>),
+    TokenizationError(kodept_parse::error::ParseErrors<A>),
     #[error(transparent)]
-    RedirectError(#[from] gag::RedirectError<File>),
+    RedirectError(#[from] gag::RedirectError<std::fs::File>),
     #[error(transparent)]
     IO(#[from] std::io::Error),
     #[error(transparent)]
@@ -76,7 +74,11 @@ impl Command for InspectParser {
 
 #[cfg(feature = "trace")]
 impl InspectParser {
-    fn launch_pegviz<P: AsRef<Path>>(&self, input_file_path: P) -> Result<(), LaunchPegvizError> {
+    fn launch_pegviz<P: AsRef<std::path::Path>>(
+        &self,
+        input_file_path: P,
+    ) -> Result<(), LaunchPegvizError> {
+        use std::fs::File;
         use std::process::{Command, Output};
         use tracing::{debug, error, info, warn};
 
@@ -111,9 +113,12 @@ impl InspectParser {
     fn inspect_tokenizer(
         &self,
         source: &ReadCodeSource,
-        file_output_path: &Path,
+        file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
         use kodept_parse::tokenizer::TracedTokenizer;
+        use std::fs::File;
+        use InspectError::TokenizationError;
+
         let file = File::create(file_output_path.with_extension("tok.peg"))?;
         let _gag = gag::Redirect::stdout(file)?;
         TracedTokenizer::try_new(source.contents())
@@ -126,8 +131,14 @@ impl InspectParser {
     fn inspect_parser(
         &self,
         source: &ReadCodeSource,
-        file_output_path: &Path,
+        file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
+        use kodept_parse::parse_from_top;
+        use kodept_parse::token_stream::TokenStream;
+        use kodept_parse::tokenizer::Tokenizer;
+        use std::fs::File;
+        use InspectError::TokenizationError;
+
         let tokenizer = Tokenizer::try_new(source.contents())
             .map_err(|it| TokenizationError((it, source.contents()).into()))?;
         let tokens = tokenizer.into_vec();
@@ -152,6 +163,8 @@ impl Command for InspectParser {
         settings: &mut CodespanSettings,
         output_path: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
+        use kodept_core::file_relative::CodePath;
+        
         let source_name = match source.path() {
             CodePath::ToFile(x) => x
                 .file_name()

@@ -33,6 +33,7 @@ fn test_undirected() {
     assert_eq!(graph.children(c).collect::<Vec<_>>(), vec![(B, a), (C, b)]);
 }
 
+#[allow(non_snake_case)]
 #[rstest]
 fn test_directed() {
     let mut graph = DiGraph::new();

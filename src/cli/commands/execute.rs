@@ -1,3 +1,4 @@
+use std::num::NonZeroU16;
 use crate::cli::commands::{build_rlt};
 use crate::cli::traits::Command;
 use clap::Parser;
@@ -10,19 +11,22 @@ use kodept_ast::ast_builder::ASTBuilder;
 use kodept_macros::error::ErrorReported;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::ResultTRExt;
-use crate::cli::configs::CompilationConfig;
 
 #[derive(Debug, Parser, Clone)]
-pub struct Execute;
+pub struct Execute {
+    /// Specifies maximum number of steps while type checking a function
+    #[arg(default_value_t = NonZeroU16::new(256).unwrap(), long = "recursion_depth")]
+    type_checking_recursion_depth: NonZeroU16,
+}
 
 impl Command for Execute {
-    type Params = CompilationConfig;
+    type Params = ();
 
     fn exec_for_source(
         &self,
         source: ReadCodeSource,
         settings: &mut CodespanSettings,
-        params: &mut Self::Params,
+        _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
         let (tree, accessor) = ASTBuilder.recursive_build(&rlt.0, &source);
@@ -32,7 +36,7 @@ impl Command for Execute {
             tree.build(),
         );
         let config = Config {
-            recursion_depth: params.type_checking_recursion_depth,
+            recursion_depth: self.type_checking_recursion_depth,
         };
         
         common::run_common_steps(&mut context, &config).or_emit(settings, &source)?;
