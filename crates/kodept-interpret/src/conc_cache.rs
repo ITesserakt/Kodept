@@ -110,10 +110,10 @@ impl<K: Key, V> ConcSecSlotMap<K, V> {
                     version: kd.version.get(),
                 });
             }
-            return Some(Slot {
+            Some(Slot {
                 value,
                 version: kd.version.get(),
-            });
+            })
         });
         last.map(|it| it.value)
     }
@@ -130,7 +130,7 @@ impl<K: Key, V> ConcSecSlotMap<K, V> {
                 }
                 return Some(slot);
             }
-            return None;
+            None
         });
         removed
     }

@@ -41,19 +41,15 @@ impl AlgorithmU {
                 let s2 = Self::unify_vec(&ts1.substitute(&s1), &ts2.substitute(&s1))?;
                 Ok(s1 + s2)
             }
-            (t1, t2) => Err(UnificationMismatch(
-                t1.into_iter().cloned().collect(),
-                t2.into_iter().cloned().collect(),
-            )
-            .into()),
+            (t1, t2) => Err(UnificationMismatch(t1.to_vec(), t2.to_vec()).into()),
         }
     }
 
     fn bind(var: &TVar, ty: &MonomorphicType) -> Result<Substitutions, AlgorithmUError> {
         match ty {
             Var(v) if var == v => Ok(Substitutions::empty()),
-            _ if Self::occurs_check(var, ty) => Err(InfiniteType(var.clone(), ty.clone())),
-            _ => Ok(Substitutions::single(var.clone(), ty.clone())),
+            _ if Self::occurs_check(var, ty) => Err(InfiniteType(*var, ty.clone())),
+            _ => Ok(Substitutions::single(*var, ty.clone())),
         }
     }
 
@@ -101,8 +97,8 @@ mod tests {
     use nonempty_collections::nev;
 
     use crate::algorithm_u::AlgorithmUError;
+    use crate::r#type::{fun, fun1, MonomorphicType, PrimitiveType, Tuple, TVar, var};
     use crate::r#type::MonomorphicType::Constant;
-    use crate::r#type::{fun, fun1, var, MonomorphicType, PrimitiveType, TVar, Tuple};
     use crate::substitution::Substitutions;
     use crate::traits::Substitutable;
 
@@ -264,6 +260,9 @@ mod tests {
         assert_eq!(s1, s2);
         assert_eq!(a.substitute(&s1), b.substitute(&s1));
         let h = fun1(Constant("A".to_string()), Constant("A".to_string()));
-        assert_eq!(a.substitute(&s1), fun1(fun1(h.clone(), h.clone()), fun1(h.clone(), h)))
+        assert_eq!(
+            a.substitute(&s1),
+            fun1(fun1(h.clone(), h.clone()), fun1(h.clone(), h))
+        )
     }
 }

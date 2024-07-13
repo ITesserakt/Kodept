@@ -383,22 +383,6 @@ mod utils {
     }
 }
 
-mod subtree {
-    use crate::graph::AnyNode;
-    use crate::graph::tree::Graph;
-
-    #[derive(Default, Debug)]
-    pub struct SubSyntaxTree {
-        graph: Graph<AnyNode>,
-    }
-
-    impl SubSyntaxTree {
-        pub fn new() -> Self {
-            Self::default()
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::FileDecl;

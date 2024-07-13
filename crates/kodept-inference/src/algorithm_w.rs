@@ -94,8 +94,8 @@ impl<'e> AlgorithmW<'e> {
         as_.remove(&bind.var);
         let eq_cs = as1
             .get(&bind.var)
-            .into_iter()
-            .map(|it| eq_cst(tv.clone(), it.clone()))
+            .iter()
+            .map(|it| eq_cst(tv, it.clone()))
             .collect();
         let bound = bind
             .ty
@@ -120,8 +120,8 @@ impl<'e> AlgorithmW<'e> {
         as_.remove(&bind.var);
         let im_cs = as2
             .get(&bind.var)
-            .into_iter()
-            .chain(as1.get(&bind.var).into_iter()) // support for fix
+            .iter()
+            .chain(as1.get(&bind.var).iter()) // support for fix
             .map(|it| implicit_cst(it.clone(), self.monomorphic_set.clone(), t1.clone()))
             .collect();
         let bound = bind.ty.as_ref().map_or(vec![], |it| {
@@ -136,7 +136,7 @@ impl<'e> AlgorithmW<'e> {
     }
 
     fn apply_tuple(&mut self, tuple: &[Language]) -> AWResult {
-        let ctx: Vec<_> = tuple.into_iter().map(|it| self.apply(it)).try_collect()?;
+        let ctx: Vec<_> = tuple.iter().map(|it| self.apply(it)).try_collect()?;
         let (a, c, t): (Vec<_>, Vec<_>, Vec<_>) = ctx.into_iter().multiunzip();
         Ok((
             AssumptionSet::merge_many(a),
@@ -185,7 +185,7 @@ impl Language {
                     Ok(None) => not_found.push(next.clone()),
                     Ok(Some(s)) => cst.extend(
                         a.get(next)
-                            .into_iter()
+                            .iter()
                             .map(|it| explicit_cst(it.clone(), s.clone().into_owned())),
                     ),
                     Err(e) => errors.push(e),

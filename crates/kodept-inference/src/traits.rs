@@ -123,8 +123,7 @@ where
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output {
         self.iter()
-            .map(|it| it.substitute(subst))
-            .flatten()
+            .flat_map(|it| it.substitute(subst))
             .collect()
     }
 }
@@ -133,7 +132,7 @@ where
 
 impl FreeTypeVars for &TVar {
     fn free_types(self) -> HashSet<TVar> {
-        HashSet::from([self.clone()])
+        HashSet::from([*self])
     }
 }
 
@@ -141,7 +140,7 @@ impl FreeTypeVars for &MonomorphicType {
     fn free_types(self) -> HashSet<TVar> {
         match self {
             Primitive(_) | Constant(_) => HashSet::new(),
-            Var(x) => HashSet::from([x.clone()]),
+            Var(x) => HashSet::from([*x]),
             Fn(input, output) => &input.free_types() | &output.free_types(),
             Tuple(crate::r#type::Tuple(vec)) => vec.free_types(),
             Pointer(x) => x.free_types(),

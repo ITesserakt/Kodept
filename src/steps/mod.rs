@@ -48,7 +48,7 @@ where
 
     #[inline]
     fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet> {
-        let head = if let Some(_) = pack.node.ro(pack.token).try_as_ref() {
+        let head = if pack.node.ro(pack.token).try_as_ref().is_some() {
             let guard = VisitGuard::new(pack.side, RefMut::new(pack.node), pack.token);
             self.head.transform(guard, pack.ctx)
         } else {

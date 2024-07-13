@@ -23,7 +23,7 @@ impl Substitutions {
         let a: HashSet<_> = other
             .0
             .iter()
-            .map(|(key, ty)| (key.clone(), ty & &*self))
+            .map(|(key, ty)| (*key, ty & &*self))
             .collect();
         let b: HashSet<_> = take(&mut self.0)
             .into_iter()
@@ -56,8 +56,10 @@ impl Substitutions {
     pub(crate) fn into_inner(self) -> HashMap<TVar, MonomorphicType> {
         self.0
     }
-    
-    pub fn from_iter<M: Into<MonomorphicType>>(iter: impl IntoIterator<Item = (TVar, M)>) -> Self {
+}
+
+impl<M: Into<MonomorphicType>> FromIterator<(TVar, M)> for Substitutions {
+    fn from_iter<T: IntoIterator<Item=(TVar, M)>>(iter: T) -> Self {
         Self(HashMap::from_iter(iter.into_iter().map(|(a, b)| (a, b.into()))))
     }
 }

@@ -180,7 +180,7 @@ fn flatten(
 }
 
 impl RecursiveTypeCheckingErrors {
-    fn to_report_messages(self) -> Vec<ReportMessage> {
+    fn into_report_messages(self) -> Vec<ReportMessage> {
         self.errors.into_iter().map(ReportMessage::from).collect()
     }
 }
@@ -308,7 +308,7 @@ impl Macro for TypeChecker<'_> {
             }
             Ok(None) => context.add_report(fn_location.clone(), CannotInfer),
             Err(e) => e
-                .to_report_messages()
+                .into_report_messages()
                 .into_iter()
                 .for_each(|it| context.add_report(fn_location.clone(), it)),
         }
