@@ -897,6 +897,7 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "derive_more",
+ "extend",
  "kodept-ast",
  "kodept-core",
  "tracing",

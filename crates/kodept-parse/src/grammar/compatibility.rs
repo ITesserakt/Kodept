@@ -4,6 +4,7 @@ use crate::token_stream::TokenStream;
 use derive_more::Display;
 use kodept_core::code_point::CodePoint;
 use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
+use peg::str::LineCol;
 use tracing::error;
 #[cfg(not(feature = "trace"))]
 use crate::tokenizer::Tokenizer as Tokenizer;
@@ -22,6 +23,17 @@ pub struct Position {
 impl From<Position> for CodePoint {
     fn from(value: Position) -> Self {
         CodePoint::new(value.length, value.offset)
+    }
+}
+
+impl From<LineCol> for Position {
+    fn from(value: LineCol) -> Self {
+        Position {
+            line: value.line,
+            col: value.column,
+            length: 1,
+            offset: value.offset,
+        }
     }
 }
 

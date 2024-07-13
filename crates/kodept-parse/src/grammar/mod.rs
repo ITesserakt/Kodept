@@ -5,7 +5,7 @@ mod pest;
 pub(crate) mod peg;
 
 #[cfg(feature = "peg")]
-mod compatibility;
+pub(crate) mod compatibility;
 #[cfg(feature = "peg")]
 pub(crate) mod parser;
 

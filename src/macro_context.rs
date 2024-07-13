@@ -3,20 +3,19 @@ use std::rc::{Rc, Weak};
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{Error, Files};
-use codespan_reporting::term::termcolor::WriteColor;
 use replace_with::replace_with_or_abort;
-use thiserror::Error;
 
 use kodept_ast::graph::{AnyNode, NodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::{RLTAccessor, RLTFamily};
 use kodept_ast::traits::{Accessor, Identifiable, Linker};
-use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_core::ConvertibleToRef;
+use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_macros::error::report::{Report, ReportMessage};
 use kodept_macros::error::report_collector::ReportCollector;
+use kodept_macros::error::traits::Reportable;
 use kodept_macros::traits::{FileContextual, MutableContext, Reporter};
 
-use crate::codespan_settings::{CodespanSettings, ReportExt};
+use crate::codespan_settings::CodespanSettings;
 use crate::read_code_source::ReadCodeSource;
 
 #[derive(Debug)]
@@ -25,10 +24,6 @@ pub struct DefaultContext {
     rlt_accessor: RLTAccessor,
     tree: Rc<SyntaxTree>,
 }
-
-#[derive(Debug, Error)]
-#[error("Compilation failed due to produced errors")]
-pub struct ErrorReported;
 
 impl DefaultContext {
     pub fn new(
@@ -105,9 +100,9 @@ impl Reporter for DefaultContext {
 }
 
 impl DefaultContext {
-    pub fn emit_diagnostics<W: WriteColor>(
+    pub fn emit_diagnostics(
         self,
-        settings: &mut CodespanSettings<W>,
+        settings: &mut CodespanSettings,
         source: &ReadCodeSource,
     ) {
         for report in self.report_collector.value.into_collected_reports() {

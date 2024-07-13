@@ -9,7 +9,7 @@ use crate::cli::configs::{CompilationConfig, DiagnosticConfig, LoadingConfig};
 const ABOUT_MESSAGE: &str =
     "Typechecks or interprets passed INPUT using Kodept programming language";
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(version, author, about = ABOUT_MESSAGE)]
 #[command(propagate_version = true)]
 pub struct Kodept {
@@ -40,7 +40,7 @@ pub struct Kodept {
     #[command(flatten)]
     pub compilation_config: CompilationConfig,
     #[command(subcommand)]
-    pub subcommands: Option<Commands>,
+    pub subcommands: Commands,
 }
 
 impl Kodept {

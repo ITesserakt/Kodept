@@ -251,39 +251,7 @@ impl InspectParser {
         Ok(())
     }
 
-    fn launch_pegviz<P: AsRef<Path>>(&self, input_file_path: P) -> Result<(), WideError> {
-        use std::process::{Command, Output};
-        use tracing::{info, warn, debug, error};
-
-        if !self.use_pegviz {
-            return Ok(());
-        }
-
-        let output_path = input_file_path.as_ref().with_extension("html");
-        let input_file = File::open(input_file_path)?;
-        let Output { status, stdout, ..} = Command::new("pegviz")
-            .args(["--output".into(), output_path])
-            .stdin(input_file)
-            .output()?;
-        let stdout = String::from_utf8(stdout)?;
-        stdout.lines().for_each(|line| {
-            match line.split_once(":") {
-                None if line.starts_with("= pegviz generated to") => info!("{}", line.strip_prefix("= ").unwrap()),
-                None => debug!("{line}"),
-                Some((a, _)) if a.contains("error") => error!("{line}"),
-                Some(_) => debug!("{line}")
-            }
-        });
-
-        match status.code() {
-            None => warn!("`pegviz` exited by signal"),
-            Some(0) => {},
-            Some(code) => Err(anyhow::anyhow!(
-                "`pegviz` exited with non-zero exit code: {code}",
-            ))?,
-        }
-        Ok(())
-    }
+    
 
     fn exec_for_source(&self, source: ReadCodeSource, output_path: &Path) -> Result<(), WideError> {
         let source_name = match source.path() {

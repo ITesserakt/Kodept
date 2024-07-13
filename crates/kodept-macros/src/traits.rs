@@ -1,5 +1,6 @@
 use std::convert::Infallible;
-
+use codespan_reporting::files::{Error, Files};
+use codespan_reporting::term::termcolor::WriteColor;
 use derive_more::{From, Unwrap};
 
 use kodept_ast::graph::SyntaxTree;
@@ -8,6 +9,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
 
 use crate::error::report::{Report, ReportMessage};
+use crate::error::traits::{CodespanSettings, Reportable};
 
 #[derive(Debug, From, Unwrap)]
 pub enum UnrecoverableError {
@@ -21,6 +23,14 @@ impl UnrecoverableError {
             UnrecoverableError::Report(x) => x,
             UnrecoverableError::Infallible(_) => unreachable!(),
         }
+    }
+}
+
+impl Reportable for UnrecoverableError {
+    type FileId = ();
+
+    fn emit<'f, W: WriteColor, F: Files<'f, FileId=Self::FileId>>(self, settings: &mut CodespanSettings<W>, source: &'f F) -> Result<(), Error> {
+        self.into_report().emit(settings, source)
     }
 }
 

@@ -6,8 +6,7 @@ use tracing::{debug, error};
 use cli::common::Kodept;
 use kodept::loader::Loader;
 use kodept_core::code_source::CodeSource;
-
-use crate::cli::commands::{Commands, Execute, Graph};
+use crate::cli::traits::Command;
 
 mod cli;
 
@@ -36,8 +35,8 @@ fn main() -> Result<(), WideError> {
         .with_max_level(cli_arguments.level())
         .init();
 
-    let settings = cli_arguments.diagnostic_config.into();
-    let loader: Loader = cli_arguments.loading_config.try_into()?;
+    let settings = cli_arguments.clone().diagnostic_config.into();
+    let loader: Loader = cli_arguments.clone().loading_config.try_into()?;
     let sources = sources_iter(loader)
         .inspect(|source| debug!("Reading {}", source.path()))
         .filter_map(|res| {
@@ -51,10 +50,7 @@ fn main() -> Result<(), WideError> {
             }
         });
 
-    match cli_arguments.subcommands {
-        None => Execute.exec(sources, settings, cli_arguments.compilation_config)?,
-        Some(Commands::Graph(_)) => Graph::exec(sources, settings, cli_arguments.output)?,
-        Some(Commands::InspectParser(cmd)) => cmd.exec(sources, cli_arguments.output)?,
-    };
+    let args = cli_arguments.clone();
+    cli_arguments.subcommands.exec(sources, settings, args)?;
     Ok(())
 }
