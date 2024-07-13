@@ -1,6 +1,6 @@
 [package]
 name = "kodept-ast"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"

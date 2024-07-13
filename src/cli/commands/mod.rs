@@ -70,7 +70,7 @@ fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
     let token_stream = TokenStream::new(&tokens);
     let result = parse_from_top(token_stream).map_err(|es| {
         es.into_iter()
-            .map(|it| to_diagnostic(it))
+            .map(to_diagnostic)
             .collect::<Vec<_>>()
     })?;
     Ok(result)
@@ -86,7 +86,7 @@ fn get_output_file(source: &ReadCodeSource, output_path: &Path) -> std::io::Resu
         CodePath::ToMemory(name) => PathBuf::from(name).with_extension("kd.dot").into(),
     };
     ensure_path_exists(output_path)?;
-    Ok(File::create(output_path.join(filename))?)
+    File::create(output_path.join(filename))
 }
 
 fn ensure_path_exists(path: &Path) -> std::io::Result<()> {

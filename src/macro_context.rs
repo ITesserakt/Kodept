@@ -198,7 +198,10 @@ impl MutableContext for DefaultContext {
     ) -> Result<(), ReportMessage> {
         match Rc::get_mut(&mut self.tree) {
             None => Err(SharedASTError.into()),
-            Some(rc) => Ok(replace_with_or_abort(rc, f)),
+            Some(rc) => {
+                replace_with_or_abort(rc, f);
+                Ok(())
+            },
         }
     }
 }

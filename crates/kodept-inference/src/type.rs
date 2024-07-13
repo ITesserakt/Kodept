@@ -198,7 +198,7 @@ impl BitAnd<&Substitutions> for &PolymorphicType {
     type Output = PolymorphicType;
 
     fn bitand(self, rhs: &Substitutions) -> Self::Output {
-        self.substitute(&rhs)
+        self.substitute(rhs)
     }
 }
 
@@ -230,7 +230,7 @@ impl BitAnd<&Substitutions> for &MonomorphicType {
     type Output = MonomorphicType;
 
     fn bitand(self, rhs: &Substitutions) -> Self::Output {
-        self.substitute(&rhs)
+        self.substitute(rhs)
     }
 }
 

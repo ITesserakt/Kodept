@@ -202,9 +202,9 @@ fn build_binary(
     node: &rlt::Operation,
     builder: &mut SyntaxTreeBuilder,
     context: &mut (impl Linker + CodeHolder + Sized),
-    left: &Box<rlt::Operation>,
+    left: &rlt::Operation,
     operation: &BinaryOperationSymbol,
-    right: &Box<rlt::Operation>,
+    right: &rlt::Operation,
 ) -> NodeId<Operation> {
     let binding = context.get_chunk_located(operation);
     let op_text = binding.as_ref();
@@ -239,8 +239,8 @@ fn build_binary(
             (BinaryOperationSymbol::Logic(_), x) => panic!("Unknown logic operator found: {x}"),
             (BinaryOperationSymbol::Assign(_), x) => panic!("Unknown assign operator found: {x}")
         }))
-        .with_children_from::<LEFT, _>([left.as_ref()], context)
-        .with_children_from::<RIGHT, _>([right.as_ref()], context)
+        .with_children_from::<LEFT, _>([left], context)
+        .with_children_from::<RIGHT, _>([right], context)
         .with_rlt(context, node)
         .id()
         .cast()
@@ -251,7 +251,7 @@ fn build_unary(
     builder: &mut SyntaxTreeBuilder,
     context: &mut (impl Linker + CodeHolder + Sized),
     operator: &UnaryOperationSymbol,
-    expr: &Box<rlt::Operation>,
+    expr: &rlt::Operation,
 ) -> NodeId<Operation> {
     builder
         .add_node(UnExpr::uninit(match operator {
@@ -260,7 +260,7 @@ fn build_unary(
             UnaryOperationSymbol::Inv(_) => Inv,
             UnaryOperationSymbol::Plus(_) => Plus,
         }))
-        .with_children_from([expr.as_ref()], context)
+        .with_children_from([expr], context)
         .with_rlt(context, node)
         .id()
         .cast()
@@ -270,13 +270,13 @@ fn build_access(
     node: &rlt::Operation,
     builder: &mut SyntaxTreeBuilder,
     context: &mut (impl Linker + CodeHolder + Sized),
-    left: &Box<rlt::Operation>,
-    right: &Box<rlt::Operation>,
+    left: &rlt::Operation,
+    right: &rlt::Operation,
 ) -> NodeId<Operation> {
     builder
         .add_node(Acc::uninit())
-        .with_children_from::<LEFT, _>([left.as_ref()], context)
-        .with_children_from::<RIGHT, _>([right.as_ref()], context)
+        .with_children_from::<LEFT, _>([left], context)
+        .with_children_from::<RIGHT, _>([right], context)
         .with_rlt(context, node)
         .id()
         .cast()
