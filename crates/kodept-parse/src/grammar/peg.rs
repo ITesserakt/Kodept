@@ -1,3 +1,4 @@
+use std::iter::FusedIterator;
 use crate::lexer::*;
 use crate::token_match::TokenMatch;
 use kodept_core::code_point::CodePoint;
@@ -123,8 +124,7 @@ peg::parser! {grammar grammar() for str {
         "^"   { Operator::Bit(BitOperator::XorBit) }                       /
         "~"   { Operator::Bit(BitOperator::NotBit) }
 
-    // TODO: proper error handling
-    rule token() -> Token<'input> =
+    rule token_() -> Token<'input> =
         i:ignore()     { Token::Ignore(i) }     /
         i:keyword()    { Token::Keyword(i) }    /
         i:symbol()     { Token::Symbol(i) }     /
@@ -144,7 +144,7 @@ peg::parser! {grammar grammar() for str {
         }
 
     rule tokens_() -> Vec<TokenMatch<'input>> =
-        i:(start:position!() t:token() end:position!() { (start, t, end) })* ![_]
+        i:(start:position!() t:token_() end:position!() { (start, t, end) })* ![_]
     {
         i.into_iter().map(|(start, token, end)| {
             let length = end - start;
@@ -153,6 +153,7 @@ peg::parser! {grammar grammar() for str {
     }
 
     pub rule tokens() -> Vec<TokenMatch<'input>> = traced(<tokens_()>)
+    pub rule token() -> Token<'input> = traced(<token_()>)
 }}
 
 pub struct Tokenizer<'t, const TRACE: bool> {
@@ -202,5 +203,27 @@ impl<'t, const TRACE: bool> Iterator for Tokenizer<'t, TRACE> {
             self.pos += 1;
             Some(self.tokens[self.pos - 1])
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.tokens[self.pos..].len();
+        (len, Some(len))
+    }
+}
+
+impl<'t, const TRACE: bool> FusedIterator for Tokenizer<'t, TRACE> {}
+impl<'t, const TRACE: bool> ExactSizeIterator for Tokenizer<'t, TRACE> {}
+
+#[cfg(test)]
+mod tests {
+    use super::Tokenizer;
+
+    #[test]
+    fn test_iter_size() {
+        let input = "\n\n\n";
+        let mut tokenizer: Tokenizer<false> = Tokenizer::new(input);
+        assert_eq!((3, Some(3)), tokenizer.size_hint());
+        let _ = tokenizer.next();
+        assert_eq!(2, tokenizer.len());
     }
 }

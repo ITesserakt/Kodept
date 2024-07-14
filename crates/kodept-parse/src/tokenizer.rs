@@ -13,6 +13,7 @@ pub type SimpleTokenizer<'t> = simple_implementation::Tokenizer<'t>;
 #[cfg(feature = "nom")]
 mod simple_implementation {
     use std::convert::Infallible;
+    use std::iter::FusedIterator;
     use crate::lexer::{Token, token};
     use crate::token_match::TokenMatch;
     use kodept_core::code_point::CodePoint;
@@ -69,6 +70,8 @@ mod simple_implementation {
             Some(span)
         }
     }
+    
+    impl FusedIterator for Tokenizer<'_> {}
 }
 
 #[cfg(test)]
