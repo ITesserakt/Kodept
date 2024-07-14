@@ -55,12 +55,11 @@ fn to_diagnostic(error: ParseError<Token>) -> Diagnostic<()> {
     let exp_msg = error
         .expected
         .into_iter()
-        .map(|it| format!("`{it}`"))
         .join(" or ");
 
     Diagnostic::error()
         .with_code("SE001")
-        .with_message(format!("Expected {}, got `{}`", exp_msg, error.actual))
+        .with_message(format!("Expected {}, got \"{}\"", exp_msg, error.actual))
         .with_labels(vec![Label::primary((), error.location.in_code.as_range())])
 }
 

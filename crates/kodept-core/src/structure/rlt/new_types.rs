@@ -16,6 +16,14 @@ macro_rules! make_wrappers {
                 self.0.point
             }
         }
+        
+        impl $name {
+            #[inline]
+            pub fn from_located<L: $crate::structure::Located>(value: L) -> Self {
+                let span = $crate::structure::span::Span::new(value.location());
+                $name(span)
+            }
+        }
         )*
     };
 }

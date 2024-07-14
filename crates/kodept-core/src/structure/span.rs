@@ -5,6 +5,7 @@ use derive_more::Constructor;
 use crate::code_point::CodePoint;
 use crate::structure::Located;
 
+#[repr(transparent)]
 #[derive(Constructor, Debug, Clone, PartialEq, Copy)]
 pub struct Span {
     pub point: CodePoint,

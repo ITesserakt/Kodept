@@ -84,19 +84,15 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
     #[inline]
     fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element> {
         let slice = &self.slice[pos..];
-        match slice
-            .iter()
-            .enumerate()
-            .find(|(_, it)| !it.token.is_ignored())
-        {
+        match slice.first() {
             None => RuleResult::Failed,
-            Some((idx, token)) => RuleResult::Matched(pos + 1 + idx, *token),
+            Some(x) => RuleResult::Matched(pos + 1, *x)
         }
     }
 }
 
 impl<'input> ParseLiteral for TokenStream<'input> {
-    #[inline]
+    #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         let Ok(tokenizer) = Tokenizer::try_new(literal) else {
             error!("Cannot parse given literal: {literal}");
