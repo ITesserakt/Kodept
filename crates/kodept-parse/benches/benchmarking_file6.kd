@@ -1,0 +1,492 @@
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(A::a())
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}
+
+module A {
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+
+    struct B {
+        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
+            b(::A::A)
+            val a = 0
+            var b = ""
+            if a == 0 => b = "Hello"
+            elif a == 1 => b = "World"
+            elif a == 2 => b = "!"
+            else {
+                fun inner => ""
+                b = inner()
+            }
+        }
+    }
+}

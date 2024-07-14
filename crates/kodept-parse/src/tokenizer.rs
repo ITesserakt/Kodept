@@ -7,18 +7,19 @@ pub type Tokenizer<'t> = crate::grammar::KodeptParser<'t>;
 #[cfg(all(feature = "peg", feature = "trace"))]
 pub type TracedTokenizer<'t> = crate::grammar::peg::Tokenizer<'t, true>;
 
-#[cfg(feature = "nom")]
-pub type SimpleTokenizer<'t> = simple_implementation::Tokenizer<'t>;
+pub type LazyTokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
-#[cfg(feature = "nom")]
 mod simple_implementation {
-    use std::convert::Infallible;
     use std::iter::FusedIterator;
-    use crate::lexer::{Token, token};
-    use crate::token_match::TokenMatch;
+
+    use tracing::error;
+
     use kodept_core::code_point::CodePoint;
     use kodept_core::structure::span::Span;
-    use tracing::error;
+
+    use crate::lexer::Token;
+    use crate::parse_token;
+    use crate::token_match::TokenMatch;
 
     pub struct Tokenizer<'t> {
         buffer: &'t str,
@@ -27,15 +28,12 @@ mod simple_implementation {
 
     impl<'t> Tokenizer<'t> {
         #[must_use]
+        #[inline]
         pub const fn new(reader: &'t str) -> Self {
             Self {
                 buffer: reader,
                 pos: 0,
             }
-        }
-        
-        pub const fn try_new(reader: &'t str) -> Result<Self, Infallible> {
-            Ok(Self::new(reader))
         }
 
         pub fn into_vec(self) -> Vec<TokenMatch<'t>> {
@@ -53,21 +51,18 @@ mod simple_implementation {
                 return None;
             }
 
-            let (rest, token) = token(&self.buffer[self.pos..]).unwrap_or_else(|e| {
+            let mut token_match = parse_token(&self.buffer[self.pos..], self.buffer).unwrap_or_else(|e| {
                 error!(
                     input = &self.buffer[self.pos..self.pos + 10],
                     "Cannot parse token: {e:#?}"
                 );
-                ("", Token::Unknown)
+                TokenMatch::new(Token::Unknown, Span::new(CodePoint::single_point(self.pos)))
             });
 
-            let matched_length = self.buffer.len() - rest.len() - self.pos;
-            let span: TokenMatch =
-                TokenMatch::new(token, Span::new(CodePoint::new(matched_length, self.pos)));
+            token_match.span.point.offset = self.pos;
+            self.pos += token_match.span.point.length;
 
-            self.pos += matched_length;
-
-            Some(span)
+            Some(token_match)
         }
     }
     

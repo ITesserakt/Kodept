@@ -117,7 +117,8 @@ pub mod default {
             .slice
             .iter()
             .next()
-            .map_or(Token::Unknown, |it| it.token)
+            .unwrap()
+            .token
     }
 
     trait ExpectedError {

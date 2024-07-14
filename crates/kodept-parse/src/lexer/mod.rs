@@ -9,26 +9,31 @@ mod grammar;
 #[cfg(feature = "nom")]
 pub(crate) use grammar::*;
 use crate::error::{ParseErrors};
+use crate::token_match::TokenMatch;
 
-pub fn parse_token(input: &str) -> Result<Token, ParseErrors<&str>> {
+#[inline]
+pub fn parse_token<'t>(input: &'t str, all_input: &'t str) -> Result<TokenMatch<'t>, ParseErrors<&'t str>> {
     cfg_if! {
         if #[cfg(all(feature = "peg", not(feature = "trace")))] {
             let token = match crate::grammar::peg::token(input) {
                 Ok(tok) => tok,
-                Err(e) => return Err((e, input).into()),
+                Err(e) => return Err((e, all_input).into()),
             };
             Ok(token)
         }
         else if #[cfg(feature = "nom")] {
+            use kodept_core::structure::span::Span;
+            use kodept_core::code_point::CodePoint;
             use nom::Err::{Error, Failure};
             use nom::Err::Incomplete;
             
-            let token = match token(input) {
-                Ok((_, tok)) => tok,
-                Err(Error(e) | Failure(e)) => return Err((e, input).into()),
-                Err(Incomplete(_)) => Token::Unknown
+            let (rest, token) = match token(input) {
+                Ok(tok) => tok,
+                Err(Error(e) | Failure(e)) => return Err((e, all_input).into()),
+                Err(Incomplete(_)) => ("", Token::Unknown)
             };
-            Ok(token)
+            let matched_length = input.len() - rest.len();
+            Ok(TokenMatch::new(token, Span::new(CodePoint::new(matched_length, 0))))
         } else {
             compile_error!("Either feature `peg` or `nom` must be enabled for this crate")
         }

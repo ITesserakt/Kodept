@@ -131,6 +131,12 @@ peg::parser! {grammar grammar() for str {
         i:identifier() { Token::Identifier(i) } /
         i:literal()    { Token::Literal(i) }    /
         i:operator()   { Token::Operator(i) }
+    
+    rule token_match() -> TokenMatch<'input> =
+        start:position!() t:token_() end:position!() { 
+            let length = end - start;
+            TokenMatch::new(t, Span::new(CodePoint::new(length, start)))
+        }
 
     rule traced<T>(e: rule<T>) -> T =
         &(input:$([_]*) {
@@ -143,20 +149,14 @@ peg::parser! {grammar grammar() for str {
             e.ok_or("")
         }
 
-    rule tokens_() -> Vec<TokenMatch<'input>> =
-        i:(start:position!() t:token_() end:position!() { (start, t, end) })* ![_]
-    {
-        i.into_iter().map(|(start, token, end)| {
-            let length = end - start;
-            TokenMatch::new(token, Span::new(CodePoint::new(length, start)))
-        }).collect()
-    }
+    rule tokens_() -> Vec<TokenMatch<'input>> = i:token_match()* ![_] { i }
 
     pub rule tokens() -> Vec<TokenMatch<'input>> = traced(<tokens_()>)
-    pub rule token() -> Token<'input> = traced(<token_()>)
+    #[no_eof]
+    pub rule token() -> TokenMatch<'input> = traced(<token_match()>)
 }}
 
-pub(crate) use grammar::token;
+pub use grammar::token;
 
 pub struct Tokenizer<'t, const TRACE: bool> {
     tokens: Vec<TokenMatch<'t>>,
