@@ -19,7 +19,7 @@ use crate::token_stream::TokenStream;
 peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// UTILITIES
     /// --------------------------------------------------------------------------------------------
-    #[cache]
+    // #[cache]
     rule _ = quiet! { [tok!(Ignore(_))]* }
 
     rule comma_separated0<T>(items: rule<T>) -> Vec<T> =
@@ -56,24 +56,24 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     rule tuple() -> rlt::Type =
         i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(i.into()) }
 
-    pub rule type_grammar() -> rlt::Type =
+    rule type_grammar() -> rlt::Type =
         i:type_ident() { rlt::Type::Reference(i) } /
         tuple()
 
     /// Parameters grammar
     /// --------------------------------------------------------------------------------------------
 
-    pub rule typed_parameter() -> rlt::TypedParameter =
+    rule typed_parameter() -> rlt::TypedParameter =
         i:ident() _ ":" _ t:type_grammar() {
             rlt::TypedParameter {  id: i.span.into(), parameter_type: t}
         }
 
-    pub rule untyped_parameter() -> rlt::UntypedParameter =
+    rule untyped_parameter() -> rlt::UntypedParameter =
         i:ident() _ (":" _ "_")? {
             rlt::UntypedParameter { id: i.span.into() }
         }
 
-    pub rule parameter() -> rlt::Parameter =
+    rule parameter() -> rlt::Parameter =
         t:typed_parameter() { rlt::Parameter::Typed(t) } /
         u:untyped_parameter() { rlt::Parameter::Untyped(u) }
 
@@ -83,7 +83,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     rule lit<T>(inner: rule<T>, name: &'static str) -> T =
         quiet!{ inner() } / expected!(name)
 
-    pub rule literal_grammar() -> rlt::Literal =
+    rule literal_grammar() -> rlt::Literal =
         i:lit(<[tok!(Literal(Binary(_)))]>,   "<binary literal>") { rlt::Literal::Binary(i.span) }   /
         i:lit(<[tok!(Literal(Octal(_)))]>,    "<octal literal>")  { rlt::Literal::Octal(i.span) }    /
         i:lit(<[tok!(Literal(Hex(_)))]>,      "<hex literal>")    { rlt::Literal::Hex(i.span) }      /
@@ -94,7 +94,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// Operators grammar
     /// --------------------------------------------------------------------------------------------
 
-    pub rule operator_grammar() -> rlt::Operation = precedence! {
+    rule operator_grammar() -> rlt::Operation = precedence! {
         a:@ _ op:$"=" _ b:(@) { rlt::Operation::Binary {
             left: Box::new(a),
             operation: BinaryOperationSymbol::Assign(Symbol::from_located(op)),
@@ -199,19 +199,19 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             right: Box::new(b)
         } }
         --
-        op:$"-" _ a:@ { rlt::Operation::TopUnary {
+        op:$"-" a:@ { rlt::Operation::TopUnary {
             operator: UnaryOperationSymbol::Neg(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
-        op:$"!" _ a:@ { rlt::Operation::TopUnary {
+        op:$"!" a:@ { rlt::Operation::TopUnary {
             operator: UnaryOperationSymbol::Not(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
-        op:$"~" _ a:@ { rlt::Operation::TopUnary {
+        op:$"~" a:@ { rlt::Operation::TopUnary {
             operator: UnaryOperationSymbol::Inv(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
-        op:$"+" _ a:@ { rlt::Operation::TopUnary {
+        op:$"+" a:@ { rlt::Operation::TopUnary {
             operator: UnaryOperationSymbol::Plus(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
@@ -223,10 +223,8 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         } }
         --
         i:application() { i }
-        i:atom()        { i }
     }
 
-    #[cache]
     rule atom() -> rlt::Operation =
         i:expression_grammar()                                             { rlt::Operation::Expression(i) } /
         i:paren_enclosed(<comma_separated0(<operator_grammar()>)>) {
@@ -263,7 +261,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
     }
 
-    pub rule expression_grammar() -> rlt::Expression =
+    rule expression_grammar() -> rlt::Expression =
         lambda()                                                   /
         i:term_grammar()      { rlt::Expression::Term(i) }         /
         i:literal_grammar()   { rlt::Expression::Literal(i) }      /
@@ -344,7 +342,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         inner: i.1
     } }
 
-    pub rule term_grammar() -> rlt::Term =
+    rule term_grammar() -> rlt::Term =
         i:contextual() { rlt::Term::Contextual(i) } /
         i:ref()        { rlt::Term::Reference(i) }
 
@@ -379,7 +377,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             }
         }
 
-    pub rule code_flow_grammar() -> rlt::IfExpr = if()
+    rule code_flow_grammar() -> rlt::IfExpr = if()
 
     /// Block level grammar
     /// --------------------------------------------------------------------------------------------
@@ -402,7 +400,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             expression: i
         } }
 
-    pub rule body() -> rlt::Body =
+    rule body() -> rlt::Body =
         i:block() { rlt::Body::Block(i) } /
         simple()
 
@@ -425,7 +423,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             equals: Symbol::from_located(e)
         } }
 
-    pub rule block_level_grammar() -> rlt::BlockLevelNode =
+    rule block_level_grammar() -> rlt::BlockLevelNode =
         i:block()            { rlt::BlockLevelNode::Block(i) }     /
         i:init_var()         { rlt::BlockLevelNode::InitVar(i) }   /
         i:bodied()           { rlt::BlockLevelNode::Function(i) }  /
@@ -472,7 +470,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             }
         }
 
-    pub rule top_level_grammar() -> rlt::TopLevelNode =
+    rule top_level_grammar() -> rlt::TopLevelNode =
         i:enum_statement()   { rlt::TopLevelNode::Enum(i) }           /
         i:struct_statement() { rlt::TopLevelNode::Struct(i) }         /
         i:bodied()           { rlt::TopLevelNode::BodiedFunction(i) }

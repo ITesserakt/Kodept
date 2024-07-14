@@ -1,15 +1,16 @@
+use derive_more::Display;
+use EitherOrBoth::{Both, Left, Right};
+use itertools::{EitherOrBoth, Itertools};
+use peg::str::LineCol;
+use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
+use tracing::error;
+
+use kodept_core::code_point::CodePoint;
+
 use crate::lexer::{Ignore::*, Token::Ignore};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
-use derive_more::Display;
-use kodept_core::code_point::CodePoint;
-use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
-use peg::str::LineCol;
-use tracing::error;
-#[cfg(not(feature = "trace"))]
-use crate::tokenizer::Tokenizer as Tokenizer;
-#[cfg(feature = "trace")]
-use crate::tokenizer::SimpleTokenizer as Tokenizer;
+use crate::tokenizer::LazyTokenizer;
 
 #[derive(Display, Copy, Clone, Debug)]
 #[display(fmt = "{line}:{col}")]
@@ -54,8 +55,8 @@ impl<'t> Parse for TokenStream<'t> {
     fn position_repr(&self, pos: usize) -> Self::PositionRepr {
         let (before, point) = match self.slice.split_at(pos) {
             (a, [b, ..]) => (a, b.span.point),
-            (a@[.., last], []) => (a, last.span.point),
-            ([], []) => panic!("Cannot slice empty stream")
+            (a @ [.., last], []) => (a, last.span.point),
+            ([], []) => panic!("Cannot slice empty stream"),
         };
         let line = before
             .iter()
@@ -67,7 +68,8 @@ impl<'t> Parse for TokenStream<'t> {
             .rev()
             .take_while(|it| !matches!(it.token, Ignore(Newline)))
             .map(|it| it.span.point.length)
-            .sum::<usize>() + 1;
+            .sum::<usize>()
+            + 1;
 
         Position {
             line,
@@ -86,7 +88,7 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
         let slice = &self.slice[pos..];
         match slice.first() {
             None => RuleResult::Failed,
-            Some(x) => RuleResult::Matched(pos + 1, *x)
+            Some(x) => RuleResult::Matched(pos + 1, *x),
         }
     }
 }
@@ -94,26 +96,18 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
 impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let Ok(tokenizer) = Tokenizer::try_new(literal) else {
-            error!("Cannot parse given literal: {literal}");
-            return RuleResult::Failed;
-        };
-        let tokens = tokenizer.into_vec();
-        let l = tokens.len();
+        let tokenizer = LazyTokenizer::new(literal);
 
-        let Some(slice) = self.slice.get(pos..pos + l) else {
-            return RuleResult::Failed;
-        };
-
-        if TokenStream::new(slice)
-            .token_iter()
-            .zip(TokenStream::new(&tokens).token_iter())
-            .all(|(a, b)| a == b)
-        {
-            RuleResult::Matched(pos + l, ())
-        } else {
-            RuleResult::Failed
+        let mut length = 0;
+        for pair in self.slice[pos..].iter().zip_longest(tokenizer) {
+            match pair {
+                Both(a, b) if a.token != b.token => return RuleResult::Failed,
+                Both(_, _) => length += 1,
+                Right(_) => return RuleResult::Failed,
+                Left(_) => break,
+            }
         }
+        RuleResult::Matched(pos + length, ())
     }
 }
 

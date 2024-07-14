@@ -149,7 +149,7 @@ impl Display for Token<'_> {
                 Ignore::Newline => write!(f, "<newline>"),
                 Ignore::Whitespace => write!(f, " "),
             },
-            Token::Unknown => write!(f, "<unknown>"),
+            Token::Unknown => write!(f, "?"),
             _ => write!(f, "{self:?}"),
         }
     }

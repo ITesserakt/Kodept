@@ -120,9 +120,11 @@ impl InspectParser {
         use InspectError::TokenizationError;
 
         let file = File::create(file_output_path.with_extension("tok.peg"))?;
-        let _gag = gag::Redirect::stdout(file)?;
-        TracedTokenizer::try_new(source.contents())
-            .map_err(|it| TokenizationError((it, source.contents()).into()))?;
+        {
+            let _gag = gag::Redirect::stdout(file)?;
+            TracedTokenizer::try_new(source.contents())
+                .map_err(|it| TokenizationError((it, source.contents()).into()))?;
+        }
 
         self.launch_pegviz(file_output_path.with_extension("tok.peg"))?;
         Ok(())
@@ -145,8 +147,10 @@ impl InspectParser {
         let tokens = TokenStream::new(&tokens);
 
         let file = File::create(file_output_path.with_extension("par.peg"))?;
-        let _gag = gag::Redirect::stdout(file)?;
-        let _ = parse_from_top(tokens);
+        {
+            let _gag = gag::Redirect::stdout(file)?;
+            let _ = parse_from_top(tokens);
+        }
 
         self.launch_pegviz(file_output_path.with_extension("par.peg"))?;
         Ok(())

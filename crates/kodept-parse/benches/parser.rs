@@ -13,12 +13,13 @@ fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
     tokens
 }
 
-const FILENAMES: [(&str, &str); 5] = [
+const FILENAMES: [(&str, &str); 6] = [
     ("benches/benchmarking_file1.kd", "large"),
     ("benches/benchmarking_file2.kd", "simple1"),
     ("benches/benchmarking_file3.kd", "simple2"),
     ("benches/benchmarking_file4.kd", "medium"),
     ("benches/benchmarking_file5.kd", "half-large"),
+    ("benches/benchmarking_file6.kd", "well-fed"),
 ];
 
 fn bench_impls(c: &mut Criterion) {
@@ -27,7 +28,7 @@ fn bench_impls(c: &mut Criterion) {
         let contents = std::fs::read_to_string(name).unwrap();
         let tokens = get_tokens_from_contents(&contents);
         let tokens = TokenStream::new(&tokens);
-        group.throughput(Throughput::Elements(tokens.len() as u64));
+        group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
         group.bench_with_input(BenchmarkId::new("default", description), &tokens, |b, i| {
             b.iter(|| {
                 let res: Result<_, ParseError> = final_parser(grammar)(*i);
