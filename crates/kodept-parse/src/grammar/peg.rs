@@ -156,6 +156,8 @@ peg::parser! {grammar grammar() for str {
     pub rule token() -> Token<'input> = traced(<token_()>)
 }}
 
+pub(crate) use grammar::token;
+
 pub struct Tokenizer<'t, const TRACE: bool> {
     tokens: Vec<TokenMatch<'t>>,
     pos: usize,

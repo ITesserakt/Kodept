@@ -23,6 +23,7 @@ trace = ["peg/trace", "dep:gag", "nom"]
 nom = ["dep:nom", "dep:nom-supreme"]
 
 [dependencies]
+cfg-if = "1.0.0"
 derive_more.workspace = true
 extend.workspace = true
 itertools.workspace = true

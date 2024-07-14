@@ -12,13 +12,14 @@ macro_rules! make_wrappers {
         pub struct $name(pub Span);
 
         impl $crate::structure::Located for $name {
+            #[inline(always)]
             fn location(&self) -> CodePoint {
                 self.0.point
             }
         }
         
         impl $name {
-            #[inline]
+            #[inline(always)]
             pub fn from_located<L: $crate::structure::Located>(value: L) -> Self {
                 let span = $crate::structure::span::Span::new(value.location());
                 $name(span)
