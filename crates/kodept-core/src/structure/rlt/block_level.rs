@@ -29,12 +29,12 @@ pub enum BlockLevelNode {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Variable {
     Immutable {
-        keyword: Symbol,
+        keyword: Keyword,
         id: Identifier,
         assigned_type: Option<(Symbol, Type)>,
     },
     Mutable {
-        keyword: Symbol,
+        keyword: Keyword,
         id: Identifier,
         assigned_type: Option<(Symbol, Type)>,
     },

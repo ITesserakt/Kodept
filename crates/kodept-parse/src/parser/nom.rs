@@ -140,7 +140,7 @@ where
 #[inline]
 pub fn paren_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
-) -> impl Parser<TokenStream<'t>, VerboseEnclosed<'t, T>, ParseError<'t>> {
+) -> impl Parser<TokenStream<'t>, VerboseEnclosed<T>, ParseError<'t>> {
     use crate::lexer::Symbol::*;
 
     tuple((
@@ -154,7 +154,7 @@ pub fn paren_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
 #[inline]
 pub fn brace_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
-) -> impl Parser<TokenStream<'t>, VerboseEnclosed<'t, T>, ParseError<'t>> {
+) -> impl Parser<TokenStream<'t>, VerboseEnclosed<T>, ParseError<'t>> {
     use crate::lexer::Symbol::*;
 
     tuple((

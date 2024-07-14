@@ -1,3 +1,4 @@
+use kodept_core::code_point::CodePoint;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
 
@@ -6,9 +7,7 @@ use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
 #[cfg(feature = "nom")]
 use nom_supreme::final_parser::RecreateContext;
 
-#[cfg(feature = "nom")]
-use kodept_core::code_point::CodePoint;
-
+use kodept_core::structure::Located;
 use crate::lexer::traits::ToRepresentation;
 use crate::lexer::{Identifier, Ignore, Literal, Token};
 use crate::token_match::TokenMatch;
@@ -230,5 +229,16 @@ impl Display for TokenStream<'_> {
             )
         }
         write!(f, "{}", output)
+    }
+}
+
+impl Located for TokenStream<'_> {
+    fn location(&self) -> CodePoint {
+        let len = self.slice.iter().map(|it| it.span.point.length).sum();
+        
+        match self.slice { 
+            [x, ..] => CodePoint::new(len, x.span.point.offset),
+            [] => CodePoint::new(0, 0)
+        }
     }
 }
