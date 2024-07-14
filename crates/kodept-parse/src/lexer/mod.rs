@@ -1,3 +1,4 @@
+use cfg_if::cfg_if;
 pub use enums::*;
 
 pub mod enums;
@@ -6,9 +7,33 @@ pub mod traits;
 mod grammar;
 
 #[cfg(feature = "nom")]
-pub(crate) use grammar::token;
-#[cfg(all(feature = "nom", test))]
 pub(crate) use grammar::*;
+use crate::error::{ParseErrors};
+
+pub fn parse_token(input: &str) -> Result<Token, ParseErrors<&str>> {
+    cfg_if! {
+        if #[cfg(all(feature = "peg", not(feature = "trace")))] {
+            let token = match crate::grammar::peg::token(input) {
+                Ok(tok) => tok,
+                Err(e) => return Err((e, input).into()),
+            };
+            Ok(token)
+        }
+        else if #[cfg(feature = "nom")] {
+            use nom::Err::{Error, Failure};
+            use nom::Err::Incomplete;
+            
+            let token = match token(input) {
+                Ok((_, tok)) => tok,
+                Err(Error(e) | Failure(e)) => return Err((e, input).into()),
+                Err(Incomplete(_)) => Token::Unknown
+            };
+            Ok(token)
+        } else {
+            compile_error!("Either feature `peg` or `nom` must be enabled for this crate")
+        }
+    }
+}
 
 #[cfg(test)]
 #[cfg(feature = "nom")]

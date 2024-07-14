@@ -907,6 +907,7 @@ dependencies = [
 name = "kodept-parse"
 version = "0.2.0"
 dependencies = [
+ "cfg-if",
  "criterion",
  "derive_more",
  "enum-iterator",
