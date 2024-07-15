@@ -83,12 +83,16 @@ impl<'t> Parse for TokenStream<'t> {
 impl<'input> ParseElem<'input> for TokenStream<'input> {
     type Element = TokenMatch<'input>;
 
-    #[inline]
+    #[inline(always)]
     fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element> {
         let slice = &self.slice[pos..];
-        match slice.first() {
+        match slice
+            .iter()
+            .enumerate()
+            .find(|(_, it)| !it.token.is_ignored())
+        {
             None => RuleResult::Failed,
-            Some(x) => RuleResult::Matched(pos + 1, *x),
+            Some((idx, token)) => RuleResult::Matched(pos + 1 + idx, *token),
         }
     }
 }
@@ -114,6 +118,7 @@ impl<'input> ParseLiteral for TokenStream<'input> {
 impl<'input> ParseSlice<'input> for TokenStream<'input> {
     type Slice = TokenStream<'input>;
 
+    #[inline(always)]
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice {
         TokenStream::new(&self.slice[p1..p2])
     }
