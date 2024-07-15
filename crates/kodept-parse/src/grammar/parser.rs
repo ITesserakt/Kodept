@@ -2,15 +2,21 @@ pub use grammar::kodept;
 use kodept_core::structure::*;
 use kodept_core::structure::rlt::new_types::BinaryOperationSymbol;
 use kodept_core::structure::rlt::new_types::UnaryOperationSymbol;
-use kodept_core::structure::rlt::new_types::Keyword;
-use kodept_core::structure::rlt::new_types::Symbol;
+// use kodept_core::structure::rlt::new_types::Keyword;
+// use kodept_core::structure::rlt::new_types::Symbol;
 
 use crate::grammar::macros::tok;
 use crate::lexer::{Identifier as I, Token};
 use crate::lexer::Literal::*;
 use crate::lexer::Token::*;
-use crate::lexer::Symbol::Semicolon;
+use crate::lexer::Symbol::*;
 use crate::lexer::Ignore::{Newline};
+use crate::lexer::ComparisonOperator::*;
+use crate::lexer::MathOperator::*;
+use crate::lexer::LogicOperator::*;
+use crate::lexer::BitOperator::*;
+use crate::lexer::Operator::*;
+use crate::lexer::Keyword::*;
 use crate::OptionTExt;
 use crate::parser::common::VerboseEnclosed;
 use crate::token_match::TokenMatch;
@@ -19,212 +25,202 @@ use crate::token_stream::TokenStream;
 peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// UTILITIES
     /// --------------------------------------------------------------------------------------------
-    // #[cache]
-    rule _ = quiet! { [tok!(Ignore(_))]* }
+    rule any_not_ignored_token() -> TokenMatch<'input> =
+        quiet!{ [tok!(Ignore(_))]* i:[_] { i } } / expected!("any visible symbol")
+    
+    rule any_token() -> TokenMatch<'input> =
+        quiet!{ i:[_] { i } } / expected!("any symbol")
+    
+    rule _ = [tok!(Ignore(_))]
 
     rule comma_separated0<T>(items: rule<T>) -> Vec<T> =
-        i:(items() ** (_ "," _)) _ ","? { i }
+        i:(items() ** [tok!(Symbol(Comma))]) [tok!(Symbol(Comma))]? { i }
 
     rule paren_enclosed<T>(inner: rule<T>) -> VerboseEnclosed<T> =
-        lp:$"(" _ i:inner() _ rp:$")" { VerboseEnclosed::from_located(lp, i, rp) }
+        lp:[tok!(Symbol(LParen))] i:inner() rp:[tok!(Symbol(RParen))] { VerboseEnclosed::from((lp, i, rp)) }
 
     rule brace_enclosed<T>(inner: rule<T>) -> VerboseEnclosed<T> =
-        lp:$"{" _ i:inner() _ rp:$"}" { VerboseEnclosed::from_located(lp, i, rp) }
+        lp:[tok!(Symbol(LBrace))] i:inner() rp:[tok!(Symbol(RBrace))] { VerboseEnclosed::from((lp, i, rp)) }
 
-    #[cache]
-    rule separation() = 
-        (quiet!{ [tok!(Ignore(Newline))]+ } / expected!("<newline>")) _ /
-        (quiet!{ [tok!(Token::Symbol(Semicolon))] } / expected!(";")) _ 
-    
     rule separated<T>(inner: rule<T>) -> Vec<T> =
-        inner() ** separation()
-
-    rule ident() -> TokenMatch<'input> =
-        quiet!{ [tok!(Identifier(I::Identifier(_)))] } / expected!("<ident>")
-
-    rule type_ident() -> rlt::new_types::TypeName =
-        i:(quiet!{ [tok!(Identifier(I::Type(_)))] } / expected!("<Ident>")) {
-            rlt::new_types::TypeName::from(i.span)
-        }
+        inner() ** (("\n" / "\t" / ";" / "\r\n")+)
 
     /// Type grammar
     /// --------------------------------------------------------------------------------------------
 
-    rule return_type() -> (Symbol, rlt::Type) =
-        c:$":" _ ty:type_grammar() { (Symbol::from_located(c), ty) }
+    rule reference() -> rlt::new_types::TypeName =
+        i:[tok!(Identifier(I::Type(_)))] { rlt::new_types::TypeName::from(i.span) }
 
     rule tuple() -> rlt::Type =
         i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(i.into()) }
 
-    rule type_grammar() -> rlt::Type =
-        i:type_ident() { rlt::Type::Reference(i) } /
+    pub rule type_grammar() -> rlt::Type =
+        i:reference() { rlt::Type::Reference(i) } /
         tuple()
 
     /// Parameters grammar
     /// --------------------------------------------------------------------------------------------
 
-    rule typed_parameter() -> rlt::TypedParameter =
-        i:ident() _ ":" _ t:type_grammar() {
+    pub rule typed_parameter() -> rlt::TypedParameter =
+        i:[tok!(Identifier(I::Identifier(_)))] [tok!(Symbol(Colon))] t:type_grammar() {
             rlt::TypedParameter {  id: i.span.into(), parameter_type: t}
         }
 
-    rule untyped_parameter() -> rlt::UntypedParameter =
-        i:ident() _ (":" _ "_")? {
+    pub rule untyped_parameter() -> rlt::UntypedParameter =
+        i:[tok!(Identifier(I::Identifier(_)))] ([tok!(Symbol(Colon))] [tok!(Symbol(TypeGap))])? {
             rlt::UntypedParameter { id: i.span.into() }
         }
 
-    rule parameter() -> rlt::Parameter =
+    pub rule parameter() -> rlt::Parameter =
         t:typed_parameter() { rlt::Parameter::Typed(t) } /
         u:untyped_parameter() { rlt::Parameter::Untyped(u) }
 
     /// Literals grammar
     /// --------------------------------------------------------------------------------------------
 
-    rule lit<T>(inner: rule<T>, name: &'static str) -> T =
-        quiet!{ inner() } / expected!(name)
-
-    rule literal_grammar() -> rlt::Literal =
-        i:lit(<[tok!(Literal(Binary(_)))]>,   "<binary literal>") { rlt::Literal::Binary(i.span) }   /
-        i:lit(<[tok!(Literal(Octal(_)))]>,    "<octal literal>")  { rlt::Literal::Octal(i.span) }    /
-        i:lit(<[tok!(Literal(Hex(_)))]>,      "<hex literal>")    { rlt::Literal::Hex(i.span) }      /
-        i:lit(<[tok!(Literal(Floating(_)))]>, "<number literal>") { rlt::Literal::Floating(i.span) } /
-        i:lit(<[tok!(Literal(Char(_)))]>,     "<char literal>")   { rlt::Literal::Char(i.span) }     /
-        i:lit(<[tok!(Literal(String(_)))]>,   "<string literal>") { rlt::Literal::String(i.span) }
+    pub rule literal_grammar() -> rlt::Literal =
+        i:[tok!(Literal(Binary(_)))] { rlt::Literal::Binary(i.span) } /
+        i:[tok!(Literal(Octal(_)))] { rlt::Literal::Octal(i.span) } /
+        i:[tok!(Literal(Hex(_)))] { rlt::Literal::Hex(i.span) } /
+        i:[tok!(Literal(Floating(_)))] { rlt::Literal::Floating(i.span) } /
+        i:[tok!(Literal(Char(_)))] { rlt::Literal::Char(i.span) } /
+        i:[tok!(Literal(String(_)))] { rlt::Literal::String(i.span) }
 
     /// Operators grammar
     /// --------------------------------------------------------------------------------------------
 
-    rule operator_grammar() -> rlt::Operation = precedence! {
-        a:@ _ op:$"=" _ b:(@) { rlt::Operation::Binary {
+    pub rule operator_grammar() -> rlt::Operation = precedence! {
+        a:@ op:[tok!(Operator(Comparison(Equals)))] b:(@) { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Assign(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Assign(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Logic(OrLogic)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Logic(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Logic(AndLogic)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Logic(op.span.into()),
             right: Box::new(b)
         } }
         --
-        a:(@) _ op:$"||" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Bit(OrBit)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Logic(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Bit(op.span.into()),
             right: Box::new(b)
         } }
-        a:(@) _ op:$"&&" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Bit(AndBit)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Logic(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Bit(op.span.into()),
             right: Box::new(b)
         } }
-        --
-        a:(@) _ op:$"|" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Bit(XorBit)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$"&" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$"^" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Bit(op.span.into()),
             right: Box::new(b)
         } }
         --
-        a:(@) _ op:$"<" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Comparison(Less)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Comparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Comparison(op.span.into()),
             right: Box::new(b)
         } }
-        a:(@) _ op:$">" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Comparison(Greater)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Comparison(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        --
-        a:(@) _ op:$"<=" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$"!=" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$"==" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$">=" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Comparison(op.span.into()),
             right: Box::new(b)
         } }
         --
-        a:(@) _ op:$"<=>" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Comparison(LessEquals)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::ComplexComparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::CompoundComparison(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Comparison(NotEquiv)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::CompoundComparison(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Comparison(Equiv)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::CompoundComparison(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Comparison(GreaterEquals)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::CompoundComparison(op.span.into()),
             right: Box::new(b)
         } }
         --
-        a:(@) _ op:$"+" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Comparison(Spaceship)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Add(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$"-" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::Add(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::ComplexComparison(op.span.into()),
             right: Box::new(b)
         } }
         --
-        a:(@) _ op:$"*" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Math(Plus)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Add(op.span.into()),
             right: Box::new(b)
         } }
-        a:(@) _ op:$"/" _ b:@ { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Math(Sub)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
-            right: Box::new(b)
-        } }
-        a:(@) _ op:$"%" _ b:@ { rlt::Operation::Binary {
-            left: Box::new(a),
-            operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Add(op.span.into()),
             right: Box::new(b)
         } }
         --
-        a:@ _ op:$"**" _ b:(@) { rlt::Operation::Binary {
+        a:(@) op:[tok!(Operator(Math(Times)))] b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Pow(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Mul(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Math(Div)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Mul(op.span.into()),
+            right: Box::new(b)
+        } }
+        a:(@) op:[tok!(Operator(Math(Mod)))] b:@ { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Mul(op.span.into()),
             right: Box::new(b)
         } }
         --
-        op:$"-" a:@ { rlt::Operation::TopUnary {
-            operator: UnaryOperationSymbol::Neg(Symbol::from_located(op)),
+        a:@ op:[tok!(Operator(Math(Pow)))] b:(@) { rlt::Operation::Binary {
+            left: Box::new(a),
+            operation: BinaryOperationSymbol::Pow(op.span.into()),
+            right: Box::new(b)
+        } }
+        --
+        op:[tok!(Operator(Math(Sub)))] a:@ { rlt::Operation::TopUnary {
+            operator: UnaryOperationSymbol::Neg(op.span.into()),
             expr: Box::new(a)
         } }
-        op:$"!" a:@ { rlt::Operation::TopUnary {
-            operator: UnaryOperationSymbol::Not(Symbol::from_located(op)),
+        op:[tok!(Operator(Logic(NotLogic)))] a:@ { rlt::Operation::TopUnary {
+            operator: UnaryOperationSymbol::Not(op.span.into()),
             expr: Box::new(a)
         } }
-        op:$"~" a:@ { rlt::Operation::TopUnary {
-            operator: UnaryOperationSymbol::Inv(Symbol::from_located(op)),
+        op:[tok!(Operator(Bit(NotBit)))] a:@ { rlt::Operation::TopUnary {
+            operator: UnaryOperationSymbol::Inv(op.span.into()),
             expr: Box::new(a)
         } }
-        op:$"+" a:@ { rlt::Operation::TopUnary {
-            operator: UnaryOperationSymbol::Plus(Symbol::from_located(op)),
+        op:[tok!(Operator(Math(Plus)))] a:@ { rlt::Operation::TopUnary {
+            operator: UnaryOperationSymbol::Plus(op.span.into()),
             expr: Box::new(a)
         } }
         --
-        a:(@) _ op:$"." _ b:@ { rlt::Operation::Access {
+        a:(@) op:[tok!(Operator(Dot))] b:@ { rlt::Operation::Access {
             left: Box::new(a),
-            dot: Symbol::from_located(op),
+            dot: op.span.into(),
             right: Box::new(b)
         } }
         --
         i:application() { i }
+        i:atom()        { i }
     }
 
+    #[cache]
     rule atom() -> rlt::Operation =
         i:expression_grammar()                                             { rlt::Operation::Expression(i) } /
         i:paren_enclosed(<comma_separated0(<operator_grammar()>)>) {
@@ -252,16 +248,16 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule lambda() -> rlt::Expression =
-        l:$"\\" _ ps:comma_separated0(<parameter()>) _ f:$"=>" _ expr:operator_grammar() {
+        l:[tok!(Keyword(Lambda))] ps:comma_separated0(<parameter()>) f:[tok!(Operator(Flow))] expr:operator_grammar() {
         rlt::Expression::Lambda {
-            keyword: Keyword::from_located(l),
+            keyword: l.span.into(),
             binds: ps.into_boxed_slice(),
-            flow: Symbol::from_located(f),
+            flow: f.span.into(),
             expr: Box::new(expr)
         }
     }
 
-    rule expression_grammar() -> rlt::Expression =
+    pub rule expression_grammar() -> rlt::Expression =
         lambda()                                                   /
         i:term_grammar()      { rlt::Expression::Term(i) }         /
         i:literal_grammar()   { rlt::Expression::Literal(i) }      /
@@ -275,19 +271,20 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// | Type | ::{X::}X | X::X{::X} |
     /// | Ref  | ::{X::}x | X::{X::}x |
 
-    rule type_ref() -> rlt::Reference = t:type_ident() { rlt::Reference::Type(t) }
+    rule type_ref() -> rlt::Reference =
+        t:[tok!(Identifier(I::Type(_)))] { rlt::Reference::Type(t.span.into()) }
 
     rule variable_ref() -> rlt::Reference =
-        t:ident() { rlt::Reference::Identifier(t.span.into()) }
+        t:[tok!(Identifier(I::Identifier(_)))] { rlt::Reference::Identifier(t.span.into()) }
 
     rule ref() -> rlt::Reference =
         variable_ref() /
         type_ref()
 
     rule global_type_ref() -> (rlt::Context, rlt::Reference) =
-        g:$"::" ctx:(type_ref() ++ "::") {
+        g:[tok!(Symbol(DoubleColon))] ctx:(type_ref() ++ "::") {
             let start = rlt::Context::Global {
-                colon: Symbol::from_located(g)
+                colon: g.span.into()
             };
             let mut ctx = ctx;
             let last = ctx.pop().unwrap();
@@ -299,9 +296,9 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
 
     rule global_ref() -> (rlt::Context, rlt::Reference) =
-        g:$"::" ctx:(type_ref() ++ (!("::" variable_ref()) "::")) "::" v:variable_ref() {
+        g:[tok!(Symbol(DoubleColon))] ctx:(type_ref() ++ (!("::" variable_ref()) "::")) "::" v:variable_ref() {
             let start = rlt::Context::Global {
-                colon: Symbol::from_located(g)
+                colon: g.span.into()
             };
             let context = ctx.into_iter().fold(start, |acc, next| rlt::Context::Inner {
                 parent: Box::new(acc),
@@ -342,7 +339,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         inner: i.1
     } }
 
-    rule term_grammar() -> rlt::Term =
+    pub rule term_grammar() -> rlt::Term =
         i:contextual() { rlt::Term::Contextual(i) } /
         i:ref()        { rlt::Term::Reference(i) }
 
@@ -350,26 +347,26 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule else() -> rlt::ElseExpr =
-        k:$"else" _ i:body() {
+        k:[tok!(Keyword(Else))] i:body() {
             rlt::ElseExpr {
-                keyword: Keyword::from_located(k),
+                keyword: k.span.into(),
                 body: i
             }
         }
 
     rule elif() -> rlt::ElifExpr =
-        k:$"elif" _ c:operator_grammar() _ i:body() {
+        k:[tok!(Keyword(Elif))] c:operator_grammar() i:body() {
             rlt::ElifExpr {
-                keyword: Keyword::from_located(k),
+                keyword: k.span.into(),
                 condition: c,
                 body: i
             }
         }
 
     rule if() -> rlt::IfExpr =
-        k:$"if" _ c:operator_grammar() _ i:body() _ el:(elif() ** _) _ es:else()? {
+        k:[tok!(Keyword(If))] c:operator_grammar() i:body() el:elif()* es:else()? {
             rlt::IfExpr {
-                keyword: Keyword::from_located(k),
+                keyword: k.span.into(),
                 condition: c,
                 body: i,
                 elif: el.into_boxed_slice(),
@@ -377,53 +374,60 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             }
         }
 
-    rule code_flow_grammar() -> rlt::IfExpr = if()
+    pub rule code_flow_grammar() -> rlt::IfExpr = if()
 
     /// Block level grammar
     /// --------------------------------------------------------------------------------------------
 
     rule block() -> rlt::ExpressionBlock =
-        lb:$"{" _ i:separated(<block_level_grammar()>) _ rb:$"}" {
+        lb:[tok!(Symbol(LBrace))] i:separated(<block_level_grammar()>) rb:[tok!(Symbol(RBrace))] {
             rlt::ExpressionBlock {
-                lbrace: Symbol::from_located(lb),
+                lbrace: lb.span.into(),
                 expression: i.into_boxed_slice(),
-                rbrace: Symbol::from_located(lb)
+                rbrace: rb.span.into()
             }
         }
 
     rule simple() -> rlt::Body =
-        f:$"=>" _ i:(
-            i:block()            { rlt::BlockLevelNode::Block(i) }     /
-            i:operator_grammar() { rlt::BlockLevelNode::Operation(i) }
-        ) { rlt::Body::Simplified {
-            flow: Symbol::from_located(f),
+        f:[tok!(Operator(Flow))] i:block_level_grammar() { rlt::Body::Simplified {
+            flow: f.span.into(),
             expression: i
         } }
 
-    rule body() -> rlt::Body =
+    pub rule body() -> rlt::Body =
         i:block() { rlt::Body::Block(i) } /
         simple()
 
     rule var_decl() -> rlt::Variable =
-        k:$"val" _ id:ident() _ ty:return_type()? { rlt::Variable::Immutable {
-            keyword: Keyword::from_located(k),
-            id: id.span.into(),
-            assigned_type: ty
-        } } /
-        k:$"var" _ id:ident() _ ty:return_type()? { rlt::Variable::Mutable {
-            keyword: Keyword::from_located(k),
-            id: id.span.into(),
-            assigned_type: ty
-        } }
+        k:[tok!(Keyword(Val))] id:[tok!(Identifier(I::Identifier(_)))] ty:(c:[tok!(Symbol(Colon))] t:type_grammar() {
+            (rlt::new_types::Symbol(c.span), t) }
+        )?
+        {
+            rlt::Variable::Immutable {
+                keyword: k.span.into(),
+                id: id.span.into(),
+                assigned_type: ty
+            }
+        } /
+        k:[tok!(Keyword(Var))] id:[tok!(Identifier(I::Identifier(_)))] ty:(c:[tok!(Symbol(Colon))] t:type_grammar() {
+            (rlt::new_types::Symbol(c.span), t) }
+        )?
+        {
+            rlt::Variable::Mutable {
+                keyword: k.span.into(),
+                id: id.span.into(),
+                assigned_type: ty
+            }
+        }
 
     rule init_var() -> rlt::InitializedVariable =
-        v:var_decl() _ e:$"=" _ o:operator_grammar() { rlt::InitializedVariable {
+        v:var_decl() e:[tok!(Operator(Comparison(Equals)))] o:operator_grammar() { rlt::InitializedVariable {
             variable: v,
             expression: o,
-            equals: Symbol::from_located(e)
+            equals: e.span.into()
         } }
 
-    rule block_level_grammar() -> rlt::BlockLevelNode =
+    pub rule block_level_grammar() -> rlt::BlockLevelNode =
         i:block()            { rlt::BlockLevelNode::Block(i) }     /
         i:init_var()         { rlt::BlockLevelNode::InitVar(i) }   /
         i:bodied()           { rlt::BlockLevelNode::Function(i) }  /
@@ -433,10 +437,13 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule bodied() -> rlt::BodiedFunction =
-        k:$"fun" _ id:ident() _ ps:paren_enclosed(<comma_separated0(<parameter()>)>)? _
-        ty:return_type()? _ b:body() {
+        k:[tok!(Keyword(Fun))]
+        id:[tok!(Identifier(I::Identifier(_)))]
+        ps:paren_enclosed(<comma_separated0(<parameter()>)>)?
+        ty:(c:[tok!(Symbol(Colon))] ty:type_grammar() { (rlt::new_types::Symbol(c.span), ty) })?
+        b:body() {
             rlt::BodiedFunction {
-                keyword: Keyword::from_located(k),
+                keyword: k.span.into(),
                 params: ps.map_into(),
                 id: id.span.into(),
                 return_type: ty,
@@ -448,29 +455,30 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule enum_statement() -> rlt::Enum =
-        k:$"enum" _ "struct" _ id:type_ident() _ i:(
-            ";"                                                  { None }    /
-            i:brace_enclosed(<comma_separated0(<type_ident()>)>) { Some(i) }
+        k:[tok!(Keyword(Enum))] [tok!(Keyword(Struct))] id:reference() i:(
+            [tok!(Symbol(Semicolon))] { None } /
+            i:brace_enclosed(<comma_separated0(<reference()>)>) { Some(i) }
         ) {
             rlt::Enum::Stack {
-                keyword: Keyword::from_located(k),
+                keyword: k.span.into(),
                 id,
                 contents: i.map_into()
             }
         }
 
     rule struct_statement() -> rlt::Struct =
-        k:$"struct" _ id:type_ident() _ ps:paren_enclosed(<comma_separated0(<typed_parameter()>)>)? _
+        k:[tok!(Keyword(Struct))] id:reference()
+        ps:paren_enclosed(<comma_separated0(<typed_parameter()>)>)?
         i:brace_enclosed(<separated(<bodied()>)>)? {
             rlt::Struct {
-                keyword: Keyword::from_located(k),
+                keyword: k.span.into(),
                 id,
                 parameters: ps.map_into(),
                 body: i.map_into()
             }
         }
 
-    rule top_level_grammar() -> rlt::TopLevelNode =
+    pub rule top_level_grammar() -> rlt::TopLevelNode =
         i:enum_statement()   { rlt::TopLevelNode::Enum(i) }           /
         i:struct_statement() { rlt::TopLevelNode::Struct(i) }         /
         i:bodied()           { rlt::TopLevelNode::BodiedFunction(i) }
@@ -479,22 +487,29 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule module() -> rlt::Module =
-        k:$"module" _ id:type_ident() _ lb:$"{" _ i:separated(<top_level_grammar()>) _ rb:$"}" {
+        k:[tok!(Keyword(Module))]
+        id:[tok!(Identifier(I::Type(_)))]
+        lb:[tok!(Symbol(LBrace))]
+        i:separated(<top_level_grammar()>)
+        rb:[tok!(Symbol(RBrace))] {
             rlt::Module::Ordinary {
-                keyword: Keyword::from_located(k),
-                id,
-                lbrace: Symbol::from_located(lb),
-                rbrace: Symbol::from_located(rb),
+                keyword: k.span.into(),
+                id: id.span.into(),
+                lbrace: lb.span.into(),
+                rbrace: rb.span.into(),
                 rest: i.into_boxed_slice()
             }
         }
 
     rule global_module() -> rlt::Module =
-        k:$"module" _ id:type_ident() _ f:$"=>" _ i:separated(<top_level_grammar()>) {
+        k:[tok!(Keyword(Module))]
+        id:[tok!(Identifier(I::Type(_)))]
+        f:[tok!(Operator(Flow))]
+        i:separated(<top_level_grammar()>) {
             rlt::Module::Global {
-                keyword: Keyword::from_located(k),
-                id,
-                flow: Symbol::from_located(f),
+                keyword: k.span.into(),
+                id: id.span.into(),
+                flow: f.span.into(),
                 rest: i.into_boxed_slice()
             }
         }
@@ -503,7 +518,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule file_grammar() -> rlt::File =
-        i:module() ++ _   { rlt::File::new(i.into_boxed_slice()) } /
+        i:module()+  { rlt::File::new(i.into_boxed_slice()) } /
         i:global_module() { rlt::File::new(Box::new([i])) }
 
     rule traced<T>(e: rule<T>) -> T =
@@ -518,5 +533,5 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
 
     pub rule kodept() -> rlt::RLT =
-        _ i:traced(<file_grammar()>) _ ![_] { rlt::RLT(i) }
+        i:traced(<file_grammar()>) ("\n" / "\r\n" / " ")* ![_] { rlt::RLT(i) }
 }}
