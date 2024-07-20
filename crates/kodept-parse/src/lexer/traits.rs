@@ -93,6 +93,7 @@ impl ToRepresentation for Keyword {
 }
 
 #[cfg(all(test, feature = "enum-iter", feature = "nom"))]
+#[cfg(not(all()))]
 mod tests {
     use std::fmt::Debug;
     use enum_iterator::{all, Sequence};

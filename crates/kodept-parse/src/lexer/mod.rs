@@ -1,47 +1,49 @@
+use std::borrow::Cow;
+
 use cfg_if::cfg_if;
+
 pub use enums::*;
 
-pub mod enums;
-pub mod traits;
-#[cfg(feature = "nom")]
-mod grammar;
-
-#[cfg(feature = "nom")]
-pub(crate) use grammar::*;
-use crate::error::{ParseErrors};
+use crate::error::ParseErrors;
 use crate::token_match::TokenMatch;
 
+pub mod enums;
+#[cfg(feature = "nom")]
+mod grammar;
+pub mod traits;
+
+#[cfg(feature = "nom")]
+pub use grammar::parse_token as nom_parse_token;
+
 #[inline]
-pub fn parse_token<'t>(input: &'t str, all_input: &'t str) -> Result<TokenMatch<'t>, ParseErrors<&'t str>> {
+pub fn parse_token<'t>(
+    input: &'t str,
+    all_input: &'t str,
+) -> Result<TokenMatch<'t>, ParseErrors<Cow<'t, str>>> {
     cfg_if! {
         if #[cfg(all(feature = "peg", not(feature = "trace")))] {
             let token = match crate::grammar::peg::token(input) {
                 Ok(tok) => tok,
-                Err(e) => return Err((e, all_input).into()),
+                Err(e) => return Err(ParseErrors::from((e, all_input)).map(Cow::Borrowed)),
             };
             Ok(token)
-        }
-        else if #[cfg(feature = "nom")] {
-            use kodept_core::structure::span::Span;
-            use kodept_core::code_point::CodePoint;
-            use nom::Err::{Error, Failure};
-            use nom::Err::Incomplete;
-            
-            let (rest, token) = match token(input) {
+        } else if #[cfg(feature = "pest")] {
+            let token = match crate::grammar::pest::parse_token(input) {
                 Ok(tok) => tok,
-                Err(Error(e) | Failure(e)) => return Err((e, all_input).into()),
-                Err(Incomplete(_)) => ("", Token::Unknown)
+                Err(e) => return Err(e.map(Cow::Owned)),
             };
-            let matched_length = input.len() - rest.len();
-            Ok(TokenMatch::new(token, Span::new(CodePoint::new(matched_length, 0))))
+            Ok(token)
+        } else if #[cfg(feature = "nom")] {
+            grammar::parse_token(input, all_input).map_err(|e| e.map(Cow::Borrowed))
         } else {
-            compile_error!("Either feature `peg` or `nom` must be enabled for this crate")
+            compile_error!("Either feature `peg` or `nom` or `pest` must be enabled for this crate")
         }
     }
 }
 
 #[cfg(test)]
 #[cfg(feature = "nom")]
+#[cfg(not(all()))]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use std::fmt::Debug;
@@ -50,7 +52,7 @@ mod tests {
     use rstest::rstest;
 
     #[allow(unused_imports)]
-    use crate::lexer::{token, Ignore::*, Token::Ignore};
+    use crate::lexer::{Ignore::*, token, Token::Ignore};
     use crate::TokenizationResult;
 
     #[rstest]

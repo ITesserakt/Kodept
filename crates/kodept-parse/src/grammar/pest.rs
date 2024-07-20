@@ -1,165 +1,183 @@
-use crate::lexer::{
-    BitOperator, ComparisonOperator, Identifier, Keyword, Literal, LogicOperator, MathOperator,
-    Operator, Symbol, Token,
-};
-use crate::token_match::TokenMatch;
+use faster_pest::*;
+
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
-use pest_typed::{ParsableTypedNode, Spanned};
-use pest_typed_derive::{match_choices, TypedParser};
+use crate::error::{ParseErrors};
+use crate::lexer::{BitOperator, ComparisonOperator, Identifier, Ignore, Keyword, Literal, LogicOperator, MathOperator, Symbol, Token};
+use crate::lexer::Operator::{Bit, Comparison, Dot, Flow, Logic, Math};
+use crate::token_match::TokenMatch;
 
-#[derive(TypedParser)]
-#[grammar = "grammar/kodept.pest"]
-pub struct Tokenizer<'t> {
-    buffer: &'t str,
-    tokens: Vec<TokenMatch<'t>>,
-    index: usize
+#[derive(Parser)]
+#[grammar = "crates/kodept-parse/src/grammar/kodept.pest"]
+struct Grammar;
+
+pub fn parse_token(input: &str) -> Result<TokenMatch, ParseErrors<String>> {
+    let token = Grammar::parse(Rule::token, input).map_err(|e| e.into_pest(input))?;
+    let ident = token.into_iter().next().unwrap().into_inner().next().unwrap();
+    Ok(parse_token_from_ident(ident))
 }
 
-impl<'t> Tokenizer<'t> {
-    pub fn new(input: &'t str) -> Self {
-        let mut this = Self {
-            buffer: input,
-            tokens: vec![],
-            index: 0
-        };
-        this.parse_tokens();
-        this.remove_quotes();
-        this
-    }
+fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
+    let span = input.as_span();
     
-    fn remove_quotes(&mut self) {
-        self.tokens.iter_mut().for_each(|TokenMatch { token, .. }| {
-            if let Token::Literal(Literal::Char(s) | Literal::String(s)) = token {
-                *s = s.trim_matches(['"', '\'']);
+    let token = match input.as_rule() {
+        Rule::ignore => Token::Ignore({
+            let input = input.into_inner().next().unwrap();
+            match input.as_rule() {
+                Rule::comment => Ignore::Comment(input.as_str()),
+                Rule::multiline_comment => Ignore::MultilineComment(input.as_str()),
+                Rule::newline => Ignore::Newline,
+                Rule::whitespace => Ignore::Whitespace,
+                _ => unreachable!(),
             }
-        });
-    }
-    
-    fn parse_tokens(&mut self) {
-        let tokens = match pairs::tokens::try_parse(self.buffer) {
-            Ok(t) => t.content.content.1.matched,
-            Err(_) => return
-        };
-        
-        self.tokens = tokens.into_iter_matched()
-            .map(Self::parse_one_token)
-            .map(|(token, span)| {
-                let matched_length = span.as_str().len();
-                TokenMatch::new(
-                    token,
-                    Span::new(CodePoint::new(matched_length, span.start())),
-                )
-            }).collect();
-    }
+        }),
+        Rule::keyword => Token::Keyword(match input.as_str() {
+            "fun" => Keyword::Fun,
+            "val" => Keyword::Val,
+            "var" => Keyword::Var,
+            "match" => Keyword::Match,
+            "while" => Keyword::While,
+            "module" => Keyword::Module,
+            "extend" => Keyword::Extend,
+            "return" => Keyword::Return,
+            "\\" => Keyword::Lambda,
+            "if" => Keyword::If,
+            "elif" => Keyword::Elif,
+            "else" => Keyword::Else,
+            "abstract" => Keyword::Abstract,
+            "trait" => Keyword::Trait,
+            "struct" => Keyword::Struct,
+            "class" => Keyword::Class,
+            "enum" => Keyword::Enum,
+            "foreign" => Keyword::Foreign,
+            "type" => Keyword::TypeAlias,
+            "with" => Keyword::With,
+            _ => unreachable!(),
+        }),
+        Rule::symbol => Token::Symbol(match input.as_str() {
+            "," => Symbol::Comma,
+            ";" => Symbol::Semicolon,
+            "{" => Symbol::LBrace,
+            "}" => Symbol::RBrace,
+            "[" => Symbol::LBracket,
+            "]" => Symbol::RBracket,
+            "(" => Symbol::LParen,
+            ")" => Symbol::RParen,
+            "_" => Symbol::TypeGap,
+            "::" => Symbol::DoubleColon,
+            ":" => Symbol::Colon,
+            _ => unreachable!(),
+        }),
+        Rule::identifier => Token::Identifier(match input.as_str().as_bytes() {
+            [b'_', b'a'..=b'z', ..] => Identifier::Identifier(input.as_str()),
+            [b'a'..=b'z', ..] => Identifier::Identifier(input.as_str()),
+            [b'_', b'A'..=b'Z', ..] => Identifier::Type(input.as_str()),
+            [b'A'..=b'Z', ..] => Identifier::Type(input.as_str()),
+            _ => unreachable!(),
+        }),
+        Rule::literal => Token::Literal({
+            let input = input.into_inner().next().unwrap();
+            match input.as_rule() {
+                Rule::bin_lit => Literal::Binary(input.as_str()),
+                Rule::oct_lit => Literal::Octal(input.as_str()),
+                Rule::hex_lit => Literal::Hex(input.as_str()),
+                Rule::flt_lit => Literal::Floating(input.as_str()),
+                Rule::chr_lit => Literal::Char(input.as_str().trim_matches('\'')),
+                Rule::str_lit => Literal::String(input.as_str().trim_matches('"')),
+                _ => unreachable!(),
+            }
+        }),
+        Rule::operator => Token::Operator(match input.as_str() {
+            "." => Dot,
+            "=>" => Flow,
+            "+" => Math(MathOperator::Plus),
+            "-" => Math(MathOperator::Sub),
+            "**" => Math(MathOperator::Pow),
+            "*" => Math(MathOperator::Times),
+            "/" => Math(MathOperator::Div),
+            "%" => Math(MathOperator::Mod),
+            "<=>" => Comparison(ComparisonOperator::Spaceship),
+            "==" => Comparison(ComparisonOperator::Equiv),
+            "=" => Comparison(ComparisonOperator::Equals),
+            "!=" => Comparison(ComparisonOperator::NotEquiv),
+            ">=" => Comparison(ComparisonOperator::GreaterEquals),
+            ">" => Comparison(ComparisonOperator::Greater),
+            "<=" => Comparison(ComparisonOperator::LessEquals),
+            "<" => Comparison(ComparisonOperator::Less),
+            "||" => Logic(LogicOperator::OrLogic),
+            "&&" => Logic(LogicOperator::AndLogic),
+            "!" => Logic(LogicOperator::NotLogic),
+            "|" => Bit(BitOperator::OrBit),
+            "&" => Bit(BitOperator::AndBit),
+            "^" => Bit(BitOperator::XorBit),
+            "~" => Bit(BitOperator::NotBit),
+            _ => unreachable!(),
+        }),
+        _ => Token::Unknown,
+    };
 
-    fn parse_one_token(token: rules::token) -> (Token, pest_typed::Span) {
-        match_choices!(token.content.as_ref() {
-            keyword => (Token::Keyword(match_choices!(keyword.content.as_ref() {
-                _fun => Keyword::Fun,
-                _val => Keyword::Val,
-                _var => Keyword::Var,
-                _match_ => Keyword::Match,
-                _while_ => Keyword::While,
-                _module => Keyword::Module,
-                _extend => Keyword::Extend,
-                _return_ => Keyword::Return,
-                _back => Keyword::Lambda,
-                _if_ => Keyword::If,
-                _elif => Keyword::Elif,
-                _else_ => Keyword::Else,
-                _abstract_ => Keyword::Abstract,
-                _trait_ => Keyword::Trait,
-                _struct_ => Keyword::Struct,
-                _class => Keyword::Class,
-                _enum_ => Keyword::Enum,
-                _foreign => Keyword::Foreign,
-                _type_ => Keyword::TypeAlias,
-                _with => Keyword::With
-            })), keyword.span()),
-            symbol => (Token::Symbol(match_choices!(symbol.content.as_ref() {
-                _comma => Symbol::Comma,
-                _semicolon => Symbol::Semicolon,
-                _lbrace => Symbol::LBrace,
-                _rbrace => Symbol::RBrace,
-                _lbracket => Symbol::LBracket,
-                _rbracket => Symbol::RBracket,
-                _lparen => Symbol::LParen,
-                _rparen => Symbol::RParen,
-                _under => Symbol::TypeGap,
-                _double => Symbol::DoubleColon,
-                _colon => Symbol::Colon
-            })), symbol.span()),
-            identifier => {
-                let (_, start, _) = identifier.as_ref();
-                let input = identifier.span().as_str();
-                let ty = match_choices!(start {
-                    _lower => Identifier::Identifier(input),
-                    _upper => Identifier::Type(input)
-                });
-                (Token::Identifier(ty), identifier.span())
-            },
-            literal => {
-                let input = literal.span().as_str();
-                match_choices!(literal.content.as_ref() {
-                    _binary => (Token::Literal(Literal::Binary(input)), literal.span()),
-                    _octal => (Token::Literal(Literal::Octal(input)), literal.span()),
-                    _hex => (Token::Literal(Literal::Hex(input)), literal.span()),
-                    _floating => (Token::Literal(Literal::Floating(input)), literal.span()),
-                    _char => {
-                        let span = literal.span();
-                        (Token::Literal(Literal::Char(span.as_str())), span)
-                    },
-                    _string => {
-                        let span = literal.span();
-                        (Token::Literal(Literal::String(span.as_str())), span)
-                    }
-                })
-            },
-            operator => (Token::Operator(match_choices!(operator.content.as_ref() {
-                _dot => Operator::Dot,
-                _flow => Operator::Flow,
-                _plus => Operator::Math(MathOperator::Plus),
-                _minus => Operator::Math(MathOperator::Sub),
-                _pow => Operator::Math(MathOperator::Pow),
-                _times => Operator::Math(MathOperator::Times),
-                _div => Operator::Math(MathOperator::Div),
-                _mod_ => Operator::Math(MathOperator::Mod),
-                _spaceship => Operator::Comparison(ComparisonOperator::Spaceship),
-                _equiv => Operator::Comparison(ComparisonOperator::Equiv),
-                _equals => Operator::Comparison(ComparisonOperator::Equals),
-                _not_equiv => Operator::Comparison(ComparisonOperator::NotEquiv),
-                _greater_eq => Operator::Comparison(ComparisonOperator::GreaterEquals),
-                _greater => Operator::Comparison(ComparisonOperator::Greater),
-                _less_eq => Operator::Comparison(ComparisonOperator::LessEquals),
-                _less => Operator::Comparison(ComparisonOperator::Less),
-                _or => Operator::Logic(LogicOperator::OrLogic),
-                _and => Operator::Logic(LogicOperator::AndLogic),
-                _not => Operator::Logic(LogicOperator::NotLogic),
-                _disj => Operator::Bit(BitOperator::OrBit),
-                _conj => Operator::Bit(BitOperator::AndBit),
-                _xor => Operator::Bit(BitOperator::XorBit),
-                _nor => Operator::Bit(BitOperator::NotBit)
-            })), operator.span()),
-            unknown => (Token::Unknown, unknown.span()),
+    let length = span.end() - span.start();
+    TokenMatch::new(token, Span::new(CodePoint::new(length, span.start())))
+}
+
+pub struct Tokenizer<'i> {
+    pairs: Pairs2<'i, Ident<'i>>,
+}
+
+impl<'i> Tokenizer<'i> {
+    pub fn try_new(input: &'i str) -> Result<Self, ParseErrors<String>> {
+        let mut pairs =
+            Grammar::parse(Rule::tokens, input).map_err(|e| e.into_pest(input))?;
+        Ok(Self {
+            pairs: pairs.next().unwrap().into_inner(),
         })
     }
 
-    pub fn into_vec(mut self) -> Vec<TokenMatch<'t>> {
-        self.tokens.shrink_to_fit();
-        self.tokens
+    pub fn new(input: &'i str) -> Self {
+        Self::try_new(input).unwrap()
+    }
+
+    pub fn into_vec(self) -> Vec<TokenMatch<'i>> {
+        let mut vec: Vec<_> = self.collect();
+        vec.shrink_to_fit();
+        vec
     }
 }
 
-impl<'t> Iterator for Tokenizer<'t> {
-    type Item = TokenMatch<'t>;
+impl<'i> Iterator for Tokenizer<'i> {
+    type Item = TokenMatch<'i>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.tokens.len() {
-            None
-        } else {
-            self.index += 1;
-            Some(self.tokens[self.index - 1])
-        }
+        self.pairs.by_ref()
+            .filter(|it| matches!(it.as_rule(), Rule::token))
+            .flat_map(|it| it.into_inner())
+            .map(parse_token_from_ident)
+            .next()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::lexer::{Ignore, Literal, LogicOperator, Operator, Token};
+    use crate::lexer::Identifier::{Identifier, Type};
+    use crate::grammar::pest::{Tokenizer};
+
+    #[test]
+    fn test_example() {
+        let input = "Hello world! 1234";
+        let output = Tokenizer::new(input);
+        let tokens = output.map(|it| it.token).collect::<Vec<_>>();
+
+        assert_eq!(
+            tokens,
+            vec![
+                Token::Identifier(Type("Hello")),
+                Token::Ignore(Ignore::Whitespace),
+                Token::Identifier(Identifier("world")),
+                Token::Operator(Operator::Logic(LogicOperator::NotLogic)),
+                Token::Ignore(Ignore::Whitespace),
+                Token::Literal(Literal::Floating("1234"))
+            ]
+        )
     }
 }

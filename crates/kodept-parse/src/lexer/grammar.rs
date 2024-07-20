@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use nom::branch::alt;
 use nom::bytes::complete::{is_a, is_not, take_while};
 use nom::character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of};
@@ -10,6 +11,8 @@ use nom_supreme::ParserExt;
 use nom_supreme::tag::complete::{tag, tag_no_case};
 use crate::lexer::{BitOperator, ComparisonOperator, Identifier, Ignore, Keyword, Literal, LogicOperator, MathOperator, Operator, Symbol, Token};
 use crate::{Span, TokenizationResult};
+use crate::error::ParseErrors;
+use crate::token_match::TokenMatch;
 
 pub const LOWER_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
 pub const UPPER_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -223,7 +226,7 @@ pub fn operator(input: Span) -> TokenizationResult<Operator> {
     )(input)
 }
 
-pub fn token(input: Span) -> TokenizationResult<Token> {
+fn token(input: Span) -> TokenizationResult<Token> {
     context(
         "lexer",
         alt((
@@ -235,4 +238,19 @@ pub fn token(input: Span) -> TokenizationResult<Token> {
             map(operator, Token::Operator),
         )),
     )(input)
+}
+
+pub fn parse_token<'t>(input: &'t str, all_input: &'t str) -> Result<TokenMatch<'t>, ParseErrors<&'t str>> {
+    use kodept_core::structure::span::Span;
+    use kodept_core::code_point::CodePoint;
+    use nom::Err::{Error, Failure};
+    use nom::Err::Incomplete;
+
+    let (rest, token) = match token(input) {
+        Ok(tok) => tok,
+        Err(Error(e) | Failure(e)) => return Err(ParseErrors::from((e, all_input))),
+        Err(Incomplete(_)) => ("", Token::Unknown)
+    };
+    let matched_length = input.len() - rest.len();
+    Ok(TokenMatch::new(token, Span::new(CodePoint::new(matched_length, 0))))
 }

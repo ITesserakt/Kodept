@@ -4,18 +4,11 @@
 // Author: ITesserakt
 //
 
-/// UTILITIES
-/// --------------------------------------------------------------------------------------------------------------------
-
-/// PRIMITIVE TOKENS
-/// --------------------------------------------------------------------------------------------------------------------
-
-comment = @{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
-multiline_comment = @{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
-
-COMMENT = _{ comment | multiline_comment }
-
-WHITESPACE = _{ WHITE_SPACE | NEWLINE }
+comment = { "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+multiline_comment = { "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+newline = { "\r\n" | "\n" }
+whitespace = { " " | "\t" }
+ignore = ${ comment | multiline_comment | newline | whitespace+ }
 
 keyword = ${
     "fun"       |
@@ -54,24 +47,25 @@ symbol = ${
     ":"
 }
 
-identifier = ${ "_"? ~ (LOWERCASE_LETTER | UPPERCASE_LETTER) ~ ("_" | ALPHABETIC | NUMBER)* }
+identifier = ${ "_"? ~ ('a'..'z' | 'A'..'Z') ~ ("_" | 'a'..'z' | 'A'..'Z' | '0'..'9')* }
+
+bin_lit = ${ ^"0b" ~ (!("0" | "_") ~ ('0'..'1' | "_")+ | '0'..'1') }
+oct_lit = ${ ^"0c" ~ (!("0" | "_") ~ ('0'..'7' | "_")+ | '0'..'7') }
+hex_lit = ${ ^"0x" ~ (!("0" | "_") ~ ('0'..'9' | 'a'..'f' | 'A'..'F' | "_")+ | '0'..'9' | 'a'..'f' | 'A'..'F') }
+flt_lit = ${ ("+" | "-")? ~ whitespace* ~ (
+                 (ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?) |
+                 ("." ~ ASCII_DIGIT+)
+             ) ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT)? }
+chr_lit = ${ "'" ~ (!"'" ~ ANY) ~ "'" }
+str_lit = ${ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
 
 literal = ${
-    // Binary number
-    (^"0b" ~ (!("0" | "_") ~ (ASCII_BIN_DIGIT | "_")+ | ASCII_BIN_DIGIT)) |
-    // Octal number
-    (^"0c" ~ (!("0" | "_") ~ (ASCII_OCT_DIGIT | "_")+ | ASCII_OCT_DIGIT)) |
-    // Hex number
-    (^"0x" ~ (!("0" | "_") ~ (ASCII_HEX_DIGIT | "_")+ | ASCII_HEX_DIGIT)) |
-    // Any floating-point number
-    (("+" | "-")? ~ WHITESPACE* ~ (
-        (ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)?) |
-        ("." ~ ASCII_DIGIT+)
-    ) ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT)?) |
-    // Char
-    ("'" ~ (!"'" ~ ANY) ~ "'") |
-    // String
-    ("\"" ~ (!"\"" ~ ANY)* ~ "\"")
+    bin_lit |
+    oct_lit |
+    hex_lit |
+    flt_lit |
+    chr_lit |
+    str_lit
 }
 
 operator = ${
@@ -107,6 +101,6 @@ operator = ${
 
 unknown = ${ ANY }
 
-token = { keyword | symbol | identifier | literal | operator | unknown }
+token = { ignore | keyword | symbol | identifier | literal | operator | unknown }
 
 tokens = { SOI ~ token* ~ EOI }

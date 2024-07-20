@@ -2,15 +2,12 @@ pub use grammar::kodept;
 use kodept_core::structure::*;
 use kodept_core::structure::rlt::new_types::BinaryOperationSymbol;
 use kodept_core::structure::rlt::new_types::UnaryOperationSymbol;
-// use kodept_core::structure::rlt::new_types::Keyword;
-// use kodept_core::structure::rlt::new_types::Symbol;
 
 use crate::grammar::macros::tok;
-use crate::lexer::{Identifier as I, Token};
+use crate::lexer::{Identifier as I};
 use crate::lexer::Literal::*;
 use crate::lexer::Token::*;
 use crate::lexer::Symbol::*;
-use crate::lexer::Ignore::{Newline};
 use crate::lexer::ComparisonOperator::*;
 use crate::lexer::MathOperator::*;
 use crate::lexer::LogicOperator::*;

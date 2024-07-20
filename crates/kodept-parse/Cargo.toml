@@ -18,7 +18,7 @@ workspace = true
 default = ["peg"]
 enum-iter = ["dep:enum-iterator"]
 peg = ["dep:peg"]
-pest = ["dep:pest_typed", "dep:pest_typed_derive"]
+pest = ["dep:faster-pest", "dep:pest"]
 trace = ["peg/trace", "dep:gag", "nom"]
 nom = ["dep:nom", "dep:nom-supreme"]
 
@@ -36,8 +36,8 @@ gag = { version = "1.0.0", optional = true }
 nom = { workspace = true, optional = true }
 nom-supreme = { version = "0.8.0", optional = true }
 peg = { version = "0.8.3", optional = true }
-pest_typed = { version = "0.15.0", optional = true }
-pest_typed_derive = { version = "0.15.0", optional = true }
+pest = { version = "2.7.11", optional = true }
+faster-pest = { version = "0.1.4", optional = true }
 
 [dependencies.kodept-core]
 path = "../kodept-core"
@@ -52,6 +52,10 @@ similar-asserts = "1.5.0"
 [[bench]]
 name = "tokenizer"
 harness = false
+required-features = ["peg", "pest", "nom"]
+
+[[test]]
+name = "tokenizer"
 required-features = ["peg", "pest", "nom"]
 
 [[bench]]
