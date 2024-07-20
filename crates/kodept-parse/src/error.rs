@@ -87,7 +87,7 @@ impl<A> ParseError<A> {
 impl<A> ParseErrors<A> {
     pub fn map<B>(self, mut f: impl FnMut(A) -> B) -> ParseErrors<B> {
         ParseErrors::new(self.into_iter()
-            .map(move |it| it.map(|e| f(e)))
+            .map(move |it| it.map(&mut f))
             .collect())
     }
 }
@@ -109,7 +109,7 @@ impl<A, O: Original<A>, P: Into<crate::grammar::compatibility::Position> + Clone
 }
 
 #[cfg(feature = "pest")]
-impl<'i> From<pest::error::Error<crate::grammar::pest::Rule>> for ParseErrors<String> {
+impl From<pest::error::Error<crate::grammar::pest::Rule>> for ParseErrors<String> {
     fn from(value: pest::error::Error<crate::grammar::pest::Rule>) -> Self {
         use pest::error::{InputLocation, LineColLocation};
 

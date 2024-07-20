@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use nom::branch::alt;
 use nom::bytes::complete::{is_a, is_not, take_while};
 use nom::character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of};

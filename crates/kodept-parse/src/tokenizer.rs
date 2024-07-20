@@ -23,6 +23,7 @@ pub type TracedTokenizer<'t> = crate::grammar::peg::Tokenizer<'t, true>;
 pub struct LazyTokenizer;
 
 impl LazyTokenizer {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new<'t>(
         reader: &'t str,
     ) -> GenericLazyTokenizer<
@@ -75,7 +76,7 @@ impl<'t, E: Debug, F: FnMut(&'t str, &'t str) -> TokenizingResult<'t, E>> Iterat
 
         let mut token_match = (self.tokenizing_fn)(&self.buffer[self.pos..], self.buffer)
             .unwrap_or_else(|e| {
-                println!("Cannot parse token: {e:#?}");
+                error!("Cannot parse token: {e:#?}");
                 TokenMatch::new(Token::Unknown, Span::new(CodePoint::single_point(self.pos)))
             });
 

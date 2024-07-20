@@ -52,7 +52,7 @@ where
     let repr = example.representation();
     move |input| {
         let example = example.clone();
-        let i = input.clone();
+        let i = input;
         let (input, output) = any_not_ignored_token(input)?;
 
         if output.token == example.into() {
