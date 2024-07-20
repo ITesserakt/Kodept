@@ -1,5 +1,5 @@
-#[cfg(feature = "pest")]
-mod pest;
+// #[cfg(feature = "pest")]
+// mod pest;
 
 #[cfg(feature = "peg")]
 pub(crate) mod peg;
@@ -8,6 +8,8 @@ pub(crate) mod peg;
 pub(crate) mod compatibility;
 #[cfg(feature = "peg")]
 pub(crate) mod parser;
+#[cfg(feature = "pest")]
+pub(crate) mod pest;
 
 #[cfg(feature = "peg")]
 pub type KodeptParser<'t> = peg::Tokenizer<'t, false>;

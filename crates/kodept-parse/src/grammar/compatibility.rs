@@ -3,7 +3,6 @@ use EitherOrBoth::{Both, Left, Right};
 use itertools::{EitherOrBoth, Itertools};
 use peg::str::LineCol;
 use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
-use tracing::error;
 
 use kodept_core::code_point::CodePoint;
 

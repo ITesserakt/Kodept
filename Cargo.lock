@@ -251,18 +251,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b82cf0babdbd58558212896d1a4272303a57bdb245c2bf1147185fb45640e70"
 
 [[package]]
-name = "cmp_by_derive"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b398bce1179f6eed26f9dd140a4470e17bfcfe05a0539e3107b44b362d3b0454"
-dependencies = [
- "proc-macro2",
- "quote",
- "rustc_version",
- "syn 2.0.71",
-]
-
-[[package]]
 name = "codespan"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -398,17 +386,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "custom_debug_derive"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08a9f3941234c9f62ceaa2782974827749de9b0a8a6487275a278da068e1baf7"
-dependencies = [
- "proc-macro2",
- "syn 1.0.109",
- "synstructure",
-]
-
-[[package]]
 name = "derive_more"
 version = "0.99.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -513,6 +490,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.71",
+]
+
+[[package]]
+name = "faster-pest"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70e677cf047842b49dd8c9ed44d7db40bc327cbf76c6779cbd2303006723e085"
+dependencies = [
+ "faster-pest-derive",
+ "pest",
+]
+
+[[package]]
+name = "faster-pest-derive"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d29671238c29d648fa1c560b2b062f46ffb84ef98ddfd70e9fc9d7657d512cce"
+dependencies = [
+ "pest_meta",
+ "proc-macro2",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -912,6 +910,7 @@ dependencies = [
  "derive_more",
  "enum-iterator",
  "extend",
+ "faster-pest",
  "gag",
  "itertools 0.13.0",
  "kodept-core",
@@ -920,8 +919,7 @@ dependencies = [
  "nom-supreme",
  "nonempty-collections",
  "peg",
- "pest_typed",
- "pest_typed_derive",
+ "pest",
  "rstest",
  "similar-asserts",
  "thiserror",
@@ -1220,40 +1218,6 @@ dependencies = [
  "once_cell",
  "pest",
  "sha2",
-]
-
-[[package]]
-name = "pest_typed"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce0ec27fdce55a85c2878be1344462988937b054fc789f3be0638401af8676e"
-dependencies = [
- "cmp_by_derive",
- "custom_debug_derive",
- "pest",
- "unicode-width",
-]
-
-[[package]]
-name = "pest_typed_derive"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "724030a3f8817e3bbadf67a5747acc0746060bffbc823fa1e53c0ff78428e67a"
-dependencies = [
- "pest_typed_generator",
-]
-
-[[package]]
-name = "pest_typed_generator"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbac0640fd30ca1779a1d92a289c04a0aadd0cd10eb14c0342ae44c9d9f5cb64"
-dependencies = [
- "pest",
- "pest_meta",
- "proc-macro2",
- "quote",
- "syn 2.0.71",
 ]
 
 [[package]]
@@ -1756,18 +1720,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "synstructure"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "unicode-xid",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1924,12 +1876,6 @@ name = "unicode-width"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0336d538f7abc86d282a4189614dfaa90810dfc2c6f6427eaf88e16311dd225d"
-
-[[package]]
-name = "unicode-xid"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utf8parse"

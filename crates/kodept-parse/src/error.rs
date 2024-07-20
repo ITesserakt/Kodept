@@ -1,10 +1,11 @@
-use std::borrow::Cow;
+use std::borrow::{Cow};
 
-use derive_more::{Constructor};
+use derive_more::Constructor;
+
+use kodept_core::code_point::CodePoint;
 
 use crate::lexer::Token;
 use crate::token_stream::TokenStream;
-use kodept_core::code_point::CodePoint;
 
 #[derive(Debug, Constructor)]
 pub struct ErrorLocation {
@@ -73,6 +74,24 @@ impl Original<String> for &str {
     }
 }
 
+impl<A> ParseError<A> {
+    pub fn map<B>(self, f: impl FnOnce(A) -> B) -> ParseError<B> {
+        ParseError {
+            expected: self.expected,
+            actual: f(self.actual),
+            location: self.location,
+        }
+    }
+}
+
+impl<A> ParseErrors<A> {
+    pub fn map<B>(self, mut f: impl FnMut(A) -> B) -> ParseErrors<B> {
+        ParseErrors::new(self.into_iter()
+            .map(move |it| it.map(|e| f(e)))
+            .collect())
+    }
+}
+
 #[cfg(feature = "peg")]
 impl<A, O: Original<A>, P: Into<crate::grammar::compatibility::Position> + Clone>
     From<(peg::error::ParseError<P>, O)> for ParseErrors<A>
@@ -85,6 +104,33 @@ impl<A, O: Original<A>, P: Into<crate::grammar::compatibility::Position> + Clone
 
         ParseErrors {
             errors: vec![ParseError::new(expected, actual, location)],
+        }
+    }
+}
+
+#[cfg(feature = "pest")]
+impl<'i> From<pest::error::Error<crate::grammar::pest::Rule>> for ParseErrors<String> {
+    fn from(value: pest::error::Error<crate::grammar::pest::Rule>) -> Self {
+        use pest::error::{InputLocation, LineColLocation};
+
+        let error_loc = match value.location {
+            InputLocation::Pos(pos) => ErrorLocation::new(pos, CodePoint::single_point(pos)),
+            InputLocation::Span((start, end)) => {
+                ErrorLocation::new(start, CodePoint::new(end - start, start))
+            }
+        };
+        let expected = value.variant.message();
+        let (start, end) = match value.line_col {
+            LineColLocation::Pos((_, col)) => (col, col + 1),
+            LineColLocation::Span((_, col_start), (_, col_end)) => (col_start, col_end),
+        };
+        let actual = value.line()[start..end].to_string();
+        ParseErrors {
+            errors: vec![ParseError::new(
+                vec![Cow::Owned(expected.to_string())],
+                actual,
+                error_loc,
+            )],
         }
     }
 }
@@ -102,23 +148,21 @@ fn point_pos(stream: TokenStream, point: CodePoint) -> usize {
 pub mod default {
     use std::borrow::Cow;
     use std::collections::VecDeque;
+
     use derive_more::Constructor;
     use itertools::Itertools;
     use nom_supreme::error::{BaseErrorKind, Expectation};
+
     use kodept_core::code_point::CodePoint;
-    use crate::error::{point_pos, ErrorLocation, ParseError, ParseErrors};
+
+    use crate::error::{ErrorLocation, ParseError, ParseErrors, point_pos};
     use crate::lexer::Token;
     use crate::parser::nom::TokenVerificationError;
     use crate::token_stream::TokenStream;
     use crate::TokenizationError;
 
     fn take_first_token(stream: TokenStream) -> Token {
-        stream
-            .slice
-            .iter()
-            .next()
-            .unwrap()
-            .token
+        stream.slice.iter().next().unwrap().token
     }
 
     trait ExpectedError {
@@ -140,12 +184,12 @@ pub mod default {
     #[derive(Debug, Constructor)]
     struct BaseError<'s, O, E> {
         location: O,
-        kind: BaseErrorKind<&'s str, E>
+        kind: BaseErrorKind<&'s str, E>,
     }
 
     impl<'s, O, E> BaseError<'s, O, E>
     where
-        E: ExpectedError
+        E: ExpectedError,
     {
         pub fn into_expected(self) -> Cow<'static, str> {
             match self.kind {
@@ -198,9 +242,11 @@ pub mod default {
             loop {
                 match current_errors.pop_front() {
                     None => break,
-                    Some(TokenizationError::Base { location, kind }) => base_errors.push(BaseError::new(location, kind)),
+                    Some(TokenizationError::Base { location, kind }) => {
+                        base_errors.push(BaseError::new(location, kind))
+                    }
                     Some(TokenizationError::Stack { base, .. }) => current_errors.push_back(*base),
-                    Some(TokenizationError::Alt(vec)) => current_errors.extend(vec)
+                    Some(TokenizationError::Alt(vec)) => current_errors.extend(vec),
                 }
             }
 
@@ -214,8 +260,11 @@ pub mod default {
                     let actual = &key[0..=1];
                     let expected = group.map(|it| it.into_expected()).collect();
                     ParseError::new(expected, actual, error_loc)
-                }).collect();
-            ParseErrors { errors: parse_errors }
+                })
+                .collect();
+            ParseErrors {
+                errors: parse_errors,
+            }
         }
     }
 }

@@ -1,3 +1,16 @@
+use std::borrow::Cow;
+use std::fmt::Debug;
+use std::iter::FusedIterator;
+
+use tracing::error;
+
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::span::Span;
+
+use crate::error::ParseErrors;
+use crate::lexer::Token;
+use crate::token_match::TokenMatch;
+
 #[cfg(all(not(feature = "peg"), not(feature = "pest"), feature = "nom"))]
 pub type Tokenizer<'t> = simple_implementation::Tokenizer<'t>;
 
@@ -7,66 +20,75 @@ pub type Tokenizer<'t> = crate::grammar::KodeptParser<'t>;
 #[cfg(all(feature = "peg", feature = "trace"))]
 pub type TracedTokenizer<'t> = crate::grammar::peg::Tokenizer<'t, true>;
 
-pub type LazyTokenizer<'t> = simple_implementation::Tokenizer<'t>;
+pub struct LazyTokenizer;
 
-mod simple_implementation {
-    use std::iter::FusedIterator;
-
-    use tracing::error;
-
-    use kodept_core::code_point::CodePoint;
-    use kodept_core::structure::span::Span;
-
-    use crate::lexer::Token;
-    use crate::parse_token;
-    use crate::token_match::TokenMatch;
-
-    pub struct Tokenizer<'t> {
-        buffer: &'t str,
-        pos: usize,
+impl LazyTokenizer {
+    pub fn new<'t>(
+        reader: &'t str,
+    ) -> GenericLazyTokenizer<
+        impl FnMut(&'t str, &'t str) -> TokenizingResult<'t, ParseErrors<Cow<'t, str>>>,
+    > {
+        GenericLazyTokenizer::new(reader, crate::lexer::parse_token)
     }
+}
 
-    impl<'t> Tokenizer<'t> {
-        #[must_use]
-        #[inline]
-        pub const fn new(reader: &'t str) -> Self {
-            Self {
-                buffer: reader,
-                pos: 0,
-            }
-        }
+type TokenizingResult<'t, E> = Result<TokenMatch<'t>, E>;
 
-        pub fn into_vec(self) -> Vec<TokenMatch<'t>> {
-            let mut vec = self.collect::<Vec<_>>();
-            vec.shrink_to_fit();
-            vec
+pub struct GenericLazyTokenizer<'t, F> {
+    buffer: &'t str,
+    pos: usize,
+    tokenizing_fn: F,
+}
+
+impl<'t, F> GenericLazyTokenizer<'t, F> {
+    #[inline]
+    #[must_use]
+    pub const fn new(reader: &'t str, tokenizing_fn: F) -> Self {
+        Self {
+            buffer: reader,
+            pos: 0,
+            tokenizing_fn,
         }
     }
 
-    impl<'t> Iterator for Tokenizer<'t> {
-        type Item = TokenMatch<'t>;
+    pub fn into_vec<E>(self) -> Vec<TokenMatch<'t>>
+    where
+        F: FnMut(&'t str, &'t str) -> TokenizingResult<'t, E>,
+        E: Debug,
+    {
+        let mut vec: Vec<_> = self.collect();
+        vec.shrink_to_fit();
+        vec
+    }
+}
 
-        fn next(&mut self) -> Option<Self::Item> {
-            if self.buffer[self.pos..].is_empty() {
-                return None;
-            }
+impl<'t, E: Debug, F: FnMut(&'t str, &'t str) -> TokenizingResult<'t, E>> Iterator
+    for GenericLazyTokenizer<'t, F>
+{
+    type Item = TokenMatch<'t>;
 
-            let mut token_match = parse_token(&self.buffer[self.pos..], self.buffer).unwrap_or_else(|e| {
-                error!(
-                    input = &self.buffer[self.pos..self.pos + 10],
-                    "Cannot parse token: {e:#?}"
-                );
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.buffer[self.pos..].is_empty() {
+            return None;
+        }
+
+        let mut token_match = (self.tokenizing_fn)(&self.buffer[self.pos..], self.buffer)
+            .unwrap_or_else(|e| {
+                println!("Cannot parse token: {e:#?}");
                 TokenMatch::new(Token::Unknown, Span::new(CodePoint::single_point(self.pos)))
             });
 
-            token_match.span.point.offset = self.pos;
-            self.pos += token_match.span.point.length;
+        token_match.span.point.offset = self.pos;
+        self.pos += token_match.span.point.length;
 
-            Some(token_match)
-        }
+        Some(token_match)
     }
-    
-    impl FusedIterator for Tokenizer<'_> {}
+}
+
+impl<'t, E: Debug, F: FnMut(&'t str, &'t str) -> TokenizingResult<'t, E>> FusedIterator
+    for GenericLazyTokenizer<'t, F>
+{
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
 
 const FILENAMES: [(&str, &str); 6] = [
     ("benches/benchmarking_file1.kd", "large"),
@@ -17,7 +17,15 @@ fn bench_impls(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("default", description),
             &contents,
-            |b, i| b.iter(|| kodept_parse::tokenizer::LazyTokenizer::new(i).into_vec()),
+            |b, i| {
+                b.iter(|| {
+                    kodept_parse::tokenizer::GenericLazyTokenizer::new(
+                        i,
+                        kodept_parse::lexer::nom_parse_token,
+                    )
+                    .into_vec()
+                })
+            },
         );
         group.bench_with_input(BenchmarkId::new("pest", description), &contents, |b, i| {
             b.iter(|| kodept_parse::grammar::PestKodeptParser::new(i).into_vec())
