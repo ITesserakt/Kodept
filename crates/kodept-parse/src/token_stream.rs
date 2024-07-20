@@ -125,14 +125,14 @@ impl<'t> InputIter for TokenStream<'t> {
 
     fn iter_indices(&self) -> Self::Iter {
         TokenStreamIndices {
-            stream: self.clone(),
+            stream: *self,
             position: 0,
         }
     }
 
     fn iter_elements(&self) -> Self::IterElem {
         TokenStreamIterator {
-            stream: self.clone(),
+            stream: *self,
             position: 0,
         }
     }
@@ -141,7 +141,7 @@ impl<'t> InputIter for TokenStream<'t> {
     where
         P: Fn(Self::Item) -> bool,
     {
-        self.slice.iter().position(|it| predicate(it.clone()))
+        self.slice.iter().position(|it| predicate(*it))
     }
 
     fn slice_index(&self, count: usize) -> Result<usize, Needed> {
