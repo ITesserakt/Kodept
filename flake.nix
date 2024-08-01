@@ -11,7 +11,7 @@
     let
       system = flake-utils.lib.system.x86_64-linux;
 
-      pkgs = (import nixpkgs) {
+      pkgs = import nixpkgs {
         inherit system;
       };
       
@@ -110,10 +110,9 @@
         modules = [
           ({ pkgs, config, ... }: {
              packages = with pkgs; [ 
-               xdot 
+               xdot
                rustup
                graphviz
-               cargo-insta
                gnuplot
                packages.${system}.pegviz
              ];
