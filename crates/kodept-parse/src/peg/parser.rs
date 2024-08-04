@@ -532,6 +532,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         }
 
     pub rule kodept() -> RLT =
+        ("\n" / "\r\n" / " ")* ![_]                            { RLT(rlt::File::new(Box::new([]))) } /
         i:traced(<file_grammar()>) ("\n" / "\r\n" / " ")* ![_] { RLT(i) }
 }}
 
