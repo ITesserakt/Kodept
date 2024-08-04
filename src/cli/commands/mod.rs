@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::cli::commands::execute::Execute;
 use crate::cli::commands::graph::Graph;
 use crate::cli::commands::inspect::InspectParser;
@@ -11,8 +12,7 @@ use kodept::read_code_source::ReadCodeSource;
 use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::ErrorReported;
-use kodept_parse::error::ParseError;
-use kodept_parse::lexer::Token;
+use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::token_stream::TokenStream;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
@@ -51,7 +51,7 @@ impl Command for Commands {
     }
 }
 
-fn to_diagnostic(error: ParseError<Token>) -> Diagnostic<()> {
+fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic<()> {
     let exp_msg = error
         .expected
         .into_iter()
@@ -65,7 +65,11 @@ fn to_diagnostic(error: ParseError<Token>) -> Diagnostic<()> {
 
 fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
     let tokenizer = LazyTokenizer::new(source.contents());
-    let tokens = tokenizer.into_vec();
+    let tokens = tokenizer.try_into_vec().map_err(|es: ParseErrors<&str>| {
+        es.into_iter()
+            .map(to_diagnostic)
+            .collect::<Vec<_>>()
+    })?;
     let token_stream = TokenStream::new(&tokens);
     let result = default_parse_from_top(token_stream).map_err(|es| {
         es.into_iter()
