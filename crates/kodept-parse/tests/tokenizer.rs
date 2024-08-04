@@ -53,7 +53,7 @@ mod peg {
 
     #[test]
     fn test_impl() {
-        let tokenizer = EagerTokenizer::new(get_file_contents(), PegLexer::new());
+        let tokenizer = EagerTokenizer::new(get_file_contents(), PegLexer::<false>::new());
         let tokens = tokenizer.into_vec();
         similar_asserts::assert_eq!(tokens, get_tokens());
     }

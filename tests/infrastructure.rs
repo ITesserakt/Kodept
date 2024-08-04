@@ -18,15 +18,15 @@ use kodept_core::code_source::CodeSource;
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::CodeHolder;
 use kodept_inference::language::Language;
+use kodept_interpret::{Cache, Witness};
 use kodept_interpret::operator_desugaring::*;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
-use kodept_interpret::{Cache, Witness};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{MutableContext, UnrecoverableError};
-use kodept_parse::parse_from_top;
+use kodept_parse::parser::default_parse_from_top;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::Tokenizer;
+use kodept_parse::tokenizer::LazyTokenizer;
 
 pub const EXAMPLES_FOLDER: &str = "examples";
 
@@ -51,9 +51,9 @@ fn get_code_source(name: impl Display) -> CodeSource {
 }
 
 fn get_rlt(source: &ReadCodeSource) -> RLT {
-    let tokens = Tokenizer::new(source.contents()).into_vec();
+    let tokens = LazyTokenizer::new(source.contents()).into_vec();
     let tokens = TokenStream::new(&tokens);
-    let result = parse_from_top(tokens).expect("Cannot parse");
+    let result = default_parse_from_top(tokens).expect("Cannot parse");
     result
 }
 
@@ -112,9 +112,9 @@ fn test_typing(name: &str) {
         ast,
     );
 
-	let contents = common_steps(&mut context).expect("Success");
-	let mut values: Vec<(_, _)> = contents.into_iter().collect();
-	values.sort_by_key(|it| it.0);
+    let contents = common_steps(&mut context).expect("Success");
+    let mut values: Vec<(_, _)> = contents.into_iter().collect();
+    values.sort_by_key(|it| it.0);
 
     assert_debug_snapshot!(values);
 }
