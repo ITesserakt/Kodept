@@ -34,12 +34,12 @@ mod default {
 #[cfg(feature = "pest")]
 mod pest {
     use kodept_parse::lexer::PestLexer;
-    use kodept_parse::tokenizer::GenericLazyTokenizer;
+    use kodept_parse::tokenizer::{EagerTokenizer};
     use crate::{get_file_contents, get_tokens};
 
     #[test]
     fn test_impl() {
-        let tokenizer = GenericLazyTokenizer::new(get_file_contents(), PestLexer::new());
+        let tokenizer = EagerTokenizer::new(get_file_contents(), PestLexer::new());
         let tokens = tokenizer.into_vec();
         similar_asserts::assert_eq!(tokens, get_tokens());
     }
@@ -48,12 +48,12 @@ mod pest {
 #[cfg(feature = "peg")]
 mod peg {
     use kodept_parse::lexer::PegLexer;
-    use kodept_parse::tokenizer::GenericLazyTokenizer;
+    use kodept_parse::tokenizer::{EagerTokenizer};
     use crate::{get_file_contents, get_tokens};
 
     #[test]
     fn test_impl() {
-        let tokenizer = GenericLazyTokenizer::new(get_file_contents(), PegLexer::new());
+        let tokenizer = EagerTokenizer::new(get_file_contents(), PegLexer::new());
         let tokens = tokenizer.into_vec();
         similar_asserts::assert_eq!(tokens, get_tokens());
     }

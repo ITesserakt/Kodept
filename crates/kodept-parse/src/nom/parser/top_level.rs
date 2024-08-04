@@ -7,7 +7,6 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::TopLevelNode;
 
-use crate::{OptionTExt};
 use crate::lexer::{Keyword::*, Symbol::*};
 use crate::nom::parser::{function, ParseResult, r#type};
 use crate::nom::parser::macros::function;
@@ -29,7 +28,7 @@ fn enum_statement(input: TokenStream) -> ParseResult<rlt::Enum> {
     .map(|it| rlt::Enum::Stack {
         keyword: it.0.span.into(),
         id: it.2,
-        contents: it.3.map_into(),
+        contents: it.3.map(|it| it.into()),
     })
     .parse(input)
 }
@@ -45,8 +44,8 @@ fn struct_statement(input: TokenStream) -> ParseResult<rlt::Struct> {
     .map(|it| rlt::Struct {
         keyword: it.0.span.into(),
         id: it.1,
-        parameters: it.2.map_into(),
-        body: it.3.map_into(),
+        parameters: it.2.map(|it| it.into()),
+        body: it.3.map(|it| it.into()),
     })
     .parse(input)
 }

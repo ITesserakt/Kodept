@@ -1,11 +1,13 @@
 use derive_more::Constructor;
 use faster_pest::*;
+
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
-use crate::common::TokenProducer;
-use crate::token_match::TokenMatch;
+
+use crate::common::{EagerTokensProducer, TokenProducer};
 use crate::lexer::*;
 use crate::lexer::Operator::*;
+use crate::token_match::TokenMatch;
 
 #[derive(Parser)]
 #[grammar = "crates/kodept-parse/src/pest/kodept.pest"]
@@ -107,7 +109,7 @@ fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
             "~" => Bit(BitOperator::NotBit),
             _ => unreachable!(),
         }),
-        _ => Token::Unknown,
+        x => panic!("Unknown rule encountered: {x:?}"),
     };
 
     let length = span.end() - span.start();
@@ -121,10 +123,33 @@ impl TokenProducer for Lexer {
     type Error<'t> = pest::error::Error<Rule>;
 
     #[inline]
-    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+    fn parse_token<'t>(
+        &self,
+        whole_input: &'t str,
+        position: usize,
+    ) -> Result<TokenMatch<'t>, Self::Error<'t>> {
         let input = &whole_input[position..];
         let token = Grammar::parse(Rule::token, input).map_err(|e| e.into_pest(input))?;
-        let ident = token.into_iter().next().unwrap().into_inner().next().unwrap();
+        let ident = token
+            .into_iter()
+            .next()
+            .unwrap()
+            .into_inner()
+            .next()
+            .unwrap();
         Ok(parse_token_from_ident(ident))
+    }
+}
+
+impl EagerTokensProducer for Lexer {
+    type Error<'t> = pest::error::Error<Rule>;
+
+    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+        let tokens = Grammar::parse(Rule::tokens, input).map_err(|e| e.into_pest(input))?;
+        let idents = tokens.into_iter().next().unwrap().into_inner();
+        Ok(idents
+            .map(|it| it.into_inner().next().unwrap())
+            .map(parse_token_from_ident)
+            .collect())
     }
 }

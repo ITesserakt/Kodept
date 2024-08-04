@@ -1,7 +1,7 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
 
 use kodept_parse::lexer::{NomLexer, PegLexer, PestLexer};
-use kodept_parse::tokenizer::GenericLazyTokenizer;
+use kodept_parse::tokenizer::{EagerTokenizer, GenericLazyTokenizer};
 
 const FILENAMES: [(&str, &str); 6] = [
     ("benches/benchmarking_file1.kd", "large"),
@@ -23,10 +23,10 @@ fn bench_impls(c: &mut Criterion) {
             |b, i| b.iter(|| GenericLazyTokenizer::new(i, NomLexer::new()).into_vec()),
         );
         group.bench_with_input(BenchmarkId::new("pest", description), &contents, |b, i| {
-            b.iter(|| GenericLazyTokenizer::new(i, PestLexer::new()).into_vec())
+            b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
         });
         group.bench_with_input(BenchmarkId::new("peg", description), &contents, |b, i| {
-            b.iter(|| GenericLazyTokenizer::new(i, PegLexer::new()).into_vec())
+            b.iter(|| EagerTokenizer::new(i, PegLexer::new()).into_vec())
         });
     }
 }
