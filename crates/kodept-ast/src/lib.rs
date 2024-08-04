@@ -1,5 +1,4 @@
 #![feature(try_trait_v2)]
-#![feature(min_specialization)]
 
 pub use constcat::concat_slices;
 pub use paste::paste;
