@@ -4,7 +4,8 @@
 // Author: ITesserakt
 //
 
-comment = { "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+// FIXME: Do not consume the last newline char
+comment = { "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE? }
 multiline_comment = { "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 newline = { "\r\n" | "\n" }
 whitespace = { " " | "\t" }

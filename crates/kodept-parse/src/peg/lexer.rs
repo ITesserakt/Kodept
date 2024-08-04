@@ -14,7 +14,7 @@ peg::parser! {grammar grammar() for str {
     rule newline() = "\n" / "\r\n" / "\r"
 
     rule comment() -> Ignore<'input> =
-        i:$("//" (!newline() [_]) newline()) { Ignore::Comment(i) }
+        i:$("//" (!newline() [_])* &newline()?) { Ignore::Comment(i) }
     rule multiline_comment() -> Ignore<'input> =
         i:$( "/*" (!"*/" [_])* "*/") { Ignore::MultilineComment(i) }
     rule whitespace() -> Ignore<'input> =

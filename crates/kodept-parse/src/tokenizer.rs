@@ -101,7 +101,7 @@ impl<'t> EagerTokenizer<'t> {
     {
         Self(VecDeque::from(handler.parse_tokens(input).unwrap()))
     }
-    
+
     pub fn into_vec(self) -> Vec<TokenMatch<'t>> {
         Vec::from(self.0)
     }

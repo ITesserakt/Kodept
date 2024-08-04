@@ -92,40 +92,32 @@ impl ToRepresentation for Keyword {
     }
 }
 
-#[cfg(all(test, feature = "enum-iter", feature = "nom"))]
-#[cfg(not(all()))]
+#[cfg(all(test, feature = "enum-iter"))]
 mod tests {
     use std::fmt::Debug;
     use enum_iterator::{all, Sequence};
 
-    use nom::Parser;
-    use nom_supreme::error::ErrorTree;
-    use nom_supreme::final_parser::final_parser;
-    use nom_supreme::ParserExt;
     use rstest::rstest;
-
-    use crate::lexer::*;
+    use crate::common::TokenProducer;
     use crate::lexer::traits::ToRepresentation;
-    use crate::TokenizationError;
+    use crate::lexer::{DefaultLexer, Keyword, Token, Symbol, Operator};
 
     #[rstest]
-    #[case(symbol)]
-    #[case(operator)]
-    #[case(keyword)]
-    fn test_lexers<'t, T, P>(#[case] mut parser: P)
+    #[case(Keyword::Struct)]
+    #[case(Symbol::Comma)]
+    #[case(Operator::Dot)]
+    fn test_lexers<T>(#[case] _example: T)
     where
-        T: Sequence + ToRepresentation + PartialEq + Debug,
-        P: Parser<&'t str, T, TokenizationError<'t>>,
+        T: Sequence + ToRepresentation + PartialEq + Debug + for<'a> Into<Token<'a>>
     {
         let values = all::<T>().map(|it| {
-            let parsed: Result<_, ErrorTree<&str>> =
-                final_parser(parser.by_ref())(it.representation());
+            let parsed = DefaultLexer::new().parse_token(it.representation(), 0);
             (it, parsed)
         });
 
         for (original, gen) in values {
             match gen {
-                Ok(it) => assert_eq!(original, it),
+                Ok(it) => assert_eq!(original.into(), it.token),
                 Err(e) => panic!("For input `{original:?}` {e}"),
             };
         }
