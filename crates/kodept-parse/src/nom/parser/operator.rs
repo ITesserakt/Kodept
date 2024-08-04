@@ -9,7 +9,6 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{
     BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
 };
-
 use crate::lexer::BitOperator::{AndBit, NotBit, OrBit, XorBit};
 use crate::lexer::ComparisonOperator::{
     Equals, Equiv, Greater, GreaterEquals, Less, LessEquals, NotEquiv, Spaceship,
@@ -18,11 +17,11 @@ use crate::lexer::LogicOperator::{AndLogic, NotLogic, OrLogic};
 use crate::lexer::MathOperator::{Div, Mod, Plus, Pow, Sub, Times};
 use crate::lexer::Operator::{Bit, Comparison, Dot, Logic, Math};
 use crate::lexer::Symbol::{LParen, RParen};
-use crate::parser::expression;
-use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
+use crate::nom::parser::{expression, ParseResult};
+use crate::nom::parser::macros::function;
+use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
-use crate::{function, ParseResult};
 
 fn left_fold<'t, I, T, P, E, F, R>(parser: P, produce: F) -> impl Parser<I, R, E> + 't
 where

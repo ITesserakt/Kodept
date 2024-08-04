@@ -5,9 +5,10 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::TypeName;
 
-use crate::{function, match_token, ParseResult};
 use crate::lexer::{Identifier::Type, Token};
-use crate::parser::nom::{comma_separated0, paren_enclosed};
+use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::ParseResult;
+use crate::nom::parser::utils::{comma_separated0, paren_enclosed};
 use crate::token_stream::TokenStream;
 
 pub fn reference(input: TokenStream) -> ParseResult<TypeName> {

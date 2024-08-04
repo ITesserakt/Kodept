@@ -9,10 +9,11 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::{Context, ContextualReference};
 
-use crate::{function, match_token, ParseResult};
 use crate::lexer::{Identifier::*, Token};
 use crate::lexer::Symbol::DoubleColon;
-use crate::parser::nom::match_token;
+use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::ParseResult;
+use crate::nom::parser::utils::match_token;
 use crate::token_stream::TokenStream;
 
 /// |      | Global   | Local     |

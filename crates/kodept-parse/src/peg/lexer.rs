@@ -1,10 +1,13 @@
-use std::iter::FusedIterator;
-use crate::lexer::*;
-use crate::token_match::TokenMatch;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::Span;
+use derive_more::Constructor;
 use peg::error::ParseError;
 use peg::str::LineCol;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::span::Span;
+use crate::common::{TokenProducer};
+use crate::lexer::{BitOperator, ComparisonOperator, LogicOperator, MathOperator};
+use crate::lexer::{Identifier, Ignore, Keyword, Literal, Operator, Symbol};
+use crate::lexer::Token;
+use crate::token_match::TokenMatch;
 
 peg::parser! {grammar grammar() for str {
     rule newline() = "\n" / "\r\n" / "\r"
@@ -131,9 +134,9 @@ peg::parser! {grammar grammar() for str {
         i:identifier() { Token::Identifier(i) } /
         i:literal()    { Token::Literal(i) }    /
         i:operator()   { Token::Operator(i) }
-    
+
     rule token_match() -> TokenMatch<'input> =
-        start:position!() t:token_() end:position!() { 
+        start:position!() t:token_() end:position!() {
             let length = end - start;
             TokenMatch::new(t, Span::new(CodePoint::new(length, start)))
         }
@@ -156,76 +159,14 @@ peg::parser! {grammar grammar() for str {
     pub rule token() -> TokenMatch<'input> = traced(<token_match()>)
 }}
 
-pub use grammar::token;
+#[derive(Constructor)]
+pub struct Lexer;
 
-pub struct Tokenizer<'t, const TRACE: bool> {
-    tokens: Vec<TokenMatch<'t>>,
-    pos: usize,
-}
+impl TokenProducer for Lexer {
+    type Error<'t> = ParseError<LineCol>;
 
-impl<'t, const TRACE: bool> Tokenizer<'t, TRACE> {
-    #[cfg(feature = "trace")]
-    pub fn try_new(input: &'t str) -> Result<Self, ParseError<LineCol>> {
-        use gag::Gag;
-        let mut _gag = None;
-        if !TRACE {
-            _gag = Some(Gag::stdout().expect("Cannot silence stdout"))
-        }
-        Ok(Self {
-            tokens: grammar::tokens(input)?,
-            pos: 0,
-        })
-    }
-
-    #[cfg(not(feature = "trace"))]
-    pub fn try_new(input: &'t str) -> Result<Self, ParseError<LineCol>> {
-        Ok(Self {
-            tokens: grammar::tokens(input)?,
-            pos: 0,
-        })
-    }
-    
-    pub fn new(input: &'t str) -> Self {
-        Self::try_new(input).unwrap()
-    }
-
-    pub fn into_vec(mut self) -> Vec<TokenMatch<'t>> {
-        self.tokens.shrink_to_fit();
-        self.tokens
-    }
-}
-
-impl<'t, const TRACE: bool> Iterator for Tokenizer<'t, TRACE> {
-    type Item = TokenMatch<'t>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.pos >= self.tokens.len() {
-            None
-        } else {
-            self.pos += 1;
-            Some(self.tokens[self.pos - 1])
-        }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.tokens[self.pos..].len();
-        (len, Some(len))
-    }
-}
-
-impl<'t, const TRACE: bool> FusedIterator for Tokenizer<'t, TRACE> {}
-impl<'t, const TRACE: bool> ExactSizeIterator for Tokenizer<'t, TRACE> {}
-
-#[cfg(test)]
-mod tests {
-    use super::Tokenizer;
-
-    #[test]
-    fn test_iter_size() {
-        let input = "\n\n\n";
-        let mut tokenizer: Tokenizer<false> = Tokenizer::new(input);
-        assert_eq!((3, Some(3)), tokenizer.size_hint());
-        let _ = tokenizer.next();
-        assert_eq!(2, tokenizer.len());
+    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+        let input = &whole_input[position..];
+        grammar::token(input)
     }
 }

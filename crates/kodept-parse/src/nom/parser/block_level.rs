@@ -2,10 +2,8 @@ use nom::branch::alt;
 use nom::Parser;
 use nom::sequence::tuple;
 use nom_supreme::ParserExt;
-
 use kodept_core::structure::rlt;
 
-use crate::{function, match_token, ParseResult};
 use crate::lexer::{
     ComparisonOperator::Equals,
     Identifier::Identifier,
@@ -14,8 +12,9 @@ use crate::lexer::{
     Symbol::*,
     Token,
 };
-use crate::parser::{function, operator, r#type};
-use crate::parser::nom::{match_token, newline_separated};
+use crate::nom::parser::utils::{match_token, newline_separated};
+use crate::nom::parser::{function, operator, ParseResult, r#type};
+use crate::nom::parser::macros::{function, match_token};
 use crate::token_stream::TokenStream;
 
 pub fn block(input: TokenStream) -> ParseResult<rlt::ExpressionBlock> {

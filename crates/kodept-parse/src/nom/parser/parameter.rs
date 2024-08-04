@@ -5,13 +5,13 @@ use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
-use crate::{function, match_token, ParseResult};
 use crate::lexer::{
     Identifier::Identifier,
     Symbol::{Colon, TypeGap},
     Token,
 };
-use crate::parser::r#type;
+use crate::nom::parser::{ParseResult, r#type};
+use crate::nom::parser::macros::{function, match_token};
 use crate::token_stream::TokenStream;
 
 pub fn typed_parameter(input: TokenStream) -> ParseResult<rlt::TypedParameter> {

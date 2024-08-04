@@ -1,45 +1,28 @@
-use std::borrow::Cow;
-
 use cfg_if::cfg_if;
 
 pub use enums::*;
 
-use crate::error::ParseErrors;
-use crate::token_match::TokenMatch;
-
 pub mod enums;
-#[cfg(feature = "nom")]
-mod grammar;
 pub mod traits;
 
-#[cfg(feature = "nom")]
-pub use grammar::parse_token as nom_parse_token;
-
-#[inline]
-pub fn parse_token<'t>(
-    input: &'t str,
-    all_input: &'t str,
-) -> Result<TokenMatch<'t>, ParseErrors<Cow<'t, str>>> {
-    cfg_if! {
-        if #[cfg(all(feature = "peg", not(feature = "trace")))] {
-            let token = match crate::grammar::peg::token(input) {
-                Ok(tok) => tok,
-                Err(e) => return Err(ParseErrors::from((e, all_input)).map(Cow::Borrowed)),
-            };
-            Ok(token)
-        } else if #[cfg(feature = "pest")] {
-            let token = match crate::grammar::pest::parse_token(input) {
-                Ok(tok) => tok,
-                Err(e) => return Err(e.map(Cow::Owned)),
-            };
-            Ok(token)
-        } else if #[cfg(feature = "nom")] {
-            grammar::parse_token(input, all_input).map_err(|e| e.map(Cow::Borrowed))
-        } else {
-            compile_error!("Either feature `peg` or `nom` or `pest` must be enabled for this crate")
-        }
+cfg_if! {
+    if #[cfg(all(feature = "peg", not(feature = "trace")))] {
+        pub type DefaultLexer = PegLexer; 
+    } else if #[cfg(feature = "pest")] {
+        pub type DefaultLexer = PestLexer;
+    } else if #[cfg(feature = "nom")] {
+        pub type DefaultLexer = NomLexer;
+    } else {
+        compilation_error!("Either feature `peg` or `nom` or `pest` must be enabled for this crate")
     }
 }
+
+#[cfg(feature = "nom")]
+pub type NomLexer = crate::nom::Lexer;
+#[cfg(feature = "peg")]
+pub type PegLexer = crate::peg::Lexer;
+#[cfg(feature = "pest")]
+pub type PestLexer = crate::pest::Lexer;
 
 #[cfg(test)]
 #[cfg(feature = "nom")]

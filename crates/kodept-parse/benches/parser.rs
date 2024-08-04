@@ -1,14 +1,13 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
-use nom_supreme::final_parser::final_parser;
 
-use kodept_parse::{parse_from_top, ParseError};
-use kodept_parse::parser::file::grammar;
+use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::Tokenizer;
+use kodept_parse::tokenizer::LazyTokenizer;
+use kodept_parse::common::RLTProducer;
 
 fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
-    let tokenizer = Tokenizer::new(contents);
+    let tokenizer = LazyTokenizer::new(contents);
     let tokens = tokenizer.into_vec();
     tokens
 }
@@ -29,14 +28,12 @@ fn bench_impls(c: &mut Criterion) {
         let tokens = get_tokens_from_contents(&contents);
         let tokens = TokenStream::new(&tokens);
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
+
         group.bench_with_input(BenchmarkId::new("default", description), &tokens, |b, i| {
-            b.iter(|| {
-                let res: Result<_, ParseError> = final_parser(grammar)(*i);
-                res.expect("Success")
-            })
+            b.iter(|| NomParser::new().parse_rlt(*i).expect("Success"))
         });
         group.bench_with_input(BenchmarkId::new("peg", description), &tokens, |b, i| {
-            b.iter(|| parse_from_top(*i).expect("Success"))
+            b.iter(|| PegParser::new().parse_rlt(*i).expect("Success"))
         });
     }
     group.finish();

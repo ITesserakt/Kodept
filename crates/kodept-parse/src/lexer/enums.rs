@@ -4,12 +4,10 @@ use derive_more::From;
 #[cfg(feature = "enum-iter")]
 use enum_iterator::Sequence;
 
-use crate::Span;
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Ignore<'t> {
-    Comment(Span<'t>),
-    MultilineComment(Span<'t>),
+    Comment(&'t str),
+    MultilineComment(&'t str),
     Newline,
     Whitespace,
 }
@@ -57,18 +55,18 @@ pub enum Symbol {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Identifier<'t> {
-    Identifier(Span<'t>),
-    Type(Span<'t>),
+    Identifier(&'t str),
+    Type(&'t str),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Literal<'t> {
-    Binary(Span<'t>),
-    Octal(Span<'t>),
-    Hex(Span<'t>),
-    Floating(Span<'t>),
-    Char(Span<'t>),
-    String(Span<'t>),
+    Binary(&'t str),
+    Octal(&'t str),
+    Hex(&'t str),
+    Floating(&'t str),
+    Char(&'t str),
+    String(&'t str),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

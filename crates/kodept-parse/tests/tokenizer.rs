@@ -18,13 +18,14 @@ fn get_tokens() -> &'static [TokenMatch<'static>] {
 }
 
 mod default {
+    use kodept_parse::lexer::NomLexer;
     use kodept_parse::tokenizer::GenericLazyTokenizer;
     use crate::{get_file_contents, get_tokens};
 
     #[test]
     fn test_impl() {
         let tokenizer =
-            GenericLazyTokenizer::new(get_file_contents(), kodept_parse::lexer::nom_parse_token);
+            GenericLazyTokenizer::new(get_file_contents(), NomLexer::new());
         let tokens = tokenizer.into_vec();
         similar_asserts::assert_eq!(tokens, get_tokens());
     }
@@ -32,12 +33,13 @@ mod default {
 
 #[cfg(feature = "pest")]
 mod pest {
-    use kodept_parse::grammar::PestKodeptParser;
+    use kodept_parse::lexer::PestLexer;
+    use kodept_parse::tokenizer::GenericLazyTokenizer;
     use crate::{get_file_contents, get_tokens};
 
     #[test]
     fn test_impl() {
-        let tokenizer = PestKodeptParser::new(get_file_contents());
+        let tokenizer = GenericLazyTokenizer::new(get_file_contents(), PestLexer::new());
         let tokens = tokenizer.into_vec();
         similar_asserts::assert_eq!(tokens, get_tokens());
     }
@@ -45,12 +47,13 @@ mod pest {
 
 #[cfg(feature = "peg")]
 mod peg {
-    use kodept_parse::grammar::KodeptParser as Tokenizer;
+    use kodept_parse::lexer::PegLexer;
+    use kodept_parse::tokenizer::GenericLazyTokenizer;
     use crate::{get_file_contents, get_tokens};
 
     #[test]
     fn test_impl() {
-        let tokenizer = Tokenizer::new(get_file_contents());
+        let tokenizer = GenericLazyTokenizer::new(get_file_contents(), PegLexer::new());
         let tokens = tokenizer.into_vec();
         similar_asserts::assert_eq!(tokens, get_tokens());
     }

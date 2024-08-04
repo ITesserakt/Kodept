@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use derive_more::{Constructor};
 use nom::bytes::complete::{take, take_while};
 use nom::Err::Error;
 use nom::IResult;
@@ -9,13 +8,14 @@ use nom::Parser;
 use nom::sequence::tuple;
 use nom_supreme::error::BaseErrorKind;
 use nom_supreme::ParserExt;
-use thiserror::Error;
-
-use crate::{
-    lexer::Token, ParseError, ParseResult, token_match::TokenMatch, token_stream::TokenStream,
-};
+use crate::common::VerboseEnclosed;
+use crate::lexer::Token;
 use crate::lexer::traits::ToRepresentation;
-use crate::parser::common::VerboseEnclosed;
+use crate::nom::parser::{ParseError, ParseResult};
+use crate::nom::parser::macros::match_any_token;
+use crate::nom::TokenVerificationError;
+use crate::token_match::TokenMatch;
+use crate::token_stream::TokenStream;
 
 #[inline]
 pub fn any_not_ignored_token(input: TokenStream) -> ParseResult<TokenMatch> {
@@ -36,12 +36,6 @@ pub fn any_token(input: TokenStream) -> ParseResult<TokenMatch> {
                 .expect("Token stream with 1 element can be coerced to lexer match")
         })
         .parse(input)
-}
-
-#[derive(Error, Debug, Constructor)]
-#[error("Expected `{expected}`")]
-pub struct TokenVerificationError {
-    pub expected: &'static str,
 }
 
 #[inline]
@@ -65,54 +59,6 @@ where
             Err(Error(error))
         }
     }
-}
-
-#[macro_export]
-macro_rules! match_token {
-    ($pat:pat_param) => {{
-        nom::error::context(
-            stringify!($pat),
-            nom::combinator::verify($crate::parser::nom::any_not_ignored_token, move |t| {
-                matches!(&t.token, $pat)
-            }),
-        )
-    }};
-}
-
-#[macro_export]
-macro_rules! match_any_token {
-    ($pat:pat_param) => {{
-        nom::error::context(
-            stringify!($pat),
-            nom::combinator::verify($crate::parser::nom::any_token, move |t| {
-                matches!(&t.token, $pat)
-            }),
-        )
-    }};
-}
-
-#[macro_export]
-#[cfg(test)]
-macro_rules! assert_parses_to {
-    ($parser:ident, $input:expr, $expectation:pat_param) => {
-        match $parser($input) {
-            Err(::nom::Err::Error(e) | ::nom::Err::Failure(e)) => {
-                panic!("{}", ::nom::error::convert_error($input, e));
-            }
-            Err(e) => {
-                panic!("Failed to parse {:?}", e)
-            }
-            Ok((_, candidate_val)) => {
-                if !matches!(&candidate_val, $expectation) {
-                    panic!(
-                        "Failed to parse to expected value\n\
-                        Got:      {:?}",
-                        &candidate_val
-                    )
-                }
-            }
-        }
-    };
 }
 
 #[inline]

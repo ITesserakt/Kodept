@@ -1,25 +1,19 @@
+use derive_more::Constructor;
 use faster_pest::*;
-
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
-use crate::error::{ParseErrors};
-use crate::lexer::{BitOperator, ComparisonOperator, Identifier, Ignore, Keyword, Literal, LogicOperator, MathOperator, Symbol, Token};
-use crate::lexer::Operator::{Bit, Comparison, Dot, Flow, Logic, Math};
+use crate::common::TokenProducer;
 use crate::token_match::TokenMatch;
+use crate::lexer::*;
+use crate::lexer::Operator::*;
 
 #[derive(Parser)]
-#[grammar = "crates/kodept-parse/src/grammar/kodept.pest"]
+#[grammar = "crates/kodept-parse/src/pest/kodept.pest"]
 struct Grammar;
-
-pub fn parse_token(input: &str) -> Result<TokenMatch, ParseErrors<String>> {
-    let token = Grammar::parse(Rule::token, input).map_err(|e| e.into_pest(input))?;
-    let ident = token.into_iter().next().unwrap().into_inner().next().unwrap();
-    Ok(parse_token_from_ident(ident))
-}
 
 fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
     let span = input.as_span();
-    
+
     let token = match input.as_rule() {
         Rule::ignore => Token::Ignore({
             let input = input.into_inner().next().unwrap();
@@ -120,64 +114,17 @@ fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
     TokenMatch::new(token, Span::new(CodePoint::new(length, span.start())))
 }
 
-pub struct Tokenizer<'i> {
-    pairs: Pairs2<'i, Ident<'i>>,
-}
+#[derive(Constructor)]
+pub struct Lexer;
 
-impl<'i> Tokenizer<'i> {
-    pub fn try_new(input: &'i str) -> Result<Self, ParseErrors<String>> {
-        let mut pairs =
-            Grammar::parse(Rule::tokens, input).map_err(|e| e.into_pest(input))?;
-        Ok(Self {
-            pairs: pairs.next().unwrap().into_inner(),
-        })
-    }
+impl TokenProducer for Lexer {
+    type Error<'t> = pest::error::Error<Rule>;
 
-    pub fn new(input: &'i str) -> Self {
-        Self::try_new(input).unwrap()
-    }
-
-    pub fn into_vec(self) -> Vec<TokenMatch<'i>> {
-        let mut vec: Vec<_> = self.collect();
-        vec.shrink_to_fit();
-        vec
-    }
-}
-
-impl<'i> Iterator for Tokenizer<'i> {
-    type Item = TokenMatch<'i>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.pairs.by_ref()
-            .filter(|it| matches!(it.as_rule(), Rule::token))
-            .flat_map(|it| it.into_inner())
-            .map(parse_token_from_ident)
-            .next()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::lexer::{Ignore, Literal, LogicOperator, Operator, Token};
-    use crate::lexer::Identifier::{Identifier, Type};
-    use crate::grammar::pest::{Tokenizer};
-
-    #[test]
-    fn test_example() {
-        let input = "Hello world! 1234";
-        let output = Tokenizer::new(input);
-        let tokens = output.map(|it| it.token).collect::<Vec<_>>();
-
-        assert_eq!(
-            tokens,
-            vec![
-                Token::Identifier(Type("Hello")),
-                Token::Ignore(Ignore::Whitespace),
-                Token::Identifier(Identifier("world")),
-                Token::Operator(Operator::Logic(LogicOperator::NotLogic)),
-                Token::Ignore(Ignore::Whitespace),
-                Token::Literal(Literal::Floating("1234"))
-            ]
-        )
+    #[inline]
+    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+        let input = &whole_input[position..];
+        let token = Grammar::parse(Rule::token, input).map_err(|e| e.into_pest(input))?;
+        let ident = token.into_iter().next().unwrap().into_inner().next().unwrap();
+        Ok(parse_token_from_ident(ident))
     }
 }

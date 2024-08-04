@@ -6,10 +6,10 @@ use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
 
 use kodept_core::code_point::CodePoint;
 
-use crate::lexer::{Ignore::*, Token::Ignore};
+use crate::lexer::{Ignore::*, DefaultLexer, Token::Ignore};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
-use crate::tokenizer::LazyTokenizer;
+use crate::tokenizer::GenericLazyTokenizer;
 
 #[derive(Display, Copy, Clone, Debug)]
 #[display(fmt = "{line}:{col}")]
@@ -99,13 +99,14 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
 impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let tokenizer = LazyTokenizer::new(literal);
+        let tokenizer = GenericLazyTokenizer::new(literal, DefaultLexer::new());
 
         let mut length = 0;
         for pair in self.slice[pos..].iter().zip_longest(tokenizer) {
             match pair {
-                Both(a, b) if a.token != b.token => return RuleResult::Failed,
-                Both(_, _) => length += 1,
+                Both(a, Ok(b)) if a.token != b.token => return RuleResult::Failed,
+                Both(_, Ok(_)) => length += 1,
+                Both(_, Err(_)) => return RuleResult::Failed,
                 Right(_) => return RuleResult::Failed,
                 Left(_) => break,
             }
