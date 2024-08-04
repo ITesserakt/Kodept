@@ -8,6 +8,7 @@ use crate::lexer::{BitOperator, ComparisonOperator, LogicOperator, MathOperator}
 use crate::lexer::{Identifier, Ignore, Keyword, Literal, Operator, Symbol};
 use crate::lexer::Token;
 use crate::token_match::TokenMatch;
+use crate::TRACING_OPTION;
 
 peg::parser! {grammar grammar() for str {
     rule newline() = "\n" / "\r\n" / "\r"
@@ -160,9 +161,9 @@ peg::parser! {grammar grammar() for str {
 }}
 
 #[derive(Constructor)]
-pub struct Lexer;
+pub struct Lexer<const TRACE: bool = false>;
 
-impl TokenProducer for Lexer {
+impl TokenProducer for Lexer<TRACING_OPTION> {
     type Error<'t> = ParseError<LineCol>;
 
     fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
@@ -171,10 +172,31 @@ impl TokenProducer for Lexer {
     }
 }
 
-impl EagerTokensProducer for Lexer {
+#[cfg(feature = "trace")]
+impl TokenProducer for Lexer<false> {
+    type Error<'t> = ParseError<LineCol>;
+
+    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+        let input = &whole_input[position..];
+        let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
+        grammar::token(input)
+    }
+}
+
+impl EagerTokensProducer for Lexer<TRACING_OPTION> {
     type Error<'t> = ParseError<LineCol>;
 
     fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+        grammar::tokens(input)
+    }
+}
+
+#[cfg(feature = "trace")]
+impl EagerTokensProducer for Lexer<false> {
+    type Error<'t> = ParseError<LineCol>;
+
+    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+        let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
         grammar::tokens(input)
     }
 }

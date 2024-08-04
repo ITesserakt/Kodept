@@ -19,6 +19,7 @@ use crate::peg::compatibility::Position;
 use crate::peg::macros::tok;
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
+use crate::TRACING_OPTION;
 
 peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// UTILITIES
@@ -536,12 +537,22 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
 }}
 
 #[derive(Constructor)]
-pub struct Parser;
+pub struct Parser<const TRACE: bool = false>;
 
-impl RLTProducer for Parser {
+impl RLTProducer for Parser<TRACING_OPTION> {
     type Error<'t> = ParseError<Position>;
 
     fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+        grammar::kodept(&input)
+    }
+}
+
+#[cfg(feature = "trace")]
+impl RLTProducer for Parser<false> {
+    type Error<'t> = ParseError<Position>;
+
+    fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+        let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
         grammar::kodept(&input)
     }
 }
