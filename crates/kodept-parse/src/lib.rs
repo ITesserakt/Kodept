@@ -15,3 +15,5 @@ mod pest;
 mod nom;
 
 pub mod common;
+
+pub(crate) const TRACING_OPTION: bool = if cfg!(feature = "trace") { true } else { false };

@@ -9,7 +9,7 @@ use crate::token_stream::TokenStream;
 
 cfg_if! {
     if #[cfg(feature = "peg")] {
-        pub type DefaultParser = PegParser;
+        pub type DefaultParser = PegParser<{crate::TRACING_OPTION}>;
     } else if #[cfg(feature = "nom")] {
         pub type DefaultParser = NomParser;
     } else {
@@ -20,7 +20,7 @@ cfg_if! {
 #[cfg(feature = "nom")]
 pub type NomParser = crate::nom::Parser;
 #[cfg(feature = "peg")]
-pub type PegParser = crate::peg::Parser;
+pub type PegParser<const TRACE: bool = false> = crate::peg::Parser<TRACE>;
 
 pub fn parse_from_top<'t, A, E, P>(input: TokenStream<'t>, parser: P) -> Result<RLT, ParseErrors<A>>
 where

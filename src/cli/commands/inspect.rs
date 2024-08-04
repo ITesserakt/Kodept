@@ -115,15 +115,15 @@ impl InspectParser {
         source: &ReadCodeSource,
         file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
-        use kodept_parse::tokenizer::TracedTokenizer;
+        use kodept_parse::{lexer::PegLexer, tokenizer::EagerTokenizer};
         use std::fs::File;
         use InspectError::TokenizationError;
 
         let file = File::create(file_output_path.with_extension("tok.peg"))?;
         {
             let _gag = gag::Redirect::stdout(file)?;
-            TracedTokenizer::try_new(source.contents())
-                .map_err(|it| TokenizationError((it, source.contents()).into()))?;
+            EagerTokenizer::try_new(source.contents(), PegLexer::<true>::new())
+                .map_err(|it| TokenizationError(it))?;
         }
 
         self.launch_pegviz(file_output_path.with_extension("tok.peg"))?;
@@ -135,21 +135,24 @@ impl InspectParser {
         source: &ReadCodeSource,
         file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
-        use kodept_parse::parse_from_top;
-        use kodept_parse::token_stream::TokenStream;
-        use kodept_parse::tokenizer::Tokenizer;
+        use kodept_parse::{
+            lexer::PegLexer,
+            parser::{parse_from_top, PegParser},
+            token_stream::TokenStream,
+            tokenizer::EagerTokenizer,
+        };
         use std::fs::File;
         use InspectError::TokenizationError;
 
-        let tokenizer = Tokenizer::try_new(source.contents())
-            .map_err(|it| TokenizationError((it, source.contents()).into()))?;
+        let tokenizer = EagerTokenizer::try_new(source.contents(), PegLexer::<false>::new())
+            .map_err(|it| TokenizationError(it))?;
         let tokens = tokenizer.into_vec();
         let tokens = TokenStream::new(&tokens);
 
         let file = File::create(file_output_path.with_extension("par.peg"))?;
         {
             let _gag = gag::Redirect::stdout(file)?;
-            let _ = parse_from_top(tokens);
+            let _ = parse_from_top(tokens, PegParser::<true>::new());
         }
 
         self.launch_pegviz(file_output_path.with_extension("par.peg"))?;
@@ -168,7 +171,7 @@ impl Command for InspectParser {
         output_path: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         use kodept_core::file_relative::CodePath;
-        
+
         let source_name = match source.path() {
             CodePath::ToFile(x) => x
                 .file_name()

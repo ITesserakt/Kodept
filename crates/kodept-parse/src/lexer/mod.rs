@@ -7,7 +7,7 @@ pub mod traits;
 
 cfg_if! {
     if #[cfg(all(feature = "peg", not(feature = "trace")))] {
-        pub type DefaultLexer = PegLexer; 
+        pub type DefaultLexer = PegLexer<{crate::TRACING_OPTION}>; 
     } else if #[cfg(feature = "pest")] {
         pub type DefaultLexer = PestLexer;
     } else if #[cfg(feature = "nom")] {
@@ -20,7 +20,7 @@ cfg_if! {
 #[cfg(feature = "nom")]
 pub type NomLexer = crate::nom::Lexer;
 #[cfg(feature = "peg")]
-pub type PegLexer = crate::peg::Lexer;
+pub type PegLexer<const TRACE: bool = false> = crate::peg::Lexer<TRACE>;
 #[cfg(feature = "pest")]
 pub type PestLexer = crate::pest::Lexer;
 
