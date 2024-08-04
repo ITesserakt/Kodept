@@ -1,21 +1,23 @@
-pub use grammar::kodept;
+use derive_more::Constructor;
+use peg::error::ParseError;
 use kodept_core::structure::*;
 use kodept_core::structure::rlt::new_types::BinaryOperationSymbol;
 use kodept_core::structure::rlt::new_types::UnaryOperationSymbol;
-
-use crate::grammar::macros::tok;
-use crate::lexer::{Identifier as I};
-use crate::lexer::Literal::*;
-use crate::lexer::Token::*;
-use crate::lexer::Symbol::*;
-use crate::lexer::ComparisonOperator::*;
-use crate::lexer::MathOperator::*;
-use crate::lexer::LogicOperator::*;
+use kodept_core::structure::rlt::RLT;
+use crate::common::{RLTProducer, VerboseEnclosed};
 use crate::lexer::BitOperator::*;
-use crate::lexer::Operator::*;
+use crate::lexer::ComparisonOperator::*;
+use crate::lexer::Identifier as I;
 use crate::lexer::Keyword::*;
+use crate::lexer::Literal::*;
+use crate::lexer::LogicOperator::*;
+use crate::lexer::MathOperator::*;
+use crate::lexer::Operator::*;
+use crate::lexer::Symbol::*;
+use crate::lexer::Token::*;
 use crate::OptionTExt;
-use crate::parser::common::VerboseEnclosed;
+use crate::peg::compatibility::Position;
+use crate::peg::macros::tok;
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
 
@@ -24,10 +26,10 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
     rule any_not_ignored_token() -> TokenMatch<'input> =
         quiet!{ [tok!(Ignore(_))]* i:[_] { i } } / expected!("any visible symbol")
-    
+
     rule any_token() -> TokenMatch<'input> =
         quiet!{ i:[_] { i } } / expected!("any symbol")
-    
+
     rule _ = [tok!(Ignore(_))]
 
     rule comma_separated0<T>(items: rule<T>) -> Vec<T> =
@@ -529,6 +531,17 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             e.ok_or("")
         }
 
-    pub rule kodept() -> rlt::RLT =
-        i:traced(<file_grammar()>) ("\n" / "\r\n" / " ")* ![_] { rlt::RLT(i) }
+    pub rule kodept() -> RLT =
+        i:traced(<file_grammar()>) ("\n" / "\r\n" / " ")* ![_] { RLT(i) }
 }}
+
+#[derive(Constructor)]
+pub struct Parser;
+
+impl RLTProducer for Parser {
+    type Error<'t> = ParseError<Position>;
+
+    fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+        grammar::kodept(&input)
+    }
+}

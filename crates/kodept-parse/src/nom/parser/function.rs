@@ -5,12 +5,12 @@ use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
-use crate::{function, OptionTExt};
-use crate::{match_token, ParseResult};
+use crate::{OptionTExt};
 use crate::lexer::{Identifier::*, Keyword::*, Symbol::*, Token};
-use crate::parser::{block_level, r#type};
-use crate::parser::nom::{comma_separated0, match_token, paren_enclosed};
-use crate::parser::parameter::{parameter, typed_parameter};
+use crate::nom::parser::{block_level, ParseResult, r#type};
+use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::parameter::{parameter, typed_parameter};
+use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::token_stream::TokenStream;
 
 #[allow(unused)]

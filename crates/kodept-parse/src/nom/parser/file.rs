@@ -6,14 +6,12 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 
 use crate::{
-    function,
     lexer::{Identifier::*, Keyword::*, Operator::*, Symbol::*, Token},
-    match_token,
     token_stream::TokenStream,
 };
-use crate::{match_any_token, ParseResult};
-use crate::parser::nom::{match_token, newline_separated};
-use crate::parser::top_level;
+use crate::nom::parser::{ParseResult, top_level};
+use crate::nom::parser::macros::{function, match_any_token, match_token};
+use crate::nom::parser::utils::{match_token, newline_separated};
 
 fn module_statement(input: TokenStream) -> ParseResult<rlt::Module> {
     tuple((

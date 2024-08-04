@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "kodept"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -903,7 +903,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cfg-if",
  "criterion",

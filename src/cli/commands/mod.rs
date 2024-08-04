@@ -13,12 +13,12 @@ use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::ErrorReported;
 use kodept_parse::error::ParseError;
 use kodept_parse::lexer::Token;
-use kodept_parse::parse_from_top;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::Tokenizer;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+use kodept_parse::parser::{default_parse_from_top};
+use kodept_parse::tokenizer::{LazyTokenizer};
 
 mod execute;
 mod graph;
@@ -64,10 +64,10 @@ fn to_diagnostic(error: ParseError<Token>) -> Diagnostic<()> {
 }
 
 fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
-    let tokenizer = Tokenizer::new(source.contents());
+    let tokenizer = LazyTokenizer::new(source.contents());
     let tokens = tokenizer.into_vec();
     let token_stream = TokenStream::new(&tokens);
-    let result = parse_from_top(token_stream).map_err(|es| {
+    let result = default_parse_from_top(token_stream).map_err(|es| {
         es.into_iter()
             .map(to_diagnostic)
             .collect::<Vec<_>>()

@@ -6,10 +6,10 @@ use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
-use crate::{function, ParseResult};
 use crate::lexer::Keyword::{Elif, Else, If};
-use crate::parser::{block_level, operator};
-use crate::parser::nom::match_token;
+use crate::nom::parser::{block_level, operator, ParseResult};
+use crate::nom::parser::macros::function;
+use crate::nom::parser::utils::match_token;
 use crate::token_stream::TokenStream;
 
 fn else_expr(input: TokenStream) -> ParseResult<rlt::ElseExpr> {

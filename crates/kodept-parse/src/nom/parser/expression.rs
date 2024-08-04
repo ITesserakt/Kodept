@@ -5,12 +5,12 @@ use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
-use crate::{function, ParseResult};
 use crate::lexer::Keyword::Lambda;
 use crate::lexer::Operator::Flow;
-use crate::parser::{code_flow, literal, operator, term};
-use crate::parser::nom::{comma_separated0, match_token};
-use crate::parser::parameter::{parameter};
+use crate::nom::parser::parameter::parameter;
+use crate::nom::parser::{code_flow, literal, operator, ParseResult, term};
+use crate::nom::parser::macros::function;
+use crate::nom::parser::utils::{comma_separated0, match_token};
 use crate::token_stream::TokenStream;
 
 fn lambda(input: TokenStream) -> ParseResult<rlt::Expression> {

@@ -1,4 +1,4 @@
-use std::borrow::{Cow};
+use std::borrow::Cow;
 
 use derive_more::Constructor;
 
@@ -41,7 +41,13 @@ impl<A> IntoIterator for ParseErrors<A> {
 
 impl<'t> Original<Token<'t>> for TokenStream<'t> {
     fn point_pos(&self, point: impl Into<CodePoint>) -> usize {
-        point_pos(*self, point.into())
+        let stream = *self;
+        let point1 = point.into();
+        stream
+            .slice
+            .iter()
+            .position(|it| it.span.point == point1)
+            .unwrap()
     }
 
     fn actual(&self, point: impl Into<CodePoint>) -> Token<'t> {
@@ -50,27 +56,15 @@ impl<'t> Original<Token<'t>> for TokenStream<'t> {
     }
 }
 
-impl<'s> Original<&'s str> for &'s str {
+impl<'a, S: From<&'a str>> Original<S> for &'a str {
     fn point_pos(&self, point: impl Into<CodePoint>) -> usize {
         let point = point.into();
         point.offset
     }
 
-    fn actual(&self, point: impl Into<CodePoint>) -> &'s str {
+    fn actual(&self, point: impl Into<CodePoint>) -> S {
         let point = point.into();
-        &self[point.offset..point.offset + point.length]
-    }
-}
-
-impl Original<String> for &str {
-    fn point_pos(&self, point: impl Into<CodePoint>) -> usize {
-        let point = point.into();
-        point.offset
-    }
-
-    fn actual(&self, point: impl Into<CodePoint>) -> String {
-        let point = point.into();
-        self[point.offset..point.offset + point.length].to_string()
+        S::from(&self[point.offset..point.offset + point.length])
     }
 }
 
@@ -86,185 +80,6 @@ impl<A> ParseError<A> {
 
 impl<A> ParseErrors<A> {
     pub fn map<B>(self, mut f: impl FnMut(A) -> B) -> ParseErrors<B> {
-        ParseErrors::new(self.into_iter()
-            .map(move |it| it.map(&mut f))
-            .collect())
-    }
-}
-
-#[cfg(feature = "peg")]
-impl<A, O: Original<A>, P: Into<crate::grammar::compatibility::Position> + Clone>
-    From<(peg::error::ParseError<P>, O)> for ParseErrors<A>
-{
-    fn from((error, stream): (peg::error::ParseError<P>, O)) -> Self {
-        let expected = error.expected.tokens().map(Cow::Borrowed).collect();
-        let pos = stream.point_pos(error.location.clone().into());
-        let actual = stream.actual(error.location.clone().into());
-        let location = ErrorLocation::new(pos, CodePoint::from(error.location.into()));
-
-        ParseErrors {
-            errors: vec![ParseError::new(expected, actual, location)],
-        }
-    }
-}
-
-#[cfg(feature = "pest")]
-impl From<pest::error::Error<crate::grammar::pest::Rule>> for ParseErrors<String> {
-    fn from(value: pest::error::Error<crate::grammar::pest::Rule>) -> Self {
-        use pest::error::{InputLocation, LineColLocation};
-
-        let error_loc = match value.location {
-            InputLocation::Pos(pos) => ErrorLocation::new(pos, CodePoint::single_point(pos)),
-            InputLocation::Span((start, end)) => {
-                ErrorLocation::new(start, CodePoint::new(end - start, start))
-            }
-        };
-        let expected = value.variant.message();
-        let (start, end) = match value.line_col {
-            LineColLocation::Pos((_, col)) => (col, col + 1),
-            LineColLocation::Span((_, col_start), (_, col_end)) => (col_start, col_end),
-        };
-        let actual = value.line()[start..end].to_string();
-        ParseErrors {
-            errors: vec![ParseError::new(
-                vec![Cow::Owned(expected.to_string())],
-                actual,
-                error_loc,
-            )],
-        }
-    }
-}
-
-#[inline(always)]
-fn point_pos(stream: TokenStream, point: CodePoint) -> usize {
-    stream
-        .slice
-        .iter()
-        .position(|it| it.span.point == point)
-        .unwrap()
-}
-
-#[cfg(feature = "nom")]
-pub mod default {
-    use std::borrow::Cow;
-    use std::collections::VecDeque;
-
-    use derive_more::Constructor;
-    use itertools::Itertools;
-    use nom_supreme::error::{BaseErrorKind, Expectation};
-
-    use kodept_core::code_point::CodePoint;
-
-    use crate::error::{ErrorLocation, ParseError, ParseErrors, point_pos};
-    use crate::lexer::Token;
-    use crate::parser::nom::TokenVerificationError;
-    use crate::token_stream::TokenStream;
-    use crate::TokenizationError;
-
-    fn take_first_token(stream: TokenStream) -> Token {
-        stream.slice.iter().next().unwrap().token
-    }
-
-    trait ExpectedError {
-        fn expected(&self) -> Cow<'static, str>;
-    }
-
-    impl ExpectedError for TokenVerificationError {
-        fn expected(&self) -> Cow<'static, str> {
-            Cow::Borrowed(self.expected)
-        }
-    }
-
-    impl<T: ?Sized + ToString> ExpectedError for Box<T> {
-        fn expected(&self) -> Cow<'static, str> {
-            Cow::Owned(self.to_string())
-        }
-    }
-
-    #[derive(Debug, Constructor)]
-    struct BaseError<'s, O, E> {
-        location: O,
-        kind: BaseErrorKind<&'s str, E>,
-    }
-
-    impl<'s, O, E> BaseError<'s, O, E>
-    where
-        E: ExpectedError,
-    {
-        pub fn into_expected(self) -> Cow<'static, str> {
-            match self.kind {
-                BaseErrorKind::Expected(Expectation::Something) => Cow::Borrowed("something"),
-                BaseErrorKind::Expected(expectation) => Cow::Owned(expectation.to_string()),
-                BaseErrorKind::Kind(kind) => Cow::Owned(kind.description().to_string()),
-                BaseErrorKind::External(ext) => ext.expected(),
-            }
-        }
-    }
-
-    impl<'t, 's> From<(crate::ParseError<'t>, TokenStream<'s>)> for ParseErrors<Token<'t>> {
-        fn from((error, stream): (crate::ParseError<'t>, TokenStream<'s>)) -> Self {
-            let mut current_errors = VecDeque::from([error]);
-            let mut base_errors = vec![];
-            loop {
-                match current_errors.pop_front() {
-                    Some(crate::ParseError::Base { location, kind }) => {
-                        base_errors.push(BaseError::new(location, kind))
-                    }
-                    Some(crate::ParseError::Stack { base, .. }) => current_errors.push_back(*base),
-                    Some(crate::ParseError::Alt(vec)) => current_errors.extend(vec),
-                    None => break,
-                }
-            }
-
-            let parse_errors = base_errors
-                .into_iter()
-                .chunk_by(|it| it.location)
-                .into_iter()
-                .map(|(key, group)| {
-                    let point = key.slice[0].span.point;
-                    let pos = point_pos(stream, point);
-                    let error_loc = ErrorLocation::new(pos, point);
-                    let actual = take_first_token(key);
-                    let expected = group.map(|it| it.into_expected()).collect();
-                    ParseError::new(expected, actual, error_loc)
-                })
-                .collect();
-            ParseErrors {
-                errors: parse_errors,
-            }
-        }
-    }
-
-    impl<'t, 's> From<(TokenizationError<'t>, &'s str)> for ParseErrors<&'t str> {
-        fn from((error, stream): (TokenizationError<'t>, &'s str)) -> Self {
-            let mut current_errors = VecDeque::from([error]);
-            let mut base_errors = vec![];
-            loop {
-                match current_errors.pop_front() {
-                    None => break,
-                    Some(TokenizationError::Base { location, kind }) => {
-                        base_errors.push(BaseError::new(location, kind))
-                    }
-                    Some(TokenizationError::Stack { base, .. }) => current_errors.push_back(*base),
-                    Some(TokenizationError::Alt(vec)) => current_errors.extend(vec),
-                }
-            }
-
-            let parse_errors = base_errors
-                .into_iter()
-                .chunk_by(|it| it.location)
-                .into_iter()
-                .map(|(key, group)| {
-                    let pos = stream.find(key).unwrap_or_default();
-                    let error_loc = ErrorLocation::new(pos, CodePoint::single_point(pos));
-                    let actual = &key[0..=1];
-                    let expected = group.map(|it| it.into_expected()).collect();
-                    ParseError::new(expected, actual, error_loc)
-                })
-                .collect();
-            ParseErrors {
-                errors: parse_errors,
-            }
-        }
+        ParseErrors::new(self.into_iter().map(move |it| it.map(&mut f)).collect())
     }
 }
