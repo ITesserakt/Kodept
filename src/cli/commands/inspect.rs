@@ -123,7 +123,7 @@ impl InspectParser {
         {
             let _gag = gag::Redirect::stdout(file)?;
             EagerTokenizer::try_new(source.contents(), PegLexer::<true>::new())
-                .map_err(|it| TokenizationError(it))?;
+                .map_err(TokenizationError)?;
         }
 
         self.launch_pegviz(file_output_path.with_extension("tok.peg"))?;
@@ -145,7 +145,7 @@ impl InspectParser {
         use InspectError::TokenizationError;
 
         let tokenizer = EagerTokenizer::try_new(source.contents(), PegLexer::<false>::new())
-            .map_err(|it| TokenizationError(it))?;
+            .map_err(TokenizationError)?;
         let tokens = tokenizer.into_vec();
         let tokens = TokenStream::new(&tokens);
 
