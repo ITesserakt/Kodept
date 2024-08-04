@@ -3,7 +3,7 @@ use peg::error::ParseError;
 use peg::str::LineCol;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
-use crate::common::{TokenProducer};
+use crate::common::{EagerTokensProducer, TokenProducer};
 use crate::lexer::{BitOperator, ComparisonOperator, LogicOperator, MathOperator};
 use crate::lexer::{Identifier, Ignore, Keyword, Literal, Operator, Symbol};
 use crate::lexer::Token;
@@ -168,5 +168,13 @@ impl TokenProducer for Lexer {
     fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
         let input = &whole_input[position..];
         grammar::token(input)
+    }
+}
+
+impl EagerTokensProducer for Lexer {
+    type Error<'t> = ParseError<LineCol>;
+
+    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+        grammar::tokens(input)
     }
 }

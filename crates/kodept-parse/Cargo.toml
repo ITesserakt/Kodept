@@ -25,7 +25,6 @@ nom = ["dep:nom", "dep:nom-supreme"]
 [dependencies]
 cfg-if = "1.0.0"
 derive_more.workspace = true
-extend.workspace = true
 itertools.workspace = true
 nonempty-collections = "0.2.5"
 thiserror = "1.0.44"

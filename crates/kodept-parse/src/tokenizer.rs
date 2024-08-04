@@ -1,8 +1,10 @@
+use std::collections::VecDeque;
 use std::fmt::Debug;
+use std::iter::FusedIterator;
 
 use itertools::Itertools;
 
-use crate::common::{ErrorAdapter, TokenProducer};
+use crate::common::{EagerTokensProducer, ErrorAdapter, TokenProducer};
 use crate::error::{Original, ParseErrors};
 use crate::lexer::DefaultLexer;
 use crate::token_match::TokenMatch;
@@ -34,13 +36,13 @@ impl<'t, F> GenericLazyTokenizer<'t, F> {
     pub fn try_into_vec<A>(self) -> Result<Vec<TokenMatch<'t>>, ParseErrors<A>>
     where
         F: TokenProducer<Error<'t>: ErrorAdapter<A, &'t str>>,
-        &'t str: Original<A>
+        &'t str: Original<A>,
     {
         let buf = self.buffer;
         let pos = self.pos;
         match self.try_collect::<_, Vec<_>, _>() {
             Ok(x) => Ok(x),
-            Err(e) => Err(e.adapt(buf, pos))
+            Err(e) => Err(e.adapt(buf, pos)),
         }
     }
 
@@ -76,3 +78,41 @@ where
         Some(Ok(token_match))
     }
 }
+
+impl<'t, F> FusedIterator for GenericLazyTokenizer<'t, F> where F: TokenProducer {}
+
+pub struct EagerTokenizer<'t>(VecDeque<TokenMatch<'t>>);
+
+impl<'t> EagerTokenizer<'t> {
+    pub fn try_new<A, E, F>(input: &'t str, handler: F) -> Result<Self, ParseErrors<A>>
+    where
+        E: ErrorAdapter<A, &'t str>,
+        for<'a> &'a str: Original<A>,
+        F: EagerTokensProducer<Error<'t> = E>,
+    {
+        let tokens = handler.parse_tokens(input).map_err(|e| e.adapt(input, 0))?;
+        Ok(Self(VecDeque::from(tokens)))
+    }
+
+    pub fn new<F>(input: &'t str, handler: F) -> Self
+    where
+        F::Error<'t>: Debug,
+        F: EagerTokensProducer,
+    {
+        Self(VecDeque::from(handler.parse_tokens(input).unwrap()))
+    }
+    
+    pub fn into_vec(self) -> Vec<TokenMatch<'t>> {
+        Vec::from(self.0)
+    }
+}
+
+impl<'t> Iterator for EagerTokenizer<'t> {
+    type Item = TokenMatch<'t>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop_front()
+    }
+}
+
+impl<'t> FusedIterator for EagerTokenizer<'t> {}

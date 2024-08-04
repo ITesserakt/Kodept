@@ -4,6 +4,7 @@ use kodept_core::structure::Located;
 use kodept_core::structure::rlt::new_types::Enclosed;
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::Span;
+
 use crate::error::{Original, ParseErrors};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
@@ -11,12 +12,22 @@ use crate::token_stream::TokenStream;
 pub trait TokenProducer {
     type Error<'t>;
 
-    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>>;
+    fn parse_token<'t>(
+        &self,
+        whole_input: &'t str,
+        position: usize,
+    ) -> Result<TokenMatch<'t>, Self::Error<'t>>;
+}
+
+pub trait EagerTokensProducer {
+    type Error<'t>;
+    
+    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>>;
 }
 
 pub trait RLTProducer {
     type Error<'t>;
-    
+
     fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>>;
 }
 
@@ -28,7 +39,7 @@ pub trait ErrorAdapter<A, O: Original<A>> {
 pub struct VerboseEnclosed<T> {
     pub left: Span,
     pub inner: T,
-    pub right: Span
+    pub right: Span,
 }
 
 impl<T, U: From<T>> From<VerboseEnclosed<T>> for Enclosed<U> {

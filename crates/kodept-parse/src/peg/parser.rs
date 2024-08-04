@@ -15,7 +15,6 @@ use crate::lexer::MathOperator::*;
 use crate::lexer::Operator::*;
 use crate::lexer::Symbol::*;
 use crate::lexer::Token::*;
-use crate::OptionTExt;
 use crate::peg::compatibility::Position;
 use crate::peg::macros::tok;
 use crate::token_match::TokenMatch;
@@ -443,7 +442,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         b:body() {
             rlt::BodiedFunction {
                 keyword: k.span.into(),
-                params: ps.map_into(),
+                params: ps.map(|it| it.into()),
                 id: id.span.into(),
                 return_type: ty,
                 body: Box::new(b)
@@ -461,7 +460,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             rlt::Enum::Stack {
                 keyword: k.span.into(),
                 id,
-                contents: i.map_into()
+                contents: i.map(|it| it.into())
             }
         }
 
@@ -472,8 +471,8 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             rlt::Struct {
                 keyword: k.span.into(),
                 id,
-                parameters: ps.map_into(),
-                body: i.map_into()
+                parameters: ps.map(|it| it.into()),
+                body: i.map(|it| it.into())
             }
         }
 

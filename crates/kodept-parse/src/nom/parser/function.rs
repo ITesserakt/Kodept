@@ -5,7 +5,6 @@ use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
-use crate::{OptionTExt};
 use crate::lexer::{Identifier::*, Keyword::*, Symbol::*, Token};
 use crate::nom::parser::{block_level, ParseResult, r#type};
 use crate::nom::parser::macros::{function, match_token};
@@ -27,7 +26,7 @@ fn abstract_function(input: TokenStream) -> ParseResult<rlt::AbstractFunction> {
     .map(|it| rlt::AbstractFunction {
         keyword: it.1.span.into(),
         id: it.2.span.into(),
-        params: it.3.map_into(),
+        params: it.3.map(|it| it.into()),
         return_type: it.4.map(|it| (it.0.span.into(), it.1)),
     })
     .parse(input)
@@ -45,7 +44,7 @@ pub fn bodied(input: TokenStream) -> ParseResult<rlt::BodiedFunction> {
     .map(|it| rlt::BodiedFunction {
         keyword: it.0.span.into(),
         id: it.1.span.into(),
-        params: it.2.map_into(),
+        params: it.2.map(|it| it.into()),
         return_type: it.3.map(|it| (it.0.span.into(), it.1)),
         body: Box::new(it.4),
     })
