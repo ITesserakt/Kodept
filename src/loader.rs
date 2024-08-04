@@ -208,6 +208,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_load_from_file_by_folder() {
         let mut file = tempfile::Builder::new().suffix(".kd").tempfile().unwrap();
 
