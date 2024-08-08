@@ -33,6 +33,11 @@ fn bench_impls(c: &mut Criterion) {
             &contents,
             |b, i| b.iter(|| ParallelTokenizer::new(i, PegLexer::<false>::new()).into_vec()),
         );
+        group.bench_with_input(
+            BenchmarkId::new("parallel-pest", description),
+            &contents,
+            |b, i| b.iter(|| ParallelTokenizer::new(i, PestLexer::new()).into_vec()),
+        );
     }
 }
 
