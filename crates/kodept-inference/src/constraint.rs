@@ -1,5 +1,5 @@
 use std::collections::{HashSet, VecDeque};
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Formatter};
 
 use derive_more::Display;
 use itertools::Either::{Left, Right};
@@ -25,7 +25,7 @@ pub enum ConstraintsSolverError {
 }
 
 #[derive(Debug, PartialEq, Clone, Display)]
-#[display(fmt = "{t1} ≡ {t2}")]
+#[display("{t1} ≡ {t2}")]
 pub struct EqConstraint {
     pub t1: MonomorphicType,
     pub t2: MonomorphicType,

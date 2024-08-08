@@ -9,7 +9,6 @@ use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
 use kodept_macros::error::ErrorReported;
 use kodept_macros::error::traits::ResultTEExt;
-
 use crate::cli::traits::Command;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
@@ -115,14 +114,15 @@ impl InspectParser {
         source: &ReadCodeSource,
         file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
-        use kodept_parse::{lexer::PegLexer, tokenizer::EagerTokenizer};
+        use kodept_parse::{lexer::PegLexer, tokenizer::EagerTokenizer, tokenizer::Tokenizer};
         use std::fs::File;
         use InspectError::TokenizationError;
 
         let file = File::create(file_output_path.with_extension("tok.peg"))?;
         {
             let _gag = gag::Redirect::stdout(file)?;
-            EagerTokenizer::try_new(source.contents(), PegLexer::<true>::new())
+            EagerTokenizer::new(source.contents(), PegLexer::<true>::new())
+                .try_collect_adapted::<String>()
                 .map_err(TokenizationError)?;
         }
 
@@ -139,14 +139,14 @@ impl InspectParser {
             lexer::PegLexer,
             parser::{parse_from_top, PegParser},
             token_stream::TokenStream,
-            tokenizer::EagerTokenizer,
+            tokenizer::{EagerTokenizer, Tokenizer},
         };
         use std::fs::File;
         use InspectError::TokenizationError;
 
-        let tokenizer = EagerTokenizer::try_new(source.contents(), PegLexer::<false>::new())
+        let tokens = EagerTokenizer::new(source.contents(), PegLexer::<false>::new())
+            .try_collect_adapted::<String>()
             .map_err(TokenizationError)?;
-        let tokens = tokenizer.into_vec();
         let tokens = TokenStream::new(&tokens);
 
         let file = File::create(file_output_path.with_extension("par.peg"))?;

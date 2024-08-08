@@ -17,9 +17,9 @@ use crate::scope::ScopeError::{Duplicate, NoScope};
 
 #[derive(Display, Debug)]
 pub enum ScopeError {
-    #[display(fmt = "No scope available at this point")]
+    #[display("No scope available at this point")]
     NoScope,
-    #[display(fmt = "Element with name `{_0}` already defined")]
+    #[display("Element with name `{_0}` already defined")]
     Duplicate(String),
 }
 
