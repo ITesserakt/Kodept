@@ -19,7 +19,6 @@ use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use tracing::info;
 
 mod execute;
 mod graph;
@@ -66,7 +65,7 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic<()> {
 
 fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str>> {
     use kodept_parse::tokenizer::*;
-    
+
     #[cfg(feature = "parallel")]
     {
         if source.contents().len() > SWITCH_TO_PARALLEL_THRESHOLD {
@@ -79,7 +78,6 @@ fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str
 fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
     let tokens =
         tokenize(source).map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
-    info!("Tokens length = {}", tokens.len());
     let token_stream = TokenStream::new(&tokens);
     let result = default_parse_from_top(token_stream)
         .map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
