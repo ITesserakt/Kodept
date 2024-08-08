@@ -3,11 +3,11 @@ use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Through
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::LazyTokenizer;
+use kodept_parse::tokenizer::{LazyTokenizer, Tokenizer, TokenizerExt};
 use kodept_parse::common::RLTProducer;
 
 fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
-    let tokenizer = LazyTokenizer::new(contents);
+    let tokenizer = LazyTokenizer::default(contents);
     let tokens = tokenizer.into_vec();
     tokens
 }
@@ -33,7 +33,7 @@ fn bench_impls(c: &mut Criterion) {
             b.iter(|| NomParser::new().parse_rlt(*i).expect("Success"))
         });
         group.bench_with_input(BenchmarkId::new("peg", description), &tokens, |b, i| {
-            b.iter(|| PegParser::new().parse_rlt(*i).expect("Success"))
+            b.iter(|| PegParser::<false>::new().parse_rlt(*i).expect("Success"))
         });
     }
     group.finish();

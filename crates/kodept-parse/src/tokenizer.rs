@@ -200,7 +200,6 @@ mod parallel {
                     *offset += a.len();
                     Some((*offset, b))
                 }))
-                .inspect(|it| println!("{}", it.0))
                 .collect();
 
             Self {
