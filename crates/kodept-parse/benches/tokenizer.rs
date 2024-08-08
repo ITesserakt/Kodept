@@ -3,12 +3,12 @@ use kodept_parse::lexer::{PegLexer, PestLexer};
 use kodept_parse::tokenizer::{EagerTokenizer, ParallelTokenizer, Tokenizer};
 
 const FILENAMES: [(&str, &str); 6] = [
-    ("benches/benchmarking_file1.kd", "large"),
-    ("benches/benchmarking_file2.kd", "simple1"),
-    ("benches/benchmarking_file3.kd", "simple2"),
-    ("benches/benchmarking_file4.kd", "medium"),
-    ("benches/benchmarking_file5.kd", "half-large"),
-    ("benches/benchmarking_file6.kd", "well-fed"),
+    ("benches/benchmarking_file1.kd", "30*128"),
+    ("benches/benchmarking_file2.kd", "30*256"),
+    ("benches/benchmarking_file3.kd", "30*8"),
+    ("benches/benchmarking_file4.kd", "30*16"),
+    ("benches/benchmarking_file5.kd", "30*32"),
+    ("benches/benchmarking_file6.kd", "30*64"),
 ];
 
 fn bench_impls(c: &mut Criterion) {
