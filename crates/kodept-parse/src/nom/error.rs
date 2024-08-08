@@ -1,11 +1,14 @@
-use std::borrow::Cow;
-use std::collections::VecDeque;
-use derive_more::Constructor;
-use itertools::Itertools;
-use nom_supreme::error::{BaseErrorKind, ErrorTree, Expectation};
-use kodept_core::code_point::CodePoint;
 use crate::common::ErrorAdapter;
 use crate::error::{ErrorLocation, Original, ParseError, ParseErrors};
+use crate::lexer::Token;
+use crate::nom::TokenVerificationError;
+use crate::token_stream::TokenStream;
+use derive_more::Constructor;
+use itertools::Itertools;
+use kodept_core::code_point::CodePoint;
+use nom_supreme::error::{BaseErrorKind, ErrorTree, Expectation};
+use std::borrow::Cow;
+use std::collections::VecDeque;
 
 trait ExpectedError {
     fn expected(&self) -> Cow<'static, str>;
@@ -31,6 +34,12 @@ where
     }
 }
 
+impl ExpectedError for TokenVerificationError {
+    fn expected(&self) -> Cow<'static, str> {
+        Cow::Borrowed(self.expected)
+    }
+}
+
 impl<T: ?Sized + ToString> ExpectedError for Box<T> {
     fn expected(&self) -> Cow<'static, str> {
         Cow::Owned(self.to_string())
@@ -40,21 +49,23 @@ impl<T: ?Sized + ToString> ExpectedError for Box<T> {
 impl<A> ErrorAdapter<A, &str> for ErrorTree<&str>
 where
     for<'a> &'a str: Original<A>,
-    for<'a> A: From<&'a str>
+    for<'a> A: From<&'a str>,
 {
     fn adapt(self, _: &str, position: usize) -> ParseErrors<A> {
         let mut current_errors = VecDeque::from([self]);
         let mut base_errors = vec![];
-        
+
         loop {
             match current_errors.pop_front() {
                 None => break,
-                Some(ErrorTree::Base { location, kind }) => base_errors.push(BaseError::new(location, kind)),
+                Some(ErrorTree::Base { location, kind }) => {
+                    base_errors.push(BaseError::new(location, kind))
+                }
                 Some(ErrorTree::Stack { base, .. }) => current_errors.push_back(*base),
                 Some(ErrorTree::Alt(es)) => current_errors.extend(es),
             }
         }
-        
+
         let parse_errors = base_errors
             .into_iter()
             .chunk_by(|it| it.location)
@@ -63,9 +74,44 @@ where
                 let actual = A::from(&key[0..=1]);
                 let expected = group.map(|it| it.into_expected()).collect();
                 let location = ErrorLocation::new(position, CodePoint::single_point(position));
-                
+
                 ParseError::new(expected, actual, location)
-            }).collect();
+            })
+            .collect();
+        ParseErrors::new(parse_errors)
+    }
+}
+
+impl<'t> ErrorAdapter<Token<'t>, TokenStream<'t>> for super::parser::ParseError<'t> {
+    fn adapt(self, _: TokenStream<'t>, position: usize) -> ParseErrors<Token<'t>> {
+        let mut current_errors = VecDeque::from([self]);
+        let mut base_errors = vec![];
+
+        loop {
+            match current_errors.pop_front() {
+                None => break,
+                Some(super::parser::ParseError::Base { location, kind }) => {
+                    base_errors.push(BaseError::new(location, kind))
+                }
+                Some(super::parser::ParseError::Stack { base, .. }) => {
+                    current_errors.push_back(*base)
+                }
+                Some(super::parser::ParseError::Alt(es)) => current_errors.extend(es),
+            }
+        }
+
+        let parse_errors = base_errors
+            .into_iter()
+            .chunk_by(|it| it.location)
+            .into_iter()
+            .map(|(key, group)| {
+                let actual = key.slice[0].token;
+                let expected = group.map(|it| it.into_expected()).collect();
+                let location = ErrorLocation::new(position, CodePoint::single_point(position));
+
+                ParseError::new(expected, actual, location)
+            })
+            .collect();
         ParseErrors::new(parse_errors)
     }
 }

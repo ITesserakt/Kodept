@@ -7,7 +7,7 @@ pub mod traits;
 
 cfg_if! {
     if #[cfg(all(feature = "peg", not(feature = "trace")))] {
-        pub type DefaultLexer = PegLexer<{crate::TRACING_OPTION}>; 
+        pub type DefaultLexer = PegLexer<true>;
     } else if #[cfg(feature = "pest")] {
         pub type DefaultLexer = PestLexer;
     } else if #[cfg(feature = "nom")] {
@@ -20,18 +20,18 @@ cfg_if! {
 #[cfg(feature = "nom")]
 pub type NomLexer = crate::nom::Lexer;
 #[cfg(feature = "peg")]
-pub type PegLexer<const TRACE: bool = false> = crate::peg::Lexer<TRACE>;
+pub type PegLexer<const TRACE: bool> = crate::peg::Lexer<TRACE>;
 #[cfg(feature = "pest")]
 pub type PestLexer = crate::pest::Lexer;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use std::fmt::Debug;
-    use rstest::rstest;
     use crate::common::TokenProducer;
-    use crate::lexer::{Token::*, Ignore::*, Token, PegLexer};
-    
+    use crate::lexer::{DefaultLexer, Ignore::*, Token, Token::*};
+    use rstest::rstest;
+    use std::fmt::Debug;
+
     #[rstest]
     #[case::ignore_comment("// hello world!", Comment("// hello world!"), None)]
     #[case::ignore_comment_another_line(
@@ -56,8 +56,7 @@ mod tests {
         #[case] expected: T,
         #[case] expected_rest: Option<&'static str>,
     ) {
-        let data = PegLexer::<{crate::TRACING_OPTION}>::new().parse_token(input, 0)
-            .unwrap();
+        let data = DefaultLexer::new().parse_token(input, 0).unwrap();
         let rest = &input[data.span.point.length..];
 
         assert_eq!(data.token, expected.into());

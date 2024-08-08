@@ -16,4 +16,4 @@ mod nom;
 
 pub mod common;
 
-pub(crate) const TRACING_OPTION: bool = cfg!(feature = "trace");
+pub const TRACING_OPTION: bool = cfg!(feature = "trace");

@@ -7,7 +7,7 @@ pub mod report_collector;
 pub mod traits;
 
 #[derive(Debug, Display, Default)]
-#[display(fmt = "Compilation failed due to produced errors")]
+#[display("Compilation failed due to produced errors")]
 pub struct ErrorReported {
     cause: Option<Box<dyn Error + Send + Sync + 'static>>
 }

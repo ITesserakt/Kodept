@@ -8,7 +8,7 @@ use crate::common::RLTProducer;
 use crate::nom::TokenVerificationError;
 use crate::token_stream::TokenStream;
 
-type ParseError<'t> =
+pub type ParseError<'t> =
     GenericErrorTree<TokenStream<'t>, &'static str, &'static str, TokenVerificationError>;
 type ParseResult<'t, O> = IResult<TokenStream<'t>, O, ParseError<'t>>;
 
@@ -68,31 +68,6 @@ mod macros {
             )
         }};
     }
-
-    #[cfg(test)]
-    macro_rules! assert_parses_to {
-        ($parser:ident, $input:expr, $expectation:pat_param) => {
-            match $parser($input) {
-                Err(::nom::Err::Error(e) | ::nom::Err::Failure(e)) => {
-                    panic!("{}", ::nom::error::convert_error($input, e));
-                }
-                Err(e) => {
-                    panic!("Failed to parse {:?}", e)
-                }
-                Ok((_, candidate_val)) => {
-                    if !matches!(&candidate_val, $expectation) {
-                        panic!(
-                            "Failed to parse to expected value\n\
-                        Got:      {:?}",
-                            &candidate_val
-                        )
-                    }
-                }
-            }
-        };
-    }
     
     pub(crate) use {function, match_any_token, match_token};
-    #[cfg(test)]
-    pub(crate) use assert_parses_to;
 }

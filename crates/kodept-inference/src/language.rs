@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Formatter};
 
 use derive_more::{Display, From};
 use itertools::Itertools;
@@ -11,7 +11,7 @@ pub struct  BVar {
 }
 
 #[derive(Display, Clone, PartialEq, Eq, Hash)]
-#[display(fmt = "{name}")]
+#[display("{name}")]
 pub struct Var {
     pub name: String,
 }

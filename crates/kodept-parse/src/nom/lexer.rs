@@ -255,7 +255,7 @@ mod grammar {
     }
 }
 
-#[derive(Constructor)]
+#[derive(Constructor, Debug, Copy, Clone)]
 pub struct Lexer;
 
 impl TokenProducer for Lexer {

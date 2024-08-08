@@ -5,7 +5,7 @@ use derive_more::{Constructor, Display};
 use crate::structure::Located;
 
 #[derive(Constructor, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
-#[display(fmt = "...{}:{}", offset, length)]
+#[display("...{}:{}", offset, length)]
 pub struct CodePoint {
     pub length: usize,
     pub offset: usize,

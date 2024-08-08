@@ -1,14 +1,14 @@
-use derive_more::Constructor;
-use peg::error::ParseError;
-use peg::str::LineCol;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::Span;
 use crate::common::{EagerTokensProducer, TokenProducer};
+use crate::lexer::Token;
 use crate::lexer::{BitOperator, ComparisonOperator, LogicOperator, MathOperator};
 use crate::lexer::{Identifier, Ignore, Keyword, Literal, Operator, Symbol};
-use crate::lexer::Token;
 use crate::token_match::TokenMatch;
-use crate::TRACING_OPTION;
+use cfg_if::cfg_if;
+use derive_more::Constructor;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::span::Span;
+use peg::error::ParseError;
+use peg::str::LineCol;
 
 peg::parser! {grammar grammar() for str {
     rule newline() = "\n" / "\r\n" / "\r"
@@ -160,43 +160,52 @@ peg::parser! {grammar grammar() for str {
     pub rule token() -> TokenMatch<'input> = traced(<token_match()>)
 }}
 
-#[derive(Constructor)]
-pub struct Lexer<const TRACE: bool = false>;
+#[derive(Constructor, Debug, Copy, Clone)]
+pub struct Lexer<const TRACE: bool>;
 
-impl TokenProducer for Lexer<TRACING_OPTION> {
+#[allow(dead_code)]
+enum GagContainer {
+    Empty,
+    #[cfg(feature = "trace")]
+    Full(gag::Gag),
+}
+
+impl GagContainer {
+    #[must_use]
+    fn enable<const E: bool>() -> Self {
+        cfg_if! {
+            if #[cfg(feature = "trace")] {
+                if !E {
+                    Self::Full(gag::Gag::stdout().expect("Cannot suppress stdout"))
+                } else {
+                    Self::Empty
+                }
+            } else {
+                Self::Empty
+            }
+        }
+    }
+}
+
+impl<const TRACE: bool> TokenProducer for Lexer<TRACE> {
     type Error<'t> = ParseError<LineCol>;
 
-    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+    fn parse_token<'t>(
+        &self,
+        whole_input: &'t str,
+        position: usize,
+    ) -> Result<TokenMatch<'t>, Self::Error<'t>> {
         let input = &whole_input[position..];
+        let _gag = GagContainer::enable::<TRACE>();
         grammar::token(input)
     }
 }
 
-#[cfg(feature = "trace")]
-impl TokenProducer for Lexer<false> {
-    type Error<'t> = ParseError<LineCol>;
-
-    fn parse_token<'t>(&self, whole_input: &'t str, position: usize) -> Result<TokenMatch<'t>, Self::Error<'t>> {
-        let input = &whole_input[position..];
-        let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
-        grammar::token(input)
-    }
-}
-
-impl EagerTokensProducer for Lexer<TRACING_OPTION> {
+impl<const TRACE: bool> EagerTokensProducer for Lexer<TRACE> {
     type Error<'t> = ParseError<LineCol>;
 
     fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
-        grammar::tokens(input)
-    }
-}
-
-#[cfg(feature = "trace")]
-impl EagerTokensProducer for Lexer<false> {
-    type Error<'t> = ParseError<LineCol>;
-
-    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
-        let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
+        let _gag = GagContainer::enable::<TRACE>();
         grammar::tokens(input)
     }
 }

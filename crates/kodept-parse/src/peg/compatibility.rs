@@ -6,13 +6,13 @@ use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
 
 use kodept_core::code_point::CodePoint;
 
-use crate::lexer::{Ignore::*, DefaultLexer, Token::Ignore};
+use crate::lexer::{Ignore::*, Token::Ignore};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
-use crate::tokenizer::GenericLazyTokenizer;
+use crate::tokenizer::{LazyTokenizer, TokenizerExt};
 
 #[derive(Display, Copy, Clone, Debug)]
-#[display(fmt = "{line}:{col}")]
+#[display("{line}:{col}")]
 pub struct Position {
     line: usize,
     col: usize,
@@ -99,7 +99,7 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
 impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let tokenizer = GenericLazyTokenizer::new(literal, DefaultLexer::new());
+        let tokenizer = LazyTokenizer::default(literal);
 
         let mut length = 0;
         for pair in self.slice[pos..].iter().zip_longest(tokenizer) {

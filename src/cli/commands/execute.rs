@@ -2,6 +2,7 @@ use std::num::NonZeroU16;
 use crate::cli::commands::{build_rlt};
 use crate::cli::traits::Command;
 use clap::Parser;
+use tracing::info;
 use kodept::codespan_settings::CodespanSettings;
 use kodept::macro_context::DefaultContext;
 use kodept::read_code_source::ReadCodeSource;
@@ -29,7 +30,9 @@ impl Command for Execute {
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
+        info!("Built RLT");
         let (tree, accessor) = ASTBuilder.recursive_build(&rlt.0, &source);
+        info!("Built AST");
         let mut context = DefaultContext::new(
             source.with_filename(|_| ReportCollector::new()),
             accessor,

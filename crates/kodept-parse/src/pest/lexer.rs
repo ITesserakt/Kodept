@@ -116,7 +116,7 @@ fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
     TokenMatch::new(token, Span::new(CodePoint::new(length, span.start())))
 }
 
-#[derive(Constructor)]
+#[derive(Constructor, Debug, Clone, Copy)]
 pub struct Lexer;
 
 impl TokenProducer for Lexer {

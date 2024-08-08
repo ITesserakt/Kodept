@@ -1,7 +1,9 @@
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
-
+use criterion::measurement::Measurement;
+use criterion::{
+    criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion, Throughput,
+};
 use kodept_parse::lexer::{NomLexer, PegLexer, PestLexer};
-use kodept_parse::tokenizer::{EagerTokenizer, GenericLazyTokenizer};
+use kodept_parse::tokenizer::Tokenizer;
 
 const FILENAMES: [(&str, &str); 6] = [
     ("benches/benchmarking_file1.kd", "large"),
@@ -12,22 +14,29 @@ const FILENAMES: [(&str, &str); 6] = [
     ("benches/benchmarking_file6.kd", "well-fed"),
 ];
 
+fn make_bench_impl<M, F, T: Tokenizer<F>>(
+    group: &mut BenchmarkGroup<M>,
+    name: &'static str,
+    description: &'static str,
+    input: &str,
+    lexer: F,
+) where
+    M: Measurement,
+{
+    group.bench_with_input(BenchmarkId::new(name, description), input, |b, i| {
+        b.iter(|| T::new(i, lexer).into_vec())
+    });
+}
+
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("tokenizer");
     for (name, description) in FILENAMES {
         let contents = std::fs::read_to_string(name).unwrap();
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
-        group.bench_with_input(
-            BenchmarkId::new("default", description),
-            &contents,
-            |b, i| b.iter(|| GenericLazyTokenizer::new(i, NomLexer::new()).into_vec()),
-        );
-        group.bench_with_input(BenchmarkId::new("pest", description), &contents, |b, i| {
-            b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
-        });
-        group.bench_with_input(BenchmarkId::new("peg", description), &contents, |b, i| {
-            b.iter(|| EagerTokenizer::new(i, PegLexer::new()).into_vec())
-        });
+
+        make_bench_impl(&mut group, "nom", description, &contents, NomLexer::new());
+        make_bench_impl(&mut group, "peg", description, &contents, PegLexer::new());
+        make_bench_impl(&mut group, "pest", description, &contents, PestLexer::new());
     }
 }
 
