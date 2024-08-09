@@ -1,10 +1,7 @@
 use derive_more::Display;
-use EitherOrBoth::{Both, Left, Right};
-use itertools::{EitherOrBoth, Itertools};
+use kodept_core::code_point::CodePoint;
 use peg::str::LineCol;
 use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
-
-use kodept_core::code_point::CodePoint;
 
 use crate::lexer::{Ignore::*, Token::Ignore};
 use crate::token_match::TokenMatch;
@@ -40,17 +37,17 @@ impl From<LineCol> for Position {
 impl<'t> Parse for TokenStream<'t> {
     type PositionRepr = Position;
 
-    #[inline]
+    #[inline(always)]
     fn start(&self) -> usize {
         self.slice.first().map_or(0, |it| it.span.point.offset)
     }
 
-    #[inline]
+    #[inline(always)]
     fn is_eof(&self, pos: usize) -> bool {
         pos >= self.len()
     }
 
-    #[inline]
+    #[inline(always)]
     fn position_repr(&self, pos: usize) -> Self::PositionRepr {
         let (before, point) = match self.slice.split_at(pos) {
             (a, [b, ..]) => (a, b.span.point),
@@ -85,13 +82,9 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
     #[inline(always)]
     fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element> {
         let slice = &self.slice[pos..];
-        match slice
-            .iter()
-            .enumerate()
-            .find(|(_, it)| !it.token.is_ignored())
-        {
+        match slice.first() {
             None => RuleResult::Failed,
-            Some((idx, token)) => RuleResult::Matched(pos + 1 + idx, *token),
+            Some(x) => RuleResult::Matched(pos + 1, *x),
         }
     }
 }
@@ -99,16 +92,18 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
 impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let tokenizer = LazyTokenizer::default(literal);
+        let mut tokenizer = LazyTokenizer::default(literal);
 
         let mut length = 0;
-        for pair in self.slice[pos..].iter().zip_longest(tokenizer) {
-            match pair {
-                Both(a, Ok(b)) if a.token != b.token => return RuleResult::Failed,
-                Both(_, Ok(_)) => length += 1,
-                Both(_, Err(_)) => return RuleResult::Failed,
-                Right(_) => return RuleResult::Failed,
-                Left(_) => break,
+        loop {
+            let a = self.slice.get(pos + length);
+            let b = tokenizer.next();
+            match (a, b) {
+                (_, Some(Err(e))) => panic!("Unexpected token received in grammar: {}", e),
+                (Some(a), Some(Ok(b))) if a.token != b.token => return RuleResult::Failed,
+                (Some(_), Some(_)) => length += 1,
+                (None, Some(_)) => return RuleResult::Failed,
+                (_, None) => break,
             }
         }
         RuleResult::Matched(pos + length, ())
