@@ -1,40 +1,36 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use kodept_parse::lexer::{PegLexer, PestLexer};
-use kodept_parse::tokenizer::{EagerTokenizer, ParallelTokenizer, Tokenizer};
+use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tokenizer};
 
-const FILENAMES: [(&str, &str); 6] = [
-    ("benches/benchmarking_file1.kd", "30*128"),
-    ("benches/benchmarking_file2.kd", "30*256"),
-    ("benches/benchmarking_file3.kd", "30*8"),
-    ("benches/benchmarking_file4.kd", "30*16"),
-    ("benches/benchmarking_file5.kd", "30*32"),
-    ("benches/benchmarking_file6.kd", "30*64"),
-];
+const FILENAME: &'static str = "benches/benchmarking_file1.kd";
+
+fn get_contents_with_factor(filename: &str, factor: usize) -> String {
+    let contents = std::fs::read_to_string(filename).unwrap();
+    contents.repeat(factor)
+}
 
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("tokenizer");
-    for (name, description) in FILENAMES {
-        let contents = std::fs::read_to_string(name).unwrap();
+    for factor in (5..=10).map(|it| 2usize.pow(it)) {
+        let contents = get_contents_with_factor(FILENAME, factor);
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
-
-        // group.bench_with_input(BenchmarkId::new("nom", description), &contents, |b, i| {
-        //     b.iter(move || {
-        //         LazyTokenizer::new(i, NomLexer::new()).into_vec();
-        //     })
-        // });
-        group.bench_with_input(BenchmarkId::new("peg", description), &contents, |b, i| {
+        
+        group.bench_with_input(BenchmarkId::new("peg", factor), &contents, |b, i| {
             b.iter(|| EagerTokenizer::new(i, PegLexer::<false>::new()).into_vec())
         });
-        group.bench_with_input(BenchmarkId::new("pest", description), &contents, |b, i| {
+        group.bench_with_input(BenchmarkId::new("pest", factor), &contents, |b, i| {
             b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
         });
+        group.bench_with_input(BenchmarkId::new("lazy-pest", factor), &contents, |b, i| {
+            b.iter(|| LazyTokenizer::new(i, PestLexer::new()).into_vec())
+        });
         group.bench_with_input(
-            BenchmarkId::new("parallel-peg", description),
+            BenchmarkId::new("parallel-peg", factor),
             &contents,
             |b, i| b.iter(|| ParallelTokenizer::new(i, PegLexer::<false>::new()).into_vec()),
         );
         group.bench_with_input(
-            BenchmarkId::new("parallel-pest", description),
+            BenchmarkId::new("parallel-pest", factor),
             &contents,
             |b, i| b.iter(|| ParallelTokenizer::new(i, PestLexer::new()).into_vec()),
         );

@@ -160,17 +160,16 @@ mod eager {
 
 #[cfg(feature = "parallel")]
 mod parallel {
-    use std::fmt::Debug;
-    use std::iter::once;
-
-    use itertools::Itertools;
-    use rayon::prelude::*;
-
     use super::Tokenizer as Tok;
     use crate::common::{ErrorAdapter, TokenProducer};
     use crate::error::{Original, ParseErrors};
     use crate::token_match::TokenMatch;
     use crate::tokenizer::lazy;
+    use itertools::Itertools;
+    use rayon::prelude::*;
+    use std::fmt::Debug;
+
+    const CHUNK_SIZE: usize = 120;
 
     #[derive(Debug)]
     pub struct Tokenizer<'t, F> {
@@ -181,26 +180,22 @@ mod parallel {
 
     impl<'t, F> Tok<'t, F> for Tokenizer<'t, F>
     where
-        F: TokenProducer + Clone + Sync,
+        F: TokenProducer + Copy + Sync,
         F::Error<'t>: Send,
     {
         type Error = F::Error<'t>;
 
         fn new(input: &'t str, lexer: F) -> Self {
-            let mut lines = input.split_inclusive('\n').peekable();
-            let Some(first) = lines.peek() else {
-                return Self {
-                    input,
-                    lines: vec![],
-                    handler: lexer,
-                };
-            };
-            let lines: Vec<_> = once((0, *first))
-                .chain(lines.tuple_windows().scan(0, |offset, (a, b)| {
-                    *offset += a.len();
-                    Some((*offset, b))
-                }))
-                .collect();
+            let mut lines = vec![];
+            let mut offset = 0;
+            for (idx, ch) in input.char_indices() {
+                let len = idx - offset;
+                if len > CHUNK_SIZE && matches!(ch, '\n' | '\t' | ';' | ' ') {
+                    lines.push((offset, &input[offset..idx]));
+                    offset = idx;
+                }
+            }
+            lines.push((offset, &input[offset..]));
 
             Self {
                 input,
@@ -213,7 +208,7 @@ mod parallel {
             self.lines
                 .into_par_iter()
                 .flat_map_iter(|(offset, line)| {
-                    lazy::Tokenizer::new(line, self.handler.clone()).update(move |it| match it {
+                    lazy::Tokenizer::new(line, self.handler).update(move |it| match it {
                         Ok(x) => x.span.point.offset += offset,
                         _ => {}
                     })
@@ -228,6 +223,20 @@ mod parallel {
         {
             let input = self.input;
             self.try_into_vec().map_err(|e| e.adapt(input, 0))
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use crate::lexer::DefaultLexer;
+        use crate::tokenizer::Tokenizer;
+
+        #[test]
+        fn test_split() {
+            let input = "123\n1234\n\n1";
+            let tokenizer = super::Tokenizer::new(input, DefaultLexer::new());
+
+            assert_eq!(tokenizer.lines, vec![(0, "123\n1234\n\n1")]);
         }
     }
 }
