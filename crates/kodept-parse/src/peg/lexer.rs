@@ -139,7 +139,7 @@ peg::parser! {grammar grammar() for str {
     rule token_match() -> TokenMatch<'input> =
         start:position!() t:token_() end:position!() {
             let length = end - start;
-            TokenMatch::new(t, Span::new(CodePoint::new(length, start)))
+            TokenMatch::new(t, Span::new(CodePoint::new(length as u32, start as u32)))
         }
 
     rule traced<T>(e: rule<T>) -> T =

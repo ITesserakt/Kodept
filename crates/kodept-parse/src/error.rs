@@ -59,12 +59,12 @@ impl<'t> Original<Token<'t>> for TokenStream<'t> {
 impl<'a, S: From<&'a str>> Original<S> for &'a str {
     fn point_pos(&self, point: impl Into<CodePoint>) -> usize {
         let point = point.into();
-        point.offset
+        point.offset as usize
     }
 
     fn actual(&self, point: impl Into<CodePoint>) -> S {
         let point = point.into();
-        S::from(&self[point.offset..point.offset + point.length])
+        S::from(&self[point.as_range()])
     }
 }
 

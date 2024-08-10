@@ -7,10 +7,10 @@ use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
 #[cfg(feature = "nom")]
 use nom_supreme::final_parser::RecreateContext;
 
-use kodept_core::structure::Located;
 use crate::lexer::traits::ToRepresentation;
 use crate::lexer::{Identifier, Ignore, Literal, Token};
 use crate::token_match::TokenMatch;
+use kodept_core::structure::Located;
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub struct TokenStream<'t> {
@@ -197,10 +197,10 @@ impl Display for TokenStream<'_> {
         };
         let size = self.slice.last().expect("Unreachable").span.point.offset - offset + 1;
         // FIXME: wrong size
-        let mut output = " ".repeat(size * 4);
+        let mut output = " ".repeat((size * 4) as usize);
         for token_match in self.iter() {
-            let index = token_match.span.point.offset - offset;
-            let len = token_match.span.point.length;
+            let index = (token_match.span.point.offset - offset) as usize;
+            let len = token_match.span.point.length as usize;
             
             output.replace_range(
                 index..index + len,

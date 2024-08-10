@@ -70,8 +70,8 @@ mod lazy {
                 Err(e) => return Some(Err(e)),
             };
 
-            token_match.span.point.offset = self.pos;
-            self.pos += token_match.span.point.length;
+            token_match.span.point.offset = self.pos as u32;
+            self.pos += token_match.span.point.length as usize;
 
             Some(Ok(token_match))
         }
@@ -209,7 +209,7 @@ mod parallel {
                 .into_par_iter()
                 .flat_map_iter(|(offset, line)| {
                     lazy::Tokenizer::new(line, self.handler).update(move |it| match it {
-                        Ok(x) => x.span.point.offset += offset,
+                        Ok(x) => x.span.point.offset += offset as u32,
                         _ => {}
                     })
                 })
