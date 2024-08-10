@@ -11,9 +11,9 @@ use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
 #[display("{line}:{col}")]
 pub struct Position {
     line: usize,
-    col: usize,
-    length: usize,
-    offset: usize,
+    col: u32,
+    length: u32,
+    offset: u32,
 }
 
 impl From<Position> for CodePoint {
@@ -26,9 +26,9 @@ impl From<LineCol> for Position {
     fn from(value: LineCol) -> Self {
         Position {
             line: value.line,
-            col: value.column,
+            col: value.column as u32,
             length: 1,
-            offset: value.offset,
+            offset: value.offset as u32,
         }
     }
 }
@@ -38,7 +38,7 @@ impl<'t> Parse for TokenStream<'t> {
 
     #[inline(always)]
     fn start(&self) -> usize {
-        self.slice.first().map_or(0, |it| it.span.point.offset)
+        self.slice.first().map_or(0, |it| it.span.point.offset) as usize
     }
 
     #[inline(always)]
@@ -63,7 +63,7 @@ impl<'t> Parse for TokenStream<'t> {
             .rev()
             .take_while(|it| !matches!(it.token, Ignore(Newline)))
             .map(|it| it.span.point.length)
-            .sum::<usize>()
+            .sum::<u32>()
             + 1;
 
         Position {
@@ -94,7 +94,7 @@ impl<'input> ParseLiteral for TokenStream<'input> {
         let token_match = DefaultLexer::new()
             .parse_token(literal, 0)
             .expect("Unexpected token received in grammar");
-        debug_assert_eq!(token_match.span.point.length, literal.len());
+        debug_assert_eq!(token_match.span.point.length, literal.len() as u32);
 
         match (self.slice.get(pos), token_match.token) {
             (Some(a), b) if a.token == b => RuleResult::Matched(pos + 1, ()),
