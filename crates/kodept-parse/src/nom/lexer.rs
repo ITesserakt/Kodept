@@ -19,17 +19,17 @@ mod grammar {
     use nom::combinator::{map, opt, recognize, value};
     use nom::error::context;
     use nom::multi::{many1, many_till};
-    use nom::Parser;
     use nom::sequence::{delimited, tuple};
-    use nom_supreme::ParserExt;
+    use nom::Parser;
     use nom_supreme::tag::complete::{tag, tag_no_case};
+    use nom_supreme::ParserExt;
 
     use crate::lexer::{
         BitOperator, ComparisonOperator, Identifier, Ignore, Keyword, Literal, LogicOperator,
         MathOperator, Operator, Symbol, Token,
     };
-    use crate::nom::{TokenizationError, TResult};
     use crate::nom::lexer::{LOWER_ALPHABET, UPPER_ALPHABET};
+    use crate::nom::{TResult, TokenizationError};
 
     macro_rules! include_literal {
         (exact $tag:literal => $token:expr) => {
@@ -275,7 +275,7 @@ impl TokenProducer for Lexer {
         let matched_length = input.len() - rest.len();
         Ok(TokenMatch::new(
             token,
-            Span::new(CodePoint::new(matched_length, 0)),
+            Span::new(CodePoint::new(matched_length as u32, 0)),
         ))
     }
 }

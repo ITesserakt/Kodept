@@ -18,10 +18,10 @@ use kodept_core::code_source::CodeSource;
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::CodeHolder;
 use kodept_inference::language::Language;
-use kodept_interpret::{Cache, Witness};
 use kodept_interpret::operator_desugaring::*;
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
+use kodept_interpret::{Cache, Witness};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{MutableContext, UnrecoverableError};
 use kodept_parse::parser::default_parse_from_top;
@@ -34,7 +34,7 @@ struct CodeProvider<'a>(&'a str);
 
 impl CodeHolder for CodeProvider<'_> {
     fn get_chunk(&self, at: CodePoint) -> Cow<str> {
-        Cow::Borrowed(&self.0[at.offset..at.offset + at.length])
+        Cow::Borrowed(&self.0[at.as_range()])
     }
 }
 

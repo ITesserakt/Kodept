@@ -5,8 +5,8 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
 
 use crate::common::{EagerTokensProducer, TokenProducer};
-use crate::lexer::*;
 use crate::lexer::Operator::*;
+use crate::lexer::*;
 use crate::token_match::TokenMatch;
 
 #[derive(Parser)]
@@ -113,7 +113,7 @@ fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
     };
 
     let length = span.end() - span.start();
-    TokenMatch::new(token, Span::new(CodePoint::new(length, span.start())))
+    TokenMatch::new(token, Span::new(CodePoint::new(length as u32, span.start() as u32)))
 }
 
 #[derive(Constructor, Debug, Clone, Copy)]

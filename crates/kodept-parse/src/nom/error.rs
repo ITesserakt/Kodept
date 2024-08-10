@@ -73,7 +73,7 @@ where
             .map(|(key, group)| {
                 let actual = A::from(&key[0..=1]);
                 let expected = group.map(|it| it.into_expected()).collect();
-                let location = ErrorLocation::new(position, CodePoint::single_point(position));
+                let location = ErrorLocation::new(position, CodePoint::single_point(position as u32));
 
                 ParseError::new(expected, actual, location)
             })
@@ -107,7 +107,7 @@ impl<'t> ErrorAdapter<Token<'t>, TokenStream<'t>> for super::parser::ParseError<
             .map(|(key, group)| {
                 let actual = key.slice[0].token;
                 let expected = group.map(|it| it.into_expected()).collect();
-                let location = ErrorLocation::new(position, CodePoint::single_point(position));
+                let location = ErrorLocation::new(position, CodePoint::single_point(position as u32));
 
                 ParseError::new(expected, actual, location)
             })
