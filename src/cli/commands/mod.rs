@@ -12,6 +12,7 @@ use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::ErrorReported;
 use kodept_parse::error::{ParseError, ParseErrors};
+use kodept_parse::lexer::DefaultLexer;
 use kodept_parse::parser::default_parse_from_top;
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
@@ -19,6 +20,7 @@ use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+use tracing::debug;
 
 mod execute;
 mod graph;
@@ -65,22 +67,27 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic<()> {
 
 fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str>> {
     use kodept_parse::tokenizer::*;
-
+    let backend = DefaultLexer::new();
+    
     #[cfg(feature = "parallel")]
     {
         if source.contents().len() > SWITCH_TO_PARALLEL_THRESHOLD {
-            return ParallelTokenizer::default(source.contents()).try_collect_adapted();
+            debug!(backend = std::any::type_name_of_val(&backend), "Using parallel tokenizer");
+            return ParallelTokenizer::new(source.contents(), backend).try_collect_adapted();
         }
     }
+    debug!(backend = std::any::type_name_of_val(&backend), "Using sequential tokenizer");
     EagerTokenizer::default(source.contents()).try_collect_adapted()
 }
 
 fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
     let tokens =
         tokenize(source).map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
+    debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);
     let result = default_parse_from_top(token_stream)
         .map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
+    debug!("Produced RLT with modules count {}", result.0.0.len());
     Ok(result)
 }
 
