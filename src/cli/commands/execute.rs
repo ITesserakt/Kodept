@@ -11,6 +11,7 @@ use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::ResultTRExt;
 use kodept_macros::error::ErrorReported;
 use std::num::NonZeroU16;
+use tracing::debug;
 
 #[derive(Debug, Parser, Clone)]
 pub struct Execute {
@@ -30,6 +31,7 @@ impl Command for Execute {
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
         let (tree, accessor) = ASTBuilder.recursive_build(&rlt.0, &source);
+        debug!("Produced AST with node count = {}", tree.node_count());
         let mut context = DefaultContext::new(
             source.with_filename(|_| ReportCollector::new()),
             accessor,

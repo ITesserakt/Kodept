@@ -47,17 +47,17 @@ mod main {
     use std::fmt::{Display, Formatter};
 
     use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-    use slotgraph::export::{Config, Direction, Dot};
+    use slotgraph::export::{Config, Direction, Dot, NodeCount};
     use slotgraph::SubDiGraph;
 
-    use crate::graph::{AnyNode, Change, ChangeSet, Identifiable, NodeId, PermTkn};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::{ChildTag, TAGS_DESC};
-    use crate::graph::tree::{ChildScope, DfsIter, Graph};
     use crate::graph::tree::stage::{
         CanAccess, FullAccess, ModificationAccess, NoAccess, ViewingAccess,
     };
+    use crate::graph::tree::{ChildScope, DfsIter, Graph};
     use crate::graph::utils::OptVec;
+    use crate::graph::{AnyNode, Change, ChangeSet, Identifiable, NodeId, PermTkn};
     use crate::node_properties::{Node, NodeWithParent};
     use crate::Uninit;
 
@@ -172,6 +172,10 @@ mod main {
 
             DfsIter::new(&self.graph, start)
         }
+
+        pub fn node_count(&self) -> usize {
+            self.graph.node_count()
+        }
     }
 
     impl SyntaxTree {
@@ -257,14 +261,14 @@ mod utils {
     use std::iter::FusedIterator;
 
     use kodept_core::structure::span::CodeHolder;
-    use slotgraph::{Key, NodeKey};
     use slotgraph::export::NodeCount;
+    use slotgraph::{Key, NodeKey};
 
-    use crate::graph::{AnyNode, HasChildrenMarker, NodeId, SyntaxTree};
     use crate::graph::nodes::Inaccessible;
     use crate::graph::tags::ChildTag;
-    use crate::graph::tree::Graph;
     use crate::graph::tree::stage::{CanAccess, FullAccess};
+    use crate::graph::tree::Graph;
+    use crate::graph::{AnyNode, HasChildrenMarker, NodeId, SyntaxTree};
     use crate::rlt_accessor::RLTFamily;
     use crate::traits::{Linker, PopulateTree};
     use crate::visit_side::VisitSide;
@@ -385,8 +389,8 @@ mod utils {
 
 #[cfg(test)]
 mod tests {
-    use crate::FileDecl;
     use crate::graph::SyntaxTreeBuilder;
+    use crate::FileDecl;
 
     #[test]
     fn test_tree_creation() {
