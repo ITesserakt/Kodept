@@ -1,12 +1,11 @@
+use crate::common::TokenProducer;
+use crate::lexer::{DefaultLexer, Ignore::*, Token::Ignore};
+use crate::token_match::TokenMatch;
+use crate::token_stream::TokenStream;
 use derive_more::Display;
 use kodept_core::code_point::CodePoint;
 use peg::str::LineCol;
 use peg::{Parse, ParseElem, ParseLiteral, ParseSlice, RuleResult};
-
-use crate::lexer::{Ignore::*, Token::Ignore};
-use crate::token_match::TokenMatch;
-use crate::token_stream::TokenStream;
-use crate::tokenizer::{LazyTokenizer, TokenizerExt};
 
 #[derive(Display, Copy, Clone, Debug)]
 #[display("{line}:{col}")]
@@ -92,21 +91,15 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
 impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let mut tokenizer = LazyTokenizer::default(literal);
+        let token_match = DefaultLexer::new()
+            .parse_token(literal, 0)
+            .expect("Unexpected token received in grammar");
+        debug_assert_eq!(token_match.span.point.length, literal.len());
 
-        let mut length = 0;
-        loop {
-            let a = self.slice.get(pos + length);
-            let b = tokenizer.next();
-            match (a, b) {
-                (_, Some(Err(e))) => panic!("Unexpected token received in grammar: {}", e),
-                (Some(a), Some(Ok(b))) if a.token != b.token => return RuleResult::Failed,
-                (Some(_), Some(_)) => length += 1,
-                (None, Some(_)) => return RuleResult::Failed,
-                (_, None) => break,
-            }
+        match (self.slice.get(pos), token_match.token) {
+            (Some(a), b) if a.token == b => RuleResult::Matched(pos + 1, ()),
+            _ => RuleResult::Failed,
         }
-        RuleResult::Matched(pos + length, ())
     }
 }
 
