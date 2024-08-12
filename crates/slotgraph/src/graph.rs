@@ -1,13 +1,13 @@
-use std::collections::HashSet;
-use std::iter::FusedIterator;
-use std::ops::{Index, IndexMut};
-
 use petgraph::visit::{
     Data, EdgeCount, GraphBase, GraphProp, IntoEdgeReferences, IntoNodeIdentifiers,
     IntoNodeReferences, NodeCount,
 };
 use petgraph::{Directed, Direction, EdgeType};
+use slotmap::basic::Iter;
 use slotmap::SlotMap;
+use std::collections::HashSet;
+use std::iter::FusedIterator;
+use std::ops::{Index, IndexMut};
 
 use crate::key::CommonKey;
 use crate::parts::{Edge, EdgeKey, KeyRef, NodeKey};
@@ -18,6 +18,18 @@ pub struct Graph<N, E = (), D: EdgeType = Directed> {
     nodes: SlotMap<CommonKey, N>,
     edges: SlotMap<CommonKey, Edge<E, D>>,
 }
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+pub struct NodeIdentifiersIter<'t, N>(Iter<'t, CommonKey, N>);
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+pub struct NodeReferencesIter<'t, N>(Iter<'t, CommonKey, N>);
+
+#[repr(transparent)]
+#[derive(Debug, Clone)]
+pub struct EdgeReferencesIter<'t, E, D: EdgeType>(Iter<'t, CommonKey, Edge<E, D>>);
 
 impl<N, E, D: EdgeType> Default for Graph<N, E, D> {
     fn default() -> Self {
@@ -58,7 +70,7 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
     pub fn add_node(&mut self, data: N) -> NodeKey {
         NodeKey(self.nodes.insert(data))
     }
-    
+
     pub fn add_node_with_key(&mut self, f: impl FnOnce(NodeKey) -> N) -> NodeKey {
         NodeKey(self.nodes.insert_with_key(|it| f(NodeKey(it))))
     }
@@ -68,9 +80,8 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
     }
 
     pub fn remove_node(&mut self, id: NodeKey) -> Option<N> {
-        self.edges.retain(move |_, edge| {
-            edge.to == id || edge.from == id
-        });
+        self.edges
+            .retain(move |_, edge| edge.to == id || edge.from == id);
         self.nodes.remove(id.0)
     }
 
@@ -92,7 +103,10 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
         self.nodes.get(id.0)
     }
 
-    pub fn children(&self, parent_id: NodeKey) -> impl FusedIterator<Item = (EdgeKey, NodeKey)> + '_ {
+    pub fn children(
+        &self,
+        parent_id: NodeKey,
+    ) -> impl FusedIterator<Item = (EdgeKey, NodeKey)> + '_ {
         self.edges.iter().filter_map(move |(k, v)| {
             match (D::is_directed(), v.from == parent_id, v.to == parent_id) {
                 (_, true, _) => Some((EdgeKey(k), v.to)),
@@ -119,7 +133,7 @@ impl<N, E, D: EdgeType> Graph<N, E, D> {
     pub fn externals(&self, direction: Direction) -> impl Iterator<Item = NodeKey> + '_ {
         struct Externals<'a, N> {
             internals: HashSet<NodeKey>,
-            nodes: slotmap::basic::Iter<'a, CommonKey, N>,
+            nodes: Iter<'a, CommonKey, N>,
         }
 
         impl<'a, N> Iterator for Externals<'a, N> {
@@ -187,29 +201,29 @@ impl<N, E, D: EdgeType> EdgeCount for Graph<N, E, D> {
     }
 }
 
-impl<N, E, D: EdgeType> IntoNodeIdentifiers for &Graph<N, E, D> {
-    type NodeIdentifiers = impl Iterator<Item = NodeKey>;
+impl<'t, N, E, D: EdgeType> IntoNodeIdentifiers for &'t Graph<N, E, D> {
+    type NodeIdentifiers = NodeIdentifiersIter<'t, N>;
 
     fn node_identifiers(self) -> Self::NodeIdentifiers {
-        self.nodes.iter().map(|it| NodeKey(it.0))
+        NodeIdentifiersIter(self.nodes.iter())
     }
 }
 
 impl<'a, N, E, D: EdgeType> IntoNodeReferences for &'a Graph<N, E, D> {
     type NodeRef = KeyRef<'a, N>;
-    type NodeReferences = impl Iterator<Item = KeyRef<'a, N>>;
+    type NodeReferences = NodeReferencesIter<'a, N>;
 
     fn node_references(self) -> Self::NodeReferences {
-        self.nodes.iter().map(|it| KeyRef::new(it.0, it.1))
+        NodeReferencesIter(self.nodes.iter())
     }
 }
 
 impl<'a, N, E, D: EdgeType> IntoEdgeReferences for &'a Graph<N, E, D> {
     type EdgeRef = KeyRef<'a, Edge<E, D>>;
-    type EdgeReferences = impl Iterator<Item = KeyRef<'a, Edge<E, D>>>;
+    type EdgeReferences = EdgeReferencesIter<'a, E, D>;
 
     fn edge_references(self) -> Self::EdgeReferences {
-        self.edges.iter().map(|it| KeyRef::new(it.0, it.1))
+        EdgeReferencesIter(self.edges.iter())
     }
 }
 
@@ -240,3 +254,47 @@ impl<N, E, D: EdgeType> IndexMut<EdgeKey> for Graph<N, E, D> {
         self.edges.index_mut(index.0)
     }
 }
+
+impl<'t, N> Iterator for NodeIdentifiersIter<'t, N> {
+    type Item = NodeKey;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|it| NodeKey(it.0))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+impl<'t, N> Iterator for NodeReferencesIter<'t, N> {
+    type Item = KeyRef<'t, N>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|it| KeyRef::new(it.0, it.1))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+impl<'t, E, D: EdgeType> Iterator for EdgeReferencesIter<'t, E, D> {
+    type Item = KeyRef<'t, Edge<E, D>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|it| KeyRef::new(it.0, it.1))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+impl<'t, N> FusedIterator for NodeIdentifiersIter<'t, N> {}
+impl<'t, N> FusedIterator for NodeReferencesIter<'t, N> {}
+impl<'t, E, D: EdgeType> FusedIterator for EdgeReferencesIter<'t, E, D> {}
+
+impl<'t, N> ExactSizeIterator for NodeIdentifiersIter<'t, N> {}
+impl<'t, N> ExactSizeIterator for NodeReferencesIter<'t, N> {}
+impl<'t, E, D: EdgeType> ExactSizeIterator for EdgeReferencesIter<'t, E, D> {}
