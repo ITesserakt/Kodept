@@ -2,19 +2,17 @@ use clap::Parser;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 use tracing::{debug, error};
+#[cfg(feature = "profiler")]
+use kodept::profiler::HeapProfiler;
 
+use crate::cli::traits::Command;
 use cli::common::Kodept;
 use kodept::loader::Loader;
 use kodept_core::code_source::CodeSource;
-use crate::cli::traits::Command;
 
 mod cli;
 
 type WideError = anyhow::Error;
-
-#[cfg(feature = "profiler")]
-#[global_allocator]
-static ALLOC: dhat::Alloc = dhat::Alloc;
 
 #[cfg(not(feature = "parallel"))]
 fn sources_iter(loader: Loader) -> impl Iterator<Item = CodeSource> {
@@ -28,7 +26,13 @@ fn sources_iter(loader: Loader) -> impl ParallelIterator<Item = CodeSource> {
 
 fn main() -> Result<(), WideError> {
     #[cfg(feature = "profiler")]
-    let _profiler = dhat::Profiler::new_heap();
+    {    
+        HeapProfiler::install();
+        ctrlc::set_handler(|| {
+        	HeapProfiler::consume();
+        	std::process::exit(0);
+        })?;
+    }
 
     let cli_arguments: Kodept = Kodept::parse();
     tracing_subscriber::fmt()
@@ -52,5 +56,10 @@ fn main() -> Result<(), WideError> {
 
     let args = cli_arguments.clone();
     cli_arguments.subcommands.exec(sources, settings, args)?;
+
+    #[cfg(feature = "profiler")]
+    {
+        HeapProfiler::consume();
+    }
     Ok(())
 }

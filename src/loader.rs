@@ -2,13 +2,14 @@ use std::borrow::Cow;
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fs::File;
+use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use itertools::Itertools;
-use kodept_core::code_source::CodeSource;
+use kodept_core::code_source::{CodeSource, CodeSourceError};
 use thiserror::Error;
-use tracing::warn;
+use tracing::{debug, warn};
 
 pub enum Loader {
     File(Vec<(File, PathBuf)>),
@@ -21,6 +22,8 @@ pub enum LoadingError {
     StartingPathNotAbsolute,
     #[error("IO error: {0}")]
     IOError(#[from] std::io::Error),
+    #[error("Cannot map file: {0}")]
+    MapError(#[from] CodeSourceError),
     #[error("No input files")]
     NoInput,
 }
@@ -32,6 +35,8 @@ pub struct LoaderBuilder<'p> {
     #[allow(dead_code)]
     cache_extension: &'p OsStr,
 }
+
+const MAP_FILESIZE: u64 = 20 * 1024 * 1024; // 20 MB
 
 impl Default for LoaderBuilder<'static> {
     fn default() -> Self {
@@ -145,13 +150,31 @@ impl Loader {
             .unwrap_or_default();
         format!("scratch-#{index}-{time}.kd", time = timestamp.as_millis())
     }
+    
+    fn mmap_if_needed(mut file: File, path: PathBuf) -> Result<CodeSource, LoadingError> {
+        let size = file.seek(SeekFrom::End(0))?;
+        file.rewind()?;
+        if size > MAP_FILESIZE {
+            debug!("Using mmap to load file {}", path.display());
+            Ok(CodeSource::mmap(path, file, Some(size))?)
+        } else {
+            Ok(CodeSource::file(path, file))
+        }
+    }
 
     #[must_use]
     pub fn into_sources(self) -> Vec<CodeSource> {
         match self {
             Loader::File(sources) => sources
                 .into_iter()
-                .map(|it| CodeSource::file(it.1, it.0))
+                .map(|it| Self::mmap_if_needed(it.0, it.1))
+                .filter_map(|it| match it {
+                    Ok(x) => Some(x),
+                    Err(e) => {
+                        warn!("Skipping file because: {e}");
+                        None
+                    }
+                })
                 .collect(),
             Loader::Memory(sources) => sources
                 .into_iter()
