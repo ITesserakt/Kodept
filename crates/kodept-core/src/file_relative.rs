@@ -28,6 +28,7 @@ impl CodeSource {
         match self {
             CodeSource::Memory { name, .. } => CodePath::ToMemory(name.clone()),
             CodeSource::File { name, .. } => CodePath::ToFile(name.clone()),
+            CodeSource::MappedFile { name, .. } => CodePath::ToFile(name.clone()),
         }
     }
 }
