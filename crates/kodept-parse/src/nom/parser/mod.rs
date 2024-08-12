@@ -1,8 +1,8 @@
-use ::nom::IResult;
 use derive_more::Constructor;
+use kodept_core::structure::rlt::RLT;
+use ::nom::IResult;
 use nom_supreme::error::GenericErrorTree;
 use nom_supreme::final_parser::final_parser;
-use kodept_core::structure::rlt::RLT;
 
 use crate::common::RLTProducer;
 use crate::nom::TokenVerificationError;
@@ -31,7 +31,7 @@ pub struct Parser;
 impl RLTProducer for Parser {
     type Error<'t> = ParseError<'t>;
 
-    fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         let file = final_parser(file::grammar)(input)?;
         Ok(RLT(file))
     }

@@ -261,7 +261,7 @@ pub struct Lexer;
 impl TokenProducer for Lexer {
     type Error<'t> = ErrorTree<&'t str>;
 
-    fn parse_token<'t>(
+    fn parse_string<'t>(
         &self,
         whole_input: &'t str,
         position: usize,

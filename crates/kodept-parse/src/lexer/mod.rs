@@ -56,7 +56,7 @@ mod tests {
         #[case] expected: T,
         #[case] expected_rest: Option<&'static str>,
     ) {
-        let data = DefaultLexer::new().parse_token(input, 0).unwrap();
+        let data = DefaultLexer::new().parse_string(input, 0).unwrap();
         let rest = &input[data.span.point.length as usize..];
 
         assert_eq!(data.token, expected.into());

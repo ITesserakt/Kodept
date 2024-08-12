@@ -92,7 +92,7 @@ impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         let token_match = DefaultLexer::new()
-            .parse_token(literal, 0)
+            .parse_string(literal, 0)
             .expect("Unexpected token received in grammar");
         debug_assert_eq!(token_match.span.point.length, literal.len() as u32);
 

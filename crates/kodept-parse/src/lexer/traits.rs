@@ -94,13 +94,13 @@ impl ToRepresentation for Keyword {
 
 #[cfg(all(test, feature = "enum-iter"))]
 mod tests {
-    use std::fmt::Debug;
     use enum_iterator::{all, Sequence};
+    use std::fmt::Debug;
 
-    use rstest::rstest;
     use crate::common::TokenProducer;
     use crate::lexer::traits::ToRepresentation;
-    use crate::lexer::{DefaultLexer, Keyword, Token, Symbol, Operator};
+    use crate::lexer::{DefaultLexer, Keyword, Operator, Symbol, Token};
+    use rstest::rstest;
 
     #[rstest]
     #[case(Keyword::Struct)]
@@ -111,7 +111,7 @@ mod tests {
         T: Sequence + ToRepresentation + PartialEq + Debug + for<'a> Into<Token<'a>>
     {
         let values = all::<T>().map(|it| {
-            let parsed = DefaultLexer::new().parse_token(it.representation(), 0);
+            let parsed = DefaultLexer::new().parse_string(it.representation(), 0);
             (it, parsed)
         });
 

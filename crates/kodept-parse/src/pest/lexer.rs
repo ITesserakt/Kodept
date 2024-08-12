@@ -123,7 +123,7 @@ impl TokenProducer for Lexer {
     type Error<'t> = pest::error::Error<Rule>;
 
     #[inline]
-    fn parse_token<'t>(
+    fn parse_string<'t>(
         &self,
         whole_input: &'t str,
         position: usize,
@@ -144,7 +144,7 @@ impl TokenProducer for Lexer {
 impl EagerTokensProducer for Lexer {
     type Error<'t> = pest::error::Error<Rule>;
 
-    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
         let tokens = Grammar::parse(Rule::tokens, input).map_err(|e| e.into_pest(input))?;
         let idents = tokens.into_iter().next().unwrap().into_inner();
         Ok(idents
