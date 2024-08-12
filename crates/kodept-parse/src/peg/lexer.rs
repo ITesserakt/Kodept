@@ -190,7 +190,7 @@ impl GagContainer {
 impl<const TRACE: bool> TokenProducer for Lexer<TRACE> {
     type Error<'t> = ParseError<LineCol>;
 
-    fn parse_token<'t>(
+    fn parse_string<'t>(
         &self,
         whole_input: &'t str,
         position: usize,
@@ -204,7 +204,7 @@ impl<const TRACE: bool> TokenProducer for Lexer<TRACE> {
 impl<const TRACE: bool> EagerTokensProducer for Lexer<TRACE> {
     type Error<'t> = ParseError<LineCol>;
 
-    fn parse_tokens<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
         let _gag = GagContainer::enable::<TRACE>();
         grammar::tokens(input)
     }

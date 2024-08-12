@@ -65,7 +65,7 @@ mod lazy {
                 return None;
             }
 
-            let mut token_match = match self.tokenizing_fn.parse_token(self.buffer, self.pos) {
+            let mut token_match = match self.tokenizing_fn.parse_string(self.buffer, self.pos) {
                 Ok(x) => x,
                 Err(e) => return Some(Err(e)),
             };
@@ -135,7 +135,7 @@ mod eager {
         type Error = F::Error<'t>;
 
         fn new(input: &'t str, lexer: F) -> Self {
-            let tokens = lexer.parse_tokens(input);
+            let tokens = lexer.parse_string(input);
             Self {
                 input,
                 result: tokens,

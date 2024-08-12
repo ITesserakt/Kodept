@@ -22,19 +22,18 @@ pub type NomParser = crate::nom::Parser;
 #[cfg(feature = "peg")]
 pub type PegParser<const TRACE: bool> = crate::peg::Parser<TRACE>;
 
-pub fn parse_from_top<'t, A, E, P>(input: TokenStream<'t>, parser: P) -> Result<RLT, ParseErrors<A>>
+pub fn parse_from_top<'t, A, E, P, O>(input: TokenStream<'t>, parser: P) -> Result<O, ParseErrors<A>>
 where
-    P: RLTProducer<Error<'t> = E>,
+    P: RLTProducer<O, Error<'t> = E>,
     E: ErrorAdapter<A, TokenStream<'t>>,
     TokenStream<'t>: Original<A>,
 {
-    match parser.parse_rlt(input) {
+    match parser.parse_stream(input) {
         Ok(x) => Ok(x),
         Err(e) => Err(e.adapt(input, 0)),
     }
 }
 
-pub fn default_parse_from_top(input: TokenStream) -> Result<RLT, ParseErrors<Token>>
-{
+pub fn default_parse_from_top(input: TokenStream) -> Result<RLT, ParseErrors<Token>> {
     parse_from_top(input, DefaultParser::new())
 }

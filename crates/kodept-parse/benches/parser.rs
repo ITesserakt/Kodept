@@ -1,10 +1,10 @@
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
+use kodept_parse::common::RLTProducer;
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::{LazyTokenizer, Tokenizer, TokenizerExt};
-use kodept_parse::common::RLTProducer;
 
 const FILENAME: &'static str = "benches/benchmarking_file1.kd";
 
@@ -28,10 +28,10 @@ fn bench_impls(c: &mut Criterion) {
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
 
         group.bench_with_input(BenchmarkId::new("nom", factor), &tokens, |b, i| {
-            b.iter(|| NomParser::new().parse_rlt(*i).expect("Success"))
+            b.iter(|| NomParser::new().parse_stream(*i).expect("Success"))
         });
         group.bench_with_input(BenchmarkId::new("peg", factor), &tokens, |b, i| {
-            b.iter(|| PegParser::<false>::new().parse_rlt(*i).expect("Success"))
+            b.iter(|| PegParser::<false>::new().parse_stream(*i).expect("Success"))
         });
     }
     group.finish();

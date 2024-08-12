@@ -524,7 +524,7 @@ pub struct Parser<const TRACE: bool = false>;
 impl RLTProducer for Parser<TRACING_OPTION> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         grammar::kodept(&input)
     }
 }
@@ -533,7 +533,7 @@ impl RLTProducer for Parser<TRACING_OPTION> {
 impl RLTProducer for Parser<false> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_rlt<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
         grammar::kodept(&input)
     }
