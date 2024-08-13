@@ -24,9 +24,10 @@ use kodept_interpret::type_checker::TypeChecker;
 use kodept_interpret::{Cache, Witness};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::traits::{MutableContext, UnrecoverableError};
+use kodept_parse::lexer::DefaultLexer;
 use kodept_parse::parser::default_parse_from_top;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::{LazyTokenizer, Tokenizer, TokenizerExt};
+use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
 
 pub const EXAMPLES_FOLDER: &str = "examples";
 
@@ -51,7 +52,7 @@ fn get_code_source(name: impl Display) -> CodeSource {
 }
 
 fn get_rlt(source: &ReadCodeSource) -> RLT {
-    let tokens = LazyTokenizer::default(source.contents()).into_vec();
+    let tokens = LazyTokenizer::new(source.contents(), DefaultLexer::new()).into_vec();
     let tokens = TokenStream::new(&tokens);
     let result = default_parse_from_top(tokens).expect("Cannot parse");
     result

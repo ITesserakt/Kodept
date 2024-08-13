@@ -77,7 +77,7 @@ fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str
         }
     }
     debug!(backend = std::any::type_name_of_val(&backend), "Using sequential tokenizer");
-    EagerTokenizer::default(source.contents()).try_collect_adapted()
+    EagerTokenizer::new(source.contents(), backend).try_collect_adapted()
 }
 
 fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {

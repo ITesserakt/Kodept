@@ -1,17 +1,15 @@
 use crate::common::ErrorAdapter;
 use crate::error::{Original, ParseErrors};
-use crate::lexer::DefaultLexer;
 use crate::token_match::TokenMatch;
 use std::fmt::Debug;
 
+use crate::lexer::DefaultLexer;
 #[cfg(feature = "parallel")]
 pub use parallel::Tokenizer as ParallelTokenizer;
 pub use {eager::Tokenizer as EagerTokenizer, lazy::Tokenizer as LazyTokenizer};
 
-pub trait Tokenizer<'t, F> {
+pub trait Tok<'t> {
     type Error;
-
-    fn new(input: &'t str, lexer: F) -> Self;
 
     fn try_into_vec(self) -> Result<Vec<TokenMatch<'t>>, Self::Error>;
 
@@ -29,18 +27,20 @@ pub trait Tokenizer<'t, F> {
     }
 }
 
-pub trait TokenizerExt<'t> {
-    fn default(input: &'t str) -> Self;
-}
+pub trait TokCtor<'t, F> {
+    fn new(input: &'t str, lexer: F) -> Self;
 
-impl<'t, T: Tokenizer<'t, DefaultLexer>> TokenizerExt<'t> for T {
-    fn default(input: &'t str) -> Self {
-        T::new(input, DefaultLexer::new())
+    fn default(input: &'t str) -> Self
+    where
+        F: From<DefaultLexer>,
+        Self: Sized,
+    {
+        Self::new(input, DefaultLexer::new().into())
     }
 }
 
 mod lazy {
-    use super::Tokenizer as Tok;
+    use super::{Tok, TokCtor};
     use crate::common::{ErrorAdapter, TokenProducer};
     use crate::error::{Original, ParseErrors};
     use crate::token_match::TokenMatch;
@@ -79,20 +79,11 @@ mod lazy {
 
     impl<'t, F> FusedIterator for Tokenizer<'t, F> where F: TokenProducer {}
 
-    impl<'t, F> Tok<'t, F> for Tokenizer<'t, F>
+    impl<'t, F> Tok<'t> for Tokenizer<'t, F>
     where
         F: TokenProducer,
     {
         type Error = F::Error<'t>;
-
-        #[inline]
-        fn new(input: &'t str, lexer: F) -> Self {
-            Self {
-                buffer: input,
-                pos: 0,
-                tokenizing_fn: lexer,
-            }
-        }
 
         fn try_into_vec(self) -> Result<Vec<TokenMatch<'t>>, Self::Error> {
             let vec: Result<Vec<_>, _> = <Self as Iterator>::collect(self);
@@ -111,10 +102,20 @@ mod lazy {
             self.try_into_vec().map_err(|e| e.adapt(input, pos))
         }
     }
+
+    impl<'t, F> TokCtor<'t, F> for Tokenizer<'t, F> {
+        fn new(input: &'t str, lexer: F) -> Self {
+            Self {
+                buffer: input,
+                pos: 0,
+                tokenizing_fn: lexer,
+            }
+        }
+    }
 }
 
 mod eager {
-    use super::Tokenizer as Tok;
+    use super::{Tok, TokCtor};
     use crate::common::{EagerTokensProducer, ErrorAdapter};
     use crate::error::{Original, ParseErrors};
     use crate::token_match::TokenMatch;
@@ -128,20 +129,11 @@ mod eager {
         lexer_type: PhantomData<F>,
     }
 
-    impl<'t, F> Tok<'t, F> for Tokenizer<'t, F::Error<'t>, F>
+    impl<'t, F> Tok<'t> for Tokenizer<'t, F::Error<'t>, F>
     where
         F: EagerTokensProducer,
     {
         type Error = F::Error<'t>;
-
-        fn new(input: &'t str, lexer: F) -> Self {
-            let tokens = lexer.parse_string(input);
-            Self {
-                input,
-                result: tokens,
-                lexer_type: PhantomData,
-            }
-        }
 
         #[inline]
         fn try_into_vec(self) -> Result<Vec<TokenMatch<'t>>, Self::Error> {
@@ -156,11 +148,25 @@ mod eager {
             self.result.map_err(|e| e.adapt(self.input, 0))
         }
     }
+
+    impl<'t, F> TokCtor<'t, F> for Tokenizer<'t, F::Error<'t>, F>
+    where
+        F: EagerTokensProducer,
+    {
+        fn new(input: &'t str, lexer: F) -> Self {
+            let tokens = lexer.parse_string(input);
+            Self {
+                input,
+                result: tokens,
+                lexer_type: PhantomData,
+            }
+        }
+    }
 }
 
 #[cfg(feature = "parallel")]
 mod parallel {
-    use super::Tokenizer as Tok;
+    use super::{Tok, TokCtor};
     use crate::common::{ErrorAdapter, TokenProducer};
     use crate::error::{Original, ParseErrors};
     use crate::token_match::TokenMatch;
@@ -178,31 +184,12 @@ mod parallel {
         handler: F,
     }
 
-    impl<'t, F> Tok<'t, F> for Tokenizer<'t, F>
+    impl<'t, F> Tok<'t> for Tokenizer<'t, F>
     where
         F: TokenProducer + Copy + Sync,
         F::Error<'t>: Send,
     {
         type Error = F::Error<'t>;
-
-        fn new(input: &'t str, lexer: F) -> Self {
-            let mut lines = vec![];
-            let mut offset = 0;
-            for (idx, ch) in input.char_indices() {
-                let len = idx - offset;
-                if len > CHUNK_SIZE && matches!(ch, '\n' | '\t' | ';' | ' ') {
-                    lines.push((offset, &input[offset..idx]));
-                    offset = idx;
-                }
-            }
-            lines.push((offset, &input[offset..]));
-
-            Self {
-                input,
-                lines,
-                handler: lexer,
-            }
-        }
 
         fn try_into_vec(self) -> Result<Vec<TokenMatch<'t>>, Self::Error> {
             self.lines
@@ -226,10 +213,31 @@ mod parallel {
         }
     }
 
+    impl<'t, F> TokCtor<'t, F> for Tokenizer<'t, F> {
+        fn new(input: &'t str, lexer: F) -> Self {
+            let mut lines = vec![];
+            let mut offset = 0;
+            for (idx, ch) in input.char_indices() {
+                let len = idx - offset;
+                if len > CHUNK_SIZE && matches!(ch, '\n' | '\t' | ';' | ' ') {
+                    lines.push((offset, &input[offset..idx]));
+                    offset = idx;
+                }
+            }
+            lines.push((offset, &input[offset..]));
+
+            Self {
+                input,
+                lines,
+                handler: lexer,
+            }
+        }
+    }
+
     #[cfg(test)]
     mod tests {
         use crate::lexer::DefaultLexer;
-        use crate::tokenizer::Tokenizer;
+        use crate::tokenizer::TokCtor;
 
         #[test]
         fn test_split() {
