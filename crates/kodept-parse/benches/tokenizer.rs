@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use kodept_parse::lexer::{PegLexer, PestLexer};
-use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tokenizer};
+use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tok};
 
 const FILENAME: &'static str = "benches/benchmarking_file1.kd";
 

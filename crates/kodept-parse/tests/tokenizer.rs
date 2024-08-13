@@ -1,7 +1,7 @@
-use kodept_parse::token_match::TokenMatch;
-use kodept_parse::tokenizer::{LazyTokenizer, Tokenizer};
-use std::fmt::Debug;
 use kodept_parse::lexer::DefaultLexer;
+use kodept_parse::token_match::TokenMatch;
+use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
+use std::fmt::Debug;
 
 const FILENAME: &str = "tests/testing_file.kd";
 
@@ -22,7 +22,7 @@ fn get_tokens() -> &'static [TokenMatch<'static>] {
 fn make_test_impl<'t, T, F>(lexer: F)
 where
     T::Error: Debug,
-    T: Tokenizer<'t, F>,
+    T: Tok<'t> + TokCtor<'t, F>,
 {
     let tokenizer = T::new(get_file_contents(), lexer);
     let tokens = tokenizer.into_vec();
@@ -31,9 +31,9 @@ where
 
 #[cfg(feature = "nom")]
 mod nom {
+    use crate::make_test_impl;
     use kodept_parse::lexer::NomLexer;
     use kodept_parse::tokenizer::{LazyTokenizer, ParallelTokenizer};
-    use crate::make_test_impl;
 
     #[test]
     fn test_lazy() {
@@ -48,9 +48,9 @@ mod nom {
 
 #[cfg(feature = "peg")]
 mod peg {
+    use crate::make_test_impl;
     use kodept_parse::lexer::PegLexer;
     use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer};
-    use crate::make_test_impl;
 
     #[test]
     fn test_lazy() {
@@ -70,9 +70,9 @@ mod peg {
 
 #[cfg(feature = "pest")]
 mod pest {
+    use crate::make_test_impl;
     use kodept_parse::lexer::PestLexer;
     use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer};
-    use crate::make_test_impl;
 
     #[test]
     fn test_lazy() {

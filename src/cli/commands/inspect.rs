@@ -5,11 +5,11 @@ use clap::{Parser, ValueEnum};
 use derive_more::Display;
 use thiserror::Error;
 
+use crate::cli::traits::Command;
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
-use kodept_macros::error::ErrorReported;
 use kodept_macros::error::traits::ResultTEExt;
-use crate::cli::traits::Command;
+use kodept_macros::error::ErrorReported;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -114,7 +114,9 @@ impl InspectParser {
         source: &ReadCodeSource,
         file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
-        use kodept_parse::{lexer::PegLexer, tokenizer::EagerTokenizer, tokenizer::Tokenizer};
+        use kodept_parse::{
+            lexer::PegLexer, tokenizer::EagerTokenizer, tokenizer::Tok, tokenizer::TokCtor,
+        };
         use std::fs::File;
         use InspectError::TokenizationError;
 
@@ -139,7 +141,7 @@ impl InspectParser {
             lexer::PegLexer,
             parser::{parse_from_top, PegParser},
             token_stream::TokenStream,
-            tokenizer::{EagerTokenizer, Tokenizer},
+            tokenizer::{EagerTokenizer, Tok, TokCtor},
         };
         use std::fs::File;
         use InspectError::TokenizationError;

@@ -4,7 +4,7 @@ use kodept_parse::common::RLTProducer;
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
-use kodept_parse::tokenizer::{LazyTokenizer, Tokenizer, TokenizerExt};
+use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
 
 const FILENAME: &'static str = "benches/benchmarking_file1.kd";
 
