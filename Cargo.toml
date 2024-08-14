@@ -18,7 +18,8 @@ members = [
     "crates/kodept-ast",
     "crates/kodept-macros",
     "crates/kodept-interpret",
-    "crates/slotgraph"]
+    "crates/slotgraph", 
+    "crates/kodept-ir"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,0 +1,17 @@
+[package]
+name = "kodept-qbe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+derive_more.workspace = true
+itertools.workspace = true
+nonempty-collections = "0.2.7"
+sealed = "0.5.0"
+smallvec = "1.13.2"
+
+[dev-dependencies]
+similar-asserts = "1.5.0"
+
+[lints]
+workspace = true
