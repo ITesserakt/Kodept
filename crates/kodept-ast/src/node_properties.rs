@@ -1,6 +1,6 @@
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::{Change, AnyNode, PermTkn, Identifiable, SyntaxTree, NodeId};
+use crate::graph::{AnyNode, Change, Identifiable, NodeId, PermTkn, SyntaxTree};
 
 #[repr(transparent)]
 pub struct Uninit<T>(T);
@@ -13,7 +13,7 @@ impl<T> Uninit<T> {
     #[allow(private_bounds)]
     pub fn unwrap(self, id: NodeId<T>) -> T
         where
-            T: crate::graph::Identifiable,
+            T: Identifiable,
     {
         self.0.set_id(id);
         self.0
