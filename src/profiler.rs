@@ -8,29 +8,26 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 static PROFILER: HeapProfiler = HeapProfiler::new();
 
 pub struct HeapProfiler {
-    inner: OnceLock<Mutex<Option<Profiler>>>,
+    inner: Mutex<Option<Profiler>>,
 }
 
 impl HeapProfiler {
     const fn new() -> Self {
         Self {
-            inner: OnceLock::new(),
+            inner: Mutex::new(None),
         }
     }
 
     pub fn install() {
         PROFILER
             .inner
-            .set(Mutex::new(Some(Profiler::new_heap())))
+            .lock()
             .expect("Cannot install heap profiler")
+            .replace(Profiler::new_heap());
     }
 
     pub fn consume() {
-        let Some(mutex) = PROFILER.inner.get() else {
-            error!("Heap profiler is not installed");
-            return;
-        };
-        let Ok(mut profiler) = mutex.lock() else {
+        let Ok(mut profiler) = PROFILER.inner.lock() else {
             error!("Cannot lock mutex");
             return;
         };
