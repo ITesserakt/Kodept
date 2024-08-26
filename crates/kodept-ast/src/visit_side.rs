@@ -2,9 +2,8 @@ use std::ops::{Deref, DerefMut};
 
 use derive_more::{From, Into, IsVariant};
 
+use crate::graph::{AnyNode, PermTkn, TypedNodeCell};
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-
-use crate::graph::{AnyNode, PermTkn, RefMut};
 
 #[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy, Debug)]
 #[repr(u8)]
@@ -15,12 +14,12 @@ pub enum VisitSide {
 }
 
 #[derive(From, Into)]
-pub struct Access<'arena, 'token, N>(&'token mut PermTkn, RefMut<'arena, N>);
+pub struct Access<'arena, 'token, N>(&'token mut PermTkn, TypedNodeCell<'arena, N>);
 
-pub struct VisitGuard<'arena, 'token, N>(VisitSide, RefMut<'arena, N>, &'token mut PermTkn);
+pub struct VisitGuard<'arena, 'token, N>(VisitSide, TypedNodeCell<'arena, N>, &'token mut PermTkn);
 
 impl<'arena, 'token, N> VisitGuard<'arena, 'token, N> {
-    pub fn new(side: VisitSide, access: RefMut<'arena, N>, token: &'token mut PermTkn) -> Self {
+    pub fn new(side: VisitSide, access: TypedNodeCell<'arena, N>, token: &'token mut PermTkn) -> Self {
         Self(side, access, token)
     }
 

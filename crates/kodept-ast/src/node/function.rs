@@ -4,11 +4,10 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::{NodeId};
-use crate::graph::{Identity, SyntaxTreeBuilder};
-use crate::traits::Linker;
+use crate::graph::Identity;
+use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
-use crate::{node, Body, Type, TyParam, node_sub_enum, Param};
+use crate::{node, node_sub_enum, Body, Param, TyParam, Type};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -41,21 +40,14 @@ node! {
 }
 
 impl PopulateTree for rlt::BodiedFunction {
-    type Output = BodyFnDecl;
+    type Root = BodyFnDecl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(BodyFnDecl::uninit(
-                context.get_chunk_located(&self.id).to_string(),
-            ))
-            .with_children_from(self.return_type.as_ref().map(|x| &x.1), context)
-            .with_children_from(self.params.iter().flat_map(|x| x.inner.as_ref()), context)
-            .with_children_from([self.body.as_ref()], context)
-            .with_rlt(context, self)
-            .id()
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(
+            BodyFnDecl::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self),
+        )
+        .with_children_from(self.return_type.as_ref().map(|x| &x.1), context)
+        .with_children_from(self.params.iter().flat_map(|x| x.inner.as_ref()), context)
+        .with_children_from([self.body.as_ref()], context)
     }
 }

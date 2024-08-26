@@ -6,7 +6,7 @@ use kodept::macro_context::DefaultContext;
 use kodept::read_code_source::ReadCodeSource;
 use kodept::steps::common;
 use kodept::steps::common::Config;
-use kodept_ast::ast_builder::ASTBuilder;
+use kodept_ast::graph::SyntaxTree;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::ResultTRExt;
 use kodept_macros::error::ErrorReported;
@@ -25,17 +25,17 @@ impl Command for Execute {
 
     fn exec_for_source(
         &self,
-        source: ReadCodeSource,
+        mut source: ReadCodeSource,
         settings: &mut CodespanSettings,
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
-        let (tree, accessor) = ASTBuilder.recursive_build(&rlt.0, &source);
+        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &mut source);
         debug!("Produced AST with node count = {}", tree.node_count());
         let mut context = DefaultContext::new(
             source.with_filename(|_| ReportCollector::new()),
             accessor,
-            tree.build(),
+            tree.split().0,
         );
         let config = Config {
             recursion_depth: self.type_checking_recursion_depth,

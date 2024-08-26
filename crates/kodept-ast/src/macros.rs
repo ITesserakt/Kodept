@@ -153,11 +153,9 @@ pub mod implementation {
             id: std::cell::OnceCell<$crate::graph::NodeId<$name>>,
             $($field_vis $field_name: $field_type,)*
         }
-
-        impl $crate::node_properties::Node for $name {}
-
+        
         impl $name {
-            pub fn uninit($($field_name: $field_type,)*) -> $crate::Uninit<Self> {
+            pub fn uninit($($field_name: $field_type,)*) -> $crate::Uninit<'static, Self> {
                 $crate::Uninit::new(Self {
                     id: Default::default(),
                     $(
@@ -166,7 +164,7 @@ pub mod implementation {
                 })
             }
 
-            pub fn into_uninit(self) -> $crate::Uninit<Self> {
+            pub fn into_uninit(self) -> $crate::Uninit<'static, Self> {
                 Self::uninit($(self.$field_name, )*)
             }
         }

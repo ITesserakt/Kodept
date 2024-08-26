@@ -1,12 +1,11 @@
-use std::convert::Infallible;
 use codespan_reporting::files::{Error, Files};
 use codespan_reporting::term::termcolor::WriteColor;
 use derive_more::{From, Unwrap};
-
 use kodept_ast::graph::SyntaxTree;
-use kodept_ast::traits::{Accessor, Linker};
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
+use std::convert::Infallible;
+use std::rc::Weak;
 
 use crate::error::report::{Report, ReportMessage};
 use crate::error::traits::{CodespanSettings, Reportable};
@@ -54,7 +53,11 @@ pub trait FileContextual {
     fn file_path(&self) -> CodePath;
 }
 
-pub trait Context: Linker + Accessor + Reporter {}
+pub trait Context: Reporter {
+    fn tree(&self) -> Weak<SyntaxTree> {
+        todo!()
+    }
+}
 
 pub trait MutableContext: Context {
     fn modify_tree(
@@ -63,4 +66,4 @@ pub trait MutableContext: Context {
     ) -> Result<(), ReportMessage>;
 }
 
-impl<T: Linker + Accessor + Reporter> Context for T {}
+impl<T: Reporter> Context for T {}

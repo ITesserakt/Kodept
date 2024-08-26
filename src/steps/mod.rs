@@ -1,14 +1,14 @@
 use std::convert::Infallible;
 
-use Execution::{Completed, Failed, Skipped};
-use kodept_ast::graph::{AnyNode, ChangeSet, PermTkn, RefMut, RefNode};
+use kodept_ast::graph::{AnyNode, ChangeSet, PermTkn, RefNode, TypedNodeCell};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::{ConvertibleToRef};
 use kodept_core::structure::Located;
-use kodept_macros::error::report::{Report, ReportMessage};
-use kodept_macros::Macro;
+use kodept_core::ConvertibleToRef;
+use kodept_macros::error::report::ReportMessage;
 use kodept_macros::traits::{Context, MutableContext, UnrecoverableError};
+use kodept_macros::Macro;
+use Execution::{Completed, Failed, Skipped};
 
 use crate::steps::hlist::{HCons, HList, HNil};
 
@@ -49,7 +49,7 @@ where
     #[inline]
     fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet> {
         let head = if pack.node.ro(pack.token).try_as_ref().is_some() {
-            let guard = VisitGuard::new(pack.side, RefMut::new(pack.node), pack.token);
+            let guard = VisitGuard::new(pack.side, TypedNodeCell::new(pack.node), pack.token);
             self.head.transform(guard, pack.ctx)
         } else {
             Skipped
@@ -85,9 +85,8 @@ fn run_macros(
             ctx: context,
         }) {
             Failed(e) => {
-                let location = context
-                    .access_unknown(node.ro(&token))
-                    .map_or(vec![], |it| vec![it.location()]);
+                // FIXME
+                let location = vec![];
                 context.report_and_fail(location, e)?;
             }
             Completed(next) => changes.extend(next),
@@ -95,10 +94,8 @@ fn run_macros(
         }
     }
 
-    match context.modify_tree(|tree| tree.apply_changes(changes, &token)) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(Report::new(&context.file_path(), vec![], e).into()),
-    }
+    // FIXME
+    Ok(())
 }
 
 pub trait Step

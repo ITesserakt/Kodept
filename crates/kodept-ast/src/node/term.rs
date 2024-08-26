@@ -1,13 +1,11 @@
-use derive_more::{From};
+use derive_more::From;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
-use crate::graph::{SyntaxTreeBuilder};
-use crate::traits::Linker;
+use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
 use crate::{node, node_sub_enum};
 
@@ -23,7 +21,7 @@ node_sub_enum! {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ReferenceContext {
     global: bool,
-    items: Vec<String>
+    items: Vec<String>,
 }
 
 node! {
@@ -51,7 +49,7 @@ impl ReferenceContext {
             items: items.into_iter().map(|it| it.into()).collect(),
         }
     }
-    
+
     pub fn local(items: impl IntoIterator<Item: Into<String>>) -> Self {
         Self {
             global: false,
@@ -61,24 +59,20 @@ impl ReferenceContext {
 }
 
 impl PopulateTree for rlt::Term {
-    type Output = Term;
+    type Root = Term;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            rlt::Term::Reference(x) => x.convert(builder, context).cast(),
-            rlt::Term::Contextual(x) => x.inner.convert(builder, context).cast()
+            rlt::Term::Reference(x) => x.convert(context).cast(),
+            rlt::Term::Contextual(x) => x.inner.convert(context).cast(),
         }
     }
 }
 
 impl PopulateTree for rlt::ContextualReference {
-    type Output = Ref;
+    type Root = Ref;
 
-    fn convert(&self, builder: &mut SyntaxTreeBuilder, context: &mut (impl Linker + CodeHolder)) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let ident = match &self.inner {
             rlt::Reference::Type(x) => Identifier::TypeReference {
                 name: context.get_chunk_located(x).to_string(),
@@ -90,25 +84,24 @@ impl PopulateTree for rlt::ContextualReference {
         let (from_root, refs) = self.context.clone().unfold();
         let ctx = ReferenceContext {
             global: from_root.is_some(),
-            items: refs.into_iter().map(|it| match it {
-                rlt::Reference::Type(x) => context.get_chunk_located(&x).to_string(),
-                rlt::Reference::Identifier(_) => panic!("Context built with ordinary references is unsupported")
-            }).collect(),
+            items: refs
+                .into_iter()
+                .map(|it| match it {
+                    rlt::Reference::Type(x) => context.get_chunk_located(&x).to_string(),
+                    rlt::Reference::Identifier(_) => {
+                        panic!("Context built with ordinary references is unsupported")
+                    }
+                })
+                .collect(),
         };
-        builder.add_node(Ref::uninit(ctx, ident))
-            .with_rlt(context, self)
-            .id()
+        SubSyntaxTree::new(Ref::uninit(ctx, ident).with_rlt(self))
     }
 }
 
 impl PopulateTree for rlt::Reference {
-    type Output = Ref;
+    type Root = Ref;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let ident = match self {
             rlt::Reference::Type(x) => Identifier::TypeReference {
                 name: context.get_chunk_located(x).to_string(),
@@ -117,9 +110,6 @@ impl PopulateTree for rlt::Reference {
                 name: context.get_chunk_located(x).to_string(),
             },
         };
-        builder
-            .add_node(Ref::uninit(Default::default(), ident))
-            .with_rlt(context, self)
-            .id()
+        SubSyntaxTree::new(Ref::uninit(Default::default(), ident).with_rlt(self))
     }
 }

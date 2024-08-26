@@ -4,12 +4,10 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::Identity;
 use crate::graph::tags::PRIMARY;
-use crate::graph::NodeId;
-use crate::graph::{SyntaxTreeBuilder};
-use crate::traits::{Linker, PopulateTree};
-use crate::{node, Body, Operation, node_sub_enum};
+use crate::graph::{Identity, SubSyntaxTree};
+use crate::traits::PopulateTree;
+use crate::{node, node_sub_enum, Body, Operation};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -47,53 +45,32 @@ node! {
 }
 
 impl PopulateTree for rlt::IfExpr {
-    type Output = IfExpr;
+    type Root = IfExpr;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(IfExpr::uninit())
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(IfExpr::uninit().with_rlt(self))
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
             .with_children_from(self.elif.as_ref(), context)
             .with_children_from(self.el.as_slice(), context)
-            .with_rlt(context, self)
-            .id()
     }
 }
 
 impl PopulateTree for rlt::ElifExpr {
-    type Output = ElifExpr;
+    type Root = ElifExpr;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(ElifExpr::uninit())
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(ElifExpr::uninit().with_rlt(self))
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
-            .with_rlt(context, self)
-            .id()
     }
 }
 
 impl PopulateTree for rlt::ElseExpr {
-    type Output = ElseExpr;
+    type Root = ElseExpr;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(ElseExpr::uninit())
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(ElseExpr::uninit().with_rlt(self))
             .with_children_from([&self.body], context)
-            .with_rlt(context, self)
-            .id()
     }
 }

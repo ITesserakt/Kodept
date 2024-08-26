@@ -1,17 +1,16 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use BinaryExpressionKind::*;
-use kodept_core::structure::{rlt};
+use crate::graph::tags::{LEFT, PRIMARY, RIGHT, SECONDARY};
+use crate::graph::{Identity, SubSyntaxTree};
+use crate::macros::implementation::node;
+use crate::traits::PopulateTree;
+use crate::{node_sub_enum, BlockLevel, CodeFlow, Lit, Param, Term};
+use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
+use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
-
-use crate::{BlockLevel, CodeFlow, Lit, node, node_sub_enum, Param, Term};
-use crate::graph::{Identity, SyntaxTreeBuilder};
-use crate::graph::NodeId;
-use crate::graph::tags::*;
-use crate::traits::{Linker, PopulateTree};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -152,65 +151,53 @@ pub enum BinaryExpressionKind {
     Bit(BitKind),
     Logic(LogicKind),
     ComplexComparison,
-    Assign
+    Assign,
 }
 
 impl PopulateTree for rlt::ExpressionBlock {
-    type Output = Exprs;
+    type Root = Exprs;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(Exprs::uninit())
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(Exprs::uninit().with_rlt(self))
             .with_children_from(self.expression.as_ref(), context)
-            .with_rlt(context, self)
-            .id()
     }
 }
 
 impl PopulateTree for rlt::Operation {
-    type Output = Operation;
+    type Root = Operation;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            rlt::Operation::Block(x) => x.convert(builder, context).cast(),
+            rlt::Operation::Block(x) => x.convert(context).cast(),
             rlt::Operation::Access { left, right, .. } => {
-                build_access(self, builder, context, left, right)
+                build_access(self, context, left, right).cast()
             }
             rlt::Operation::TopUnary { operator, expr } => {
-                build_unary(self, builder, context, operator, expr)
+                build_unary(self, context, operator, expr).cast()
             }
             rlt::Operation::Binary {
                 left,
                 operation,
                 right,
-            } => build_binary(self, builder, context, left, operation, right),
-            rlt::Operation::Application(x) => x.convert(builder, context).cast(),
-            rlt::Operation::Expression(x) => x.convert(builder, context).cast(),
+            } => build_binary(self, context, left, operation, right).cast(),
+            rlt::Operation::Application(x) => x.convert(context).cast(),
+            rlt::Operation::Expression(x) => x.convert(context).cast(),
         }
     }
 }
 
-fn build_binary(
-    node: &rlt::Operation,
-    builder: &mut SyntaxTreeBuilder,
-    context: &mut (impl Linker + CodeHolder + Sized),
-    left: &rlt::Operation,
-    operation: &BinaryOperationSymbol,
-    right: &rlt::Operation,
-) -> NodeId<Operation> {
+fn build_binary<'a>(
+    node: &'a rlt::Operation,
+    context: &mut (impl CodeHolder + Sized),
+    left: &'a rlt::Operation,
+    operation: &'a BinaryOperationSymbol,
+    right: &'a rlt::Operation,
+) -> SubSyntaxTree<'a, BinExpr> {
     let binding = context.get_chunk_located(operation);
     let op_text = binding.as_ref();
-    
-    builder
-        .add_node(BinExpr::uninit(match (operation, op_text) {
+
+    SubSyntaxTree::new(
+        BinExpr::uninit(match (operation, op_text) {
             (BinaryOperationSymbol::Pow(_), _) => Math(MathKind::Pow),
             (BinaryOperationSymbol::Mul(_), "*") => Math(MathKind::Mul),
             (BinaryOperationSymbol::Mul(_), "/") => Math(MathKind::Div),
@@ -230,68 +217,57 @@ fn build_binary(
             (BinaryOperationSymbol::Logic(_), "||") => Logic(LogicKind::Disj),
             (BinaryOperationSymbol::Logic(_), "&&") => Logic(LogicKind::Conj),
             (BinaryOperationSymbol::Assign(_), "=") => Assign,
-            
+
             (BinaryOperationSymbol::Mul(_), x) => panic!("Unknown mul operator found: {x}"),
             (BinaryOperationSymbol::Add(_), x) => panic!("Unknown add operator found: {x}"),
-            (BinaryOperationSymbol::CompoundComparison(_), x) => panic!("Unknown cmp operator found: {x}"),
+            (BinaryOperationSymbol::CompoundComparison(_), x) => {
+                panic!("Unknown cmp operator found: {x}")
+            }
             (BinaryOperationSymbol::Comparison(_), x) => panic!("Unknown cmp operator found: {x}"),
             (BinaryOperationSymbol::Bit(_), x) => panic!("Unknown bit operator found: {x}"),
             (BinaryOperationSymbol::Logic(_), x) => panic!("Unknown logic operator found: {x}"),
-            (BinaryOperationSymbol::Assign(_), x) => panic!("Unknown assign operator found: {x}")
-        }))
-        .with_children_from::<LEFT, _>([left], context)
-        .with_children_from::<RIGHT, _>([right], context)
-        .with_rlt(context, node)
-        .id()
-        .cast()
+            (BinaryOperationSymbol::Assign(_), x) => panic!("Unknown assign operator found: {x}"),
+        })
+        .with_rlt(node),
+    )
+    .with_children_from::<LEFT, _>([left], context)
+    .with_children_from::<RIGHT, _>([right], context)
 }
 
-fn build_unary(
-    node: &rlt::Operation,
-    builder: &mut SyntaxTreeBuilder,
-    context: &mut (impl Linker + CodeHolder + Sized),
-    operator: &UnaryOperationSymbol,
-    expr: &rlt::Operation,
-) -> NodeId<Operation> {
-    builder
-        .add_node(UnExpr::uninit(match operator {
+fn build_unary<'a>(
+    node: &'a rlt::Operation,
+    context: &mut (impl CodeHolder + Sized),
+    operator: &'a UnaryOperationSymbol,
+    expr: &'a rlt::Operation,
+) -> SubSyntaxTree<'a, UnExpr> {
+    SubSyntaxTree::new(
+        UnExpr::uninit(match operator {
             UnaryOperationSymbol::Neg(_) => Neg,
             UnaryOperationSymbol::Not(_) => Not,
             UnaryOperationSymbol::Inv(_) => Inv,
             UnaryOperationSymbol::Plus(_) => Plus,
-        }))
-        .with_children_from([expr], context)
-        .with_rlt(context, node)
-        .id()
-        .cast()
+        })
+        .with_rlt(node),
+    )
+    .with_children_from([expr], context)
 }
 
-fn build_access(
-    node: &rlt::Operation,
-    builder: &mut SyntaxTreeBuilder,
-    context: &mut (impl Linker + CodeHolder + Sized),
-    left: &rlt::Operation,
-    right: &rlt::Operation,
-) -> NodeId<Operation> {
-    builder
-        .add_node(Acc::uninit())
+fn build_access<'a>(
+    node: &'a rlt::Operation,
+    context: &mut (impl CodeHolder + Sized),
+    left: &'a rlt::Operation,
+    right: &'a rlt::Operation,
+) -> SubSyntaxTree<'a, Acc> {
+    SubSyntaxTree::new(Acc::uninit().with_rlt(node))
         .with_children_from::<LEFT, _>([left], context)
         .with_children_from::<RIGHT, _>([right], context)
-        .with_rlt(context, node)
-        .id()
-        .cast()
 }
 
 impl PopulateTree for rlt::Application {
-    type Output = Appl;
+    type Root = Appl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(Appl::uninit())
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(Appl::uninit().with_rlt(self))
             .with_children_from::<PRIMARY, _>([&self.expr], context)
             .with_children_from::<SECONDARY, _>(
                 self.params
@@ -299,30 +275,23 @@ impl PopulateTree for rlt::Application {
                     .map_or([].as_slice(), |x| x.inner.as_ref()),
                 context,
             )
-            .with_rlt(context, self)
-            .id()
     }
 }
 
 impl PopulateTree for rlt::Expression {
-    type Output = Expression;
+    type Root = Expression;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            rlt::Expression::Lambda { binds, expr, .. } => builder
-                .add_node(Lambda::uninit())
-                .with_children_from(binds.as_ref(), context)
-                .with_children_from([expr.as_ref()], context)
-                .with_rlt(context, self)
-                .id()
-                .cast(),
-            rlt::Expression::Term(x) => x.convert(builder, context).cast(),
-            rlt::Expression::Literal(x) => x.convert(builder, context).cast(),
-            rlt::Expression::If(x) => x.convert(builder, context).cast::<CodeFlow>().cast(),
+            rlt::Expression::Lambda { binds, expr, .. } => {
+                SubSyntaxTree::new(Lambda::uninit().with_rlt(self))
+                    .with_children_from(binds.as_ref(), context)
+                    .with_children_from([expr.as_ref()], context)
+                    .cast()
+            }
+            rlt::Expression::Term(x) => x.convert(context).cast(),
+            rlt::Expression::Literal(x) => x.convert(context).cast(),
+            rlt::Expression::If(x) => x.convert(context).cast::<CodeFlow>().cast(),
         }
     }
 }

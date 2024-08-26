@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use derive_more::{IsVariant};
+use derive_more::IsVariant;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -8,10 +8,10 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::BlockLevelNode;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
-use crate::graph::{Identity, SyntaxTreeBuilder};
-use crate::traits::{Linker, PopulateTree};
-use crate::{node, BodyFnDecl, Exprs, Operation, Type, node_sub_enum};
+use crate::graph::Identity;
+use crate::graph::SubSyntaxTree;
+use crate::traits::PopulateTree;
+use crate::{node, node_sub_enum, BodyFnDecl, Exprs, Operation, Type};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -61,62 +61,43 @@ pub enum VariableKind {
 }
 
 impl PopulateTree for rlt::Body {
-    type Output = Body;
+    type Root = Body;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            rlt::Body::Block(x) => x.convert(builder, context).cast(),
-            rlt::Body::Simplified { expression, .. } => expression.convert(builder, context).cast(),
+            rlt::Body::Block(x) => x.convert(context).cast(),
+            rlt::Body::Simplified { expression, .. } => expression.convert(context).cast(),
         }
     }
 }
 
 impl PopulateTree for BlockLevelNode {
-    type Output = BlockLevel;
+    type Root = BlockLevel;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            BlockLevelNode::InitVar(x) => x.convert(builder, context).cast(),
-            BlockLevelNode::Block(x) => x.convert(builder, context).cast(),
-            BlockLevelNode::Function(x) => x.convert(builder, context).cast(),
-            BlockLevelNode::Operation(x) => x.convert(builder, context).cast(),
+            BlockLevelNode::InitVar(x) => x.convert(context).cast(),
+            BlockLevelNode::Block(x) => x.convert(context).cast(),
+            BlockLevelNode::Function(x) => x.convert(context).cast(),
+            BlockLevelNode::Operation(x) => x.convert(context).cast(),
         }
     }
 }
 
 impl PopulateTree for rlt::InitializedVariable {
-    type Output = InitVar;
+    type Root = InitVar;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(InitVar::uninit())
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(InitVar::uninit().with_rlt(self))
             .with_children_from([&self.expression], context)
             .with_children_from([&self.variable], context)
-            .with_rlt(context, self)
-            .id()
     }
 }
 
 impl PopulateTree for rlt::Variable {
-    type Output = VarDecl;
+    type Root = VarDecl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let (kind, name, ty) = match self {
             rlt::Variable::Immutable {
                 id, assigned_type, ..
@@ -125,13 +106,9 @@ impl PopulateTree for rlt::Variable {
                 id, assigned_type, ..
             } => (VariableKind::Mutable, id, assigned_type),
         };
-        builder
-            .add_node(VarDecl::uninit(
-                kind,
-                context.get_chunk_located(name).to_string(),
-            ))
-            .with_children_from(ty.as_ref().map(|x| &x.1), context)
-            .with_rlt(context, self)
-            .id()
+        SubSyntaxTree::new(
+            VarDecl::uninit(kind, context.get_chunk_located(name).to_string()).with_rlt(self),
+        )
+        .with_children_from(ty.as_ref().map(|x| &x.1), context)
     }
 }

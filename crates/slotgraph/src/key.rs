@@ -9,7 +9,7 @@ use slotmap::{new_key_type, KeyData};
 
 use crate::NodeKey;
 
-new_key_type! { pub(crate) struct CommonKey; }
+new_key_type! { pub struct CommonKey; }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
@@ -139,5 +139,11 @@ unsafe impl<T> slotmap::Key for Key<T> {
 impl<T> From<Key<T>> for NodeKey {
     fn from(value: Key<T>) -> Self {
         NodeKey(CommonKey(value.key_data))
+    }
+}
+
+impl<T> From<Key<T>> for crate::dag::NodeKey {
+    fn from(value: Key<T>) -> Self {
+        crate::dag::NodeKey::Child(CommonKey(value.key_data))
     }
 }

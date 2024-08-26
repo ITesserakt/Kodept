@@ -5,6 +5,7 @@ mod graph;
 mod key;
 mod parts;
 mod subgraph;
+pub mod dag;
 
 pub type DiGraph<N, E = ()> = graph::Graph<N, E, Directed>;
 pub type UnGraph<N, E = ()> = graph::Graph<N, E, Undirected>;

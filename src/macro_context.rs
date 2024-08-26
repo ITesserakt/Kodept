@@ -1,14 +1,12 @@
 use std::ops::Range;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::files::{Error, Files};
 use replace_with::replace_with_or_abort;
 
-use kodept_ast::graph::{AnyNode, NodeId, SyntaxTree};
-use kodept_ast::rlt_accessor::{RLTAccessor, RLTFamily};
-use kodept_ast::traits::{Accessor, Identifiable, Linker};
-use kodept_core::ConvertibleToRef;
+use kodept_ast::graph::SyntaxTree;
+use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_core::file_relative::{CodePath, FileRelative};
 use kodept_macros::error::report::{Report, ReportMessage};
 use kodept_macros::error::report_collector::ReportCollector;
@@ -19,16 +17,16 @@ use crate::codespan_settings::CodespanSettings;
 use crate::read_code_source::ReadCodeSource;
 
 #[derive(Debug)]
-pub struct DefaultContext {
+pub struct DefaultContext<'r> {
     report_collector: FileRelative<ReportCollector>,
-    rlt_accessor: RLTAccessor,
+    rlt_accessor: RLTAccessor<'r>,
     tree: Rc<SyntaxTree>,
 }
 
-impl DefaultContext {
+impl<'r> DefaultContext<'r> {
     pub fn new(
         report_collector: FileRelative<ReportCollector>,
-        rlt_accessor: RLTAccessor,
+        rlt_accessor: RLTAccessor<'r>,
         ast: SyntaxTree,
     ) -> Self {
         Self {
@@ -39,67 +37,19 @@ impl DefaultContext {
     }
 }
 
-impl Linker for DefaultContext {
-    fn link<A, B>(&mut self, ast: &A, with: &B)
-    where
-        A: Identifiable + Into<AnyNode>,
-        B: Into<RLTFamily> + Clone,
-    {
-        self.rlt_accessor.save(ast, with);
-    }
-
-    fn link_existing<A, B>(&mut self, a: A, b: &B) -> A
-    where
-        A: Identifiable + Into<AnyNode>,
-        B: Identifiable + Into<AnyNode>,
-    {
-        self.rlt_accessor.save_existing(&a, b);
-        a
-    }
-
-    fn link_by_id<A, B>(&mut self, ast_id: NodeId<A>, with: &B)
-    where
-        B: Into<RLTFamily> + Clone,
-        A: Into<AnyNode>
-    {
-        self.rlt_accessor.save_by_id(ast_id, with)
-    }
-}
-
-impl Accessor for DefaultContext {
-    fn access<A, B>(&self, ast: &A) -> Option<&B>
-    where
-        A: Identifiable + Into<AnyNode>,
-        RLTFamily: ConvertibleToRef<B>,
-    {
-        self.rlt_accessor.access(ast)
-    }
-
-    fn access_unknown<A>(&self, ast: &A) -> Option<RLTFamily>
-    where
-        A: Identifiable + Into<AnyNode>,
-    {
-        self.rlt_accessor.access_unknown(ast).cloned()
-    }
-
-    fn tree(&self) -> Weak<SyntaxTree> {
-        Rc::downgrade(&self.tree)
-    }
-}
-
-impl FileContextual for DefaultContext {
+impl FileContextual for DefaultContext<'_> {
     fn file_path(&self) -> CodePath {
         self.report_collector.filepath.clone()
     }
 }
 
-impl Reporter for DefaultContext {
+impl Reporter for DefaultContext<'_> {
     fn report(&mut self, report: Report) {
         self.report_collector.value.report(report)
     }
 }
 
-impl DefaultContext {
+impl DefaultContext<'_> {
     pub fn emit_diagnostics(
         self,
         settings: &mut CodespanSettings,
@@ -191,7 +141,7 @@ impl From<DroppedASTError> for ReportMessage {
     }
 }
 
-impl MutableContext for DefaultContext {
+impl MutableContext for DefaultContext<'_> {
     fn modify_tree(
         &mut self,
         f: impl FnOnce(SyntaxTree) -> SyntaxTree,

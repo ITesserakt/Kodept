@@ -1,13 +1,10 @@
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
-use kodept_core::structure::rlt::{File, Module};
-use kodept_core::structure::span::CodeHolder;
-
-use crate::graph::{NodeId, SyntaxTreeBuilder};
-use crate::traits::Linker;
+use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
 use crate::{node, TopLevel};
+use kodept_core::structure::rlt;
+use kodept_core::structure::span::CodeHolder;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -35,39 +32,28 @@ node! {
     }
 }
 
-impl PopulateTree for File {
-    type Output = FileDecl;
+impl PopulateTree for rlt::File {
+    type Root = FileDecl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(FileDecl::uninit())
-            .with_children_from(self.0.iter(), context)
-            .with_rlt(context, self)
-            .id()
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        let node = FileDecl::uninit().with_rlt(self);
+        SubSyntaxTree::new(node).with_children_from(&self.0, context)
     }
 }
 
-impl PopulateTree for Module {
-    type Output = ModDecl;
+impl PopulateTree for rlt::Module {
+    type Root = ModDecl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let (kind, name, rest) = match self {
-            Module::Global { id, rest, .. } => (ModuleKind::Global, id, rest),
-            Module::Ordinary { id, rest, .. } => (ModuleKind::Ordinary, id, rest),
+            rlt::Module::Global { id, rest, .. } => {
+                (ModuleKind::Global, context.get_chunk_located(id), rest)
+            }
+            rlt::Module::Ordinary { id, rest, .. } => {
+                (ModuleKind::Ordinary, context.get_chunk_located(id), rest)
+            }
         };
-        let node = ModDecl::uninit(kind, context.get_chunk_located(name).to_string());
-        builder
-            .add_node(node)
-            .with_children_from(rest.iter(), context)
-            .with_rlt(context, self)
-            .id()
+        let node = ModDecl::uninit(kind, name.to_string()).with_rlt(self);
+        SubSyntaxTree::new(node).with_children_from(rest, context)
     }
 }

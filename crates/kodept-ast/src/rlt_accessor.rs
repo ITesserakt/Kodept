@@ -1,100 +1,45 @@
-use derive_more::{From, TryInto};
-use slotmap::SecondaryMap;
-
+use crate::graph::GenericNodeKey;
+use derive_more::{Constructor, From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
-use kodept_core::ConvertibleToRef;
+use slotmap::SecondaryMap;
 
-use crate::graph::{AnyNode, GenericNodeKey, NodeId};
-use crate::traits::Identifiable;
-
-#[derive(Clone, From, TryInto, Debug)]
-#[try_into(ref)]
-pub enum RLTFamily {
-    File(rlt::File),
-    Module(rlt::Module),
-    Struct(rlt::Struct),
-    Enum(rlt::Enum),
-    Type(rlt::Type),
-    TypeName(rlt::new_types::TypeName),
-    TypedParameter(rlt::TypedParameter),
-    UntypedParameter(rlt::UntypedParameter),
-    Variable(rlt::Variable),
-    InitializedVariable(rlt::InitializedVariable),
-    BodiedFunction(rlt::BodiedFunction),
-    Body(rlt::Body),
-    BlockLevel(rlt::BlockLevelNode),
-    ExpressionBlock(rlt::ExpressionBlock),
-    Operation(rlt::Operation),
-    Application(rlt::Application),
-    Expression(rlt::Expression),
-    Term(rlt::Term),
-    Reference(rlt::Reference),
-    Contextual(rlt::ContextualReference),
-    Literal(rlt::Literal),
-    CodeFlow(rlt::CodeFlow),
-    If(rlt::IfExpr),
-    Elif(rlt::ElifExpr),
-    Else(rlt::ElseExpr),
+#[derive(Copy, Clone, From, TryInto, Debug)]
+pub enum RLTFamily<'r> {
+    File(&'r rlt::File),
+    Module(&'r rlt::Module),
+    Struct(&'r rlt::Struct),
+    Enum(&'r rlt::Enum),
+    Type(&'r rlt::Type),
+    TypeName(&'r rlt::new_types::TypeName),
+    TypedParameter(&'r rlt::TypedParameter),
+    UntypedParameter(&'r rlt::UntypedParameter),
+    Variable(&'r rlt::Variable),
+    InitializedVariable(&'r rlt::InitializedVariable),
+    BodiedFunction(&'r rlt::BodiedFunction),
+    Body(&'r rlt::Body),
+    BlockLevel(&'r rlt::BlockLevelNode),
+    ExpressionBlock(&'r rlt::ExpressionBlock),
+    Operation(&'r rlt::Operation),
+    Application(&'r rlt::Application),
+    Expression(&'r rlt::Expression),
+    Term(&'r rlt::Term),
+    Reference(&'r rlt::Reference),
+    Contextual(&'r rlt::ContextualReference),
+    Literal(&'r rlt::Literal),
+    CodeFlow(&'r rlt::CodeFlow),
+    If(&'r rlt::IfExpr),
+    Elif(&'r rlt::ElifExpr),
+    Else(&'r rlt::ElseExpr),
 }
 
-#[derive(Debug, Default)]
-pub struct RLTAccessor {
-    links: SecondaryMap<GenericNodeKey, RLTFamily>,
+#[derive(Constructor, Debug)]
+pub struct RLTAccessor<'r> {
+    mapping: SecondaryMap<GenericNodeKey, RLTFamily<'r>>,
+    root_mapping: Option<RLTFamily<'r>>,
 }
 
-impl RLTAccessor {
-    pub fn access<A, B>(&self, node: &A) -> Option<&B>
-    where
-        A: Identifiable + Into<AnyNode>,
-        RLTFamily: ConvertibleToRef<B>,
-    {
-        self.links
-            .get(node.get_id().widen().into())
-            .and_then(|it| it.try_as_ref())
-    }
-
-    pub fn access_unknown<A>(&self, node: &A) -> Option<&RLTFamily>
-    where
-        A: Identifiable + Into<AnyNode>,
-    {
-        self.links.get(node.get_id().widen().into())
-    }
-
-    pub fn save_existing<A, B>(&mut self, new: &A, existing: &B)
-    where
-        A: Identifiable + Into<AnyNode>,
-        B: Identifiable + Into<AnyNode>,
-    {
-        match self.links.get(existing.get_id().widen().into()) {
-            None => None,
-            Some(x) => self.links.insert(new.get_id().widen().into(), x.clone()),
-        };
-    }
-
-    pub fn save<A, B>(&mut self, key: &A, value: &B)
-    where
-        B: Into<RLTFamily> + Clone,
-        A: Identifiable + Into<AnyNode>
-    {
-        self.links.insert(key.get_id().widen().into(), value.clone().into());
-    }
-
-    pub fn save_by_id<A, B>(&mut self, ast_id: NodeId<A>, with: &B)
-    where
-        B: Into<RLTFamily> + Clone,
-        A: Into<AnyNode> {
-        self.links.insert(ast_id.widen().into(), with.clone().into());
-    }
-}
-
-impl<'a> From<&'a RLTFamily> for RLTFamily {
-    fn from(value: &'a RLTFamily) -> Self {
-        value.clone()
-    }
-}
-
-impl Located for RLTFamily {
+impl Located for RLTFamily<'_> {
     fn location(&self) -> CodePoint {
         match self {
             RLTFamily::File(x) => x.location(),
@@ -121,7 +66,7 @@ impl Located for RLTFamily {
             RLTFamily::If(x) => x.location(),
             RLTFamily::Elif(x) => x.location(),
             RLTFamily::Else(x) => x.location(),
-            RLTFamily::Contextual(x) => x.location()
+            RLTFamily::Contextual(x) => x.location(),
         }
     }
 }
