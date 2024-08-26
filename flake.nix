@@ -115,6 +115,7 @@
                graphviz
                gnuplot
                packages.${system}.pegviz
+               python312Packages.distutils
              ];
              
              pre-commit.hooks.clippy.enable = true;

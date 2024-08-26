@@ -11,7 +11,6 @@ use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
 use kodept_ast::BodyFnDecl;
-use kodept_core::structure::{rlt, Located};
 use kodept_inference::algorithm_w::{AlgorithmWError, CompoundInferError};
 use kodept_inference::language::{Language, Var};
 use kodept_inference::r#type::PolymorphicType;
@@ -236,7 +235,7 @@ impl EnvironmentProvider<Var> for RecursiveTypeChecker<'_> {
         let Some(id) = self.search.id_of_var(&key.name) else {
             return Ok(None);
         };
-        let key: GenericNodeKey = id.into();
+        let key: GenericNodeKey = id.as_key().unwrap();
         self.maybe_get(&key)
     }
 }
@@ -292,10 +291,8 @@ impl Macro for TypeChecker<'_> {
             evidence: self.evidence,
             current_recursion_depth: Cell::new(self.recursion_depth.get()),
         };
-        let fn_location = context
-            .access(&*node)
-            .map_or(vec![], |it: &rlt::BodiedFunction| vec![it.id.location()]);
-        let key: GenericNodeKey = node.get_id().widen().into();
+        let fn_location = vec![];
+        let key: GenericNodeKey = node.get_id().as_key().unwrap();
         match rec.maybe_get(&key) {
             Ok(Some(ty)) => {
                 context.add_report(

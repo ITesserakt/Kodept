@@ -4,10 +4,8 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::Identity;
-use crate::graph::NodeId;
-use crate::graph::{SyntaxTreeBuilder};
-use crate::traits::{AsEnum, Linker, PopulateTree};
+use crate::graph::{Identity, SubSyntaxTree};
+use crate::traits::{AsEnum, PopulateTree};
 use crate::{node, node_sub_enum};
 
 node_sub_enum! {
@@ -65,90 +63,63 @@ impl Param {
     pub fn name(&self) -> &str {
         match self.as_enum() {
             ParamEnum::Ty(x) => &x.name,
-            ParamEnum::NonTy(x) => &x.name
+            ParamEnum::NonTy(x) => &x.name,
         }
     }
 }
 
 impl PopulateTree for rlt::new_types::TypeName {
-    type Output = TyName;
+    type Root = TyName;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        let node = TyName::uninit(context.get_chunk_located(self).to_string());
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        let node = TyName::uninit(context.get_chunk_located(self).to_string()).with_rlt(self);
 
-        builder.add_node(node).with_rlt(context, self).id()
+        SubSyntaxTree::new(node)
     }
 }
 
 impl PopulateTree for rlt::TypedParameter {
-    type Output = TyParam;
+    type Root = TyParam;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        let node = TyParam::uninit(context.get_chunk_located(&self.id).to_string());
-        builder
-            .add_node(node)
-            .with_children_from([&self.parameter_type], context)
-            .with_rlt(context, self)
-            .id()
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        let node = TyParam::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self);
+        SubSyntaxTree::new(node).with_children_from([&self.parameter_type], context)
     }
 }
 
 impl PopulateTree for rlt::Type {
-    type Output = Type;
+    type Root = Type;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            rlt::Type::Reference(x) => x.convert(builder, context).cast(),
-            rlt::Type::Tuple(x) => builder
-                .add_node(ProdTy::uninit())
+            rlt::Type::Reference(x) => x.convert(context).cast(),
+            rlt::Type::Tuple(x) => SubSyntaxTree::new(ProdTy::uninit().with_rlt(self))
                 .with_children_from(x.inner.iter().as_slice(), context)
-                .with_rlt(context, self)
-                .id()
-                .cast()
+                .cast(),
         }
     }
 }
 
 impl PopulateTree for rlt::UntypedParameter {
-    type Output = NonTyParam;
+    type Root = NonTyParam;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        builder
-            .add_node(NonTyParam::uninit(
-                context.get_chunk_located(&self.id).to_string(),
-            ))
-            .with_rlt(context, self)
-            .id()
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        SubSyntaxTree::new(
+            NonTyParam::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self),
+        )
     }
 }
 
 impl PopulateTree for rlt::Parameter {
-    type Output = Param;
+    type Root = Param;
 
     fn convert(
         &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+        context: &mut impl CodeHolder,
+    ) -> SubSyntaxTree<Self::Root> {
         match self {
-            rlt::Parameter::Typed(x) => x.convert(builder, context).cast(),
-            rlt::Parameter::Untyped(x) => x.convert(builder, context).cast(),
+            rlt::Parameter::Typed(x) => x.convert(context).cast(),
+            rlt::Parameter::Untyped(x) => x.convert(context).cast(),
         }
     }
 }

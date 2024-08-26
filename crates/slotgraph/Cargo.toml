@@ -11,6 +11,7 @@ rust-version = "1.70.0"
 
 [dependencies]
 slotmap = "1.0.7"
+thiserror = "1.0.63"
 petgraph = { version = "0.6.4", default-features = false }
 serde = { version = "1.0.200", optional = true }
 

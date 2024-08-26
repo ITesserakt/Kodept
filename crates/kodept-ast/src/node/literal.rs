@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
-use crate::graph::{SyntaxTreeBuilder};
-use crate::traits::Linker;
+use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
 use crate::{node, node_sub_enum, Operation};
 
@@ -54,47 +52,30 @@ node! {
 }
 
 impl PopulateTree for rlt::Literal {
-    type Output = Lit;
+    type Root = Lit;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        let mut from_num = |x| {
-            builder
-                .add_node(NumLit::uninit(
-                    context.get_chunk_located(x).to_string(),
-                ))
-                .with_rlt(context, self)
-                .id()
-                .cast()
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        let from_num = |x| {
+            SubSyntaxTree::new(
+                NumLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),
+            )
         };
 
         match self {
-            rlt::Literal::Binary(x) => from_num(x),
-            rlt::Literal::Octal(x) => from_num(x),
-            rlt::Literal::Hex(x) => from_num(x),
-            rlt::Literal::Floating(x) => from_num(x),
-            rlt::Literal::Char(x) => builder
-                .add_node(CharLit::uninit(
-                    context.get_chunk_located(x).to_string(),
-                ))
-                .with_rlt(context, self)
-                .id()
-                .cast(),
-            rlt::Literal::String(x) => builder
-                .add_node(StrLit::uninit(
-                    context.get_chunk_located(x).to_string(),
-                ))
-                .with_rlt(context, self)
-                .id()
-                .cast(),
-            rlt::Literal::Tuple(x) => builder
-                .add_node(TupleLit::uninit())
+            rlt::Literal::Binary(x) => from_num(x).cast(),
+            rlt::Literal::Octal(x) => from_num(x).cast(),
+            rlt::Literal::Hex(x) => from_num(x).cast(),
+            rlt::Literal::Floating(x) => from_num(x).cast(),
+            rlt::Literal::Char(x) => SubSyntaxTree::new(
+                CharLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),
+            )
+            .cast(),
+            rlt::Literal::String(x) => SubSyntaxTree::new(
+                StrLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),
+            )
+            .cast(),
+            rlt::Literal::Tuple(x) => SubSyntaxTree::new(TupleLit::uninit().with_rlt(self))
                 .with_children_from(x.inner.as_ref(), context)
-                .with_rlt(context, self)
-                .id()
                 .cast(),
         }
     }

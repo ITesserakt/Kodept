@@ -15,13 +15,13 @@ pub enum Change {
     /// Child added
     Add {
         parent_id: GenericNodeId,
-        child: Uninit<AnyNode>,
+        child: Uninit<'static, AnyNode>,
         tag: ChildTag,
     },
     /// Replace itself with other node
     Replace {
         from_id: GenericNodeId,
-        to: Uninit<AnyNode>,
+        to: Uninit<'static, AnyNode>,
     },
     /// Delete itself from ast hierarchy
     DeleteSelf { node_id: GenericNodeId },
@@ -34,7 +34,7 @@ impl Change {
         }
     }
 
-    pub fn add<T, U, const TAG: ChildTag>(to: NodeId<T>, element: Uninit<U>) -> Change
+    pub fn add<T, U, const TAG: ChildTag>(to: NodeId<T>, element: Uninit<'static, U>) -> Change
     where
         T: Into<AnyNode> + HasChildrenMarker<U, TAG>,
         U: Into<AnyNode>,
@@ -46,7 +46,7 @@ impl Change {
         }
     }
 
-    pub fn replace<T: Into<AnyNode>>(node: NodeId<AnyNode>, with: Uninit<T>) -> Change {
+    pub fn replace<T: Into<AnyNode>>(node: NodeId<AnyNode>, with: Uninit<'static, T>) -> Change {
         Change::Replace {
             from_id: node.widen(),
             to: with.map_into(),

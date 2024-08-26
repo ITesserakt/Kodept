@@ -6,21 +6,21 @@ use std::marker::PhantomData;
 
 use smallvec::SmallVec;
 
+use crate::graph::any_node::AnyNode;
+use crate::graph::nodes::{NodeCell, PermTkn};
+use crate::graph::traits::Identifiable;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::graph::nodes::Inaccessible;
-use crate::graph::{AnyNode, Identifiable, PermTkn};
-
 #[repr(transparent)]
-pub struct RefMut<'a, T> {
-    node: &'a Inaccessible,
+pub struct TypedNodeCell<'a, T> {
+    node: &'a NodeCell,
     _phantom: PhantomData<T>,
 }
 
 pub type OptVec<T> = SmallVec<[T; 1]>;
 
-impl<'a, T> RefMut<'a, T> {
-    pub fn new(node: &'a Inaccessible) -> Self {
+impl<'a, T> TypedNodeCell<'a, T> {
+    pub fn new(node: &'a NodeCell) -> Self {
         Self {
             node,
             _phantom: Default::default(),
@@ -36,12 +36,12 @@ pub trait FromOptVec {
     type T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a>;
-    fn unwrap_mut<'a>(value: OptVec<&'a Inaccessible>) -> Self::Mut<'a>;
+    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a>;
 }
 
 impl<T: Debug> FromOptVec for Option<T> {
     type Ref<'a> = Option<&'a T> where T: 'a;
-    type Mut<'a> = Option<RefMut<'a, T>>;
+    type Mut<'a> = Option<TypedNodeCell<'a, T>>;
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
@@ -56,10 +56,10 @@ impl<T: Debug> FromOptVec for Option<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a Inaccessible>) -> Self::Mut<'a> {
+    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a> {
         match value.split_first() {
             None => None,
-            Some((x, [])) => Some(RefMut::new(x)),
+            Some((x, [])) => Some(TypedNodeCell::new(x)),
             Some((_, x)) => panic!(
                 "Container must has no more then one child <{}>, but has {:?}",
                 type_name::<T>(),
@@ -71,19 +71,19 @@ impl<T: Debug> FromOptVec for Option<T> {
 
 impl<T> FromOptVec for Vec<T> {
     type Ref<'a> = Vec<&'a T> where Self::T: 'a;
-    type Mut<'a> = Vec<RefMut<'a, T>>;
+    type Mut<'a> = Vec<TypedNodeCell<'a, T>>;
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
         value.to_vec()
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a Inaccessible>) -> Self::Mut<'a> {
-        value.into_iter().map(|x| RefMut::new(x)).collect()
+    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a> {
+        value.into_iter().map(|x| TypedNodeCell::new(x)).collect()
     }
 }
 
-impl<'a, T> RefMut<'a, T>
+impl<'a, T> TypedNodeCell<'a, T>
 where
     AnyNode: ConvertibleToMut<T>,
 {
@@ -103,7 +103,7 @@ where
     }
 }
 
-impl<'a, T> RefMut<'a, T>
+impl<'a, T> TypedNodeCell<'a, T>
 where
     AnyNode: ConvertibleToRef<T>,
 {
@@ -121,7 +121,7 @@ where
     }
 }
 
-impl<'a, T> Debug for RefMut<'a, T> {
+impl<'a, T> Debug for TypedNodeCell<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RefMut")
             .field("node", self.node)

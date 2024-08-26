@@ -9,7 +9,6 @@ use crate::error::report::ReportMessage;
 use crate::traits::Context;
 
 pub mod default;
-pub mod erased;
 pub mod error;
 pub mod traits;
 

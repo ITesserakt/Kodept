@@ -4,11 +4,9 @@ use serde::{Deserialize, Serialize};
 use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::NodeId;
-use crate::graph::{SyntaxTreeBuilder};
-use crate::traits::Linker;
+use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
-use crate::{node, BodyFnDecl, TyName, TyParam, node_sub_enum};
+use crate::{node, node_sub_enum, BodyFnDecl, TyName, TyParam};
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -48,63 +46,43 @@ node! {
 }
 
 impl PopulateTree for Struct {
-    type Output = StructDecl;
+    type Root = StructDecl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
-        let node = StructDecl::uninit(context.get_chunk_located(&self.id).to_string());
-        builder
-            .add_node(node)
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        let node =
+            StructDecl::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self);
+        SubSyntaxTree::new(node)
             .with_children_from(self.body.iter().flat_map(|x| x.inner.as_ref()), context)
             .with_children_from(
                 self.parameters.iter().flat_map(|x| x.inner.as_ref()),
                 context,
             )
-            .with_rlt(context, self)
-            .id()
     }
 }
 
 impl PopulateTree for Enum {
-    type Output = EnumDecl;
+    type Root = EnumDecl;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let (kind, name, rest) = match self {
             Enum::Stack { id, contents, .. } => (EnumKind::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumKind::Heap, id, contents),
         };
-        let node = EnumDecl::uninit(kind, context.get_chunk_located(name).to_string());
-        builder
-            .add_node(node)
-            .with_children_from(
-                rest.as_ref()
-                    .map_or([].as_slice(), |x| x.inner.iter().as_slice()),
-                context,
-            )
-            .with_rlt(context, self)
-            .id()
+        let node =
+            EnumDecl::uninit(kind, context.get_chunk_located(name).to_string()).with_rlt(self);
+        SubSyntaxTree::new(node)
+            .with_children_from(rest.iter().flat_map(|it| it.inner.as_ref()), context)
     }
 }
 
 impl PopulateTree for TopLevelNode {
-    type Output = TopLevel;
+    type Root = TopLevel;
 
-    fn convert(
-        &self,
-        builder: &mut SyntaxTreeBuilder,
-        context: &mut (impl Linker + CodeHolder),
-    ) -> NodeId<Self::Output> {
+    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
-            TopLevelNode::Enum(x) => x.convert(builder, context).cast(),
-            TopLevelNode::Struct(x) => x.convert(builder, context).cast(),
-            TopLevelNode::BodiedFunction(x) => x.convert(builder, context).cast(),
+            TopLevelNode::Enum(x) => x.convert(context).cast(),
+            TopLevelNode::Struct(x) => x.convert(context).cast(),
+            TopLevelNode::BodiedFunction(x) => x.convert(context).cast()
         }
     }
 }

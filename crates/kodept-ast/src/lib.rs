@@ -8,19 +8,19 @@ pub use ref_cast::RefCast;
 pub(crate) use graph::with_children;
 #[allow(unused_imports)]
 pub(crate) use macros::implementation::node;
-pub use node_properties::Uninit;
 
 pub use self::node::{
     block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
     top_level::*, types::*,
 };
+pub use uninit::Uninit;
 
-pub mod ast_builder;
+// pub mod ast_builder;
 pub mod graph;
 mod macros;
 mod node;
-mod node_properties;
 pub mod rlt_accessor;
 pub mod traits;
+mod uninit;
 pub mod utils;
 pub mod visit_side;

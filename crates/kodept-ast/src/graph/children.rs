@@ -1,10 +1,10 @@
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-
-use crate::graph::{AnyNode};
-use crate::graph::{PermTkn, SyntaxTree};
-use crate::graph::tags::ChildTag;
+use crate::graph::any_node::AnyNode;
+use crate::graph::children::tags::ChildTag;
+use crate::graph::nodes::PermTkn;
 use crate::graph::utils::FromOptVec;
+use crate::graph::SyntaxTree;
 use crate::traits::Identifiable;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 pub mod tags {
     pub type ChildTag = u8;
@@ -35,7 +35,7 @@ pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
     where
         AnyNode: ConvertibleToMut<Child>,
     {
-        Self::Container::unwrap_mut(tree.children_of_raw(self.get_id(), TAG))
+        Self::Container::unwrap_mut(tree.raw_children_of(self.get_id(), TAG))
     }
 }
 

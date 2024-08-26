@@ -7,9 +7,9 @@ use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
 
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::*;
-use crate::graph::Identifiable;
 use crate::graph::node_id::GenericNodeId;
+use crate::graph::traits::Identifiable;
+use crate::*;
 
 #[derive(Debug, PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
 #[strum_discriminants(derive(VariantArray, Display))]
@@ -78,9 +78,6 @@ macro_rules! folding {
         }
     };
 }
-
-#[deprecated]
-pub type GenericASTNode = AnyNode;
 
 pub trait SubEnum {
     const VARIANTS: &'static [AnyNodeD];
