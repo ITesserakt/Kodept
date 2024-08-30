@@ -87,14 +87,18 @@ where
 
     fn to_index(&self, a: Self::NodeId) -> usize {
         match a {
-            NodeKey::Root => u64::MAX as usize,
+            // value = 0xFFFF_FFFF
+            // version = 0x3
+            NodeKey::Root => 0x0000_0003_FFFF_FFFF,
             NodeKey::Child(id) => id.to_index() as usize,
         }
     }
 
     fn from_index(&self, i: usize) -> Self::NodeId {
         match i as u64 {
-            u64::MAX => NodeKey::Root,
+            // value = 0xFFFF_FFFF
+            // version = 0x3
+            0x0000_0003_FFFF_FFFF  => NodeKey::Root,
             i => NodeKey::Child(CommonKey::from_index(i)),
         }
     }

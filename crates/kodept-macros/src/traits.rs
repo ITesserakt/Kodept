@@ -20,7 +20,6 @@ impl UnrecoverableError {
     pub fn into_report(self) -> Report {
         match self {
             UnrecoverableError::Report(x) => x,
-            UnrecoverableError::Infallible(_) => unreachable!(),
         }
     }
 }
