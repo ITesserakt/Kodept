@@ -1,7 +1,7 @@
-use std::panic::{RefUnwindSafe, UnwindSafe};
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
 use kodept_macros::error::ErrorReported;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 
 #[cfg(feature = "parallel")]
 pub trait CommonIter: rayon::prelude::ParallelIterator<Item = <Self as CommonIter>::Item> {
@@ -55,7 +55,7 @@ pub trait Command {
         }) {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(e)) => Err(e),
-            Err(e) => Err(ErrorReported::new().with_message(e))
+            Err(_) => Err(ErrorReported::new())
         }
     }
 

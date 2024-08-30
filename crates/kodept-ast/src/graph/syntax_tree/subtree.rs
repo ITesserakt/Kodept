@@ -3,19 +3,27 @@ use crate::graph::children::HasChildrenMarker;
 use crate::graph::node_id::GenericNodeKey;
 use crate::graph::syntax_tree::Graph;
 use crate::graph::{AnyNode, Identifiable, NodeId};
-use crate::rlt_accessor::RLTFamily;
+use crate::rlt_accessor::{RLTAccessor, RLTFamily};
 use crate::traits::PopulateTree;
 use crate::uninit::Uninit;
 use kodept_core::structure::span::CodeHolder;
-use slotgraph::dag::NodeKey;
+use replace_with::replace_with_or_abort_and_return;
+use slotgraph::dag::{Dag, NodeKey};
 use slotmap::{Key, SecondaryMap};
+use std::convert::identity;
 use std::marker::PhantomData;
 
 #[derive(Debug)]
+enum GraphImpl {
+    Plain(Graph<AnyNode>),
+    Leaf { root: AnyNode },
+}
+
+#[derive(Debug)]
 pub struct SubSyntaxTree<'rlt, ROOT> {
-    pub(super) graph: Graph<AnyNode>,
-    pub(super) rlt_mapping: SecondaryMap<GenericNodeKey, RLTFamily<'rlt>>,
-    pub(super) root_rlt_mapping: Option<RLTFamily<'rlt>>,
+    graph: GraphImpl,
+    rlt_mapping: SecondaryMap<GenericNodeKey, RLTFamily<'rlt>>,
+    root_rlt_mapping: Option<RLTFamily<'rlt>>,
     _phantom: PhantomData<ROOT>,
 }
 
@@ -27,7 +35,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     {
         let (root, mapping) = root.unwrap(NodeId::Root);
         Self {
-            graph: Graph::new(root.into()),
+            graph: GraphImpl::Leaf { root: root.into() },
             rlt_mapping: Default::default(),
             root_rlt_mapping: mapping,
             _phantom: PhantomData,
@@ -41,10 +49,17 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         U: Identifiable + Into<AnyNode>,
     {
         let mut rlt = None;
-        let id = self.graph.add_node_at_root(|id| {
-            let node = node.unwrap(id.into());
-            rlt = node.1;
-            node.0.into()
+        let id = replace_with_or_abort_and_return(&mut self.graph, |g| {
+            let mut g = match g {
+                GraphImpl::Leaf { root } => Graph::new(root),
+                GraphImpl::Plain(g) => g,
+            };
+            let id = g.add_node_at_root(|id| {
+                let node = node.unwrap(id.into());
+                rlt = node.1;
+                node.0.into()
+            });
+            (id, GraphImpl::Plain(g))
         });
         if let (Some(rlt), NodeKey::Child(id)) = (rlt, id) {
             self.rlt_mapping.insert(id.into(), rlt);
@@ -56,16 +71,37 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     where
         T: HasChildrenMarker<U, TAG>,
     {
-        let (id, mapping) = self
-            .graph
-            .attach_subgraph_at(NodeKey::Root, subtree.graph)
-            .unwrap();
-        for &to in mapping.values() {
-            self.graph[to].set_id(to.into());
-        }
-        if let Some(x) = self.graph.edge_weight_mut(id) {
-            *x = TAG;
-        }
+        let (id, mapping) = replace_with_or_abort_and_return(&mut self.graph, |g| {
+            let mut g = match g {
+                GraphImpl::Plain(g) => g,
+                GraphImpl::Leaf { root } => Graph::new(root)
+            };
+            let result = match subtree.graph {
+                GraphImpl::Plain(sg) => {
+                    let (id, mapping) = g.attach_subgraph_at(NodeKey::Root, sg).unwrap();
+                    for &to in mapping.values() {
+                        g[to].set_id(to.into());
+                    }
+                    match g.edge_weight_mut(id) {
+                        None => {}
+                        Some(x) => *x = TAG
+                    };
+                    (id, mapping)
+                },
+                GraphImpl::Leaf { root } => {
+                    let id = g.add_node_at_root(|id| {
+                        root.set_id(id.into());
+                        root
+                    });
+                    match g.edge_weight_mut(id) {
+                        None => {}
+                        Some(x) => *x = TAG
+                    };
+                    (id, Default::default())
+                }
+            };
+            (result, GraphImpl::Plain(g))
+        });
         if let (NodeKey::Child(id), Some(map)) = (id, subtree.root_rlt_mapping) {
             self.rlt_mapping.insert(id.into(), map);
         }
@@ -84,7 +120,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     ) -> Self
     where
         T: HasChildrenMarker<U, TAG>,
-        'a: 'rlt
+        'a: 'rlt,
     {
         for node in iter {
             let subtree = node.convert(context);
@@ -92,13 +128,24 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         }
         self
     }
-    
-    pub fn cast<R>(self) -> SubSyntaxTree<'rlt, R> where T: Into<R> {
+
+    pub fn cast<R>(self) -> SubSyntaxTree<'rlt, R>
+    where
+        T: Into<R>,
+    {
         SubSyntaxTree {
             graph: self.graph,
             rlt_mapping: self.rlt_mapping,
             root_rlt_mapping: self.root_rlt_mapping,
             _phantom: PhantomData,
+        }
+    }
+
+    pub(super) fn consume_map<U>(self, mut f: impl FnMut(AnyNode) -> U) -> (Dag<U, ChildTag>, RLTAccessor<'rlt>) {
+        let accessor = RLTAccessor::new(self.rlt_mapping, self.root_rlt_mapping);
+        match self.graph {
+            GraphImpl::Plain(g) => (g.consume_map(f, identity), accessor),
+            GraphImpl::Leaf { root } => (Dag::new(f(root)), accessor)
         }
     }
 }

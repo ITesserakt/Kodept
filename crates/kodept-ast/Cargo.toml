@@ -25,6 +25,7 @@ once_cell_serde = { version = "1.17.1", optional = true, features = ["serde"] }
 paste = "1.0.15"
 qcell = "0.5.4"
 ref-cast = "1.0.23"
+replace_with = "0.1.7"
 serde = { version = "1", optional = true, features = ["derive"] }
 slotgraph = { path = "../slotgraph", version = "0.1" }
 slotmap = "1.0.7"

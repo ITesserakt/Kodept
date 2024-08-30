@@ -1,5 +1,6 @@
-use std::num::NonZeroU16;
 use derive_more::Constructor;
+use std::num::NonZeroU16;
+use std::process::exit;
 use tracing::info;
 
 use kodept_interpret::operator_desugaring::{

@@ -3,7 +3,9 @@ use crate::graph::children::tags::{ChildTag, TAGS_DESC};
 use crate::graph::node_id::NodeId;
 use crate::graph::nodes::{NodeCell, PermTkn};
 use crate::graph::syntax_tree::dfs::DfsIter;
-use crate::graph::syntax_tree::stage::{CanAccess, CanMutAccess, FullAccess, ModificationAccess, NoAccess, ViewingAccess};
+use crate::graph::syntax_tree::stage::{
+    CanAccess, CanMutAccess, FullAccess, ModificationAccess, NoAccess, ViewingAccess,
+};
 use crate::graph::utils::OptVec;
 use crate::rlt_accessor::RLTAccessor;
 use crate::traits::PopulateTree;
@@ -42,26 +44,24 @@ impl SyntaxTree<FullAccess> {
 
         Helper(
             self.graph.map(
-                |k, v| {
-                    format!(
-                        "{} [{}]",
-                        v.ro(&self.permission.0).name(),
-                        k,
-                    )
-                },
+                |k, v| format!("{} [{}]", v.ro(&self.permission.0).name(), k,),
                 |tag| TAGS_DESC[*tag as usize],
             ),
             config,
         )
     }
-    
-    pub fn recursively_build<'a>(rlt_root: &'a RLT, context: &mut impl CodeHolder) -> (Self, RLTAccessor<'a>) {
+
+    pub fn recursively_build<'a>(
+        rlt_root: &'a RLT,
+        context: &mut impl CodeHolder,
+    ) -> (Self, RLTAccessor<'a>) {
         let subtree = rlt_root.0.convert(context);
+        let (graph, accessor) = subtree.consume_map(NodeCell::new);
         let tree = Self {
-            graph: subtree.graph.consume_map(NodeCell::new, |t| t),
-            permission: FullAccess(PermTkn::new())
+            graph,
+            permission: FullAccess(PermTkn::new()),
         };
-        (tree, RLTAccessor::new(subtree.rlt_mapping, subtree.root_rlt_mapping))
+        (tree, accessor)
     }
 }
 
@@ -97,19 +97,19 @@ impl SyntaxTree<NoAccess> {
         let node_ref = self.graph.node_weight(id.into())?;
         node_ref.rw(token).try_as_mut()
     }
-    
+
     pub fn parent_of<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&AnyNode> {
         let parent_id = self.graph.parent_id(id.into())?;
         Some(self.graph[parent_id].ro(token))
     }
-    
+
     pub fn give_access(self, token: &PermTkn) -> SyntaxTreeView {
         SyntaxTree {
             graph: self.graph,
             permission: ViewingAccess(token),
         }
     }
-    
+
     pub fn give_access_mut(self, token: &mut PermTkn) -> SyntaxTreeMutView {
         SyntaxTree {
             graph: self.graph,
@@ -140,7 +140,7 @@ impl<P: CanAccess> SyntaxTree<P> {
         let node_ref = self.graph.node_weight(id.into())?;
         node_ref.ro(token).try_as_ref()
     }
-    
+
     pub fn parent_of<T>(&self, id: NodeId<T>) -> Option<&AnyNode> {
         let token = self.permission.tkn();
         let node_ref = self.graph.parent_id(id.into())?;
@@ -178,6 +178,12 @@ impl<P> SyntaxTree<P> {
     }
 
     pub fn split(self) -> (SyntaxTree, P) {
-        (SyntaxTree { graph: self.graph, permission: NoAccess }, self.permission)
+        (
+            SyntaxTree {
+                graph: self.graph,
+                permission: NoAccess,
+            },
+            self.permission,
+        )
     }
 }
