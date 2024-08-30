@@ -140,24 +140,16 @@ pub mod implementation {
         $($field_vis:vis $field_name:ident: $field_type:ty,)*;
         $($graph_vis:vis $graph_name:ident: $graph_type:ty$( as $tag:tt)?,)*
     }) => {
-        #[cfg(feature = "serde")]
         $(#[$config])*
         $vis struct $name {
-            id: once_cell_serde::unsync::OnceCell<$crate::graph::NodeId<$name>>,
-            $($field_vis $field_name: $field_type,)*
-        }
-
-        #[cfg(not(feature = "serde"))]
-        $(#[$config])*
-        $vis struct $name {
-            id: std::cell::OnceCell<$crate::graph::NodeId<$name>>,
+            id: std::cell::Cell<$crate::graph::NodeId<$name>>,
             $($field_vis $field_name: $field_type,)*
         }
         
         impl $name {
             pub fn uninit($($field_name: $field_type,)*) -> $crate::Uninit<'static, Self> {
                 $crate::Uninit::new(Self {
-                    id: Default::default(),
+                    id: std::cell::Cell::new($crate::graph::NodeId::null()),
                     $(
                     $field_name,
                     )*
@@ -171,13 +163,11 @@ pub mod implementation {
 
         impl $crate::graph::Identifiable for $name {
             fn get_id(&self) -> $crate::graph::NodeId<Self> {
-                self.id.get().copied().expect("Unreachable")
+                self.id.get()
             }
 
             fn set_id(&self, value: $crate::graph::NodeId<Self>) {
-                if let Err(_) = self.id.set(value) {
-                    tracing::warn!("Tried to set id twice");
-                }
+                self.id.set(value)
             }
         }
 

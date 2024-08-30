@@ -1,3 +1,4 @@
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
 use kodept_macros::error::ErrorReported;
@@ -23,32 +24,38 @@ impl<T: rayon::prelude::ParallelIterator> CommonIter for T {
 }
 
 pub trait Command {
-    type Params;
+    type Params: UnwindSafe;
 
     #[allow(unused_mut)]
     fn exec(
         &self,
-        sources: impl CommonIter<Item = ReadCodeSource>,
+        sources: impl CommonIter<Item = ReadCodeSource> + UnwindSafe,
         mut settings: CodespanSettings,
         mut additional_params: Self::Params,
     ) -> Result<(), ErrorReported>
     where
         Self::Params: Clone + Send,
-        Self: Sync,
+        Self: Sync + RefUnwindSafe,
     {
-        #[cfg(feature = "parallel")]
-        {
-            sources.try_for_each_with(
-                (settings, additional_params),
-                |(settings, params), source| self.exec_for_source(source, settings, params),
-            )
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            for source in sources {
-                self.exec_for_source(source, &mut settings, &mut additional_params)?;
+        match std::panic::catch_unwind(move || {
+            #[cfg(feature = "parallel")]
+            {
+                sources.try_for_each_with(
+                    (settings, additional_params),
+                    |(settings, params), source| self.exec_for_source(source, settings, params),
+                )
             }
-            Ok(())
+            #[cfg(not(feature = "parallel"))]
+            {
+                for source in sources {
+                    self.exec_for_source(source, &mut settings, &mut additional_params)?;
+                }
+                Ok(())
+            }
+        }) {
+            Ok(Ok(_)) => Ok(()),
+            Ok(Err(e)) => Err(e),
+            Err(e) => Err(ErrorReported::new().with_message(e))
         }
     }
 

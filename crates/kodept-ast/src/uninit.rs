@@ -1,3 +1,4 @@
+use tracing::warn;
 use crate::graph::{Identifiable, NodeId};
 use crate::rlt_accessor::RLTFamily;
 
@@ -19,6 +20,9 @@ impl<'rlt, T> Uninit<'rlt, T> {
         T: Identifiable,
     {
         self.value.set_id(id);
+        if self.rlt_ref.is_none() {
+            warn!("No rlt linked with node {id}")
+        }
         (self.value, self.rlt_ref)
     }
 

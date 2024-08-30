@@ -12,7 +12,7 @@ use kodept::read_code_source::ReadCodeSource;
 use kodept::steps::hlist::{HCons, HNil};
 use kodept::steps::pipeline::Pipeline;
 use kodept::steps::Step;
-use kodept_ast::ast_builder::ASTBuilder;
+use kodept_ast::graph::SyntaxTree;
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::structure::rlt::RLT;
@@ -101,11 +101,11 @@ fn common_steps(ctx: &mut impl MutableContext) -> Result<Cache<Rc<Language>>, Un
 
 fn test_typing(name: &str) {
     let source = ReadCodeSource::try_from(get_code_source(name)).expect("Cannot read source");
-    let provider = CodeProvider(source.contents());
+    let mut provider = CodeProvider(source.contents());
     let rlt = get_rlt(&source);
 
-    let (ast, rlt_accessor) = ASTBuilder.recursive_build(&rlt.0, &provider);
-    let ast = ast.build();
+    let (ast, rlt_accessor) = SyntaxTree::recursively_build(&rlt, &mut provider);
+    let (ast, _) = ast.split();
 
     let mut context = DefaultContext::new(
         source.with_filename(|_| ReportCollector::new()),

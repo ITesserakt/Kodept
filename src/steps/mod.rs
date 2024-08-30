@@ -3,7 +3,6 @@ use std::convert::Infallible;
 use kodept_ast::graph::{AnyNode, ChangeSet, PermTkn, RefNode, TypedNodeCell};
 use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::structure::Located;
 use kodept_core::ConvertibleToRef;
 use kodept_macros::error::report::ReportMessage;
 use kodept_macros::traits::{Context, MutableContext, UnrecoverableError};

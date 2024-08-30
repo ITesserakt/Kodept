@@ -971,6 +971,7 @@ dependencies = [
 name = "kodept-macros"
 version = "0.1.6"
 dependencies = [
+ "anyhow",
  "codespan",
  "codespan-reporting",
  "derive_more",
