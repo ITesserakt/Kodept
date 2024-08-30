@@ -22,5 +22,5 @@ pub trait AsEnum {
 pub trait PopulateTree {
     type Root: Into<AnyNode>;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root>;
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root>;
 }

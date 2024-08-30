@@ -157,7 +157,7 @@ pub enum BinaryExpressionKind {
 impl PopulateTree for rlt::ExpressionBlock {
     type Root = Exprs;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         SubSyntaxTree::new(Exprs::uninit().with_rlt(self))
             .with_children_from(self.expression.as_ref(), context)
     }
@@ -166,7 +166,7 @@ impl PopulateTree for rlt::ExpressionBlock {
 impl PopulateTree for rlt::Operation {
     type Root = Operation;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
             rlt::Operation::Block(x) => x.convert(context).cast(),
             rlt::Operation::Access { left, right, .. } => {
@@ -188,7 +188,7 @@ impl PopulateTree for rlt::Operation {
 
 fn build_binary<'a>(
     node: &'a rlt::Operation,
-    context: &mut (impl CodeHolder + Sized),
+    context: &(impl CodeHolder + Sized),
     left: &'a rlt::Operation,
     operation: &'a BinaryOperationSymbol,
     right: &'a rlt::Operation,
@@ -236,7 +236,7 @@ fn build_binary<'a>(
 
 fn build_unary<'a>(
     node: &'a rlt::Operation,
-    context: &mut (impl CodeHolder + Sized),
+    context: &(impl CodeHolder + Sized),
     operator: &'a UnaryOperationSymbol,
     expr: &'a rlt::Operation,
 ) -> SubSyntaxTree<'a, UnExpr> {
@@ -254,7 +254,7 @@ fn build_unary<'a>(
 
 fn build_access<'a>(
     node: &'a rlt::Operation,
-    context: &mut (impl CodeHolder + Sized),
+    context: &(impl CodeHolder + Sized),
     left: &'a rlt::Operation,
     right: &'a rlt::Operation,
 ) -> SubSyntaxTree<'a, Acc> {
@@ -266,7 +266,7 @@ fn build_access<'a>(
 impl PopulateTree for rlt::Application {
     type Root = Appl;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         SubSyntaxTree::new(Appl::uninit().with_rlt(self))
             .with_children_from::<PRIMARY, _>([&self.expr], context)
             .with_children_from::<SECONDARY, _>(
@@ -281,7 +281,7 @@ impl PopulateTree for rlt::Application {
 impl PopulateTree for rlt::Expression {
     type Root = Expression;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
             rlt::Expression::Lambda { binds, expr, .. } => {
                 SubSyntaxTree::new(Lambda::uninit().with_rlt(self))
