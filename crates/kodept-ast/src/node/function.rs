@@ -42,7 +42,7 @@ node! {
 impl PopulateTree for rlt::BodiedFunction {
     type Root = BodyFnDecl;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         SubSyntaxTree::new(
             BodyFnDecl::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self),
         )

@@ -61,7 +61,7 @@ impl ReferenceContext {
 impl PopulateTree for rlt::Term {
     type Root = Term;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
             rlt::Term::Reference(x) => x.convert(context).cast(),
             rlt::Term::Contextual(x) => x.inner.convert(context).cast(),
@@ -72,7 +72,7 @@ impl PopulateTree for rlt::Term {
 impl PopulateTree for rlt::ContextualReference {
     type Root = Ref;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let ident = match &self.inner {
             rlt::Reference::Type(x) => Identifier::TypeReference {
                 name: context.get_chunk_located(x).to_string(),
@@ -101,7 +101,7 @@ impl PopulateTree for rlt::ContextualReference {
 impl PopulateTree for rlt::Reference {
     type Root = Ref;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let ident = match self {
             rlt::Reference::Type(x) => Identifier::TypeReference {
                 name: context.get_chunk_located(x).to_string(),

@@ -48,7 +48,7 @@ node! {
 impl PopulateTree for Struct {
     type Root = StructDecl;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let node =
             StructDecl::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self);
         SubSyntaxTree::new(node)
@@ -63,7 +63,7 @@ impl PopulateTree for Struct {
 impl PopulateTree for Enum {
     type Root = EnumDecl;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let (kind, name, rest) = match self {
             Enum::Stack { id, contents, .. } => (EnumKind::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumKind::Heap, id, contents),
@@ -78,7 +78,7 @@ impl PopulateTree for Enum {
 impl PopulateTree for TopLevelNode {
     type Root = TopLevel;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
             TopLevelNode::Enum(x) => x.convert(context).cast(),
             TopLevelNode::Struct(x) => x.convert(context).cast(),

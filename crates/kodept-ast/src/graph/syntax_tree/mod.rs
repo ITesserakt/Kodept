@@ -53,7 +53,7 @@ impl SyntaxTree<FullAccess> {
 
     pub fn recursively_build<'a>(
         rlt_root: &'a RLT,
-        context: &mut impl CodeHolder,
+        context: &impl CodeHolder,
     ) -> (Self, RLTAccessor<'a>) {
         let subtree = rlt_root.0.convert(context);
         let (graph, accessor) = subtree.consume_map(NodeCell::new);

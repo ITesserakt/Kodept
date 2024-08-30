@@ -71,7 +71,7 @@ impl Param {
 impl PopulateTree for rlt::new_types::TypeName {
     type Root = TyName;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let node = TyName::uninit(context.get_chunk_located(self).to_string()).with_rlt(self);
 
         SubSyntaxTree::new(node)
@@ -81,7 +81,7 @@ impl PopulateTree for rlt::new_types::TypeName {
 impl PopulateTree for rlt::TypedParameter {
     type Root = TyParam;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         let node = TyParam::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self);
         SubSyntaxTree::new(node).with_children_from([&self.parameter_type], context)
     }
@@ -90,7 +90,7 @@ impl PopulateTree for rlt::TypedParameter {
 impl PopulateTree for rlt::Type {
     type Root = Type;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         match self {
             rlt::Type::Reference(x) => x.convert(context).cast(),
             rlt::Type::Tuple(x) => SubSyntaxTree::new(ProdTy::uninit().with_rlt(self))
@@ -103,7 +103,7 @@ impl PopulateTree for rlt::Type {
 impl PopulateTree for rlt::UntypedParameter {
     type Root = NonTyParam;
 
-    fn convert(&self, context: &mut impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
         SubSyntaxTree::new(
             NonTyParam::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self),
         )
@@ -115,7 +115,7 @@ impl PopulateTree for rlt::Parameter {
 
     fn convert(
         &self,
-        context: &mut impl CodeHolder,
+        context: &impl CodeHolder,
     ) -> SubSyntaxTree<Self::Root> {
         match self {
             rlt::Parameter::Typed(x) => x.convert(context).cast(),
