@@ -77,6 +77,7 @@ where
     }
 }
 
+#[cfg(target_pointer_width = "64")]
 impl<T, C> NodeIndexable for DagImpl<T, C>
 where
     C: SlotMapContainer,

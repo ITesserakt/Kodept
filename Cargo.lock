@@ -918,6 +918,7 @@ dependencies = [
  "paste",
  "qcell",
  "ref-cast",
+ "replace_with",
  "rstest",
  "serde",
  "slotgraph",
