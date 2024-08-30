@@ -1,9 +1,9 @@
 use clap::Parser;
+#[cfg(feature = "profiler")]
+use kodept::profiler::HeapProfiler;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 use tracing::{debug, error};
-#[cfg(feature = "profiler")]
-use kodept::profiler::HeapProfiler;
 
 use crate::cli::traits::Command;
 use cli::common::Kodept;
@@ -55,11 +55,11 @@ fn main() -> Result<(), WideError> {
         });
 
     let args = cli_arguments.clone();
-    cli_arguments.subcommands.exec(sources, settings, args)?;
+    let result = cli_arguments.subcommands.exec(sources, settings, args);
 
     #[cfg(feature = "profiler")]
     {
         HeapProfiler::consume();
     }
-    Ok(())
+    result.map_err(|e| WideError::from(e))
 }

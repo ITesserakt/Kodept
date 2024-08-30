@@ -4,7 +4,6 @@ use derive_more::{From, Unwrap};
 use kodept_ast::graph::SyntaxTree;
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_relative::CodePath;
-use std::convert::Infallible;
 use std::rc::Weak;
 
 use crate::error::report::{Report, ReportMessage};
@@ -13,7 +12,6 @@ use crate::error::traits::{CodespanSettings, Reportable};
 #[derive(Debug, From, Unwrap)]
 pub enum UnrecoverableError {
     Report(Report),
-    Infallible(Infallible),
 }
 
 impl UnrecoverableError {

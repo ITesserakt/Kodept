@@ -1,5 +1,5 @@
-use crate::graph::GenericNodeKey;
-use derive_more::{Constructor, From, TryInto};
+use crate::graph::{AnyNode, GenericNodeKey, NodeId};
+use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
 use slotmap::SecondaryMap;
@@ -33,10 +33,52 @@ pub enum RLTFamily<'r> {
     Else(&'r rlt::ElseExpr),
 }
 
-#[derive(Constructor, Debug)]
+#[derive(Debug)]
 pub struct RLTAccessor<'r> {
     mapping: SecondaryMap<GenericNodeKey, RLTFamily<'r>>,
     root_mapping: Option<RLTFamily<'r>>,
+}
+
+impl<'r> RLTAccessor<'r> {
+    pub(crate) fn new(
+        mapping: SecondaryMap<GenericNodeKey, RLTFamily<'r>>,
+        root_mapping: Option<RLTFamily<'r>>,
+    ) -> Self {
+        Self {
+            mapping,
+            root_mapping,
+        }
+    }
+
+    pub fn get_unknown<T>(&self, id: NodeId<T>) -> Option<RLTFamily>
+    where 
+        AnyNode: TryFrom<T>
+    {
+        match id {
+            NodeId::Root => self.root_mapping,
+            NodeId::Key(id) => self.mapping.get(id.coerce()).copied(),
+        }
+    }
+
+    pub fn get<T, R>(&self, id: NodeId<T>) -> Option<&R>
+    where
+        for<'a> RLTFamily<'a>: TryInto<&'a R>,
+        AnyNode: TryFrom<T>
+    {
+        match self.get_unknown(id) {
+            None => None,
+            Some(x) => x.try_into().ok()
+        }
+    }
+
+    pub(crate) fn append(&mut self, other: RLTAccessor<'r>) {
+        if let Some(x) = other.root_mapping {
+            self.root_mapping = Some(x)
+        }
+        for (k, v) in other.mapping {
+            self.mapping.insert(k, v);
+        }
+    }
 }
 
 impl Located for RLTFamily<'_> {

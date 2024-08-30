@@ -1,5 +1,5 @@
 use dhat::Profiler;
-use std::sync::{Mutex, OnceLock};
+use std::sync::Mutex;
 use tracing::error;
 
 #[global_allocator]
