@@ -6,10 +6,10 @@ pub mod enums;
 pub mod traits;
 
 cfg_if! {
-	if #[cfg(all(feature = "peg", not(feature = "trace")))] {
-        pub type DefaultLexer = PegLexer<false>;
-    } else if #[cfg(feature = "pest")] {
+	if #[cfg(feature = "pest")] {
         pub type DefaultLexer = PestLexer;
+    } else if #[cfg(all(feature = "peg", not(feature = "trace")))] {
+        pub type DefaultLexer = PegLexer<false>;
     } else if #[cfg(feature = "nom")] {
         pub type DefaultLexer = NomLexer;
     } else {

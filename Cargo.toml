@@ -67,7 +67,6 @@ version = "0.2"
 
 [dependencies.kodept-parse]
 path = "crates/kodept-parse"
-features = ["peg"]
 version = "0.3"
 
 [dependencies.kodept-ast]
