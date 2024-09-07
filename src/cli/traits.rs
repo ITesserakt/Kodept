@@ -3,55 +3,69 @@ use kodept::read_code_source::ReadCodeSource;
 use kodept_macros::error::ErrorReported;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 
-#[cfg(feature = "parallel")]
-pub trait CommonIter: rayon::prelude::ParallelIterator<Item = <Self as CommonIter>::Item> {
+pub trait CommonIter {
     type Item;
+
+    fn try_foreach_with<T, E, F>(
+        self,
+        with: T,
+        f: F,
+    ) -> Result<(), E>
+    where
+        T: Send + Clone,
+        F: Fn(&mut T, Self::Item) -> Result<(), E>,
+        F: Send + Sync,
+        E: Send;
 }
 
 #[cfg(not(feature = "parallel"))]
-pub trait CommonIter: Iterator<Item = <Self as CommonIter>::Item> {
-    type Item;
-}
+impl<I: Iterator> CommonIter for I {
+    type Item = I::Item;
 
-#[cfg(not(feature = "parallel"))]
-impl<T: Iterator> CommonIter for T {
-    type Item = T::Item;
+    fn try_foreach_with<T, E, F>(self, mut with: T, f: F) -> Result<(), E>
+    where
+        F: Fn(&mut T, Self::Item) -> Result<(), E>
+    {
+        for item in self {
+            f(&mut with, item)?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(feature = "parallel")]
-impl<T: rayon::prelude::ParallelIterator> CommonIter for T {
-    type Item = T::Item;
+impl<I: rayon::prelude::ParallelIterator> CommonIter for I {
+    type Item = I::Item;
+
+    fn try_foreach_with<T, E, F>(self, with: T, f: F) -> Result<(), E>
+    where
+        T: Send + Clone,
+        F: Fn(&mut T, Self::Item) -> Result<(), E>,
+        F: Send + Sync,
+        E: Send
+    {
+        rayon::prelude::ParallelIterator::try_for_each_with(self, with, f)
+    }
 }
 
 pub trait Command {
     type Params: UnwindSafe;
 
-    #[allow(unused_mut)]
     fn exec(
         &self,
         sources: impl CommonIter<Item = ReadCodeSource> + UnwindSafe,
-        mut settings: CodespanSettings,
-        mut additional_params: Self::Params,
+        settings: CodespanSettings,
+        additional_params: Self::Params,
     ) -> Result<(), ErrorReported>
     where
         Self::Params: Clone + Send,
         Self: Sync + RefUnwindSafe,
     {
         match std::panic::catch_unwind(move || {
-            #[cfg(feature = "parallel")]
-            {
-                sources.try_for_each_with(
-                    (settings, additional_params),
-                    |(settings, params), source| self.exec_for_source(source, settings, params),
-                )
-            }
-            #[cfg(not(feature = "parallel"))]
-            {
-                for source in sources {
-                    self.exec_for_source(source, &mut settings, &mut additional_params)?;
-                }
-                Ok(())
-            }
+            sources.try_foreach_with(
+                (settings, additional_params),
+                |(settings, params), source| self.exec_for_source(source, settings, params),
+            )
         }) {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(e)) => Err(e),
