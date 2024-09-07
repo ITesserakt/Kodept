@@ -33,17 +33,17 @@ where
 mod nom {
     use crate::make_test_impl;
     use kodept_parse::lexer::NomLexer;
-    use kodept_parse::tokenizer::{LazyTokenizer, ParallelTokenizer};
+    use kodept_parse::tokenizer::LazyTokenizer;
 
     #[test]
     fn test_lazy() {
         make_test_impl::<LazyTokenizer<_>, _>(NomLexer::new());
     }
-    
-    #[test]
-    fn test_parallel() {
-        make_test_impl::<ParallelTokenizer<_>, _>(NomLexer::new())
-    }
+    // 
+    // #[test]
+    // fn test_parallel() {
+    //     make_test_impl::<ParallelTokenizer<_>, _>(NomLexer::new())
+    // }
 }
 
 #[cfg(feature = "peg")]

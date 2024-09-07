@@ -1,21 +1,21 @@
 use std::fmt::Debug;
 
-use nom::bytes::complete::{take, take_while};
-use nom::Err::Error;
-use nom::IResult;
-use nom::multi::{separated_list0, separated_list1};
-use nom::Parser;
-use nom::sequence::tuple;
-use nom_supreme::error::BaseErrorKind;
-use nom_supreme::ParserExt;
 use crate::common::VerboseEnclosed;
-use crate::lexer::Token;
 use crate::lexer::traits::ToRepresentation;
-use crate::nom::parser::{ParseError, ParseResult};
+use crate::lexer::Token;
 use crate::nom::parser::macros::match_any_token;
+use crate::nom::parser::{ParseError, ParseResult};
 use crate::nom::TokenVerificationError;
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
+use nom::bytes::complete::{take, take_while};
+use nom::multi::{separated_list0, separated_list1};
+use nom::sequence::tuple;
+use nom::Err::Error;
+use nom::IResult;
+use nom::Parser;
+use nom_supreme::error::BaseErrorKind;
+use nom_supreme::ParserExt;
 
 #[inline]
 pub fn any_not_ignored_token(input: TokenStream) -> ParseResult<TokenMatch> {
@@ -39,7 +39,7 @@ pub fn any_token(input: TokenStream) -> ParseResult<TokenMatch> {
 }
 
 #[inline]
-pub fn match_token<'t, T>(example: T) -> impl FnMut(TokenStream<'t>) -> ParseResult<TokenMatch<'t>>
+pub fn match_token<'t, T>(example: T) -> impl FnMut(TokenStream<'t>) -> ParseResult<'t, TokenMatch<'t>>
 where
     T: Into<Token<'t>> + Clone + ToRepresentation,
 {
