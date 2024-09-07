@@ -71,7 +71,7 @@ impl SyntaxTree<NoAccess> {
         id: NodeId<T>,
         token: &'b PermTkn,
         tag: ChildTag,
-    ) -> OptVec<&U>
+    ) -> OptVec<&'b U>
     where
         AnyNode: ConvertibleToRef<U>,
     {
@@ -82,7 +82,7 @@ impl SyntaxTree<NoAccess> {
             .collect()
     }
 
-    pub fn get<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&T>
+    pub fn get<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&'b T>
     where
         AnyNode: ConvertibleToRef<T>,
     {
@@ -90,7 +90,7 @@ impl SyntaxTree<NoAccess> {
         node_ref.ro(token).try_as_ref()
     }
 
-    pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut PermTkn) -> Option<&mut T>
+    pub fn get_mut<'b, T>(&'b self, id: NodeId<T>, token: &'b mut PermTkn) -> Option<&'b mut T>
     where
         AnyNode: ConvertibleToMut<T>,
     {
@@ -98,7 +98,7 @@ impl SyntaxTree<NoAccess> {
         node_ref.rw(token).try_as_mut()
     }
 
-    pub fn parent_of<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&AnyNode> {
+    pub fn parent_of<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&'b AnyNode> {
         let parent_id = self.graph.parent_id(id.into())?;
         Some(self.graph[parent_id].ro(token))
     }
