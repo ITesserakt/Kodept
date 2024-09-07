@@ -1,8 +1,9 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use kodept_parse::lexer::{PegLexer, PestLexer};
-use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tok};
+use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tok, TokCtor};
+use std::iter::once;
 
-const FILENAME: &'static str = "benches/benchmarking_file1.kd";
+const FILENAME: &str = "benches/benchmarking_file1.kd";
 
 fn get_contents_with_factor(filename: &str, factor: usize) -> String {
     let contents = std::fs::read_to_string(filename).unwrap();
@@ -11,7 +12,7 @@ fn get_contents_with_factor(filename: &str, factor: usize) -> String {
 
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("tokenizer");
-    for factor in (5..=10).map(|it| 2usize.pow(it)) {
+    for factor in once(1).chain(5..=10).map(|it| 2usize.pow(it)) {
         let contents = get_contents_with_factor(FILENAME, factor);
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
         

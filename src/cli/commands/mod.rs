@@ -27,7 +27,7 @@ mod graph;
 mod inspect;
 
 #[cfg(feature = "parallel")]
-const SWITCH_TO_PARALLEL_THRESHOLD: usize = 20 * 1024 * 1024; // 20 MB
+const SWITCH_TO_PARALLEL_THRESHOLD: usize = 20 * 1024; // 20 KB
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {

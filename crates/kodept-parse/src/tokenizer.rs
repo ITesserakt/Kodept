@@ -166,16 +166,14 @@ mod eager {
 
 #[cfg(feature = "parallel")]
 mod parallel {
-    use super::{Tok, TokCtor};
-    use crate::common::{ErrorAdapter, TokenProducer};
+    use super::{eager, Tok, TokCtor};
+    use crate::common::{EagerTokensProducer, ErrorAdapter};
     use crate::error::{Original, ParseErrors};
     use crate::token_match::TokenMatch;
-    use crate::tokenizer::lazy;
-    use itertools::Itertools;
     use rayon::prelude::*;
     use std::fmt::Debug;
 
-    const CHUNK_SIZE: usize = 120;
+    const CHUNK_SIZE: usize = 480;
 
     #[derive(Debug)]
     pub struct Tokenizer<'t, F> {
@@ -186,7 +184,7 @@ mod parallel {
 
     impl<'t, F> Tok<'t> for Tokenizer<'t, F>
     where
-        F: TokenProducer + Copy + Sync,
+        F: EagerTokensProducer + Copy + Sync,
         F::Error<'t>: Send,
     {
         type Error = F::Error<'t>;
@@ -194,13 +192,27 @@ mod parallel {
         fn try_into_vec(self) -> Result<Vec<TokenMatch<'t>>, Self::Error> {
             self.lines
                 .into_par_iter()
-                .flat_map_iter(|(offset, line)| {
-                    lazy::Tokenizer::new(line, self.handler).update(move |it| match it {
-                        Ok(x) => x.span.point.offset += offset as u32,
-                        _ => {}
-                    })
+                .map(|(offset, line)| {
+                    let tokenizer = eager::Tokenizer::new(line, self.handler);
+                    let tokens = tokenizer.try_into_vec();
+                    match tokens {
+                        Ok(mut x) => {
+                            for m in &mut x {
+                                m.span.point.offset += offset as u32;
+                            }
+                            Ok(x)
+                        }
+                        e => e
+                    }
                 })
-                .collect()
+                .try_fold(Vec::new, |mut acc, next| {
+                    acc.extend(next?);
+                    Ok(acc)
+                })
+                .try_reduce(Vec::new, |mut a, b| {
+                    a.extend(b);
+                    Ok(a)
+                })
         }
 
         fn try_collect_adapted<A>(self) -> Result<Vec<TokenMatch<'t>>, ParseErrors<A>>

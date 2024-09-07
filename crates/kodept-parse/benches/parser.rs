@@ -1,12 +1,13 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 use kodept_parse::common::RLTProducer;
+use kodept_parse::lexer::DefaultLexer;
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
 
-const FILENAME: &'static str = "benches/benchmarking_file1.kd";
+const FILENAME: &str = "benches/benchmarking_file1.kd";
 
 fn get_contents_with_factor(filename: &str, factor: usize) -> String {
     let contents = std::fs::read_to_string(filename).unwrap();
@@ -14,7 +15,7 @@ fn get_contents_with_factor(filename: &str, factor: usize) -> String {
 }
 
 fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
-    let tokenizer = LazyTokenizer::default(contents);
+    let tokenizer: LazyTokenizer<DefaultLexer> = LazyTokenizer::default(contents);
     let tokens = tokenizer.into_vec();
     tokens
 }
