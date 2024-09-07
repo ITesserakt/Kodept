@@ -4,6 +4,7 @@ use crate::visit_side::VisitSide;
 use slotgraph::dag::NodeKey;
 use std::collections::VecDeque;
 use std::iter::FusedIterator;
+use smallvec::SmallVec;
 
 pub enum TraverseState {
     DescendDeeper,
@@ -12,7 +13,7 @@ pub enum TraverseState {
 
 pub struct DfsIter<'a> {
     stack: VecDeque<(NodeKey, TraverseState)>,
-    edges_buffer: Vec<NodeKey>,
+    edges_buffer: SmallVec<[NodeKey; 2]>,
     graph: &'a Graph,
 }
 
@@ -23,7 +24,7 @@ impl<'a> DfsIter<'a> {
 
         Self {
             stack,
-            edges_buffer: vec![],
+            edges_buffer: SmallVec::new(),
             graph,
         }
     }
