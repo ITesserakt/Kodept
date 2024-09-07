@@ -10,12 +10,11 @@ use derive_more::Display;
 use itertools::Itertools;
 use sealed::sealed;
 use std::fmt::Formatter;
-use std::num::NonZeroUsize;
 
 #[derive(Debug, PartialEq)]
 pub enum Count {
     Unspecified,
-    N(NonZeroUsize),
+    N(usize),
 }
 
 #[sealed]
@@ -54,7 +53,7 @@ mod macros {
             Count::Unspecified
         };
         ($c:expr) => {
-            Count::N(unsafe { NonZeroUsize::new_unchecked($c) })
+            Count::N($c)
         };
     }
 
