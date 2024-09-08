@@ -26,7 +26,6 @@ node_sub_enum! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct StructDecl {
         pub name: String,;
@@ -36,7 +35,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct EnumDecl {
         pub kind: EnumKind,

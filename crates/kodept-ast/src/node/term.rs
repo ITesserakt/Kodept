@@ -25,7 +25,6 @@ pub struct ReferenceContext {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Ref {
         pub context: ReferenceContext,

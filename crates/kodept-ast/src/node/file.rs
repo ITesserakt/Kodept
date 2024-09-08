@@ -14,7 +14,6 @@ pub enum ModuleKind {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct FileDecl {
         ;
@@ -23,7 +22,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ModDecl {
         pub kind: ModuleKind,
