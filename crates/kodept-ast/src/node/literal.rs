@@ -20,7 +20,6 @@ node_sub_enum! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct NumLit {
         pub value: String,;
@@ -28,7 +27,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct CharLit {
         pub value: String,;
@@ -36,7 +34,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct StrLit {
         pub value: String,;
@@ -44,7 +41,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct TupleLit {;
         pub value: Vec<Operation>,

@@ -17,7 +17,6 @@ node_sub_enum! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct IfExpr {;
         pub condition: Identity<Operation> as PRIMARY,
@@ -28,7 +27,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ElifExpr {;
         pub condition: Identity<Operation>,
@@ -37,7 +35,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ElseExpr {;
         pub body: Identity<Body>,

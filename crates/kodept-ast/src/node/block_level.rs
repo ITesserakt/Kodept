@@ -34,7 +34,6 @@ node_sub_enum! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct VarDecl {
         pub kind: VariableKind,
@@ -44,7 +43,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct InitVar {
         ;

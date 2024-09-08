@@ -37,7 +37,6 @@ node_sub_enum! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Appl {;
         pub expr: Identity<Operation> as PRIMARY,
@@ -46,7 +45,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Acc {;
         pub left: Identity<Operation> as LEFT,
@@ -55,7 +53,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct UnExpr {
         pub kind: UnaryExpressionKind,;
@@ -64,7 +61,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct BinExpr {
         pub kind: BinaryExpressionKind,;
@@ -74,7 +70,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Lambda {;
         // binds somehow wrapped in operation causing expr to fail => tags required
@@ -84,7 +79,6 @@ node! {
 }
 
 node! {
-    #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Exprs {;
         pub items: Vec<BlockLevel>,

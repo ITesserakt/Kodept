@@ -170,7 +170,24 @@ pub mod implementation {
                 self.id.set(value)
             }
         }
-
+        
+        impl std::fmt::Debug for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let mut fmt = f.debug_struct(stringify!($name));
+                fmt.field("id", &self.id.get());
+                $(
+                    fmt.field(stringify!($field_name), &self.$field_name);
+                )*
+                fmt.finish()
+            }
+        }
+        
+        impl std::cmp::PartialEq for $name {
+            fn eq(&self, other: &Self) -> bool {
+                self.id == other.id
+            }
+        }
+        
         $crate::with_children! [$name => {
             $($graph_vis $graph_name: $graph_type $( as $tag)?,)*
         }];
