@@ -188,6 +188,15 @@ pub mod implementation {
             }
         }
         
+        impl $crate::graph::SubEnum for $name {
+            const VARIANTS: &'static [$crate::graph::AnyNodeD] = &[$crate::graph::AnyNodeD::$name];
+            
+            #[inline(always)]
+            fn contains(node: &$crate::graph::AnyNode) -> bool {
+                node.describe() == $crate::graph::AnyNodeD::$name
+            }
+        }
+        
         $crate::with_children! [$name => {
             $($graph_vis $graph_name: $graph_type $( as $tag)?,)*
         }];

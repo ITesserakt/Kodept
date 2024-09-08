@@ -1,16 +1,17 @@
 use tracing::warn;
 
-use kodept_ast::graph::{AnyNode, ChangeSet};
+use crate::context::{Context, SyntaxProvider};
+use crate::visit_guard::VisitGuard;
+use kodept_ast::graph::{AnyNode, ChangeSet, NodeId};
 use kodept_ast::utils::Execution;
 use kodept_ast::utils::Execution::Skipped;
-use kodept_ast::visit_side::VisitGuard;
+use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
-use crate::error::report::ReportMessage;
-use crate::traits::Context;
-
+pub mod context;
 pub mod default;
 pub mod error;
-pub mod traits;
+pub mod unrecoverable_error;
+pub mod visit_guard;
 
 pub fn warn_about_broken_rlt<T>() {
     warn!(
@@ -19,29 +20,42 @@ pub fn warn_about_broken_rlt<T>() {
     );
 }
 
-pub trait Macro {
-    type Error: Into<ReportMessage>;
+pub trait Macro<Capability> {
+    type Error;
+    /// Node to transform
     type Node: TryFrom<AnyNode>;
 
     #[allow(unused_variables)]
-    fn transform(
+    #[inline(always)]
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        context: &mut impl Context,
+        ctx: &mut impl Context<Capability>,
     ) -> Execution<Self::Error, ChangeSet> {
         Skipped
     }
-}
 
-impl<M: Macro> Macro for &mut M {
-    type Error = M::Error;
-    type Node = M::Node;
+    fn resolve<'a>(
+        &self,
+        id: NodeId<Self::Node>,
+        ctx: &'a impl Context<Capability>,
+    ) -> &'a Self::Node
+    where
+        Capability: SyntaxProvider + 'a,
+        AnyNode: ConvertibleToRef<Self::Node>,
+    {
+        ctx.get(id).unwrap()
+    }
 
-    fn transform(
-        &mut self,
-        guard: VisitGuard<Self::Node>,
-        context: &mut impl Context,
-    ) -> Execution<Self::Error, ChangeSet> {
-        M::transform(self, guard, context)
+    fn resolve_mut<'a>(
+        &self,
+        id: NodeId<Self::Node>,
+        ctx: &'a mut impl Context<Capability>,
+    ) -> &'a mut Self::Node
+    where
+        Capability: SyntaxProvider + 'a,
+        AnyNode: ConvertibleToMut<Self::Node>,
+    {
+        ctx.get_mut(id).unwrap()
     }
 }

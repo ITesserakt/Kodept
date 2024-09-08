@@ -123,7 +123,7 @@ where
 
 impl<'a, T> Debug for TypedNodeCell<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RefMut")
+        f.debug_struct("TypedNodeCell")
             .field("node", self.node)
             .field("_phantom", &self._phantom)
             .finish()
