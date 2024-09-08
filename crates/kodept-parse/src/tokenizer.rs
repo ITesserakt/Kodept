@@ -3,7 +3,6 @@ use crate::error::{Original, ParseErrors};
 use crate::token_match::TokenMatch;
 use std::fmt::Debug;
 
-use crate::lexer::DefaultLexer;
 #[cfg(feature = "parallel")]
 pub use parallel::Tokenizer as ParallelTokenizer;
 pub use {eager::Tokenizer as EagerTokenizer, lazy::Tokenizer as LazyTokenizer};
@@ -29,14 +28,6 @@ pub trait Tok<'t> {
 
 pub trait TokCtor<'t, F> {
     fn new(input: &'t str, lexer: F) -> Self;
-
-    fn default(input: &'t str) -> Self
-    where
-        F: From<DefaultLexer>,
-        Self: Sized,
-    {
-        Self::new(input, DefaultLexer::new().into())
-    }
 }
 
 mod lazy {
@@ -248,13 +239,13 @@ mod parallel {
 
     #[cfg(test)]
     mod tests {
-        use crate::lexer::DefaultLexer;
+        use crate::lexer::PestLexer;
         use crate::tokenizer::TokCtor;
 
         #[test]
         fn test_split() {
             let input = "123\n1234\n\n1";
-            let tokenizer = super::Tokenizer::new(input, DefaultLexer::new());
+            let tokenizer = super::Tokenizer::new(input, PestLexer::new());
 
             assert_eq!(tokenizer.lines, vec![(0, "123\n1234\n\n1")]);
         }

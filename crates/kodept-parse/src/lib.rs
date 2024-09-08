@@ -7,11 +7,8 @@ pub mod tokenizer;
 
 pub mod error;
 
-#[cfg(feature = "peg")]
 mod peg;
-#[cfg(feature = "pest")]
 mod pest;
-#[cfg(feature = "nom")]
 mod nom;
 
 pub mod common;
