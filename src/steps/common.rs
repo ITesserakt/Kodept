@@ -8,11 +8,9 @@ use kodept_interpret::operator_desugaring::{
 };
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_macros::context::Context;
-use kodept_macros::default::ASTFormatter;
 use kodept_macros::unrecoverable_error::UnrecoverableError;
-use std::io::stdout;
 use std::num::NonZeroU16;
-use tracing::{info, trace_span};
+use tracing::info;
 
 #[derive(Constructor)]
 pub struct Config {
@@ -31,7 +29,7 @@ pub fn run_common_steps<'a>(
             UnaryOperatorExpander::new(),
         ))
         .apply_with_context(&mut ctx)?;
-    
+
     info!("Step 2: Split by scopes and resolve symbols");
     let (scopes,) = Pipeline
         .define_step((ScopeAnalyzer::new(),))

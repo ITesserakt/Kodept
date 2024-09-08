@@ -5,7 +5,6 @@ use kodept::codespan_settings::CodespanSettings;
 use kodept::macro_context::MacroContext;
 use kodept::read_code_source::ReadCodeSource;
 use kodept::steps::capabilities::BasicCapability;
-use kodept::steps::common;
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
 use kodept_macros::error::report_collector::ReportCollector;
@@ -26,12 +25,12 @@ impl Command for Execute {
 
     fn exec_for_source(
         &self,
-        mut source: ReadCodeSource,
+        source: ReadCodeSource,
         settings: &mut CodespanSettings,
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
-        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &mut source);
+        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &source);
         debug!("Produced AST with node count = {}", tree.node_count());
         let context = MacroContext::new(BasicCapability {
             file: source.path(),
@@ -43,7 +42,7 @@ impl Command for Execute {
             recursion_depth: self.type_checking_recursion_depth,
         };
 
-        common::run_common_steps(context, &config).or_emit(settings, &source)?;
+        kodept::steps::common::run_common_steps(context, &config).or_emit(settings, &source)?;
         Ok(())
     }
 }
