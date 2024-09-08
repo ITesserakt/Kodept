@@ -1,4 +1,4 @@
-use kodept_parse::lexer::DefaultLexer;
+use kodept_parse::lexer::PegLexer;
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
 use std::fmt::Debug;
@@ -12,7 +12,7 @@ fn get_file_contents() -> &'static str {
 fn get_tokens() -> &'static [TokenMatch<'static>] {
     let file_contents: &'static str = std::fs::read_to_string(FILENAME).unwrap().leak();
     let tokens: &'static [TokenMatch<'static>] = {
-        let tokenizer = LazyTokenizer::new(file_contents, DefaultLexer::new());
+        let tokenizer = LazyTokenizer::new(file_contents, PegLexer::<true>::new());
         tokenizer.into_vec().leak()
     };
     tokens
@@ -29,7 +29,6 @@ where
     similar_asserts::assert_eq!(tokens, get_tokens());
 }
 
-#[cfg(feature = "nom")]
 mod nom {
     use crate::make_test_impl;
     use kodept_parse::lexer::NomLexer;
@@ -46,7 +45,6 @@ mod nom {
     // }
 }
 
-#[cfg(feature = "peg")]
 mod peg {
     use crate::make_test_impl;
     use kodept_parse::lexer::PegLexer;
@@ -68,7 +66,6 @@ mod peg {
     }
 }
 
-#[cfg(feature = "pest")]
 mod pest {
     use crate::make_test_impl;
     use kodept_parse::lexer::PestLexer;

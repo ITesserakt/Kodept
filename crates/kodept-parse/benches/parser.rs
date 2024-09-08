@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 use kodept_parse::common::RLTProducer;
-use kodept_parse::lexer::DefaultLexer;
+use kodept_parse::lexer::PegLexer;
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
@@ -15,7 +15,7 @@ fn get_contents_with_factor(filename: &str, factor: usize) -> String {
 }
 
 fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
-    let tokenizer: LazyTokenizer<DefaultLexer> = LazyTokenizer::default(contents);
+    let tokenizer = LazyTokenizer::new(contents, PegLexer::<false>::new());
     let tokens = tokenizer.into_vec();
     tokens
 }

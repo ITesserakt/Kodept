@@ -61,5 +61,5 @@ fn main() -> Result<(), WideError> {
     {
         HeapProfiler::consume();
     }
-    result.map_err(|e| WideError::from(e))
+    result.map_err(WideError::from)
 }

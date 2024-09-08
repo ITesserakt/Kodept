@@ -12,8 +12,7 @@ use kodept_core::file_relative::CodePath;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::error::ErrorReported;
 use kodept_parse::error::{ParseError, ParseErrors};
-use kodept_parse::lexer::DefaultLexer;
-use kodept_parse::parser::default_parse_from_top;
+use kodept_parse::parser::{parse_from_top, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
 use std::fmt::Display;
@@ -66,17 +65,25 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic<()> {
 }
 
 fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str>> {
+    use kodept_parse::lexer::*;
     use kodept_parse::tokenizer::*;
-    let backend = DefaultLexer::new();
-    
+
     #[cfg(feature = "parallel")]
     {
+        let backend: PegLexer<false> = PegLexer::new();
         if source.contents().len() > SWITCH_TO_PARALLEL_THRESHOLD {
-            debug!(backend = std::any::type_name_of_val(&backend), "Using parallel tokenizer");
+            debug!(
+                backend = std::any::type_name_of_val(&backend),
+                "Using parallel tokenizer"
+            );
             return ParallelTokenizer::new(source.contents(), backend).try_collect_adapted();
         }
     }
-    debug!(backend = std::any::type_name_of_val(&backend), "Using sequential tokenizer");
+    let backend = PestLexer::new();
+    debug!(
+        backend = std::any::type_name_of_val(&backend),
+        "Using sequential tokenizer"
+    );
     EagerTokenizer::new(source.contents(), backend).try_collect_adapted()
 }
 
@@ -85,9 +92,9 @@ fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
         tokenize(source).map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
     debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);
-    let result = default_parse_from_top(token_stream)
+    let result = parse_from_top(token_stream, PegParser::<false>::new())
         .map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
-    debug!("Produced RLT with modules count {}", result.0.0.len());
+    debug!("Produced RLT with modules count {}", result.0 .0.len());
     Ok(result)
 }
 

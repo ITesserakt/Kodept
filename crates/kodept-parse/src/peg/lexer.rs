@@ -3,7 +3,6 @@ use crate::lexer::Token;
 use crate::lexer::{BitOperator, ComparisonOperator, LogicOperator, MathOperator};
 use crate::lexer::{Identifier, Ignore, Keyword, Literal, Operator, Symbol};
 use crate::token_match::TokenMatch;
-use cfg_if::cfg_if;
 use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::Span;
@@ -173,17 +172,15 @@ enum GagContainer {
 impl GagContainer {
     #[must_use]
     fn enable<const E: bool>() -> Self {
-        cfg_if! {
-            if #[cfg(feature = "trace")] {
-                if !E {
-                    Self::Full(gag::Gag::stdout().expect("Cannot suppress stdout"))
-                } else {
-                    Self::Empty
-                }
+        #[cfg(feature = "trace")] {
+            return if !E {
+                Self::Full(gag::Gag::stdout().expect("Cannot suppress stdout"))
             } else {
                 Self::Empty
             }
         }
+        #[cfg(not(feature = "trace"))]
+        Self::Empty
     }
 }
 

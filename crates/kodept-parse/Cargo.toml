@@ -15,29 +15,26 @@ workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["pest", "peg"]
+default = []
 enum-iter = ["dep:enum-iterator"]
-peg = ["dep:peg"]
-pest = ["dep:faster-pest", "dep:pest"]
-trace = ["peg/trace", "dep:gag", "nom"]
-nom = ["dep:nom", "dep:nom-supreme"]
+trace = ["peg/trace", "dep:gag"]
 parallel = ["dep:rayon"]
 
 [dependencies]
-cfg-if = "1.0.0"
 derive_more.workspace = true
 itertools.workspace = true
 nonempty-collections = "0.2.5"
 thiserror = "1.0.44"
 tracing = "0.1.40"
 
+nom.workspace = true
+nom-supreme = "0.8.0"
+peg = "0.8.3"
+pest = "2.7.11"
+faster-pest = "0.1.4"
+
 enum-iterator = { version = "2.1.0", optional = true }
 gag = { version = "1.0.0", optional = true }
-nom = { workspace = true, optional = true }
-nom-supreme = { version = "0.8.0", optional = true }
-peg = { version = "0.8.3", optional = true }
-pest = { version = "2.7.11", optional = true }
-faster-pest = { version = "0.1.4", optional = true }
 rayon = { version = "1.10.0", optional = true }
 
 [dependencies.kodept-core]
@@ -53,13 +50,12 @@ similar-asserts = "1.5.0"
 [[bench]]
 name = "tokenizer"
 harness = false
-required-features = ["peg", "pest", "parallel"]
+required-features = ["parallel"]
 
 [[bench]]
 name = "parser"
 harness = false
-required-features = ["peg", "nom"]
 
 [[test]]
 name = "tokenizer"
-required-features = ["parallel", "peg", "pest", "nom"]
+required-features = ["parallel"]
