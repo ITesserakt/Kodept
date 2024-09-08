@@ -1,60 +1,61 @@
-use std::convert::Infallible;
-
-use kodept_ast::graph::{AnyNode, ChangeSet, PermTkn, RefNode, TypedNodeCell};
+use crate::hlist::{FromHList, HCons, HList, HNil};
+use crate::macro_context::{MacroContext, TreeTraversal};
+use kodept_ast::graph::{ChangeSet, GenericNodeId, SubEnum};
 use kodept_ast::utils::Execution;
-use kodept_ast::visit_side::{VisitGuard, VisitSide};
-use kodept_core::ConvertibleToRef;
+use kodept_ast::visit_side::VisitSide;
+use kodept_macros::context::{Context, Reporter, SyntaxProvider};
 use kodept_macros::error::report::ReportMessage;
-use kodept_macros::traits::{Context, MutableContext, UnrecoverableError};
+use kodept_macros::unrecoverable_error::UnrecoverableError;
+use kodept_macros::visit_guard::VisitGuard;
 use kodept_macros::Macro;
+use std::convert::Infallible;
 use Execution::{Completed, Failed, Skipped};
 
-use crate::steps::hlist::{HCons, HList, HNil};
-
+pub mod capabilities;
 pub mod common;
-pub mod hlist;
 pub mod pipeline;
 
-struct Pack<'arena, 'token, C: Context> {
-    node: RefNode<'arena>,
-    token: &'token mut PermTkn,
+struct Pack<'a, C> {
+    node_id: GenericNodeId,
     side: VisitSide,
-    ctx: &'arena mut C,
+    ctx: &'a mut C,
 }
 
-trait RunMacros: HList {
+trait RunMacros<Capability>: HList {
     type Error: Into<ReportMessage>;
 
-    fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet>;
+    fn apply<C: Context<Capability>>(&mut self, pack: Pack<C>)
+        -> Execution<Self::Error, ChangeSet>;
 }
 
-impl RunMacros for HNil {
+impl<Capability> RunMacros<Capability> for HNil {
     type Error = Infallible;
 
     #[inline]
-    fn apply<C: Context>(&mut self, _: Pack<C>) -> Execution<Self::Error, ChangeSet> {
+    fn apply<C: Context<Capability>>(&mut self, _: Pack<C>) -> Execution<Self::Error, ChangeSet> {
         Skipped
     }
 }
 
-impl<N, Head, Tail> RunMacros for HCons<Head, Tail>
+impl<N, Head, Tail, Capability> RunMacros<Capability> for HCons<Head, Tail>
 where
-    Head: Macro<Node = N>,
-    Tail: RunMacros,
-    AnyNode: ConvertibleToRef<N>,
+    Head: Macro<Capability, Node = N, Error: Into<ReportMessage>>,
+    Tail: RunMacros<Capability>,
+    N: SubEnum,
+    Capability: SyntaxProvider
 {
     type Error = ReportMessage;
 
     #[inline]
-    fn apply<C: Context>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet> {
-        let head = if pack.node.ro(pack.token).try_as_ref().is_some() {
-            let guard = VisitGuard::new(pack.side, TypedNodeCell::new(pack.node), pack.token);
-            self.head.transform(guard, pack.ctx)
+    fn apply<C: Context<Capability>>(&mut self, pack: Pack<C>) -> Execution<Self::Error, ChangeSet> {
+        let head = if N::VARIANTS.contains(&pack.ctx.describe(pack.node_id)) {
+            let guard = VisitGuard::new(pack.node_id.coerce(), pack.side);
+            self.head.apply(guard, pack.ctx)
         } else {
             Skipped
         };
         let tail = self.tail.apply(pack);
-        
+
         match (head, tail) {
             (Failed(e), _) => Failed(e.into()),
             (_, Failed(e)) => Failed(e.into()),
@@ -69,24 +70,25 @@ where
     }
 }
 
-fn run_macros(
-    context: &mut impl MutableContext,
-    macros: &mut impl RunMacros,
-) -> Result<(), UnrecoverableError> {
-    let mut token = PermTkn::new();
+fn run_macros<C>(
+    ctx: &mut MacroContext<C>,
+    macros: &mut impl RunMacros<C>,
+) -> Result<(), UnrecoverableError>
+where
+    C: TreeTraversal + Reporter
+{
     let mut changes = ChangeSet::new();
+    let mut iter = ctx.detached_iter();
 
-    for (node, side) in context.tree().upgrade().unwrap().dfs() {
+    while let Some((node_id, side)) = iter.next(ctx.get_tree()) {
         match macros.apply(Pack {
-            node,
-            token: &mut token,
+            node_id,
             side,
-            ctx: context,
+            ctx,
         }) {
             Failed(e) => {
-                // FIXME
                 let location = vec![];
-                context.report_and_fail(location, e)?;
+                ctx.report_and_fail(location, e)?
             }
             Completed(next) => changes.extend(next),
             Skipped => continue,
@@ -97,21 +99,24 @@ fn run_macros(
     Ok(())
 }
 
-pub trait Step
+pub trait Step<Capability>
 where
     Self: Sized,
 {
     #[allow(private_bounds)]
-    type Inputs: RunMacros;
+    type Inputs: RunMacros<Capability>;
 
     fn into_contents(self) -> Self::Inputs;
 
-    fn apply_with_context<C: MutableContext>(
+    fn apply_with_context<O: FromHList<Self::Inputs>>(
         self,
-        ctx: &mut C,
-    ) -> Result<Self::Inputs, UnrecoverableError> {
+        ctx: &mut MacroContext<Capability>,
+    ) -> Result<O, UnrecoverableError>
+    where
+        Capability: TreeTraversal + Reporter,
+    {
         let mut contents = self.into_contents();
         run_macros(ctx, &mut contents)?;
-        Ok(contents)
+        Ok(O::from_hlist(contents))
     }
 }

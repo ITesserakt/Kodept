@@ -2,8 +2,9 @@ use crate::cli::commands::build_rlt;
 use crate::cli::traits::Command;
 use clap::Parser;
 use kodept::codespan_settings::CodespanSettings;
-use kodept::macro_context::DefaultContext;
+use kodept::macro_context::MacroContext;
 use kodept::read_code_source::ReadCodeSource;
+use kodept::steps::capabilities::BasicCapability;
 use kodept::steps::common;
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
@@ -32,17 +33,17 @@ impl Command for Execute {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
         let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &mut source);
         debug!("Produced AST with node count = {}", tree.node_count());
-        let mut context = DefaultContext::new(
-            source.with_filename(|_| ReportCollector::new()),
-            accessor,
-            tree.split().0,
-        );
+        let context = MacroContext::new(BasicCapability {
+            file: source.path(),
+            ast: tree,
+            rlt: accessor,
+            reporter: ReportCollector::new()
+        });
         let config = Config {
             recursion_depth: self.type_checking_recursion_depth,
         };
 
-        common::run_common_steps(&mut context, &config).or_emit(settings, &source)?;
-        context.emit_diagnostics(settings, &source);
+        common::run_common_steps(context, &config).or_emit(settings, &source)?;
         Ok(())
     }
 }

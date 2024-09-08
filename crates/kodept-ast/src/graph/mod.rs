@@ -3,7 +3,9 @@ pub use self::changes::{Change, ChangeSet};
 pub use self::children::tags;
 pub use self::node_id::{GenericNodeId, GenericNodeKey, NodeId};
 pub use self::nodes::{PermTkn, RefNode};
-pub use self::syntax_tree::{subtree::SubSyntaxTree, SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView};
+pub use self::syntax_tree::{
+    dfs, stage, subtree::SubSyntaxTree, SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView,
+};
 pub use self::utils::TypedNodeCell;
 
 pub(crate) use self::children::macros::with_children;
@@ -14,8 +16,8 @@ pub(crate) use self::identity::Identity;
 pub(crate) use self::traits::Identifiable;
 
 mod any_node;
-mod children;
 mod changes;
+mod children;
 mod identity;
 mod node_id;
 mod nodes;

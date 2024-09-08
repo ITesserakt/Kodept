@@ -22,4 +22,15 @@ pub mod rlt_accessor;
 pub mod traits;
 mod uninit;
 pub mod utils;
-pub mod visit_side;
+
+pub mod visit_side {
+    use derive_more::IsVariant;
+
+    #[derive(IsVariant, Clone, Ord, PartialOrd, Eq, PartialEq, Copy, Debug)]
+    #[repr(u8)]
+    pub enum VisitSide {
+        Entering,
+        Exiting,
+        Leaf,
+    }
+}

@@ -1,4 +1,4 @@
-use codespan_reporting::files::line_starts;
+use codespan_reporting::files::{line_starts, Error, Files};
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_relative::{CodePath, FileRelative};
@@ -7,6 +7,7 @@ use mmap_rs::Mmap;
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::io::Read;
+use std::ops::Range;
 use std::str::from_utf8;
 use thiserror::Error;
 use yoke::Yoke;
@@ -102,6 +103,53 @@ impl CodeHolder for ReadCodeSource {
         match &self.source_contents {
             ReadImpl::Explicit(x) => Cow::Borrowed(&x[at.as_range()]),
             ReadImpl::Implicit(x) => Cow::Borrowed(&x.get()[at.as_range()]),
+        }
+    }
+}
+
+impl<'a> Files<'a> for ReadCodeSource {
+    type FileId = ();
+    type Name = CodePath;
+    type Source = &'a str;
+
+    fn name(&'a self, (): ()) -> Result<Self::Name, Error> {
+        Ok(self.path())
+    }
+
+    fn source(&'a self, (): ()) -> Result<Self::Source, Error> {
+        Ok(self.contents())
+    }
+
+    fn line_index(&'a self, (): (), byte_index: usize) -> Result<usize, Error> {
+        Ok(self
+            .line_starts()
+            .binary_search(&byte_index)
+            .unwrap_or_else(|next_line| next_line - 1))
+    }
+
+    fn line_range(&'a self, (): (), line_index: usize) -> Result<Range<usize>, Error> {
+        let line_start = self.line_start(line_index)?;
+        let next_line_start = self.line_start(line_index + 1)?;
+
+        Ok(line_start..next_line_start)
+    }
+}
+
+impl ReadCodeSource {
+    fn line_start(&self, line_index: usize) -> Result<usize, Error> {
+        use std::cmp::Ordering;
+
+        match line_index.cmp(&self.line_starts().len()) {
+            Ordering::Less => Ok(self
+                .line_starts()
+                .get(line_index)
+                .cloned()
+                .expect("failed despite previous check")),
+            Ordering::Equal => Ok(self.contents().len()),
+            Ordering::Greater => Err(Error::LineTooLarge {
+                given: line_index,
+                max: self.line_starts().len() - 1,
+            }),
         }
     }
 }

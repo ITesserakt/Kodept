@@ -6,10 +6,10 @@ use std::rc::Rc;
 
 use insta::assert_debug_snapshot;
 
+use kodept::hlist::{HCons, HNil};
 use kodept::loader::Loader;
 use kodept::macro_context::DefaultContext;
 use kodept::read_code_source::ReadCodeSource;
-use kodept::steps::hlist::{HCons, HNil};
 use kodept::steps::pipeline::Pipeline;
 use kodept::steps::Step;
 use kodept_ast::graph::SyntaxTree;
@@ -23,7 +23,7 @@ use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
 use kodept_interpret::type_checker::TypeChecker;
 use kodept_interpret::{Cache, Witness};
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::traits::{MutableContext, UnrecoverableError};
+use kodept_macros::unrecoverable_error::{MutableContext, UnrecoverableError};
 use kodept_parse::lexer::DefaultLexer;
 use kodept_parse::parser::default_parse_from_top;
 use kodept_parse::token_stream::TokenStream;

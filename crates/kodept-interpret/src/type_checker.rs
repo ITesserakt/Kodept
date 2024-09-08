@@ -16,7 +16,6 @@ use kodept_inference::language::{Language, Var};
 use kodept_inference::r#type::PolymorphicType;
 use kodept_inference::traits::EnvironmentProvider;
 use kodept_macros::error::report::{ReportMessage, Severity};
-use kodept_macros::traits::Context;
 use kodept_macros::Macro;
 use RecursiveTypeCheckingError::{AlgoWError, MutuallyRecursive, NodeNotFound};
 

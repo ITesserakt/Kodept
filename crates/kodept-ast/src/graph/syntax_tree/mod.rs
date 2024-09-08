@@ -16,15 +16,15 @@ use slotgraph::dag::{NodeKey, SecondaryDag};
 use slotgraph::export::{Config, Dot};
 use std::fmt::{Display, Formatter};
 
-mod dfs;
-mod stage;
+pub mod dfs;
+pub mod stage;
 pub mod subtree;
 
 type Graph<T = NodeCell, E = ChildTag> = slotgraph::dag::Dag<T, E>;
 
 #[derive(Debug)]
 pub struct SyntaxTree<Permission = NoAccess> {
-    graph: Graph,
+    inner: Graph,
     permission: Permission,
 }
 
@@ -43,7 +43,7 @@ impl SyntaxTree<FullAccess> {
         }
 
         Helper(
-            self.graph.map(
+            self.inner.map(
                 |k, v| format!("{} [{}]", v.ro(&self.permission.0).name(), k,),
                 |tag| TAGS_DESC[*tag as usize],
             ),
@@ -58,7 +58,7 @@ impl SyntaxTree<FullAccess> {
         let subtree = rlt_root.0.convert(context);
         let (graph, accessor) = subtree.consume_map(NodeCell::new);
         let tree = Self {
-            graph,
+            inner: graph,
             permission: FullAccess(PermTkn::new()),
         };
         (tree, accessor)
@@ -75,7 +75,7 @@ impl SyntaxTree<NoAccess> {
     where
         AnyNode: ConvertibleToRef<U>,
     {
-        self.graph
+        self.inner
             .children(id.into())
             .filter(|(_, it)| it.edge_data == tag)
             .filter_map(|(_, it)| it.value.ro(token).try_as_ref())
@@ -86,7 +86,7 @@ impl SyntaxTree<NoAccess> {
     where
         AnyNode: ConvertibleToRef<T>,
     {
-        let node_ref = self.graph.node_weight(id.into())?;
+        let node_ref = self.inner.node_weight(id.into())?;
         node_ref.ro(token).try_as_ref()
     }
 
@@ -94,25 +94,25 @@ impl SyntaxTree<NoAccess> {
     where
         AnyNode: ConvertibleToMut<T>,
     {
-        let node_ref = self.graph.node_weight(id.into())?;
+        let node_ref = self.inner.node_weight(id.into())?;
         node_ref.rw(token).try_as_mut()
     }
 
     pub fn parent_of<'b, T>(&'b self, id: NodeId<T>, token: &'b PermTkn) -> Option<&'b AnyNode> {
-        let parent_id = self.graph.parent_id(id.into())?;
-        Some(self.graph[parent_id].ro(token))
+        let parent_id = self.inner.parent_id(id.into())?;
+        Some(self.inner[parent_id].ro(token))
     }
 
     pub fn give_access(self, token: &PermTkn) -> SyntaxTreeView {
         SyntaxTree {
-            graph: self.graph,
+            inner: self.inner,
             permission: ViewingAccess(token),
         }
     }
 
     pub fn give_access_mut(self, token: &mut PermTkn) -> SyntaxTreeMutView {
         SyntaxTree {
-            graph: self.graph,
+            inner: self.inner,
             permission: ModificationAccess(token),
         }
     }
@@ -125,7 +125,7 @@ impl<P: CanAccess> SyntaxTree<P> {
         AnyNode: ConvertibleToRef<U>,
     {
         let token = self.permission.tkn();
-        self.graph
+        self.inner
             .children(id.into())
             .filter(|(_, it)| it.edge_data == tag)
             .filter_map(|(_, it)| it.value.ro(token).try_as_ref())
@@ -137,14 +137,14 @@ impl<P: CanAccess> SyntaxTree<P> {
         AnyNode: ConvertibleToRef<T>,
     {
         let token = self.permission.tkn();
-        let node_ref = self.graph.node_weight(id.into())?;
+        let node_ref = self.inner.node_weight(id.into())?;
         node_ref.ro(token).try_as_ref()
     }
 
     pub fn parent_of<T>(&self, id: NodeId<T>) -> Option<&AnyNode> {
         let token = self.permission.tkn();
-        let node_ref = self.graph.parent_id(id.into())?;
-        Some(self.graph[node_ref].ro(token))
+        let node_ref = self.inner.parent_id(id.into())?;
+        Some(self.inner[node_ref].ro(token))
     }
 }
 
@@ -155,22 +155,22 @@ impl<P: CanMutAccess> SyntaxTree<P> {
         AnyNode: ConvertibleToMut<T>,
     {
         let token = self.permission.tkn_mut();
-        let node_ref = self.graph.node_weight(id.into())?;
+        let node_ref = self.inner.node_weight(id.into())?;
         node_ref.rw(token).try_as_mut()
     }
 }
 
 impl<P> SyntaxTree<P> {
     pub fn node_count(&self) -> usize {
-        self.graph.len()
+        self.inner.len()
     }
 
-    pub fn dfs(&self) -> DfsIter {
-        DfsIter::new(&self.graph, NodeKey::Root)
+    pub fn dfs(&self) -> DfsIter<P> {
+        DfsIter::new(self, NodeKey::Root)
     }
 
     pub fn raw_children_of<T>(&self, id: NodeId<T>, tag: ChildTag) -> OptVec<&NodeCell> {
-        self.graph
+        self.inner
             .children(id.into())
             .filter(|it| it.1.edge_data == tag)
             .map(|it| &it.1.value)
@@ -180,7 +180,7 @@ impl<P> SyntaxTree<P> {
     pub fn split(self) -> (SyntaxTree, P) {
         (
             SyntaxTree {
-                graph: self.graph,
+                inner: self.inner,
                 permission: NoAccess,
             },
             self.permission,

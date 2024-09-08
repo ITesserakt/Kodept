@@ -1,18 +1,17 @@
 use tracing::debug;
 
-use kodept_ast::{
-    AbstFnDecl, BodyFnDecl, EnumDecl, ModDecl,
-    StructDecl, TyParam, TyName, NonTyParam, VarDecl,
-};
-use kodept_ast::graph::{ChangeSet, AnyNode};
+use crate::scope::{ScopeError, ScopeTree};
+use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::utils::Execution;
-use kodept_ast::visit_side::{VisitGuard, VisitSide};
+use kodept_ast::visit_side::VisitSide;
+use kodept_ast::{
+    AbstFnDecl, BodyFnDecl, EnumDecl, ModDecl, NonTyParam, StructDecl, TyName, TyParam, VarDecl,
+};
 use kodept_inference::r#type::MonomorphicType::Constant;
+use kodept_macros::context::{Context, SyntaxProvider};
+use kodept_macros::visit_guard::VisitGuard;
 use kodept_macros::Macro;
-use kodept_macros::traits::Context;
-
-use crate::scope::{ScopeError, ScopeTree};
 
 pub struct ScopeAnalyzer(ScopeTree);
 
@@ -31,21 +30,13 @@ impl ScopeAnalyzer {
         self.0
     }
 
-    fn divide_by_scopes(
-        &mut self,
-        node: &AnyNode,
-        side: VisitSide,
-    ) -> Result<(), ScopeError> {
+    fn divide_by_scopes(&mut self, node: &AnyNode, side: VisitSide) -> Result<(), ScopeError> {
         let divide = match node {
             AnyNode::ModDecl(ModDecl { name, .. }) => Some(Some(name)),
             AnyNode::StructDecl(StructDecl { name, .. }) => Some(Some(name)),
             AnyNode::EnumDecl(EnumDecl { name, .. }) => Some(Some(name)),
-            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => {
-                Some(Some(name))
-            }
-            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => {
-                Some(Some(name))
-            }
+            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => Some(Some(name)),
+            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => Some(Some(name)),
             AnyNode::FileDecl(_) => Some(None),
             AnyNode::Exprs(_) => Some(None),
             AnyNode::Lambda(_) => Some(None),
@@ -67,22 +58,23 @@ impl ScopeAnalyzer {
     }
 }
 
-impl Macro for ScopeAnalyzer {
+impl<C: SyntaxProvider> Macro<C> for ScopeAnalyzer {
     type Error = ScopeError;
     type Node = AnyNode;
 
-    fn transform(
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        context: &mut impl Context,
+        ctx: &mut impl Context<C>,
     ) -> Execution<Self::Error, ChangeSet> {
-        let (node, side) = guard.allow_all();
+        let (id, side) = guard.allow_all();
+        let node = self.resolve(id, ctx);
 
         if side == VisitSide::Exiting {
             debug!("{:#?}", self.0);
         }
 
-        self.divide_by_scopes(&node, side)?;
+        self.divide_by_scopes(node, side)?;
 
         if !matches!(side, VisitSide::Exiting | VisitSide::Leaf) {
             return Execution::Skipped;
@@ -91,21 +83,18 @@ impl Macro for ScopeAnalyzer {
         let Ok(scope) = self.0.current_mut() else {
             return Execution::Skipped;
         };
-        let Some(tree) = context.tree().upgrade() else {
-            return Execution::Skipped;
-        };
-        match &*node {
+        match node {
             AnyNode::StructDecl(StructDecl { name, .. }) => {
                 scope.insert_type(name, Constant(name.clone()))?;
             }
             AnyNode::TyParam(TyParam { name, .. }) => {
-                scope.insert_var(node.get_id(), name)?;
+                scope.insert_var(id, name)?;
             }
             AnyNode::NonTyParam(NonTyParam { name, .. }) => {
-                scope.insert_var(node.get_id(), name)?;
+                scope.insert_var(id, name)?;
             }
             AnyNode::TyName(TyName { name, .. }) => {
-                if let Some(AnyNode::EnumDecl(_)) = tree.parent_of(node.get_id(), node.token()) {
+                if let Some(AnyNode::EnumDecl(_)) = ctx.parent_of(id) {
                     scope.insert_type(name, Constant(name.clone()))?;
                 }
             }
