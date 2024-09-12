@@ -20,7 +20,6 @@ pub struct Execute {
     type_checking_recursion_depth: NonZeroU16,
 }
 
-#[cfg(not(feature = "parallel"))]
 impl Command for Execute {
     type Params = ();
 
@@ -32,37 +31,6 @@ impl Command for Execute {
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
         let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &source);
-        debug!("Produced AST with node count = {}", tree.node_count());
-        let context = MacroContext::new(BasicCapability {
-            file: source.path(),
-            ast: tree,
-            rlt: accessor,
-            reporter: ReportCollector::new(),
-        });
-        let config = Config {
-            recursion_depth: self.type_checking_recursion_depth,
-        };
-
-        kodept::steps::common::run_common_steps(context, &config).or_emit(settings, &source)?;
-        Ok(())
-    }
-}
-
-#[cfg(feature = "parallel")]
-impl Command for Execute {
-    type Params = ();
-
-    fn exec_for_source(
-        &self,
-        source: ReadCodeSource,
-        settings: &mut CodespanSettings,
-        _: &mut Self::Params,
-    ) -> Result<(), ErrorReported> {
-        use kodept_ast::traits::parallel::Parallelize;
-
-        let rlt = build_rlt(&source).or_emit(settings, &source)?;
-        let parallel_rlt = Parallelize(rlt.0);
-        let (tree, accessor) = SyntaxTree::parallel_recursively_build(&parallel_rlt, &source);
         debug!("Produced AST with node count = {}", tree.node_count());
         let context = MacroContext::new(BasicCapability {
             file: source.path(),

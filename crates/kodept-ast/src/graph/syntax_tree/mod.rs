@@ -51,6 +51,7 @@ impl SyntaxTree<FullAccess> {
         )
     }
 
+    #[cfg(not(feature = "parallel"))]
     pub fn recursively_build<'a>(
         rlt_root: &'a rlt::RLT,
         context: &impl CodeHolder,
@@ -65,11 +66,13 @@ impl SyntaxTree<FullAccess> {
     }
     
     #[cfg(feature = "parallel")]
-    pub fn parallel_recursively_build<'a>(
-        rlt_root: &'a crate::traits::parallel::Parallelize<rlt::File, 0>,
+    pub fn recursively_build<'a>(
+        rlt_root: &'a rlt::RLT,
         context: &impl CodeHolder,
     ) -> (Self, RLTAccessor<'a>) {
-        let subtree = rlt_root.convert(context);
+        use crate::traits::parallel::*;
+        let parallelized = Parallelize(&rlt_root.0);
+        let subtree = parallelized.convert(context);
         let (graph, accessor) = subtree.consume_map(NodeCell::new);
         let tree = Self {
             inner: graph,

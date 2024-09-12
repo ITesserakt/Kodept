@@ -35,12 +35,12 @@ pub mod parallel {
     use kodept_core::structure::span::CodeHolder;
     use rayon::prelude::*;
 
-    pub struct Parallelize<T, const TAG: ChildTag>(pub T);
+    pub struct Parallelize<'a, T, const TAG: ChildTag>(pub &'a T);
 
-    pub trait Bound {
+    pub trait Bound<'a> {
         type Node: Into<AnyNode>;
 
-        fn convert(self) -> Uninit<Self::Node>;
+        fn convert(self) -> Uninit<'a, Self::Node>;
     }
 
     pub trait SingleChildrenFamily {
@@ -49,11 +49,12 @@ pub mod parallel {
         fn children(&self) -> &[Self::Child];
     }
 
-    impl<'a, T, U, A, B, const TAG: ChildTag> PopulateTree for &'a Parallelize<T, TAG>
+    impl<'a, T, U, A, B, const TAG: ChildTag> PopulateTree<'a> for Parallelize<'a, T, TAG>
     where
         T: SingleChildrenFamily<Child = U>,
-        &T: Bound<Node = A>,
-        &U: PopulateTree<Root = B> + Sync + 'static,
+        U: Sync + 'a,
+        &'a T: Bound<'a, Node = A>,
+        &'a U: PopulateTree<'a, Root = B>,
         A: Identifiable + Into<AnyNode>,
         A: HasChildrenMarker<B, TAG>,
         B: Send,
@@ -65,7 +66,7 @@ pub mod parallel {
             let subtrees = self
                 .0
                 .children()
-                .par_iter()
+                .into_par_iter()
                 .map(|it| it.convert(context))
                 .collect_vec_list();
             for vec in subtrees {
@@ -84,11 +85,11 @@ pub mod parallel {
             self.0.as_ref()
         }
     }
-    
-    impl Bound for &rlt::File {
+
+    impl<'a> Bound<'a> for &'a rlt::File {
         type Node = FileDecl;
 
-        fn convert(self) -> Uninit<Self::Node> {
+        fn convert(self) -> Uninit<'a, Self::Node> {
             FileDecl::uninit().with_rlt(self)
         }
     }
