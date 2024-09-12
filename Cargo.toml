@@ -88,7 +88,7 @@ kodept-inference = { path = "crates/kodept-inference", version = "0.2" }
 
 [features]
 profiler = ["dep:dhat", "dep:ctrlc"]
-parallel = ["dep:rayon", "kodept-parse/parallel"]
+parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 
 [profile.profiler]

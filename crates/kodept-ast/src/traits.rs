@@ -24,3 +24,72 @@ pub trait PopulateTree {
 
     fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root>;
 }
+
+#[cfg(feature = "parallel")]
+pub mod parallel {
+    use crate::graph::tags::ChildTag;
+    use crate::graph::{AnyNode, HasChildrenMarker, Identifiable, SubSyntaxTree};
+    use crate::traits::PopulateTree;
+    use crate::{FileDecl, Uninit};
+    use kodept_core::structure::span::CodeHolder;
+    use rayon::prelude::*;
+    use kodept_core::structure::rlt;
+
+    pub struct Parallelize<T, const TAG: ChildTag>(pub T);
+
+    pub trait Bound {
+        type Node: Into<AnyNode>;
+
+        fn convert(&self) -> Uninit<Self::Node>;
+    }
+
+    pub trait SingleChildrenFamily {
+        type Child;
+
+        fn children(&self) -> &[Self::Child];
+    }
+        
+    impl<T, U, A, B, const TAG: ChildTag> PopulateTree for Parallelize<T, TAG>
+    where
+        T: SingleChildrenFamily<Child = U>,
+        T: Bound<Node = A>,
+        U: PopulateTree<Root = B> + Sync + 'static,
+        A: Identifiable + Into<AnyNode>,
+        A: HasChildrenMarker<B, TAG>,
+        B: Send,
+    {
+        type Root = A;
+
+        fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+            let mut root = SubSyntaxTree::new(self.0.convert());
+            let subtrees = self
+                .0
+                .children()
+                .par_iter()
+                .map(|it| it.convert(context))
+                .collect_vec_list();
+            for vec in subtrees {
+                for subtree in vec {
+                    root.attach_subtree(subtree)
+                }
+            }
+            root
+        }
+    }
+
+    impl SingleChildrenFamily for rlt::File {
+        type Child = rlt::Module;
+
+        fn children(&self) -> &[Self::Child] {
+            self.0.as_ref()
+        }
+    }
+    
+    impl Bound for rlt::File {
+        type Node = FileDecl;
+
+        fn convert(&self) -> Uninit<Self::Node> {
+            FileDecl::uninit().with_rlt(self)
+        }
+    }
+}
