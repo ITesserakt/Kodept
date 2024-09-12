@@ -30,19 +30,19 @@ node! {
     }
 }
 
-impl PopulateTree for rlt::File {
+impl<'a> PopulateTree<'a> for &'a rlt::File {
     type Root = FileDecl;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let node = FileDecl::uninit().with_rlt(self);
         SubSyntaxTree::new(node).with_children_from(&self.0, context)
     }
 }
 
-impl PopulateTree for rlt::Module {
+impl<'a> PopulateTree<'a> for &'a rlt::Module {
     type Root = ModDecl;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let (kind, name, rest) = match self {
             rlt::Module::Global { id, rest, .. } => {
                 (ModuleKind::Global, context.get_chunk_located(id), rest)

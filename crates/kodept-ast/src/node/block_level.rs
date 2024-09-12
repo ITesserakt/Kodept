@@ -58,10 +58,10 @@ pub enum VariableKind {
     Mutable,
 }
 
-impl PopulateTree for rlt::Body {
+impl<'a> PopulateTree<'a> for &'a rlt::Body {
     type Root = Body;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             rlt::Body::Block(x) => x.convert(context).cast(),
             rlt::Body::Simplified { expression, .. } => expression.convert(context).cast(),
@@ -69,10 +69,10 @@ impl PopulateTree for rlt::Body {
     }
 }
 
-impl PopulateTree for BlockLevelNode {
+impl<'a> PopulateTree<'a> for &'a BlockLevelNode {
     type Root = BlockLevel;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             BlockLevelNode::InitVar(x) => x.convert(context).cast(),
             BlockLevelNode::Block(x) => x.convert(context).cast(),
@@ -82,20 +82,20 @@ impl PopulateTree for BlockLevelNode {
     }
 }
 
-impl PopulateTree for rlt::InitializedVariable {
+impl<'a> PopulateTree<'a> for &'a rlt::InitializedVariable {
     type Root = InitVar;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(InitVar::uninit().with_rlt(self))
             .with_children_from([&self.expression], context)
             .with_children_from([&self.variable], context)
     }
 }
 
-impl PopulateTree for rlt::Variable {
+impl<'a> PopulateTree<'a> for &'a rlt::Variable {
     type Root = VarDecl;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let (kind, name, ty) = match self {
             rlt::Variable::Immutable {
                 id, assigned_type, ..

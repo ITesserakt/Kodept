@@ -19,10 +19,10 @@ pub trait AsEnum {
     fn as_enum(self) -> Self::Enum;
 }
 
-pub trait PopulateTree {
+pub trait PopulateTree<'a> {
     type Root: Into<AnyNode>;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root>;
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root>;
 }
 
 #[cfg(feature = "parallel")]
@@ -31,16 +31,16 @@ pub mod parallel {
     use crate::graph::{AnyNode, HasChildrenMarker, Identifiable, SubSyntaxTree};
     use crate::traits::PopulateTree;
     use crate::{FileDecl, Uninit};
+    use kodept_core::structure::rlt;
     use kodept_core::structure::span::CodeHolder;
     use rayon::prelude::*;
-    use kodept_core::structure::rlt;
 
     pub struct Parallelize<T, const TAG: ChildTag>(pub T);
 
     pub trait Bound {
         type Node: Into<AnyNode>;
 
-        fn convert(&self) -> Uninit<Self::Node>;
+        fn convert(self) -> Uninit<Self::Node>;
     }
 
     pub trait SingleChildrenFamily {
@@ -48,19 +48,19 @@ pub mod parallel {
 
         fn children(&self) -> &[Self::Child];
     }
-        
-    impl<T, U, A, B, const TAG: ChildTag> PopulateTree for Parallelize<T, TAG>
+
+    impl<'a, T, U, A, B, const TAG: ChildTag> PopulateTree for &'a Parallelize<T, TAG>
     where
         T: SingleChildrenFamily<Child = U>,
-        T: Bound<Node = A>,
-        U: PopulateTree<Root = B> + Sync + 'static,
+        &T: Bound<Node = A>,
+        &U: PopulateTree<Root = B> + Sync + 'static,
         A: Identifiable + Into<AnyNode>,
         A: HasChildrenMarker<B, TAG>,
         B: Send,
     {
         type Root = A;
 
-        fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+        fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
             let mut root = SubSyntaxTree::new(self.0.convert());
             let subtrees = self
                 .0
@@ -85,10 +85,10 @@ pub mod parallel {
         }
     }
     
-    impl Bound for rlt::File {
+    impl Bound for &rlt::File {
         type Node = FileDecl;
 
-        fn convert(&self) -> Uninit<Self::Node> {
+        fn convert(self) -> Uninit<Self::Node> {
             FileDecl::uninit().with_rlt(self)
         }
     }
