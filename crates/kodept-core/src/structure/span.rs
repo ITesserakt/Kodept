@@ -17,7 +17,7 @@ impl Located for Span {
     }
 }
 
-pub trait CodeHolder {
+pub trait CodeHolder: Sync {
     fn get_chunk(&self, at: CodePoint) -> Cow<str>;
 
     fn get_chunk_located<L: Located>(&self, for_item: &L) -> Cow<str> {

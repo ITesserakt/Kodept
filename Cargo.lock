@@ -914,9 +914,9 @@ dependencies = [
  "constcat",
  "derive_more",
  "kodept-core",
- "once_cell_serde",
  "paste",
  "qcell",
+ "rayon",
  "ref-cast",
  "replace_with",
  "rstest",
@@ -1235,15 +1235,6 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
-
-[[package]]
-name = "once_cell_serde"
-version = "1.17.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0b4cd459a553fb0fc0bca19715e8d057bca8846e311a05c7b861d453c6e4205"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "oorandom"

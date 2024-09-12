@@ -74,7 +74,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         let (id, mapping) = replace_with_or_abort_and_return(&mut self.graph, |g| {
             let mut g = match g {
                 GraphImpl::Plain(g) => g,
-                GraphImpl::Leaf { root } => Graph::new(root)
+                GraphImpl::Leaf { root } => Graph::new(root),
             };
             let result = match subtree.graph {
                 GraphImpl::Plain(sg) => {
@@ -84,10 +84,10 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
                     }
                     match g.edge_weight_mut(id) {
                         None => {}
-                        Some(x) => *x = TAG
+                        Some(x) => *x = TAG,
                     };
                     (id, mapping)
-                },
+                }
                 GraphImpl::Leaf { root } => {
                     let id = g.add_node_at_root(|id| {
                         root.set_id(id.into());
@@ -95,7 +95,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
                     });
                     match g.edge_weight_mut(id) {
                         None => {}
-                        Some(x) => *x = TAG
+                        Some(x) => *x = TAG,
                     };
                     (id, Default::default())
                 }
@@ -141,11 +141,32 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         }
     }
 
-    pub(super) fn consume_map<U>(self, mut f: impl FnMut(AnyNode) -> U) -> (Dag<U, ChildTag>, RLTAccessor<'rlt>) {
+    pub fn with_root<R: Into<AnyNode>>(self, root: R) -> SubSyntaxTree<'rlt, R>
+    {
+        let graph = match self.graph {
+            GraphImpl::Plain(mut g) => {
+                g.root = root.into();
+                GraphImpl::Plain(g)
+            }
+            GraphImpl::Leaf { .. } => GraphImpl::Leaf { root: root.into() },
+        };
+
+        SubSyntaxTree {
+            graph,
+            rlt_mapping: self.rlt_mapping,
+            root_rlt_mapping: self.root_rlt_mapping,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub(super) fn consume_map<U>(
+        self,
+        mut f: impl FnMut(AnyNode) -> U,
+    ) -> (Dag<U, ChildTag>, RLTAccessor<'rlt>) {
         let accessor = RLTAccessor::new(self.rlt_mapping, self.root_rlt_mapping);
         match self.graph {
             GraphImpl::Plain(g) => (g.consume_map(f, identity), accessor),
-            GraphImpl::Leaf { root } => (Dag::new(f(root)), accessor)
+            GraphImpl::Leaf { root } => (Dag::new(f(root)), accessor),
         }
     }
 }
