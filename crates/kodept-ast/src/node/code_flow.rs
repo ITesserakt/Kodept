@@ -41,10 +41,10 @@ node! {
     }
 }
 
-impl PopulateTree for rlt::IfExpr {
+impl<'a> PopulateTree<'a> for &'a rlt::IfExpr {
     type Root = IfExpr;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(IfExpr::uninit().with_rlt(self))
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
@@ -53,20 +53,20 @@ impl PopulateTree for rlt::IfExpr {
     }
 }
 
-impl PopulateTree for rlt::ElifExpr {
+impl<'a> PopulateTree<'a> for &'a rlt::ElifExpr {
     type Root = ElifExpr;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(ElifExpr::uninit().with_rlt(self))
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
     }
 }
 
-impl PopulateTree for rlt::ElseExpr {
+impl<'a> PopulateTree<'a> for &'a rlt::ElseExpr {
     type Root = ElseExpr;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(ElseExpr::uninit().with_rlt(self))
             .with_children_from([&self.body], context)
     }

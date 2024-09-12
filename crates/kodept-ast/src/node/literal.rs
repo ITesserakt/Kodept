@@ -47,10 +47,10 @@ node! {
     }
 }
 
-impl PopulateTree for rlt::Literal {
+impl<'a> PopulateTree<'a> for &'a rlt::Literal {
     type Root = Lit;
 
-    fn convert(&self, context: &impl CodeHolder) -> SubSyntaxTree<Self::Root> {
+    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let from_num = |x| {
             SubSyntaxTree::new(
                 NumLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),

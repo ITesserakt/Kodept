@@ -9,7 +9,7 @@ use crate::graph::syntax_tree::stage::{
 use crate::graph::utils::OptVec;
 use crate::rlt_accessor::RLTAccessor;
 use crate::traits::PopulateTree;
-use kodept_core::structure::rlt::{File, RLT};
+use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 use slotgraph::dag::{NodeKey, SecondaryDag};
@@ -52,7 +52,7 @@ impl SyntaxTree<FullAccess> {
     }
 
     pub fn recursively_build<'a>(
-        rlt_root: &'a RLT,
+        rlt_root: &'a rlt::RLT,
         context: &impl CodeHolder,
     ) -> (Self, RLTAccessor<'a>) {
         let subtree = rlt_root.0.convert(context);
@@ -66,7 +66,7 @@ impl SyntaxTree<FullAccess> {
     
     #[cfg(feature = "parallel")]
     pub fn parallel_recursively_build<'a>(
-        rlt_root: &'a crate::traits::parallel::Parallelize<File, 0>,
+        rlt_root: &'a crate::traits::parallel::Parallelize<rlt::File, 0>,
         context: &impl CodeHolder,
     ) -> (Self, RLTAccessor<'a>) {
         let subtree = rlt_root.convert(context);

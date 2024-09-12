@@ -115,7 +115,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
 
     pub fn with_children_from<'a, const TAG: ChildTag, U>(
         mut self,
-        iter: impl IntoIterator<Item = &'a (impl PopulateTree<Root = U> + 'a)>,
+        iter: impl IntoIterator<Item = impl PopulateTree<'a, Root = U>>,
         context: &impl CodeHolder,
     ) -> Self
     where
