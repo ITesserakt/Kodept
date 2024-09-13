@@ -34,6 +34,7 @@ pub mod parallel {
     use kodept_core::structure::rlt;
     use kodept_core::structure::span::CodeHolder;
     use rayon::prelude::*;
+    use std::sync::mpsc::channel;
 
     pub struct Parallelize<'a, T, const TAG: ChildTag>(pub &'a T);
 
@@ -62,19 +63,21 @@ pub mod parallel {
         type Root = A;
 
         fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
-            let mut root = SubSyntaxTree::new(self.0.convert());
-            let subtrees = self
-                .0
-                .children()
-                .into_par_iter()
-                .map(|it| it.convert(context))
-                .collect_vec_list();
-            for vec in subtrees {
-                for subtree in vec {
-                    root.attach_subtree(subtree)
+            let (sx, rx) = channel();
+            std::thread::scope(move |s| {
+                let children = self.0.children();
+                s.spawn(move || {
+                    children
+                        .into_par_iter()
+                        .map(|it| it.convert(context))
+                        .for_each_with(sx, |sx, it| sx.send(it).unwrap());
+                });
+                let mut root = SubSyntaxTree::new(self.0.convert());
+                for child in rx {
+                    root.attach_subtree(child);
                 }
-            }
-            root
+                root
+            })
         }
     }
 
