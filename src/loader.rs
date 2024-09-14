@@ -256,7 +256,7 @@ mod tests {
     fn test_load_any_temp_file() {
         let _ = tempfile::tempfile();
         let loader = Loader::file()
-            .with_starting_path(&temp_dir())
+            .with_starting_path(temp_dir())
             .with_any_source_extension()
             .build()
             .unwrap();
