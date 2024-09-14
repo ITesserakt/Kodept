@@ -95,10 +95,11 @@ impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
     where
         E: Default,
     {
+        self.arena.reserve(subgraph.len());
         let other_root = subgraph.root;
         let root_id = self.add_node_with_key(place_root, |_| other_root)?;
 
-        let mut mapping = HashMap::new();
+        let mut mapping = HashMap::with_capacity(subgraph.arena.len() + 1);
         mapping.insert(NodeKey::Root, root_id);
 
         for detached_node in

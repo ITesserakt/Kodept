@@ -35,7 +35,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::File {
 
     fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let node = FileDecl::uninit().with_rlt(self);
-        SubSyntaxTree::new(node).with_children_from(&self.0, context)
+        SubSyntaxTree::new(node).with_children_from(self.0.as_ref(), context)
     }
 }
 
@@ -52,6 +52,6 @@ impl<'a> PopulateTree<'a> for &'a rlt::Module {
             }
         };
         let node = ModDecl::uninit(kind, name.to_string()).with_rlt(self);
-        SubSyntaxTree::new(node).with_children_from(rest, context)
+        SubSyntaxTree::new(node).with_children_from(rest.as_ref(), context)
     }
 }

@@ -1,5 +1,3 @@
-use tracing::debug;
-
 use crate::scope::{ScopeError, ScopeTree};
 use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::traits::Identifiable;
@@ -69,10 +67,6 @@ impl<C: SyntaxProvider> Macro<C> for ScopeAnalyzer {
     ) -> Execution<Self::Error, ChangeSet> {
         let (id, side) = guard.allow_all();
         let node = self.resolve(id, ctx);
-
-        if side == VisitSide::Exiting {
-            debug!("{:#?}", self.0);
-        }
 
         self.divide_by_scopes(node, side)?;
 
