@@ -19,6 +19,7 @@ use std::fmt::{Display, Formatter};
 pub mod dfs;
 pub mod stage;
 pub mod subtree;
+mod utils;
 
 type Graph<T = NodeCell, E = ChildTag> = slotgraph::dag::Dag<T, E>;
 
@@ -50,8 +51,7 @@ impl SyntaxTree<FullAccess> {
             config,
         )
     }
-
-    #[cfg(not(feature = "parallel"))]
+    
     pub fn recursively_build<'a>(
         rlt_root: &'a rlt::RLT,
         context: &impl CodeHolder,
@@ -61,22 +61,6 @@ impl SyntaxTree<FullAccess> {
         let tree = Self {
             inner: graph,
             permission: FullAccess(PermTkn::new()),
-        };
-        (tree, accessor)
-    }
-    
-    #[cfg(feature = "parallel")]
-    pub fn recursively_build<'a>(
-        rlt_root: &'a rlt::RLT,
-        context: &impl CodeHolder,
-    ) -> (Self, RLTAccessor<'a>) {
-        use crate::traits::parallel::*;
-        let parallelized = Parallelize(&rlt_root.0);
-        let subtree = parallelized.convert(context);
-        let (graph, accessor) = subtree.consume_map(NodeCell::new);
-        let tree = Self {
-            inner: graph,
-            permission: FullAccess(PermTkn::new())
         };
         (tree, accessor)
     }

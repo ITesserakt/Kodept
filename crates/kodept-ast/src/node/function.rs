@@ -45,7 +45,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::BodiedFunction {
             BodyFnDecl::uninit(context.get_chunk_located(&self.id).to_string()).with_rlt(self),
         )
         .with_children_from(self.return_type.as_ref().map(|x| &x.1), context)
-        .with_children_from(self.params.iter().flat_map(|x| x.inner.as_ref()), context)
+        .maybe_with_children_from(self.params.as_ref().map(|x| x.inner.as_ref()), context)
         .with_children_from([self.body.as_ref()], context)
     }
 }

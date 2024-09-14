@@ -1,6 +1,7 @@
 use crate::graph::children::tags::ChildTag;
 use crate::graph::children::HasChildrenMarker;
 use crate::graph::node_id::GenericNodeKey;
+use crate::graph::syntax_tree::utils;
 use crate::graph::syntax_tree::Graph;
 use crate::graph::{AnyNode, Identifiable, NodeId};
 use crate::rlt_accessor::{RLTAccessor, RLTFamily};
@@ -12,6 +13,13 @@ use slotgraph::dag::{Dag, NodeKey};
 use slotmap::{Key, SecondaryMap};
 use std::convert::identity;
 use std::marker::PhantomData;
+use std::sync::LazyLock;
+
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
+    LazyLock::new(|| match std::thread::available_parallelism() {
+        Ok(x) => x.get() * 5,
+        Err(_) => 8 * 5,
+    });
 
 #[derive(Debug)]
 enum GraphImpl {
@@ -113,20 +121,59 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         }
     }
 
-    pub fn with_children_from<'a, const TAG: ChildTag, U>(
-        mut self,
-        iter: impl IntoIterator<Item = impl PopulateTree<'a, Root = U>>,
+    pub fn maybe_with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
+        self,
+        from: Option<
+            impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
+        >,
         context: &impl CodeHolder,
     ) -> Self
     where
         T: HasChildrenMarker<U, TAG>,
-        'a: 'rlt,
+        U: Send,
     {
-        for node in iter {
-            let subtree = node.convert(context);
-            self.attach_subtree(subtree)
+        if let Some(from) = from {
+            return self.with_children_from(from, context);
         }
         self
+    }
+
+    pub fn with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
+        self,
+        iter: impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
+        context: &impl CodeHolder,
+    ) -> Self
+    where
+        U: Send,
+        T: HasChildrenMarker<U, TAG>,
+    {
+        if !cfg!(feature = "parallel") || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
+            return iter
+                .into_iter()
+                .map(|it| it.convert(context))
+                .fold(self, |mut acc, next| {
+                    acc.attach_subtree(next);
+                    acc
+                });
+        }
+        
+        #[cfg(not(feature = "parallel"))]
+        unreachable!();
+
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+
+            let iter = iter.into_par_iter();
+            iter.map(|it| it.convert(context))
+                .collect_vec_list()
+                .into_iter()
+                .flatten()
+                .fold(self, |mut acc, next| {
+                    acc.attach_subtree(next);
+                    acc
+                })
+        }
     }
 
     pub fn cast<R>(self) -> SubSyntaxTree<'rlt, R>
@@ -141,8 +188,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         }
     }
 
-    pub fn with_root<R: Into<AnyNode>>(self, root: R) -> SubSyntaxTree<'rlt, R>
-    {
+    pub fn with_root<R: Into<AnyNode>>(self, root: R) -> SubSyntaxTree<'rlt, R> {
         let graph = match self.graph {
             GraphImpl::Plain(mut g) => {
                 g.root = root.into();
