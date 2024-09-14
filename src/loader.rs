@@ -20,6 +20,8 @@ pub enum Loader {
 pub enum LoadingError {
     #[error("Provided path should be absolute")]
     StartingPathNotAbsolute,
+    #[error("Provided path does not exists")]
+    InputDoesNotExists,
     #[error("IO error: {0}")]
     IOError(#[from] std::io::Error),
     #[error("Cannot map file: {0}")]
@@ -77,11 +79,12 @@ impl<'p> LoaderBuilder<'p> {
     }
 
     pub fn build(self) -> Result<Loader, LoadingError> {
+        match self.starting_path.try_exists() {
+            Ok(true) => {},
+            Ok(false) => return Err(LoadingError::InputDoesNotExists),
+            Err(io) => return Err(LoadingError::IOError(io))
+        };
         let sources = if self.starting_path.is_dir() {
-            if !self.starting_path.is_absolute() {
-                return Err(LoadingError::StartingPathNotAbsolute);
-            }
-
             self.starting_path
                 .read_dir()
                 .map_err(LoadingError::IOError)?
