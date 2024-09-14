@@ -8,7 +8,7 @@ use smallvec::SmallVec;
 
 use crate::graph::any_node::AnyNode;
 use crate::graph::nodes::{NodeCell, PermTkn};
-use crate::graph::traits::Identifiable;
+use crate::graph::Identifiable;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 #[repr(transparent)]
