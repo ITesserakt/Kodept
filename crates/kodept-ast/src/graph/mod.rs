@@ -13,7 +13,11 @@ pub(crate) use self::children::HasChildrenMarker;
 #[allow(unused_imports)]
 pub(crate) use self::children::{ChildrenMut, ChildrenRef, ContainerT};
 pub(crate) use self::identity::Identity;
-pub(crate) use self::traits::Identifiable;
+
+pub(crate) trait Identifiable: Sized {
+    fn get_id(&self) -> NodeId<Self>;
+    fn set_id(&self, value: NodeId<Self>);
+}
 
 mod any_node;
 mod changes;
@@ -22,5 +26,4 @@ mod identity;
 mod node_id;
 mod nodes;
 mod syntax_tree;
-mod traits;
 mod utils;
