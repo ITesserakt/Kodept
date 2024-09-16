@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use derive_more::{Constructor, Display};
-
+use crate::static_assert_size;
 use crate::structure::Located;
 
 #[derive(Constructor, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
@@ -10,6 +10,8 @@ pub struct CodePoint {
     pub length: u32,
     pub offset: u32,
 }
+
+static_assert_size!(CodePoint, 8);
 
 impl CodePoint {
     #[must_use]

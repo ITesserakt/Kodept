@@ -4,7 +4,7 @@ use derive_more::{Display, From, TryInto};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
-
+use kodept_core::static_assert_size;
 use crate::graph::node_id::GenericNodeId;
 use crate::graph::Identifiable;
 use crate::*;
@@ -43,6 +43,10 @@ pub enum AnyNode {
     AbstFnDecl(AbstFnDecl),
     ProdTy(ProdTy),
 }
+
+// It's important to support the size of AnyNode less than 64 to fit into a cache line
+static_assert_size!(AnyNode, 56);
+static_assert_size!(AnyNodeD, 1);
 
 macro_rules! folding {
     ($this:expr; $bind:ident => $usage:expr) => {

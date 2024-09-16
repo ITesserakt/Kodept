@@ -1,5 +1,3 @@
-#![feature(try_trait_v2)]
-
 pub use constcat::concat_slices;
 pub use paste::paste;
 pub use ref_cast::RefCast;

@@ -4,6 +4,7 @@ use crate::graph::any_node::{AnyNode, SubEnum};
 use derive_more::{Display, From};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use kodept_core::static_assert_size;
 use slotgraph::dag::NodeKey;
 use slotgraph::Key;
 
@@ -13,6 +14,9 @@ pub enum NodeId<Node> {
     Root,
     Key(Key<Node>),
 }
+
+static_assert_size!(GenericNodeId, 8);
+static_assert_size!((u32, u32), 8);
 
 pub type GenericNodeId = NodeId<AnyNode>;
 pub type GenericNodeKey = Key<AnyNode>;
