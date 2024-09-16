@@ -3,8 +3,8 @@ mod error;
 mod compatibility;
 mod parser;
 
-pub use lexer::Lexer;
-pub use parser::Parser;
+pub(crate) use lexer::Lexer;
+pub(crate) use parser::Parser;
 
 mod macros {
     macro_rules! tok {

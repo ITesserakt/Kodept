@@ -9,7 +9,6 @@ use itertools::Itertools;
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
 use kodept::source_files::SourceView;
-use kodept_core::file_name::FileName;
 use kodept_core::structure::rlt::RLT;
 use kodept_macros::context::FileId;
 use kodept_macros::error::ErrorReported;
@@ -20,7 +19,7 @@ use kodept_parse::token_stream::TokenStream;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tracing::debug;
 
 mod execute;

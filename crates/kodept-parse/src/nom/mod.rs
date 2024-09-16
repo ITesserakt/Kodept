@@ -7,8 +7,8 @@ mod lexer;
 mod error;
 mod parser;
 
-pub use lexer::Lexer;
-pub use parser::Parser;
+pub(crate) use lexer::Lexer;
+pub(crate) use parser::Parser;
 
 type TokenizationError<'t> = ErrorTree<&'t str>;
 type TResult<'t, O> = IResult<&'t str, O, TokenizationError<'t>>;

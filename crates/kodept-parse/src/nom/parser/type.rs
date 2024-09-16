@@ -7,11 +7,11 @@ use kodept_core::structure::rlt::new_types::TypeName;
 
 use crate::lexer::{Identifier::Type, Token};
 use crate::nom::parser::macros::{function, match_token};
-use crate::nom::parser::ParseResult;
 use crate::nom::parser::utils::{comma_separated0, paren_enclosed};
+use crate::nom::parser::ParseResult;
 use crate::token_stream::TokenStream;
 
-pub fn reference(input: TokenStream) -> ParseResult<TypeName> {
+pub(super) fn reference(input: TokenStream) -> ParseResult<TypeName> {
     match_token!(Token::Identifier(Type(_)))
         .context(function!())
         .map(|it| it.span.into())
@@ -25,7 +25,7 @@ fn tuple(input: TokenStream) -> ParseResult<rlt::Type> {
         .parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::Type> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Type> {
     alt((reference.map(rlt::Type::Reference), tuple))
         .context(function!())
         .parse(input)

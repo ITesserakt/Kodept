@@ -5,10 +5,6 @@ use nom::Parser;
 use nom_supreme::ParserExt;
 use nonempty_collections::NEVec;
 
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::{
-    BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
-};
 use crate::lexer::BitOperator::{AndBit, NotBit, OrBit, XorBit};
 use crate::lexer::ComparisonOperator::{
     Equals, Equiv, Greater, GreaterEquals, Less, LessEquals, NotEquiv, Spaceship,
@@ -17,11 +13,15 @@ use crate::lexer::LogicOperator::{AndLogic, NotLogic, OrLogic};
 use crate::lexer::MathOperator::{Div, Mod, Plus, Pow, Sub, Times};
 use crate::lexer::Operator::{Bit, Comparison, Dot, Logic, Math};
 use crate::lexer::Symbol::{LParen, RParen};
-use crate::nom::parser::{expression, ParseResult};
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
+use crate::nom::parser::{expression, ParseResult};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
+use kodept_core::structure::rlt;
+use kodept_core::structure::rlt::new_types::{
+    BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
+};
 
 fn left_fold<'t, I, T, P, E, F, R>(parser: P, produce: F) -> impl Parser<I, R, E> + 't
 where
@@ -262,6 +262,6 @@ fn assign_expr(input: TokenStream) -> ParseResult<rlt::Operation> {
 }
 
 #[inline]
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::Operation> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Operation> {
     assign_expr(input)
 }

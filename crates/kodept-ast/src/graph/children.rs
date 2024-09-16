@@ -39,15 +39,15 @@ pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
     }
 }
 
-pub type ChildrenRef<'a, T, Child, const TAG: ChildTag> =
+pub(crate) type ChildrenRef<'a, T, Child, const TAG: ChildTag> =
     <<T as HasChildrenMarker<Child, TAG>>::Container as FromOptVec>::Ref<'a>;
 
-pub type ChildrenMut<'a, T, Child, const TAG: ChildTag> =
+pub(crate) type ChildrenMut<'a, T, Child, const TAG: ChildTag> =
     <<T as HasChildrenMarker<Child, TAG>>::Container as FromOptVec>::Mut<'a>;
 
-pub type ContainerT<T> = <T as FromOptVec>::T;
+pub(crate) type ContainerT<T> = <T as FromOptVec>::T;
 
-pub mod macros {
+pub(crate) mod macros {
     macro_rules! with_children {
         ($t:ty => {$($vis:vis $name:ident: $c_t:ty as $tag:tt,)*}) => {
             paste::paste! {

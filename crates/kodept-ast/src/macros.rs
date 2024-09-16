@@ -1,4 +1,4 @@
-pub mod implementation {
+pub(crate) mod implementation {
     #[macro_export]
     macro_rules! node_sub_enum {
         ($(#[$config:meta])* $vis:vis enum $wrapper:ident {

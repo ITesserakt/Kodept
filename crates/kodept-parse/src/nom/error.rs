@@ -24,7 +24,7 @@ impl<'s, O, E> BaseError<'s, O, E>
 where
     E: ExpectedError,
 {
-    pub fn into_expected(self) -> Cow<'static, str> {
+    fn into_expected(self) -> Cow<'static, str> {
         match self.kind {
             BaseErrorKind::Expected(Expectation::Something) => Cow::Borrowed("something"),
             BaseErrorKind::Expected(expectation) => Cow::Owned(expectation.to_string()),

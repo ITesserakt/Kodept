@@ -9,8 +9,8 @@ use crate::common::TokenProducer;
 use crate::lexer::Token;
 use crate::token_match::TokenMatch;
 
-pub const LOWER_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
-pub const UPPER_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+pub(crate) const LOWER_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
+pub(crate) const UPPER_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 mod grammar {
     use nom::branch::alt;
@@ -240,7 +240,7 @@ mod grammar {
         )(input)
     }
 
-    pub fn token(input: &str) -> TResult<Token> {
+    pub(crate) fn token(input: &str) -> TResult<Token> {
         context(
             "lexer",
             alt((

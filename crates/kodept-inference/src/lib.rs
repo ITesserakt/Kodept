@@ -15,7 +15,7 @@ pub(crate) struct InferState {
 }
 
 impl InferState {
-    pub fn new_var(&mut self) -> TVar {
+    pub(crate) fn new_var(&mut self) -> TVar {
         let result = TVar(self.variable_index);
         self.variable_index += 1;
         result
