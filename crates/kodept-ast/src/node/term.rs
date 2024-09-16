@@ -1,7 +1,7 @@
 use derive_more::From;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
+use thin_vec::ThinVec;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 
@@ -21,7 +21,7 @@ node_sub_enum! {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ReferenceContext {
     global: bool,
-    items: Vec<String>,
+    items: ThinVec<String>,
 }
 
 node! {

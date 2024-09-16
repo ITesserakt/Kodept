@@ -14,7 +14,6 @@ pub enum CodeSourceError {
 #[derive(Debug)]
 pub enum CodeSource {
     Memory {
-        name: String,
         contents: Cursor<String>,
     },
     File {
@@ -29,9 +28,8 @@ pub enum CodeSource {
 }
 
 impl CodeSource {
-    pub fn memory<S: Into<String>>(name: S, contents: String) -> Self {
+    pub fn memory(contents: String) -> Self {
         Self::Memory {
-            name: name.into(),
             contents: Cursor::new(contents),
         }
     }
@@ -65,15 +63,6 @@ impl CodeSource {
             map: Cursor::new(map),
             size
         })
-    }
-
-    #[must_use]
-    pub fn name(&self) -> &str {
-        match self {
-            CodeSource::Memory { name, .. } => name,
-            CodeSource::File { name, .. } => name.to_str().unwrap_or("<unknown location>"),
-            CodeSource::MappedFile { name, .. } => name.to_str().unwrap_or("<unknown location>"),
-        }
     }
 }
 
