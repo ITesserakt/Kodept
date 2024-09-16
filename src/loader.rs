@@ -4,7 +4,6 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use itertools::Itertools;
 use kodept_core::code_source::{CodeSource, CodeSourceError};
@@ -80,9 +79,9 @@ impl<'p> LoaderBuilder<'p> {
 
     pub fn build(self) -> Result<Loader, LoadingError> {
         match self.starting_path.try_exists() {
-            Ok(true) => {},
+            Ok(true) => {}
             Ok(false) => return Err(LoadingError::InputDoesNotExists),
-            Err(io) => return Err(LoadingError::IOError(io))
+            Err(io) => return Err(LoadingError::IOError(io)),
         };
         let sources = if self.starting_path.is_dir() {
             self.starting_path
@@ -147,13 +146,6 @@ impl Loader {
         Self::Memory(text.into_iter().collect())
     }
 
-    fn generate_scratch_name(index: usize) -> String {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-        format!("scratch-#{index}-{time}.kd", time = timestamp.as_millis())
-    }
-    
     fn mmap_if_needed(mut file: File, path: PathBuf) -> Result<CodeSource, LoadingError> {
         let size = file.seek(SeekFrom::End(0))?;
         file.rewind()?;
@@ -181,8 +173,7 @@ impl Loader {
                 .collect(),
             Loader::Memory(sources) => sources
                 .into_iter()
-                .enumerate()
-                .map(|(i, it)| CodeSource::memory(Self::generate_scratch_name(i), it))
+                .map(|it| CodeSource::memory(it))
                 .collect(),
         }
     }

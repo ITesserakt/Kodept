@@ -5,15 +5,15 @@ pub struct Pipeline;
 
 impl Pipeline {
     #[allow(private_bounds)]
-    pub fn define_step<H, Capability>(self, inputs: impl IntoHList<H>) -> impl Step<Capability, Inputs = H>
+    pub fn define_step<H>(self, inputs: impl IntoHList<H>) -> impl Step<Inputs = H>
     where
-        H: RunMacros<Capability>,
+        H: RunMacros,
     {
         struct Container<H>(H);
 
-        impl<C, H> Step<C> for Container<H>
+        impl<H> Step for Container<H>
         where
-            H: RunMacros<C>,
+            H: RunMacros,
         {
             type Inputs = H;
 

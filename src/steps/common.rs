@@ -1,5 +1,3 @@
-use crate::macro_context::MacroContext;
-use crate::steps::capabilities::BasicCapability;
 use crate::steps::pipeline::Pipeline;
 use crate::steps::Step;
 use derive_more::Constructor;
@@ -7,8 +5,8 @@ use kodept_interpret::operator_desugaring::{
     AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander,
 };
 use kodept_interpret::semantic_analyzer::ScopeAnalyzer;
-use kodept_macros::context::Context;
-use kodept_macros::unrecoverable_error::UnrecoverableError;
+use kodept_macros::context::{Context, FileId};
+use kodept_macros::error::report::Report;
 use std::num::NonZeroU16;
 use tracing::info;
 
@@ -17,10 +15,10 @@ pub struct Config {
     pub recursion_depth: NonZeroU16,
 }
 
-pub fn run_common_steps<'a>(
-    mut ctx: MacroContext<BasicCapability<'a>>,
+pub fn run_common_steps<'r>(
+    mut ctx: Context<'r>,
     config: &Config,
-) -> Result<impl Context + 'a, UnrecoverableError> {
+) -> Result<Context<'r>, Report<FileId>> {
     info!("Step 1: Simplify AST");
     let (a, b, c) = Pipeline
         .define_step((
@@ -45,5 +43,5 @@ pub fn run_common_steps<'a>(
     //     )])
     //     .apply_with_context(ctx)?;
 
-    Ok(ctx.enrich(|_| ()))
+    Ok(ctx)
 }

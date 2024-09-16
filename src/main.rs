@@ -3,6 +3,7 @@ use clap::Parser;
 use kodept::profiler::HeapProfiler;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+use std::sync::Arc;
 
 use crate::cli::traits::Command;
 use cli::common::Kodept;
@@ -44,9 +45,10 @@ fn main() -> Result<(), WideError> {
     let sources = SourceFiles::from_sources(loader.into_sources());
 
     let args = cli_arguments.clone();
-    let result = cli_arguments
-        .subcommands
-        .exec(sources.into_common_iter(), settings, args);
+    let result =
+        cli_arguments
+            .subcommands
+            .exec(Arc::new(sources).into_common_iter(), settings, args);
 
     #[cfg(feature = "profiler")]
     {

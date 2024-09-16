@@ -1,41 +1,39 @@
-use crate::error::report::{Report, ReportMessage};
-use crate::unrecoverable_error::UnrecoverableError;
+use crate::error::report::{IntoSpannedReportMessage, Report};
+use crate::error::report_collector::ReportCollector;
 use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::{AnyNodeD, GenericNodeId, SyntaxTree};
-use kodept_core::code_point::CodePoint;
-use kodept_core::file_relative::CodePath;
-use std::ops::DerefMut;
+use kodept_ast::rlt_accessor::RLTAccessor;
+use kodept_core::file_name::FileName;
 
-pub trait Context<Capability = ()>: DerefMut<Target = Capability> {
-    fn enrich<R>(self, f: impl FnOnce(Capability) -> R) -> impl Context<R>;
+pub type FileId = u16;
+
+#[derive(Debug)]
+pub struct FileDescriptor {
+    pub name: FileName,
+    pub id: FileId
 }
 
-pub trait SyntaxProvider: DerefMut<Target = SyntaxTree<FullAccess>> {
-    #[inline(always)]
-    fn describe(&self, id: GenericNodeId) -> AnyNodeD {
-        let node = self.deref().get(id).unwrap();
-        node.describe()
-    }
+#[derive(Debug)]
+pub struct Context<'r> {
+    pub ast: SyntaxTree<FullAccess>,
+    pub rlt: RLTAccessor<'r>,
+    pub reports: ReportCollector,
+    pub current_file: FileDescriptor,
 }
 
-pub trait FileProvider {
-    fn path(&self) -> CodePath;
-}
-
-pub trait Reporter: FileProvider {
-    #[deprecated]
-    fn report_and_fail<R: Into<ReportMessage>, T>(
-        &self,
-        at: Vec<CodePoint>,
-        message: R,
-    ) -> Result<T, UnrecoverableError> {
-        Err(Report::new(&self.path(), at, message).into())
+impl Context<'_> {
+    pub fn describe(&self, node_id: GenericNodeId) -> AnyNodeD {
+        self.ast
+            .get(node_id)
+            .expect("Cannot find node with given id")
+            .describe()
+    }
+    
+    pub fn report_and_fail<T>(&mut self, message: impl IntoSpannedReportMessage) -> Result<T, Report<FileId>> {
+        Err(Report::from_message(self.current_file.id, message))
     }
 
-    #[deprecated]
-    fn add_report<R: Into<ReportMessage>>(&mut self, at: Vec<CodePoint>, message: R) {
-        self.report(Report::new(&self.path(), at, message))
+    pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
+        self.reports.report(self.current_file.id, message)
     }
-
-    fn report(&mut self, report: Report);
 }

@@ -8,8 +8,10 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 use itertools::Itertools;
 use kodept::codespan_settings::CodespanSettings;
 use kodept::read_code_source::ReadCodeSource;
-use kodept_core::file_relative::CodePath;
+use kodept::source_files::SourceView;
+use kodept_core::file_name::FileName;
 use kodept_core::structure::rlt::RLT;
+use kodept_macros::context::FileId;
 use kodept_macros::error::ErrorReported;
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::parser::{parse_from_top, PegParser};
@@ -43,7 +45,7 @@ impl Command for Commands {
 
     fn exec_for_source(
         &self,
-        source: ReadCodeSource,
+        source: SourceView,
         settings: &mut CodespanSettings,
         params: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
@@ -55,13 +57,16 @@ impl Command for Commands {
     }
 }
 
-fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic<()> {
+fn to_diagnostic<A: Display, FileId>(file_id: FileId, error: ParseError<A>) -> Diagnostic<FileId> {
     let exp_msg = error.expected.into_iter().join(" or ");
 
     Diagnostic::error()
         .with_code("SE001")
         .with_message(format!("Expected {}, got \"{}\"", exp_msg, error.actual))
-        .with_labels(vec![Label::primary((), error.location.in_code.as_range())])
+        .with_labels(vec![Label::primary(
+            file_id,
+            error.location.in_code.as_range(),
+        )])
 }
 
 fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str>> {
@@ -87,26 +92,27 @@ fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str
     EagerTokenizer::new(source.contents(), backend).try_collect_adapted()
 }
 
-fn build_rlt(source: &ReadCodeSource) -> Result<RLT, Vec<Diagnostic<()>>> {
-    let tokens =
-        tokenize(source).map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
+fn build_rlt(source: &SourceView) -> Result<RLT, Vec<Diagnostic<FileId>>> {
+    let tokens = tokenize(&*source).map_err(|es| {
+        es.into_iter()
+            .map(|it| to_diagnostic(*&*source.id, it))
+            .collect::<Vec<_>>()
+    })?;
     debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);
-    let result = parse_from_top(token_stream, PegParser::<false>::new())
-        .map_err(|es| es.into_iter().map(to_diagnostic).collect::<Vec<_>>())?;
+    let result = parse_from_top(token_stream, PegParser::<false>::new()).map_err(|es| {
+        es.into_iter()
+            .map(|it| to_diagnostic(*&*source.id, it))
+            .collect::<Vec<_>>()
+    })?;
     debug!("Produced RLT with modules count {}", result.0 .0.len());
     Ok(result)
 }
 
 fn get_output_file(source: &ReadCodeSource, output_path: &Path) -> std::io::Result<File> {
-    let filename = match source.path() {
-        CodePath::ToFile(file) => file
-            .with_extension("kd.dot")
-            .file_name()
-            .expect("Source should be a file")
-            .to_os_string(),
-        CodePath::ToMemory(name) => PathBuf::from(name).with_extension("kd.dot").into(),
-    };
+    let name = source.path();
+    let path = name.build_file_path().with_extension("kd.dot");
+    let filename = path.file_name().unwrap();
     ensure_path_exists(output_path)?;
     File::create(output_path.join(filename))
 }

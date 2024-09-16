@@ -42,6 +42,7 @@ clippy.complexity = "warn"
 clippy.style = "warn"
 clippy.perf = "warn"
 rust.unsafe_code = "deny"
+rust.unreachable_pub = "warn"
 
 [dependencies]
 anyhow = "1"

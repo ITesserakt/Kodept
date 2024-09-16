@@ -1,16 +1,19 @@
+#![feature(try_trait_v2)]
+
+use extend::ext;
 use tracing::warn;
 
-use crate::context::{Context, SyntaxProvider};
+use crate::context::Context;
+use crate::execution::Execution;
+use crate::execution::Execution::Skipped;
 use crate::visit_guard::VisitGuard;
 use kodept_ast::graph::{AnyNode, ChangeSet, NodeId};
-use kodept_ast::utils::Execution;
-use kodept_ast::utils::Execution::Skipped;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 
 pub mod context;
 pub mod default;
 pub mod error;
-pub mod unrecoverable_error;
+pub mod execution;
 pub mod visit_guard;
 
 pub fn warn_about_broken_rlt<T>() {
@@ -20,42 +23,39 @@ pub fn warn_about_broken_rlt<T>() {
     );
 }
 
-pub trait Macro<Capability> {
+pub trait Macro {
     type Error;
     /// Node to transform
     type Node: TryFrom<AnyNode>;
+    type Ctx<'a>;
 
     #[allow(unused_variables)]
     #[inline(always)]
-    fn apply(
+    fn apply<'a>(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut impl Context<Capability>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
         Skipped
     }
+}
 
-    fn resolve<'a>(
-        &self,
-        id: NodeId<Self::Node>,
-        ctx: &'a impl Context<Capability>,
-    ) -> &'a Self::Node
+#[ext(name = MacroExt)]
+pub impl<M> M
+where
+    for<'a> M: Macro<Ctx<'a> = Context<'a>>,
+{
+    fn resolve<'a, 'b>(&self, id: NodeId<M::Node>, ctx: &'b M::Ctx<'a>) -> &'b M::Node
     where
-        Capability: SyntaxProvider + 'a,
-        AnyNode: ConvertibleToRef<Self::Node>,
+        AnyNode: ConvertibleToRef<M::Node>,
     {
-        ctx.get(id).unwrap()
+        ctx.ast.get(id).unwrap()
     }
 
-    fn resolve_mut<'a>(
-        &self,
-        id: NodeId<Self::Node>,
-        ctx: &'a mut impl Context<Capability>,
-    ) -> &'a mut Self::Node
+    fn resolve_mut<'a, 'b>(&self, id: NodeId<M::Node>, ctx: &'b mut M::Ctx<'a>) -> &'b mut M::Node
     where
-        Capability: SyntaxProvider + 'a,
-        AnyNode: ConvertibleToMut<Self::Node>,
+        AnyNode: ConvertibleToMut<M::Node>,
     {
-        ctx.get_mut(id).unwrap()
+        ctx.ast.get_mut(id).unwrap()
     }
 }

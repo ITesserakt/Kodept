@@ -1,7 +1,7 @@
 use codespan_reporting::files::{line_starts, Error, Files};
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
-use kodept_core::file_relative::{CodePath, FileRelative};
+use kodept_core::file_name::FileName;
 use kodept_core::structure::span::CodeHolder;
 use mmap_rs::Mmap;
 use std::borrow::Cow;
@@ -29,12 +29,12 @@ pub enum ReadCodeSourceError {
 #[derive(Debug)]
 pub struct ReadCodeSource {
     source_contents: ReadImpl,
-    source_path: CodePath,
+    source_path: FileName,
     line_starts: Vec<usize>,
 }
 
 impl ReadCodeSource {
-    pub fn path(&self) -> CodePath {
+    pub fn path(&self) -> FileName {
         self.source_path.clone()
     }
 
@@ -47,13 +47,6 @@ impl ReadCodeSource {
 
     pub(crate) fn line_starts(&self) -> &[usize] {
         &self.line_starts
-    }
-
-    pub fn with_filename<T>(&self, f: impl Fn(&Self) -> T) -> FileRelative<T> {
-        FileRelative {
-            value: f(self),
-            filepath: self.source_path.clone(),
-        }
     }
 }
 
@@ -109,7 +102,7 @@ impl CodeHolder for ReadCodeSource {
 
 impl<'a> Files<'a> for ReadCodeSource {
     type FileId = ();
-    type Name = CodePath;
+    type Name = FileName;
     type Source = &'a str;
 
     fn name(&'a self, (): ()) -> Result<Self::Name, Error> {

@@ -1,15 +1,15 @@
 use crate::scope::{ScopeError, ScopeTree};
 use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::traits::Identifiable;
-use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::VisitSide;
 use kodept_ast::{
     AbstFnDecl, BodyFnDecl, EnumDecl, ModDecl, NonTyParam, StructDecl, TyName, TyParam, VarDecl,
 };
 use kodept_inference::r#type::MonomorphicType::Constant;
-use kodept_macros::context::{Context, SyntaxProvider};
+use kodept_macros::context::Context;
+use kodept_macros::execution::Execution;
 use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::Macro;
+use kodept_macros::{Macro, MacroExt};
 
 pub struct ScopeAnalyzer(ScopeTree);
 
@@ -56,14 +56,15 @@ impl ScopeAnalyzer {
     }
 }
 
-impl<C: SyntaxProvider> Macro<C> for ScopeAnalyzer {
+impl Macro for ScopeAnalyzer {
     type Error = ScopeError;
     type Node = AnyNode;
+    type Ctx<'a> = Context<'a>;
 
-    fn apply(
+    fn apply<'a>(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut impl Context<C>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
         let (id, side) = guard.allow_all();
         let node = self.resolve(id, ctx);
@@ -88,7 +89,7 @@ impl<C: SyntaxProvider> Macro<C> for ScopeAnalyzer {
                 scope.insert_var(id, name)?;
             }
             AnyNode::TyName(TyName { name, .. }) => {
-                if let Some(AnyNode::EnumDecl(_)) = ctx.parent_of(id) {
+                if let Some(AnyNode::EnumDecl(_)) = ctx.ast.parent_of(id) {
                     scope.insert_type(name, Constant(name.clone()))?;
                 }
             }

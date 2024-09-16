@@ -1,9 +1,8 @@
 use std::any::Any;
 
-use codespan_reporting::diagnostic::Severity;
 use derive_more::Constructor;
 
-use crate::error::report::ReportMessage;
+use crate::error::report::{ReportMessage, Severity};
 
 #[derive(Constructor)]
 pub struct CompilerCrash {

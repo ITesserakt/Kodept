@@ -1,16 +1,26 @@
-use crate::error::report::{Report, ReportMessage};
+use crate::context::FileId;
+use crate::error::report::{IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage};
 use crate::error::ErrorReported;
-use codespan_reporting::diagnostic::{Diagnostic, Severity};
+use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::files::{Error, Files};
 use codespan_reporting::term::termcolor::WriteColor;
 use codespan_reporting::term::Config;
 use extend::ext;
-use kodept_core::file_relative::{CodePath, FileRelative};
+use kodept_core::code_point::CodePoint;
+use std::borrow::Cow;
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Clone)]
 pub struct CodespanSettings<S> {
     pub config: Config,
     pub stream: S,
+}
+
+#[derive(Debug)]
+pub struct SpannedError<E: std::error::Error> {
+    point: CodePoint,
+    severity: Severity,
+    inner: E,
 }
 
 pub trait Reportable {
@@ -35,8 +45,8 @@ impl<FileId> Reportable for Diagnostic<FileId> {
     }
 }
 
-impl Reportable for Report {
-    type FileId = ();
+impl<FileId> Reportable for Report<FileId> {
+    type FileId = FileId;
 
     fn emit<'f, W: WriteColor, F: Files<'f, FileId = Self::FileId>>(
         self,
@@ -44,23 +54,6 @@ impl Reportable for Report {
         source: &'f F,
     ) -> Result<(), Error> {
         self.into_diagnostic().emit(settings, source)
-    }
-}
-
-impl<E: std::error::Error> Reportable for FileRelative<&E> {
-    type FileId = ();
-
-    fn emit<'f, W: WriteColor, F: Files<'f, FileId = Self::FileId>>(
-        self,
-        settings: &mut CodespanSettings<W>,
-        source: &'f F,
-    ) -> Result<(), Error> {
-        let report = Report::new(
-            &self.filepath,
-            vec![],
-            ReportMessage::new(Severity::Error, "external", self.value.to_string()),
-        );
-        report.emit(settings, source)
     }
 }
 
@@ -96,24 +89,94 @@ pub impl<T, R: Reportable> Result<T, R> {
 
 #[ext]
 pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
-    fn or_emit<'f, W: WriteColor, F: Files<'f, FileId = ()>>(
+    fn or_emit<'f, W: WriteColor, F: Files<'f, FileId=FileId>>(
         self,
         settings: &mut CodespanSettings<W>,
         source: &'f F,
-        filepath: CodePath,
+        file_id: FileId,
     ) -> Result<T, ErrorReported> {
         match self {
             Ok(x) => Ok(x),
             Err(e) => {
-                let file_relative = FileRelative {
-                    value: &e,
-                    filepath,
-                };
-                file_relative
-                    .emit(settings, source)
-                    .expect("Cannot emit diagnostics");
+                pub struct Helper<'e, E: std::error::Error>(&'e E);
+                impl<'e, E> From<Helper<'e, E>> for ReportMessage
+                where
+                    E: std::error::Error
+                {
+                    fn from(value: Helper<E>) -> Self {
+                        Self::new(Severity::Error, "external", value.0.to_string())
+                    }
+                }
+
+                let report = Report::from_message(file_id, Helper(&e));
+                report.emit(settings, source).expect("Cannot emit diagnostic");
                 Err(ErrorReported::with_cause(e))
             }
         }
+    }
+}
+
+#[ext]
+pub impl<E: std::error::Error> E {
+    fn points_at(self, source_pos: CodePoint) -> SpannedError<E> {
+        SpannedError {
+            point: source_pos,
+            severity: Severity::Error,
+            inner: self,
+        }
+    }
+}
+
+impl<E: std::error::Error> SpannedError<E> {
+    pub fn with_severity(self, severity: Severity) -> Self {
+        Self { severity, ..self }
+    }
+}
+
+impl<E: std::error::Error> SpannedReportMessage for SpannedError<E> {
+    fn labels(&self) -> impl IntoIterator<Item = Label> {
+        [Label::primary("here", self.point)]
+    }
+
+    fn severity(&self) -> Severity {
+        self.severity
+    }
+
+    fn message(&self) -> Cow<'static, str> {
+        Cow::Owned(self.inner.to_string())
+    }
+}
+
+impl<E: std::error::Error> Display for SpannedError<E> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl<E: std::error::Error + 'static> std::error::Error for SpannedError<E> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.inner)
+    }
+}
+
+impl SpannedReportMessage for ReportMessage {
+    fn labels(&self) -> impl IntoIterator<Item = Label> {
+        []
+    }
+
+    fn severity(&self) -> Severity {
+        self.severity
+    }
+
+    fn message(&self) -> Cow<'static, str> {
+        Cow::Owned(self.message.clone())
+    }
+}
+
+impl<E: std::error::Error + 'static> IntoSpannedReportMessage for SpannedError<E> {
+    type Message = Self;
+
+    fn into_message(self) -> Self::Message {
+        self
     }
 }

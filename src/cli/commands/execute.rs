@@ -2,11 +2,11 @@ use crate::cli::commands::build_rlt;
 use crate::cli::traits::Command;
 use clap::Parser;
 use kodept::codespan_settings::CodespanSettings;
-use kodept::macro_context::MacroContext;
 use kodept::read_code_source::ReadCodeSource;
-use kodept::steps::capabilities::BasicCapability;
+use kodept::source_files::SourceView;
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
+use kodept_macros::context::{Context, FileDescriptor};
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::ResultTRExt;
 use kodept_macros::error::ErrorReported;
@@ -25,19 +25,22 @@ impl Command for Execute {
 
     fn exec_for_source(
         &self,
-        source: ReadCodeSource,
+        source: SourceView,
         settings: &mut CodespanSettings,
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
-        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &source);
+        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &*source);
         debug!("Produced AST with node count = {}", tree.node_count());
-        let context = MacroContext::new(BasicCapability {
-            file: source.path(),
+        let context = Context {
             ast: tree,
             rlt: accessor,
-            reporter: ReportCollector::new(),
-        });
+            reports: Default::default(),
+            current_file: FileDescriptor {
+                name: source.path(),
+                id: 0,
+            },
+        };
         let config = Config {
             recursion_depth: self.type_checking_recursion_depth,
         };
