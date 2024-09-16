@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use crate::cli::traits::Command;
 use kodept::codespan_settings::CodespanSettings;
-use kodept::read_code_source::ReadCodeSource;
+use kodept::source_files::SourceView;
 use kodept_macros::error::traits::ResultTEExt;
 use kodept_macros::error::ErrorReported;
 
@@ -58,7 +58,7 @@ impl Command for InspectParser {
 
     fn exec_for_source(
         &self,
-        source: ReadCodeSource,
+        source: SourceView,
         settings: &mut CodespanSettings,
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
@@ -67,7 +67,7 @@ impl Command for InspectParser {
         struct Unsupported;
 
         let error = Err(Unsupported);
-        error.or_emit(settings, &source, source.path())
+        error.or_emit(settings, &source, *source.id)
     }
 }
 
@@ -172,14 +172,14 @@ impl Command for InspectParser {
         settings: &mut CodespanSettings,
         output_path: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
-        use kodept_core::file_relative::CodePath;
+        use kodept_core::file_name::FileName;
 
         let source_name = match source.path() {
-            CodePath::ToFile(x) => x
+            FileName::Real(x) => x
                 .file_name()
                 .expect("Source should be a file")
                 .to_os_string(),
-            CodePath::ToMemory(x) => x.into(),
+            FileName::Anon(x) => x.into(),
         };
         let file_output_path = output_path.join(source_name);
         match self.option {

@@ -1,15 +1,14 @@
 use std::io::{Error, Write};
 
-use codespan_reporting::diagnostic::Severity;
-
 use kodept_ast::graph::{AnyNode, ChangeSet};
-use kodept_ast::utils::Execution;
-use kodept_ast::utils::Execution::Completed;
 use kodept_ast::visit_side::VisitSide;
 
-use crate::context::SyntaxProvider;
-use crate::error::report::ReportMessage;
-use crate::{context, visit_guard, Macro};
+use crate::context::Context;
+use crate::error::report::{ReportMessage, Severity};
+use crate::execution::Execution;
+use crate::execution::Execution::Completed;
+use crate::visit_guard::VisitGuard;
+use crate::{Macro, MacroExt};
 
 pub struct ASTFormatter<W: Write> {
     writer: W,
@@ -30,21 +29,21 @@ impl<W: Write> ASTFormatter<W> {
     }
 }
 
-impl<W, C> Macro<C> for ASTFormatter<W>
+impl<W> Macro for ASTFormatter<W>
 where
-    W: Write,
-    C: SyntaxProvider
+    W: Write
 {
     type Error = IOError;
     type Node = AnyNode;
+    type Ctx<'a> = Context<'a>;
 
-    fn apply(
+    fn apply<'a>(
         &mut self,
-        node: visit_guard::VisitGuard<AnyNode>,
-        ctx: &mut impl context::Context<C>,
+        guard: VisitGuard<Self::Node>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
-        let (node, side) = node.allow_all();
-        let node = ctx.get(node);
+        let (node, side) = guard.allow_all();
+        let node = self.resolve(node, ctx);
         let writer = &mut self.writer;
 
         match side {

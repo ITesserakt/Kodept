@@ -2,16 +2,16 @@ use std::convert::Infallible;
 
 use kodept_ast::graph::{tags, AnyNode, Change, ChangeSet};
 use kodept_ast::traits::Identifiable;
-use kodept_ast::utils::Execution;
 use kodept_ast::visit_side::VisitSide;
 use kodept_ast::{
     Acc, Appl, BinExpr, BinaryExpressionKind, BitKind, ComparisonKind, EqKind, Expression,
     Identifier, LogicKind, MathKind, Operation, Ref, ReferenceContext, Term, UnExpr,
     UnaryExpressionKind,
 };
-use kodept_macros::context::{Context, SyntaxProvider};
+use kodept_macros::context::Context;
+use kodept_macros::execution::Execution;
 use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::Macro;
+use kodept_macros::{Macro, MacroExt};
 
 #[derive(Default)]
 pub struct BinaryOperatorExpander;
@@ -64,17 +64,15 @@ impl AccessExpander {
     }
 }
 
-impl<C> Macro<C> for BinaryOperatorExpander
-where
-    C: SyntaxProvider,
-{
+impl Macro for BinaryOperatorExpander {
     type Error = Infallible;
     type Node = BinExpr;
+    type Ctx<'a> = Context<'a>;
 
-    fn apply(
+    fn apply<'a>(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut impl Context<C>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
         let id = guard.allow_only(VisitSide::Entering)?;
         let node = self.resolve(id, ctx);
@@ -113,14 +111,15 @@ where
     }
 }
 
-impl<C: SyntaxProvider> Macro<C> for UnaryOperatorExpander {
+impl Macro for UnaryOperatorExpander {
     type Error = Infallible;
     type Node = UnExpr;
+    type Ctx<'a> = Context<'a>;
 
-    fn apply(
+    fn apply<'a>(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut impl Context<C>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
         let id = guard.allow_only(VisitSide::Entering)?;
         let node = self.resolve(id, ctx);
@@ -134,14 +133,15 @@ impl<C: SyntaxProvider> Macro<C> for UnaryOperatorExpander {
     }
 }
 
-impl<C: SyntaxProvider> Macro<C> for AccessExpander {
+impl Macro for AccessExpander {
     type Error = Infallible;
     type Node = Acc;
+    type Ctx<'a> = Context<'a>;
 
-    fn apply(
+    fn apply<'a>(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut impl Context<C>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
         let id = guard.allow_only(VisitSide::Entering)?;
         let node = self.resolve(id, ctx);

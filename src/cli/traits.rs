@@ -1,6 +1,6 @@
 use kodept::codespan_settings::CodespanSettings;
 use kodept::common_iter::CommonIter;
-use kodept::read_code_source::ReadCodeSource;
+use kodept::source_files::SourceView;
 use kodept_macros::error::ErrorReported;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::time::{Duration, Instant};
@@ -23,7 +23,7 @@ pub trait Command {
 
     fn exec(
         &self,
-        sources: impl CommonIter<Item = ReadCodeSource> + UnwindSafe,
+        sources: impl CommonIter<Item =SourceView> + UnwindSafe,
         settings: CodespanSettings,
         additional_params: Self::Params,
     ) -> Result<(), ErrorReported>
@@ -52,7 +52,7 @@ pub trait Command {
 
     fn exec_for_source(
         &self,
-        source: ReadCodeSource,
+        source: SourceView,
         settings: &mut CodespanSettings,
         params: &mut Self::Params,
     ) -> Result<(), ErrorReported>;

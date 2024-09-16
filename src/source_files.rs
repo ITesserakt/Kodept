@@ -2,16 +2,38 @@ use crate::common_iter::CommonIter;
 use crate::read_code_source::ReadCodeSource;
 use codespan_reporting::files::{Error, Files};
 use kodept_core::code_source::CodeSource;
-use kodept_core::file_relative::CodePath;
-use std::collections::hash_map::IntoValues;
+use kodept_core::file_name::FileName;
+use kodept_core::Freeze;
+use kodept_macros::context::FileId;
 use std::collections::HashMap;
-use std::ops::Range;
+use std::ops::{Deref, Range};
+use std::sync::Arc;
 use tracing::error;
+use yoke::Yoke;
 
-pub type FileId = u16;
+#[derive(Debug, Clone)]
+pub struct SourceView {
+    pub id: Freeze<FileId>,
+    source: Yoke<&'static ReadCodeSource, Arc<SourceFiles>>,
+}
 
+#[derive(Debug)]
 pub struct SourceFiles {
     contents: HashMap<FileId, ReadCodeSource>,
+}
+
+impl Deref for SourceView {
+    type Target = ReadCodeSource;
+
+    fn deref(&self) -> &Self::Target {
+        self.source.get()
+    }
+}
+
+impl SourceView {
+    pub fn all_files(&self) -> &SourceFiles {
+        self.source.backing_cart()
+    }
 }
 
 impl SourceFiles {
@@ -34,29 +56,32 @@ impl SourceFiles {
         Self { contents: map }
     }
 
-    pub fn into_common_iter(self) -> impl CommonIter<Item = ReadCodeSource> {
-        #[cfg(not(feature = "parallel"))] {
-            self.into_iter()
+    pub fn into_common_iter<'a>(self: &'a Arc<Self>) -> impl CommonIter<Item =SourceView> + 'a {
+        #[cfg(not(feature = "parallel"))]
+        {
+            self.contents.keys().copied().map(|id| SourceView {
+                id: Freeze::new(id),
+                source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
+            })
         }
-        #[cfg(feature = "parallel")] {
-            use rayon::prelude::IntoParallelIterator;
-            self.into_par_iter()
+        #[cfg(feature = "parallel")]
+        {
+            use rayon::prelude::*;
+
+            self.contents
+                .par_iter()
+                .map(|it| *it.0)
+                .map(|id| SourceView {
+                    id: Freeze::new(id),
+                    source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
+                })
         }
-    }
-}
-
-impl IntoIterator for SourceFiles {
-    type Item = ReadCodeSource;
-    type IntoIter = IntoValues<FileId, ReadCodeSource>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.contents.into_values()
     }
 }
 
 impl<'a> Files<'a> for SourceFiles {
     type FileId = FileId;
-    type Name = CodePath;
+    type Name = FileName;
     type Source = &'a str;
 
     fn name(&'a self, id: Self::FileId) -> Result<Self::Name, Error> {
@@ -88,23 +113,24 @@ impl<'a> Files<'a> for SourceFiles {
     }
 }
 
-#[cfg(feature = "parallel")]
-mod parallel {
-    use crate::read_code_source::ReadCodeSource;
-    use crate::source_files::{FileId, SourceFiles};
-    use rayon::collections::hash_map::IntoIter as HashMapIntoIter;
-    use rayon::iter::Map;
-    use rayon::prelude::*;
+impl<'a> Files<'a> for SourceView {
+    type FileId = FileId;
+    type Name = FileName;
+    type Source = &'a str;
 
-    impl IntoParallelIterator for SourceFiles {
-        type Iter = Map<
-            HashMapIntoIter<FileId, ReadCodeSource>,
-            fn((FileId, ReadCodeSource)) -> ReadCodeSource,
-        >;
-        type Item = ReadCodeSource;
+    fn name(&'a self, _: Self::FileId) -> Result<Self::Name, Error> {
+        self.source.get().name(())
+    }
 
-        fn into_par_iter(self) -> Self::Iter {
-            self.contents.into_par_iter().map(|(_, it)| it)
-        }
+    fn source(&'a self, _: Self::FileId) -> Result<Self::Source, Error> {
+        self.source.get().source(())
+    }
+
+    fn line_index(&'a self, _: Self::FileId, byte_index: usize) -> Result<usize, Error> {
+        self.source.get().line_index((), byte_index)
+    }
+
+    fn line_range(&'a self, _: Self::FileId, line_index: usize) -> Result<Range<usize>, Error> {
+        self.source.get().line_range((), line_index)
     }
 }

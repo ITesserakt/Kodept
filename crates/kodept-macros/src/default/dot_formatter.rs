@@ -1,11 +1,10 @@
-use crate::context::{Context, SyntaxProvider};
-use crate::error::report::ReportMessage;
+use crate::context::Context;
+use crate::error::report::{ReportMessage, Severity};
+use crate::execution::Execution;
+use crate::execution::Execution::{Completed, Skipped};
 use crate::visit_guard::VisitGuard;
 use crate::Macro;
-use codespan_reporting::diagnostic::Severity;
 use kodept_ast::graph::ChangeSet;
-use kodept_ast::utils::Execution;
-use kodept_ast::utils::Execution::{Completed, Skipped};
 use kodept_ast::FileDecl;
 use std::fmt::Write;
 
@@ -22,20 +21,21 @@ impl From<Error> for ReportMessage {
     }
 }
 
-impl<C: SyntaxProvider, W: Write> Macro<C> for ASTDotFormatter<W> {
+impl<W: Write> Macro for ASTDotFormatter<W> {
     type Error = Error;
     type Node = FileDecl;
+    type Ctx<'a> = Context<'a>;
 
-    fn apply(
+    fn apply<'a>(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut impl Context<C>,
+        ctx: &mut Self::Ctx<'a>,
     ) -> Execution<Self::Error, ChangeSet> {
         if guard.allow_last().is_none() {
             return Skipped;
         }
         
-        write!(&mut self.output, "{}", ctx.export_dot(&[])).map_err(Error)?;
+        write!(&mut self.output, "{}", ctx.ast.export_dot(&[])).map_err(Error)?;
         Completed(ChangeSet::new())
     }
 }
