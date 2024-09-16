@@ -26,10 +26,10 @@ impl<W: Write> Macro for ASTDotFormatter<W> {
     type Node = FileDecl;
     type Ctx<'a> = Context<'a>;
 
-    fn apply<'a>(
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut Self::Ctx<'a>,
+        ctx: &mut Self::Ctx<'_>,
     ) -> Execution<Self::Error, ChangeSet> {
         if guard.allow_last().is_none() {
             return Skipped;

@@ -69,10 +69,10 @@ impl Macro for BinaryOperatorExpander {
     type Node = BinExpr;
     type Ctx<'a> = Context<'a>;
 
-    fn apply<'a>(
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut Self::Ctx<'a>,
+        ctx: &mut Self::Ctx<'_>,
     ) -> Execution<Self::Error, ChangeSet> {
         let id = guard.allow_only(VisitSide::Entering)?;
         let node = self.resolve(id, ctx);
@@ -116,10 +116,10 @@ impl Macro for UnaryOperatorExpander {
     type Node = UnExpr;
     type Ctx<'a> = Context<'a>;
 
-    fn apply<'a>(
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut Self::Ctx<'a>,
+        ctx: &mut Self::Ctx<'_>,
     ) -> Execution<Self::Error, ChangeSet> {
         let id = guard.allow_only(VisitSide::Entering)?;
         let node = self.resolve(id, ctx);
@@ -138,10 +138,10 @@ impl Macro for AccessExpander {
     type Node = Acc;
     type Ctx<'a> = Context<'a>;
 
-    fn apply<'a>(
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut Self::Ctx<'a>,
+        ctx: &mut Self::Ctx<'_>,
     ) -> Execution<Self::Error, ChangeSet> {
         let id = guard.allow_only(VisitSide::Entering)?;
         let node = self.resolve(id, ctx);

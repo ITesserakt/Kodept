@@ -22,7 +22,7 @@ trait RunMacros: HList {
     type Error: Into<ReportMessage>;
     type Ctx<'a>;
 
-    fn apply<'a>(&mut self, pack: Pack<Self::Ctx<'a>>) -> Execution<Self::Error, ChangeSet>;
+    fn apply(&mut self, pack: Pack<Self::Ctx<'_>>) -> Execution<Self::Error, ChangeSet>;
 }
 
 impl RunMacros for HNil {
@@ -30,7 +30,7 @@ impl RunMacros for HNil {
     type Ctx<'a> = Context<'a>;
 
     #[inline]
-    fn apply<'a>(&mut self, _: Pack<Self::Ctx<'a>>) -> Execution<Self::Error, ChangeSet> {
+    fn apply(&mut self, _: Pack<Self::Ctx<'_>>) -> Execution<Self::Error, ChangeSet> {
         Skipped
     }
 }
@@ -45,7 +45,7 @@ where
     type Ctx<'a> = Context<'a>;
 
     #[inline]
-    fn apply<'a>(&mut self, pack: Pack<Self::Ctx<'a>>) -> Execution<Self::Error, ChangeSet> {
+    fn apply(&mut self, pack: Pack<Self::Ctx<'_>>) -> Execution<Self::Error, ChangeSet> {
         let head = if N::VARIANTS.contains(&pack.ctx.describe(pack.node_id)) {
             let guard = VisitGuard::new(pack.node_id.coerce(), pack.side);
             self.head.apply(guard, pack.ctx)
