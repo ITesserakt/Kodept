@@ -31,10 +31,10 @@ pub trait Macro {
 
     #[allow(unused_variables)]
     #[inline(always)]
-    fn apply<'a>(
+    fn apply(
         &mut self,
         guard: VisitGuard<Self::Node>,
-        ctx: &mut Self::Ctx<'a>,
+        ctx: &mut Self::Ctx<'_>,
     ) -> Execution<Self::Error, ChangeSet> {
         Skipped
     }
@@ -45,14 +45,14 @@ pub impl<M> M
 where
     for<'a> M: Macro<Ctx<'a> = Context<'a>>,
 {
-    fn resolve<'a, 'b>(&self, id: NodeId<M::Node>, ctx: &'b M::Ctx<'a>) -> &'b M::Node
+    fn resolve<'b>(&self, id: NodeId<M::Node>, ctx: &'b M::Ctx<'_>) -> &'b M::Node
     where
         AnyNode: ConvertibleToRef<M::Node>,
     {
         ctx.ast.get(id).unwrap()
     }
 
-    fn resolve_mut<'a, 'b>(&self, id: NodeId<M::Node>, ctx: &'b mut M::Ctx<'a>) -> &'b mut M::Node
+    fn resolve_mut<'b>(&self, id: NodeId<M::Node>, ctx: &'b mut M::Ctx<'_>) -> &'b mut M::Node
     where
         AnyNode: ConvertibleToMut<M::Node>,
     {

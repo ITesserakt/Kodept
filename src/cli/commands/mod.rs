@@ -92,16 +92,16 @@ fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str
 }
 
 fn build_rlt(source: &SourceView) -> Result<RLT, Vec<Diagnostic<FileId>>> {
-    let tokens = tokenize(&*source).map_err(|es| {
+    let tokens = tokenize(source).map_err(|es| {
         es.into_iter()
-            .map(|it| to_diagnostic(*&*source.id, it))
+            .map(|it| to_diagnostic(*source.id, it))
             .collect::<Vec<_>>()
     })?;
     debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);
     let result = parse_from_top(token_stream, PegParser::<false>::new()).map_err(|es| {
         es.into_iter()
-            .map(|it| to_diagnostic(*&*source.id, it))
+            .map(|it| to_diagnostic(*source.id, it))
             .collect::<Vec<_>>()
     })?;
     debug!("Produced RLT with modules count {}", result.0 .0.len());
