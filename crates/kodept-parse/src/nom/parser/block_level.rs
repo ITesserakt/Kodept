@@ -1,8 +1,8 @@
-use nom::branch::alt;
-use nom::Parser;
-use nom::sequence::tuple;
-use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
+use nom::branch::alt;
+use nom::sequence::tuple;
+use nom::Parser;
+use nom_supreme::ParserExt;
 
 use crate::lexer::{
     ComparisonOperator::Equals,
@@ -12,12 +12,12 @@ use crate::lexer::{
     Symbol::*,
     Token,
 };
-use crate::nom::parser::utils::{match_token, newline_separated};
-use crate::nom::parser::{function, operator, ParseResult, r#type};
 use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::utils::{match_token, newline_separated};
+use crate::nom::parser::{function, operator, r#type, ParseResult};
 use crate::token_stream::TokenStream;
 
-pub fn block(input: TokenStream) -> ParseResult<rlt::ExpressionBlock> {
+fn block(input: TokenStream) -> ParseResult<rlt::ExpressionBlock> {
     tuple((
         match_token(LBrace),
         newline_separated(grammar),
@@ -32,7 +32,7 @@ pub fn block(input: TokenStream) -> ParseResult<rlt::ExpressionBlock> {
     .parse(input)
 }
 
-pub fn simple(input: TokenStream) -> ParseResult<rlt::Body> {
+fn simple(input: TokenStream) -> ParseResult<rlt::Body> {
     tuple((match_token(Flow), grammar.cut()))
         .context(function!())
         .map(|it| rlt::Body::Simplified {
@@ -42,7 +42,7 @@ pub fn simple(input: TokenStream) -> ParseResult<rlt::Body> {
         .parse(input)
 }
 
-pub fn body(input: TokenStream) -> ParseResult<rlt::Body> {
+pub(super) fn body(input: TokenStream) -> ParseResult<rlt::Body> {
     alt((block.map(rlt::Body::Block), simple))
         .context(function!())
         .parse(input)
@@ -95,7 +95,7 @@ fn initialized_variable(input: TokenStream) -> ParseResult<rlt::InitializedVaria
     .parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::BlockLevelNode> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::BlockLevelNode> {
     alt((
         block.map(rlt::BlockLevelNode::Block),
         initialized_variable.map(rlt::BlockLevelNode::InitVar),

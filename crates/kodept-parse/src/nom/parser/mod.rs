@@ -8,7 +8,7 @@ use crate::common::RLTProducer;
 use crate::nom::TokenVerificationError;
 use crate::token_stream::TokenStream;
 
-pub type ParseError<'t> =
+pub(in crate::nom) type ParseError<'t> =
     GenericErrorTree<TokenStream<'t>, &'static str, &'static str, TokenVerificationError>;
 type ParseResult<'t, O> = IResult<TokenStream<'t>, O, ParseError<'t>>;
 

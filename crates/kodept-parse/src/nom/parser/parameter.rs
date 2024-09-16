@@ -1,6 +1,6 @@
 use nom::branch::alt;
-use nom::Parser;
 use nom::sequence::separated_pair;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
@@ -10,11 +10,11 @@ use crate::lexer::{
     Symbol::{Colon, TypeGap},
     Token,
 };
-use crate::nom::parser::{ParseResult, r#type};
 use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::{r#type, ParseResult};
 use crate::token_stream::TokenStream;
 
-pub fn typed_parameter(input: TokenStream) -> ParseResult<rlt::TypedParameter> {
+pub(super) fn typed_parameter(input: TokenStream) -> ParseResult<rlt::TypedParameter> {
     separated_pair(
         match_token!(Token::Identifier(Identifier(_))),
         match_token!(Token::Symbol(Colon)),
@@ -28,7 +28,7 @@ pub fn typed_parameter(input: TokenStream) -> ParseResult<rlt::TypedParameter> {
     .parse(input)
 }
 
-pub fn untyped_parameter(input: TokenStream) -> ParseResult<rlt::UntypedParameter> {
+fn untyped_parameter(input: TokenStream) -> ParseResult<rlt::UntypedParameter> {
     let (rest, id) = match_token!(Token::Identifier(Identifier(_)))
         .context(function!())
         .parse(input)?;
@@ -40,7 +40,7 @@ pub fn untyped_parameter(input: TokenStream) -> ParseResult<rlt::UntypedParamete
     Ok((rest, rlt::UntypedParameter { id: id.span.into() }))
 }
 
-pub fn parameter(input: TokenStream) -> ParseResult<rlt::Parameter> {
+pub(super) fn parameter(input: TokenStream) -> ParseResult<rlt::Parameter> {
     alt((
         typed_parameter.map(rlt::Parameter::Typed),
         untyped_parameter.map(rlt::Parameter::Untyped),

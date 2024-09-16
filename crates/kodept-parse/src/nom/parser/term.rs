@@ -2,18 +2,18 @@ use std::collections::VecDeque;
 
 use nom::branch::alt;
 use nom::multi::{many0, many1};
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::{Context, ContextualReference};
 
-use crate::lexer::{Identifier::*, Token};
 use crate::lexer::Symbol::DoubleColon;
+use crate::lexer::{Identifier::*, Token};
 use crate::nom::parser::macros::{function, match_token};
-use crate::nom::parser::ParseResult;
 use crate::nom::parser::utils::match_token;
+use crate::nom::parser::ParseResult;
 use crate::token_stream::TokenStream;
 
 /// |      | Global   | Local     |
@@ -121,11 +121,11 @@ fn contextual(input: TokenStream) -> ParseResult<ContextualReference> {
         .parse(input)
 }
 
-pub fn reference(input: TokenStream) -> ParseResult<rlt::Reference> {
+fn reference(input: TokenStream) -> ParseResult<rlt::Reference> {
     variable_ref.or(type_ref).context(function!()).parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::Term> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Term> {
     alt((
         contextual.map(rlt::Term::Contextual),
         reference.map(rlt::Term::Reference),

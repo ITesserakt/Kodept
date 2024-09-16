@@ -17,10 +17,10 @@ pub struct Config {
 
 pub fn run_common_steps<'r>(
     mut ctx: Context<'r>,
-    config: &Config,
+    _: &Config,
 ) -> Result<Context<'r>, Report<FileId>> {
     info!("Step 1: Simplify AST");
-    let (a, b, c) = Pipeline
+    let (_, _, _) = Pipeline
         .define_step((
             AccessExpander::new(),
             BinaryOperatorExpander::new(),
@@ -32,7 +32,7 @@ pub fn run_common_steps<'r>(
     let (scopes,) = Pipeline
         .define_step((ScopeAnalyzer::new(),))
         .apply_with_context(&mut ctx)?;
-    let scopes = scopes.into_inner();
+    let _ = scopes.into_inner();
     //
     // info!("Step 3: Infer and check types");
     // Pipeline

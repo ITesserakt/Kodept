@@ -1,17 +1,17 @@
 use nom::multi::{many0, many1};
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
+use crate::nom::parser::macros::{function, match_any_token, match_token};
+use crate::nom::parser::utils::{match_token, newline_separated};
+use crate::nom::parser::{top_level, ParseResult};
 use crate::{
     lexer::{Identifier::*, Keyword::*, Operator::*, Symbol::*, Token},
     token_stream::TokenStream,
 };
-use crate::nom::parser::{ParseResult, top_level};
-use crate::nom::parser::macros::{function, match_any_token, match_token};
-use crate::nom::parser::utils::{match_token, newline_separated};
 
 fn module_statement(input: TokenStream) -> ParseResult<rlt::Module> {
     tuple((
@@ -49,7 +49,7 @@ fn global_module_statement(input: TokenStream) -> ParseResult<rlt::Module> {
     .parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::File> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::File> {
     many1(module_statement)
         .map(|m| rlt::File::new(m.into_boxed_slice()))
         .or(global_module_statement.map(|m| rlt::File::new(Box::new([m]))))

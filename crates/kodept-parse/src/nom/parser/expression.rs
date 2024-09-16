@@ -1,16 +1,16 @@
 use nom::branch::alt;
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
 use crate::lexer::Keyword::Lambda;
 use crate::lexer::Operator::Flow;
-use crate::nom::parser::parameter::parameter;
-use crate::nom::parser::{code_flow, literal, operator, ParseResult, term};
 use crate::nom::parser::macros::function;
+use crate::nom::parser::parameter::parameter;
 use crate::nom::parser::utils::{comma_separated0, match_token};
+use crate::nom::parser::{code_flow, literal, operator, term, ParseResult};
 use crate::token_stream::TokenStream;
 
 fn lambda(input: TokenStream) -> ParseResult<rlt::Expression> {
@@ -30,7 +30,7 @@ fn lambda(input: TokenStream) -> ParseResult<rlt::Expression> {
     .parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::Expression> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Expression> {
     alt((
         lambda,
         term::grammar.map(rlt::Expression::Term),

@@ -1,15 +1,14 @@
-use nom::branch::alt;
 use nom::multi::many0;
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
 use crate::lexer::Keyword::{Elif, Else, If};
-use crate::nom::parser::{block_level, operator, ParseResult};
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::match_token;
+use crate::nom::parser::{block_level, operator, ParseResult};
 use crate::token_stream::TokenStream;
 
 fn else_expr(input: TokenStream) -> ParseResult<rlt::ElseExpr> {
@@ -37,7 +36,7 @@ fn elif_expr(input: TokenStream) -> ParseResult<rlt::ElifExpr> {
     .parse(input)
 }
 
-pub fn if_expr(input: TokenStream) -> ParseResult<rlt::IfExpr> {
+pub(super) fn if_expr(input: TokenStream) -> ParseResult<rlt::IfExpr> {
     tuple((
         match_token(If),
         operator::grammar.cut(),
@@ -54,12 +53,4 @@ pub fn if_expr(input: TokenStream) -> ParseResult<rlt::IfExpr> {
         el: it.4,
     })
     .parse(input)
-}
-
-#[allow(unused)]
-// TODO
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::CodeFlow> {
-    alt((if_expr.map(rlt::CodeFlow::If),))
-        .context(function!())
-        .parse(input)
 }

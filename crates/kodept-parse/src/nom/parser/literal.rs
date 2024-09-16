@@ -5,9 +5,9 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 
 use crate::lexer::{Literal::*, Token};
-use crate::nom::parser::{operator, ParseResult};
 use crate::nom::parser::macros::{function, match_token};
 use crate::nom::parser::utils::{comma_separated0, paren_enclosed};
+use crate::nom::parser::{operator, ParseResult};
 use crate::token_stream::TokenStream;
 
 fn tuple_literal(input: TokenStream) -> ParseResult<rlt::Literal> {
@@ -17,7 +17,7 @@ fn tuple_literal(input: TokenStream) -> ParseResult<rlt::Literal> {
         .parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::Literal> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Literal> {
     alt((
         match_token!(Token::Literal(Binary(_))).map(|it| rlt::Literal::Binary(it.span)),
         match_token!(Token::Literal(Octal(_))).map(|it| rlt::Literal::Octal(it.span)),

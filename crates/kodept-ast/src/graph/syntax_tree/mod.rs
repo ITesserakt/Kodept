@@ -18,7 +18,7 @@ use std::fmt::{Display, Formatter};
 
 pub mod dfs;
 pub mod stage;
-pub mod subtree;
+pub(crate) mod subtree;
 mod utils;
 
 type Graph<T = NodeCell, E = ChildTag> = slotgraph::dag::Dag<T, E>;

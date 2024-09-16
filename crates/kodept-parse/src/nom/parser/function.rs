@@ -1,15 +1,14 @@
-use nom::branch::alt;
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 
 use crate::lexer::{Identifier::*, Keyword::*, Symbol::*, Token};
-use crate::nom::parser::{block_level, ParseResult, r#type};
 use crate::nom::parser::macros::{function, match_token};
 use crate::nom::parser::parameter::{parameter, typed_parameter};
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
+use crate::nom::parser::{block_level, r#type, ParseResult};
 use crate::token_stream::TokenStream;
 
 #[allow(unused)]
@@ -32,7 +31,7 @@ fn abstract_function(input: TokenStream) -> ParseResult<rlt::AbstractFunction> {
     .parse(input)
 }
 
-pub fn bodied(input: TokenStream) -> ParseResult<rlt::BodiedFunction> {
+pub(super) fn bodied(input: TokenStream) -> ParseResult<rlt::BodiedFunction> {
     tuple((
         match_token(Fun),
         match_token!(Token::Identifier(Identifier(_))),
@@ -48,16 +47,5 @@ pub fn bodied(input: TokenStream) -> ParseResult<rlt::BodiedFunction> {
         return_type: it.3.map(|it| (it.0.span.into(), it.1)),
         body: Box::new(it.4),
     })
-    .parse(input)
-}
-
-#[allow(unused)]
-// TODO
-pub fn grammar(input: TokenStream) -> ParseResult<rlt::Function> {
-    alt((
-        abstract_function.map(rlt::Function::Abstract),
-        bodied.map(rlt::Function::Bodied),
-    ))
-    .context(function!())
     .parse(input)
 }

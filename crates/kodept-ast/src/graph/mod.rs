@@ -4,7 +4,7 @@ pub use self::children::tags;
 pub use self::node_id::{GenericNodeId, GenericNodeKey, NodeId};
 pub use self::nodes::{PermTkn, RefNode};
 pub use self::syntax_tree::{
-    dfs, stage, subtree::SubSyntaxTree, SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView,
+    dfs, stage, subtree::SubSyntaxTree, SyntaxTree, SyntaxTreeBuilder, SyntaxTreeMutView, SyntaxTreeView,
 };
 pub use self::utils::TypedNodeCell;
 

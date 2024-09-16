@@ -1,17 +1,17 @@
 use nom::branch::alt;
 use nom::combinator::cut;
-use nom::Parser;
 use nom::sequence::tuple;
+use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::TopLevelNode;
 
 use crate::lexer::{Keyword::*, Symbol::*};
-use crate::nom::parser::{function, ParseResult, r#type};
 use crate::nom::parser::macros::function;
 use crate::nom::parser::parameter::typed_parameter;
 use crate::nom::parser::utils::{brace_enclosed, comma_separated0, comma_separated1, match_token, newline_separated, paren_enclosed};
+use crate::nom::parser::{function, r#type, ParseResult};
 use crate::token_stream::TokenStream;
 
 fn enum_statement(input: TokenStream) -> ParseResult<rlt::Enum> {
@@ -50,7 +50,7 @@ fn struct_statement(input: TokenStream) -> ParseResult<rlt::Struct> {
     .parse(input)
 }
 
-pub fn grammar(input: TokenStream) -> ParseResult<TopLevelNode> {
+pub(super) fn grammar(input: TokenStream) -> ParseResult<TopLevelNode> {
     alt((
         enum_statement.map(TopLevelNode::Enum),
         struct_statement.map(TopLevelNode::Struct),

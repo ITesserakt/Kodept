@@ -18,7 +18,7 @@ use nom_supreme::error::BaseErrorKind;
 use nom_supreme::ParserExt;
 
 #[inline]
-pub fn any_not_ignored_token(input: TokenStream) -> ParseResult<TokenMatch> {
+pub(super) fn any_not_ignored_token(input: TokenStream) -> ParseResult<TokenMatch> {
     take_while(|it: TokenMatch| matches!(it.token, Token::Ignore(_)))
         .precedes(take(1usize))
         .map(|it: TokenStream| {
@@ -29,7 +29,7 @@ pub fn any_not_ignored_token(input: TokenStream) -> ParseResult<TokenMatch> {
 }
 
 #[inline]
-pub fn any_token(input: TokenStream) -> ParseResult<TokenMatch> {
+pub(super) fn any_token(input: TokenStream) -> ParseResult<TokenMatch> {
     take(1usize)
         .map(|it: TokenStream| {
             it.into_token_match()
@@ -39,7 +39,7 @@ pub fn any_token(input: TokenStream) -> ParseResult<TokenMatch> {
 }
 
 #[inline]
-pub fn match_token<'t, T>(example: T) -> impl FnMut(TokenStream<'t>) -> ParseResult<'t, TokenMatch<'t>>
+pub(super) fn match_token<'t, T>(example: T) -> impl FnMut(TokenStream<'t>) -> ParseResult<'t, TokenMatch<'t>>
 where
     T: Into<Token<'t>> + Clone + ToRepresentation,
 {
@@ -63,7 +63,7 @@ where
 
 #[inline]
 #[allow(unused)]
-pub fn inspect_input<I: Debug, O, E, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E>
+pub(super) fn inspect_input<I: Debug, O, E, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E>
 where
     P: Parser<I, O, E>,
 {
@@ -72,7 +72,7 @@ where
 
 #[inline]
 #[allow(unused)]
-pub fn inspect<I: Debug, O: Debug, E: Debug, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E>
+pub(super) fn inspect<I: Debug, O: Debug, E: Debug, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E>
 where
     P: Parser<I, O, E>,
 {
@@ -84,7 +84,7 @@ where
 }
 
 #[inline]
-pub fn paren_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
+pub(super) fn paren_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
 ) -> impl Parser<TokenStream<'t>, VerboseEnclosed<T>, ParseError<'t>> {
     use crate::lexer::Symbol::*;
@@ -98,7 +98,7 @@ pub fn paren_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
 }
 
 #[inline]
-pub fn brace_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
+pub(super) fn brace_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
 ) -> impl Parser<TokenStream<'t>, VerboseEnclosed<T>, ParseError<'t>> {
     use crate::lexer::Symbol::*;
@@ -113,7 +113,7 @@ pub fn brace_enclosed<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
 
 #[allow(unused_parens)]
 #[inline]
-pub fn newline_separated<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
+pub(super) fn newline_separated<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
 ) -> impl Parser<TokenStream<'t>, Vec<T>, ParseError<'t>> {
     use crate::lexer::{Ignore::*, Symbol::*};
@@ -125,7 +125,7 @@ pub fn newline_separated<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
 }
 
 #[inline]
-pub fn comma_separated0<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
+pub(super) fn comma_separated0<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
 ) -> impl Parser<TokenStream<'t>, Vec<T>, ParseError<'t>> {
     use crate::lexer::Symbol::*;
@@ -134,7 +134,7 @@ pub fn comma_separated0<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
 }
 
 #[inline]
-pub fn comma_separated1<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
+pub(super) fn comma_separated1<'t, T, P: Parser<TokenStream<'t>, T, ParseError<'t>>>(
     items_parser: P,
 ) -> impl Parser<TokenStream<'t>, Vec<T>, ParseError<'t>> {
     use crate::lexer::Symbol::*;

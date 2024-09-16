@@ -17,7 +17,7 @@ pub struct TypedNodeCell<'a, T> {
     _phantom: PhantomData<T>,
 }
 
-pub type OptVec<T> = SmallVec<[T; 1]>;
+pub(crate) type OptVec<T> = SmallVec<[T; 1]>;
 
 impl<'a, T> TypedNodeCell<'a, T> {
     pub fn new(node: &'a NodeCell) -> Self {
