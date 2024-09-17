@@ -17,8 +17,8 @@ use std::sync::LazyLock;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
     LazyLock::new(|| match std::thread::available_parallelism() {
-        Ok(x) => x.get() * 5,
-        Err(_) => 8 * 5,
+        Ok(x) => x.get() * 4,
+        Err(_) => 8 * 4,
     });
 
 #[derive(Debug)]
@@ -129,7 +129,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         context: &impl CodeHolder,
     ) -> Self
     where
-        T: HasChildrenMarker<U, TAG>,
+        T: HasChildrenMarker<U, TAG> + Send,
         U: Send,
     {
         if let Some(from) = from {
@@ -139,13 +139,13 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     }
 
     pub fn with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
-        self,
+        mut self,
         iter: impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
         context: &impl CodeHolder,
     ) -> Self
     where
         U: Send,
-        T: HasChildrenMarker<U, TAG>,
+        T: HasChildrenMarker<U, TAG> + Send,
     {
         if !cfg!(feature = "parallel") || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             return iter
@@ -156,7 +156,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
                     acc
                 });
         }
-        
+
         #[cfg(not(feature = "parallel"))]
         unreachable!();
 
@@ -164,15 +164,22 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         {
             use rayon::prelude::*;
 
+            let (sx, rx) = std::sync::mpsc::channel();
             let iter = iter.into_par_iter();
-            iter.map(|it| it.convert(context))
-                .collect_vec_list()
-                .into_iter()
-                .flatten()
-                .fold(self, |mut acc, next| {
-                    acc.attach_subtree(next);
-                    acc
-                })
+
+            let (_, result) = rayon::join(
+                move || {
+                    iter.map(|it| it.convert(context))
+                        .for_each_with(sx, |sender, it| sender.send(it).unwrap());
+                },
+                move || {
+                    for item in rx {
+                        self.attach_subtree(item)
+                    }
+                    self
+                },
+            );
+            result
         }
     }
 
