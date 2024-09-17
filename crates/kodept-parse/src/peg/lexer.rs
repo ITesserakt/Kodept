@@ -132,8 +132,8 @@ peg::parser! {grammar grammar() for str {
         i:keyword()    { Token::Keyword(i) }    /
         i:symbol()     { Token::Symbol(i) }     /
         i:identifier() { Token::Identifier(i) } /
-        i:literal()    { Token::Literal(i) }    /
-        i:operator()   { Token::Operator(i) }
+        i:operator()   { Token::Operator(i) }   /
+        i:literal()    { Token::Literal(i) }
 
     rule token_match() -> TokenMatch<'input> =
         start:position!() t:token_() end:position!() {

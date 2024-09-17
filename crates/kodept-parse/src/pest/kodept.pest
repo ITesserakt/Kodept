@@ -102,6 +102,6 @@ operator = ${
 
 unknown = ${ ANY }
 
-token = { ignore | keyword | symbol | identifier | literal | operator | unknown }
+token = { ignore | keyword | symbol | identifier | operator | literal | unknown }
 
 tokens = { SOI ~ token* ~ EOI }
