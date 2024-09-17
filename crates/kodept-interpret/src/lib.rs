@@ -2,13 +2,13 @@ use crate::conc_cache::ConcSecSlotMap;
 use crate::operator_desugaring::{AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander};
 use kodept_ast::graph::GenericNodeKey;
 
-// mod convert_model;
-// mod node_family;
+mod convert_model;
+mod node_family;
 pub mod operator_desugaring;
 mod scope;
 pub mod semantic_analyzer;
 mod symbol;
-// pub mod type_checker;
+pub mod type_checker;
 mod conc_cache;
 
 #[derive(Copy, Clone)]

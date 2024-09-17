@@ -9,6 +9,7 @@ use crate::execution::Execution::Skipped;
 use crate::visit_guard::VisitGuard;
 use kodept_ast::graph::{AnyNode, ChangeSet, NodeId};
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
+use crate::error::report::IntoSpannedReportMessage;
 
 pub mod context;
 pub mod default;
@@ -24,7 +25,7 @@ pub fn warn_about_broken_rlt<T>() {
 }
 
 pub trait Macro {
-    type Error;
+    type Error: IntoSpannedReportMessage;
     /// Node to transform
     type Node: TryFrom<AnyNode>;
     type Ctx<'a>;

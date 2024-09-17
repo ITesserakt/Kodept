@@ -1,25 +1,22 @@
 use crate::context::Context;
-use crate::error::report::{ReportMessage, Severity};
 use crate::execution::Execution;
 use crate::execution::Execution::{Completed, Skipped};
 use crate::visit_guard::VisitGuard;
 use crate::Macro;
 use kodept_ast::graph::ChangeSet;
 use kodept_ast::FileDecl;
-use std::fmt::Write;
+use std::io::Write;
+use derive_more::Constructor;
+use thiserror::Error;
 
+#[derive(Constructor)]
 pub struct ASTDotFormatter<W> {
     output: W,
 }
 
-#[derive(Debug)]
-pub struct Error(std::fmt::Error);
-
-impl From<Error> for ReportMessage {
-    fn from(value: Error) -> Self {
-        Self::new(Severity::Error, "IO001", value.0.to_string())
-    }
-}
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub struct Error(std::io::Error);
 
 impl<W: Write> Macro for ASTDotFormatter<W> {
     type Error = Error;

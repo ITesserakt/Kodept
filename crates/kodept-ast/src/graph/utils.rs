@@ -32,16 +32,17 @@ pub trait FromOptVec {
     type Ref<'a>
     where
         Self::T: 'a;
-    type Mut<'a>;
+    type Mut<'a>
+    where Self::T: 'a;
     type T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a>;
-    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a>;
+    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a>;
 }
 
 impl<T: Debug> FromOptVec for Option<T> {
     type Ref<'a> = Option<&'a T> where T: 'a;
-    type Mut<'a> = Option<TypedNodeCell<'a, T>>;
+    type Mut<'a> = Option<&'a mut T> where T: 'a;
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
@@ -56,11 +57,11 @@ impl<T: Debug> FromOptVec for Option<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a> {
-        match value.split_first() {
-            None => None,
-            Some((x, [])) => Some(TypedNodeCell::new(x)),
-            Some((_, x)) => panic!(
+    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
+        match value.into_inner() {
+            Ok([x]) => Some(x),
+            Err(x) if x.is_empty() => None,
+            Err(x) => panic!(
                 "Container must has no more then one child <{}>, but has {:?}",
                 type_name::<T>(),
                 x
@@ -71,15 +72,15 @@ impl<T: Debug> FromOptVec for Option<T> {
 
 impl<T> FromOptVec for Vec<T> {
     type Ref<'a> = Vec<&'a T> where Self::T: 'a;
-    type Mut<'a> = Vec<TypedNodeCell<'a, T>>;
+    type Mut<'a> = Vec<&'a mut T> where Self::T: 'a; 
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
         value.to_vec()
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a> {
-        value.into_iter().map(|x| TypedNodeCell::new(x)).collect()
+    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
+        value.into_vec()
     }
 }
 

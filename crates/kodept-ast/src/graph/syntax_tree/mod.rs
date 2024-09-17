@@ -26,7 +26,7 @@ type Graph<T = NodeCell, E = ChildTag> = slotgraph::dag::Dag<T, E>;
 #[derive(Debug)]
 pub struct SyntaxTree<Permission = NoAccess> {
     inner: Graph,
-    permission: Permission,
+    pub(crate) permission: Permission,
 }
 
 pub type SyntaxTreeBuilder = SyntaxTree<FullAccess>;
@@ -51,7 +51,7 @@ impl SyntaxTree<FullAccess> {
             config,
         )
     }
-    
+
     pub fn recursively_build<'a>(
         rlt_root: &'a rlt::RLT,
         context: &impl CodeHolder,

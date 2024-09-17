@@ -5,8 +5,7 @@ use std::fmt::Debug;
 use std::iter::{once, Once};
 use std::ops::{Deref, DerefMut};
 
-use crate::graph::nodes::NodeCell;
-use crate::graph::utils::{FromOptVec, OptVec, TypedNodeCell};
+use crate::graph::utils::{FromOptVec, OptVec};
 
 #[repr(transparent)]
 pub struct Identity<T>(pub T);
@@ -36,7 +35,7 @@ impl<T> DerefMut for Identity<T> {
 
 impl<T: Debug> FromOptVec for Identity<T> {
     type Ref<'a> = &'a T where Self::T: 'a;
-    type Mut<'a> = TypedNodeCell<'a, T>;
+    type Mut<'a> = &'a mut T where Self::T: 'a;
     type T = T;
 
     fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
@@ -50,10 +49,10 @@ impl<T: Debug> FromOptVec for Identity<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a NodeCell>) -> Self::Mut<'a> {
-        match value.as_slice() {
-            [x] => TypedNodeCell::new(x),
-            _ => panic!(
+    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
+        match value.into_inner() {
+            Ok([x]) => x,
+            Err(value) => panic!(
                 "Container must has only one child <{}>, but has {:?}",
                 type_name::<T>(),
                 value

@@ -9,8 +9,9 @@ use crate::dag::detach_iter::DagDetachIter;
 use crate::key::CommonKey;
 use container::SlotMapContainer;
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
+use std::hash::RandomState;
 use std::ops::Index;
 use thiserror::Error;
 
@@ -176,6 +177,20 @@ impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
                 .collect(),
             root_children: self.root_children,
         }
+    }
+
+    pub fn node_weights_mut<const N: usize>(&mut self, ids: [NodeKey; N]) -> Option<[&mut T; N]>
+    {
+        assert!(ids.iter().all(|it| !matches!(it, NodeKey::Root)));
+        assert_eq!(HashSet::<_, RandomState>::from_iter(&ids).len(), ids.len());
+
+        let keys = ids.map(|it| match it {
+            NodeKey::Root => unreachable!(),
+            NodeKey::Child(x) => x
+        });
+        let refs = self.arena.get_disjoint_mut(keys);
+
+        refs.map(|it| it.map(|node| &mut node.value))
     }
 }
 

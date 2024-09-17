@@ -1,15 +1,15 @@
 use crate::cli::commands::build_rlt;
 use crate::cli::traits::Command;
 use clap::Parser;
-use kodept::codespan_settings::CodespanSettings;
 use kodept::source_files::SourceView;
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
-use kodept_macros::context::{Context, FileDescriptor};
-use kodept_macros::error::traits::{Reportable, ResultTEExt, ResultTRExt};
+use kodept_macros::context::Context;
+use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::ErrorReported;
 use std::num::NonZeroU16;
 use tracing::debug;
+use kodept_core::Freeze;
 
 #[derive(Debug, Parser, Clone)]
 pub struct Execute {
@@ -24,36 +24,23 @@ impl Command for Execute {
     fn exec_for_source(
         &self,
         source: SourceView,
-        settings: &mut CodespanSettings,
+        collector: &mut ReportCollector,
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
-        let rlt = build_rlt(&source).or_emit(settings, &source)?;
+        let rlt = build_rlt(&source, collector).ok_or(ErrorReported::new())?;
+
         let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &*source);
         debug!("Produced AST with node count = {}", tree.node_count());
         let mut context = Context {
             ast: tree,
             rlt: accessor,
-            reports: Default::default(),
-            current_file: FileDescriptor {
-                name: source.path(),
-                id: 0,
-            },
+            collector,
+            current_file: Freeze::new(source.describe()),
         };
         let config = Config {
             recursion_depth: self.type_checking_recursion_depth,
         };
 
-        let result = kodept::steps::common::run_common_steps(&mut context, &config);
-        context
-            .reports
-            .into_collected_reports()
-            .emit(settings, &source)
-            .or_emit(settings, &source, *source.id)?;
-        
-        if result.is_none() {
-            Err(ErrorReported::new())
-        } else {
-            Ok(())
-        }
+        kodept::steps::common::run_common_steps(&mut context, &config).ok_or(ErrorReported::new())
     }
 }

@@ -1,6 +1,7 @@
 use crate::hlist::IntoHList;
 use crate::steps::{RunMacros, Step};
 
+#[derive(Debug)]
 pub struct Pipeline;
 
 impl Pipeline {

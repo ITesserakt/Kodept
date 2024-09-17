@@ -6,13 +6,12 @@ use std::fmt::{Debug, Formatter};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 use itertools::Itertools;
-use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree};
+use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree, SyntaxTreeBuilder};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::MonomorphicType;
-use kodept_macros::error::report::{ReportMessage, Severity};
 use thiserror::Error;
-
+use kodept_ast::graph::stage::FullAccess;
 use crate::scope::ScopeError::{Duplicate, NoScope};
 
 #[derive(Display, Debug, Error)]
@@ -87,14 +86,14 @@ impl ScopeTree {
         Ok(())
     }
 
-    fn of_node<N>(&self, node: &N, ast: &SyntaxTree, token: &PermTkn) -> Result<Id, ScopeError>
+    fn of_node<N>(&self, node: &N, ast: &SyntaxTree<FullAccess>) -> Result<Id, ScopeError>
     where
         N: Identifiable + Into<AnyNode>,
     {
         let parents = {
             let mut current = node.get_id().widen();
             let mut result = vec![current];
-            while let Some(parent) = ast.parent_of(current, token) {
+            while let Some(parent) = ast.parent_of(current) {
                 result.push(parent.get_id());
                 current = parent.get_id();
             }
@@ -116,13 +115,12 @@ impl ScopeTree {
     pub fn lookup<N>(
         &self,
         node: &N,
-        ast: &SyntaxTree,
-        token: &PermTkn,
+        ast: &SyntaxTree<FullAccess>
     ) -> Result<ScopeSearch, ScopeError>
     where
         N: Identifiable + Into<AnyNode>,
     {
-        let start = self.of_node(node, ast, token)?;
+        let start = self.of_node(node, ast)?;
         Ok(ScopeSearch {
             tree: self,
             current_pos: start,
@@ -268,14 +266,5 @@ impl Debug for Scope {
             write!(f, " {{{}}}", self.variables.keys().cloned().join(", "))?;
         }
         Ok(())
-    }
-}
-
-impl From<ScopeError> for ReportMessage {
-    fn from(value: ScopeError) -> Self {
-        match value {
-            NoScope => Self::new(Severity::Bug, "SM001", value.to_string()),
-            Duplicate(_) => Self::new(Severity::Error, "SM002", value.to_string()),
-        }
     }
 }

@@ -1,12 +1,7 @@
-use base64::alphabet::CRYPT;
-use base64::engine::{GeneralPurpose, GeneralPurposeConfig};
-use base64::Engine;
 use codespan_reporting::diagnostic::{Diagnostic, Label as ForeignLabel};
 use kodept_core::code_point::CodePoint;
-use kodept_core::file_name::FileName;
 use std::any::TypeId;
 use std::borrow::Cow;
-use std::convert::Infallible;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
@@ -17,7 +12,7 @@ pub enum Severity {
     Note,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Label {
     point: CodePoint,
     primary: bool,
@@ -26,15 +21,18 @@ pub struct Label {
 
 #[derive(Debug)]
 pub struct ReportMessage {
-    pub severity: Severity,
-    pub code: String,
-    pub message: String,
+    severity: Severity,
+    notes: Vec<Cow<'static, str>>,
+    message: String,
 }
 
 pub trait SpannedReportMessage {
     fn labels(&self) -> impl IntoIterator<Item = Label>;
     fn severity(&self) -> Severity;
     fn message(&self) -> Cow<'static, str>;
+    fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>>;
+
+    fn with_node_location(self, location: CodePoint) -> impl SpannedReportMessage;
 }
 
 pub trait IntoSpannedReportMessage {
@@ -44,7 +42,7 @@ pub trait IntoSpannedReportMessage {
 }
 
 #[derive(Debug)]
-pub struct Report<FileId = ()> {
+pub struct Report<FileId = crate::context::FileId> {
     diagnostic: Diagnostic<FileId>,
 }
 
@@ -78,12 +76,17 @@ impl From<Severity> for codespan_reporting::diagnostic::Severity {
 }
 
 impl ReportMessage {
-    pub fn new<S: Into<String>>(severity: Severity, code: S, message: String) -> Self {
+    pub fn new<S: Into<String>>(severity: Severity, _: S, message: String) -> Self {
         Self {
             severity,
-            code: code.into(),
             message,
+            notes: Default::default(),
         }
+    }
+
+    pub fn with_note(mut self, note: Cow<'static, str>) -> Self {
+        self.notes.push(note);
+        self
     }
 }
 
@@ -93,16 +96,24 @@ impl<FileId> Report<FileId> {
         let mut hasher = DefaultHasher::new();
         type_id.hash(&mut hasher);
         let hash = hasher.finish();
-        let bytes = hash.to_le_bytes();
-        GeneralPurpose::new(&CRYPT, GeneralPurposeConfig::new()).encode(bytes)
+        format!("{:X}", hash)
     }
 
+    #[must_use]
     pub fn from_message<T>(file_id: FileId, msg: T) -> Self
     where
         T: IntoSpannedReportMessage,
         FileId: Clone,
     {
-        let msg = msg.into_message();
+        Self::from_raw_message(file_id, msg.into_message())
+    }
+
+    #[must_use]
+    pub fn from_raw_message<T>(file_id: FileId, msg: T) -> Self
+    where
+        T: SpannedReportMessage + 'static,
+        FileId: Clone,
+    {
         let labels = msg
             .labels()
             .into_iter()
@@ -118,7 +129,8 @@ impl<FileId> Report<FileId> {
 
         let diagnostic = Diagnostic::new(msg.severity().into())
             .with_message(msg.message())
-            .with_code(Self::generate_code_from_type::<T::Message>())
+            .with_code(Self::generate_code_from_type::<T>())
+            .with_notes(msg.notes().into_iter().map(|it| it.to_string()).collect())
             .with_labels(labels);
 
         Self { diagnostic }
@@ -134,40 +146,19 @@ impl<FileId> Report<FileId> {
         )
     }
 
-    pub fn into_diagnostic(self) -> Diagnostic<FileId> {
+    #[must_use]
+    pub(crate) fn into_diagnostic(self) -> Diagnostic<FileId> {
         self.diagnostic
     }
 }
 
-impl<FileId: Default> Report<FileId> {
-    pub fn new<R: Into<ReportMessage>>(
-        _file: &FileName,
-        points: Vec<CodePoint>,
-        message: R,
-    ) -> Self {
-        let msg = message.into();
-        let diagnostic = Diagnostic::new(msg.severity.into())
-            .with_code(msg.code)
-            .with_message(msg.message);
-        let diagnostic = if let [p] = points.as_slice() {
-            diagnostic.with_labels(vec![ForeignLabel::primary(FileId::default(), p.as_range())])
-        } else if let [p, s @ ..] = points.as_slice() {
-            let mut secondaries: Vec<_> = s
-                .iter()
-                .map(|it| ForeignLabel::secondary(FileId::default(), it.as_range()))
-                .collect();
-            secondaries.insert(0, ForeignLabel::primary(FileId::default(), p.as_range()));
-            diagnostic.with_labels(secondaries)
-        } else {
-            diagnostic
-        };
-        Self { diagnostic }
-    }
-}
-
-impl From<Infallible> for ReportMessage {
-    fn from(_: Infallible) -> Self {
-        unreachable!()
+impl<E: std::error::Error> From<E> for ReportMessage {
+    fn from(value: E) -> Self {
+        ReportMessage {
+            severity: Severity::Error,
+            message: value.to_string(),
+            notes: Default::default(),
+        }
     }
 }
 
@@ -176,5 +167,29 @@ impl<T: Into<ReportMessage>> IntoSpannedReportMessage for T {
 
     fn into_message(self) -> Self::Message {
         self.into()
+    }
+}
+
+impl SpannedReportMessage for ReportMessage {
+    fn labels(&self) -> impl IntoIterator<Item = Label> {
+        []
+    }
+
+    fn severity(&self) -> Severity {
+        self.severity
+    }
+
+    fn message(&self) -> Cow<'static, str> {
+        Cow::Owned(self.message.clone())
+    }
+
+    fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>> {
+        self.notes.clone()
+    }
+
+    fn with_node_location(self, location: CodePoint) -> impl SpannedReportMessage {
+        crate::error::Diagnostic::new(self.severity)
+            .with_message(self.message)
+            .with_node_location(location)
     }
 }

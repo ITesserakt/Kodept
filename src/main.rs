@@ -27,15 +27,16 @@ fn main() -> Result<(), WideError> {
         .with_max_level(cli_arguments.level())
         .init();
 
-    let settings = cli_arguments.clone().diagnostic_config.into();
+    let mut reports = cli_arguments.clone().diagnostic_config.into();
     let loader: Loader = cli_arguments.clone().loading_config.try_into()?;
-    let sources = SourceFiles::from_sources(loader.into_sources());
+    let sources = Arc::new(SourceFiles::from_sources(loader.into_sources()));
 
     let args = cli_arguments.clone();
     let result =
         cli_arguments
             .subcommands
-            .exec(Arc::new(sources).into_common_iter(), settings, args);
+            .exec(sources.clone().into_common_iter(), &mut reports, args);
+    reports.consume(&*sources);
 
     #[cfg(feature = "profiler")]
     {

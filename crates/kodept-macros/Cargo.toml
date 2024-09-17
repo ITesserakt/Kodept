@@ -17,11 +17,11 @@ workspace = true
 [dependencies]
 anyhow = "1.0.86"
 base64 = "0.22.1"
-codespan = "0.11.1"
 codespan-reporting = "0.11.1"
 
 extend.workspace = true
 derive_more.workspace = true
+thiserror.workspace = true
 tracing.workspace = true
 
 [dependencies.kodept-core]

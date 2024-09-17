@@ -12,11 +12,11 @@ pub struct ModificationAccess<'a>(pub &'a mut PermTkn);
 #[derive(Default, Debug)]
 pub struct NoAccess;
 
-pub(super) trait CanAccess {
+pub trait CanAccess {
     fn tkn(&self) -> &PermTkn;
 }
 
-pub(super) trait CanMutAccess: CanAccess {
+pub trait CanMutAccess: CanAccess {
     fn tkn_mut(&mut self) -> &mut PermTkn;
 }
 

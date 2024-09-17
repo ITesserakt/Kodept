@@ -2,9 +2,8 @@ use crate::context::FileId;
 use crate::error::report::{
     IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage,
 };
-use crate::error::ErrorReported;
-use codespan_reporting::diagnostic::Diagnostic;
-use codespan_reporting::files::{Error, Files};
+use crate::error::{Diagnostic, ErrorReported};
+use codespan_reporting::files::Files;
 use codespan_reporting::term::termcolor::WriteColor;
 use codespan_reporting::term::Config;
 use extend::ext;
@@ -14,8 +13,9 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
+use crate::error::report_collector::ReportCollector;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CodespanSettings<S> {
     pub config: Config,
     pub stream: S,
@@ -25,7 +25,14 @@ pub struct CodespanSettings<S> {
 pub struct SpannedError<E: std::error::Error> {
     point: CodePoint,
     severity: Severity,
+    notes: Vec<Cow<'static, str>>,
     inner: E,
+}
+
+pub trait DrainReports {
+    type Output;
+
+    fn drain(self, file_id: FileId, collector: &mut ReportCollector) -> Self::Output;
 }
 
 pub trait Reportable {
@@ -35,19 +42,7 @@ pub trait Reportable {
         self,
         settings: &mut CodespanSettings<W>,
         source: &'f F,
-    ) -> Result<(), Error>;
-}
-
-impl<FileId> Reportable for Diagnostic<FileId> {
-    type FileId = FileId;
-
-    fn emit<'f, W: WriteColor, F: Files<'f, FileId = Self::FileId>>(
-        self,
-        settings: &mut CodespanSettings<W>,
-        source: &'f F,
-    ) -> Result<(), Error> {
-        codespan_reporting::term::emit(&mut settings.stream, &settings.config, source, &self)
-    }
+    );
 }
 
 impl<FileId> Reportable for Report<FileId> {
@@ -57,8 +52,9 @@ impl<FileId> Reportable for Report<FileId> {
         self,
         settings: &mut CodespanSettings<W>,
         source: &'f F,
-    ) -> Result<(), Error> {
-        self.into_diagnostic().emit(settings, source)
+    ) {
+        codespan_reporting::term::emit(&mut settings.stream, &settings.config, source, &self.into_diagnostic())
+            .expect("Cannot emit diagnostics")
     }
 }
 
@@ -69,26 +65,8 @@ impl<R: Reportable> Reportable for Vec<R> {
         self,
         settings: &mut CodespanSettings<W>,
         source: &'f F,
-    ) -> Result<(), Error> {
-        self.into_iter()
-            .try_for_each(|it| it.emit(settings, source))
-    }
-}
-
-#[ext]
-pub impl<T, R: Reportable> Result<T, R> {
-    fn or_emit<'f, W: WriteColor, F: Files<'f, FileId = R::FileId>>(
-        self,
-        settings: &mut CodespanSettings<W>,
-        source: &'f F,
-    ) -> Result<T, ErrorReported> {
-        match self {
-            Ok(x) => Ok(x),
-            Err(e) => {
-                e.emit(settings, source).expect("Cannot emit diagnostics");
-                Err(ErrorReported::new())
-            }
-        }
+    ) {
+        self.into_iter().for_each(|it| it.emit(settings, source))
     }
 }
 
@@ -113,10 +91,7 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
                     }
                 }
 
-                let report = Report::from_message(file_id, Helper(&e));
-                report
-                    .emit(settings, source)
-                    .expect("Cannot emit diagnostic");
+                Report::from_message(file_id, Helper(&e)).emit(settings, source);
                 Err(ErrorReported::with_cause(e))
             }
         }
@@ -128,6 +103,7 @@ impl<E: std::error::Error> SpannedError<E> {
         Self {
             point: at,
             severity: Severity::Error,
+            notes: Default::default(),
             inner,
         }
     }
@@ -146,6 +122,20 @@ impl<E: std::error::Error> SpannedError<E> {
     pub fn with_severity(self, severity: Severity) -> Self {
         Self { severity, ..self }
     }
+    
+    pub fn with_note(mut self, note: impl Into<Cow<'static, str>>) -> Self {
+        self.notes.push(note.into());
+        self
+    }
+    
+    pub fn map<F: std::error::Error>(self, f: impl FnOnce(E) -> F) -> SpannedError<F> {
+        SpannedError {
+            point: self.point,
+            severity: self.severity,
+            notes: self.notes,
+            inner: f(self.inner),
+        }
+    }
 }
 
 impl<E: std::error::Error> SpannedReportMessage for SpannedError<E> {
@@ -160,6 +150,17 @@ impl<E: std::error::Error> SpannedReportMessage for SpannedError<E> {
     fn message(&self) -> Cow<'static, str> {
         Cow::Owned(self.inner.to_string())
     }
+
+    fn notes(&self) -> impl IntoIterator<Item=Cow<'static, str>> {
+        self.notes.clone()
+    }
+
+    fn with_node_location(self, location: CodePoint) -> impl SpannedReportMessage {
+        Diagnostic::new(self.severity)
+            .with_message(self.inner.to_string())
+            .with_label(Label::primary("here", self.point))
+            .with_node_location(location)
+    }
 }
 
 impl<E: std::error::Error> Display for SpannedError<E> {
@@ -168,30 +169,26 @@ impl<E: std::error::Error> Display for SpannedError<E> {
     }
 }
 
-impl<E: std::error::Error + 'static> std::error::Error for SpannedError<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(&self.inner)
-    }
-}
-
-impl SpannedReportMessage for ReportMessage {
-    fn labels(&self) -> impl IntoIterator<Item = Label> {
-        []
-    }
-
-    fn severity(&self) -> Severity {
-        self.severity
-    }
-
-    fn message(&self) -> Cow<'static, str> {
-        Cow::Owned(self.message.clone())
-    }
-}
-
 impl<E: std::error::Error + 'static> IntoSpannedReportMessage for SpannedError<E> {
     type Message = Self;
 
     fn into_message(self) -> Self::Message {
         self
+    }
+}
+
+impl<T, S: IntoSpannedReportMessage, I: IntoIterator<Item = S>> DrainReports for Result<T, I> {
+    type Output = Option<T>;
+
+    fn drain(self, file_id: FileId, collector: &mut ReportCollector) -> Self::Output {
+        match self {
+            Ok(x) => Some(x),
+            Err(e) => {
+                for item in e {
+                    collector.report(file_id, item);
+                }
+                None
+            }
+        }
     }
 }

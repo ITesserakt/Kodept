@@ -9,10 +9,13 @@ pub struct ReportCollector {
 
 impl ReportCollector {
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        ReportCollector {
+            reports: vec![],
+            has_errors: false,
+        }
     }
-    
+
     pub fn push_report(&mut self, report: Report<FileId>) {
         self.has_errors |= report.is_error();
         self.reports.push(report)
