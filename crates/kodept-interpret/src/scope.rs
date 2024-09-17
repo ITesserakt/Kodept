@@ -3,16 +3,16 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use crate::scope::ScopeError::{Duplicate, NoScope};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 use itertools::Itertools;
-use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree, SyntaxTreeBuilder};
+use kodept_ast::graph::stage::FullAccess;
+use kodept_ast::graph::{AnyNode, GenericNodeId, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::MonomorphicType;
 use thiserror::Error;
-use kodept_ast::graph::stage::FullAccess;
-use crate::scope::ScopeError::{Duplicate, NoScope};
 
 #[derive(Display, Debug, Error)]
 pub enum ScopeError {

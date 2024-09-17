@@ -39,7 +39,7 @@ node_sub_enum! {
 }
 
 impl ModelConvertibleNode {
-    pub fn to_model(
+    pub(crate) fn to_model(
         &self,
         scopes: &ScopeTree,
         ast: &SyntaxTree<FullAccess>,

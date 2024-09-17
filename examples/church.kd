@@ -1,8 +1,8 @@
 module Prelude =>
 // ∀a, b ⇒ a → b → a
-fun const(x) => \y => x
+fun const(x) => [y] => x
 // ∀a, b, c ⇒ (a → b) → (c → a) → c → b
-fun compose(f, g) => \x => f(g(x))
+fun compose(f, g) => [x] => f(g(x))
 // ∀a, b, c ⇒ (a → b → c) → a → b → c
 fun curry(f, a, b) => f((a, b))
 // ∀a ⇒ a → a
@@ -23,4 +23,4 @@ fun plus(m, n, f, x) => m(f, n(f, x))
 fun mult(m, n, f, x) => m(n(f), x)
 // ∀a, b, c, d, e, f, g ⇒
 // (((a → b) → (b → c) → c) → (d → d) → (e → f ) → g) → a → f → g
-fun pred(n, f, x) => n(\g, h => h(g(f)), \u => x, \v => v)
+fun pred(n, f, x) => n([g, h] => h(g(f)), [u] => x, [v] => v)

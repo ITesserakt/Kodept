@@ -4,9 +4,9 @@ use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
-
-use crate::lexer::Keyword::Lambda;
+use crate::common::VerboseEnclosed;
 use crate::lexer::Operator::Flow;
+use crate::lexer::Symbol::{LBrace, RBrace};
 use crate::nom::parser::macros::function;
 use crate::nom::parser::parameter::parameter;
 use crate::nom::parser::utils::{comma_separated0, match_token};
@@ -15,17 +15,17 @@ use crate::token_stream::TokenStream;
 
 fn lambda(input: TokenStream) -> ParseResult<rlt::Expression> {
     tuple((
-        match_token(Lambda),
+        match_token(LBrace),
         comma_separated0(parameter),
+        match_token(RBrace),
         match_token(Flow),
         operator::grammar,
     ))
     .context(function!())
     .map(|it| rlt::Expression::Lambda {
-        keyword: it.0.span.into(),
-        binds: it.1.into_boxed_slice(),
-        flow: it.2.span.into(),
-        expr: Box::new(it.3),
+        binds: VerboseEnclosed::from((it.0, it.1.into_boxed_slice(), it.2)).into(),
+        flow: it.3.span.into(),
+        expr: Box::new(it.4),
     })
     .parse(input)
 }
