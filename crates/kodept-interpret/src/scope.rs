@@ -6,16 +6,16 @@ use std::fmt::{Debug, Formatter};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 use itertools::Itertools;
-
 use kodept_ast::graph::{AnyNode, GenericNodeId, PermTkn, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::MonomorphicType;
 use kodept_macros::error::report::{ReportMessage, Severity};
+use thiserror::Error;
 
 use crate::scope::ScopeError::{Duplicate, NoScope};
 
-#[derive(Display, Debug)]
+#[derive(Display, Debug, Error)]
 pub enum ScopeError {
     #[display("No scope available at this point")]
     NoScope,
@@ -208,7 +208,7 @@ impl ScopeSearch<'_> {
                 .tree
                 .get(&self.current_pos)
                 .expect("Tree corrupted");
-            return scope.data().lookup_var(name);
+            scope.data().lookup_var(name)
         } else {
             self.bubble_up(|scope| scope.lookup_var(name.clone()))
                 .expect("Tree corrupted")
@@ -222,7 +222,7 @@ impl ScopeSearch<'_> {
                 .tree
                 .get(&self.current_pos)
                 .expect("Tree corrupted");
-            return scope.data().variables.get(name.as_ref()).copied();
+            scope.data().variables.get(name.as_ref()).copied()
         } else {
             self.bubble_up(|scope| scope.variables.get(name.as_ref()).copied())
                 .expect("Tree corrupted")
@@ -236,7 +236,7 @@ impl ScopeSearch<'_> {
                 .tree
                 .get(&self.current_pos)
                 .expect("Tree corrupted");
-            return scope.data().lookup_type(name);
+            scope.data().lookup_type(name)
         } else {
             self.bubble_up(|scope| scope.lookup_type(name.clone()))
                 .expect("Tree corrupted")

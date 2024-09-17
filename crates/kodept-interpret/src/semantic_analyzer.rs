@@ -7,6 +7,7 @@ use kodept_ast::{
 };
 use kodept_inference::r#type::MonomorphicType::Constant;
 use kodept_macros::context::Context;
+use kodept_macros::error::traits::SpannedError;
 use kodept_macros::execution::Execution;
 use kodept_macros::visit_guard::VisitGuard;
 use kodept_macros::{Macro, MacroExt};
@@ -57,7 +58,7 @@ impl ScopeAnalyzer {
 }
 
 impl Macro for ScopeAnalyzer {
-    type Error = ScopeError;
+    type Error = SpannedError<ScopeError>;
     type Node = AnyNode;
     type Ctx<'a> = Context<'a>;
 
@@ -69,7 +70,8 @@ impl Macro for ScopeAnalyzer {
         let (id, side) = guard.allow_all();
         let node = self.resolve(id, ctx);
 
-        self.divide_by_scopes(node, side)?;
+        self.divide_by_scopes(node, side)
+            .map_err(|e| SpannedError::for_node(e, id, &ctx.rlt))?;
 
         if !matches!(side, VisitSide::Exiting | VisitSide::Leaf) {
             return Execution::Skipped;
@@ -80,31 +82,26 @@ impl Macro for ScopeAnalyzer {
         };
         match node {
             AnyNode::StructDecl(StructDecl { name, .. }) => {
-                scope.insert_type(name, Constant(name.clone()))?;
+                scope.insert_type(name, Constant(name.clone()))
             }
-            AnyNode::TyParam(TyParam { name, .. }) => {
-                scope.insert_var(id, name)?;
-            }
-            AnyNode::NonTyParam(NonTyParam { name, .. }) => {
-                scope.insert_var(id, name)?;
-            }
+            AnyNode::TyParam(TyParam { name, .. }) => scope.insert_var(id, name),
+            AnyNode::NonTyParam(NonTyParam { name, .. }) => scope.insert_var(id, name),
             AnyNode::TyName(TyName { name, .. }) => {
                 if let Some(AnyNode::EnumDecl(_)) = ctx.ast.parent_of(id) {
-                    scope.insert_type(name, Constant(name.clone()))?;
+                    scope.insert_type(name, Constant(name.clone()))
+                } else {
+                    Ok(())
                 }
             }
             AnyNode::EnumDecl(EnumDecl { name, .. }) => {
-                scope.insert_type(name, Constant(name.clone()))?;
+                scope.insert_type(name, Constant(name.clone()))
             }
-            AnyNode::VarDecl(VarDecl { name, .. }) => scope.insert_var(node.get_id(), name)?,
-            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => {
-                scope.insert_var(node.get_id(), name)?;
-            }
-            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => {
-                scope.insert_var(node.get_id(), name)?
-            }
-            _ => {}
+            AnyNode::VarDecl(VarDecl { name, .. }) => scope.insert_var(node.get_id(), name),
+            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => scope.insert_var(node.get_id(), name),
+            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => scope.insert_var(node.get_id(), name),
+            _ => Ok(()),
         }
+        .map_err(|e| SpannedError::for_node(e, id, &ctx.rlt))?;
 
         Execution::Completed(ChangeSet::new())
     }

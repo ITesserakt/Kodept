@@ -1,12 +1,17 @@
 use crate::context::FileId;
-use crate::error::report::{IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage};
+use crate::error::report::{
+    IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage,
+};
 use crate::error::ErrorReported;
 use codespan_reporting::diagnostic::Diagnostic;
 use codespan_reporting::files::{Error, Files};
 use codespan_reporting::term::termcolor::WriteColor;
 use codespan_reporting::term::Config;
 use extend::ext;
+use kodept_ast::graph::{AnyNode, NodeId};
+use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -89,7 +94,7 @@ pub impl<T, R: Reportable> Result<T, R> {
 
 #[ext]
 pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
-    fn or_emit<'f, W: WriteColor, F: Files<'f, FileId=FileId>>(
+    fn or_emit<'f, W: WriteColor, F: Files<'f, FileId = FileId>>(
         self,
         settings: &mut CodespanSettings<W>,
         source: &'f F,
@@ -101,7 +106,7 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
                 pub struct Helper<'e, E: std::error::Error>(&'e E);
                 impl<'e, E> From<Helper<'e, E>> for ReportMessage
                 where
-                    E: std::error::Error
+                    E: std::error::Error,
                 {
                     fn from(value: Helper<E>) -> Self {
                         Self::new(Severity::Error, "external", value.0.to_string())
@@ -109,25 +114,35 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
                 }
 
                 let report = Report::from_message(file_id, Helper(&e));
-                report.emit(settings, source).expect("Cannot emit diagnostic");
+                report
+                    .emit(settings, source)
+                    .expect("Cannot emit diagnostic");
                 Err(ErrorReported::with_cause(e))
             }
         }
     }
 }
 
-#[ext]
-pub impl<E: std::error::Error> E {
-    fn points_at(self, source_pos: CodePoint) -> SpannedError<E> {
-        SpannedError {
-            point: source_pos,
+impl<E: std::error::Error> SpannedError<E> {
+    pub fn new(inner: E, at: CodePoint) -> Self {
+        Self {
+            point: at,
             severity: Severity::Error,
-            inner: self,
+            inner,
         }
     }
-}
 
-impl<E: std::error::Error> SpannedError<E> {
+    pub fn for_node<T>(inner: E, node_id: NodeId<T>, ctx: &RLTAccessor) -> Self
+    where
+        AnyNode: TryFrom<T>,
+    {
+        let position = ctx.get_unknown(node_id);
+        match position {
+            None => panic!("Node is not linked with corresponding rlt node"),
+            Some(pos) => Self::new(inner, pos.location()),
+        }
+    }
+
     pub fn with_severity(self, severity: Severity) -> Self {
         Self { severity, ..self }
     }
