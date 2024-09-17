@@ -1,10 +1,9 @@
 use crate::graph::any_node::AnyNode;
 use crate::graph::children::tags::ChildTag;
-use crate::graph::nodes::PermTkn;
 use crate::graph::utils::FromOptVec;
-use crate::graph::SyntaxTree;
+use crate::graph::{CanAccess, SyntaxTree};
 use crate::traits::Identifiable;
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
+use kodept_core::ConvertibleToRef;
 
 pub mod tags {
     pub type ChildTag = u8;
@@ -20,22 +19,14 @@ pub mod tags {
 pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
     type Container: FromOptVec<T = Child>;
 
-    fn get_children<'b>(
+    fn get_children<'b, P: CanAccess>(
         &self,
-        tree: &'b SyntaxTree,
-        token: &'b PermTkn,
+        tree: &'b SyntaxTree<P>,
     ) -> ChildrenRef<'b, Self, Child, TAG>
     where
         AnyNode: ConvertibleToRef<Child>,
     {
-        Self::Container::unwrap(tree.children_of(self.get_id(), token, TAG))
-    }
-
-    fn get_children_mut<'b>(&self, tree: &'b SyntaxTree) -> ChildrenMut<'b, Self, Child, TAG>
-    where
-        AnyNode: ConvertibleToMut<Child>,
-    {
-        Self::Container::unwrap_mut(tree.raw_children_of(self.get_id(), TAG))
+        Self::Container::unwrap(tree.children_of(self.get_id(), TAG))
     }
 }
 
@@ -57,18 +48,12 @@ pub(crate) mod macros {
             }
 
             impl $t {
-                $vis fn $name<'a>(
+                #[inline(always)]
+                $vis fn $name<'a, P: $crate::graph::CanAccess>(
                     &self,
-                    tree: &'a $crate::graph::SyntaxTree,
-                    token: &'a $crate::graph::PermTkn,
+                    tree: &'a $crate::graph::SyntaxTree<P>
                 ) -> $crate::graph::ChildrenRef<'a, $t, $crate::graph::ContainerT<$c_t>, $tag> {
-                    <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag>>::get_children(self, tree, token)
-                }
-
-                $vis fn [<$name _mut>]<'a>(
-                    &self, tree: &'a $crate::graph::SyntaxTree
-                ) -> $crate::graph::ChildrenMut<'a, $t, $crate::graph::ContainerT<$c_t>, $tag> {
-                    <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag>>::get_children_mut(self, tree)
+                    <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag>>::get_children(self, tree)
                 }
             })*
             }
@@ -79,6 +64,6 @@ pub(crate) mod macros {
             } }
         }
     }
-    
+
     pub(crate) use with_children;
 }

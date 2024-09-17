@@ -7,7 +7,7 @@ use codespan_reporting::term::termcolor::StandardStream;
 use codespan_reporting::term::{ColorArg, Config};
 
 use crate::cli::utils::{DisplayStyle, Extension};
-use kodept::codespan_settings::{CodespanSettings, StreamOutput};
+use kodept::codespan_settings::{CodespanSettings, Reports, StreamOutput};
 use kodept::loader::{Loader, LoadingError};
 
 #[derive(Debug, Args, Clone)]
@@ -21,9 +21,12 @@ pub struct DiagnosticConfig {
     /// Adjust color output settings
     #[arg(short, long, default_value = "auto")]
     color: ColorArg,
+    /// Output diagnostics eagerly
+    #[arg(long, default_value_t = false)]
+    eager: bool,
     /// Disable output of diagnostics to stderr
     #[arg(
-    conflicts_with_all = ["style", "tab_width", "color"],
+    conflicts_with_all = ["style", "tab_width", "color", "eager"],
     long = "disable-diagnostics",
     default_value_t = false
     )]
@@ -43,7 +46,7 @@ pub struct LoadingConfig {
     extension: Extension,
 }
 
-impl From<DiagnosticConfig> for CodespanSettings {
+impl From<DiagnosticConfig> for Reports {
     fn from(value: DiagnosticConfig) -> Self {
         let config = Config {
             tab_width: value.tab_width,
@@ -56,7 +59,11 @@ impl From<DiagnosticConfig> for CodespanSettings {
             StreamOutput::NoOp
         };
 
-        Self { config, stream }
+        match (value.disable, value.eager) {
+            (true, _) => Self::Disabled,
+            (false, true) => Self::Eager(CodespanSettings { config, stream }),
+            (false, false) => Self::Lazy(Default::default(), CodespanSettings { config, stream })
+        }
     }
 }
 

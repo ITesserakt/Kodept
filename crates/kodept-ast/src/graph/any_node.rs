@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 
-use derive_more::{Display, From, TryInto};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
-use kodept_core::static_assert_size;
 use crate::graph::node_id::GenericNodeId;
 use crate::graph::Identifiable;
 use crate::*;
+use derive_more::{Display, From, TryInto};
+use kodept_core::{static_assert_size, ConvertibleToRef};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
 
 #[derive(Debug, PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
 #[strum_discriminants(derive(VariantArray, Display))]
@@ -115,5 +115,11 @@ impl AnyNode {
     #[inline]
     pub fn name(&self) -> &'static str {
         self.into()
+    }
+    
+    pub fn try_cast<U>(&self) -> Option<&U>
+    where AnyNode: ConvertibleToRef<U>
+    {
+        self.try_as_ref()
     }
 }

@@ -1,10 +1,9 @@
 use std::io::{Error, Write};
-
+use thiserror::Error;
 use kodept_ast::graph::{AnyNode, ChangeSet};
 use kodept_ast::visit_side::VisitSide;
 
 use crate::context::Context;
-use crate::error::report::{ReportMessage, Severity};
 use crate::execution::Execution;
 use crate::execution::Execution::Completed;
 use crate::visit_guard::VisitGuard;
@@ -15,13 +14,9 @@ pub struct ASTFormatter<W: Write> {
     indent: usize,
 }
 
+#[derive(Debug, Error)]
+#[error(transparent)]
 pub struct IOError(Error);
-
-impl From<IOError> for ReportMessage {
-    fn from(value: IOError) -> Self {
-        Self::new(Severity::Bug, "IO000", value.0.to_string())
-    }
-}
 
 impl<W: Write> ASTFormatter<W> {
     pub fn new(writer: W) -> Self {

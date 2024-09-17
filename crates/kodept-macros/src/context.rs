@@ -4,6 +4,7 @@ use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::{AnyNodeD, GenericNodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_core::file_name::FileName;
+use kodept_core::Freeze;
 
 pub type FileId = u16;
 
@@ -17,8 +18,8 @@ pub struct FileDescriptor {
 pub struct Context<'r> {
     pub ast: SyntaxTree<FullAccess>,
     pub rlt: RLTAccessor<'r>,
-    pub reports: ReportCollector,
-    pub current_file: FileDescriptor,
+    pub collector: &'r mut ReportCollector,
+    pub current_file: Freeze<FileDescriptor>,
 }
 
 impl Context<'_> {
@@ -34,6 +35,6 @@ impl Context<'_> {
     }
 
     pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
-        self.reports.report(self.current_file.id, message)
+        self.collector.report(self.current_file.id, message)
     }
 }

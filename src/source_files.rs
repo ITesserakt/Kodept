@@ -4,7 +4,7 @@ use codespan_reporting::files::{Error, Files};
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
-use kodept_macros::context::FileId;
+use kodept_macros::context::{FileDescriptor, FileId};
 use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
@@ -33,6 +33,13 @@ impl Deref for SourceView {
 impl SourceView {
     pub fn all_files(&self) -> &SourceFiles {
         self.source.backing_cart()
+    }
+    
+    pub fn describe(&self) -> FileDescriptor {
+        FileDescriptor {
+            name: self.source.get().path(),
+            id: *self.id,
+        }
     }
 }
 

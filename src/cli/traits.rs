@@ -1,6 +1,7 @@
-use kodept::codespan_settings::CodespanSettings;
+use kodept::codespan_settings::Reports;
 use kodept::common_iter::CommonIter;
 use kodept::source_files::SourceView;
+use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::ErrorReported;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::time::{Duration, Instant};
@@ -23,26 +24,26 @@ pub trait Command {
 
     fn exec(
         &self,
-        sources: impl CommonIter<Item =SourceView> + UnwindSafe,
-        settings: CodespanSettings,
+        sources: impl CommonIter<Item = SourceView> + UnwindSafe,
+        reports: &mut Reports,
         additional_params: Self::Params,
     ) -> Result<(), ErrorReported>
     where
         Self::Params: Clone + Send,
         Self: Sync + RefUnwindSafe,
     {
+        let reports = reports.clone();
         match std::panic::catch_unwind(move || {
-            sources.try_foreach_with(
-                (settings, additional_params),
-                |(settings, params), source| {
-                    let path = source.path();
-                    let now = Instant::now();
-                    let result = self.exec_for_source(source, settings, params);
-                    let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
-                    warn!("Finished `{path}` in {:.2}{}", elapsed, suffix);
-                    result
-                },
-            )
+            sources.try_foreach_with((reports, additional_params), |(reports, params), source| {
+                let path = source.path();
+                let now = Instant::now();
+                let result = reports.provide_collector(&source.clone(), |c| {
+                    self.exec_for_source(source, c, params)
+                });
+                let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
+                warn!("Finished `{path}` in {:.2}{}", elapsed, suffix);
+                result
+            })
         }) {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(e)) => Err(e),
@@ -53,7 +54,7 @@ pub trait Command {
     fn exec_for_source(
         &self,
         source: SourceView,
-        settings: &mut CodespanSettings,
+        collector: &mut ReportCollector,
         params: &mut Self::Params,
     ) -> Result<(), ErrorReported>;
 }

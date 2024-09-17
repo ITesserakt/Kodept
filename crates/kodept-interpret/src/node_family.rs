@@ -1,18 +1,21 @@
 use itertools::Itertools;
 use nonempty_collections::{nev, NEVec};
 
-use Identifier::TypeReference;
-use kodept_ast::*;
-use kodept_ast::graph::{PermTkn, SyntaxTree};
-use kodept_ast::traits::AsEnum;
-use kodept_ast::utils::Execution;
-use kodept_ast::utils::Execution::{Completed, Skipped};
-use kodept_inference::algorithm_w::AlgorithmWError::UnknownVar;
-use kodept_inference::language::var;
-use kodept_inference::r#type::{fun, MonomorphicType, Tuple, unit_type};
-
 use crate::scope::ScopeSearch;
 use crate::type_checker::InferError;
+use kodept_ast::graph::stage::FullAccess;
+use kodept_ast::graph::SyntaxTree;
+use kodept_ast::rlt_accessor::RLTAccessor;
+use kodept_ast::traits::{AsEnum, Identifiable};
+use kodept_ast::*;
+use kodept_core::structure::Located;
+use kodept_inference::algorithm_w::AlgorithmWError::UnknownVar;
+use kodept_inference::language::var;
+use kodept_inference::r#type::{fun, unit_type, MonomorphicType, Tuple};
+use kodept_macros::error::traits::SpannedError;
+use kodept_macros::execution::Execution;
+use kodept_macros::execution::Execution::{Completed, Skipped};
+use Identifier::TypeReference;
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -41,38 +44,42 @@ impl TypeRestrictedNode {
     pub fn type_of(
         &self,
         scopes: &ScopeSearch,
-        tree: &SyntaxTree,
-        token: &PermTkn,
-    ) -> Execution<InferError, MonomorphicType> {
+        tree: &SyntaxTree<FullAccess>,
+        rlt: &RLTAccessor,
+    ) -> Execution<SpannedError<InferError>, MonomorphicType> {
         match self.as_enum() {
             TypeRestrictedNodeEnum::Reference(Ref {
                 ident: TypeReference { name },
                 ..
             }) => {
-                let ty = scopes.ty(name).ok_or(UnknownVar(nev![var(name)]))?;
+                let location = rlt.get_unknown(self.get_id()).unwrap().location();
+                let ty = scopes.ty(name).ok_or(SpannedError::new(
+                    InferError::AlgorithmW(UnknownVar(nev![var(name)])),
+                    location,
+                ))?;
                 Completed(ty)
             }
             TypeRestrictedNodeEnum::Variable(node) => {
-                if let Some(ty) = node.assigned_type(tree, token) {
-                    Completed(convert(ty, scopes, tree, token)?)
+                if let Some(ty) = node.assigned_type(tree) {
+                    Completed(convert(ty, scopes, tree, rlt)?)
                 } else {
                     Skipped
                 }
             }
             TypeRestrictedNodeEnum::TypedParameter(x) => {
-                Completed(convert(x.parameter_type(tree, token), scopes, tree, token)?)
+                Completed(convert(x.parameter_type(tree), scopes, tree, rlt)?)
             }
             TypeRestrictedNodeEnum::Function(node) => {
-                let params = node.parameters(tree, token);
-                let return_type = node.return_type(tree, token);
+                let params = node.parameters(tree);
+                let return_type = node.return_type(tree);
 
                 let ret = match return_type {
                     None => unit_type(),
-                    Some(ty) => convert(ty, scopes, tree, token)?,
+                    Some(ty) => convert(ty, scopes, tree, rlt)?,
                 };
                 let ps = params
                     .into_iter()
-                    .map(|it| convert(it.parameter_type(tree, token), scopes, tree, token))
+                    .map(|it| convert(it.parameter_type(tree), scopes, tree, rlt))
                     .try_collect()?;
                 match NEVec::from_vec(ps) {
                     None => Completed(ret),
@@ -87,22 +94,22 @@ impl TypeRestrictedNode {
 pub(crate) fn convert(
     ty: &Type,
     scope: &ScopeSearch,
-    ast: &SyntaxTree,
-    token: &PermTkn,
-) -> Result<MonomorphicType, InferError> {
-    return match ty.as_enum() {
+    ast: &SyntaxTree<FullAccess>,
+    rlt: &RLTAccessor,
+) -> Result<MonomorphicType, SpannedError<InferError>> {
+    match ty.as_enum() {
         TypeEnum::TyName(constant) => {
-            scope
-                .ty(&constant.name)
-                .ok_or(InferError::AlgorithmW(UnknownVar(nev![
-                    var(&constant.name)
-                ])))
+            let location = rlt.get_unknown(ty.get_id()).unwrap().location();
+            scope.ty(&constant.name).ok_or(SpannedError::new(
+                InferError::AlgorithmW(UnknownVar(nev![var(&constant.name)])),
+                location,
+            ))
         }
         TypeEnum::Tuple(tuple) => {
             let types: Result<Vec<_>, _> = tuple
-                .types(ast, token)
+                .types(ast)
                 .into_iter()
-                .map(|it| match convert(it, scope, ast, token) {
+                .map(|it| match convert(it, scope, ast, rlt) {
                     Ok(x) => Ok(x),
                     Err(e) => Err(e),
                 })
@@ -110,5 +117,5 @@ pub(crate) fn convert(
             let types = types?;
             Ok(MonomorphicType::Tuple(Tuple::new(types)))
         }
-    };
+    }
 }

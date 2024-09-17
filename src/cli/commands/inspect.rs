@@ -6,9 +6,8 @@ use derive_more::Display;
 use thiserror::Error;
 
 use crate::cli::traits::Command;
-use kodept::codespan_settings::CodespanSettings;
 use kodept::source_files::SourceView;
-use kodept_macros::error::traits::ResultTEExt;
+use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::ErrorReported;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
@@ -59,15 +58,15 @@ impl Command for InspectParser {
     fn exec_for_source(
         &self,
         source: SourceView,
-        settings: &mut CodespanSettings,
+        collector: &mut ReportCollector,
         _: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
         #[derive(Error, Debug)]
         #[error("Program is compiled without inspecting support")]
         struct Unsupported;
 
-        let error = Err(Unsupported);
-        error.or_emit(settings, &source, *source.id)
+        collector.report(*source.id, Unsupported);
+        Err(ErrorReported::new())
     }
 }
 
@@ -111,7 +110,7 @@ impl InspectParser {
 
     fn inspect_tokenizer(
         &self,
-        source: &ReadCodeSource,
+        source: &SourceView,
         file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
         use kodept_parse::{
@@ -134,7 +133,7 @@ impl InspectParser {
 
     fn inspect_parser(
         &self,
-        source: &ReadCodeSource,
+        source: &SourceView,
         file_output_path: &std::path::Path,
     ) -> Result<(), InspectError<String>> {
         use kodept_parse::{
@@ -168,42 +167,28 @@ impl Command for InspectParser {
 
     fn exec_for_source(
         &self,
-        source: ReadCodeSource,
-        settings: &mut CodespanSettings,
+        source: SourceView,
+        collector: &mut ReportCollector,
         output_path: &mut Self::Params,
     ) -> Result<(), ErrorReported> {
-        use kodept_core::file_name::FileName;
-
-        let source_name = match source.path() {
-            FileName::Real(x) => x
-                .file_name()
-                .expect("Source should be a file")
-                .to_os_string(),
-            FileName::Anon(x) => x.into(),
-        };
+        let filename = source.path();
+        let source_name = filename.build_file_path();
         let file_output_path = output_path.join(source_name);
-        match self.option {
-            InspectingOptions::Tokenizer => self
-                .inspect_tokenizer(&source, &file_output_path)
-                .or_emit(settings, &source, source.path())?,
-            InspectingOptions::Parser => self.inspect_parser(&source, &file_output_path).or_emit(
-                settings,
-                &source,
-                source.path(),
-            )?,
+        match match self.option {
+            InspectingOptions::Tokenizer => self.inspect_tokenizer(&source, &file_output_path),
+            InspectingOptions::Parser => self.inspect_parser(&source, &file_output_path),
             InspectingOptions::Both => {
-                self.inspect_tokenizer(&source, &file_output_path).or_emit(
-                    settings,
-                    &source,
-                    source.path(),
-                )?;
-                self.inspect_parser(&source, &file_output_path).or_emit(
-                    settings,
-                    &source,
-                    source.path(),
-                )?
+                if let Err(e) = self.inspect_tokenizer(&source, &file_output_path) {
+                    collector.report(*source.id, e);
+                }
+                self.inspect_parser(&source, &file_output_path)
             }
-        };
-        Ok(())
+        } {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                collector.report(*source.id, e);
+                Err(ErrorReported::new())
+            }
+        }
     }
 }
