@@ -12,11 +12,15 @@ impl ReportCollector {
     pub fn new() -> Self {
         Self::default()
     }
+    
+    pub fn push_report(&mut self, report: Report<FileId>) {
+        self.has_errors |= report.is_error();
+        self.reports.push(report)
+    }
 
     pub fn report(&mut self, file_id: FileId, message: impl IntoSpannedReportMessage) {
         let report = Report::from_message(file_id, message);
-        self.has_errors |= report.is_error();
-        self.reports.push(report);
+        self.push_report(report)
     }
 
     #[must_use]

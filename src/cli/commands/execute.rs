@@ -6,7 +6,7 @@ use kodept::source_files::SourceView;
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
 use kodept_macros::context::{Context, FileDescriptor};
-use kodept_macros::error::traits::ResultTRExt;
+use kodept_macros::error::traits::{Reportable, ResultTEExt, ResultTRExt};
 use kodept_macros::error::ErrorReported;
 use std::num::NonZeroU16;
 use tracing::debug;
@@ -30,7 +30,7 @@ impl Command for Execute {
         let rlt = build_rlt(&source).or_emit(settings, &source)?;
         let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &*source);
         debug!("Produced AST with node count = {}", tree.node_count());
-        let context = Context {
+        let mut context = Context {
             ast: tree,
             rlt: accessor,
             reports: Default::default(),
@@ -43,7 +43,17 @@ impl Command for Execute {
             recursion_depth: self.type_checking_recursion_depth,
         };
 
-        kodept::steps::common::run_common_steps(context, &config).or_emit(settings, &source)?;
-        Ok(())
+        let result = kodept::steps::common::run_common_steps(&mut context, &config);
+        context
+            .reports
+            .into_collected_reports()
+            .emit(settings, &source)
+            .or_emit(settings, &source, *source.id)?;
+        
+        if result.is_none() {
+            Err(ErrorReported::new())
+        } else {
+            Ok(())
+        }
     }
 }

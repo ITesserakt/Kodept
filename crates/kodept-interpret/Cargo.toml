@@ -23,6 +23,7 @@ itertools.workspace = true
 nonempty-collections = "0.2.5"
 ref-cast = "1.0.23"
 slotmap = "1.0.7"
+thiserror.workspace = true
 
 [dependencies.kodept-macros]
 path = "../kodept-macros"

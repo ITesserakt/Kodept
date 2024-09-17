@@ -975,6 +975,7 @@ dependencies = [
  "nonempty-collections",
  "ref-cast",
  "slotmap",
+ "thiserror",
  "tracing",
 ]
 
