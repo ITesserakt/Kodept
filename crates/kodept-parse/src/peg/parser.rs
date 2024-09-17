@@ -248,10 +248,9 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// --------------------------------------------------------------------------------------------
 
     rule lambda() -> rlt::Expression =
-        l:$"\\" _ ps:comma_separated0(<parameter()>) _ f:$"=>" _ expr:operator_grammar() {
+        l:$"[" _ ps:comma_separated0(<parameter()>) _ r:$"]" _ f:$"=>" _ expr:operator_grammar() {
         rlt::Expression::Lambda {
-            keyword: Keyword::from_located(l),
-            binds: ps.into_boxed_slice(),
+            binds: VerboseEnclosed::from_located(l, ps.into_boxed_slice(), r).into(),
             flow: Symbol::from_located(f),
             expr: Box::new(expr)
         }

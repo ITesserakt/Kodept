@@ -45,8 +45,10 @@ impl Reports {
                 result
             }
             Reports::Lazy(collector, _) => {
-                let mut lock = collector.lock().expect("Cannot lock mutex");
-                f(&mut lock)
+                match collector.lock() {
+                    Ok(mut x) => f(&mut x),
+                    Err(x) => f(&mut x.into_inner())
+                }
             }
         }
     }

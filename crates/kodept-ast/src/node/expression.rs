@@ -279,7 +279,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::Expression {
         match self {
             rlt::Expression::Lambda { binds, expr, .. } => {
                 SubSyntaxTree::new(Lambda::uninit().with_rlt(self))
-                    .with_children_from(binds.as_ref(), context)
+                    .with_children_from(binds.inner.as_ref(), context)
                     .with_children_from([expr.as_ref()], context)
                     .cast()
             }

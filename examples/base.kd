@@ -9,7 +9,7 @@ fun const(a, b) => a
 // Composes two functions, f and g
 fun compose(f, g) => \x => f(g(x))
 
-fun s(f, g) => \x => f(x, g(x))
+fun s(f, g) => [x, y] => f(x, g(x))
 
 fun fix(f) => {
     val x = f(x)

@@ -34,8 +34,7 @@ pub enum Operation {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Lambda {
-        keyword: Keyword,
-        binds: Box<[Parameter]>,
+        binds: Enclosed<Box<[Parameter]>>,
         flow: Symbol,
         expr: Box<Operation>,
     },
