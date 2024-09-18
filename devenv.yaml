@@ -1,0 +1,10 @@
+inputs:
+    nixpkgs:
+        url: github:NixOS/nixpkgs/nixpkgs-unstable
+    fenix:
+        url: github:nix-community/fenix/staging
+    crane:
+        url: github:ipetkov/crane
+    pegviz:
+        url: github:fasterthanlime/pegviz
+        flake: false
