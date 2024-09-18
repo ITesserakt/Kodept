@@ -48,7 +48,6 @@
 in {
 	packages = with pkgs; [
 		xdot
-		# rustup
 		gnuplot
 	];
 
@@ -58,6 +57,8 @@ in {
 		toolchain = fenix.packages.x86_64-linux.latest;
 	};
 
+	scripts.kodept.exec = "${config.outputs.x86_64-linux.kodept}/bin/kodept $@";
+
 	outputs = rec {
 		x86_64-linux.pegviz = craneLib.buildPackage (commonArgs // {
 			src = pegviz_sources;
@@ -65,6 +66,7 @@ in {
 		x86_64-linux.kodept = craneLib.buildPackage (commonArgs // {
 			src = kodept_sources;
 			buildInputs = [ x86_64-linux.pegviz ];
+            cargoExtraArgs = "-F parallel";
 		});
 		x86_64-windows.pegviz = craneLib-win.buildPackage (commonArgs-win // {
 			src = pegviz_sources;
@@ -72,6 +74,7 @@ in {
 		x86_64-windows.kodept = craneLib-win.buildPackage (commonArgs-win // {
 			src = kodept_sources;
 			buildInputs = [ x86_64-windows.pegviz ];
+			cargoExtraArgs = "-F parallel";
 		});
 	};
 }
