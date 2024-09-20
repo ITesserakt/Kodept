@@ -14,7 +14,7 @@ use kodept_macros::error::traits::DrainReports;
 use kodept_macros::error::{Diagnostic, ErrorReported};
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::parser::{parse_from_top, PegParser};
-use kodept_parse::token_match::TokenMatch;
+use kodept_parse::token_match::{PackedTokenMatch, TokenMatch};
 use kodept_parse::token_stream::TokenStream;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
@@ -64,7 +64,7 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
         .with_label(Label::primary("here", error.location.in_code))
 }
 
-fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str>> {
+fn tokenize(source: &ReadCodeSource) -> Result<Vec<PackedTokenMatch>, ParseErrors<&str>> {
     use kodept_parse::lexer::*;
     use kodept_parse::tokenizer::*;
 
@@ -90,7 +90,10 @@ fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str
 fn build_rlt(source: &SourceView, collector: &mut ReportCollector) -> Option<RLT> {
     let tokens = tokenize(source)
         .map_err(|es| es.into_iter().map(to_diagnostic))
-        .drain(*source.id, collector)?;
+        .drain(*source.id, collector)?
+        .into_iter()
+        .map(|it| TokenMatch::from((it, source.contents())))
+        .collect::<Vec<_>>();
     
     debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);

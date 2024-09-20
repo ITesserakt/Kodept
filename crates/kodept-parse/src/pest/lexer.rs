@@ -7,7 +7,7 @@ use kodept_core::structure::span::Span;
 use crate::common::{EagerTokensProducer, TokenProducer};
 use crate::lexer::Operator::*;
 use crate::lexer::*;
-use crate::token_match::TokenMatch;
+use crate::token_match::{PackedTokenMatch, TokenMatch};
 
 #[derive(Parser)]
 #[grammar = "crates/kodept-parse/src/pest/kodept.pest"]
@@ -127,7 +127,7 @@ impl TokenProducer for Lexer {
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
         let input = &whole_input[position..];
         let token = Grammar::parse(Rule::token, input).map_err(|e| e.into_pest(input))?;
         let ident = token
@@ -137,19 +137,20 @@ impl TokenProducer for Lexer {
             .into_inner()
             .next()
             .unwrap();
-        Ok(parse_token_from_ident(ident))
+        Ok(parse_token_from_ident(ident).into())
     }
 }
 
 impl EagerTokensProducer for Lexer {
     type Error<'t> = pest::error::Error<Rule>;
 
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>> {
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
         let tokens = Grammar::parse(Rule::tokens, input).map_err(|e| e.into_pest(input))?;
         let idents = tokens.into_iter().next().unwrap().into_inner();
         Ok(idents
             .map(|it| it.into_inner().next().unwrap())
             .map(parse_token_from_ident)
+            .map(|it| it.into())
             .collect())
     }
 }
