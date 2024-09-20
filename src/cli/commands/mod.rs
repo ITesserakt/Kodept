@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::cli::commands::execute::Execute;
 use crate::cli::commands::graph::Graph;
 use crate::cli::commands::inspect::InspectParser;
@@ -13,7 +14,7 @@ use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::DrainReports;
 use kodept_macros::error::{Diagnostic, ErrorReported};
 use kodept_parse::error::{ParseError, ParseErrors};
-use kodept_parse::parser::{parse_from_top, PegParser};
+use kodept_parse::parser::{parse_from_top, LaLRPop, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
 use std::fmt::Display;
@@ -57,7 +58,11 @@ impl Command for Commands {
 }
 
 fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
-    let exp_msg = error.expected.into_iter().join(" or ");
+    let exp_msg = if error.expected.is_empty() {
+        Cow::Borrowed("???")
+    } else {
+        error.expected.into_iter().join(" or ").into()
+    };
 
     Diagnostic::new(Severity::Error)
         .with_message(format!("Expected {}, got \"{}\"", exp_msg, error.actual))
@@ -94,7 +99,7 @@ fn build_rlt(source: &SourceView, collector: &mut ReportCollector) -> Option<RLT
     
     debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);
-    let result = parse_from_top(token_stream, PegParser::<false>::new())
+    let result = parse_from_top(token_stream, LaLRPop::new())
         .map_err(|es| es.into_iter().map(to_diagnostic))
         .drain(*source.id, collector)?;
     

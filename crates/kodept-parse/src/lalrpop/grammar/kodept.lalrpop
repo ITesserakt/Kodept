@@ -1,0 +1,486 @@
+use std::convert::Infallible;
+use crate::token_stream::TokenStream;
+use crate::lexer::{
+    Token,
+    Keyword::*,
+    Ignore::*,
+    Symbol::*,
+    Identifier::*,
+    Literal::*,
+    Operator::*,
+    MathOperator::*,
+    ComparisonOperator::*,
+    LogicOperator::*,
+    BitOperator::*
+};
+use kodept_core::structure::{rlt, rlt::RLT, span::Span};
+use kodept_core::structure::rlt::new_types::{Enclosed, TypeName, Symbol, UnaryOperationSymbol, BinaryOperationSymbol};
+use kodept_core::code_point::CodePoint;
+use crate::common::VerboseEnclosed;
+
+grammar<'i>();
+
+#[inline]
+Spanned<T>: Span = <left: @L> T <right: @R> => Span::new(CodePoint::new((right - left) as u32, left as u32));
+
+#[inline]
+Comma<T>: Vec<T> =
+    <mut rules: (<T> ",")*> <last: T?> => {
+        rules.extend(last);
+        rules
+    };
+
+#[inline]
+Comma1<T>: Vec<T> =
+    <mut rules: (<T> ",")+> <last: T?> => {
+        rules.extend(last);
+        rules
+    };
+
+#[inline]
+BraceEnclosed<T>: VerboseEnclosed<T> = 
+    <lb:Spanned<"{">> <inner:T> <rb:Spanned<"}">> => VerboseEnclosed::from_located(<>);
+
+#[inline]
+ParenEnclosed<T>: VerboseEnclosed<T> = 
+    <lb:Spanned<"(">> <inner:T> <rb:Spanned<")">> => VerboseEnclosed::from_located(<>);
+
+TypeIdent: TypeName =
+    Spanned<"<Ident>"> => rlt::new_types::TypeName::from(<>);
+
+pub Program: RLT = FileGrammar => RLT(<>);
+
+FileGrammar: rlt::File = {
+    <Module+> => rlt::File::new(<>.into_boxed_slice()),
+    GlobalModule => rlt::File::new(Box::new([<>])),
+}
+
+Module: rlt::Module =
+    <k:Spanned<"module">> <id:TypeIdent> <lb:Spanned<"{">> <i:TopLevelGrammar*> <rb:Spanned<"}">> => rlt::Module::Ordinary {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id,
+        lbrace: Symbol::from_located(lb),
+        rbrace: Symbol::from_located(rb),
+        rest: i.into_boxed_slice()
+    };
+GlobalModule: rlt::Module = 
+    <k:Spanned<"module">> <id:TypeIdent> <f:Spanned<"=>">> <i:TopLevelGrammar*> => rlt::Module::Global {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id,
+        flow: Symbol::from_located(f),
+        rest: i.into_boxed_slice()
+    };
+
+TopLevelGrammar: rlt::TopLevelNode = {
+    EnumStatement => rlt::TopLevelNode::Enum(<>),
+    StructStatement => rlt::TopLevelNode::Struct(<>),
+    Bodied => rlt::TopLevelNode::BodiedFunction(<>)
+}
+
+EnumBody: Option<VerboseEnclosed<Vec<TypeName>>> = {
+    ";" => None,
+    BraceEnclosed<Comma<TypeIdent>> => Some(<>)
+};
+EnumStatement: rlt::Enum 
+    = <k:Spanned<"enum">> Spanned<"struct"> <id:TypeIdent> <i:EnumBody> => rlt::Enum::Stack {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id,
+        contents: i.map(|it| it.into())
+    };
+
+StructStatement: rlt::Struct = 
+    <k:Spanned<"struct">> <id:TypeIdent> <ps:ParenEnclosed<Comma<TypedParameter>>?>
+    <i:BraceEnclosed<Bodied*>?> => rlt::Struct {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id,
+        parameters: ps.map(|it| it.into()),
+        body: i.map(|it| it.into())
+    };
+
+Bodied: rlt::BodiedFunction = {
+    <k:Spanned<"fun">> <id:Spanned<"<ident>">>
+    <ps:ParenEnclosed<Comma<Parameter>>?> <return_type:ReturnType?>
+    <b:Block> => rlt::BodiedFunction {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id: id.into(),
+        params: ps.map(|it| it.into()),
+        return_type,
+        body: Box::new(rlt::Body::Block(b))
+    },
+    <k:Spanned<"fun">> <id:Spanned<"<ident>">>
+    <ps:ParenEnclosed<Comma<Parameter>>?> <return_type:ReturnType?>
+    <f:Spanned<"=>">> <b:OperatorGrammar> ";" => rlt::BodiedFunction {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id: id.into(),
+        params: ps.map(|it| it.into()),
+        return_type,
+        body: Box::new(rlt::Body::Simplified {
+            flow: Symbol::from_located(f),
+            expression: rlt::BlockLevelNode::Operation(b)
+        })
+    },
+}
+
+Body: rlt::Body = {
+    Block => rlt::Body::Block(<>),
+    <f:Spanned<"=>">> <i:Block> => rlt::Body::Simplified {
+        flow: Symbol::from_located(f),
+        expression: rlt::BlockLevelNode::Block(i)
+    },
+    <f:Spanned<"=>">> <i:OperatorGrammar> => rlt::Body::Simplified {
+        flow: Symbol::from_located(f),
+        expression: rlt::BlockLevelNode::Operation(i)
+    }
+}
+
+Block: rlt::ExpressionBlock =
+    <lb:Spanned<"{">> <e:BlockLevelGrammar*> <rb:Spanned<"}">> => rlt::ExpressionBlock {
+        lbrace: Symbol::from_located(lb),
+        expression: e.into_boxed_slice(),
+        rbrace: Symbol::from_located(rb)
+    };
+
+BlockLevelGrammar: rlt::BlockLevelNode = {
+    Block => rlt::BlockLevelNode::Block(<>),
+    Bodied => rlt::BlockLevelNode::Function(<>),
+    <InitVar> ";" => rlt::BlockLevelNode::InitVar(<>),
+    <OperatorGrammar> ";" => rlt::BlockLevelNode::Operation(<>)
+};
+
+VarDecl: rlt::Variable = {
+    <k:Spanned<"val">> <id:Spanned<"<ident>">> <ty:ReturnType?> => rlt::Variable::Immutable {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id: id.into(),
+        assigned_type: ty
+    },
+    <k:Spanned<"var">> <id:Spanned<"<ident>">> <ty:ReturnType?> => rlt::Variable::Mutable {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        id: id.into(),
+        assigned_type: ty
+    },
+}
+
+InitVar: rlt::InitializedVariable =
+    <v:VarDecl> <e:Spanned<"=">> <o:OperatorGrammar> => rlt::InitializedVariable {
+        variable: v,
+        expression: o,
+        equals: Symbol::from_located(e)
+    };
+
+OperatorGrammar: rlt::Operation = {
+    #[precedence(level = "0")]
+    Atom,
+    #[precedence(level = "1")]
+    <op:Spanned<"!">> <a:OperatorGrammar> => rlt::Operation::TopUnary {
+        operator: UnaryOperationSymbol::Not(Symbol::from_located(op)),
+        expr: Box::new(a)
+    },
+    #[precedence(level = "1")]
+    <op:Spanned<"~">> <a:OperatorGrammar> => rlt::Operation::TopUnary {
+        operator: UnaryOperationSymbol::Inv(Symbol::from_located(op)),
+        expr: Box::new(a)
+    },
+    #[precedence(level = "12")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <ps:ParenEnclosed<Comma<OperatorGrammar>>> => rlt::Operation::Application(Box::new(rlt::Application {
+        expr: a,
+        params: Some(ps.into())
+    })),
+    #[precedence(level = "2")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<".">> <b:OperatorGrammar> => rlt::Operation::Access {
+        left: Box::new(a),
+        dot: Symbol::from_located(op),
+        right: Box::new(b)
+    },
+    #[precedence(level = "3")] #[assoc(side = "right")]
+    <a:OperatorGrammar> <op:Spanned<"**">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Pow(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "4")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"%">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "4")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"/">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "4")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"*">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "5")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"-">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Add(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "5")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"+">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Add(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "6")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"<=>">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::ComplexComparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "7")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<">=">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "7")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"==">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "7")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"!=">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "7")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"<=">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "8")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<">">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Comparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "8")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"<">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Comparison(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "9")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"^">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "9")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"&">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "9")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"|">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "10")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"&&">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Logic(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "10")] #[assoc(side = "left")]
+    <a:OperatorGrammar> <op:Spanned<"||">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Logic(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+    #[precedence(level = "11")] #[assoc(side = "right")]
+    <a:OperatorGrammar> <op:Spanned<"=">> <b:OperatorGrammar> => rlt::Operation::Binary {
+        left: Box::new(a),
+        operation: BinaryOperationSymbol::Assign(Symbol::from_located(op)),
+        right: Box::new(b)
+    },
+}
+
+Atom: rlt::Operation = {
+    ExpressionGrammar => rlt::Operation::Expression(<>),
+    ParenEnclosed<OperatorGrammar> => <>.inner,
+    ParenEnclosed<Comma1<OperatorGrammar>> => rlt::Operation::Expression(rlt::Expression::Literal(rlt::Literal::Tuple(<>.into()))),
+}
+
+ExpressionGrammar: rlt::Expression = {
+    <l:Spanned<"[">> <ps:Comma<Parameter>> <r:Spanned<"]">> <x:Spanned<"{">> <expr:OperatorGrammar> "}" => rlt::Expression::Lambda {
+        binds: VerboseEnclosed::from_located(l, ps.into_boxed_slice(), r).into(),
+        flow: Symbol::from_located(x),
+        expr: Box::new(expr)
+    },
+    TermGrammar => rlt::Expression::Term(<>),
+    LiteralGrammar => rlt::Expression::Literal(<>),
+    CodeFlowGrammar => rlt::Expression::If(Box::new(<>))
+}
+
+TermGrammar: rlt::Term = {
+    Contextual => rlt::Term::Contextual(<>),
+    Ref => rlt::Term::Reference(<>)
+}
+
+Contextual: rlt::ContextualReference = {
+
+}
+
+Ref: rlt::Reference = {
+    TypeIdent => rlt::Reference::Type(<>),
+    Spanned<"<ident>"> => rlt::Reference::Identifier(<>.into())
+}
+
+LiteralGrammar: rlt::Literal = {
+    Spanned<"<binary literal>"> => rlt::Literal::Binary(<>),
+    Spanned<"<octal literal>"> => rlt::Literal::Octal(<>),
+    Spanned<"<hex literal>"> => rlt::Literal::Hex(<>),
+    Spanned<"<number literal>"> => rlt::Literal::Floating(<>),
+    Spanned<"<char literal>"> => rlt::Literal::Char(<>),
+    Spanned<"<string literal>"> => rlt::Literal::String(<>)
+}
+
+Else: rlt::ElseExpr =
+    <k:Spanned<"else">> <b:Block> => rlt::ElseExpr {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        body: rlt::Body::Block(b)
+    };
+
+Elif: rlt::ElifExpr =
+    <k:Spanned<"elif">> <c:OperatorGrammar> <b:Block> => rlt::ElifExpr {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        condition: c,
+        body: rlt::Body::Block(b)
+    };
+
+If: rlt::IfExpr =
+    <k:Spanned<"if">> <c:OperatorGrammar> <b:Block> <el:Elif*> <es:Else?> => rlt::IfExpr {
+        keyword: rlt::new_types::Keyword::from_located(k),
+        condition: c,
+        body: rlt::Body::Block(b),
+        elif: el.into_boxed_slice(),
+        el: es
+    };
+
+CodeFlowGrammar: rlt::IfExpr = If;
+
+Parameter: rlt::Parameter = {
+    TypedParameter => rlt::Parameter::Typed(<>),
+    UntypedParameter => rlt::Parameter::Untyped(<>)
+}
+
+UntypedParameter: rlt::UntypedParameter =
+    <Spanned<"<ident>">> (":" "_")? => rlt::UntypedParameter { id: <>.into() };
+
+TypedParameter: rlt::TypedParameter = 
+    <id:Spanned<"<ident>">> ":" <t:TypeGrammar> => rlt::TypedParameter {
+        id: id.into(),
+        parameter_type: t
+    };
+    
+TypeGrammar: rlt::Type = {
+    TypeIdent => rlt::Type::Reference(<>),
+    Tuple
+}
+
+ReturnType: (Symbol, rlt::Type) =
+    <c:Spanned<":">> <t:TypeGrammar> => (Symbol::from_located(c), t);
+    
+Tuple: rlt::Type =
+    ParenEnclosed<Comma<TypeGrammar>> => rlt::Type::Tuple(<>.into());
+
+extern {
+    type Location = usize;
+    type Error = Infallible;
+
+    enum Token<'i> {
+        // KEYWORDS
+        "fun" => Token::Keyword(Fun),
+        "val" => Token::Keyword(Val),
+        "var" => Token::Keyword(Var),
+        "if" => Token::Keyword(If),
+        "elif" => Token::Keyword(Elif),
+        "else" => Token::Keyword(Else),
+        "match" => Token::Keyword(Match),
+        "while" => Token::Keyword(While),
+        "module" => Token::Keyword(Module),
+        "extend" => Token::Keyword(Extend),
+        "\\" => Token::Keyword(Lambda),
+        "abstract" => Token::Keyword(Abstract),
+        "trait" => Token::Keyword(Trait),
+        "struct" => Token::Keyword(Struct),
+        "class" => Token::Keyword(Class),
+        "enum" => Token::Keyword(Enum),
+        "foreign" => Token::Keyword(Foreign),
+        "type" => Token::Keyword(TypeAlias),
+        "with" => Token::Keyword(With),
+        "return" => Token::Keyword(Return),
+
+        // IGNORED
+        "comment" => Token::Ignore(Comment(<&'i str>)),
+        "ml-comment" => Token::Ignore(MultilineComment(<&'i str>)),
+        "<newline>" => Token::Ignore(Newline),
+        "ws" => Token::Ignore(Whitespace),
+
+        // SYMBOLS
+        "," => Token::Symbol(Comma),
+        ";" => Token::Symbol(Semicolon),
+        "{" => Token::Symbol(LBrace),
+        "}" => Token::Symbol(RBrace),
+        "[" => Token::Symbol(LBracket),
+        "]" => Token::Symbol(RBracket),
+        "(" => Token::Symbol(LParen),
+        ")" => Token::Symbol(RParen),
+        "_" => Token::Symbol(TypeGap),
+        "::" => Token::Symbol(DoubleColon),
+        ":" => Token::Symbol(Colon),
+
+        // IDENTIFIERS
+        "<ident>" => Token::Identifier(Identifier(<&'i str>)),
+        "<Ident>" => Token::Identifier(Type(<&'i str>)),
+
+        // LITERALS
+        "<binary literal>" => Token::Literal(Binary(<&'i str>)),
+        "<octal literal>" => Token::Literal(Octal(<&'i str>)),
+        "<hex literal>" => Token::Literal(Hex(<&'i str>)),
+        "<number literal>" => Token::Literal(Floating(<&'i str>)),
+        "<char literal>" => Token::Literal(Char(<&'i str>)),
+        "<string literal>" => Token::Literal(String(<&'i str>)),
+
+        // OPERATORS
+        "." => Token::Operator(Dot),
+        "=>" => Token::Operator(Flow),
+
+        "+" => Token::Operator(Math(Plus)),
+        "-" => Token::Operator(Math(Sub)),
+        "**" => Token::Operator(Math(Pow)),
+        "*" => Token::Operator(Math(Times)),
+        "/" => Token::Operator(Math(Div)),
+        "%" => Token::Operator(Math(Mod)),
+
+        "=" => Token::Operator(Comparison(Equals)),
+        "==" => Token::Operator(Comparison(Equiv)),
+        "!=" => Token::Operator(Comparison(NotEquiv)),
+        "<" => Token::Operator(Comparison(Less)),
+        "<=" => Token::Operator(Comparison(LessEquals)),
+        ">" => Token::Operator(Comparison(Greater)),
+        ">=" => Token::Operator(Comparison(GreaterEquals)),
+        "<=>" => Token::Operator(Comparison(Spaceship)),
+
+        "|" => Token::Operator(Logic(OrLogic)),
+        "&" => Token::Operator(Logic(AndLogic)),
+        "!" => Token::Operator(Logic(NotLogic)),
+
+        "||" => Token::Operator(Bit(OrBit)),
+        "&&" => Token::Operator(Bit(AndBit)),
+        "^" => Token::Operator(Bit(XorBit)),
+        "~" => Token::Operator(Bit(NotBit)),
+    }
+}

@@ -43,6 +43,7 @@
 		src = ./.;
 		filter = path: type:
 			(lib.hasSuffix "\.pest" path )         ||
+			(lib.hasSuffix "\.lalrpop" path )         ||
 			(craneLib.filterCargoSources path type);
 	};
 in {

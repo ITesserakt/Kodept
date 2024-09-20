@@ -69,6 +69,7 @@ version = "0.2"
 [dependencies.kodept-parse]
 path = "crates/kodept-parse"
 version = "0.3"
+features = ["lalrpop"]
 
 [dependencies.kodept-ast]
 path = "crates/kodept-ast"
