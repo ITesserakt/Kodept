@@ -6,7 +6,7 @@ use kodept_core::structure::span::Span;
 use kodept_core::structure::Located;
 
 use crate::error::{Original, ParseErrors};
-use crate::token_match::TokenMatch;
+use crate::token_match::{PackedTokenMatch, TokenMatch};
 use crate::token_stream::TokenStream;
 
 pub trait TokenProducer {
@@ -16,13 +16,13 @@ pub trait TokenProducer {
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<TokenMatch<'t>, Self::Error<'t>>;
+    ) -> Result<PackedTokenMatch, Self::Error<'t>>;
 }
 
 pub trait EagerTokensProducer {
     type Error<'t>;
     
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch<'t>>, Self::Error<'t>>;
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>>;
 }
 
 pub trait RLTProducer<Output = RLT> {

@@ -3,11 +3,10 @@ use nom::Err::{Error, Failure, Incomplete};
 use nom_supreme::error::ErrorTree;
 
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::Span;
 
 use crate::common::TokenProducer;
 use crate::lexer::Token;
-use crate::token_match::TokenMatch;
+use crate::token_match::PackedTokenMatch;
 
 pub(crate) const LOWER_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
 pub(crate) const UPPER_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -265,7 +264,7 @@ impl TokenProducer for Lexer {
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<TokenMatch<'t>, Self::Error<'t>> {
+    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
         let input = &whole_input[position..];
         let (rest, token) = match grammar::token(input) {
             Ok(x) => x,
@@ -273,9 +272,9 @@ impl TokenProducer for Lexer {
             Err(Incomplete(_)) => ("", Token::Unknown),
         };
         let matched_length = input.len() - rest.len();
-        Ok(TokenMatch::new(
-            token,
-            Span::new(CodePoint::new(matched_length as u32, 0)),
+        Ok(PackedTokenMatch::new(
+            token.into(),
+            CodePoint::new(matched_length as u32, 0),
         ))
     }
 }

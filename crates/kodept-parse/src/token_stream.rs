@@ -1,18 +1,70 @@
 use kodept_core::code_point::CodePoint;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
-
+use std::ops::Deref;
 use nom::{InputIter, InputLength, InputTake, Needed, UnspecializedInput};
 use nom_supreme::final_parser::RecreateContext;
-
+use kodept_core::static_assert_size;
 use crate::lexer::traits::ToRepresentation;
 use crate::lexer::{Identifier, Ignore, Literal, Token};
-use crate::token_match::TokenMatch;
+use crate::token_match::{PackedTokenMatch, TokenMatch};
 use kodept_core::structure::Located;
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub struct TokenStream<'t> {
     pub(crate) slice: &'t [TokenMatch<'t>],
+}
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub struct PackedTokenStream<'t> {
+    slice: &'t [PackedTokenMatch],
+    original_input: &'t str,
+}
+
+static_assert_size!(TokenStream<'static>, 16);
+static_assert_size!(PackedTokenStream<'static>, 32);
+
+impl<'t> PackedTokenStream<'t> {
+    pub fn new(slice: &'t [PackedTokenMatch], original_input: &'t str) -> Self {
+        Self {
+            slice,
+            original_input
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.slice.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.slice.is_empty()
+    }
+}
+
+impl Located for PackedTokenStream<'_> {
+    fn location(&self) -> CodePoint {
+        let len = self.slice.into_iter().map(|it| it.point.length).sum();
+
+        match self.slice {
+            [x, ..] => CodePoint::new(len, x.point.offset),
+            [] => CodePoint::new(0, 0)
+        }
+    }
+}
+
+impl<'t> Deref for PackedTokenStream<'t> {
+    type Target = &'t [PackedTokenMatch];
+
+    fn deref(&self) -> &Self::Target {
+        &self.slice
+    }
+}
+
+impl Display for PackedTokenStream<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let location = self.location();
+        write!(f, "{}", &self.original_input[location.as_range()])
+    }
 }
 
 impl<'t> TokenStream<'t> {
