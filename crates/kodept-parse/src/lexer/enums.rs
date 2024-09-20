@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use derive_more::From;
 #[cfg(feature = "enum-iter")]
 use enum_iterator::Sequence;
+use kodept_core::static_assert_size;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Ignore<'t> {
@@ -132,6 +133,8 @@ pub enum Token<'t> {
     Unknown,
 }
 
+static_assert_size!(Token<'static>, 32);
+
 impl Token<'_> {
     pub fn is_ignored(&self) -> bool {
         matches!(self, Token::Ignore(_))
@@ -140,15 +143,6 @@ impl Token<'_> {
 
 impl Display for Token<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Token::Ignore(x) => match x {
-                Ignore::Comment(x) => write!(f, "{x}"),
-                Ignore::MultilineComment(x) => write!(f, "{x}"),
-                Ignore::Newline => write!(f, "<newline>"),
-                Ignore::Whitespace => write!(f, " "),
-            },
-            Token::Unknown => write!(f, "?"),
-            _ => write!(f, "{self:?}"),
-        }
+        write!(f, "{}", self.to_name())
     }
 }
