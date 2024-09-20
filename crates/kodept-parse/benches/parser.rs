@@ -28,11 +28,16 @@ fn bench_impls(c: &mut Criterion) {
         let tokens = TokenStream::new(&tokens);
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
 
-        group.bench_with_input(BenchmarkId::new("nom", factor), &tokens, |b, i| {
-            b.iter(|| NomParser::new().parse_stream(*i).expect("Success"))
-        });
-        group.bench_with_input(BenchmarkId::new("peg", factor), &tokens, |b, i| {
-            b.iter(|| PegParser::<false>::new().parse_stream(*i).expect("Success"))
+        // group.bench_with_input(BenchmarkId::new("nom", factor), &tokens, |b, i| {
+        //     b.iter(|| NomParser::new().parse_stream(*i).expect("Success"))
+        // });
+        // group.bench_with_input(BenchmarkId::new("peg", factor), &tokens, |b, i| {
+        //     b.iter(|| PegParser::<false>::new().parse_stream(*i).expect("Success"))
+        // });
+        #[cfg(feature = "lalrpop")]
+        group.bench_with_input(BenchmarkId::new("lalrpop", factor), &tokens, |b, i| {
+            use kodept_parse::parser::LaLRPop;
+            b.iter(|| LaLRPop::new().parse_stream(*i).expect("Success"))
         });
     }
     group.finish();

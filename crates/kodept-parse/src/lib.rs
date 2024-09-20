@@ -13,4 +13,7 @@ mod nom;
 
 pub mod common;
 
+#[cfg(feature = "lalrpop")]
+mod lalrpop;
+
 pub const TRACING_OPTION: bool = cfg!(feature = "trace");
