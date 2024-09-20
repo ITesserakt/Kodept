@@ -5,7 +5,7 @@ use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::Reportable;
 use std::io::Write;
 use std::mem::take;
-use std::sync::{Arc, LockResult, Mutex};
+use std::sync::{Arc, Mutex};
 
 pub type CodespanSettings = kodept_macros::error::traits::CodespanSettings<StreamOutput>;
 
@@ -44,12 +44,10 @@ impl Reports {
                 collector.into_collected_reports().emit(settings, sources);
                 result
             }
-            Reports::Lazy(collector, _) => {
-                match collector.lock() {
-                    Ok(mut x) => f(&mut x),
-                    Err(x) => f(&mut x.into_inner())
-                }
-            }
+            Reports::Lazy(collector, _) => match collector.lock() {
+                Ok(mut x) => f(&mut x),
+                Err(x) => f(&mut x.into_inner()),
+            },
         }
     }
 
@@ -60,7 +58,7 @@ impl Reports {
             Reports::Lazy(collector, mut settings) => {
                 let reports = match collector.lock() {
                     Ok(mut x) => take(&mut *x),
-                    Err(x) => take(&mut *x.into_inner())
+                    Err(x) => take(&mut *x.into_inner()),
                 };
                 reports
                     .into_collected_reports()
