@@ -1,5 +1,4 @@
-use crate::common::TokenProducer;
-use crate::lexer::{Ignore::*, PestLexer, Token::Ignore};
+use crate::lexer::{Ignore::*, Token, Token::Ignore};
 use crate::token_match::TokenMatch;
 use crate::token_stream::TokenStream;
 use derive_more::Display;
@@ -91,12 +90,11 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
 impl<'input> ParseLiteral for TokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let token_match = PestLexer::new()
-            .parse_string(literal, 0)
-            .expect("Unexpected token received in grammar");
-        debug_assert_eq!(token_match.span.point.length, literal.len() as u32);
+        let Some(token) = Token::from_name(literal) else {
+            unreachable!("Bug in grammar. Any literal used should be convertible to token.")
+        };
 
-        match (self.slice.get(pos), token_match.token) {
+        match (self.slice.get(pos), token) {
             (Some(a), b) if a.token == b => RuleResult::Matched(pos + 1, ()),
             _ => RuleResult::Failed,
         }
