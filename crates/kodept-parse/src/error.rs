@@ -4,8 +4,8 @@ use derive_more::Constructor;
 
 use kodept_core::code_point::CodePoint;
 
-use crate::lexer::{PackedToken, Token};
-use crate::token_stream::{PackedTokenStream, TokenStream};
+use crate::lexer::PackedToken;
+use crate::token_stream::PackedTokenStream;
 
 #[derive(Debug, Constructor)]
 pub struct ErrorLocation {
@@ -36,23 +36,6 @@ impl<A> IntoIterator for ParseErrors<A> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.errors.into_iter()
-    }
-}
-
-impl<'t, 's> Original<Token<'t>> for TokenStream<'t, 's> {
-    fn point_pos(&self, point: impl Into<CodePoint>) -> usize {
-        let stream = *self;
-        let point1 = point.into();
-        stream
-            .slice
-            .iter()
-            .position(|it| it.span.point == point1)
-            .unwrap()
-    }
-
-    fn actual(&self, point: impl Into<CodePoint>) -> Token<'t> {
-        let pos = self.point_pos(point);
-        self.slice[pos].token
     }
 }
 

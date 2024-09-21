@@ -146,7 +146,7 @@ impl InspectParser {
         let tokens = EagerTokenizer::new(source.contents(), PegLexer::<false>::new())
             .try_collect_adapted::<String>()
             .map_err(TokenizationError)?;
-        let tokens = kodept_parse::token_stream::PackedTokenStream::new(&tokens, source.contents());
+        let tokens = kodept_parse::token_stream::PackedTokenStream::new(&tokens);
 
         let file = File::create(file_output_path.with_extension("par.peg"))?;
         {

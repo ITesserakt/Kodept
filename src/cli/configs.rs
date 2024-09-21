@@ -232,7 +232,7 @@ impl ParsingConfig {
 
     pub fn build_rlt<'a>(&self, source: &'a ReadCodeSource) -> Result<RLT, ParseErrors<&'a str>> {
         let tokens = self.tokenize(source)?;
-        let stream = PackedTokenStream::new(&tokens, source.contents());
+        let stream = PackedTokenStream::new(&tokens);
         debug!(length = tokens.len(), "Produced token stream");
 
         let backend = self.get_parsing_backend();

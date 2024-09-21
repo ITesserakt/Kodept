@@ -6,6 +6,7 @@ use crate::token_stream::PackedTokenStream;
 use derive_more::Constructor;
 use itertools::Itertools;
 use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
 use nom_supreme::error::{BaseErrorKind, ErrorTree, Expectation};
 use std::borrow::Cow;
 use std::collections::VecDeque;
@@ -73,7 +74,8 @@ where
             .map(|(key, group)| {
                 let actual = A::from(&key[0..=1]);
                 let expected = group.map(|it| it.into_expected()).collect();
-                let location = ErrorLocation::new(position, CodePoint::single_point(position as u32));
+                let location =
+                    ErrorLocation::new(position, CodePoint::single_point(position as u32));
 
                 ParseError::new(expected, actual, location)
             })
@@ -84,19 +86,19 @@ where
 
 impl<'t> ErrorAdapter<PackedToken, PackedTokenStream<'t>> for super::parser::ParseError<'t> {
     fn adapt(self, _: PackedTokenStream<'t>, position: usize) -> ParseErrors<PackedToken> {
+        use super::parser::ParseError as NomParseError;
+
         let mut current_errors = VecDeque::from([self]);
         let mut base_errors = vec![];
 
         loop {
             match current_errors.pop_front() {
                 None => break,
-                Some(super::parser::ParseError::Base { location, kind }) => {
+                Some(NomParseError::Base { location, kind }) => {
                     base_errors.push(BaseError::new(location, kind))
                 }
-                Some(super::parser::ParseError::Stack { base, .. }) => {
-                    current_errors.push_back(*base)
-                }
-                Some(super::parser::ParseError::Alt(es)) => current_errors.extend(es),
+                Some(NomParseError::Stack { base, contexts }) => current_errors.push_back(*base),
+                Some(NomParseError::Alt(es)) => current_errors.extend(es),
             }
         }
 
@@ -105,11 +107,11 @@ impl<'t> ErrorAdapter<PackedToken, PackedTokenStream<'t>> for super::parser::Par
             .chunk_by(|it| it.location)
             .into_iter()
             .map(|(key, group)| {
-                let actual = key[0].token;
+                let actual = key[0];
                 let expected = group.map(|it| it.into_expected()).collect();
-                let location = ErrorLocation::new(position, CodePoint::single_point(position as u32));
+                let location = ErrorLocation::new(position, key.location());
 
-                ParseError::new(expected, actual, location)
+                ParseError::new(expected, actual.token, location)
             })
             .collect();
         ParseErrors::new(parse_errors)

@@ -47,28 +47,5 @@ mod macros {
         }};
     }
 
-    macro_rules! match_token {
-        ($pat:pat_param) => {{
-            nom::error::context(
-                stringify!($pat),
-                nom::combinator::verify(
-                    $crate::nom::parser::utils::any_not_ignored_token,
-                    move |t| matches!(&t.token, $pat),
-                ),
-            )
-        }};
-    }
-
-    macro_rules! match_any_token {
-        ($pat:pat_param) => {{
-            nom::error::context(
-                stringify!($pat),
-                nom::combinator::verify($crate::nom::parser::utils::any_token, move |t| {
-                    matches!(&t.token, $pat)
-                }),
-            )
-        }};
-    }
-
-    pub(crate) use {function, match_any_token, match_token};
+    pub(crate) use {function};
 }

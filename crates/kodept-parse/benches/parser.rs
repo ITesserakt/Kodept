@@ -25,7 +25,7 @@ fn bench_impls(c: &mut Criterion) {
     for factor in (5..=10).map(|it| 2usize.pow(it)) {
         let contents = get_contents_with_factor(FILENAME, factor);
         let tokens = get_tokens_from_contents(&contents);
-        let tokens = PackedTokenStream::new(&tokens, &contents);
+        let tokens = PackedTokenStream::new(&tokens);
         group.throughput(Throughput::Bytes(contents.as_bytes().len() as u64));
 
         group.bench_with_input(BenchmarkId::new("nom", factor), &tokens, |b, i| {

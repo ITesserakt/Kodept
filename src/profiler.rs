@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(feature = "profiler")]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
+#[allow(dead_code)]
 static PROFILER: HeapProfiler = HeapProfiler::new();
 
 #[derive(Clone)]
@@ -18,6 +19,7 @@ pub struct HeapProfiler {
 }
 
 impl HeapProfiler {
+    #[allow(dead_code)]
     const fn new() -> Self {
         Self {
             #[cfg(feature = "profiler")]
@@ -53,9 +55,9 @@ impl HeapProfilerLock {
     }
 
     pub fn consume_on_ctrlc(&mut self) {
-        let mut this = self.clone();
         #[cfg(feature = "profiler")]
         {
+            let mut this = self.clone();
             ctrlc::set_handler(move || {
                 this.consume();
                 std::process::exit(0);

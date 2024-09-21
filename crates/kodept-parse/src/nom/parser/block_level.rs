@@ -1,5 +1,5 @@
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::macros::{function};
 use crate::nom::parser::utils::{match_token, newline_separated};
 use crate::nom::parser::{function, operator, r#type, ParseResult};
 use crate::token_stream::PackedTokenStream;
@@ -46,7 +46,7 @@ pub(super) fn body(input: PackedTokenStream) -> ParseResult<rlt::Body> {
 fn var_declaration(input: PackedTokenStream) -> ParseResult<rlt::Variable> {
     let (input, kind) = match_token(Val).or(match_token(Var)).parse(input)?;
     let (input, rest) = tuple((
-        match_token!(Identifier).cut(),
+        match_token(Identifier).cut(),
         tuple((match_token(Colon), r#type::grammar)).opt(),
     ))
     .cut()

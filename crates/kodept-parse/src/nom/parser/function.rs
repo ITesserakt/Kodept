@@ -3,7 +3,7 @@ use nom::Parser;
 use nom_supreme::ParserExt;
 
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::macros::{function};
 use crate::nom::parser::parameter::{parameter, typed_parameter};
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{block_level, r#type, ParseResult};
@@ -18,7 +18,7 @@ fn abstract_function(input: PackedTokenStream) -> ParseResult<rlt::AbstractFunct
     tuple((
         match_token(Abstract),
         match_token(Fun),
-        match_token!(Identifier),
+        match_token(Identifier),
         paren_enclosed(comma_separated0(typed_parameter)).opt(),
         tuple((match_token(Colon), r#type::grammar)).opt(),
     ))
@@ -35,7 +35,7 @@ fn abstract_function(input: PackedTokenStream) -> ParseResult<rlt::AbstractFunct
 pub(super) fn bodied(input: PackedTokenStream) -> ParseResult<rlt::BodiedFunction> {
     tuple((
         match_token(Fun),
-        match_token!(Identifier),
+        match_token(Identifier),
         paren_enclosed(comma_separated0(parameter)).opt(),
         tuple((match_token(Colon), r#type::grammar.cut())).opt(),
         block_level::body.cut(),
