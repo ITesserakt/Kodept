@@ -7,7 +7,7 @@ use derive_more::Constructor;
 use itertools::Itertools;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use nom_supreme::error::{BaseErrorKind, ErrorTree, Expectation};
+use nom_supreme::error::{BaseErrorKind, ErrorTree, Expectation, GenericErrorTree, StackContext};
 use std::borrow::Cow;
 use std::collections::VecDeque;
 
@@ -86,19 +86,29 @@ where
 
 impl<'t> ErrorAdapter<PackedToken, PackedTokenStream<'t>> for super::parser::ParseError<'t> {
     fn adapt(self, _: PackedTokenStream<'t>, position: usize) -> ParseErrors<PackedToken> {
-        use super::parser::ParseError as NomParseError;
-
         let mut current_errors = VecDeque::from([self]);
         let mut base_errors = vec![];
+        let mut depth = 0;
 
         loop {
             match current_errors.pop_front() {
                 None => break,
-                Some(NomParseError::Base { location, kind }) => {
+                Some(GenericErrorTree::Base { location, kind }) => {
                     base_errors.push(BaseError::new(location, kind))
                 }
-                Some(NomParseError::Stack { base, contexts }) => current_errors.push_back(*base),
-                Some(NomParseError::Alt(es)) => current_errors.extend(es),
+                Some(GenericErrorTree::Stack { base, contexts }) => {
+                    println!(
+                        "{}{}",
+                        "\t".repeat(depth),
+                        contexts.iter().map(|it| match &it.1 {
+                            StackContext::Kind(x) => x.description(),
+                            StackContext::Context(x) => x,
+                        }).join("\n")
+                    );
+                    depth += 1;
+                    current_errors.push_back(*base)
+                }
+                Some(GenericErrorTree::Alt(es)) => current_errors.extend(es),
             }
         }
 

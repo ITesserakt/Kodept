@@ -10,7 +10,7 @@ use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
 use nom::branch::alt;
 use nom::bytes::complete::{take, take_while};
-use nom::multi::{separated_list0, separated_list1};
+use nom::multi::{many1, separated_list0, separated_list1};
 use nom::sequence::tuple;
 use nom::Err::Error;
 use nom::IResult;
@@ -134,11 +134,11 @@ pub(super) fn newline_separated<'t, T, P: Parser<PackedTokenStream<'t>, T, Parse
     items_parser: P,
 ) -> impl Parser<PackedTokenStream<'t>, Vec<T>, ParseError<'t>> {
     separated_list0(
-        alt((
-            match_token(Newline),
-            match_token(Whitespace),
+        many1(alt((
+            match_any_token(Newline),
+            match_any_token(Whitespace),
             match_token(Semicolon),
-        )),
+        ))),
         items_parser,
     )
 }
