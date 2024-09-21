@@ -1,5 +1,5 @@
 use kodept_parse::lexer::PegLexer;
-use kodept_parse::token_match::TokenMatch;
+use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
 use std::fmt::Debug;
 
@@ -9,9 +9,9 @@ fn get_file_contents() -> &'static str {
     std::fs::read_to_string(FILENAME).unwrap().leak()
 }
 
-fn get_tokens() -> &'static [TokenMatch<'static>] {
+fn get_tokens() -> &'static [PackedTokenMatch] {
     let file_contents: &'static str = std::fs::read_to_string(FILENAME).unwrap().leak();
-    let tokens: &'static [TokenMatch<'static>] = {
+    let tokens: &'static [PackedTokenMatch] = {
         let tokenizer = LazyTokenizer::new(file_contents, PegLexer::<true>::new());
         tokenizer.into_vec().leak()
     };

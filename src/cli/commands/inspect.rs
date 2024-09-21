@@ -1,14 +1,14 @@
-use std::path::PathBuf;
+use std::path::Path;
 use std::string::FromUtf8Error;
 
+use crate::cli::traits::CommandWithSources;
 use clap::{Parser, ValueEnum};
 use derive_more::Display;
-use thiserror::Error;
-
-use crate::cli::traits::Command;
-use kodept::source_files::SourceView;
+use kodept::codespan_settings::{Reports};
+use kodept::source_files::{SourceFiles, SourceView};
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::error::ErrorReported;
+use thiserror::Error;
+use crate::cli::configs::LoadingConfig;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -25,6 +25,8 @@ pub struct InspectParser {
     /// Additionally launch `pegviz` to produce html output
     #[arg(default_value_t = true, short = 'p', long = "pegviz")]
     use_pegviz: bool,
+    #[command(flatten)]
+    loading_config: LoadingConfig
 }
 
 #[allow(dead_code)]
@@ -52,21 +54,18 @@ enum InspectError<A> {
 }
 
 #[cfg(not(feature = "trace"))]
-impl Command for InspectParser {
-    type Params = PathBuf;
-
-    fn exec_for_source(
-        &self,
-        source: SourceView,
-        collector: &mut ReportCollector,
-        _: &mut Self::Params,
-    ) -> Result<(), ErrorReported> {
+impl CommandWithSources for InspectParser {
+    fn build_sources(&self, collector: &mut ReportCollector<()>) -> Option<SourceFiles> {
         #[derive(Error, Debug)]
         #[error("Program is compiled without inspecting support")]
         struct Unsupported;
 
-        collector.report(*source.id, Unsupported);
-        Err(ErrorReported::new())
+        collector.report((), Unsupported);
+        None
+    }
+
+    fn exec_for_source(&self, _: SourceView, _: &mut Reports, _: &Path) -> Option<()> {
+        unreachable!()
     }
 }
 
@@ -139,7 +138,6 @@ impl InspectParser {
         use kodept_parse::{
             lexer::PegLexer,
             parser::{parse_from_top, PegParser},
-            token_stream::TokenStream,
             tokenizer::{EagerTokenizer, Tok, TokCtor},
         };
         use std::fs::File;
@@ -148,7 +146,7 @@ impl InspectParser {
         let tokens = EagerTokenizer::new(source.contents(), PegLexer::<false>::new())
             .try_collect_adapted::<String>()
             .map_err(TokenizationError)?;
-        let tokens = TokenStream::new(&tokens);
+        let tokens = kodept_parse::token_stream::PackedTokenStream::new(&tokens, source.contents());
 
         let file = File::create(file_output_path.with_extension("par.peg"))?;
         {
@@ -162,33 +160,51 @@ impl InspectParser {
 }
 
 #[cfg(feature = "trace")]
-impl Command for InspectParser {
-    type Params = PathBuf;
+impl CommandWithSources for InspectParser {
+    fn build_sources(&self, collector: &mut ReportCollector<()>) -> Option<SourceFiles> {
+        let loader: kodept::loader::Loader = match self.loading_config.clone().try_into() {
+            Ok(x) => x,
+            Err(e) => {
+                collector.report((), e);
+                return None;
+            }
+        };
+        Some(SourceFiles::from_sources(loader.into_sources()))
+    }
 
-    fn exec_for_source(
-        &self,
-        source: SourceView,
-        collector: &mut ReportCollector,
-        output_path: &mut Self::Params,
-    ) -> Result<(), ErrorReported> {
+    fn exec_for_source(&self, source: SourceView, reports: &mut Reports, output: &Path) -> Option<()> {
+        use kodept::codespan_settings::ProvideCollector;
+        
         let filename = source.path();
         let source_name = filename.build_file_path();
-        let file_output_path = output_path.join(source_name);
-        match match self.option {
-            InspectingOptions::Tokenizer => self.inspect_tokenizer(&source, &file_output_path),
-            InspectingOptions::Parser => self.inspect_parser(&source, &file_output_path),
-            InspectingOptions::Both => {
-                if let Err(e) = self.inspect_tokenizer(&source, &file_output_path) {
-                    collector.report(*source.id, e);
+        let file_output_path = output.join(source_name);
+        
+        reports.provide_collector(source.all_files(), |collector| {
+            match self.option {
+                InspectingOptions::Tokenizer => {
+                    if let Err(e) = self.inspect_tokenizer(&source, &file_output_path) {
+                        collector.report(*source.id, e);
+                        return None;
+                    }
+                },
+                InspectingOptions::Parser => {
+                    if let Err(e) = self.inspect_parser(&source, &file_output_path) {
+                        collector.report(*source.id, e);
+                        return None;
+                    }
+                },
+                InspectingOptions::Both => {
+                    if let Err(e) = self.inspect_tokenizer(&source, &file_output_path) {
+                        collector.report(*source.id, e);
+                        return None;
+                    }
+                    if let Err(e) = self.inspect_parser(&source, &file_output_path) {
+                        collector.report(*source.id, e);
+                        return None;
+                    }
                 }
-                self.inspect_parser(&source, &file_output_path)
             }
-        } {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                collector.report(*source.id, e);
-                Err(ErrorReported::new())
-            }
-        }
+            Some(())
+        })
     }
 }

@@ -39,7 +39,7 @@ impl<A> IntoIterator for ParseErrors<A> {
     }
 }
 
-impl<'t> Original<Token<'t>> for TokenStream<'t> {
+impl<'t, 's> Original<Token<'t>> for TokenStream<'t, 's> {
     fn point_pos(&self, point: impl Into<CodePoint>) -> usize {
         let stream = *self;
         let point1 = point.into();

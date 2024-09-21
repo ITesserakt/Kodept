@@ -7,7 +7,7 @@ use kodept_core::structure::Located;
 
 use crate::error::{Original, ParseErrors};
 use crate::token_match::{PackedTokenMatch, TokenMatch};
-use crate::token_stream::TokenStream;
+use crate::token_stream::PackedTokenStream;
 
 pub trait TokenProducer {
     type Error<'t>;
@@ -21,14 +21,16 @@ pub trait TokenProducer {
 
 pub trait EagerTokensProducer {
     type Error<'t>;
-    
+
     fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>>;
 }
 
 pub trait RLTProducer<Output = RLT> {
-    type Error<'t>;
+    type Error<'t>
+    where
+        Self: 't;
 
-    fn parse_stream<'t>(&self, input: TokenStream<'t>) -> Result<Output, Self::Error<'t>>;
+    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<Output, Self::Error<'t>>;
 }
 
 pub trait ErrorAdapter<A, O: Original<A>> {
@@ -61,6 +63,12 @@ impl<'t, T> From<(TokenMatch<'t>, T, TokenMatch<'t>)> for VerboseEnclosed<T> {
             inner: value.1,
             right: value.2.span,
         }
+    }
+}
+
+impl<T> From<(PackedTokenMatch, T, PackedTokenMatch)> for VerboseEnclosed<T> {
+    fn from((left, inner, right): (PackedTokenMatch, T, PackedTokenMatch)) -> Self {
+        Self::from_located(left, inner, right)
     }
 }
 

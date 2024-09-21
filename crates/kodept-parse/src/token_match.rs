@@ -1,6 +1,7 @@
 use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::static_assert_size;
+use kodept_core::structure::Located;
 use kodept_core::structure::span::Span;
 
 use crate::lexer::{PackedToken, Token};
@@ -15,6 +16,7 @@ use crate::lexer::ComparisonOperator::*;
 use crate::lexer::BitOperator::*;
 use crate::lexer::LogicOperator::*;
 
+#[deprecated]
 #[derive(Debug, Clone, PartialEq, Constructor, Copy)]
 pub struct TokenMatch<'t> {
     pub token: Token<'t>,
@@ -111,5 +113,11 @@ impl<'t> From<(PackedTokenMatch, &'t str)> for TokenMatch<'t> {
 impl From<TokenMatch<'_>> for PackedTokenMatch {
     fn from(value: TokenMatch<'_>) -> Self {
         PackedTokenMatch::new(value.token.into(), value.span.point)
+    }
+}
+
+impl Located for PackedTokenMatch {
+    fn location(&self) -> CodePoint {
+        self.point
     }
 }

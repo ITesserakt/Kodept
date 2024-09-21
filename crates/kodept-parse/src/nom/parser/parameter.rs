@@ -4,43 +4,37 @@ use nom::Parser;
 use nom_supreme::ParserExt;
 
 use kodept_core::structure::rlt;
-
-use crate::lexer::{
-    Identifier::Identifier,
-    Symbol::{Colon, TypeGap},
-    Token,
-};
+use kodept_core::structure::rlt::new_types;
+use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::{function, match_token};
 use crate::nom::parser::{r#type, ParseResult};
-use crate::token_stream::TokenStream;
+use crate::token_stream::PackedTokenStream;
 
-pub(super) fn typed_parameter(input: TokenStream) -> ParseResult<rlt::TypedParameter> {
+pub(super) fn typed_parameter(input: PackedTokenStream) -> ParseResult<rlt::TypedParameter> {
     separated_pair(
-        match_token!(Token::Identifier(Identifier(_))),
-        match_token!(Token::Symbol(Colon)),
+        match_token!(Identifier),
+        match_token!(Colon),
         r#type::grammar,
     )
     .context(function!())
     .map(|it| rlt::TypedParameter {
-        id: it.0.span.into(),
+        id: new_types::Identifier::from_located(it.0),
         parameter_type: it.1,
     })
     .parse(input)
 }
 
-fn untyped_parameter(input: TokenStream) -> ParseResult<rlt::UntypedParameter> {
-    let (rest, id) = match_token!(Token::Identifier(Identifier(_)))
-        .context(function!())
-        .parse(input)?;
-    let (rest, _) = match_token!(Token::Symbol(Colon))
-        .precedes(match_token!(Token::Symbol(TypeGap)).cut())
+fn untyped_parameter(input: PackedTokenStream) -> ParseResult<rlt::UntypedParameter> {
+    let (rest, id) = match_token!(Identifier).context(function!()).parse(input)?;
+    let (rest, _) = match_token!(Colon)
+        .precedes(match_token!(TypeGap).cut())
         .opt()
         .parse(rest)?;
 
-    Ok((rest, rlt::UntypedParameter { id: id.span.into() }))
+    Ok((rest, rlt::UntypedParameter { id: new_types::Identifier::from_located(id) }))
 }
 
-pub(super) fn parameter(input: TokenStream) -> ParseResult<rlt::Parameter> {
+pub(super) fn parameter(input: PackedTokenStream) -> ParseResult<rlt::Parameter> {
     alt((
         typed_parameter.map(rlt::Parameter::Typed),
         untyped_parameter.map(rlt::Parameter::Untyped),
