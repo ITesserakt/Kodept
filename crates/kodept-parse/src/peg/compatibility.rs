@@ -1,6 +1,6 @@
-use crate::lexer::{Ignore::*, Token, Token::Ignore};
-use crate::token_match::TokenMatch;
-use crate::token_stream::TokenStream;
+use crate::lexer::PackedToken;
+use crate::token_match::PackedTokenMatch;
+use crate::token_stream::PackedTokenStream;
 use derive_more::Display;
 use kodept_core::code_point::CodePoint;
 use peg::str::LineCol;
@@ -32,12 +32,12 @@ impl From<LineCol> for Position {
     }
 }
 
-impl<'t> Parse for TokenStream<'t> {
+impl<'t> Parse for PackedTokenStream<'t> {
     type PositionRepr = Position;
 
     #[inline(always)]
     fn start(&self) -> usize {
-        self.slice.first().map_or(0, |it| it.span.point.offset) as usize
+        self.first().map_or(0, |it| it.point.offset) as usize
     }
 
     #[inline(always)]
@@ -47,21 +47,21 @@ impl<'t> Parse for TokenStream<'t> {
 
     #[inline(always)]
     fn position_repr(&self, pos: usize) -> Self::PositionRepr {
-        let (before, point) = match self.slice.split_at(pos) {
-            (a, [b, ..]) => (a, b.span.point),
-            (a @ [.., last], []) => (a, last.span.point),
+        let (before, point) = match self.split_at(pos) {
+            (a, [b, ..]) => (a, b.point),
+            (a @ [.., last], []) => (a, last.point),
             ([], []) => panic!("Cannot slice empty stream"),
         };
         let line = before
             .iter()
-            .filter(|it| matches!(it.token, Ignore(Newline)))
+            .filter(|it| matches!(it.token, PackedToken::Newline))
             .count()
             + 1;
         let col = before
             .iter()
             .rev()
-            .take_while(|it| !matches!(it.token, Ignore(Newline)))
-            .map(|it| it.span.point.length)
+            .take_while(|it| !matches!(it.token, PackedToken::Newline))
+            .map(|it| it.point.length)
             .sum::<u32>()
             + 1;
 
@@ -74,12 +74,12 @@ impl<'t> Parse for TokenStream<'t> {
     }
 }
 
-impl<'input> ParseElem<'input> for TokenStream<'input> {
-    type Element = TokenMatch<'input>;
+impl<'input> ParseElem<'input> for PackedTokenStream<'input> {
+    type Element = PackedTokenMatch;
 
     #[inline(always)]
     fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element> {
-        let slice = &self.slice[pos..];
+        let slice = &self[pos..];
         match slice.first() {
             None => RuleResult::Failed,
             Some(x) => RuleResult::Matched(pos + 1, *x),
@@ -87,25 +87,25 @@ impl<'input> ParseElem<'input> for TokenStream<'input> {
     }
 }
 
-impl<'input> ParseLiteral for TokenStream<'input> {
+impl<'input> ParseLiteral for PackedTokenStream<'input> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let Some(token) = Token::from_name(literal) else {
+        let Some(token) = PackedToken::from_name(literal) else {
             unreachable!("Bug in grammar. Any literal used should be convertible to token.")
         };
 
-        match (self.slice.get(pos), token) {
+        match (self.get(pos), token) {
             (Some(a), b) if a.token == b => RuleResult::Matched(pos + 1, ()),
             _ => RuleResult::Failed,
         }
     }
 }
 
-impl<'input> ParseSlice<'input> for TokenStream<'input> {
-    type Slice = TokenStream<'input>;
+impl<'input> ParseSlice<'input> for PackedTokenStream<'input> {
+    type Slice = PackedTokenStream<'input>;
 
     #[inline(always)]
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice {
-        TokenStream::new(&self.slice[p1..p2])
+        self.sub_stream(p1..p2)
     }
 }

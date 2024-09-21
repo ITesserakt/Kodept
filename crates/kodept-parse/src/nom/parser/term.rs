@@ -6,22 +6,21 @@ use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
 
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::{Context, ContextualReference};
-
-use crate::lexer::Symbol::DoubleColon;
-use crate::lexer::{Identifier::*, Token};
+use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::{function, match_token};
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::ParseResult;
-use crate::token_stream::TokenStream;
+use crate::token_stream::PackedTokenStream;
+use kodept_core::structure::rlt;
+use kodept_core::structure::rlt::new_types::Symbol;
+use kodept_core::structure::rlt::{new_types, Context, ContextualReference};
 
 /// |      | Global   | Local     |
 /// | ---- | -------- | --------- |
 /// | Type | ::{X::}X | X::X{::X} |
 /// | Ref  | ::{X::}x | X::{X::}x |
 
-fn global_type_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
+fn global_type_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((
         match_token(DoubleColon),
         many0(type_ref.terminated(match_token(DoubleColon))),
@@ -29,7 +28,7 @@ fn global_type_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)>
     ))
     .map(|(global, context, ty)| {
         let start = Context::Global {
-            colon: global.span.into(),
+            colon: Symbol::from_located(global),
         };
         let context = context.into_iter().fold(start, |acc, next| Context::Inner {
             parent: Box::new(acc),
@@ -41,7 +40,7 @@ fn global_type_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)>
     .parse(input)
 }
 
-fn global_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
+fn global_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((
         match_token(DoubleColon),
         many0(type_ref.terminated(match_token(DoubleColon))),
@@ -49,7 +48,7 @@ fn global_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
     ))
     .map(|(global, context, r)| {
         let start = Context::Global {
-            colon: global.span.into(),
+            colon: Symbol::from_located(global),
         };
         let context = context.into_iter().fold(start, |acc, next| Context::Inner {
             parent: Box::new(acc),
@@ -61,7 +60,7 @@ fn global_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
     .parse(input)
 }
 
-fn local_type_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
+fn local_type_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((type_ref, many1(match_token(DoubleColon).precedes(type_ref))))
         .map(|it| (it.0, VecDeque::from(it.1)))
         .map(|(first, mut rest)| {
@@ -80,7 +79,7 @@ fn local_type_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> 
         .parse(input)
 }
 
-fn local_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
+fn local_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((
         many1(type_ref.terminated(match_token(DoubleColon))),
         variable_ref,
@@ -97,21 +96,21 @@ fn local_ref(input: TokenStream) -> ParseResult<(Context, rlt::Reference)> {
     .parse(input)
 }
 
-fn variable_ref(input: TokenStream) -> ParseResult<rlt::Reference> {
-    match_token!(Token::Identifier(Identifier(_)))
-        .map(|it| rlt::Reference::Identifier(it.span.into()))
+fn variable_ref(input: PackedTokenStream) -> ParseResult<rlt::Reference> {
+    match_token!(Identifier)
+        .map(|it| rlt::Reference::Identifier(new_types::Identifier::from_located(it)))
         .context(function!())
         .parse(input)
 }
 
-fn type_ref(input: TokenStream) -> ParseResult<rlt::Reference> {
-    match_token!(Token::Identifier(Type(_)))
-        .map(|it| rlt::Reference::Identifier(it.span.into()))
+fn type_ref(input: PackedTokenStream) -> ParseResult<rlt::Reference> {
+    match_token!(Type)
+        .map(|it| rlt::Reference::Identifier(new_types::Identifier::from_located(it)))
         .context(function!())
         .parse(input)
 }
 
-fn contextual(input: TokenStream) -> ParseResult<ContextualReference> {
+fn contextual(input: PackedTokenStream) -> ParseResult<ContextualReference> {
     alt((global_type_ref, global_ref, local_ref, local_type_ref))
         .map(|it| ContextualReference {
             context: it.0,
@@ -121,11 +120,11 @@ fn contextual(input: TokenStream) -> ParseResult<ContextualReference> {
         .parse(input)
 }
 
-fn reference(input: TokenStream) -> ParseResult<rlt::Reference> {
+fn reference(input: PackedTokenStream) -> ParseResult<rlt::Reference> {
     variable_ref.or(type_ref).context(function!()).parse(input)
 }
 
-pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Term> {
+pub(super) fn grammar(input: PackedTokenStream) -> ParseResult<rlt::Term> {
     alt((
         contextual.map(rlt::Term::Contextual),
         reference.map(rlt::Term::Reference),

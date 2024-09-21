@@ -11,6 +11,8 @@ use std::sync::Arc;
 use tracing::error;
 use yoke::Yoke;
 
+pub struct GlobalReports;
+
 #[derive(Debug, Clone)]
 pub struct SourceView {
     pub id: Freeze<FileId>,
@@ -27,6 +29,28 @@ impl Deref for SourceView {
 
     fn deref(&self) -> &Self::Target {
         self.source.get()
+    }
+}
+
+impl Files<'static> for GlobalReports {
+    type FileId = ();
+    type Name = &'static str;
+    type Source = &'static str;
+
+    fn name(&'static self, _: Self::FileId) -> Result<Self::Name, Error> {
+        Ok("<global level>")
+    }
+
+    fn source(&'static self, _: Self::FileId) -> Result<Self::Source, Error> {
+        Err(Error::FileMissing)
+    }
+
+    fn line_index(&'static self, _: Self::FileId, _: usize) -> Result<usize, Error> {
+        Err(Error::FileMissing)
+    }
+
+    fn line_range(&'static self, _: Self::FileId, _: usize) -> Result<Range<usize>, Error> {
+        Err(Error::FileMissing)
     }
 }
 

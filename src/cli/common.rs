@@ -4,7 +4,7 @@ use clap::Parser;
 use tracing::Level;
 
 use crate::cli::commands::Commands;
-use crate::cli::configs::{DiagnosticConfig, LoadingConfig};
+use crate::cli::configs::DiagnosticConfig;
 
 const ABOUT_MESSAGE: &str =
     "Typechecks or interprets passed INPUT using Kodept programming language";
@@ -29,14 +29,12 @@ pub struct Kodept {
     conflicts_with_all = ["debug", "verbose"]
     )]
     verbosity: Level,
-    /// Write output to specified path
-    #[arg(short = 'o', long = "out", default_value = "./build")]
+    /// Write all output to specified path
+    #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
     pub output: PathBuf,
 
     #[command(flatten)]
     pub diagnostic_config: DiagnosticConfig,
-    #[command(flatten)]
-    pub loading_config: LoadingConfig,
     #[command(subcommand)]
     pub subcommands: Commands,
 }
@@ -51,4 +49,12 @@ impl Kodept {
             self.verbosity
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn verify_cli() {
+    use clap::CommandFactory;
+
+    Kodept::command().debug_assert();
 }

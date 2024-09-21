@@ -1,29 +1,24 @@
 use crate::common::{RLTProducer, VerboseEnclosed};
-use crate::lexer::{
-    Identifier as I,
-    Ignore::*,
-    Literal::*,
-    Symbol::*,
-    Token,
-    Token::{Identifier, Ignore, Literal},
-};
+use crate::lexer::PackedToken::*;
 use crate::peg::compatibility::Position;
 use crate::peg::macros::tok;
-use crate::token_match::TokenMatch;
-use crate::token_stream::TokenStream;
+use crate::token_stream::PackedTokenStream;
+use crate::token_match::PackedTokenMatch;
 use crate::TRACING_OPTION;
 use derive_more::Constructor;
 use kodept_core::structure::rlt::new_types::BinaryOperationSymbol;
 use kodept_core::structure::rlt::new_types::UnaryOperationSymbol;
-use kodept_core::structure::rlt::new_types::{Keyword, Symbol};
+use kodept_core::structure::rlt::new_types::{Keyword, Symbol, Identifier};
 use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::*;
+use kodept_core::structure::span::Span;
 use peg::error::ParseError;
+use crate::lexer::PackedToken;
 
-peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
+peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     /// UTILITIES
     /// --------------------------------------------------------------------------------------------
-    rule _ = quiet! { [tok!(Ignore(_))]* }
+    rule _ = quiet! { [tok!(Comment | MultilineComment | Newline | Whitespace)]* }
     
     rule comma_separated0<T>(items: rule<T>) -> Vec<T> =
         i:(items() ** (_ "," _)) _ ","? { i }
@@ -35,18 +30,18 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         lp:$"{" _ i:inner() _ rp:$"}" { VerboseEnclosed::from_located(lp, i, rp) }
     
     rule separation() =
-        (quiet!{ [tok!(Ignore(Newline))]+ } / expected!("<newline>")) _ /
-        (quiet!{ [tok!(Token::Symbol(Semicolon))] } / expected!(";")) _
+        (quiet!{ [tok!(Newline)]+ } / expected!("<newline>")) _ /
+        (quiet!{ [tok!(Semicolon)] } / expected!(";")) _
 
     rule separated<T>(inner: rule<T>) -> Vec<T> =
         inner() ** separation()
 
-    rule ident() -> TokenMatch<'input> =
-        quiet!{ [tok!(Identifier(I::Identifier(_)))] } / expected!("<ident>")
+    rule ident() -> PackedTokenMatch =
+        quiet!{ [tok!(PackedToken::Identifier)] } / expected!("<ident>")
 
     rule type_ident() -> rlt::new_types::TypeName =
-        i:(quiet!{ [tok!(Identifier(I::Type(_)))] } / expected!("<Ident>")) {
-            rlt::new_types::TypeName::from(i.span)
+        i:(quiet!{ [tok!(Type)] } / expected!("<Ident>")) {
+            rlt::new_types::TypeName::from_located(i.point)
         }
 
     /// Type grammar
@@ -67,12 +62,12 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
 
     pub rule typed_parameter() -> rlt::TypedParameter =
         i:ident() _ ":" _ t:type_grammar() {
-            rlt::TypedParameter {  id: i.span.into(), parameter_type: t}
+            rlt::TypedParameter {  id: Identifier::from_located(i.point), parameter_type: t}
         }
 
     pub rule untyped_parameter() -> rlt::UntypedParameter =
         i:ident() _ (":" _ "_")? {
-            rlt::UntypedParameter { id: i.span.into() }
+            rlt::UntypedParameter { id: Identifier::from_located(i.point) }
         }
 
     pub rule parameter() -> rlt::Parameter =
@@ -86,12 +81,12 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         quiet!{ inner() } / expected!(name)
 
     pub rule literal_grammar() -> rlt::Literal =
-        i:lit(<[tok!(Literal(Binary(_)))]>,   "<binary literal>") { rlt::Literal::Binary(i.span) }   /
-        i:lit(<[tok!(Literal(Octal(_)))]>,    "<octal literal>")  { rlt::Literal::Octal(i.span) }    /
-        i:lit(<[tok!(Literal(Hex(_)))]>,      "<hex literal>")    { rlt::Literal::Hex(i.span) }      /
-        i:lit(<[tok!(Literal(Floating(_)))]>, "<number literal>") { rlt::Literal::Floating(i.span) } /
-        i:lit(<[tok!(Literal(Char(_)))]>,     "<char literal>")   { rlt::Literal::Char(i.span) }     /
-        i:lit(<[tok!(Literal(String(_)))]>,   "<string literal>") { rlt::Literal::String(i.span) }
+        i:lit(<[tok!(Binary)]>,   "<binary literal>") { rlt::Literal::Binary(Span::new(i.point)) }   /
+        i:lit(<[tok!(Octal)]>,    "<octal literal>")  { rlt::Literal::Octal(Span::new(i.point)) }    /
+        i:lit(<[tok!(Hex)]>,      "<hex literal>")    { rlt::Literal::Hex(Span::new(i.point)) }      /
+        i:lit(<[tok!(Floating)]>, "<number literal>") { rlt::Literal::Floating(Span::new(i.point)) } /
+        i:lit(<[tok!(Char)]>,     "<char literal>")   { rlt::Literal::Char(Span::new(i.point)) }     /
+        i:lit(<[tok!(String)]>,   "<string literal>") { rlt::Literal::String(Span::new(i.point)) }
 
     /// Operators grammar
     /// --------------------------------------------------------------------------------------------
@@ -273,7 +268,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     rule type_ref() -> rlt::Reference = t:type_ident() { rlt::Reference::Type(t) }
 
     rule variable_ref() -> rlt::Reference =
-        t:ident() { rlt::Reference::Identifier(t.span.into()) }
+        t:ident() { rlt::Reference::Identifier(Identifier::from_located(t.point)) }
 
     rule ref() -> rlt::Reference =
         variable_ref() /
@@ -402,12 +397,12 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     rule var_decl() -> rlt::Variable =
         k:$"val" _ id:ident() _ ty:return_type()? { rlt::Variable::Immutable {
             keyword: Keyword::from_located(k),
-            id: id.span.into(),
+            id: Identifier::from_located(id.point),
             assigned_type: ty
         } } /
         k:$"var" _ id:ident() _ ty:return_type()? { rlt::Variable::Mutable {
             keyword: Keyword::from_located(k),
-            id: id.span.into(),
+            id: Identifier::from_located(id.point),
             assigned_type: ty
         } }
 
@@ -433,7 +428,7 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
             rlt::BodiedFunction {
                 keyword: Keyword::from_located(k),
                 params: ps.map(|it| it.into()),
-                id: id.span.into(),
+                id: Identifier::from_located(id.point),
                 return_type: ty,
                 body: Box::new(b)
             }
@@ -517,13 +512,13 @@ peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
         _ i:traced(<file_grammar()>) _ ![_] { RLT(i) }
 }}
 
-#[derive(Constructor)]
+#[derive(Constructor, Debug)]
 pub struct Parser<const TRACE: bool = false>;
 
 impl RLTProducer for Parser<TRACING_OPTION> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_stream<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         grammar::kodept(&input)
     }
 }
@@ -532,7 +527,7 @@ impl RLTProducer for Parser<TRACING_OPTION> {
 impl RLTProducer for Parser<false> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_stream<'t>(&self, input: TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
         grammar::kodept(&input)
     }

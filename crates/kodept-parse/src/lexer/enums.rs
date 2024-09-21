@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 
+use crate::lexer::traits::ToRepresentation;
 use derive_more::{From, TryInto};
 #[cfg(feature = "enum-iter")]
 use enum_iterator::Sequence;
@@ -202,7 +203,7 @@ pub enum PackedToken {
     AndBit,
     XorBit,
     NotBit,
-    Unknown
+    Unknown,
 }
 
 static_assert_size!(Token<'static>, 32);
@@ -215,10 +216,10 @@ impl PackedToken {
             PackedToken::MultilineComment => true,
             PackedToken::Newline => true,
             PackedToken::Whitespace => true,
-            _ => false
+            _ => false,
         }
     }
-    
+
     pub fn is_symbol(&self) -> bool {
         match self {
             PackedToken::Comma => true,
@@ -232,10 +233,10 @@ impl PackedToken {
             PackedToken::TypeGap => true,
             PackedToken::DoubleColon => true,
             PackedToken::Colon => true,
-            _ => false
+            _ => false,
         }
     }
-    
+
     pub fn is_keyword(&self) -> bool {
         match self {
             PackedToken::Fun => true,
@@ -258,10 +259,10 @@ impl PackedToken {
             PackedToken::TypeAlias => true,
             PackedToken::With => true,
             PackedToken::Return => true,
-            _ => false
+            _ => false,
         }
     }
-    
+
     pub fn is_operator(&self) -> bool {
         match self {
             PackedToken::Dot => true,
@@ -287,7 +288,7 @@ impl PackedToken {
             PackedToken::AndBit => true,
             PackedToken::XorBit => true,
             PackedToken::NotBit => true,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -305,8 +306,8 @@ impl From<Token<'_>> for PackedToken {
                 Ignore::Comment(_) => PackedToken::Comment,
                 Ignore::MultilineComment(_) => PackedToken::MultilineComment,
                 Ignore::Newline => PackedToken::Newline,
-                Ignore::Whitespace => PackedToken::Whitespace
-            }
+                Ignore::Whitespace => PackedToken::Whitespace,
+            },
             Token::Keyword(x) => match x {
                 Keyword::Fun => PackedToken::Fun,
                 Keyword::Val => PackedToken::Val,
@@ -328,7 +329,7 @@ impl From<Token<'_>> for PackedToken {
                 Keyword::TypeAlias => PackedToken::TypeAlias,
                 Keyword::With => PackedToken::With,
                 Keyword::Return => PackedToken::Return,
-            }
+            },
             Token::Symbol(x) => match x {
                 Symbol::Comma => PackedToken::Comma,
                 Symbol::Semicolon => PackedToken::Semicolon,
@@ -341,7 +342,7 @@ impl From<Token<'_>> for PackedToken {
                 Symbol::TypeGap => PackedToken::TypeGap,
                 Symbol::DoubleColon => PackedToken::DoubleColon,
                 Symbol::Colon => PackedToken::Colon,
-            }
+            },
             Token::Identifier(Identifier::Identifier(_)) => PackedToken::Identifier,
             Token::Identifier(Identifier::Type(_)) => PackedToken::Type,
             Token::Literal(x) => match x {
@@ -351,7 +352,7 @@ impl From<Token<'_>> for PackedToken {
                 Literal::Floating(_) => PackedToken::Floating,
                 Literal::Char(_) => PackedToken::Char,
                 Literal::String(_) => PackedToken::String,
-            }
+            },
             Token::Operator(x) => match x {
                 Operator::Dot => PackedToken::Dot,
                 Operator::Flow => PackedToken::Flow,
@@ -362,7 +363,7 @@ impl From<Token<'_>> for PackedToken {
                     MathOperator::Mod => PackedToken::Mod,
                     MathOperator::Pow => PackedToken::Pow,
                     MathOperator::Times => PackedToken::Times,
-                }
+                },
                 Operator::Comparison(x) => match x {
                     ComparisonOperator::Equals => PackedToken::Equals,
                     ComparisonOperator::Equiv => PackedToken::Equiv,
@@ -372,20 +373,20 @@ impl From<Token<'_>> for PackedToken {
                     ComparisonOperator::Greater => PackedToken::Greater,
                     ComparisonOperator::GreaterEquals => PackedToken::GreaterEquals,
                     ComparisonOperator::Spaceship => PackedToken::Spaceship,
-                }
+                },
                 Operator::Logic(x) => match x {
                     LogicOperator::OrLogic => PackedToken::OrLogic,
                     LogicOperator::AndLogic => PackedToken::AndLogic,
                     LogicOperator::NotLogic => PackedToken::NotLogic,
-                }
+                },
                 Operator::Bit(x) => match x {
                     BitOperator::OrBit => PackedToken::OrBit,
                     BitOperator::AndBit => PackedToken::AndBit,
                     BitOperator::XorBit => PackedToken::XorBit,
                     BitOperator::NotBit => PackedToken::NotBit,
-                }
-            }
-            Token::Unknown => PackedToken::Unknown
+                },
+            },
+            Token::Unknown => PackedToken::Unknown,
         }
     }
 }
@@ -393,5 +394,11 @@ impl From<Token<'_>> for PackedToken {
 impl Display for Token<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.to_name())
+    }
+}
+
+impl Display for PackedToken {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.representation())
     }
 }

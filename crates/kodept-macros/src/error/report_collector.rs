@@ -2,12 +2,12 @@ use crate::context::FileId;
 use crate::error::report::{IntoSpannedReportMessage, Report};
 
 #[derive(Default, Debug)]
-pub struct ReportCollector {
-    reports: Vec<Report<FileId>>,
+pub struct ReportCollector<F = FileId> {
+    reports: Vec<Report<F>>,
     has_errors: bool,
 }
 
-impl ReportCollector {
+impl<F> ReportCollector<F> {
     #[must_use]
     pub const fn new() -> Self {
         ReportCollector {
@@ -16,12 +16,15 @@ impl ReportCollector {
         }
     }
 
-    pub fn push_report(&mut self, report: Report<FileId>) {
+    pub fn push_report(&mut self, report: Report<F>) {
         self.has_errors |= report.is_error();
         self.reports.push(report)
     }
 
-    pub fn report(&mut self, file_id: FileId, message: impl IntoSpannedReportMessage) {
+    pub fn report(&mut self, file_id: F, message: impl IntoSpannedReportMessage)
+    where
+        F: Clone,
+    {
         let report = Report::from_message(file_id, message);
         self.push_report(report)
     }
@@ -36,11 +39,11 @@ impl ReportCollector {
     }
 
     #[must_use]
-    pub fn into_collected_reports(self) -> Vec<Report<FileId>> {
+    pub fn into_collected_reports(self) -> Vec<Report<F>> {
         self.reports
     }
 
-    pub fn as_collected_reports(&self) -> &[Report<FileId>] {
+    pub fn as_collected_reports(&self) -> &[Report<F>] {
         self.reports.as_slice()
     }
 }

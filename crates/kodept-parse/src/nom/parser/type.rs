@@ -5,27 +5,27 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::TypeName;
 
-use crate::lexer::{Identifier::Type, Token};
 use crate::nom::parser::macros::{function, match_token};
 use crate::nom::parser::utils::{comma_separated0, paren_enclosed};
 use crate::nom::parser::ParseResult;
-use crate::token_stream::TokenStream;
+use crate::token_stream::PackedTokenStream;
+use crate::lexer::PackedToken::*;
 
-pub(super) fn reference(input: TokenStream) -> ParseResult<TypeName> {
-    match_token!(Token::Identifier(Type(_)))
+pub(super) fn reference(input: PackedTokenStream) -> ParseResult<TypeName> {
+    match_token!(Type)
         .context(function!())
-        .map(|it| it.span.into())
+        .map(TypeName::from_located)
         .parse(input)
 }
 
-fn tuple(input: TokenStream) -> ParseResult<rlt::Type> {
+fn tuple(input: PackedTokenStream) -> ParseResult<rlt::Type> {
     paren_enclosed(comma_separated0(grammar))
         .context(function!())
         .map(|it| rlt::Type::Tuple(it.into()))
         .parse(input)
 }
 
-pub(super) fn grammar(input: TokenStream) -> ParseResult<rlt::Type> {
+pub(super) fn grammar(input: PackedTokenStream) -> ParseResult<rlt::Type> {
     alt((reference.map(rlt::Type::Reference), tuple))
         .context(function!())
         .parse(input)

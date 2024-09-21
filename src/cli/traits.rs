@@ -1,9 +1,14 @@
-use kodept::codespan_settings::Reports;
+use kodept::codespan_settings::{ProvideCollector, Reports};
 use kodept::common_iter::CommonIter;
-use kodept::source_files::SourceView;
+use kodept::source_files::{SourceFiles, SourceView};
+use kodept_macros::error::report::Severity;
 use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::error::ErrorReported;
-use std::panic::{RefUnwindSafe, UnwindSafe};
+use kodept_macros::error::Diagnostic;
+use std::panic::UnwindSafe;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::Arc;
+use std::thread::panicking;
 use std::time::{Duration, Instant};
 use tracing::warn;
 
@@ -19,42 +24,58 @@ fn pick_appropriate_suffix(dur: Duration) -> (f32, &'static str) {
     }
 }
 
-pub trait Command {
-    type Params: UnwindSafe;
+static PANICKED_SOURCE: AtomicU16 = AtomicU16::new(u16::MAX);
 
-    fn exec(
-        &self,
-        sources: impl CommonIter<Item = SourceView> + UnwindSafe,
-        reports: &mut Reports,
-        additional_params: Self::Params,
-    ) -> Result<(), ErrorReported>
+struct SetPanickedSourceId(u16);
+
+impl Drop for SetPanickedSourceId {
+    fn drop(&mut self) {
+        if panicking() {
+            PANICKED_SOURCE.store(self.0, Ordering::Relaxed);
+        }
+    }
+}
+
+pub trait CommandWithSources: Sized {
+    fn build_sources(&self, collector: &mut ReportCollector<()>) -> Option<SourceFiles>;
+
+    fn exec(self, sources: Arc<SourceFiles>, reports: &mut Reports, output: PathBuf) -> Option<()>
     where
-        Self::Params: Clone + Send,
-        Self: Sync + RefUnwindSafe,
+        Self: UnwindSafe + Sync,
     {
-        let reports = reports.clone();
+        let rpt = reports.clone();
+        let src = sources.clone();
         match std::panic::catch_unwind(move || {
-            sources.try_foreach_with((reports, additional_params), |(reports, params), source| {
-                let path = source.path();
-                let now = Instant::now();
-                let result = reports.provide_collector(&source.clone(), |c| {
-                    self.exec_for_source(source, c, params)
-                });
-                let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
-                warn!("Finished `{path}` in {:.2}{}", elapsed, suffix);
-                result
-            })
+            src.into_common_iter()
+                .panic_fuse()
+                .try_foreach_with(rpt, |reports, source| {
+                    let _ = SetPanickedSourceId(*source.id);
+                    let now = Instant::now();
+                    let result = self.exec_for_source(source.clone(), reports, &output);
+                    let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
+                    warn!("Finished `{}` in {elapsed:.2}{suffix}", source.path());
+                    result
+                })
         }) {
-            Ok(Ok(_)) => Ok(()),
-            Ok(Err(e)) => Err(e),
-            Err(_) => Err(ErrorReported::new()),
+            Ok(Some(())) => Some(()),
+            Ok(None) => None,
+            Err(_) => {
+                reports.provide_collector(&*sources, |c| {
+                    c.report(
+                        PANICKED_SOURCE.load(Ordering::Relaxed),
+                        Diagnostic::new(Severity::Bug)
+                            .with_message("Unknown panic happened. Contact Kodept developers."),
+                    )
+                });
+                None
+            }
         }
     }
 
     fn exec_for_source(
         &self,
         source: SourceView,
-        collector: &mut ReportCollector,
-        params: &mut Self::Params,
-    ) -> Result<(), ErrorReported>;
+        reports: &mut Reports,
+        output: &Path,
+    ) -> Option<()>;
 }

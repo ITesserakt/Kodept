@@ -1,8 +1,8 @@
 use crate::common::ErrorAdapter;
 use crate::error::{ErrorLocation, Original, ParseError, ParseErrors};
-use crate::lexer::Token;
+use crate::lexer::PackedToken;
 use crate::nom::TokenVerificationError;
-use crate::token_stream::TokenStream;
+use crate::token_stream::PackedTokenStream;
 use derive_more::Constructor;
 use itertools::Itertools;
 use kodept_core::code_point::CodePoint;
@@ -46,10 +46,10 @@ impl<T: ?Sized + ToString> ExpectedError for Box<T> {
     }
 }
 
-impl<A> ErrorAdapter<A, &str> for ErrorTree<&str>
+impl<'a, A> ErrorAdapter<A, &'a str> for ErrorTree<&'a str>
 where
-    for<'a> &'a str: Original<A>,
-    for<'a> A: From<&'a str>,
+    &'a str: Original<A>,
+    A: From<&'a str>,
 {
     fn adapt(self, _: &str, position: usize) -> ParseErrors<A> {
         let mut current_errors = VecDeque::from([self]);
@@ -82,8 +82,8 @@ where
     }
 }
 
-impl<'t> ErrorAdapter<Token<'t>, TokenStream<'t>> for super::parser::ParseError<'t> {
-    fn adapt(self, _: TokenStream<'t>, position: usize) -> ParseErrors<Token<'t>> {
+impl<'t> ErrorAdapter<PackedToken, PackedTokenStream<'t>> for super::parser::ParseError<'t> {
+    fn adapt(self, _: PackedTokenStream<'t>, position: usize) -> ParseErrors<PackedToken> {
         let mut current_errors = VecDeque::from([self]);
         let mut base_errors = vec![];
 
@@ -105,7 +105,7 @@ impl<'t> ErrorAdapter<Token<'t>, TokenStream<'t>> for super::parser::ParseError<
             .chunk_by(|it| it.location)
             .into_iter()
             .map(|(key, group)| {
-                let actual = key.slice[0].token;
+                let actual = key[0].token;
                 let expected = group.map(|it| it.into_expected()).collect();
                 let location = ErrorLocation::new(position, CodePoint::single_point(position as u32));
 

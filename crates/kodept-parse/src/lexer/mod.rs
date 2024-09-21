@@ -14,6 +14,7 @@ mod tests {
     use crate::lexer::{Ignore::*, PegLexer, Token, Token::*};
     use rstest::rstest;
     use std::fmt::Debug;
+    use crate::token_match::TokenMatch;
 
     #[rstest]
     #[case::ignore_comment("// hello world!", Comment("// hello world!"), None)]
@@ -40,9 +41,10 @@ mod tests {
         #[case] expected_rest: Option<&'static str>,
     ) {
         let data = PegLexer::<true>::new().parse_string(input, 0).unwrap();
-        let rest = &input[data.span.point.length as usize..];
+        let rest = &input[data.point.length as usize..];
+        let token_match = TokenMatch::from((data, input));
 
-        assert_eq!(data.token, expected.into());
+        assert_eq!(token_match.token, expected.into());
         assert_eq!(rest, expected_rest.unwrap_or(""));
     }
 }
