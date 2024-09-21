@@ -1,12 +1,12 @@
+use nom::branch::alt;
 use nom::multi::{many0, many1};
 use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
 
-use crate::lexer::PackedToken;
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function, match_any_token, match_token};
-use crate::nom::parser::utils::{match_token, newline_separated};
+use crate::nom::parser::macros::function;
+use crate::nom::parser::utils::{match_any_token, match_token, newline_separated};
 use crate::nom::parser::{top_level, ParseResult};
 use crate::token_stream::PackedTokenStream;
 use kodept_core::structure::rlt;
@@ -15,7 +15,7 @@ use kodept_core::structure::rlt::new_types::{Keyword, Symbol, TypeName};
 fn module_statement(input: PackedTokenStream) -> ParseResult<rlt::Module> {
     tuple((
         match_token(Module),
-        match_token!(Identifier),
+        match_token(Type),
         match_token(LBrace),
         newline_separated(top_level::grammar),
         match_token(RBrace).cut(),
@@ -34,7 +34,7 @@ fn module_statement(input: PackedTokenStream) -> ParseResult<rlt::Module> {
 fn global_module_statement(input: PackedTokenStream) -> ParseResult<rlt::Module> {
     tuple((
         match_token(Module),
-        match_token!(PackedToken::Type),
+        match_token(Type),
         match_token(Flow),
         many0(top_level::grammar).cut(),
     ))
@@ -48,11 +48,20 @@ fn global_module_statement(input: PackedTokenStream) -> ParseResult<rlt::Module>
     .parse(input)
 }
 
+#[allow(unused_parens)]
 pub(super) fn grammar(input: PackedTokenStream) -> ParseResult<rlt::File> {
     many1(module_statement)
         .map(|m| rlt::File::new(m.into_boxed_slice()))
         .or(global_module_statement.map(|m| rlt::File::new(Box::new([m]))))
-        .terminated(match_any_token!((Comment | MultilineComment | Newline | Whitespace)).opt())
+        .terminated(
+            alt((
+                match_any_token(Comment),
+                match_any_token(Newline),
+                match_any_token(MultilineComment),
+                match_any_token(Whitespace),
+            ))
+            .opt(),
+        )
         .context(function!())
         .parse(input)
 }

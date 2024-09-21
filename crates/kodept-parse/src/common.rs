@@ -6,7 +6,7 @@ use kodept_core::structure::span::Span;
 use kodept_core::structure::Located;
 
 use crate::error::{Original, ParseErrors};
-use crate::token_match::{PackedTokenMatch, TokenMatch};
+use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
 
 pub trait TokenProducer {
@@ -51,17 +51,6 @@ impl<T, U: From<T>> From<VerboseEnclosed<T>> for Enclosed<U> {
             left: value.left.into(),
             inner: value.inner.into(),
             right: value.right.into(),
-        }
-    }
-}
-
-impl<'t, T> From<(TokenMatch<'t>, T, TokenMatch<'t>)> for VerboseEnclosed<T> {
-    #[inline]
-    fn from(value: (TokenMatch<'t>, T, TokenMatch<'t>)) -> Self {
-        Self {
-            left: value.0.span,
-            inner: value.1,
-            right: value.2.span,
         }
     }
 }

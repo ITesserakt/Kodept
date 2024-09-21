@@ -7,7 +7,7 @@ use nom::Parser;
 use nom_supreme::ParserExt;
 
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::macros::{function};
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::ParseResult;
 use crate::token_stream::PackedTokenStream;
@@ -97,14 +97,14 @@ fn local_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)>
 }
 
 fn variable_ref(input: PackedTokenStream) -> ParseResult<rlt::Reference> {
-    match_token!(Identifier)
+    match_token(Identifier)
         .map(|it| rlt::Reference::Identifier(new_types::Identifier::from_located(it)))
         .context(function!())
         .parse(input)
 }
 
 fn type_ref(input: PackedTokenStream) -> ParseResult<rlt::Reference> {
-    match_token!(Type)
+    match_token(Type)
         .map(|it| rlt::Reference::Identifier(new_types::Identifier::from_located(it)))
         .context(function!())
         .parse(input)

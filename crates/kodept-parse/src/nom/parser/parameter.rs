@@ -6,14 +6,15 @@ use nom_supreme::ParserExt;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types;
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function, match_token};
+use crate::nom::parser::macros::{function};
 use crate::nom::parser::{r#type, ParseResult};
+use crate::nom::parser::utils::match_token;
 use crate::token_stream::PackedTokenStream;
 
 pub(super) fn typed_parameter(input: PackedTokenStream) -> ParseResult<rlt::TypedParameter> {
     separated_pair(
-        match_token!(Identifier),
-        match_token!(Colon),
+        match_token(Identifier),
+        match_token(Colon),
         r#type::grammar,
     )
     .context(function!())
@@ -25,9 +26,9 @@ pub(super) fn typed_parameter(input: PackedTokenStream) -> ParseResult<rlt::Type
 }
 
 fn untyped_parameter(input: PackedTokenStream) -> ParseResult<rlt::UntypedParameter> {
-    let (rest, id) = match_token!(Identifier).context(function!()).parse(input)?;
-    let (rest, _) = match_token!(Colon)
-        .precedes(match_token!(TypeGap).cut())
+    let (rest, id) = match_token(Identifier).context(function!()).parse(input)?;
+    let (rest, _) = match_token(Colon)
+        .precedes(match_token(TypeGap).cut())
         .opt()
         .parse(rest)?;
 

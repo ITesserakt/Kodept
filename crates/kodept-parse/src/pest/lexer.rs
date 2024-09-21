@@ -2,118 +2,77 @@ use derive_more::Constructor;
 use faster_pest::*;
 
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::Span;
 
 use crate::common::{EagerTokensProducer, TokenProducer};
-use crate::lexer::Operator::*;
 use crate::lexer::*;
-use crate::token_match::{PackedTokenMatch, TokenMatch};
+use crate::token_match::{PackedTokenMatch};
 
 #[derive(Parser)]
 #[grammar = "crates/kodept-parse/src/pest/kodept.pest"]
 struct Grammar;
 
-fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> TokenMatch<'i> {
+fn parse_token_from_ident<'i>(input: Pair2<'i, Ident<'i>>) -> PackedTokenMatch {
     let span = input.as_span();
 
     let token = match input.as_rule() {
-        Rule::ignore => Token::Ignore({
-            let input = input.into_inner().next().unwrap();
-            match input.as_rule() {
-                Rule::comment => Ignore::Comment(input.as_str()),
-                Rule::multiline_comment => Ignore::MultilineComment(input.as_str()),
-                Rule::newline => Ignore::Newline,
-                Rule::whitespace => Ignore::Whitespace,
-                _ => unreachable!(),
-            }
-        }),
-        Rule::keyword => Token::Keyword(match input.as_str() {
-            "fun" => Keyword::Fun,
-            "val" => Keyword::Val,
-            "var" => Keyword::Var,
-            "match" => Keyword::Match,
-            "while" => Keyword::While,
-            "module" => Keyword::Module,
-            "extend" => Keyword::Extend,
-            "return" => Keyword::Return,
-            "\\" => Keyword::Lambda,
-            "if" => Keyword::If,
-            "elif" => Keyword::Elif,
-            "else" => Keyword::Else,
-            "abstract" => Keyword::Abstract,
-            "trait" => Keyword::Trait,
-            "struct" => Keyword::Struct,
-            "class" => Keyword::Class,
-            "enum" => Keyword::Enum,
-            "foreign" => Keyword::Foreign,
-            "type" => Keyword::TypeAlias,
-            "with" => Keyword::With,
+        Rule::ignore => match input.into_inner().next().unwrap().as_rule() {
+            Rule::comment => PackedToken::Comment,
+            Rule::multiline_comment => PackedToken::MultilineComment,
+            Rule::newline => PackedToken::Newline,
+            Rule::whitespace => PackedToken::Whitespace,
             _ => unreachable!(),
-        }),
-        Rule::symbol => Token::Symbol(match input.as_str() {
-            "," => Symbol::Comma,
-            ";" => Symbol::Semicolon,
-            "{" => Symbol::LBrace,
-            "}" => Symbol::RBrace,
-            "[" => Symbol::LBracket,
-            "]" => Symbol::RBracket,
-            "(" => Symbol::LParen,
-            ")" => Symbol::RParen,
-            "_" => Symbol::TypeGap,
-            "::" => Symbol::DoubleColon,
-            ":" => Symbol::Colon,
+        },
+        Rule::keyword => PackedToken::from_name(input.as_str())
+            .expect("Found a keyword not defined in PackedToken"),
+        Rule::symbol => PackedToken::from_name(input.as_str())
+            .expect("Found a symbol not defined in PackedToken"),
+        Rule::identifier => match input.as_str().as_bytes() {
+            [b'_', b'a'..=b'z', ..] => PackedToken::Identifier,
+            [b'a'..=b'z', ..] => PackedToken::Identifier,
+            [b'_', b'A'..=b'Z', ..] => PackedToken::Type,
+            [b'A'..=b'Z', ..] => PackedToken::Type,
             _ => unreachable!(),
-        }),
-        Rule::identifier => Token::Identifier(match input.as_str().as_bytes() {
-            [b'_', b'a'..=b'z', ..] => Identifier::Identifier(input.as_str()),
-            [b'a'..=b'z', ..] => Identifier::Identifier(input.as_str()),
-            [b'_', b'A'..=b'Z', ..] => Identifier::Type(input.as_str()),
-            [b'A'..=b'Z', ..] => Identifier::Type(input.as_str()),
+        },
+        Rule::literal => match input.into_inner().next().unwrap().as_rule() {
+            Rule::bin_lit => PackedToken::Binary,
+            Rule::oct_lit => PackedToken::Octal,
+            Rule::hex_lit => PackedToken::Hex,
+            Rule::flt_lit => PackedToken::Floating,
+            Rule::chr_lit => PackedToken::Char,
+            Rule::str_lit => PackedToken::String,
             _ => unreachable!(),
-        }),
-        Rule::literal => Token::Literal({
-            let input = input.into_inner().next().unwrap();
-            match input.as_rule() {
-                Rule::bin_lit => Literal::Binary(input.as_str()),
-                Rule::oct_lit => Literal::Octal(input.as_str()),
-                Rule::hex_lit => Literal::Hex(input.as_str()),
-                Rule::flt_lit => Literal::Floating(input.as_str()),
-                Rule::chr_lit => Literal::Char(input.as_str().trim_matches('\'')),
-                Rule::str_lit => Literal::String(input.as_str().trim_matches('"')),
-                _ => unreachable!(),
-            }
-        }),
-        Rule::operator => Token::Operator(match input.as_str() {
-            "." => Dot,
-            "=>" => Flow,
-            "+" => Math(MathOperator::Plus),
-            "-" => Math(MathOperator::Sub),
-            "**" => Math(MathOperator::Pow),
-            "*" => Math(MathOperator::Times),
-            "/" => Math(MathOperator::Div),
-            "%" => Math(MathOperator::Mod),
-            "<=>" => Comparison(ComparisonOperator::Spaceship),
-            "==" => Comparison(ComparisonOperator::Equiv),
-            "=" => Comparison(ComparisonOperator::Equals),
-            "!=" => Comparison(ComparisonOperator::NotEquiv),
-            ">=" => Comparison(ComparisonOperator::GreaterEquals),
-            ">" => Comparison(ComparisonOperator::Greater),
-            "<=" => Comparison(ComparisonOperator::LessEquals),
-            "<" => Comparison(ComparisonOperator::Less),
-            "||" => Logic(LogicOperator::OrLogic),
-            "&&" => Logic(LogicOperator::AndLogic),
-            "!" => Logic(LogicOperator::NotLogic),
-            "|" => Bit(BitOperator::OrBit),
-            "&" => Bit(BitOperator::AndBit),
-            "^" => Bit(BitOperator::XorBit),
-            "~" => Bit(BitOperator::NotBit),
+        },
+        Rule::operator => match input.as_str() {
+            "." => PackedToken::Dot,
+            "=>" => PackedToken::Flow,
+            "+" => PackedToken::Plus,
+            "-" => PackedToken::Sub,
+            "**" => PackedToken::Pow,
+            "*" => PackedToken::Times,
+            "/" => PackedToken::Div,
+            "%" => PackedToken::Mod,
+            "<=>" => PackedToken::Spaceship,
+            "==" => PackedToken::Equiv,
+            "=" => PackedToken::Equals,
+            "!=" => PackedToken::NotEquiv,
+            ">=" => PackedToken::GreaterEquals,
+            ">" => PackedToken::Greater,
+            "<=" => PackedToken::LessEquals,
+            "<" => PackedToken::Less,
+            "||" => PackedToken::OrLogic,
+            "&&" => PackedToken::AndLogic,
+            "!" => PackedToken::NotLogic,
+            "|" => PackedToken::OrBit,
+            "&" => PackedToken::AndBit,
+            "^" => PackedToken::XorBit,
+            "~" => PackedToken::NotBit,
             _ => unreachable!(),
-        }),
+        },
         x => panic!("Unknown rule encountered: {x:?}"),
     };
 
     let length = span.end() - span.start();
-    TokenMatch::new(token, Span::new(CodePoint::new(length as u32, span.start() as u32)))
+    PackedTokenMatch::new(token, CodePoint::new(length as u32, span.start() as u32))
 }
 
 #[derive(Constructor, Debug, Clone, Copy)]
@@ -137,7 +96,7 @@ impl TokenProducer for Lexer {
             .into_inner()
             .next()
             .unwrap();
-        Ok(parse_token_from_ident(ident).into())
+        Ok(parse_token_from_ident(ident))
     }
 }
 
@@ -150,7 +109,6 @@ impl EagerTokensProducer for Lexer {
         Ok(idents
             .map(|it| it.into_inner().next().unwrap())
             .map(parse_token_from_ident)
-            .map(|it| it.into())
             .collect())
     }
 }
