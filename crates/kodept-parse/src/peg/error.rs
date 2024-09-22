@@ -9,7 +9,7 @@ use crate::peg::compatibility::Position;
 impl<A, O, P> ErrorAdapter<A, O> for peg::error::ParseError<P>
 where
     O: Original<A>,
-    P: Into<Position>
+    P: Into<Position>,
 {
     fn adapt(self, original_input: O, position: usize) -> ParseErrors<A> {
         let expected = self.expected.tokens().map(Cow::Borrowed).collect();
@@ -17,6 +17,9 @@ where
         let actual = original_input.actual(loc);
         let location = ErrorLocation::new(position, loc);
 
-        ParseErrors::new(vec![ParseError::new(expected, actual, location)])
+        ParseErrors::new(vec![match actual {
+            None => ParseError::unexpected_eof(expected, location),
+            Some(actual) => ParseError::expected(expected, actual, location)
+        }])
     }
 }

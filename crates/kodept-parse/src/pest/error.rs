@@ -22,6 +22,9 @@ where
             }
         };
         let expected = Cow::Owned(self.variant.message().to_string());
-        ParseErrors::new(vec![ParseError::new(vec![expected], actual, location)])
+        ParseErrors::new(vec![match actual {
+            None => ParseError::unexpected_eof(vec![expected], location),
+            Some(actual) => ParseError::expected(vec![expected], actual, location),
+        }])
     }
 }
