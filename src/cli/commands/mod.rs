@@ -72,7 +72,7 @@ impl Commands {
 }
 
 fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
-    let (mut expected, actual, location, hints) = match error {
+    let (expected, actual, location, hints) = match error {
         ParseError::ExpectedInstead {
             expected,
             actual,
