@@ -56,7 +56,6 @@ pub(super) fn match_token(
 pub(super) fn match_any_token(
     expected: PackedToken,
 ) -> impl FnMut(PackedTokenStream) -> ParseResult<PackedTokenMatch> {
-    let repr = expected.representation();
     move |input| {
         let (rest, output) = any_token(input)?;
         let token_match = output.into_single();
