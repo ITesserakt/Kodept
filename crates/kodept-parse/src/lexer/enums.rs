@@ -134,7 +134,7 @@ pub enum Token<'t> {
     Unknown,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Default)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum PackedToken {
     Comment,
@@ -203,6 +203,7 @@ pub enum PackedToken {
     AndBit,
     XorBit,
     NotBit,
+    #[default]
     Unknown,
 }
 

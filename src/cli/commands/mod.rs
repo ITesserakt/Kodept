@@ -10,6 +10,7 @@ use kodept::source_files::GlobalReports;
 use kodept_macros::error::report::{Label, Severity};
 use kodept_macros::error::{Diagnostic, ErrorReported};
 use kodept_parse::error::{ParseError, ParseErrors};
+use std::borrow::Cow;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
@@ -38,7 +39,8 @@ impl Commands {
                     .provide_collector(&GlobalReports, |collector| x.build_sources(collector))
                     .map(Arc::new)
                     .ok_or(ErrorReported::new())?;
-                let result = x.exec(sources.clone(), &mut reports, output)
+                let result = x
+                    .exec(sources.clone(), &mut reports, output)
                     .ok_or(ErrorReported::new());
                 reports.consume(&*sources);
                 result
@@ -48,7 +50,8 @@ impl Commands {
                     .provide_collector(&GlobalReports, |collector| x.build_sources(collector))
                     .map(Arc::new)
                     .ok_or(ErrorReported::new())?;
-                let result = x.exec(sources.clone(), &mut reports, output)
+                let result = x
+                    .exec(sources.clone(), &mut reports, output)
                     .ok_or(ErrorReported::new());
                 reports.consume(&*sources);
                 result
@@ -58,7 +61,8 @@ impl Commands {
                     .provide_collector(&GlobalReports, |collector| x.build_sources(collector))
                     .map(Arc::new)
                     .ok_or(ErrorReported::new())?;
-                let result = x.exec(sources.clone(), &mut reports, output)
+                let result = x
+                    .exec(sources.clone(), &mut reports, output)
                     .ok_or(ErrorReported::new());
                 reports.consume(&*sources);
                 result
@@ -68,11 +72,57 @@ impl Commands {
 }
 
 fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
-    let exp_msg = error.expected.into_iter().join(" or ");
+    let (mut expected, actual, location, hints) = match error {
+        ParseError::ExpectedInstead {
+            expected,
+            actual,
+            location,
+            hints,
+        } => (expected, Some(actual), location, hints),
+        ParseError::ExpectedNotEOF {
+            expected,
+            location,
+            hints,
+        } => (expected, None, location, hints),
+    };
 
-    Diagnostic::new(Severity::Error)
-        .with_message(format!("Expected {}, got \"{}\"", exp_msg, error.actual))
-        .with_label(Label::primary("here", error.location.in_code))
+    let diagnostic = if expected.is_empty() {
+        let actual = actual
+            .map(|it| Cow::Owned(it.to_string()))
+            .unwrap_or(Cow::Borrowed("EOF"));
+
+        Diagnostic::new(Severity::Error)
+            .with_message(format!("Unexpected {actual}"))
+            .with_label(Label::primary("here", location.in_code))
+    } else if let Some(actual) = actual {
+        let exp_msg = expected_to_string(expected);
+
+        Diagnostic::new(Severity::Error)
+            .with_message(format!("Expected {exp_msg}, got {actual}"))
+            .with_label(Label::primary("here", location.in_code))
+    } else {
+        let exp_msg = expected_to_string(expected);
+        
+        Diagnostic::new(Severity::Error)
+            .with_message(format!("Expected {exp_msg} after, got EOF"))
+            .with_label(Label::primary("here", location.in_code))
+    };
+
+    hints
+        .into_iter()
+        .fold(diagnostic, |acc, next| acc.with_note(next))
+}
+
+fn expected_to_string(mut expected: Vec<Cow<'static, str>>) -> Cow<'static, str> {
+    let Some(last_expected) = expected.pop() else {
+        return Cow::Borrowed("");
+    };
+    
+    if expected.is_empty() {
+        last_expected
+    } else {
+        format!("{} or {}", expected.into_iter().join(", "), last_expected).into()
+    }
 }
 
 fn to_diagnostics<A: Display>(errors: ParseErrors<A>) -> Vec<Diagnostic> {
