@@ -8,12 +8,12 @@ use crate::rlt_accessor::{RLTAccessor, RLTFamily};
 use crate::traits::PopulateTree;
 use crate::uninit::Uninit;
 use kodept_core::structure::span::CodeHolder;
-use replace_with::replace_with_or_abort_and_return;
 use slotgraph::dag::{Dag, NodeKey};
 use slotmap::{Key, SecondaryMap};
 use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
+use replace_with::replace_with_or_abort_and_return;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
     LazyLock::new(|| match std::thread::available_parallelism() {
@@ -36,6 +36,15 @@ pub struct SubSyntaxTree<'rlt, ROOT> {
 }
 
 impl<'rlt, T> SubSyntaxTree<'rlt, T> {
+    pub(super) fn from_dag(graph: Graph<AnyNode>) -> SubSyntaxTree<'static, T> {
+        SubSyntaxTree {
+            graph: GraphImpl::Plain(graph),
+            rlt_mapping: Default::default(),
+            root_rlt_mapping: None,
+            _phantom: Default::default(),
+        }
+    }
+    
     #[allow(private_bounds)]
     pub fn new(root: Uninit<'rlt, T>) -> Self
     where
@@ -65,7 +74,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
             let id = g.add_node_at_root(|id| {
                 let node = node.unwrap(id.into());
                 rlt = node.1;
-                node.0.into()
+                (node.0.into(), TAG)
             });
             (id, GraphImpl::Plain(g))
         });
@@ -86,25 +95,17 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
             };
             let result = match subtree.graph {
                 GraphImpl::Plain(sg) => {
-                    let (id, mapping) = g.attach_subgraph_at(NodeKey::Root, sg).unwrap();
+                    let (id, mapping) = g.attach_subgraph_at(NodeKey::Root, sg, TAG).unwrap();
                     for &to in mapping.values() {
                         g[to].set_id(to.into());
                     }
-                    match g.edge_weight_mut(id) {
-                        None => {}
-                        Some(x) => *x = TAG,
-                    };
                     (id, mapping)
                 }
                 GraphImpl::Leaf { root } => {
                     let id = g.add_node_at_root(|id| {
                         root.set_id(id.into());
-                        root
+                        (root, TAG)
                     });
-                    match g.edge_weight_mut(id) {
-                        None => {}
-                        Some(x) => *x = TAG,
-                    };
                     (id, Default::default())
                 }
             };

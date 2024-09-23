@@ -1,6 +1,5 @@
 use crate::error::report::{IntoSpannedReportMessage, Report};
 use crate::error::report_collector::ReportCollector;
-use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::{AnyNodeD, GenericNodeId, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_core::file_name::FileName;
@@ -16,7 +15,7 @@ pub struct FileDescriptor {
 
 #[derive(Debug)]
 pub struct Context<'r> {
-    pub ast: SyntaxTree<FullAccess>,
+    pub ast: SyntaxTree,
     pub rlt: RLTAccessor<'r>,
     pub collector: &'r mut ReportCollector,
     pub current_file: Freeze<FileDescriptor>,

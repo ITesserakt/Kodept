@@ -1,7 +1,7 @@
 use crate::graph::any_node::AnyNode;
 use crate::graph::children::tags::ChildTag;
 use crate::graph::utils::FromOptVec;
-use crate::graph::{CanAccess, SyntaxTree};
+use crate::graph::{SyntaxTree};
 use crate::traits::Identifiable;
 use kodept_core::ConvertibleToRef;
 
@@ -19,7 +19,7 @@ pub mod tags {
 pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
     type Container: FromOptVec<T = Child>;
 
-    fn get_children<'b, P: CanAccess>(
+    fn get_children<'b, P>(
         &self,
         tree: &'b SyntaxTree<P>,
     ) -> ChildrenRef<'b, Self, Child, TAG>
@@ -49,9 +49,9 @@ pub(crate) mod macros {
 
             impl $t {
                 #[inline(always)]
-                $vis fn $name<'a, P: $crate::graph::CanAccess>(
+                $vis fn $name<'a>(
                     &self,
-                    tree: &'a $crate::graph::SyntaxTree<P>
+                    tree: &'a $crate::graph::SyntaxTree
                 ) -> $crate::graph::ChildrenRef<'a, $t, $crate::graph::ContainerT<$c_t>, $tag> {
                     <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag>>::get_children(self, tree)
                 }

@@ -49,14 +49,15 @@ impl<T: Debug> FromOptVec for Identity<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
-        match value.into_inner() {
-            Ok([x]) => x,
-            Err(value) => panic!(
+    fn unwrap_mut<'a>(mut value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
+        if value.len() == 1 {
+            value.pop().unwrap()
+        } else {
+            panic!(
                 "Container must has only one child <{}>, but has {:?}",
                 type_name::<T>(),
                 value
-            ),
+            )
         }
     }
 }

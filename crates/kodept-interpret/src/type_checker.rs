@@ -1,5 +1,4 @@
 use derive_more::From;
-use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::{AnyNodeD, ChangeSet, GenericNodeId, GenericNodeKey, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::BodyFnDecl;
@@ -72,7 +71,7 @@ pub struct TypeChecker<'a> {
 
 struct RecursiveTypeChecker<'a> {
     search: ScopeSearch<'a>,
-    tree: &'a SyntaxTree<FullAccess>,
+    tree: &'a SyntaxTree,
     rlt: &'a RLTAccessor<'a>,
     models: &'a Cache<Rc<Language>>,
     current_recursion_depth: Cell<u16>,
