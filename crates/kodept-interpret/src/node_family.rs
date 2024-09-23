@@ -3,7 +3,6 @@ use nonempty_collections::{nev, NEVec};
 
 use crate::scope::ScopeSearch;
 use crate::type_checker::InferError;
-use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::SyntaxTree;
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::traits::{AsEnum, Identifiable};
@@ -44,7 +43,7 @@ impl TypeRestrictedNode {
     pub fn type_of(
         &self,
         scopes: &ScopeSearch,
-        tree: &SyntaxTree<FullAccess>,
+        tree: &SyntaxTree,
         rlt: &RLTAccessor,
     ) -> Execution<SpannedError<InferError>, MonomorphicType> {
         match self.as_enum() {
@@ -94,7 +93,7 @@ impl TypeRestrictedNode {
 pub(crate) fn convert(
     ty: &Type,
     scope: &ScopeSearch,
-    ast: &SyntaxTree<FullAccess>,
+    ast: &SyntaxTree,
     rlt: &RLTAccessor,
 ) -> Result<MonomorphicType, SpannedError<InferError>> {
     match ty.as_enum() {

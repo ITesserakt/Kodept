@@ -5,7 +5,6 @@ use nonempty_collections::nev;
 use crate::node_family::convert;
 use crate::scope::ScopeTree;
 use crate::type_checker::InferError;
-use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::SyntaxTree;
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::traits::{AsEnum, Identifiable};
@@ -42,7 +41,7 @@ impl ModelConvertibleNode {
     pub(crate) fn to_model(
         &self,
         scopes: &ScopeTree,
-        ast: &SyntaxTree<FullAccess>,
+        ast: &SyntaxTree,
         rlt: &RLTAccessor,
     ) -> Result<Language, SpannedError<InferError>> {
         let helper = ConversionHelper { scopes, ast, rlt };
@@ -68,7 +67,7 @@ impl ModelConvertibleNode {
 #[derive(Copy, Clone)]
 struct ConversionHelper<'a> {
     scopes: &'a ScopeTree,
-    ast: &'a SyntaxTree<FullAccess>,
+    ast: &'a SyntaxTree,
     rlt: &'a RLTAccessor<'a>,
 }
 
@@ -82,7 +81,7 @@ trait ToModelFrom<N> {
 }
 
 pub(crate) trait ExtractName {
-    fn extract_name(&self, tree: &SyntaxTree<FullAccess>) -> Cow<str>;
+    fn extract_name(&self, tree: &SyntaxTree) -> Cow<str>;
 }
 
 impl ToModelFrom<Body> for ConversionHelper<'_> {
@@ -326,7 +325,7 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
 }
 
 impl ExtractName for BlockLevel {
-    fn extract_name(&self, tree: &SyntaxTree<FullAccess>) -> Cow<str> {
+    fn extract_name(&self, tree: &SyntaxTree) -> Cow<str> {
         match self.as_enum() {
             BlockLevelEnum::Fn(x) => x.extract_name(tree),
             BlockLevelEnum::InitVar(x) => x.variable(tree).name.clone().into(),
@@ -336,7 +335,7 @@ impl ExtractName for BlockLevel {
 }
 
 impl ExtractName for BodyFnDecl {
-    fn extract_name(&self, _: &SyntaxTree<FullAccess>) -> Cow<str> {
+    fn extract_name(&self, _: &SyntaxTree) -> Cow<str> {
         self.name.as_str().into()
     }
 }

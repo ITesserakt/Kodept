@@ -7,7 +7,6 @@ use crate::scope::ScopeError::{Duplicate, NoScope};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 use itertools::Itertools;
-use kodept_ast::graph::stage::FullAccess;
 use kodept_ast::graph::{AnyNode, GenericNodeId, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
@@ -86,7 +85,7 @@ impl ScopeTree {
         Ok(())
     }
 
-    fn of_node<N>(&self, node: &N, ast: &SyntaxTree<FullAccess>) -> Result<Id, ScopeError>
+    fn of_node<N>(&self, node: &N, ast: &SyntaxTree) -> Result<Id, ScopeError>
     where
         N: Identifiable + Into<AnyNode>,
     {
@@ -115,7 +114,7 @@ impl ScopeTree {
     pub fn lookup<N>(
         &self,
         node: &N,
-        ast: &SyntaxTree<FullAccess>
+        ast: &SyntaxTree
     ) -> Result<ScopeSearch, ScopeError>
     where
         N: Identifiable + Into<AnyNode>,

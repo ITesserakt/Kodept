@@ -66,24 +66,19 @@ impl<T> Clone for KeyRef<'_, T> {
 impl<T> Copy for KeyRef<'_, T> {}
 
 impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
-    pub fn add_node_at_root(&mut self, f: impl FnOnce(NodeKey) -> T) -> NodeKey
-    where
-        E: Default,
-    {
+    pub fn add_node_at_root(&mut self, f: impl FnOnce(NodeKey) -> (T, E)) -> NodeKey {
         self.add_node_with_key(NodeKey::Root, f).unwrap()
     }
 
     pub fn add_node_with_key(
         &mut self,
         parent: NodeKey,
-        f: impl FnOnce(NodeKey) -> T,
-    ) -> Result<NodeKey, ParentNotFound>
-    where
-        E: Default,
-    {
-        let id = self
-            .arena
-            .insert_with_key(|k| Node::new(f(NodeKey::Child(k)), parent, E::default()));
+        f: impl FnOnce(NodeKey) -> (T, E),
+    ) -> Result<NodeKey, ParentNotFound> {
+        let id = self.arena.insert_with_key(|k| {
+            let (value, edge) = f(NodeKey::Child(k));
+            Node::new(value, parent, edge)
+        });
         self.place_node(parent, id)?;
         Ok(NodeKey::Child(id))
     }
@@ -92,13 +87,11 @@ impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
         &mut self,
         place_root: NodeKey,
         mut subgraph: DagImpl<T, C>,
-    ) -> Result<(NodeKey, HashMap<NodeKey, NodeKey>), ParentNotFound>
-    where
-        E: Default,
-    {
+        root_edge: E,
+    ) -> Result<(NodeKey, HashMap<NodeKey, NodeKey>), ParentNotFound> {
         self.arena.reserve(subgraph.len());
         let other_root = subgraph.root;
-        let root_id = self.add_node_with_key(place_root, |_| other_root)?;
+        let root_id = self.add_node_with_key(place_root, |_| (other_root, root_edge))?;
 
         let mut mapping = HashMap::with_capacity(subgraph.arena.len() + 1);
         mapping.insert(NodeKey::Root, root_id);
@@ -107,11 +100,8 @@ impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
             DagDetachIter::new(&mut subgraph.arena, NodeKey::Root, subgraph.root_children)
         {
             let parent_place = *mapping.get(&detached_node.parent_id).unwrap();
-            let new_idx = self.add_node_with_key(parent_place, |_| detached_node.value)?;
-            match self.edge_weight_mut(new_idx) {
-                None => {}
-                Some(x) => *x = detached_node.edge,
-            }
+            let new_idx = self
+                .add_node_with_key(parent_place, |_| (detached_node.value, detached_node.edge))?;
 
             mapping.insert(detached_node.id, new_idx);
         }
@@ -135,12 +125,13 @@ impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
         {
             let parent_id = mapping[&detached_node.parent_id];
             let new_id = new_graph
-                .add_node_with_key(parent_id, |_| nodes_map(detached_node.value))
+                .add_node_with_key(parent_id, |_| {
+                    (
+                        nodes_map(detached_node.value),
+                        edges_map(detached_node.edge),
+                    )
+                })
                 .unwrap();
-            match new_graph.edge_weight_mut(new_id) {
-                None => {}
-                Some(x) => *x = edges_map(detached_node.edge),
-            }
             mapping.insert(detached_node.id, new_id);
         }
 
@@ -179,14 +170,13 @@ impl<T, E> DagImpl<T, SlotMap<CommonKey, Node<T, E>>> {
         }
     }
 
-    pub fn node_weights_mut<const N: usize>(&mut self, ids: [NodeKey; N]) -> Option<[&mut T; N]>
-    {
+    pub fn node_weights_mut<const N: usize>(&mut self, ids: [NodeKey; N]) -> Option<[&mut T; N]> {
         assert!(ids.iter().all(|it| !matches!(it, NodeKey::Root)));
         assert_eq!(HashSet::<_, RandomState>::from_iter(&ids).len(), ids.len());
 
         let keys = ids.map(|it| match it {
             NodeKey::Root => unreachable!(),
-            NodeKey::Child(x) => x
+            NodeKey::Child(x) => x,
         });
         let refs = self.arena.get_disjoint_mut(keys);
 
@@ -201,7 +191,7 @@ impl<T, C> DagImpl<T, C> {
     {
         self.arena.len() + 1
     }
-    
+
     pub const fn is_empty(&self) -> bool {
         false
     }
@@ -222,7 +212,7 @@ where
         }
     }
 
-    pub fn detach_subgraph_at(&mut self, id: NodeKey) -> Option<Dag<T>> {
+    pub fn detach_subgraph_at(&mut self, id: NodeKey) -> Option<(Dag<T, E>, E)> {
         let id = match id {
             NodeKey::Root => return None,
             NodeKey::Child(id) => id,
@@ -240,13 +230,13 @@ where
                 NodeKey::Child(_) => *mapping.get(&detached_node.parent_id)?,
             };
             let new_id = subgraph
-                .add_node_with_key(parent_id, |_| detached_node.value)
+                .add_node_with_key(parent_id, |_| (detached_node.value, detached_node.edge))
                 .unwrap();
             mapping.insert(detached_node.id, new_id);
         }
 
         self.fix_parent(node.next_sibling, node.last_sibling, node.parent, id);
-        Some(subgraph)
+        Some((subgraph, node.edge_data))
     }
 
     pub fn remove(&mut self, id: NodeKey) {

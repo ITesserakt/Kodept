@@ -1,32 +1,9 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::any::type_name;
-use std::fmt::{Debug, Formatter};
-use std::marker::PhantomData;
+use std::fmt::Debug;
 
-use smallvec::SmallVec;
-
-use crate::graph::any_node::AnyNode;
-use crate::graph::nodes::{NodeCell, PermTkn};
-use crate::graph::Identifiable;
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-
-#[repr(transparent)]
-pub struct TypedNodeCell<'a, T> {
-    node: &'a NodeCell,
-    _phantom: PhantomData<T>,
-}
-
-pub(crate) type OptVec<T> = SmallVec<[T; 1]>;
-
-impl<'a, T> TypedNodeCell<'a, T> {
-    pub fn new(node: &'a NodeCell) -> Self {
-        Self {
-            node,
-            _phantom: Default::default(),
-        }
-    }
-}
+pub(crate) type OptVec<T> = Vec<T>;
 
 pub trait FromOptVec {
     type Ref<'a>
@@ -57,15 +34,15 @@ impl<T: Debug> FromOptVec for Option<T> {
         }
     }
 
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
-        match value.into_inner() {
-            Ok([x]) => Some(x),
-            Err(x) if x.is_empty() => None,
-            Err(x) => panic!(
+    fn unwrap_mut<'a>(mut value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
+        if value.len() <= 1 {
+            value.pop()
+        } else {
+            panic!(
                 "Container must has no more then one child <{}>, but has {:?}",
                 type_name::<T>(),
-                x
-            ),
+                value
+            )
         }
     }
 }
@@ -80,53 +57,6 @@ impl<T> FromOptVec for Vec<T> {
     }
 
     fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
-        value.into_vec()
-    }
-}
-
-impl<'a, T> TypedNodeCell<'a, T>
-where
-    AnyNode: ConvertibleToMut<T>,
-{
-    pub fn borrow_mut<'b>(&'b self, token: &'a mut PermTkn) -> &'a mut T {
-        let read = self.node.rw(token);
-        let disc = read.describe();
-        let id = read.get_id();
-        match read.try_as_mut() {
-            None => panic!(
-                "Node [{}] has wrong type: expected `{}`, actual `{}`",
-                id,
-                type_name::<T>(),
-                disc
-            ),
-            Some(x) => x,
-        }
-    }
-}
-
-impl<'a, T> TypedNodeCell<'a, T>
-where
-    AnyNode: ConvertibleToRef<T>,
-{
-    pub fn borrow(&self, token: &'a PermTkn) -> &T {
-        let read = self.node.ro(token);
-        match read.try_as_ref() {
-            None => panic!(
-                "Node [{}] has wrong type: expected `{}`, actual `{}`",
-                read.get_id(),
-                type_name::<T>(),
-                read.describe()
-            ),
-            Some(x) => x,
-        }
-    }
-}
-
-impl<'a, T> Debug for TypedNodeCell<'a, T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TypedNodeCell")
-            .field("node", self.node)
-            .field("_phantom", &self._phantom)
-            .finish()
+        value
     }
 }
