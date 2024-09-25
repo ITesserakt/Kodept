@@ -1,5 +1,4 @@
 pub use self::any_node::{AnyNode, AnyNodeD, SubEnum};
-pub use self::changes::{Change, ChangeSet};
 pub use self::children::tags;
 pub use self::node_id::{GenericNodeId, GenericNodeKey, NodeId};
 pub use self::syntax_tree::{
@@ -8,9 +7,8 @@ pub use self::syntax_tree::{
 
 pub(crate) use self::children::macros::with_children;
 pub(crate) use self::children::HasChildrenMarker;
-#[allow(unused_imports)]
-pub(crate) use self::children::{ChildrenMut, ChildrenRef, ContainerT};
 pub(crate) use self::identity::Identity;
+pub(crate) use self::utils::*;
 
 pub(crate) trait Identifiable: Sized {
     fn get_id(&self) -> NodeId<Self>;
@@ -18,7 +16,6 @@ pub(crate) trait Identifiable: Sized {
 }
 
 mod any_node;
-mod changes;
 mod children;
 mod identity;
 mod node_id;

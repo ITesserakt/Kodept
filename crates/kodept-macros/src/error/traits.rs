@@ -155,7 +155,7 @@ impl<E: std::error::Error> SpannedReportMessage for SpannedError<E> {
         self.notes.clone()
     }
 
-    fn with_node_location(self, location: CodePoint) -> impl SpannedReportMessage {
+    fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
         Diagnostic::new(self.severity)
             .with_message(self.inner.to_string())
             .with_label(Label::primary("here", self.point))

@@ -3,7 +3,6 @@ use crate::execution::Execution;
 use crate::execution::Execution::{Completed, Skipped};
 use crate::visit_guard::VisitGuard;
 use crate::Macro;
-use kodept_ast::graph::ChangeSet;
 use kodept_ast::FileDecl;
 use std::io::Write;
 use derive_more::Constructor;
@@ -27,12 +26,12 @@ impl<W: Write> Macro for ASTDotFormatter<W> {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error, ChangeSet> {
+    ) -> Execution<Self::Error> {
         if guard.allow_last().is_none() {
             return Skipped;
         }
         
         write!(&mut self.output, "{}", ctx.ast.export_dot(&[])).map_err(Error)?;
-        Completed(ChangeSet::new())
+        Completed(())
     }
 }

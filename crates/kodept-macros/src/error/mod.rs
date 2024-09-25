@@ -102,7 +102,7 @@ impl SpannedReportMessage for Diagnostic {
         self.notes.clone()
     }
 
-    fn with_node_location(mut self, location: CodePoint) -> impl SpannedReportMessage {
+    fn with_node_location(mut self, location: CodePoint) -> impl IntoSpannedReportMessage {
         self.labels.push(Label::secondary("while checking here", location));
         self
     }

@@ -13,6 +13,7 @@ use slotgraph::dag::{NodeKey, SecondaryDag};
 use slotgraph::export::{Config, Dot};
 use std::convert::identity;
 use std::fmt::{Display, Formatter};
+use std::iter::FusedIterator;
 use std::marker::PhantomData;
 
 pub mod dfs;
@@ -66,15 +67,15 @@ impl<P> SyntaxTree<P> {
         Some((SubSyntaxTree::from_dag(dag), edge))
     }
 
-    pub fn children_of<T, U>(&self, id: NodeId<T>, tag: ChildTag) -> OptVec<&U>
+    pub fn children_of<'a, T, U>(&'a self, id: NodeId<T>, tag: ChildTag) -> impl FusedIterator<Item = &'a U> 
     where
         AnyNode: ConvertibleToRef<U>,
+        U: 'a
     {
         self.inner
             .children(id.into())
-            .filter(|(_, it)| it.edge_data == tag)
+            .filter(move |(_, it)| it.edge_data == tag)
             .filter_map(|(_, it)| it.value.try_as_ref())
-            .collect()
     }
 
     pub fn get<T>(&self, id: NodeId<T>) -> Option<&T>

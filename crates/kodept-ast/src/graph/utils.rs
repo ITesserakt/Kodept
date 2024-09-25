@@ -1,62 +1,76 @@
 #![allow(clippy::needless_lifetimes)]
 
-use std::any::type_name;
-use std::fmt::Debug;
+use crate::graph::Identity;
 
 pub(crate) type OptVec<T> = Vec<T>;
 
-pub trait FromOptVec {
-    type Ref<'a>
-    where
-        Self::T: 'a;
-    type Mut<'a>
-    where Self::T: 'a;
+pub struct OptionFamily;
+pub struct VecFamily;
+pub struct IdentityFamily;
+
+pub trait ContainerFamily {
+    type This<T>;
+
+    fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> Self::This<T>;
+}
+
+pub trait HasContainerFamily {
+    type Family: ContainerFamily;
     type T;
-
-    fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a>;
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a>;
 }
 
-impl<T: Debug> FromOptVec for Option<T> {
-    type Ref<'a> = Option<&'a T> where T: 'a;
-    type Mut<'a> = Option<&'a mut T> where T: 'a;
+pub(crate) type ContainerT<C, T> = <C as ContainerFamily>::This<T>;
+pub(crate) type ChangeT<From, To> =
+    <<From as HasContainerFamily>::Family as ContainerFamily>::This<To>;
+pub(crate) type WrapRef<'a, C> = ChangeT<C, &'a InnerT<C>>;
+pub(crate) type FamilyT<Of> = <Of as HasContainerFamily>::Family;
+pub(crate) type InnerT<C> = <C as HasContainerFamily>::T;
+
+impl<T> HasContainerFamily for Option<T> {
+    type Family = OptionFamily;
     type T = T;
+}
 
-    fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
-        match value.split_first() {
-            None => None,
-            Some((x, [])) => Some(x),
-            Some((_, x)) => panic!(
-                "Container must has no more then one child <{}>, but has {:?}",
-                type_name::<T>(),
-                x
-            ),
-        }
-    }
+impl<T> HasContainerFamily for Vec<T> {
+    type Family = VecFamily;
+    type T = T;
+}
 
-    fn unwrap_mut<'a>(mut value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
-        if value.len() <= 1 {
-            value.pop()
-        } else {
-            panic!(
-                "Container must has no more then one child <{}>, but has {:?}",
-                type_name::<T>(),
-                value
-            )
+impl<T> HasContainerFamily for Identity<T> {
+    type Family = IdentityFamily;
+    type T = T;
+}
+
+impl ContainerFamily for OptionFamily {
+    type This<T> = Option<T>;
+
+    fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> Self::This<T> {
+        let mut into_iter = iter.into_iter();
+        match (into_iter.next(), into_iter.next()) {
+            (None, _) => None,
+            (Some(x), None) => Some(x),
+            (Some(_), Some(_)) => unreachable!("Container must have at most one element")
         }
     }
 }
 
-impl<T> FromOptVec for Vec<T> {
-    type Ref<'a> = Vec<&'a T> where Self::T: 'a;
-    type Mut<'a> = Vec<&'a mut T> where Self::T: 'a; 
-    type T = T;
+impl ContainerFamily for VecFamily {
+    type This<T> = Vec<T>;
 
-    fn unwrap<'a>(value: OptVec<&'a Self::T>) -> Self::Ref<'a> {
-        value.to_vec()
+    fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> Self::This<T> {
+        Vec::from_iter(iter)
     }
+}
 
-    fn unwrap_mut<'a>(value: OptVec<&'a mut Self::T>) -> Self::Mut<'a> {
-        value
+impl ContainerFamily for IdentityFamily {
+    type This<T> = T;
+
+    fn from_iter<T>(iter: impl IntoIterator<Item = T>) -> Self::This<T> {
+        let mut into_iter = iter.into_iter();
+
+        match (into_iter.next(), into_iter.next()) {
+            (Some(x), None) => x,
+            (None, _) | (Some(_), Some(_)) => unreachable!("Container must have exactly one element"),
+        }
     }
 }

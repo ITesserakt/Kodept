@@ -1,5 +1,5 @@
 use crate::scope::{ScopeError, ScopeTree};
-use kodept_ast::graph::{AnyNode, ChangeSet};
+use kodept_ast::graph::{AnyNode};
 use kodept_ast::traits::Identifiable;
 use kodept_ast::visit_side::VisitSide;
 use kodept_ast::{
@@ -66,7 +66,7 @@ impl Macro for ScopeAnalyzer {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error, ChangeSet> {
+    ) -> Execution<Self::Error> {
         let (id, side) = guard.allow_all();
         let node = self.resolve(id, ctx);
 
@@ -103,6 +103,6 @@ impl Macro for ScopeAnalyzer {
         }
         .map_err(|e| SpannedError::for_node(e, id, &ctx.rlt))?;
 
-        Execution::Completed(ChangeSet::new())
+        Execution::Completed(())
     }
 }
