@@ -1,5 +1,5 @@
 use derive_more::From;
-use kodept_ast::graph::{AnyNodeD, ChangeSet, GenericNodeId, GenericNodeKey, SyntaxTree};
+use kodept_ast::graph::{AnyNodeD, GenericNodeId, GenericNodeKey, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::BodyFnDecl;
 use kodept_core::code_point::CodePoint;
@@ -246,7 +246,7 @@ impl Macro for TypeChecker<'_> {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Context<'_>,
-    ) -> Execution<Self::Error, ChangeSet> {
+    ) -> Execution<Self::Error> {
         let node_id = guard.allow_last()?;
         let node = ctx.ast.get(node_id).unwrap();
 
@@ -282,6 +282,6 @@ impl Macro for TypeChecker<'_> {
             Err(e) => e.errors.into_iter().for_each(|e| ctx.report(e)),
         }
 
-        Execution::Completed(ChangeSet::new())
+        Execution::Completed(())
     }
 }

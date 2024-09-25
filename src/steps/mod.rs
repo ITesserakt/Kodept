@@ -1,5 +1,5 @@
 use crate::hlist::{FromHList, HCons, HList, HNil};
-use kodept_ast::graph::{ChangeSet, GenericNodeId, SubEnum};
+use kodept_ast::graph::{GenericNodeId, SubEnum};
 use kodept_ast::visit_side::VisitSide;
 use kodept_core::structure::Located;
 use kodept_macros::context::{Context, FileId};
@@ -21,14 +21,14 @@ struct Pack<'a, C> {
 trait RunMacros: HList {
     type Ctx<'a>;
 
-    fn apply(&mut self, pack: Pack<Self::Ctx<'_>>) -> Execution<Vec<Report<FileId>>, ChangeSet>;
+    fn apply(&mut self, pack: Pack<Self::Ctx<'_>>) -> Execution<Vec<Report<FileId>>>;
 }
 
 impl RunMacros for HNil {
     type Ctx<'a> = Context<'a>;
 
     #[inline]
-    fn apply(&mut self, _: Pack<Self::Ctx<'_>>) -> Execution<Vec<Report<FileId>>, ChangeSet> {
+    fn apply(&mut self, _: Pack<Self::Ctx<'_>>) -> Execution<Vec<Report<FileId>>> {
         Skipped
     }
 }
@@ -42,7 +42,7 @@ where
     type Ctx<'a> = Context<'a>;
 
     #[inline]
-    fn apply(&mut self, pack: Pack<Self::Ctx<'_>>) -> Execution<Vec<Report<FileId>>, ChangeSet> {
+    fn apply(&mut self, pack: Pack<Self::Ctx<'_>>) -> Execution<Vec<Report<FileId>>> {
         let head = if N::VARIANTS.contains(&pack.ctx.describe(pack.node_id)) {
             let guard = VisitGuard::new(pack.node_id.coerce(), pack.side);
             self.head.apply(guard, pack.ctx)
@@ -59,11 +59,10 @@ where
 
         match (head, tail) {
             (Failed(e1), other) => {
-                let e = e1.into_message();
                 let e = if let Some(loc) = location {
-                    Report::from_raw_message(file_id, e.with_node_location(loc))
+                    Report::from_message(file_id, e1.into_message().with_node_location(loc))
                 } else {
-                    Report::from_raw_message(file_id, e)
+                    Report::from_message(file_id, e1)
                 };
                 if let Failed(mut e2) = other {
                     e2.push(e);
@@ -74,12 +73,8 @@ where
             }
             (_, Failed(e)) => Failed(e),
             (Skipped, Skipped) => Skipped,
-            (Completed(full), Skipped) => Completed(full),
-            (Skipped, Completed(full)) => Completed(full),
-            (Completed(mut part1), Completed(part2)) => {
-                part1.extend(part2);
-                Completed(part1)
-            }
+            (Completed(_), _) => Completed(()),
+            (_, Completed(_)) => Completed(()),
         }
     }
 }
@@ -88,13 +83,12 @@ fn run_macros<M>(ctx: &mut Context, macros: &mut M)
 where
     for<'a> M: RunMacros<Ctx<'a> = Context<'a>>,
 {
-    let mut changes = ChangeSet::new();
     let mut iter = ctx.ast.dfs().detach();
 
     while let Some((node_id, side)) = iter.next(&ctx.ast) {
         match macros.apply(Pack { node_id, side, ctx }) {
             Failed(e) => e.into_iter().for_each(|it| ctx.collector.push_report(it)),
-            Completed(next) => changes.extend(next),
+            Completed(_) => {}
             Skipped => continue,
         }
     }

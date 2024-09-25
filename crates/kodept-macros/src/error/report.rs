@@ -1,8 +1,9 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label as ForeignLabel};
 use kodept_core::code_point::CodePoint;
-use std::any::TypeId;
+use std::any::{type_name_of_val, TypeId};
 use std::borrow::Cow;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use crate::context::FileId;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Severity {
@@ -32,7 +33,7 @@ pub trait SpannedReportMessage {
     fn message(&self) -> Cow<'static, str>;
     fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>>;
 
-    fn with_node_location(self, location: CodePoint) -> impl SpannedReportMessage;
+    fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage;
 }
 
 pub trait IntoSpannedReportMessage {
@@ -91,28 +92,20 @@ impl ReportMessage {
 }
 
 impl<FileId> Report<FileId> {
-    fn generate_code_from_type<T: 'static + ?Sized>() -> String {
-        let type_id = TypeId::of::<T>();
+    fn generate_code_from_type<T>(value: &T) -> String {
+        let type_name = type_name_of_val(value);
         let mut hasher = DefaultHasher::new();
-        type_id.hash(&mut hasher);
+        type_name.hash(&mut hasher);
         let hash = hasher.finish();
-        format!("{:X}", hash)
+        let hash = hash.to_ne_bytes().into_iter().fold(0u16, |acc, next| {
+            acc ^ next as u16
+        });
+        format!("{:0>8X}", hash)
     }
 
-    #[must_use]
-    pub fn from_message<T>(file_id: FileId, msg: T) -> Self
-    where
-        T: IntoSpannedReportMessage,
-        FileId: Clone,
-    {
-        Self::from_raw_message(file_id, msg.into_message())
-    }
-
-    #[must_use]
-    pub fn from_raw_message<T>(file_id: FileId, msg: T) -> Self
-    where
-        T: SpannedReportMessage + 'static,
-        FileId: Clone,
+    fn from_raw_message_with_code<T>(file_id: FileId, msg: T, code: String) -> Self
+    where T: SpannedReportMessage,
+        FileId: Clone
     {
         let labels = msg
             .labels()
@@ -129,11 +122,21 @@ impl<FileId> Report<FileId> {
 
         let diagnostic = Diagnostic::new(msg.severity().into())
             .with_message(msg.message())
-            .with_code(Self::generate_code_from_type::<T>())
+            .with_code(code)
             .with_notes(msg.notes().into_iter().map(|it| it.to_string()).collect())
             .with_labels(labels);
 
         Self { diagnostic }
+    }
+
+    #[must_use]
+    pub fn from_message<T>(file_id: FileId, msg: T) -> Self
+    where
+        T: IntoSpannedReportMessage,
+        FileId: Clone,
+    {
+        let code = Self::generate_code_from_type(&msg);
+        Self::from_raw_message_with_code(file_id, msg.into_message(), code)
     }
 
     #[must_use]
@@ -187,7 +190,7 @@ impl SpannedReportMessage for ReportMessage {
         self.notes.clone()
     }
 
-    fn with_node_location(self, location: CodePoint) -> impl SpannedReportMessage {
+    fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
         crate::error::Diagnostic::new(self.severity)
             .with_message(self.message)
             .with_node_location(location)

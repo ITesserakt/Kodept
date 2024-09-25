@@ -1,9 +1,9 @@
 use crate::graph::any_node::AnyNode;
 use crate::graph::children::tags::ChildTag;
-use crate::graph::utils::FromOptVec;
 use crate::graph::{SyntaxTree};
 use crate::traits::Identifiable;
 use kodept_core::ConvertibleToRef;
+use crate::graph::utils::{ContainerFamily, ContainerT};
 
 pub mod tags {
     pub type ChildTag = u8;
@@ -17,34 +17,25 @@ pub mod tags {
 }
 
 pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
-    type Container: FromOptVec<T = Child>;
+    type Container: ContainerFamily;
 
     fn get_children<'b, P>(
         &self,
         tree: &'b SyntaxTree<P>,
-    ) -> ChildrenRef<'b, Self, Child, TAG>
+    ) -> ContainerT<Self::Container, &'b Child>
     where
         AnyNode: ConvertibleToRef<Child>,
     {
-        Self::Container::unwrap(tree.children_of(self.get_id(), TAG))
+        Self::Container::from_iter(tree.children_of(self.get_id(), TAG))
     }
 }
-
-pub(crate) type ChildrenRef<'a, T, Child, const TAG: ChildTag> =
-    <<T as HasChildrenMarker<Child, TAG>>::Container as FromOptVec>::Ref<'a>;
-
-pub(crate) type ChildrenMut<'a, T, Child, const TAG: ChildTag> =
-    <<T as HasChildrenMarker<Child, TAG>>::Container as FromOptVec>::Mut<'a>;
-
-pub(crate) type ContainerT<T> = <T as FromOptVec>::T;
 
 pub(crate) mod macros {
     macro_rules! with_children {
         ($t:ty => {$($vis:vis $name:ident: $c_t:ty as $tag:tt,)*}) => {
-            paste::paste! {
             $(
-            impl $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag> for $t {
-                type Container = $c_t;
+            impl $crate::graph::HasChildrenMarker<$crate::graph::InnerT<$c_t>, $tag> for $t {
+                type Container = $crate::graph::FamilyT<$c_t>;
             }
 
             impl $t {
@@ -52,11 +43,10 @@ pub(crate) mod macros {
                 $vis fn $name<'a>(
                     &self,
                     tree: &'a $crate::graph::SyntaxTree
-                ) -> $crate::graph::ChildrenRef<'a, $t, $crate::graph::ContainerT<$c_t>, $tag> {
-                    <Self as $crate::graph::HasChildrenMarker<$crate::graph::ContainerT<$c_t>, $tag>>::get_children(self, tree)
+                ) -> $crate::graph::WrapRef<'a, $c_t> {
+                    <Self as $crate::graph::HasChildrenMarker<$crate::graph::InnerT<$c_t>, $tag>>::get_children(self, tree)
                 }
             })*
-            }
         };
         ($t:ty => {$($vis:vis $name:ident: $c_t:ty,)*}) => {
             $crate::with_children! { $t => {

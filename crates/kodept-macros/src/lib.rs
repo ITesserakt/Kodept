@@ -7,7 +7,7 @@ use crate::context::Context;
 use crate::execution::Execution;
 use crate::execution::Execution::Skipped;
 use crate::visit_guard::VisitGuard;
-use kodept_ast::graph::{AnyNode, ChangeSet, NodeId};
+use kodept_ast::graph::{AnyNode, NodeId};
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
 use crate::error::report::IntoSpannedReportMessage;
 
@@ -36,7 +36,7 @@ pub trait Macro {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error, ChangeSet> {
+    ) -> Execution<Self::Error> {
         Skipped
     }
 }
