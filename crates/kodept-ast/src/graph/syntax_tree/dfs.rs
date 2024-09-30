@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::iter::FusedIterator;
 use tracing::debug;
 
-pub enum TraverseState {
+enum TraverseState {
     DescendDeeper,
     Exit,
 }
@@ -77,10 +77,9 @@ impl DetachedDfsIter {
                 .map(|it| AnyNodeId::from(it)),
         );
         self.edges_buffer.reverse();
-        let edges_iter = self.edges_buffer.iter();
-        if edges_iter.len() != 0 {
+        if !self.edges_buffer.is_empty() {
             self.stack.push_back((current_id, TraverseState::Exit));
-            for &child in edges_iter {
+            for &child in &self.edges_buffer {
                 self.stack.push_back((child, TraverseState::DescendDeeper));
             }
             Some((current_id, VisitSide::Entering))
