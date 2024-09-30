@@ -2,10 +2,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::graph::tags::{LEFT, PRIMARY, RIGHT, SECONDARY};
-use crate::graph::{Identity, SubSyntaxTree};
+use crate::graph::{ContainerFamily, Identity, IdentityFamily, SubSyntaxTree};
 use crate::macros::implementation::node;
 use crate::traits::PopulateTree;
-use crate::{node_sub_enum, BlockLevel, CodeFlow, Lit, Param, Term};
+use crate::{node_sub_enum, BlockLevel, CodeFlow, Lit, Param, Term, Uninit};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
@@ -146,6 +146,14 @@ pub enum BinaryExpressionKind {
     Logic(LogicKind),
     ComplexComparison,
     Assign,
+}
+
+impl UnExpr {
+    pub fn split_subtree(mut subtree: SubSyntaxTree<Self>) -> (Uninit<Self>, SubSyntaxTree<Operation>) {
+        let children = IdentityFamily::from_iter(subtree.extract_children());
+
+        (subtree.into_root(), children)
+    }
 }
 
 impl<'a> PopulateTree<'a> for &'a rlt::ExpressionBlock {

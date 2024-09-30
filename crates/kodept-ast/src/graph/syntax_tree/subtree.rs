@@ -8,12 +8,12 @@ use crate::rlt_accessor::{RLTAccessor, RLTFamily};
 use crate::traits::PopulateTree;
 use crate::uninit::Uninit;
 use kodept_core::structure::span::CodeHolder;
+use replace_with::replace_with_or_abort_and_return;
 use slotgraph::dag::{Dag, NodeKey};
 use slotmap::{Key, SecondaryMap};
 use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
-use replace_with::replace_with_or_abort_and_return;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
     LazyLock::new(|| match std::thread::available_parallelism() {
@@ -44,7 +44,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
             _phantom: Default::default(),
         }
     }
-    
+
     #[allow(private_bounds)]
     pub fn new(root: Uninit<'rlt, T>) -> Self
     where
@@ -196,22 +196,69 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         }
     }
 
-    pub fn with_root<R: Into<AnyNode>>(self, root: R) -> SubSyntaxTree<'rlt, R> {
-        let graph = match self.graph {
-            GraphImpl::Plain(mut g) => {
-                g.root = root.into();
-                GraphImpl::Plain(g)
-            }
-            GraphImpl::Leaf { .. } => GraphImpl::Leaf { root: root.into() },
-        };
+    pub fn extract_children<U, const TAG: ChildTag>(
+        &mut self,
+    ) -> impl Iterator<Item = SubSyntaxTree<'rlt, U>> + '_
+    where
+        T: HasChildrenMarker<U, TAG>,
+        U: 'static
+    {
+        enum Helper<I1, I2> {
+            A(I1),
+            B(I2),
+        }
+        impl<T, I1, I2> Iterator for Helper<I1, I2>
+        where
+            I1: Iterator<Item = T>,
+            I2: Iterator<Item = T>,
+        {
+            type Item = T;
 
-        SubSyntaxTree {
-            graph,
-            rlt_mapping: self.rlt_mapping,
-            root_rlt_mapping: self.root_rlt_mapping,
-            _phantom: PhantomData,
+            fn next(&mut self) -> Option<Self::Item> {
+                match self {
+                    Helper::A(x) => x.next(),
+                    Helper::B(x) => x.next(),
+                }
+            }
+        }
+
+        match &mut self.graph {
+            GraphImpl::Plain(g) => {
+                let children_ids: Vec<_> = g
+                    .children(NodeKey::Root)
+                    .filter(|(_, it)| it.edge_data == TAG)
+                    .map(|(id, _)| id)
+                    .collect();
+
+                Helper::A(
+                    children_ids
+                        .into_iter()
+                        .map(|id| g.detach_subgraph_at(id))
+                        .filter_map(|it| Some(SubSyntaxTree::from_dag(it?.0))),
+                )
+            }
+            GraphImpl::Leaf { .. } => Helper::B(std::iter::empty()),
         }
     }
+    
+    pub fn into_root(self) -> Uninit<'rlt, T>
+    where 
+        AnyNode: TryInto<T>
+    {
+        let root = match self.graph {
+            GraphImpl::Plain(g) => g.root,
+            GraphImpl::Leaf { root } => root,
+        };
+        
+        let value = if let Some(rlt) = self.root_rlt_mapping {
+            Uninit::new(root)
+                .with_rlt(rlt)
+        } else {
+            Uninit::new(root)
+        };
+        
+        value.map(|it| it.try_into().ok().unwrap())
+    } 
 
     pub(super) fn consume_map<U>(
         self,

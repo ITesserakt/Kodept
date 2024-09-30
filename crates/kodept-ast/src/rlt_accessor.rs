@@ -50,9 +50,9 @@ impl<'r> RLTAccessor<'r> {
         }
     }
 
-    pub fn get_unknown<T>(&self, id: NodeId<T>) -> Option<RLTFamily>
-    where 
-        AnyNode: TryFrom<T>
+    pub fn get_unknown<T>(&self, id: NodeId<T>) -> Option<RLTFamily<'r>>
+    where
+        AnyNode: TryFrom<T>,
     {
         match id {
             NodeId::Root => self.root_mapping,
@@ -63,12 +63,28 @@ impl<'r> RLTAccessor<'r> {
     pub fn get<T, R>(&self, id: NodeId<T>) -> Option<&R>
     where
         for<'a> RLTFamily<'a>: TryInto<&'a R>,
-        AnyNode: TryFrom<T>
+        AnyNode: TryFrom<T>,
     {
         match self.get_unknown(id) {
             None => None,
-            Some(x) => x.try_into().ok()
+            Some(x) => x.try_into().ok(),
         }
+    }
+
+    pub fn set<T, R>(&mut self, id: NodeId<T>, value: R)
+    where
+        R: Into<RLTFamily<'r>>,
+        AnyNode: From<T>
+    {
+        let value = value.into();
+        match id {
+            NodeId::Root => {
+                self.root_mapping = Some(value)
+            }
+            NodeId::Key(_) => {
+                self.mapping.insert(id.as_key().unwrap(), value);
+            }
+        };
     }
 
     pub(crate) fn append(&mut self, other: RLTAccessor<'r>) {
