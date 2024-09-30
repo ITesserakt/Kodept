@@ -1,8 +1,8 @@
-use crate::graph::{GenericNodeId, SyntaxTree};
+use crate::graph::{AnyNodeId, SyntaxTree};
 use crate::visit_side::VisitSide;
-use slotgraph::dag::NodeKey;
 use std::collections::VecDeque;
 use std::iter::FusedIterator;
+use tracing::debug;
 
 pub enum TraverseState {
     DescendDeeper,
@@ -15,12 +15,12 @@ pub struct DfsIter<'a, P> {
 }
 
 pub struct DetachedDfsIter {
-    stack: VecDeque<(NodeKey, TraverseState)>,
-    edges_buffer: Vec<NodeKey>,
+    stack: VecDeque<(AnyNodeId, TraverseState)>,
+    edges_buffer: Vec<AnyNodeId>,
 }
 
 impl<'a, P> DfsIter<'a, P> {
-    pub fn new(tree: &'a SyntaxTree<P>, start: NodeKey) -> Self {
+    pub(crate) fn new(tree: &'a SyntaxTree<P>, start: AnyNodeId) -> Self {
         let mut stack = VecDeque::with_capacity(tree.inner.len());
         stack.push_back((start, TraverseState::DescendDeeper));
 
@@ -32,14 +32,14 @@ impl<'a, P> DfsIter<'a, P> {
             tree,
         }
     }
-    
+
     pub fn detach(self) -> DetachedDfsIter {
         self.inner
     }
 }
 
 impl<'a, P> Iterator for DfsIter<'a, P> {
-    type Item = (GenericNodeId, VisitSide);
+    type Item = (AnyNodeId, VisitSide);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next(self.tree)
@@ -51,20 +51,35 @@ impl<'a, P> Iterator for DfsIter<'a, P> {
 }
 
 impl DetachedDfsIter {
-    pub fn next<P>(&mut self, tree: &SyntaxTree<P>) -> Option<(GenericNodeId, VisitSide)> {
-        let (next, descend) = self.stack.pop_back()?;
-        let current_id = next.into();
+    pub fn next<P>(&mut self, tree: &SyntaxTree<P>) -> Option<(AnyNodeId, VisitSide)> {
+        let (current_id, descend) = loop {
+            let (current_id, descend) = self.stack.pop_back()?;
+
+            if !tree.contains(current_id) {
+                debug!(
+                    "Node {} has removed from the AST, but still accessible from dfs iterator",
+                    current_id
+                );
+                continue;
+            }
+
+            break (current_id, descend);
+        };
+
         if matches!(descend, TraverseState::Exit) {
             return Some((current_id, VisitSide::Exiting));
         }
 
         self.edges_buffer.clear();
-        self.edges_buffer
-            .extend(tree.inner.children(next).map(|it| it.0));
+        self.edges_buffer.extend(
+            tree.inner
+                .children_ids(current_id.into())
+                .map(|it| AnyNodeId::from(it)),
+        );
         self.edges_buffer.reverse();
         let edges_iter = self.edges_buffer.iter();
         if edges_iter.len() != 0 {
-            self.stack.push_back((next, TraverseState::Exit));
+            self.stack.push_back((current_id, TraverseState::Exit));
             for &child in edges_iter {
                 self.stack.push_back((child, TraverseState::DescendDeeper));
             }

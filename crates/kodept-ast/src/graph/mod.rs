@@ -1,6 +1,6 @@
 pub use self::any_node::{AnyNode, AnyNodeD, SubEnum};
 pub use self::children::tags;
-pub use self::node_id::{GenericNodeId, GenericNodeKey, NodeId};
+pub use self::node_id::{AnyNodeId, AnyNodeKey, NodeId};
 pub use self::children::HasChildrenMarker;
 pub use self::syntax_tree::{
     dfs, subtree::SubSyntaxTree, SyntaxTree, SyntaxTreeBuilder,

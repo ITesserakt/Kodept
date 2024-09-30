@@ -7,7 +7,7 @@ use crate::scope::ScopeError::{Duplicate, NoScope};
 use derive_more::Display;
 use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
 use itertools::Itertools;
-use kodept_ast::graph::{AnyNode, GenericNodeId, SyntaxTree};
+use kodept_ast::graph::{AnyNode, AnyNodeId, SyntaxTree};
 use kodept_ast::traits::Identifiable;
 use kodept_inference::language::{var, Var};
 use kodept_inference::r#type::MonomorphicType;
@@ -28,10 +28,10 @@ pub struct ScopeTree {
 }
 
 pub struct Scope {
-    start_from_id: GenericNodeId,
+    start_from_id: AnyNodeId,
     name: Option<String>,
     types: HashMap<String, MonomorphicType>,
-    variables: HashMap<String, GenericNodeId>,
+    variables: HashMap<String, AnyNodeId>,
 }
 
 #[derive(Clone, Debug)]
@@ -129,7 +129,7 @@ impl ScopeTree {
 }
 
 impl Scope {
-    fn new(from: GenericNodeId, name: Option<String>) -> Self {
+    fn new(from: AnyNodeId, name: Option<String>) -> Self {
         Self {
             start_from_id: from,
             name,
@@ -151,7 +151,7 @@ impl Scope {
 
     pub fn insert_var(
         &mut self,
-        id: GenericNodeId,
+        id: AnyNodeId,
         name: impl Into<String> + Clone,
     ) -> Result<(), ScopeError> {
         if self.variables.insert(name.clone().into(), id).is_some() {
@@ -160,7 +160,7 @@ impl Scope {
         Ok(())
     }
 
-    pub fn starts_from(&self) -> GenericNodeId {
+    pub fn starts_from(&self) -> AnyNodeId {
         self.start_from_id
     }
 
@@ -212,7 +212,7 @@ impl ScopeSearch<'_> {
         }
     }
 
-    pub fn id_of_var(&self, name: impl AsRef<str>) -> Option<GenericNodeId> {
+    pub fn id_of_var(&self, name: impl AsRef<str>) -> Option<AnyNodeId> {
         if self.exclusive {
             let scope = self
                 .tree

@@ -15,11 +15,11 @@ pub enum NodeId<Node> {
     Key(Key<Node>),
 }
 
-static_assert_size!(GenericNodeId, 8);
+static_assert_size!(AnyNodeId, 8);
 static_assert_size!((u32, u32), 8);
 
-pub type GenericNodeId = NodeId<AnyNode>;
-pub type GenericNodeKey = Key<AnyNode>;
+pub type AnyNodeId = NodeId<AnyNode>;
+pub type AnyNodeKey = Key<AnyNode>;
 
 impl<Node> From<NodeKey> for NodeId<Node> {
     fn from(value: NodeKey) -> Self {
@@ -60,7 +60,7 @@ impl<T> NodeId<T> {
         }
     }
 
-    pub fn as_key(&self) -> Option<GenericNodeKey>
+    pub fn as_key(&self) -> Option<AnyNodeKey>
     where
         AnyNode: TryFrom<T>,
     {
@@ -72,7 +72,7 @@ impl<T> NodeId<T> {
 }
 
 impl<T: Into<AnyNode>> NodeId<T> {
-    pub fn widen(self) -> GenericNodeId {
+    pub fn widen(self) -> AnyNodeId {
         match self {
             NodeId::Root => NodeId::Root,
             NodeId::Key(k) => NodeId::Key(k.coerce()),
@@ -80,7 +80,7 @@ impl<T: Into<AnyNode>> NodeId<T> {
     }
 }
 
-impl GenericNodeId {
+impl AnyNodeId {
     pub fn coerce<U>(self) -> NodeId<U>
     where
         U: SubEnum,
@@ -92,7 +92,7 @@ impl GenericNodeId {
     }
 }
 
-impl GenericNodeId {
+impl AnyNodeId {
     pub fn narrow<T: TryFrom<AnyNode>>(self) -> NodeId<T> {
         match self {
             NodeId::Root => NodeId::Root,

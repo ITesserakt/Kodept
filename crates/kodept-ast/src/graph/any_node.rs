@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::graph::node_id::GenericNodeId;
+use crate::graph::node_id::AnyNodeId;
 use crate::graph::Identifiable;
 use crate::*;
 use derive_more::{Display, From, TryInto};
@@ -96,12 +96,12 @@ impl SubEnum for AnyNode {
 
 impl Identifiable for AnyNode {
     #[inline]
-    fn get_id(&self) -> GenericNodeId {
+    fn get_id(&self) -> AnyNodeId {
         folding!(self; x => x.get_id().widen())
     }
 
     #[inline]
-    fn set_id(&self, value: GenericNodeId) {
+    fn set_id(&self, value: AnyNodeId) {
         folding!(self; x => x.set_id(value.narrow()));
     }
 }

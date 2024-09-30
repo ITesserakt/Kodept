@@ -1,6 +1,6 @@
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::{AnyNode, NodeId, SubSyntaxTree};
+use crate::graph::{AnyNode, SubSyntaxTree};
 
 pub use super::graph::Identifiable;
 
