@@ -1,16 +1,16 @@
 pub use self::any_node::{AnyNode, AnyNodeD, SubEnum};
 pub use self::children::tags;
 pub use self::node_id::{GenericNodeId, GenericNodeKey, NodeId};
+pub use self::children::HasChildrenMarker;
 pub use self::syntax_tree::{
     dfs, subtree::SubSyntaxTree, SyntaxTree, SyntaxTreeBuilder,
 };
 
 pub(crate) use self::children::macros::with_children;
-pub(crate) use self::children::HasChildrenMarker;
 pub(crate) use self::identity::Identity;
 pub(crate) use self::utils::*;
 
-pub(crate) trait Identifiable: Sized {
+pub trait Identifiable: Sized {
     fn get_id(&self) -> NodeId<Self>;
     fn set_id(&self, value: NodeId<Self>);
 }

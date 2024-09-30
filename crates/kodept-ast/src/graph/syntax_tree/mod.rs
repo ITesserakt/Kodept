@@ -3,7 +3,7 @@ use crate::graph::children::tags::{ChildTag, TAGS_DESC};
 use crate::graph::node_id::NodeId;
 use crate::graph::syntax_tree::dfs::DfsIter;
 use crate::graph::utils::OptVec;
-use crate::graph::SubSyntaxTree;
+use crate::graph::{HasChildrenMarker, SubSyntaxTree};
 use crate::rlt_accessor::RLTAccessor;
 use crate::traits::PopulateTree;
 use kodept_core::structure::rlt;
@@ -61,16 +61,69 @@ impl<P> SyntaxTree<P> {
         };
         (tree, accessor)
     }
-    
-    pub fn detach_subtree<T>(&mut self, node_id: NodeId<T>) -> Option<(SubSyntaxTree<T>, ChildTag)> {
+
+    pub fn detach_subtree<T>(
+        &mut self,
+        node_id: NodeId<T>,
+    ) -> Option<(SubSyntaxTree<'static, T>, ChildTag)> {
         let (dag, edge) = self.inner.detach_subgraph_at(node_id.into())?;
         Some((SubSyntaxTree::from_dag(dag), edge))
     }
 
-    pub fn children_of<'a, T, U>(&'a self, id: NodeId<T>, tag: ChildTag) -> impl FusedIterator<Item = &'a U> 
+    pub fn attach_subtree<T, U>(
+        &mut self,
+        parent_id: NodeId<T>,
+        subtree: SubSyntaxTree<U>,
+        tag: ChildTag,
+    ) {
+        let (dag, _) = subtree.consume_map(identity);
+        self.inner
+            .attach_subgraph_at(parent_id.into(), dag, tag)
+            .unwrap();
+    }
+
+    pub fn update_children_tag<T1, U1, T2, U2, const OLD_TAG: ChildTag, const NEW_TAG: ChildTag>(
+        &mut self,
+        node_id: NodeId<T1>,
+    ) -> Option<()>
+    where
+        T1: HasChildrenMarker<U1, OLD_TAG>,
+        T2: HasChildrenMarker<U2, NEW_TAG>,
+    {
+        for id in self.inner.children_ids(node_id.into()).collect::<Vec<_>>() {
+            let Some(weight) = self.inner.edge_weight_mut(id) else {
+                continue;
+            };
+            if *weight == OLD_TAG {
+                *weight = NEW_TAG;
+            }
+        }
+        Some(())
+    }
+
+    pub fn add_child<T, U>(
+        &mut self,
+        parent_id: NodeId<T>,
+        f: impl FnOnce(NodeId<U>) -> U,
+        tag: ChildTag,
+    ) -> NodeId<U>
+    where
+        AnyNode: From<U>,
+    {
+        self.inner
+            .add_node_with_key(parent_id.into(), |id| (f(id.into()).into(), tag))
+            .unwrap()
+            .into()
+    }
+
+    pub fn children_of<'a, T, U>(
+        &'a self,
+        id: NodeId<T>,
+        tag: ChildTag,
+    ) -> impl FusedIterator<Item = &'a U>
     where
         AnyNode: ConvertibleToRef<U>,
-        U: 'a
+        U: 'a,
     {
         self.inner
             .children(id.into())

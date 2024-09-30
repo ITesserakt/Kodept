@@ -25,14 +25,36 @@ impl<'rlt, T> Uninit<'rlt, T> {
         }
         (self.value, self.rlt_ref)
     }
-
-    pub fn with_rlt<R>(self, rlt_node: &'rlt R) -> Uninit<'rlt, T>
+    
+    #[allow(unsafe_code)]
+    #[allow(private_bounds)]
+    pub unsafe fn unwrap_unchecked(self, id: NodeId<T>) -> (T, Option<RLTFamily<'rlt>>)
     where 
-        &'rlt R: Into<RLTFamily<'rlt>>,
+        T: Identifiable
+    {
+        self.value.set_id(id);
+        (self.value, self.rlt_ref)
+    }
+
+    pub fn with_rlt<R>(self, rlt_node: R) -> Uninit<'rlt, T>
+    where 
+        R: Into<RLTFamily<'rlt>>,
+        R: 'rlt
     {
         Self {
             value: self.value,
             rlt_ref: Some(rlt_node.into())
+        }
+    }
+    
+    pub fn use_value<R>(&mut self, mut f: impl FnMut(&mut T) -> R) -> R {
+        f(&mut self.value)
+    }
+    
+    pub fn map<R>(self, f: impl FnOnce(T) -> R) -> Uninit<'rlt, R> {
+        Uninit {
+            value: f(self.value),
+            rlt_ref: self.rlt_ref,
         }
     }
 

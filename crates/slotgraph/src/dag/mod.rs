@@ -1,17 +1,19 @@
+/// Original code adopted from: https://docs.rs/scene-graph/latest/scene_graph/
 mod child_iter;
 mod container;
 mod detach_iter;
 mod petgraph_impls;
 mod petgraph_iter;
 
-use crate::dag::child_iter::DagChildIter;
+use crate::dag::child_iter::{DagChildIdIter, DagChildIter};
 use crate::dag::detach_iter::DagDetachIter;
 use crate::key::CommonKey;
 use container::SlotMapContainer;
 use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::RandomState;
+use std::mem::replace;
 use std::ops::Index;
 use thiserror::Error;
 
@@ -37,7 +39,7 @@ pub struct Children {
     last: CommonKey,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DagImpl<N, C> {
     pub root: N,
     arena: C,
@@ -238,7 +240,19 @@ where
         self.fix_parent(node.next_sibling, node.last_sibling, node.parent, id);
         Some((subgraph, node.edge_data))
     }
+    
+    pub fn replace(&mut self, id: NodeKey, value: T) -> Option<T> {
+        match id {
+            NodeKey::Root => {
+                Some(replace(&mut self.root, value))
+            }
+            NodeKey::Child(id) => {
+                Some(replace(&mut self.arena.get_mut(id)?.value, value))
+            }
+        }
+    }
 
+    /// Removes *all* nodes starting from `id`
     pub fn remove(&mut self, id: NodeKey) {
         let id = match id {
             NodeKey::Root => panic!("Root node cannot be removed"),
@@ -249,8 +263,9 @@ where
             return;
         };
 
+        for _ in DagDetachIter::new(&mut self.arena, NodeKey::Child(id), node.children) {}
+
         self.fix_parent(node.next_sibling, node.last_sibling, node.parent, id);
-        todo!();
     }
 
     pub fn contains(&self, id: NodeKey) -> bool {
@@ -315,6 +330,10 @@ where
 
     pub fn children(&self, parent_id: NodeKey) -> DagChildIter<T, C, E> {
         DagChildIter::new(self, parent_id)
+    }
+    
+    pub fn children_ids(&self, parent_id: NodeKey) -> DagChildIdIter<T, C, E> {
+        DagChildIdIter::new(self, parent_id)
     }
 
     fn fix_parent(

@@ -2,15 +2,7 @@ use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::{AnyNode, NodeId, SubSyntaxTree};
 
-pub trait Identifiable: Sized {
-    fn get_id(&self) -> NodeId<Self>;
-}
-
-impl<T: crate::graph::Identifiable> Identifiable for T {
-    fn get_id(&self) -> NodeId<Self> {
-        <Self as crate::graph::Identifiable>::get_id(self)
-    }
-}
+pub use super::graph::Identifiable;
 
 #[allow(clippy::wrong_self_convention)]
 pub trait AsEnum {

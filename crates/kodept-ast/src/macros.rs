@@ -42,6 +42,13 @@ pub(crate) mod implementation {
                 }
             }
             
+            impl From<$crate::graph::AnyNode> for $wrapper {
+                #[inline]
+                fn from(value: $crate::graph::AnyNode) -> Self {
+                    Self(value)
+                }
+            }
+            
             impl<'a> TryFrom<&'a $crate::graph::AnyNode> for &'a $wrapper {
                 type Error = $crate::utils::Skip<std::convert::Infallible>;
                 #[inline]
@@ -66,10 +73,15 @@ pub(crate) mod implementation {
                 }
             }
 
-            impl $crate::traits::Identifiable for $wrapper {
+            impl $crate::graph::Identifiable for $wrapper {
                 #[inline]
                 fn get_id(&self) -> $crate::graph::NodeId<Self> {
                     self.0.get_id().coerce()
+                }
+                
+                #[inline]
+                fn set_id(&self, id: $crate::graph::NodeId<Self>) {
+                    self.0.set_id(id.widen())
                 }
             }
             
