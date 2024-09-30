@@ -9,7 +9,7 @@ use crate::traits::PopulateTree;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-use slotgraph::dag::{NodeKey, SecondaryDag};
+use slotgraph::dag::{SecondaryDag};
 use slotgraph::export::{Config, Dot};
 use std::convert::identity;
 use std::fmt::{Display, Formatter};
@@ -130,6 +130,10 @@ impl<P> SyntaxTree<P> {
             .filter(move |(_, it)| it.edge_data == tag)
             .filter_map(|(_, it)| it.value.try_as_ref())
     }
+    
+    pub fn contains<T>(&self, id: NodeId<T>) -> bool {
+        self.inner.contains(id.into())
+    }
 
     pub fn get<T>(&self, id: NodeId<T>) -> Option<&T>
     where
@@ -157,7 +161,7 @@ impl<P> SyntaxTree<P> {
     }
 
     pub fn dfs(&self) -> DfsIter<P> {
-        DfsIter::new(self, NodeKey::Root)
+        DfsIter::new(self, NodeId::Root)
     }
 
     pub fn raw_children_of<T>(&self, id: NodeId<T>, tag: ChildTag) -> OptVec<&AnyNode> {

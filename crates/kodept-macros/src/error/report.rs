@@ -1,9 +1,8 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label as ForeignLabel};
 use kodept_core::code_point::CodePoint;
-use std::any::{type_name_of_val, TypeId};
+use std::any::{type_name_of_val};
 use std::borrow::Cow;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use crate::context::FileId;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Severity {

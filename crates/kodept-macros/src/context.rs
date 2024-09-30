@@ -2,7 +2,7 @@ use crate::error::report::{IntoSpannedReportMessage, Report};
 use crate::error::report_collector::ReportCollector;
 use kodept_ast::graph::tags::ChildTag;
 use kodept_ast::graph::{
-    AnyNode, AnyNodeD, GenericNodeId, HasChildrenMarker, Identifiable, NodeId, SyntaxTree,
+    AnyNode, AnyNodeD, AnyNodeId, HasChildrenMarker, Identifiable, NodeId, SyntaxTree,
 };
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::Uninit;
@@ -27,7 +27,7 @@ pub struct Context<'r> {
 }
 
 impl<'rlt> Context<'rlt> {
-    pub fn describe(&self, node_id: GenericNodeId) -> AnyNodeD {
+    pub fn describe(&self, node_id: AnyNodeId) -> AnyNodeD {
         self.ast
             .get(node_id)
             .expect("Cannot find node with given id")
@@ -60,7 +60,7 @@ impl<'rlt> Context<'rlt> {
 
         let slot = self.ast.get_mut(node_id.widen())?;
         let old = replace(slot, value);
-        old.set_id(GenericNodeId::null());
+        old.set_id(AnyNodeId::null());
 
         Some(Uninit::new(old.try_into().ok()?))
     }

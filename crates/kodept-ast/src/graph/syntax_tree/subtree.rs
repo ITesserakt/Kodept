@@ -1,6 +1,6 @@
 use crate::graph::children::tags::ChildTag;
 use crate::graph::children::HasChildrenMarker;
-use crate::graph::node_id::GenericNodeKey;
+use crate::graph::node_id::AnyNodeKey;
 use crate::graph::syntax_tree::utils;
 use crate::graph::syntax_tree::Graph;
 use crate::graph::{AnyNode, Identifiable, NodeId};
@@ -30,7 +30,7 @@ enum GraphImpl {
 #[derive(Debug)]
 pub struct SubSyntaxTree<'rlt, ROOT> {
     graph: GraphImpl,
-    rlt_mapping: SecondaryMap<GenericNodeKey, RLTFamily<'rlt>>,
+    rlt_mapping: SecondaryMap<AnyNodeKey, RLTFamily<'rlt>>,
     root_rlt_mapping: Option<RLTFamily<'rlt>>,
     _phantom: PhantomData<ROOT>,
 }

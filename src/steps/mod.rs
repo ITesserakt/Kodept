@@ -1,5 +1,5 @@
 use crate::hlist::{FromHList, HCons, HList, HNil};
-use kodept_ast::graph::{GenericNodeId, SubEnum};
+use kodept_ast::graph::{AnyNodeId, SubEnum};
 use kodept_ast::visit_side::VisitSide;
 use kodept_core::structure::Located;
 use kodept_macros::context::{Context, FileId};
@@ -13,7 +13,7 @@ pub mod common;
 pub mod pipeline;
 
 struct Pack<'a, C> {
-    node_id: GenericNodeId,
+    node_id: AnyNodeId,
     side: VisitSide,
     ctx: &'a mut C,
 }

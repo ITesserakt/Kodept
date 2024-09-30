@@ -1,6 +1,6 @@
 use crate::conc_cache::ConcSecSlotMap;
 use crate::operator_desugaring::{AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander};
-use kodept_ast::graph::GenericNodeKey;
+use kodept_ast::graph::AnyNodeKey;
 
 mod convert_model;
 mod node_family;
@@ -26,4 +26,4 @@ impl Witness {
 
 pub(crate) type Path = String;
 
-pub type Cache<T> = ConcSecSlotMap<GenericNodeKey, T>;
+pub type Cache<T> = ConcSecSlotMap<AnyNodeKey, T>;

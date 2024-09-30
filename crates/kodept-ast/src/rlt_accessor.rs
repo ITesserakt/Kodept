@@ -1,4 +1,4 @@
-use crate::graph::{AnyNode, GenericNodeKey, NodeId};
+use crate::graph::{AnyNode, AnyNodeKey, NodeId};
 use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::{rlt, Located};
@@ -35,13 +35,13 @@ pub enum RLTFamily<'r> {
 
 #[derive(Debug)]
 pub struct RLTAccessor<'r> {
-    mapping: SecondaryMap<GenericNodeKey, RLTFamily<'r>>,
+    mapping: SecondaryMap<AnyNodeKey, RLTFamily<'r>>,
     root_mapping: Option<RLTFamily<'r>>,
 }
 
 impl<'r> RLTAccessor<'r> {
     pub(crate) fn new(
-        mapping: SecondaryMap<GenericNodeKey, RLTFamily<'r>>,
+        mapping: SecondaryMap<AnyNodeKey, RLTFamily<'r>>,
         root_mapping: Option<RLTFamily<'r>>,
     ) -> Self {
         Self {

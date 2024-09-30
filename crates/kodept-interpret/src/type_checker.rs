@@ -1,5 +1,5 @@
 use derive_more::From;
-use kodept_ast::graph::{AnyNodeD, GenericNodeId, GenericNodeKey, SyntaxTree};
+use kodept_ast::graph::{AnyNodeD, AnyNodeId, AnyNodeKey, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::BodyFnDecl;
 use kodept_core::code_point::CodePoint;
@@ -88,7 +88,7 @@ pub enum InferError {
 #[derive(Debug, Error, From)]
 enum RecursiveTypeCheckingError {
     #[error("Node with id `{0}` was not found")]
-    NodeNotFound(GenericNodeId),
+    NodeNotFound(AnyNodeId),
     #[error("Node like `{0}` cannot convert to inner model")]
     InconvertibleToModel(AnyNodeD),
     #[error("Cannot type check due to mutual recursion")]
@@ -144,11 +144,11 @@ fn flatten(
     }
 }
 
-impl EnvironmentProvider<GenericNodeKey> for RecursiveTypeChecker<'_> {
+impl EnvironmentProvider<AnyNodeKey> for RecursiveTypeChecker<'_> {
     type Error = RecursiveTypeCheckingErrors;
 
-    fn maybe_get(&self, key: &GenericNodeKey) -> Result<Option<Cow<PolymorphicType>>, Self::Error> {
-        let id: GenericNodeId = (*key).into();
+    fn maybe_get(&self, key: &AnyNodeKey) -> Result<Option<Cow<PolymorphicType>>, Self::Error> {
+        let id: AnyNodeId = (*key).into();
         let location = self.rlt.get_unknown(id).unwrap().location();
         let node = self
             .tree
@@ -218,7 +218,7 @@ impl EnvironmentProvider<Var> for RecursiveTypeChecker<'_> {
         let Some(id) = self.search.id_of_var(&key.name) else {
             return Ok(None);
         };
-        let key: GenericNodeKey = id.as_key().unwrap();
+        let key: AnyNodeKey = id.as_key().unwrap();
         self.maybe_get(&key)
     }
 }
@@ -251,7 +251,7 @@ impl Macro for TypeChecker<'_> {
         let node = ctx.ast.get(node_id).unwrap();
 
         let search = self.symbols.lookup(node, &ctx.ast).unwrap();
-        let key: GenericNodeKey = node_id.as_key().unwrap();
+        let key: AnyNodeKey = node_id.as_key().unwrap();
         let rec = RecursiveTypeChecker {
             search,
             tree: &ctx.ast,
