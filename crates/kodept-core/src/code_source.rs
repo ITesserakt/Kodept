@@ -51,6 +51,8 @@ impl CodeSource {
             }
             Some(x) => x
         };
+        // SAFETY: compiler is not going to modify this file.
+        // But any other app can, and here we're not checking that.
         let options = unsafe {
             MmapOptions::new(size as usize)?
                 .with_flags(MmapFlags::SEQUENTIAL | MmapFlags::SHARED)
