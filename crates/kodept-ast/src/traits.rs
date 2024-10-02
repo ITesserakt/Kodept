@@ -1,8 +1,8 @@
 use kodept_core::structure::span::CodeHolder;
 
-use crate::graph::{AnyNode, SubSyntaxTree};
-
 pub use super::graph::Identifiable;
+use crate::graph::{AnyNode, SubSyntaxTree};
+use crate::interning::SharedStr;
 
 #[allow(clippy::wrong_self_convention)]
 pub trait AsEnum {
@@ -14,5 +14,5 @@ pub trait AsEnum {
 pub trait PopulateTree<'a> {
     type Root: Into<AnyNode>;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root>;
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root>;
 }

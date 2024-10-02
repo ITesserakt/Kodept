@@ -15,6 +15,7 @@ use std::convert::identity;
 use std::fmt::{Display, Formatter};
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
+use crate::interning::SharedStr;
 
 pub mod dfs;
 pub(crate) mod subtree;
@@ -49,10 +50,10 @@ impl<P> SyntaxTree<P> {
         )
     }
 
-    pub fn recursively_build<'a>(
-        rlt_root: &'a rlt::RLT,
-        context: &impl CodeHolder,
-    ) -> (Self, RLTAccessor<'a>) {
+    pub fn recursively_build(
+        rlt_root: &rlt::RLT,
+        context: impl CodeHolder<Str=SharedStr>,
+    ) -> (Self, RLTAccessor) {
         let subtree = rlt_root.0.convert(context);
         let (graph, accessor) = subtree.consume_map(identity);
         let tree = Self {

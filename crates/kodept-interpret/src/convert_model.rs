@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-
+use std::ops::Deref;
 use nonempty_collections::nev;
 
 use crate::node_family::convert;
@@ -81,7 +81,7 @@ trait ToModelFrom<N> {
 }
 
 pub(crate) trait ExtractName {
-    fn extract_name(&self, tree: &SyntaxTree) -> Cow<str>;
+    fn extract_name<'a>(&'a self, tree: &'a SyntaxTree) -> Cow<'a, str>;
 }
 
 impl ToModelFrom<Body> for ConversionHelper<'_> {
@@ -124,8 +124,8 @@ impl ToModelFrom<BodyFnDecl> for ConversionHelper<'_> {
                     Some(ty) => Some(convert(ty, &scope, self.ast, self.rlt)?),
                 };
                 let var = scope
-                    .var(name)
-                    .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))
+                    .var(name.deref())
+                    .ok_or(AlgorithmWError::UnknownVar(nev![var(name.deref())]))
                     .map_err(|e| {
                         SpannedError::for_node(InferError::AlgorithmW(e), it.get_id(), self.rlt)
                     })?;
@@ -208,8 +208,8 @@ impl ToModelFrom<InitVar> for ConversionHelper<'_> {
             .map_err(|e| SpannedError::for_node(InferError::Scope(e), node.get_id(), self.rlt))?;
         let variable = node.variable(self.ast);
         let bind = scope
-            .var(&variable.name)
-            .ok_or(AlgorithmWError::UnknownVar(nev![var(&variable.name)]))
+            .var(variable.name.deref())
+            .ok_or(AlgorithmWError::UnknownVar(nev![var(variable.name.deref())]))
             .map_err(|e| {
                 SpannedError::for_node(InferError::AlgorithmW(e), variable.get_id(), self.rlt)
             })?;
@@ -262,8 +262,8 @@ impl ToModelFrom<IfExpr> for ConversionHelper<'_> {
 impl ToModelFrom<Lit> for ConversionHelper<'_> {
     fn convert(self, node: &Lit) -> Result<Language, SpannedError<InferError>> {
         match node.as_enum() {
-            LitEnum::Num(x) => Ok(Floating(x.value.clone()).into()),
-            LitEnum::Char(x) => Ok(Floating(x.value.clone()).into()),
+            LitEnum::Num(_) => Ok(Floating.into()),
+            LitEnum::Char(_) => Ok(Floating.into()),
             LitEnum::Str(_) => todo!(),
             LitEnum::Tuple(node) => {
                 let items = node
@@ -293,9 +293,9 @@ impl ToModelFrom<Ref> for ConversionHelper<'_> {
         match &node.ident {
             TypeReference { .. } => todo!("Too complex"),
             Identifier::Reference { name } => scope
-                .var(name)
+                .var(name.deref())
                 .map(|it| it.into())
-                .ok_or(AlgorithmWError::UnknownVar(nev![var(name)]))
+                .ok_or(AlgorithmWError::UnknownVar(nev![var(name.deref())]))
                 .map_err(|e| {
                     SpannedError::for_node(InferError::AlgorithmW(e), node.get_id(), self.rlt)
                 }),
@@ -325,10 +325,10 @@ impl ToModelFrom<Lambda> for ConversionHelper<'_> {
 }
 
 impl ExtractName for BlockLevel {
-    fn extract_name(&self, tree: &SyntaxTree) -> Cow<str> {
+    fn extract_name<'a>(&'a self, tree: &'a SyntaxTree) -> Cow<'a, str> {
         match self.as_enum() {
             BlockLevelEnum::Fn(x) => x.extract_name(tree),
-            BlockLevelEnum::InitVar(x) => x.variable(tree).name.clone().into(),
+            BlockLevelEnum::InitVar(x) => x.variable(tree).name.as_ref().into(),
             _ => self.get_id().to_string().into(),
         }
     }
@@ -336,6 +336,6 @@ impl ExtractName for BlockLevel {
 
 impl ExtractName for BodyFnDecl {
     fn extract_name(&self, _: &SyntaxTree) -> Cow<str> {
-        self.name.as_str().into()
+        self.name.as_ref().into()
     }
 }

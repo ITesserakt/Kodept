@@ -7,6 +7,7 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
 use crate::{node, node_sub_enum, Operation};
+use crate::interning::SharedStr;
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -22,21 +23,21 @@ node_sub_enum! {
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct NumLit {
-        pub value: String,;
+        pub value: SharedStr,;
     }
 }
 
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct CharLit {
-        pub value: String,;
+        pub value: SharedStr,;
     }
 }
 
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct StrLit {
-        pub value: String,;
+        pub value: SharedStr,;
     }
 }
 
@@ -50,10 +51,10 @@ node! {
 impl<'a> PopulateTree<'a> for &'a rlt::Literal {
     type Root = Lit;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         let from_num = |x| {
             SubSyntaxTree::new(
-                NumLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),
+                NumLit::uninit(context.get_chunk_located(x)).with_rlt(self),
             )
         };
 
@@ -63,11 +64,11 @@ impl<'a> PopulateTree<'a> for &'a rlt::Literal {
             rlt::Literal::Hex(x) => from_num(x).cast(),
             rlt::Literal::Floating(x) => from_num(x).cast(),
             rlt::Literal::Char(x) => SubSyntaxTree::new(
-                CharLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),
+                CharLit::uninit(context.get_chunk_located(x)).with_rlt(self),
             )
             .cast(),
             rlt::Literal::String(x) => SubSyntaxTree::new(
-                StrLit::uninit(context.get_chunk_located(x).to_string()).with_rlt(self),
+                StrLit::uninit(context.get_chunk_located(x)).with_rlt(self),
             )
             .cast(),
             rlt::Literal::Tuple(x) => SubSyntaxTree::new(TupleLit::uninit().with_rlt(self))

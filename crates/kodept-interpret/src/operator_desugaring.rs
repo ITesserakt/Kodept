@@ -1,5 +1,4 @@
 use std::convert::Infallible;
-
 use kodept_ast::graph::tags;
 use kodept_ast::traits::AsEnum;
 use kodept_ast::visit_side::VisitSide;
@@ -7,6 +6,7 @@ use kodept_ast::{
     Acc, Appl, BinExpr, Expression, Identifier, Operation, OperationEnumMut, Ref, ReferenceContext,
     Term, UnExpr, UnaryExpressionKind,
 };
+use kodept_ast::interning::SharedStr;
 use kodept_macros::context::Context;
 use kodept_macros::execution::Execution;
 use kodept_macros::execution::Execution::Completed;
@@ -91,7 +91,7 @@ impl Macro for UnaryOperatorExpander {
             id,
             Ref::uninit(
                 ReferenceContext::global(["Prelude"]),
-                Identifier::Reference { name },
+                Identifier::Reference { name: SharedStr::new(name) },
             ).with_rlt(rlt)
             .map_into::<Term>()
             .map_into::<Expression>()

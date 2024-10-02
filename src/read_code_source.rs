@@ -91,8 +91,10 @@ impl TryFrom<CodeSource> for ReadCodeSource {
     }
 }
 
-impl CodeHolder for ReadCodeSource {
-    fn get_chunk(&self, at: CodePoint) -> Cow<str> {
+impl<'a> CodeHolder for &'a ReadCodeSource {
+    type Str = Cow<'a, str>;
+    
+    fn get_chunk(self, at: CodePoint) -> Cow<'a, str> {
         match &self.source_contents {
             ReadImpl::Explicit(x) => Cow::Borrowed(&x[at.as_range()]),
             ReadImpl::Implicit(x) => Cow::Borrowed(&x.get()[at.as_range()]),
