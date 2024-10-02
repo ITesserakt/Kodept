@@ -45,7 +45,7 @@ pub enum AnyNode {
 }
 
 // It's important to support the size of AnyNode less than 64 to fit into a cache line
-static_assert_size!(AnyNode, 40);
+static_assert_size!(AnyNode, 56);
 static_assert_size!(AnyNodeD, 1);
 
 macro_rules! folding {
