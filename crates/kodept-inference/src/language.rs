@@ -37,8 +37,8 @@ pub struct Let {
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum Literal {
-    Integral(String),
-    Floating(String),
+    Integral,
+    Floating,
     Tuple(Vec<Language>),
 }
 
@@ -155,7 +155,7 @@ impl Display for Let {
 impl Display for Literal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Literal::Integral(n) | Literal::Floating(n) => write!(f, "{n}"),
+            Literal::Integral | Literal::Floating => write!(f, "<lit>"),
             Literal::Tuple(t) => write!(f, "({})", t.iter().join(", ")),
         }
     }

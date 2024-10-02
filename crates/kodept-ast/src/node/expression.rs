@@ -11,6 +11,7 @@ use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperati
 use kodept_core::structure::span::CodeHolder;
 use BinaryExpressionKind::*;
 use UnaryExpressionKind::*;
+use crate::interning::SharedStr;
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -159,7 +160,7 @@ impl UnExpr {
 impl<'a> PopulateTree<'a> for &'a rlt::ExpressionBlock {
     type Root = Exprs;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(Exprs::uninit().with_rlt(self))
             .with_children_from(self.expression.as_ref(), context)
     }
@@ -168,7 +169,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::ExpressionBlock {
 impl<'a> PopulateTree<'a> for &'a rlt::Operation {
     type Root = Operation;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             rlt::Operation::Block(x) => x.convert(context).cast(),
             rlt::Operation::Access { left, right, .. } => {
@@ -190,7 +191,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::Operation {
 
 fn build_binary<'a>(
     node: &'a rlt::Operation,
-    context: &(impl CodeHolder + Sized),
+    context: impl CodeHolder<Str = SharedStr>,
     left: &'a rlt::Operation,
     operation: &'a BinaryOperationSymbol,
     right: &'a rlt::Operation,
@@ -238,7 +239,7 @@ fn build_binary<'a>(
 
 fn build_unary<'a>(
     node: &'a rlt::Operation,
-    context: &(impl CodeHolder + Sized),
+    context: impl CodeHolder<Str = SharedStr>,
     operator: &'a UnaryOperationSymbol,
     expr: &'a rlt::Operation,
 ) -> SubSyntaxTree<'a, UnExpr> {
@@ -256,7 +257,7 @@ fn build_unary<'a>(
 
 fn build_access<'a>(
     node: &'a rlt::Operation,
-    context: &(impl CodeHolder + Sized),
+    context: impl CodeHolder<Str = SharedStr>,
     left: &'a rlt::Operation,
     right: &'a rlt::Operation,
 ) -> SubSyntaxTree<'a, Acc> {
@@ -268,7 +269,7 @@ fn build_access<'a>(
 impl<'a> PopulateTree<'a> for &'a rlt::Application {
     type Root = Appl;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(Appl::uninit().with_rlt(self))
             .with_children_from::<PRIMARY, _>([&self.expr], context)
             .with_children_from::<SECONDARY, _>(
@@ -283,7 +284,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::Application {
 impl<'a> PopulateTree<'a> for &'a rlt::Expression {
     type Root = Expression;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             rlt::Expression::Lambda { binds, expr, .. } => {
                 SubSyntaxTree::new(Lambda::uninit().with_rlt(self))

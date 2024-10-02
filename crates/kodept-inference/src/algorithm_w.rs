@@ -49,12 +49,12 @@ impl<'e> AlgorithmW<'e> {
             Language::Let(x) => self.apply_let(x),
             Language::Special(x) => self.apply_special(x),
             Language::Literal(x) => match x {
-                Literal::Integral(_) => Ok((
+                Literal::Integral => Ok((
                     AssumptionSet::empty(),
                     vec![],
                     PrimitiveType::Integral.into(),
                 )),
-                Literal::Floating(_) => Ok((
+                Literal::Floating => Ok((
                     AssumptionSet::empty(),
                     vec![],
                     PrimitiveType::Floating.into(),

@@ -82,19 +82,19 @@ impl Macro for ScopeAnalyzer {
         };
         match node {
             AnyNode::StructDecl(StructDecl { name, .. }) => {
-                scope.insert_type(name, Constant(name.clone()))
+                scope.insert_type(name, Constant(name.to_string()))
             }
             AnyNode::TyParam(TyParam { name, .. }) => scope.insert_var(id, name),
             AnyNode::NonTyParam(NonTyParam { name, .. }) => scope.insert_var(id, name),
             AnyNode::TyName(TyName { name, .. }) => {
                 if let Some(AnyNode::EnumDecl(_)) = ctx.ast.parent_of(id) {
-                    scope.insert_type(name, Constant(name.clone()))
+                    scope.insert_type(name, Constant(name.to_string()))
                 } else {
                     Ok(())
                 }
             }
             AnyNode::EnumDecl(EnumDecl { name, .. }) => {
-                scope.insert_type(name, Constant(name.clone()))
+                scope.insert_type(name, Constant(name.to_string()))
             }
             AnyNode::VarDecl(VarDecl { name, .. }) => scope.insert_var(node.get_id(), name),
             AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => scope.insert_var(node.get_id(), name),

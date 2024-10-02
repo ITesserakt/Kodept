@@ -14,6 +14,7 @@ use slotmap::{Key, SecondaryMap};
 use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
+use crate::interning::SharedStr;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
     LazyLock::new(|| match std::thread::available_parallelism() {
@@ -127,7 +128,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         from: Option<
             impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
         >,
-        context: &impl CodeHolder,
+        context: impl CodeHolder<Str = SharedStr>,
     ) -> Self
     where
         T: HasChildrenMarker<U, TAG> + Send,
@@ -140,9 +141,9 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     }
 
     pub fn with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
-        mut self,
+        self,
         iter: impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
-        context: &impl CodeHolder,
+        context: impl CodeHolder<Str = SharedStr>,
     ) -> Self
     where
         U: Send,
@@ -163,7 +164,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
 
         #[cfg(feature = "parallel")]
         {
-            use rayon::prelude::*;
+            use rayon::prelude::*; 
 
             let (sx, rx) = std::sync::mpsc::channel();
             let iter = iter.into_par_iter();
@@ -174,10 +175,10 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
                         .for_each_with(sx, |sender, it| sender.send(it).unwrap());
                 },
                 move || {
-                    for item in rx {
-                        self.attach_subtree(item)
-                    }
-                    self
+                    rx.into_iter().fold(self, |mut acc, next| {
+                        acc.attach_subtree(next);
+                        acc
+                    })
                 },
             );
             result

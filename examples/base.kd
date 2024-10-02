@@ -7,7 +7,7 @@ fun flip(f, x, y) => f(y, x)
 fun const(a, b) => a
 
 // Composes two functions, f and g
-fun compose(f, g) => \x => f(g(x))
+fun compose(f, g) => [x] => f(g(x))
 
 fun s(f, g) => [x, y] => f(x, g(x))
 
@@ -22,7 +22,7 @@ fun let_bound {
 
 fun tuples(z) {
     val x = (z, z)
-    val w = \y => ((y, y))
+    val w = [y] => ((y, y))
     w(x)
 }
 

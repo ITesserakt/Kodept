@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use itertools::Itertools;
 use nonempty_collections::{nev, NEVec};
 
@@ -53,7 +54,7 @@ impl TypeRestrictedNode {
             }) => {
                 let location = rlt.get_unknown(self.get_id()).unwrap().location();
                 let ty = scopes.ty(name).ok_or(SpannedError::new(
-                    InferError::AlgorithmW(UnknownVar(nev![var(name)])),
+                    InferError::AlgorithmW(UnknownVar(nev![var(name.deref())])),
                     location,
                 ))?;
                 Completed(ty)
@@ -100,7 +101,7 @@ pub(crate) fn convert(
         TypeEnum::TyName(constant) => {
             let location = rlt.get_unknown(ty.get_id()).unwrap().location();
             scope.ty(&constant.name).ok_or(SpannedError::new(
-                InferError::AlgorithmW(UnknownVar(nev![var(&constant.name)])),
+                InferError::AlgorithmW(UnknownVar(nev![var(constant.name.deref())])),
                 location,
             ))
         }

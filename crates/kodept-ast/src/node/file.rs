@@ -5,6 +5,7 @@ use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+use crate::interning::SharedStr;
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -25,7 +26,7 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ModDecl {
         pub kind: ModuleKind,
-        pub name: String,;
+        pub name: SharedStr,;
         pub contents: Vec<TopLevel>,
     }
 }
@@ -33,7 +34,7 @@ node! {
 impl<'a> PopulateTree<'a> for &'a rlt::File {
     type Root = FileDecl;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         let node = FileDecl::uninit().with_rlt(self);
         SubSyntaxTree::new(node).with_children_from(self.0.as_ref(), context)
     }
@@ -42,7 +43,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::File {
 impl<'a> PopulateTree<'a> for &'a rlt::Module {
     type Root = ModDecl;
 
-    fn convert(self, context: &impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         let (kind, name, rest) = match self {
             rlt::Module::Global { id, rest, .. } => {
                 (ModuleKind::Global, context.get_chunk_located(id), rest)
@@ -51,7 +52,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::Module {
                 (ModuleKind::Ordinary, context.get_chunk_located(id), rest)
             }
         };
-        let node = ModDecl::uninit(kind, name.to_string()).with_rlt(self);
+        let node = ModDecl::uninit(kind, name).with_rlt(self);
         SubSyntaxTree::new(node).with_children_from(rest.as_ref(), context)
     }
 }

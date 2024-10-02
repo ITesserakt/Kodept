@@ -14,6 +14,7 @@ use kodept_macros::default::ASTDotFormatter;
 use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::DrainReports;
 use std::path::Path;
+use kodept_ast::interning::InterningCodeHolder;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Graph {
@@ -48,7 +49,8 @@ impl CommandWithSources for Graph {
                 .drain(*source.id, collector)
         })?;
 
-        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &*source);
+        let code_holder = InterningCodeHolder::new(&*source);
+        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder);
         let output_file = match get_output_file(&source, output) {
             Ok(x) => x,
             Err(e) => {

@@ -785,6 +785,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "interner"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8c60687056b35a996f2213287048a7092d801b61df5fee3bd5bd9bf6f17a2d0"
+
+[[package]]
 name = "is-terminal"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -876,6 +882,7 @@ version = "0.5.0"
 dependencies = [
  "constcat",
  "derive_more",
+ "interner",
  "kodept-core",
  "paste",
  "rayon",

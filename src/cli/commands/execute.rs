@@ -7,6 +7,7 @@ use kodept::loader::Loader;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
+use kodept_ast::interning::{debug_interning_efficiency, InterningCodeHolder};
 use kodept_core::Freeze;
 use kodept_macros::context::Context;
 use kodept_macros::error::report_collector::ReportCollector;
@@ -38,12 +39,7 @@ impl CommandWithSources for Execute {
         Some(SourceFiles::from_sources(loader.into_sources()))
     }
 
-    fn exec_for_source(
-        &self,
-        source: SourceView,
-        reports: &mut Reports,
-        _: &Path,
-    ) -> Option<()> {
+    fn exec_for_source(&self, source: SourceView, reports: &mut Reports, _: &Path) -> Option<()> {
         let rlt = reports.provide_collector(source.all_files(), |collector| {
             self.parsing_config
                 .build_rlt(&source)
@@ -51,7 +47,9 @@ impl CommandWithSources for Execute {
                 .drain(*source.id, collector)
         })?;
 
-        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, &*source);
+        let code_holder = InterningCodeHolder::new(&*source);
+        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder);
+        debug_interning_efficiency();
         debug!("Produced AST with node count = {}", tree.node_count());
 
         reports.provide_collector(source.all_files(), |collector| {

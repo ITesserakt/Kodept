@@ -19,7 +19,7 @@ mod node;
 pub mod rlt_accessor;
 pub mod traits;
 mod uninit;
-mod interning;
+pub mod interning;
 
 pub mod visit_side {
     use derive_more::IsVariant;

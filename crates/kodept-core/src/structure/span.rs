@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use derive_more::Constructor;
 
 use crate::code_point::CodePoint;
@@ -17,10 +15,12 @@ impl Located for Span {
     }
 }
 
-pub trait CodeHolder: Sync {
-    fn get_chunk(&self, at: CodePoint) -> Cow<str>;
+pub trait CodeHolder: Send + Sync + Sized + Copy {
+    type Str;
 
-    fn get_chunk_located<L: Located>(&self, for_item: &L) -> Cow<str> {
+    fn get_chunk(self, at: CodePoint) -> Self::Str;
+
+    fn get_chunk_located<L: Located>(self, for_item: &L) -> Self::Str {
         self.get_chunk(for_item.location())
     }
 }
