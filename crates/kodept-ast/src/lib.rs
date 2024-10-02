@@ -19,7 +19,7 @@ mod node;
 pub mod rlt_accessor;
 pub mod traits;
 mod uninit;
-pub mod utils;
+mod interning;
 
 pub mod visit_side {
     use derive_more::IsVariant;
@@ -30,5 +30,17 @@ pub mod visit_side {
         Entering,
         Exiting,
         Leaf,
+    }
+}
+
+pub mod utils {
+    use derive_more::From;
+
+    #[derive(Default, Debug, From)]
+    pub enum Skip<E> {
+        Failed(E),
+        #[default]
+        #[from(ignore)]
+        Skipped,
     }
 }

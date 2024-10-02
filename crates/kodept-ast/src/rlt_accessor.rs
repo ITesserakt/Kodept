@@ -87,7 +87,7 @@ impl<'r> RLTAccessor<'r> {
         };
     }
 
-    pub(crate) fn append(&mut self, other: RLTAccessor<'r>) {
+    pub fn append(&mut self, other: RLTAccessor<'r>) {
         if let Some(x) = other.root_mapping {
             self.root_mapping = Some(x)
         }
