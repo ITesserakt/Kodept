@@ -29,7 +29,6 @@ replace_with = "0.1.7"
 slotgraph = { path = "../slotgraph", version = "0.1" }
 slotmap = "1.0.7"
 strum = { version = "0.26.2", features = ["derive"] }
-thin-vec = { version = "0.2.13", features = ["serde"] }
 tracing.workspace = true
 
 serde = { version = "1", optional = true, features = ["derive"] }

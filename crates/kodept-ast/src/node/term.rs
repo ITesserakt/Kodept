@@ -4,7 +4,6 @@ use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use thin_vec::ThinVec;
 
 use crate::graph::SubSyntaxTree;
 use crate::interning::SharedStr;
@@ -23,7 +22,7 @@ node_sub_enum! {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ReferenceContext {
     global: bool,
-    items: ThinVec<SharedStr>,
+    items: Vec<SharedStr>,
 }
 
 node! {
