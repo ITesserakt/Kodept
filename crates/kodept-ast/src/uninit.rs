@@ -14,7 +14,6 @@ impl<T> Uninit<'static, T> {
 }
 
 impl<'rlt, T> Uninit<'rlt, T> {
-    #[allow(private_bounds)]
     pub fn unwrap(self, id: NodeId<T>) -> (T, Option<RLTFamily<'rlt>>)
     where
         T: Identifiable,
