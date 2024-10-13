@@ -33,7 +33,7 @@ impl<'t> PackedTokenStream<'t> {
     }
 
     pub fn into_single(self) -> PackedTokenMatch {
-        match self.slice.as_ref() {
+        match self.slice {
             [x] => *x,
             _ => unreachable!("Token stream with 1 element can be coerced to match"),
         }
@@ -42,7 +42,7 @@ impl<'t> PackedTokenStream<'t> {
 
 impl Located for PackedTokenStream<'_> {
     fn location(&self) -> CodePoint {
-        let len = self.slice.into_iter().map(|it| it.point.length).sum();
+        let len = self.slice.iter().map(|it| it.point.length).sum();
 
         match self.slice {
             [x, ..] => CodePoint::new(len, x.point.offset),

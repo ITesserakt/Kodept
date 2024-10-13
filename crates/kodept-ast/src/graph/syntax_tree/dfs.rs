@@ -74,7 +74,7 @@ impl DetachedDfsIter {
         self.edges_buffer.extend(
             tree.inner
                 .children_ids(current_id.into())
-                .map(|it| AnyNodeId::from(it)),
+                .map(AnyNodeId::from),
         );
         self.edges_buffer.reverse();
         if !self.edges_buffer.is_empty() {

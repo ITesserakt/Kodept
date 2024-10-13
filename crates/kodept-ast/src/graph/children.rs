@@ -1,6 +1,6 @@
 use crate::graph::children::tags::ChildTag;
 use crate::graph::{SyntaxTree};
-use crate::graph::node_props::{HasParent, Node};
+use crate::graph::node_props::Node;
 use crate::traits::Identifiable;
 use crate::graph::utils::{ContainerFamily, ContainerT};
 
