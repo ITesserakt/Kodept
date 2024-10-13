@@ -4,12 +4,12 @@ use extend::ext;
 use tracing::warn;
 
 use crate::context::Context;
+use crate::error::report::IntoSpannedReportMessage;
 use crate::execution::Execution;
 use crate::execution::Execution::Skipped;
 use crate::visit_guard::VisitGuard;
-use kodept_ast::graph::{AnyNode, NodeId};
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-use crate::error::report::IntoSpannedReportMessage;
+use kodept_ast::graph::node_props::Node;
+use kodept_ast::graph::{NodeId};
 
 pub mod context;
 pub mod default;
@@ -27,7 +27,7 @@ pub fn warn_about_broken_rlt<T>() {
 pub trait Macro {
     type Error: IntoSpannedReportMessage;
     /// Node to transform
-    type Node: TryFrom<AnyNode>;
+    type Node: Node;
     type Ctx<'a>;
 
     #[allow(unused_variables)]
@@ -46,17 +46,11 @@ pub impl<M> M
 where
     for<'a> M: Macro<Ctx<'a> = Context<'a>>,
 {
-    fn resolve<'b>(&self, id: NodeId<M::Node>, ctx: &'b M::Ctx<'_>) -> &'b M::Node
-    where
-        AnyNode: ConvertibleToRef<M::Node>,
-    {
+    fn resolve<'b>(&self, id: NodeId<M::Node>, ctx: &'b M::Ctx<'_>) -> &'b M::Node {
         ctx.ast.get(id).unwrap()
     }
 
-    fn resolve_mut<'b>(&self, id: NodeId<M::Node>, ctx: &'b mut M::Ctx<'_>) -> &'b mut M::Node
-    where
-        AnyNode: ConvertibleToMut<M::Node>,
-    {
+    fn resolve_mut<'b>(&self, id: NodeId<M::Node>, ctx: &'b mut M::Ctx<'_>) -> &'b mut M::Node {
         ctx.ast.get_mut(id).unwrap()
     }
 }

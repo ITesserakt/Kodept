@@ -80,7 +80,7 @@ impl<A> IntoIterator for ParseErrors<A> {
 impl<'t> Original<PackedToken> for PackedTokenStream<'t> {
     fn point_pos(&self, point: impl Into<CodePoint>) -> Option<usize> {
         let point = point.into();
-        self.into_iter().position(|it| it.point == point)
+        self.iter().position(|it| it.point == point)
     }
 
     fn actual(&self, point: impl Into<CodePoint>) -> Option<PackedToken> {

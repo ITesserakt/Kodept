@@ -3,7 +3,7 @@ pub(crate) mod implementation {
     macro_rules! node_sub_enum {
         ($(#[$config:meta])* $vis:vis enum $wrapper:ident {
             $($name:ident($modifier:tt $($t:tt)?)$(,)?)*
-        }) => {$crate::paste! {
+        }) => {
             #[derive($crate::RefCast)]
             #[repr(transparent)]
             $(
@@ -11,19 +11,19 @@ pub(crate) mod implementation {
             )*
             $vis struct $wrapper($crate::graph::AnyNode);
 
-            $vis enum [<$wrapper Enum>]<'lt> {
+            $crate::paste! { $vis enum [<$wrapper Enum>]<'lt> {
                 $(
                     $name(&'lt $crate::ty!($modifier $($t)?)),
                 )*
-            }
+            }}
 
-            $vis enum [<$wrapper EnumMut>]<'lt> {
+            $crate::paste! { $vis enum [<$wrapper EnumMut>]<'lt> {
                 $(
                     $name(&'lt mut $crate::ty!($modifier $($t)?)),
                 )*
-            }
+            }}
 
-            impl $crate::graph::SubEnum for $wrapper {
+            impl $crate::graph::node_props::SubEnum for $wrapper {
                 const VARIANTS: &'static [$crate::graph::AnyNodeD] =
                     $crate::concat_slices!([$crate::graph::AnyNodeD]: $($crate::node_sub_enum_entry!($modifier $($t)?), )*);
             }
@@ -48,27 +48,38 @@ pub(crate) mod implementation {
                     Self(value)
                 }
             }
-            
-            impl<'a> TryFrom<&'a $crate::graph::AnyNode> for &'a $wrapper {
-                type Error = $crate::utils::Skip<std::convert::Infallible>;
+
+            impl $crate::graph::node_props::Node for $wrapper {
                 #[inline]
-                fn try_from(value: &'a $crate::graph::AnyNode) -> Result<Self, Self::Error> {
-                    if <$wrapper as $crate::graph::SubEnum>::contains(value) {
-                        Ok(<$wrapper as $crate::RefCast>::ref_cast(value))
-                    } else {
-                        Err($crate::utils::Skip::Skipped)
-                    }
+                fn erase(self) -> $crate::graph::AnyNode {
+                    self.0
                 }
-            }
-            
-            impl<'a> TryFrom<&'a mut $crate::graph::AnyNode> for &'a mut $wrapper {
-                type Error = $crate::utils::Skip<std::convert::Infallible>;
+
                 #[inline]
-                fn try_from(value: &'a mut $crate::graph::AnyNode) -> Result<Self, Self::Error> {
-                    if <$wrapper as $crate::graph::SubEnum>::contains(value) {
+                fn describe(&self) -> $crate::graph::AnyNodeD {
+                    self.0.describe()
+                }
+
+                #[inline]
+                fn try_from_mut(value: &mut $crate::graph::AnyNode) -> Result<&mut Self, $crate::graph::node_props::ConversionError> {
+                    if <$wrapper as $crate::graph::node_props::SubEnum>::contains(value) {
                         Ok(<$wrapper as $crate::RefCast>::ref_cast_mut(value))
                     } else {
-                        Err($crate::utils::Skip::Skipped)
+                        Err($crate::graph::node_props::ConversionError {
+                            expected_types: <$wrapper as $crate::graph::node_props::SubEnum>::VARIANTS,
+                            actual_type: value.describe()
+                        })
+                    }
+                }
+
+                fn try_from_ref(value: &$crate::graph::AnyNode) -> Result<&Self, $crate::graph::node_props::ConversionError> {
+                    if <$wrapper as $crate::graph::node_props::SubEnum>::contains(value) {
+                        Ok(<$wrapper as $crate::RefCast>::ref_cast(value))
+                    } else {
+                        Err($crate::graph::node_props::ConversionError {
+                            expected_types: <$wrapper as $crate::graph::node_props::SubEnum>::VARIANTS,
+                            actual_type: value.describe()
+                        })
                     }
                 }
             }
@@ -86,7 +97,7 @@ pub(crate) mod implementation {
             }
             
             impl<'lt> $crate::traits::AsEnum for &'lt $wrapper {
-                type Enum = [<$wrapper Enum>]<'lt>;
+                type Enum = $crate::paste! { [<$wrapper Enum>]<'lt> };
                 
                 #[inline]
                 fn as_enum(self) -> Self::Enum {
@@ -98,7 +109,7 @@ pub(crate) mod implementation {
             }
             
             impl<'lt> $crate::traits::AsEnum for &'lt mut $wrapper {
-                type Enum = [<$wrapper EnumMut>]<'lt>;
+                type Enum = $crate::paste! { [<$wrapper EnumMut>]<'lt> };
                 
                 #[inline]
                 fn as_enum(self) -> Self::Enum {
@@ -108,7 +119,7 @@ pub(crate) mod implementation {
                     unreachable!()
                 }
             }
-        }};
+        };
     }
     
     #[macro_export]
@@ -124,12 +135,12 @@ pub(crate) mod implementation {
             } 
         };
         ($this:expr => $name:ident, forward $t:ty) => { 
-            if <$t as $crate::graph::SubEnum>::contains(&$this) {
+            if <$t as $crate::graph::node_props::SubEnum>::contains(&$this) {
                 return Self::Enum::$name(<$t as $crate::RefCast>::ref_cast(&$this))
             }
         };
         ($this:expr => mut $name:ident, forward $t:ty) => { 
-            if <$t as $crate::graph::SubEnum>::contains(&$this) {
+            if <$t as $crate::graph::node_props::SubEnum>::contains(&$this) {
                 return Self::Enum::$name(<$t as $crate::RefCast>::ref_cast_mut(&mut $this))
             }
         };
@@ -144,13 +155,14 @@ pub(crate) mod implementation {
     #[macro_export]
     macro_rules! node_sub_enum_entry {
         ($t:ident) => { &[$crate::graph::AnyNodeD::$t] };
-        (forward $t:ty) => { <$t as $crate::graph::SubEnum>::VARIANTS };
+        (forward $t:ty) => { <$t as $crate::graph::node_props::SubEnum>::VARIANTS };
     }
 
     macro_rules! node {
     ($(#[$config:meta])* $vis:vis struct $name:ident {
         $($field_vis:vis $field_name:ident: $field_type:ty,)*;
         $($graph_vis:vis $graph_name:ident: $graph_type:ty$( as $tag:tt)?,)*
+        $(; parent is [$($parent:tt)+])?
     }) => {
         $(#[$config])*
         $vis struct $name {
@@ -170,6 +182,40 @@ pub(crate) mod implementation {
 
             pub fn into_uninit(self) -> $crate::Uninit<'static, Self> {
                 Self::uninit($(self.$field_name, )*)
+            }
+        }
+
+        impl $crate::graph::node_props::Node for $name {
+            #[inline]
+            fn describe(&self) -> $crate::graph::AnyNodeD {
+                $crate::graph::AnyNodeD::$name
+            }
+
+            #[inline]
+            fn erase(self) -> $crate::graph::AnyNode {
+                $crate::graph::AnyNode::$name(self)
+            }
+
+            #[inline]
+            fn try_from_ref(value: &$crate::graph::AnyNode) -> Result<&Self, $crate::graph::node_props::ConversionError> {
+                match value {
+                    $crate::graph::AnyNode::$name(x) => Ok(x),
+                    _ => Err($crate::graph::node_props::ConversionError {
+                        actual_type: value.describe(),
+                        expected_types: <$name as $crate::graph::node_props::SubEnum>::VARIANTS
+                    })
+                }
+            }
+
+            #[inline]
+            fn try_from_mut(value: &mut $crate::graph::AnyNode) -> Result<&mut Self, $crate::graph::node_props::ConversionError> {
+                match value {
+                    $crate::graph::AnyNode::$name(x) => Ok(x),
+                    _ => Err($crate::graph::node_props::ConversionError {
+                        actual_type: value.describe(),
+                        expected_types: <$name as $crate::graph::node_props::SubEnum>::VARIANTS
+                    })
+                }
             }
         }
 
@@ -200,7 +246,7 @@ pub(crate) mod implementation {
             }
         }
         
-        impl $crate::graph::SubEnum for $name {
+        impl $crate::graph::node_props::SubEnum for $name {
             const VARIANTS: &'static [$crate::graph::AnyNodeD] = &[$crate::graph::AnyNodeD::$name];
             
             #[inline(always)]
@@ -208,7 +254,9 @@ pub(crate) mod implementation {
                 node.describe() == $crate::graph::AnyNodeD::$name
             }
         }
-        
+
+        $($crate::parent_definition! { $name => [$($parent)+] })?
+
         $crate::with_children! [$name => {
             $($graph_vis $graph_name: $graph_type $( as $tag)?,)*
         }];
@@ -218,5 +266,39 @@ pub(crate) mod implementation {
     }
 }
 
-    pub(crate) use node;
+    macro_rules! parent_definition {
+        ($name:ident => [$parent:ty]) => {
+            impl $crate::graph::node_props::HasParent for $name {
+                type Parent = $parent;
+
+                #[inline]
+                fn parent<'a>(&self, ast: &'a $crate::graph::SyntaxTree) -> Option<&'a $parent> {
+                    let id = <Self as $crate::graph::Identifiable>::get_id(self);
+                    let node = ast.parent_of(id)?;
+                    Some(<$parent as $crate::graph::node_props::Node>::try_from_ref(node)
+                        .expect("Parent node type mismatch"))
+                }
+            }
+        };
+        ($name:ident => [$($parent:ident$(,)?)+]) => {
+            $crate::paste! { $crate::node_sub_enum! {
+                pub enum [<$name Parent>] {
+                    $($parent($parent),)+
+                }
+            }}
+
+            impl $crate::graph::node_props::HasParent for $name {
+                type Parent = $crate::paste! { [<$name Parent>] };
+
+                fn parent<'a>(&self, ast: &'a $crate::graph::SyntaxTree) -> Option<&'a Self::Parent> {
+                    let id = <Self as $crate::graph::Identifiable>::get_id(self);
+                    let node = ast.parent_of(id)?;
+                    Some(<Self::Parent as $crate::graph::node_props::Node>::try_from_ref(node)
+                        .expect("Parent node type mismatch"))
+                }
+            }
+        }
+    }
+
+    pub(crate) use {node, parent_definition};
 }

@@ -5,7 +5,7 @@ use crate::graph::tags::{LEFT, PRIMARY, RIGHT, SECONDARY};
 use crate::graph::{ContainerFamily, Identity, IdentityFamily, SubSyntaxTree};
 use crate::macros::implementation::node;
 use crate::traits::PopulateTree;
-use crate::{node_sub_enum, BlockLevel, CodeFlow, Lit, Param, Term, Uninit};
+use crate::{node_sub_enum, BlockLevel, BodyFnDecl, CodeFlow, Lit, Param, Term, Uninit};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::span::CodeHolder;
@@ -41,7 +41,8 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Appl {;
         pub expr: Identity<Operation> as PRIMARY,
-        pub params: Vec<Operation> as SECONDARY,
+        pub params: Vec<Operation> as SECONDARY,;
+        parent is [BodyFnDecl]
     }
 }
 
@@ -49,7 +50,8 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Acc {;
         pub left: Identity<Operation> as LEFT,
-        pub right: Identity<Operation> as RIGHT,
+        pub right: Identity<Operation> as RIGHT,;
+        parent is [BodyFnDecl]
     }
 }
 
@@ -82,7 +84,8 @@ node! {
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct Exprs {;
-        pub items: Vec<BlockLevel>,
+        pub items: Vec<BlockLevel>,;
+        parent is [BodyFnDecl]
     }
 }
 

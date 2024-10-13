@@ -1,5 +1,5 @@
 use derive_more::From;
-use kodept_ast::graph::{AnyNodeD, AnyNodeId, AnyNodeKey, SyntaxTree};
+use kodept_ast::graph::{AnyNodeId, AnyNodeKey, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::BodyFnDecl;
 use kodept_core::code_point::CodePoint;
@@ -22,6 +22,7 @@ use std::collections::HashSet;
 use std::num::NonZeroU16;
 use std::rc::Rc;
 use thiserror::Error;
+use kodept_ast::graph::node_props::{ConversionError, Node};
 use RecursiveTypeCheckingError::{MutuallyRecursive, NodeNotFound};
 
 use crate::convert_model::ModelConvertibleNode;
@@ -89,8 +90,8 @@ pub enum InferError {
 enum RecursiveTypeCheckingError {
     #[error("Node with id `{0}` was not found")]
     NodeNotFound(AnyNodeId),
-    #[error("Node like `{0}` cannot convert to inner model")]
-    InconvertibleToModel(AnyNodeD),
+    #[error("Node like `{}` cannot convert to inner model", _0.actual_type)]
+    InconvertibleToModel(ConversionError),
     #[error("Cannot type check due to mutual recursion")]
     MutuallyRecursive,
     #[error(transparent)]
@@ -155,7 +156,7 @@ impl EnvironmentProvider<AnyNodeKey> for RecursiveTypeChecker<'_> {
             .get(id)
             .ok_or(SpannedError::new(NodeNotFound(id).into(), location))?;
 
-        if let Some(node) = node.try_cast::<TypeRestrictedNode>() {
+        if let Ok(node) = TypeRestrictedNode::try_from_ref(node) {
             let search = self
                 .search
                 .as_tree()
@@ -192,9 +193,8 @@ impl EnvironmentProvider<AnyNodeKey> for RecursiveTypeChecker<'_> {
         let model = match self.models.get(*key) {
             Some(x) => x.clone(),
             None => {
-                let model = node
-                    .try_cast::<ModelConvertibleNode>()
-                    .ok_or(InconvertibleToModel(node.describe()))
+                let model = ModelConvertibleNode::try_from_ref(node)
+                    .map_err(InconvertibleToModel)
                     .map_err(|e| SpannedError::new(e, location))?
                     .to_model(self.search.as_tree(), &self.tree, &self.rlt)
                     .map_err(|e| e.map(|it| it.into()))?;

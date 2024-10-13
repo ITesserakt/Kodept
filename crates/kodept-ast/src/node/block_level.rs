@@ -48,7 +48,8 @@ node! {
     pub struct InitVar {
         ;
         pub variable: Identity<VarDecl>,
-        pub expr: Identity<Operation>,
+        pub expr: Identity<Operation>,;
+        parent is [BodyFnDecl]
     }
 }
 

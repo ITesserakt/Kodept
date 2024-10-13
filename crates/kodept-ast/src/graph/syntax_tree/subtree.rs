@@ -14,6 +14,7 @@ use slotmap::{Key, SecondaryMap};
 use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
+use crate::graph::node_props::{HasParent, Node};
 use crate::interning::SharedStr;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
@@ -64,7 +65,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     pub fn add_child<U, const TAG: ChildTag>(&mut self, node: Uninit<'rlt, U>) -> NodeId<U>
     where
         T: HasChildrenMarker<U, TAG>,
-        U: Identifiable + Into<AnyNode>,
+        U: Identifiable + HasParent<Parent = T>,
     {
         let mut rlt = None;
         let id = replace_with_or_abort_and_return(&mut self.graph, |g| {
@@ -75,7 +76,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
             let id = g.add_node_at_root(|id| {
                 let node = node.unwrap(id.into());
                 rlt = node.1;
-                (node.0.into(), TAG)
+                (node.0.erase(), TAG)
             });
             (id, GraphImpl::Plain(g))
         });
@@ -88,6 +89,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     pub fn attach_subtree<U, const TAG: ChildTag>(&mut self, subtree: SubSyntaxTree<'rlt, U>)
     where
         T: HasChildrenMarker<U, TAG>,
+        U: Node,
     {
         let (id, mapping) = replace_with_or_abort_and_return(&mut self.graph, |g| {
             let mut g = match g {
@@ -132,7 +134,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     ) -> Self
     where
         T: HasChildrenMarker<U, TAG> + Send,
-        U: Send,
+        U: Send + Node,
     {
         if let Some(from) = from {
             return self.with_children_from(from, context);
@@ -146,7 +148,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         context: impl CodeHolder<Str = SharedStr>,
     ) -> Self
     where
-        U: Send,
+        U: Send + Node,
         T: HasChildrenMarker<U, TAG> + Send,
     {
         if !cfg!(feature = "parallel") || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
@@ -202,7 +204,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     ) -> impl Iterator<Item = SubSyntaxTree<'rlt, U>> + '_
     where
         T: HasChildrenMarker<U, TAG>,
-        U: 'static
+        U: 'static + Node
     {
         enum Helper<I1, I2> {
             A(I1),

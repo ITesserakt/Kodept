@@ -1,3 +1,8 @@
+//! |      | Global   | Local     |
+//! | ---- | -------- | --------- |
+//! | Type | ::{X::}X | X::X{::X} |
+//! | Ref  | ::{X::}x | X::{X::}x |
+
 use std::collections::VecDeque;
 
 use nom::branch::alt;
@@ -14,11 +19,6 @@ use crate::token_stream::PackedTokenStream;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::Symbol;
 use kodept_core::structure::rlt::{new_types, Context, ContextualReference};
-
-/// |      | Global   | Local     |
-/// | ---- | -------- | --------- |
-/// | Type | ::{X::}X | X::X{::X} |
-/// | Ref  | ::{X::}x | X::{X::}x |
 
 fn global_type_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((

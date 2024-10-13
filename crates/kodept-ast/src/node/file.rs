@@ -27,7 +27,8 @@ node! {
     pub struct ModDecl {
         pub kind: ModuleKind,
         pub name: SharedStr,;
-        pub contents: Vec<TopLevel>,
+        pub contents: Vec<TopLevel>,;
+        parent is [FileDecl]
     }
 }
 

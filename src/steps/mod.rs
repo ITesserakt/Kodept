@@ -1,5 +1,6 @@
 use crate::hlist::{FromHList, HCons, HList, HNil};
-use kodept_ast::graph::{AnyNodeId, SubEnum};
+use kodept_ast::graph::{AnyNodeId};
+use kodept_ast::graph::node_props::Node;
 use kodept_ast::visit_side::VisitSide;
 use kodept_core::structure::Located;
 use kodept_macros::context::{Context, FileId};
@@ -37,7 +38,7 @@ impl<N, Head, Tail> RunMacros for HCons<Head, Tail>
 where
     for<'a> Head: Macro<Node = N, Ctx<'a> = Context<'a>>,
     for<'a> Tail: RunMacros<Ctx<'a> = Context<'a>>,
-    N: SubEnum,
+    N: Node
 {
     type Ctx<'a> = Context<'a>;
 
