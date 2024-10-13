@@ -519,7 +519,7 @@ impl RLTProducer for Parser<TRACING_OPTION> {
     type Error<'t> = ParseError<Position>;
 
     fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
-        grammar::kodept(&input)
+        grammar::kodept(input)
     }
 }
 

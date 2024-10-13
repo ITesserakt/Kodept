@@ -1,8 +1,7 @@
-use crate::graph::any_node::AnyNode;
 use crate::graph::children::tags::ChildTag;
 use crate::graph::{SyntaxTree};
+use crate::graph::node_props::{HasParent, Node};
 use crate::traits::Identifiable;
-use kodept_core::ConvertibleToRef;
 use crate::graph::utils::{ContainerFamily, ContainerT};
 
 pub mod tags {
@@ -17,15 +16,17 @@ pub mod tags {
     pub static TAGS_DESC: [&str; 5] = ["", "P", "S", "L", "R"];
 }
 
-pub trait HasChildrenMarker<Child, const TAG: ChildTag>: Identifiable {
+pub trait HasChildrenMarker<Child, const TAG: ChildTag>
+where
+    Child: Node,
+    Self: Node + Identifiable
+{
     type Container: ContainerFamily;
 
     fn get_children<'b, P>(
         &self,
         tree: &'b SyntaxTree<P>,
     ) -> ContainerT<Self::Container, &'b Child>
-    where
-        AnyNode: ConvertibleToRef<Child>,
     {
         Self::Container::from_iter(tree.children_of(self.get_id(), TAG))
     }

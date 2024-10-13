@@ -5,7 +5,7 @@ pub use ref_cast::RefCast;
 #[allow(unused_imports)]
 pub(crate) use graph::with_children;
 #[allow(unused_imports)]
-pub(crate) use macros::implementation::node;
+pub(crate) use macros::implementation::{node, parent_definition};
 
 pub use self::node::{
     block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,

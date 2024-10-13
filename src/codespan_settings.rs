@@ -115,7 +115,7 @@ impl ProvideCollector<FileId> for Reports {
             }
             Reports::Lazy { local_reports, .. } => {
                 let mut lock = local_reports.lock().unwrap_or_else(|e| e.into_inner());
-                f(&mut *lock)
+                f(&mut lock)
             }
         }
     }
@@ -140,7 +140,7 @@ impl ProvideCollector<()> for Reports {
             }
             Reports::Lazy { global_reports, .. } => {
                 let mut lock = global_reports.lock().unwrap_or_else(|e| e.into_inner());
-                f(&mut *lock)
+                f(&mut lock)
             }
         }
     }

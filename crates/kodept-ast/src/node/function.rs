@@ -7,7 +7,7 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::Identity;
 use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
-use crate::{node, node_sub_enum, Body, Param, TyParam, Type};
+use crate::{node, node_sub_enum, Body, ModDecl, Param, StructDecl, TyParam, Type};
 use crate::interning::SharedStr;
 
 node_sub_enum! {
@@ -25,7 +25,8 @@ node! {
         pub name: SharedStr,;
         pub parameters: Vec<Param>,
         pub return_type: Option<Type>,
-        pub body: Identity<Body>,
+        pub body: Identity<Body>,;
+        parent is [ModDecl, StructDecl, BodyFnDecl]
     }
 }
 

@@ -1,12 +1,13 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::graph::any_node::{AnyNode, SubEnum};
+use crate::graph::any_node::{AnyNode};
 use derive_more::{Display, From};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use kodept_core::static_assert_size;
 use slotgraph::dag::NodeKey;
 use slotgraph::Key;
+use crate::graph::node_props::SubEnum;
 
 #[derive(Display, From)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]

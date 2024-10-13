@@ -7,7 +7,7 @@ use kodept_core::structure::span::CodeHolder;
 use crate::graph::{Identity, SubSyntaxTree};
 use crate::interning::SharedStr;
 use crate::traits::{AsEnum, PopulateTree};
-use crate::{node, node_sub_enum};
+use crate::{node, node_sub_enum, BodyFnDecl, EnumDecl, StructDecl};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -30,14 +30,16 @@ node_sub_enum! {
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct TyName {
-        pub name: SharedStr,;
+        pub name: SharedStr,;;
+        parent is [TyParam, BodyFnDecl, EnumDecl]
     }
 }
 
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ProdTy {;
-        pub types: Vec<Type>,
+        pub types: Vec<Type>,;
+        parent is [TyParam, BodyFnDecl]
     }
 }
 
@@ -45,7 +47,8 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct TyParam {
         pub name: SharedStr,;
-        pub parameter_type: Identity<Type>,
+        pub parameter_type: Identity<Type>,;
+        parent is [StructDecl, BodyFnDecl]
     }
 }
 

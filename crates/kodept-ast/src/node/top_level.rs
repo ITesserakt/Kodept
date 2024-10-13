@@ -6,7 +6,7 @@ use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
-use crate::{node, node_sub_enum, BodyFnDecl, TyName, TyParam};
+use crate::{node, node_sub_enum, BodyFnDecl, ModDecl, TyName, TyParam};
 use crate::interning::SharedStr;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -31,7 +31,8 @@ node! {
     pub struct StructDecl {
         pub name: SharedStr,;
         pub parameters: Vec<TyParam>,
-        pub contents: Vec<BodyFnDecl>,
+        pub contents: Vec<BodyFnDecl>,;
+        parent is [ModDecl]
     }
 }
 
@@ -40,7 +41,8 @@ node! {
     pub struct EnumDecl {
         pub kind: EnumKind,
         pub name: SharedStr,;
-        pub contents: Vec<TyName>,
+        pub contents: Vec<TyName>,;
+        parent is [ModDecl]
     }
 }
 

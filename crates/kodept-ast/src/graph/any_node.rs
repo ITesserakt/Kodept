@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
 use crate::graph::node_id::AnyNodeId;
+use crate::graph::node_props::{ConversionError, Node, SubEnum};
 use crate::graph::Identifiable;
 use crate::*;
 use derive_more::{Display, From, TryInto};
-use kodept_core::{static_assert_size, ConvertibleToRef};
+use kodept_core::static_assert_size;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
@@ -81,15 +82,6 @@ macro_rules! folding {
     };
 }
 
-pub trait SubEnum {
-    const VARIANTS: &'static [AnyNodeD];
-
-    #[inline]
-    fn contains(node: &AnyNode) -> bool {
-        Self::VARIANTS.contains(&node.describe())
-    }
-}
-
 impl SubEnum for AnyNode {
     const VARIANTS: &'static [AnyNodeD] = AnyNodeD::VARIANTS;
 }
@@ -106,6 +98,24 @@ impl Identifiable for AnyNode {
     }
 }
 
+impl Node for AnyNode {
+    fn erase(self) -> AnyNode {
+        self
+    }
+
+    fn describe(&self) -> AnyNodeD {
+        AnyNode::describe(self)
+    }
+
+    fn try_from_ref(value: &AnyNode) -> Result<&Self, ConversionError> {
+        Ok(value)
+    }
+
+    fn try_from_mut(value: &mut AnyNode) -> Result<&mut Self, ConversionError> {
+        Ok(value)
+    }
+}
+
 impl AnyNode {
     #[inline]
     pub fn describe(&self) -> AnyNodeD {
@@ -115,11 +125,5 @@ impl AnyNode {
     #[inline]
     pub fn name(&self) -> &'static str {
         self.into()
-    }
-    
-    pub fn try_cast<U>(&self) -> Option<&U>
-    where AnyNode: ConvertibleToRef<U>
-    {
-        self.try_as_ref()
     }
 }

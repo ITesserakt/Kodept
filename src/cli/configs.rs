@@ -212,15 +212,16 @@ impl ParsingConfig {
 
         let backend = self.get_lexing_backend(source.contents().len());
 
-        if cfg!(feature = "parallel") && self.parallel {
-            if source.contents().len() > self.parallel_threshold * 1024 {
-                debug!(backend = backend.type_name(), "Using parallel lexer");
-                #[cfg(feature = "parallel")]
-                return ParallelTokenizer::new(source.contents(), backend).try_into_vec();
-                #[cfg(not(feature = "parallel"))]
-                {
-                    unreachable!()
-                }
+        if cfg!(feature = "parallel")
+            && self.parallel
+            && source.contents().len() > self.parallel_threshold * 1024
+        {
+            debug!(backend = backend.type_name(), "Using parallel lexer");
+            #[cfg(feature = "parallel")]
+            return ParallelTokenizer::new(source.contents(), backend).try_into_vec();
+            #[cfg(not(feature = "parallel"))]
+            {
+                unreachable!()
             }
         }
         if matches!(self.lexer, LexerChoice::Nom) {
@@ -262,7 +263,7 @@ impl From<DiagnosticConfig> for Reports {
             (false, false) => Self::Lazy {
                 local_reports: Default::default(),
                 global_reports: Default::default(),
-                settings: CodespanSettings { config, stream }
+                settings: CodespanSettings { config, stream },
             },
         }
     }

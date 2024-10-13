@@ -9,6 +9,7 @@ use kodept_ast::Uninit;
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
 use std::mem::replace;
+use kodept_ast::graph::node_props::Node;
 
 pub type FileId = u16;
 
@@ -72,7 +73,7 @@ impl<'rlt> Context<'rlt> {
     ) -> NodeId<U>
     where
         T: HasChildrenMarker<U, TAG>,
-        U: Identifiable,
+        U: Identifiable + Node,
         AnyNode: From<U>,
     {
         let mut rlt = None;

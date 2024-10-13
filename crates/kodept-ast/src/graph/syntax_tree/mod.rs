@@ -1,21 +1,21 @@
 use crate::graph::any_node::AnyNode;
 use crate::graph::children::tags::{ChildTag, TAGS_DESC};
 use crate::graph::node_id::NodeId;
+use crate::graph::node_props::{HasParent, Node};
 use crate::graph::syntax_tree::dfs::DfsIter;
 use crate::graph::utils::OptVec;
 use crate::graph::{HasChildrenMarker, SubSyntaxTree};
+use crate::interning::SharedStr;
 use crate::rlt_accessor::RLTAccessor;
 use crate::traits::PopulateTree;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
-use kodept_core::{ConvertibleToMut, ConvertibleToRef};
-use slotgraph::dag::{SecondaryDag};
+use slotgraph::dag::SecondaryDag;
 use slotgraph::export::{Config, Dot};
 use std::convert::identity;
 use std::fmt::{Display, Formatter};
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
-use crate::interning::SharedStr;
 
 pub mod dfs;
 pub(crate) mod subtree;
@@ -52,7 +52,7 @@ impl<P> SyntaxTree<P> {
 
     pub fn recursively_build(
         rlt_root: &rlt::RLT,
-        context: impl CodeHolder<Str=SharedStr>,
+        context: impl CodeHolder<Str = SharedStr>,
     ) -> (Self, RLTAccessor) {
         let subtree = rlt_root.0.convert(context);
         let (graph, accessor) = subtree.consume_map(identity);
@@ -90,6 +90,8 @@ impl<P> SyntaxTree<P> {
     where
         T1: HasChildrenMarker<U1, OLD_TAG>,
         T2: HasChildrenMarker<U2, NEW_TAG>,
+        U1: Node,
+        U2: Node,
     {
         for id in self.inner.children_ids(node_id.into()).collect::<Vec<_>>() {
             let Some(weight) = self.inner.edge_weight_mut(id) else {
@@ -123,25 +125,24 @@ impl<P> SyntaxTree<P> {
         tag: ChildTag,
     ) -> impl FusedIterator<Item = &'a U>
     where
-        AnyNode: ConvertibleToRef<U>,
-        U: 'a,
+        U: Node + 'a,
     {
         self.inner
             .children(id.into())
             .filter(move |(_, it)| it.edge_data == tag)
-            .filter_map(|(_, it)| it.value.try_as_ref())
+            .filter_map(|(_, it)| U::try_from_ref(&it.value).ok())
     }
-    
+
     pub fn contains<T>(&self, id: NodeId<T>) -> bool {
         self.inner.contains(id.into())
     }
 
     pub fn get<T>(&self, id: NodeId<T>) -> Option<&T>
     where
-        AnyNode: ConvertibleToRef<T>,
+        T: Node,
     {
         let node_ref = self.inner.node_weight(id.into())?;
-        node_ref.try_as_ref()
+        T::try_from_ref(node_ref).ok()
     }
 
     pub fn parent_of<T>(&self, id: NodeId<T>) -> Option<&AnyNode> {
@@ -151,10 +152,10 @@ impl<P> SyntaxTree<P> {
 
     pub fn get_mut<T>(&mut self, id: NodeId<T>) -> Option<&mut T>
     where
-        AnyNode: ConvertibleToMut<T>,
+        T: Node,
     {
         let node_ref = self.inner.node_weight_mut(id.into())?;
-        node_ref.try_as_mut()
+        T::try_from_mut(node_ref).ok()
     }
 
     pub fn node_count(&self) -> usize {

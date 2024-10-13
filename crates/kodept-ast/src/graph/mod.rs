@@ -1,4 +1,4 @@
-pub use self::any_node::{AnyNode, AnyNodeD, SubEnum};
+pub use self::any_node::{AnyNode, AnyNodeD};
 pub use self::children::tags;
 pub use self::node_id::{AnyNodeId, AnyNodeKey, NodeId};
 pub use self::children::HasChildrenMarker;
@@ -21,3 +21,4 @@ mod identity;
 mod node_id;
 mod syntax_tree;
 mod utils;
+pub mod node_props;
