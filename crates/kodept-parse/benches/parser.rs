@@ -16,8 +16,7 @@ fn get_contents_with_factor(filename: &str, factor: usize) -> String {
 
 fn get_tokens_from_contents(contents: &str) -> Vec<PackedTokenMatch> {
     let tokenizer = LazyTokenizer::new(contents, PegLexer::<false>::new());
-    let tokens = tokenizer.into_vec();
-    tokens
+    tokenizer.into_vec()
 }
 
 fn bench_impls(c: &mut Criterion) {

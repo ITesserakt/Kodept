@@ -1,7 +1,7 @@
 use crate::graph::any_node::AnyNode;
 use crate::graph::children::tags::{ChildTag, TAGS_DESC};
 use crate::graph::node_id::NodeId;
-use crate::graph::node_props::{HasParent, Node};
+use crate::graph::node_props::Node;
 use crate::graph::syntax_tree::dfs::DfsIter;
 use crate::graph::utils::OptVec;
 use crate::graph::{HasChildrenMarker, SubSyntaxTree};

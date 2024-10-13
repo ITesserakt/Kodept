@@ -130,7 +130,7 @@ fn flatten(
         CompoundInferError::AlgoW(x) => SpannedError::new(x.into(), location).into(),
         CompoundInferError::Both(x, errors) => {
             let tail = errors.into_iter().flat_map(|it| it.errors).collect();
-            let errors = NEVec::from((SpannedError::new(x.into(), location).into(), tail));
+            let errors = NEVec::from((SpannedError::new(x.into(), location), tail));
             RecursiveTypeCheckingErrors { errors }
         }
         CompoundInferError::Foreign(errors) => {
@@ -154,17 +154,17 @@ impl EnvironmentProvider<AnyNodeKey> for RecursiveTypeChecker<'_> {
         let node = self
             .tree
             .get(id)
-            .ok_or(SpannedError::new(NodeNotFound(id).into(), location))?;
+            .ok_or(SpannedError::new(NodeNotFound(id), location))?;
 
         if let Ok(node) = TypeRestrictedNode::try_from_ref(node) {
             let search = self
                 .search
                 .as_tree()
-                .lookup(node, &self.tree)
+                .lookup(node, self.tree)
                 .map_err(|e| {
                     SpannedError::new(RecursiveTypeCheckingError::ScopeError(e), location)
                 })?;
-            match node.type_of(&search, &self.tree, &self.rlt) {
+            match node.type_of(&search, self.tree, self.rlt) {
                 Execution::Failed(e) => {
                     return Err(e
                         .map(|it| match it {
@@ -196,7 +196,7 @@ impl EnvironmentProvider<AnyNodeKey> for RecursiveTypeChecker<'_> {
                 let model = ModelConvertibleNode::try_from_ref(node)
                     .map_err(InconvertibleToModel)
                     .map_err(|e| SpannedError::new(e, location))?
-                    .to_model(self.search.as_tree(), &self.tree, &self.rlt)
+                    .to_model(self.search.as_tree(), self.tree, self.rlt)
                     .map_err(|e| e.map(|it| it.into()))?;
                 let model = Rc::new(model);
                 self.models.insert(*key, model.clone());
