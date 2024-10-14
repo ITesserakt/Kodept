@@ -29,7 +29,6 @@ use crate::convert_model::ModelConvertibleNode;
 use crate::node_family::TypeRestrictedNode;
 use crate::scope::{ScopeError, ScopeSearch, ScopeTree};
 use crate::type_checker::RecursiveTypeCheckingError::InconvertibleToModel;
-use crate::Cache;
 
 pub struct CannotInfer {
     point: CodePoint,

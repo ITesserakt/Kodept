@@ -18,7 +18,7 @@ node_sub_enum! {
     }
 }
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, PartialOrd, Ord, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ReferenceContext {
     global: bool,
