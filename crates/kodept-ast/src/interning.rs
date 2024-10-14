@@ -1,6 +1,7 @@
 use derive_more::{Deref, Display};
 use interner::global::{GlobalString, StringPool};
 use kodept_core::code_point::CodePoint;
+use kodept_core::static_assert_size;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -8,9 +9,8 @@ use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::debug;
-use kodept_core::static_assert_size;
 
-#[derive(Debug, Display, PartialEq, Ord, PartialOrd, Eq, Clone, Hash)]
+#[derive(Debug, Display, PartialEq, Ord, PartialOrd, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(into = "String"))]
 #[cfg_attr(feature = "serde", serde(from = "Cow<str>"))]
@@ -47,7 +47,7 @@ pub struct InterningCodeHolder<'a, C> {
 
 const fn humanize(mut value: f64) -> (f64, &'static str) {
     const SUFFIXES: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
-    
+
     let mut index = 0;
     loop {
         if value > -1024.0 && value < 1024.0 || index > 5 {
@@ -117,6 +117,13 @@ impl SharedStr {
     pub fn new<'a>(value: impl Into<Cow<'a, str>>) -> Self {
         TOTAL_SHARES.fetch_add(1, Ordering::AcqRel);
         Self(GLOBAL_STRING_POOL.get(value))
+    }
+}
+
+impl Clone for SharedStr {
+    fn clone(&self) -> Self {
+        TOTAL_SHARES.fetch_add(1, Ordering::AcqRel);
+        Self(self.0.clone())
     }
 }
 

@@ -1,17 +1,18 @@
 #![allow(clippy::unwrap_used)]
 
-use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
-
-use crate::scope::ScopeError::{Duplicate, NoScope};
+use crate::symbol::SymbolV2;
 use derive_more::Display;
-use id_tree::{InsertBehavior, Node, NodeIdError, Tree};
-use itertools::Itertools;
-use kodept_ast::graph::{AnyNode, AnyNodeId, SyntaxTree};
-use kodept_ast::traits::Identifiable;
-use kodept_inference::language::{var, Var};
-use kodept_inference::r#type::MonomorphicType;
+use kodept_ast::graph::{AnyNodeId, Identifiable, NodeId, SyntaxTree};
+use kodept_ast::interning::SharedStr;
+use kodept_inference::r#type::PolymorphicType;
+use std::collections::BTreeSet;
+use std::fmt::Debug;
+use std::iter;
 use thiserror::Error;
+
+#[derive(Debug, Display, Error)]
+#[display("Cannot get outer scope for root one")]
+pub struct ScopePeelError;
 
 #[derive(Display, Debug, Error)]
 pub enum ScopeError {
@@ -21,249 +22,121 @@ pub enum ScopeError {
     Duplicate(String),
 }
 
-#[derive(Default)]
-pub struct ScopeTree {
-    tree: Tree<Scope>,
-    current_scope: Option<Id>,
+type Index = usize;
+
+pub struct ScopeBuilder {
+    // Scopes cannot be removed, so no gaps expected
+    container: Vec<ScopeV2>,
+    root_scope: Index,
+    current_scope: Index,
+    last_pushed_index: Index
 }
 
-pub struct Scope {
-    start_from_id: AnyNodeId,
-    name: Option<String>,
-    types: HashMap<String, MonomorphicType>,
-    variables: HashMap<String, AnyNodeId>,
+#[derive(Debug, Eq, PartialEq)]
+pub struct ScopeV2<Type = Option<PolymorphicType>> {
+    parent: Option<Index>,
+    start_from: AnyNodeId,
+    pub name: Option<SharedStr>,
+    symbols: BTreeSet<SymbolV2<Type>>
 }
 
-#[derive(Clone, Debug)]
-pub struct ScopeSearch<'a> {
-    tree: &'a ScopeTree,
-    current_pos: Id,
-    exclusive: bool,
+#[derive(Debug, Copy, Clone)]
+pub struct ScopeSearcher<'a, Type = Option<PolymorphicType>> {
+    buffer: &'a [ScopeV2<Type>],
+    root_scope: Index
 }
 
-type Id = id_tree::NodeId;
+#[derive(Debug)]
+pub struct ScopeSearcherMut<'a, Type = Option<PolymorphicType>> {
+    buffer: &'a mut [ScopeV2<Type>],
+    root_scope: Index
+}
 
-impl ScopeTree {
+impl ScopeV2 {
+    pub fn new(start_from: AnyNodeId) -> Self {
+        Self {
+            parent: None,
+            symbols: BTreeSet::new(),
+            name: None,
+            start_from
+        }
+    }
+    
+    /// Inserts a new symbol and returns the old one if presented
+    pub fn insert_symbol(&mut self, symbol: SymbolV2) -> Option<SymbolV2> {
+        self.symbols.replace(symbol)
+    }
+}
+
+impl<T> ScopeSearcher<'_, T> {
+    /// Finds the last scope that wraps up given node([`id`]).
+    pub fn get_enclosing_scope(&self, id: AnyNodeId, ast: &SyntaxTree) -> &ScopeV2<T> {
+        // First, try to find scope by checking start_from with id
+        if let Some(strict_match) = self.buffer.iter().find(|it| it.start_from == id) {
+            return strict_match;
+        }
+
+        let parents = iter::successors(Some(id), |&it| {
+            Some(ast.parent_of(it)?.get_id())
+        }).collect::<Vec<_>>();
+
+        todo!()
+    }
+}
+
+impl ScopeBuilder {
     pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn push_scope<N>(&mut self, from: &N, name: Option<impl Into<String>>)
-    where
-        N: Identifiable + Into<AnyNode>,
-    {
-        let behaviour = match &self.current_scope {
-            None => InsertBehavior::AsRoot,
-            Some(id) => InsertBehavior::UnderNode(id),
-        };
-        let next_id = self
-            .tree
-            .insert(
-                Node::new(Scope::new(from.get_id().widen(), name.map(|it| it.into()))),
-                behaviour,
-            )
-            .expect("Current scope corrupted");
-        self.current_scope = Some(next_id);
-    }
-
-    pub fn current_mut(&mut self) -> Result<&mut Scope, ScopeError> {
-        Ok(self
-            .tree
-            .get_mut(self.current_scope.as_ref().ok_or(NoScope)?)
-            .expect("Node was added recently")
-            .data_mut())
-    }
-
-    pub fn pop_scope(&mut self) -> Result<(), ScopeError> {
-        let current = self.current_scope.as_ref().ok_or(NoScope)?;
-        self.current_scope = self
-            .tree
-            .ancestor_ids(current)
-            .expect("Current node corrupted")
-            .next()
-            .cloned();
-        Ok(())
-    }
-
-    fn of_node<N>(&self, node: &N, ast: &SyntaxTree) -> Result<Id, ScopeError>
-    where
-        N: Identifiable + Into<AnyNode>,
-    {
-        let parents = {
-            let mut current = node.get_id().widen();
-            let mut result = vec![current];
-            while let Some(parent) = ast.parent_of(current) {
-                result.push(parent.get_id());
-                current = parent.get_id();
-            }
-            result
-        };
-
-        let root = self.tree.root_node_id().ok_or(NoScope)?;
-        self.tree
-            .traverse_post_order_ids(root)
-            .expect("Root node corrupted")
-            .find(|id| {
-                self.tree
-                    .get(id)
-                    .is_ok_and(|it| parents.contains(&it.data().start_from_id))
-            })
-            .ok_or(NoScope)
-    }
-
-    pub fn lookup<N>(
-        &self,
-        node: &N,
-        ast: &SyntaxTree
-    ) -> Result<ScopeSearch, ScopeError>
-    where
-        N: Identifiable + Into<AnyNode>,
-    {
-        let start = self.of_node(node, ast)?;
-        Ok(ScopeSearch {
-            tree: self,
-            current_pos: start,
-            exclusive: false,
-        })
-    }
-}
-
-impl Scope {
-    fn new(from: AnyNodeId, name: Option<String>) -> Self {
+        let root = ScopeV2::new(AnyNodeId::Root);
         Self {
-            start_from_id: from,
-            name,
-            types: Default::default(),
-            variables: Default::default(),
+            container: vec![root],
+            // the first element in vec is root
+            root_scope: 0,
+            // root scope is the current one
+            current_scope: 0,
+            last_pushed_index: 0,
         }
     }
 
-    pub fn insert_type(
-        &mut self,
-        name: impl Into<String> + Clone,
-        ty: MonomorphicType,
-    ) -> Result<(), ScopeError> {
-        if self.types.insert(name.clone().into(), ty).is_some() {
-            return Err(Duplicate(name.into()));
-        }
-        Ok(())
-    }
-
-    pub fn insert_var(
-        &mut self,
-        id: AnyNodeId,
-        name: impl Into<String> + Clone,
-    ) -> Result<(), ScopeError> {
-        if self.variables.insert(name.clone().into(), id).is_some() {
-            return Err(Duplicate(name.into()));
-        }
-        Ok(())
-    }
-
-    pub fn starts_from(&self) -> AnyNodeId {
-        self.start_from_id
-    }
-
-    fn lookup_var(&self, name: impl Into<String>) -> Option<Var> {
-        let name = name.into();
-        self.variables.get(&name).map(|_| var(&name))
-    }
-
-    fn lookup_type(&self, name: impl AsRef<str>) -> Option<MonomorphicType> {
-        self.types.get(name.as_ref()).cloned()
-    }
-}
-
-impl ScopeSearch<'_> {
-    pub fn exclusive(self) -> Self {
-        Self {
-            exclusive: true,
-            ..self
+    pub fn search(&self) -> ScopeSearcher {
+        ScopeSearcher {
+            buffer: &self.container,
+            root_scope: self.root_scope,
         }
     }
 
-    fn bubble_up<T>(&self, f: impl Fn(&Scope) -> Option<T>) -> Result<Option<T>, NodeIdError> {
-        let mut current_pos = &self.current_pos;
-        loop {
-            let scope = self.tree.tree.get(current_pos)?;
-            match f(scope.data()) {
-                None => {
-                    current_pos = match self.tree.tree.ancestor_ids(current_pos)?.next() {
-                        None => return Ok(None),
-                        Some(parent_id) => parent_id,
-                    }
-                }
-                Some(out) => return Ok(Some(out)),
-            }
+    pub fn search_mut(&mut self) -> ScopeSearcherMut {
+        ScopeSearcherMut {
+            buffer: &mut self.container,
+            root_scope: self.root_scope,
         }
     }
-
-    pub fn var(&self, name: impl Into<String> + Clone) -> Option<Var> {
-        if self.exclusive {
-            let scope = self
-                .tree
-                .tree
-                .get(&self.current_pos)
-                .expect("Tree corrupted");
-            scope.data().lookup_var(name)
-        } else {
-            self.bubble_up(|scope| scope.lookup_var(name.clone()))
-                .expect("Tree corrupted")
-        }
+    
+    pub fn current_scope(&self) -> &ScopeV2 {
+        &self.container[self.current_scope]
+    }
+    
+    pub fn current_scope_mut(&mut self) -> &mut ScopeV2 {
+        &mut self.container[self.current_scope]
     }
 
-    pub fn id_of_var(&self, name: impl AsRef<str>) -> Option<AnyNodeId> {
-        if self.exclusive {
-            let scope = self
-                .tree
-                .tree
-                .get(&self.current_pos)
-                .expect("Tree corrupted");
-            scope.data().variables.get(name.as_ref()).copied()
-        } else {
-            self.bubble_up(|scope| scope.variables.get(name.as_ref()).copied())
-                .expect("Tree corrupted")
-        }
+    pub fn root_scope(&self) -> &ScopeV2 {
+        &self.container[self.root_scope]
     }
 
-    pub fn ty(&self, name: impl AsRef<str> + Clone) -> Option<MonomorphicType> {
-        if self.exclusive {
-            let scope = self
-                .tree
-                .tree
-                .get(&self.current_pos)
-                .expect("Tree corrupted");
-            scope.data().lookup_type(name)
-        } else {
-            self.bubble_up(|scope| scope.lookup_type(name.clone()))
-                .expect("Tree corrupted")
-        }
+    pub fn push_scope(&mut self, start_from: AnyNodeId) -> &mut ScopeV2 {
+        let mut scope = ScopeV2::new(start_from);
+        scope.parent = Some(self.current_scope);
+
+        self.last_pushed_index += 1;
+        self.container.push(scope);
+        self.current_scope = self.last_pushed_index;
+        &mut self.container[self.last_pushed_index]
     }
 
-    pub fn as_tree(&self) -> &ScopeTree {
-        self.tree
-    }
-}
-
-impl Debug for ScopeTree {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.tree.write_formatted(f)
-    }
-}
-
-impl Debug for Scope {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if let Some(name) = &self.name {
-            write!(f, "[{:?}:{name}]", self.start_from_id)?;
-        } else {
-            write!(f, "[{:?}]", self.start_from_id)?;
-        }
-        if !self.types.is_empty() {
-            write!(f, " {{{}}}", self.types.keys().join(", "))?;
-        }
-        if !self.variables.is_empty() {
-            write!(f, " {{{}}}", self.variables.keys().cloned().join(", "))?;
-        }
+    pub fn peel_scope(&mut self) -> Result<(), ScopePeelError> {
+        let current = &self.container[self.current_scope];
+        let parent = current.parent.ok_or(ScopePeelError)?;
+        self.current_scope = parent;
         Ok(())
     }
 }

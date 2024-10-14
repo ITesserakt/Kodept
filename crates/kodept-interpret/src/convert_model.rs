@@ -3,7 +3,6 @@ use std::ops::Deref;
 use nonempty_collections::nev;
 
 use crate::node_family::convert;
-use crate::scope::ScopeTree;
 use crate::type_checker::InferError;
 use kodept_ast::graph::SyntaxTree;
 use kodept_ast::rlt_accessor::RLTAccessor;

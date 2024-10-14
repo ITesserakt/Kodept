@@ -31,14 +31,16 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ElifExpr {;
         pub condition: Identity<Operation>,
-        pub body: Identity<Body>,
+        pub body: Identity<Body>,;
+        parent is [IfExpr]
     }
 }
 
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct ElseExpr {;
-        pub body: Identity<Body>,
+        pub body: Identity<Body>,;
+        parent is [IfExpr]
     }
 }
 

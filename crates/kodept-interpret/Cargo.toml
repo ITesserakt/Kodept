@@ -15,14 +15,13 @@ rust-version = "1.74.0"
 workspace = true
 
 [dependencies]
-chashmap = "2.2.2"
+dashmap = "6.1.0"
 derive_more.workspace = true
 tracing.workspace = true
-id_tree.workspace = true
 itertools.workspace = true
-nonempty-collections = "0.2.5"
-ref-cast = "1.0.23"
-slotmap = "1.0.7"
+nonempty-collections.workspace = true
+pin-project = "1.1.6"
+slotgraph = { path = "../slotgraph", version = "0.1" }
 thiserror.workspace = true
 
 [dependencies.kodept-macros]
