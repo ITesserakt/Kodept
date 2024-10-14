@@ -45,7 +45,7 @@ pub struct InterningCodeHolder<'a, C> {
     _phantom: PhantomData<&'a ()>,
 }
 
-const fn humanize(mut value: f64) -> (f64, &'static str) {
+fn humanize(mut value: f64) -> (f64, &'static str) {
     const SUFFIXES: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
 
     let mut index = 0;
