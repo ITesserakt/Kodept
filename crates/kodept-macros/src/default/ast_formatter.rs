@@ -1,11 +1,10 @@
 use std::io::{Error, Write};
 use thiserror::Error;
 use kodept_ast::graph::{AnyNode};
+use kodept_ast::utils::Skip;
 use kodept_ast::visit_side::VisitSide;
 
 use crate::context::Context;
-use crate::execution::Execution;
-use crate::execution::Execution::Completed;
 use crate::visit_guard::VisitGuard;
 use crate::{Macro, MacroExt};
 
@@ -36,7 +35,7 @@ where
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error> {
+    ) -> Result<(), Skip<Self::Error>> {
         let (node, side) = guard.allow_all();
         let node = self.resolve(node, ctx);
         let writer = &mut self.writer;
@@ -55,6 +54,6 @@ where
             }
         }
 
-        Completed(())
+        Ok(())
     }
 }

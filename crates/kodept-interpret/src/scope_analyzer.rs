@@ -1,12 +1,11 @@
 use crate::scope::{ScopeBuilder, ScopePeelError, ScopeV2};
-use kodept_ast::graph::node_props::SubEnum;
 use kodept_ast::graph::{AnyNode, Identifiable};
+use kodept_ast::utils::Skip;
 use kodept_ast::visit_side::VisitSide;
-use kodept_ast::{AbstFnDecl, BodyFnDecl, EnumDecl, Exprs, FileDecl, ModDecl, StructDecl};
+use kodept_ast::{AbstFnDecl, BodyFnDecl, EnumDecl, Exprs, ModDecl, StructDecl};
 use kodept_macros::context::Context;
 use kodept_macros::error::report::Severity;
 use kodept_macros::error::traits::SpannedError;
-use kodept_macros::execution::Execution;
 use kodept_macros::visit_guard::VisitGuard;
 use kodept_macros::{Macro, MacroExt};
 use std::convert::Infallible;
@@ -124,22 +123,16 @@ impl Macro for ScopeAnalyzer {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error> {
+    ) -> Result<(), Skip<Self::Error>> {
         let (id, side) = guard.allow_all();
         let node = self.resolve(id, ctx);
 
         if let Err(e) = self.divide_by_scopes(node, side) {
             ctx.report(SpannedError::for_node(e, id, &ctx.rlt).with_severity(Severity::Bug));
         }
-        let node = ctx.ast.get(id)?;
-        
-        if FileDecl::contains(node) {
-            // divide_by_scopes should correctly peel all the scopes to the root one
-            assert_eq!(self.builder.root_scope(), self.builder.current_scope());
-        }
 
         if matches!(side, VisitSide::Entering) {
-            return Execution::Completed(());
+            return Ok(())
         }
 
         let scope = self.builder.current_scope_mut();
@@ -147,6 +140,6 @@ impl Macro for ScopeAnalyzer {
 
         extract_symbols(scope, node);
 
-        Execution::Completed(())
+        Ok(())
     }
 }
