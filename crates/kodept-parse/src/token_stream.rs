@@ -4,6 +4,7 @@ use kodept_core::static_assert_size;
 use kodept_core::structure::Located;
 use nom::{InputIter, InputLength, InputTake, Needed, Offset, Slice, UnspecializedInput};
 use std::fmt::Debug;
+use std::iter::Enumerate;
 use std::ops::{Deref, Range, RangeTo};
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -12,6 +13,10 @@ pub struct PackedTokenStream<'t> {
 }
 
 static_assert_size!(PackedTokenStream<'static>, 16);
+
+pub struct PackedTokenStreamIter<'t> {
+    slice_iter: std::slice::Iter<'t, PackedTokenMatch>
+}
 
 impl<'t> PackedTokenStream<'t> {
     pub fn new(slice: &'t [PackedTokenMatch]) -> Self {
@@ -59,17 +64,29 @@ impl<'t> Deref for PackedTokenStream<'t> {
     }
 }
 
+impl Iterator for PackedTokenStreamIter<'_> {
+    type Item = PackedTokenMatch;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.slice_iter.next().copied()
+    }
+}
+
 impl<'t> InputIter for PackedTokenStream<'t> {
     type Item = PackedTokenMatch;
-    type Iter = impl Iterator<Item = (usize, PackedTokenMatch)>;
-    type IterElem = impl Iterator<Item = PackedTokenMatch>;
+    type Iter = Enumerate<PackedTokenStreamIter<'t>>;
+    type IterElem = PackedTokenStreamIter<'t>;
 
     fn iter_indices(&self) -> Self::Iter {
-        self.slice.iter().enumerate().map(|it| (it.0, *it.1))
+        PackedTokenStreamIter {
+            slice_iter: self.slice.iter()
+        }.enumerate()
     }
 
     fn iter_elements(&self) -> Self::IterElem {
-        self.slice.iter().cloned()
+        PackedTokenStreamIter {
+            slice_iter: self.slice.iter(),
+        }
     }
 
     fn position<P>(&self, predicate: P) -> Option<usize>
