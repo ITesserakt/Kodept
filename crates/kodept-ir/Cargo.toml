@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 derive_more.workspace = true
 itertools.workspace = true
-nonempty-collections = "0.2.7"
+nonempty-collections.workspace = true
 sealed = "0.5.0"
 smallvec = "1.13.2"
 

@@ -24,11 +24,10 @@ members = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-nom = "7.1"
 thiserror = "1.0"
 extend = "1.2"
 itertools = "0.13"
-id_tree = "1.8.0"
+nonempty-collections = "0.2.9"
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]
