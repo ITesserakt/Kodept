@@ -1,5 +1,5 @@
 use crate::error::report::{IntoSpannedReportMessage, Report};
-use crate::error::report_collector::ReportCollector;
+use crate::error::report_collector::{ReportCollector, Reporter};
 use kodept_ast::graph::tags::ChildTag;
 use kodept_ast::graph::{
     AnyNode, AnyNodeD, AnyNodeId, HasChildrenMarker, Identifiable, NodeId, SyntaxTree,
@@ -23,7 +23,7 @@ pub struct FileDescriptor {
 pub struct Context<'r> {
     pub ast: SyntaxTree,
     pub rlt: RLTAccessor<'r>,
-    pub collector: &'r mut ReportCollector,
+    pub collector: &'r ReportCollector,
     pub current_file: Freeze<FileDescriptor>,
 }
 
@@ -42,7 +42,7 @@ impl<'rlt> Context<'rlt> {
         Err(Report::from_message(self.current_file.id, message))
     }
 
-    pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
+    pub fn report(&self, message: impl IntoSpannedReportMessage) {
         self.collector.report(self.current_file.id, message)
     }
 

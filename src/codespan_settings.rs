@@ -30,6 +30,8 @@ pub enum Reports {
     Disabled,
     Eager(CodespanSettings),
     Lazy {
+        // TODO: ReportCollector is thread-safe already
+        //       Maybe remove ArcMutex wrapper 
         local_reports: Arc<Mutex<ReportCollector>>,
         global_reports: Arc<Mutex<ReportCollector<()>>>,
         settings: CodespanSettings,

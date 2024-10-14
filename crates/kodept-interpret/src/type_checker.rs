@@ -1,4 +1,5 @@
 use derive_more::From;
+use kodept_ast::graph::node_props::{ConversionError, Node};
 use kodept_ast::graph::{AnyNodeId, AnyNodeKey, SyntaxTree};
 use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_ast::BodyFnDecl;
@@ -22,7 +23,6 @@ use std::collections::HashSet;
 use std::num::NonZeroU16;
 use std::rc::Rc;
 use thiserror::Error;
-use kodept_ast::graph::node_props::{ConversionError, Node};
 use RecursiveTypeCheckingError::{MutuallyRecursive, NodeNotFound};
 
 use crate::convert_model::ModelConvertibleNode;
@@ -157,13 +157,9 @@ impl EnvironmentProvider<AnyNodeKey> for RecursiveTypeChecker<'_> {
             .ok_or(SpannedError::new(NodeNotFound(id), location))?;
 
         if let Ok(node) = TypeRestrictedNode::try_from_ref(node) {
-            let search = self
-                .search
-                .as_tree()
-                .lookup(node, self.tree)
-                .map_err(|e| {
-                    SpannedError::new(RecursiveTypeCheckingError::ScopeError(e), location)
-                })?;
+            let search = self.search.as_tree().lookup(node, self.tree).map_err(|e| {
+                SpannedError::new(RecursiveTypeCheckingError::ScopeError(e), location)
+            })?;
             match node.type_of(&search, self.tree, self.rlt) {
                 Execution::Failed(e) => {
                     return Err(e
@@ -269,14 +265,11 @@ impl Macro for TypeChecker<'_> {
 
         match ty {
             Ok(Some(ty)) => {
-                ctx.collector.report(
-                    ctx.current_file.id,
-                    TypeInfo {
-                        name: &node.name,
-                        ty: &ty,
-                        point: fn_location,
-                    },
-                );
+                ctx.report(TypeInfo {
+                    name: &node.name,
+                    ty: &ty,
+                    point: fn_location,
+                });
             }
             Ok(None) => ctx.report(CannotInfer { point: fn_location }),
             Err(e) => e.errors.into_iter().for_each(|e| ctx.report(e)),
