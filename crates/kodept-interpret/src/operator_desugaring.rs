@@ -1,17 +1,17 @@
-use std::convert::Infallible;
 use kodept_ast::graph::tags;
+use kodept_ast::interning::SharedStr;
 use kodept_ast::traits::AsEnum;
+use kodept_ast::utils::Skip;
+use kodept_ast::utils::Skip::Skipped;
 use kodept_ast::visit_side::VisitSide;
 use kodept_ast::{
     Acc, Appl, BinExpr, Expression, Identifier, Operation, OperationEnumMut, Ref, ReferenceContext,
     Term, UnExpr, UnaryExpressionKind,
 };
-use kodept_ast::interning::SharedStr;
 use kodept_macros::context::Context;
-use kodept_macros::execution::Execution;
-use kodept_macros::execution::Execution::Completed;
 use kodept_macros::visit_guard::VisitGuard;
 use kodept_macros::{Macro, MacroExt};
+use std::convert::Infallible;
 
 #[derive(Default)]
 pub struct BinaryOperatorExpander;
@@ -49,11 +49,11 @@ impl Macro for BinaryOperatorExpander {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error> {
-        let id = guard.allow_only(VisitSide::Entering)?;
+    ) -> Result<(), Skip<Self::Error>> {
+        let id = guard.allow_only(VisitSide::Entering).ok_or(Skipped)?;
         let node = self.resolve(id, ctx);
 
-        Completed(())
+        Ok(())
     }
 }
 
@@ -66,10 +66,12 @@ impl Macro for UnaryOperatorExpander {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error> {
-        let id = guard.allow_only(VisitSide::Entering)?;
+    ) -> Result<(), Skip<Self::Error>> {
+        let id = guard.allow_only(VisitSide::Entering).ok_or(Skipped)?;
 
-        let mut node = ctx.replace(id.cast::<Operation>(), Appl::uninit().map_into())?;
+        let mut node = ctx
+            .replace(id.cast::<Operation>(), Appl::uninit().map_into())
+            .ok_or(Skipped)?;
 
         let name = node
             .use_value(|it| match it.as_enum() {
@@ -91,14 +93,17 @@ impl Macro for UnaryOperatorExpander {
             id,
             Ref::uninit(
                 ReferenceContext::global(["Prelude"]),
-                Identifier::Reference { name: SharedStr::new(name) },
-            ).with_rlt(rlt)
+                Identifier::Reference {
+                    name: SharedStr::new(name),
+                },
+            )
+            .with_rlt(rlt)
             .map_into::<Term>()
             .map_into::<Expression>()
             .map_into::<Operation>(),
         );
 
-        Completed(())
+        Ok(())
     }
 }
 
@@ -111,10 +116,10 @@ impl Macro for AccessExpander {
         &mut self,
         guard: VisitGuard<Self::Node>,
         ctx: &mut Self::Ctx<'_>,
-    ) -> Execution<Self::Error> {
-        let id = guard.allow_only(VisitSide::Entering)?;
+    ) -> Result<(), Skip<Self::Error>> {
+        let id = guard.allow_only(VisitSide::Entering).ok_or(Skipped)?;
         let node = self.resolve(id, ctx);
 
-        Completed(())
+        Ok(())
     }
 }

@@ -67,12 +67,7 @@ impl<T> Eq for SymbolV2<T> {}
 
 impl<T> PartialOrd for SymbolV2<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(
-            self.context
-                .partial_cmp(&other.context)?
-                .then(self.ident.partial_cmp(&other.ident)?)
-                .then(self.kind.partial_cmp(&other.kind)?),
-        )
+        Some(self.cmp(other))
     }
 }
 
