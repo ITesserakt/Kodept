@@ -13,7 +13,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
-use crate::error::report_collector::ReportCollector;
+use crate::error::report_collector::{ReportCollector, Reporter};
 
 #[derive(Clone, Debug)]
 pub struct CodespanSettings<S> {

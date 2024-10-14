@@ -6,7 +6,7 @@ use clap::{Parser, ValueEnum};
 use derive_more::Display;
 use kodept::codespan_settings::{Reports};
 use kodept::source_files::{SourceFiles, SourceView};
-use kodept_macros::error::report_collector::ReportCollector;
+use kodept_macros::error::report_collector::{ReportCollector, Reporter};
 use thiserror::Error;
 use crate::cli::configs::LoadingConfig;
 

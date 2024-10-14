@@ -11,7 +11,7 @@ use kodept_ast::graph::SyntaxTree;
 use kodept_core::Freeze;
 use kodept_macros::context::Context;
 use kodept_macros::default::ASTDotFormatter;
-use kodept_macros::error::report_collector::ReportCollector;
+use kodept_macros::error::report_collector::{ReportCollector, Reporter};
 use kodept_macros::error::traits::DrainReports;
 use std::path::Path;
 use kodept_ast::interning::InterningCodeHolder;

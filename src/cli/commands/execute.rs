@@ -10,7 +10,7 @@ use kodept_ast::graph::SyntaxTree;
 use kodept_ast::interning::{debug_interning_efficiency, InterningCodeHolder};
 use kodept_core::Freeze;
 use kodept_macros::context::Context;
-use kodept_macros::error::report_collector::ReportCollector;
+use kodept_macros::error::report_collector::{ReportCollector, Reporter};
 use kodept_macros::error::traits::DrainReports;
 use std::num::NonZeroU16;
 use std::path::Path;

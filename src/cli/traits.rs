@@ -2,7 +2,7 @@ use kodept::codespan_settings::{ProvideCollector, Reports};
 use kodept::common_iter::CommonIter;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept_macros::error::report::Severity;
-use kodept_macros::error::report_collector::ReportCollector;
+use kodept_macros::error::report_collector::{ReportCollector, Reporter};
 use kodept_macros::error::Diagnostic;
 use std::panic::UnwindSafe;
 use std::path::{Path, PathBuf};
