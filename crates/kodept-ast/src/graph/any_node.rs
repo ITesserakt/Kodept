@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 
 use crate::graph::node_id::AnyNodeId;
 use crate::graph::node_props::{ConversionError, Node, SubEnum};
@@ -10,7 +10,7 @@ use kodept_core::static_assert_size;
 use serde::{Deserialize, Serialize};
 use strum::{EnumDiscriminants, IntoStaticStr, VariantArray, VariantNames};
 
-#[derive(Debug, PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
+#[derive(PartialEq, From, TryInto, EnumDiscriminants, IntoStaticStr, VariantNames)]
 #[strum_discriminants(derive(VariantArray, Display))]
 #[strum_discriminants(cfg_attr(feature = "serde", derive(Serialize, Deserialize)))]
 #[strum_discriminants(name(AnyNodeD))]
@@ -125,5 +125,11 @@ impl AnyNode {
     #[inline]
     pub fn name(&self) -> &'static str {
         self.into()
+    }
+}
+
+impl Debug for AnyNode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        folding!(self; x => write!(f, "{:?}", x))
     }
 }

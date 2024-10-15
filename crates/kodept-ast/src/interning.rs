@@ -6,11 +6,12 @@ use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::debug;
 
-#[derive(Debug, Display, PartialEq, Ord, PartialOrd, Eq, Hash)]
+#[derive(Display, PartialEq, Ord, PartialOrd, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(into = "String"))]
 #[cfg_attr(feature = "serde", serde(from = "Cow<str>"))]
@@ -156,5 +157,11 @@ impl From<&SharedStr> for String {
 impl Drop for SharedStr {
     fn drop(&mut self) {
         TOTAL_SHARES.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+
+impl Debug for SharedStr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }
