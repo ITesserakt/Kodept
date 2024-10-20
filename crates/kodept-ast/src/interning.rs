@@ -154,6 +154,12 @@ impl From<&SharedStr> for String {
     }
 }
 
+impl From<&SharedStr> for Cow<'static, str> {
+    fn from(value: &SharedStr) -> Self {
+        Cow::Owned(value.to_string())
+    }
+}
+
 impl Drop for SharedStr {
     fn drop(&mut self) {
         TOTAL_SHARES.fetch_sub(1, Ordering::AcqRel);

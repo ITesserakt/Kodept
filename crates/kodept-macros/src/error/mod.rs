@@ -1,9 +1,9 @@
-use std::borrow::Cow;
+use crate::error::report::{IntoSpannedReportMessage, Label, Severity, SpannedReportMessage};
 use derive_more::Display;
+use kodept_core::code_point::CodePoint;
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt::Formatter;
-use kodept_core::code_point::CodePoint;
-use crate::error::report::{IntoSpannedReportMessage, Label, Severity, SpannedReportMessage};
 
 pub mod compiler_crash;
 pub mod report;
@@ -46,7 +46,7 @@ pub struct Diagnostic {
     message: Cow<'static, str>,
     labels: Vec<Label>,
     notes: Vec<Cow<'static, str>>,
-    severity: Severity
+    severity: Severity,
 }
 
 impl Diagnostic {
@@ -86,7 +86,7 @@ impl IntoSpannedReportMessage for Diagnostic {
 }
 
 impl SpannedReportMessage for Diagnostic {
-    fn labels(&self) -> impl IntoIterator<Item=Label> {
+    fn labels(&self) -> impl IntoIterator<Item = Label> {
         self.labels.clone()
     }
 
@@ -98,12 +98,13 @@ impl SpannedReportMessage for Diagnostic {
         self.message.clone()
     }
 
-    fn notes(&self) -> impl IntoIterator<Item=Cow<'static, str>> {
+    fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>> {
         self.notes.clone()
     }
 
     fn with_node_location(mut self, location: CodePoint) -> impl IntoSpannedReportMessage {
-        self.labels.push(Label::secondary("while checking here", location));
+        self.labels
+            .push(Label::secondary("while checking here", location));
         self
     }
 }

@@ -1,6 +1,6 @@
-use std::error::Error;
 use crate::graph::{AnyNode, AnyNodeD, SyntaxTree};
 use derive_more::Display;
+use std::error::Error;
 use std::fmt::Formatter;
 
 pub trait SubEnum {
@@ -24,11 +24,21 @@ pub trait Node: SubEnum {
 
     fn try_from_ref(value: &AnyNode) -> Result<&Self, ConversionError>;
     fn try_from_mut(value: &mut AnyNode) -> Result<&mut Self, ConversionError>;
+
+    fn parent_is<P>(&self, ast: &SyntaxTree) -> bool
+    where
+        Self: HasParent,
+        Self::Parent: Node + From<P>,
+        P: SubEnum,
+    {
+        self.parent(ast)
+            .map_or(false, |it| P::VARIANTS.contains(&it.describe()))
+    }
 }
 
 pub trait HasParent: Node {
     type Parent: Node;
-    
+
     fn parent<'a>(&self, ast: &'a SyntaxTree) -> Option<&'a Self::Parent>;
 }
 
@@ -38,7 +48,7 @@ impl Display for ConversionError {
             write!(f, "Expected node not like {}", self.actual_type)?;
             return Ok(());
         }
-        
+
         write!(f, "Expected nodes like {}", self.expected_types[0])?;
         for item in &self.expected_types[1..] {
             write!(f, ", {}", item)?;

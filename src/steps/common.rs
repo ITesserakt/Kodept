@@ -28,9 +28,10 @@ pub fn run_common_steps(
         .apply_with_context(ctx)?;
 
     info!("Step 2: Split by scopes and resolve symbols");
-    let (scopes,) = Pipeline
+    let (scope_analyzer,) = Pipeline
         .define_step((ScopeAnalyzer::new(),))
         .apply_with_context(ctx)?;
+    let scopes = scope_analyzer.into_inner();
     
     // info!("Step 3: Infer and check types");
     // let (_,) = Pipeline

@@ -20,18 +20,16 @@ pub enum SymbolKind {
 
 #[derive(Debug)]
 pub struct SymbolV2<Type = Option<PolymorphicType>> {
-    ast_node: AnyNodeId,
-    context: ReferenceContext,
-    ident: SharedStr,
-    kind: SymbolKind,
-    ty: Type,
+    pub ast_node: AnyNodeId,
+    pub ident: SharedStr,
+    pub kind: SymbolKind,
+    pub ty: Type,
 }
 
 impl SymbolV2 {
     pub fn from_ref(value: &Ref, kind: SymbolKind) -> Self {
         Self {
             ast_node: value.get_id().widen(),
-            context: value.context.clone(),
             ident: match &value.ident {
                 Identifier::TypeReference { name } => name.clone(),
                 Identifier::Reference { name } => name.clone(),
@@ -41,10 +39,9 @@ impl SymbolV2 {
         }
     }
     
-    pub fn new(node_id: AnyNodeId, context: ReferenceContext, ident: SharedStr, kind: SymbolKind) -> Self {
+    pub fn new(node_id: AnyNodeId, ident: SharedStr, kind: SymbolKind) -> Self {
         Self {
             ast_node: node_id,
-            context,
             ident,
             kind,
             ty: None,
@@ -59,7 +56,7 @@ impl SymbolV2 {
 
 impl<T> PartialEq for SymbolV2<T> {
     fn eq(&self, other: &Self) -> bool {
-        self.context == other.context && self.ident == other.ident && self.kind == other.kind
+        self.ident == other.ident && self.kind == other.kind
     }
 }
 
@@ -73,9 +70,7 @@ impl<T> PartialOrd for SymbolV2<T> {
 
 impl<T> Ord for SymbolV2<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.context
-            .cmp(&other.context)
-            .then_with(|| self.ident.cmp(&other.ident))
+        self.ident.cmp(&other.ident)
             .then_with(|| self.kind.cmp(&other.kind))
     }
 }

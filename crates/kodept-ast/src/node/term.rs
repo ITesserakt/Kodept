@@ -1,9 +1,9 @@
+use std::borrow::Cow;
 use derive_more::From;
 use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
 use crate::graph::SubSyntaxTree;
 use crate::interning::SharedStr;
@@ -21,8 +21,8 @@ node_sub_enum! {
 #[derive(Debug, PartialEq, Eq, Default, PartialOrd, Ord, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ReferenceContext {
-    global: bool,
-    items: Vec<SharedStr>,
+    pub global: bool,
+    pub items: Vec<SharedStr>,
 }
 
 node! {
@@ -43,24 +43,22 @@ pub enum Identifier {
 }
 
 impl ReferenceContext {
-    pub fn global(items: impl IntoIterator<Item: Into<String>>) -> Self {
+    pub fn global<'a>(items: impl IntoIterator<Item: Into<Cow<'a, str>>>) -> Self {
         Self {
             global: true,
             items: items
                 .into_iter()
-                .map(|it| it.into())
-                .map(|it| SharedStr::from(Cow::Owned(it)))
+                .map(SharedStr::new)
                 .collect(),
         }
     }
 
-    pub fn local(items: impl IntoIterator<Item: Into<String>>) -> Self {
+    pub fn local<'a>(items: impl IntoIterator<Item: Into<Cow<'a, str>>>) -> Self {
         Self {
             global: false,
             items: items
                 .into_iter()
-                .map(|it| it.into())
-                .map(|it| SharedStr::from(Cow::Owned(it)))
+                .map(SharedStr::new)
                 .collect(),
         }
     }
