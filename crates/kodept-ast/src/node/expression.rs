@@ -100,54 +100,24 @@ pub enum UnaryExpressionKind {
 
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum ComparisonKind {
-    Less,
-    LessEq,
-    Greater,
-    GreaterEq,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum EqKind {
-    Eq,
-    NEq,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum LogicKind {
-    Disj,
-    Conj,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum BitKind {
-    Or,
-    And,
-    Xor,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum MathKind {
+pub enum BinaryExpressionKind {
     Add,
     Sub,
     Mul,
     Pow,
     Div,
     Mod,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub enum BinaryExpressionKind {
-    Math(MathKind),
-    Cmp(ComparisonKind),
-    Eq(EqKind),
-    Bit(BitKind),
-    Logic(LogicKind),
+    Less,
+    LessEq,
+    Greater,
+    GreaterEq,
+    Eq,
+    NEq,
+    Or,
+    And,
+    Xor,
+    Disj,
+    Conj,
     ComplexComparison,
     Assign,
 }
@@ -204,24 +174,24 @@ fn build_binary<'a>(
 
     SubSyntaxTree::new(
         BinExpr::uninit(match (operation, op_text) {
-            (BinaryOperationSymbol::Pow(_), _) => Math(MathKind::Pow),
-            (BinaryOperationSymbol::Mul(_), "*") => Math(MathKind::Mul),
-            (BinaryOperationSymbol::Mul(_), "/") => Math(MathKind::Div),
-            (BinaryOperationSymbol::Mul(_), "%") => Math(MathKind::Mod),
-            (BinaryOperationSymbol::Add(_), "+") => Math(MathKind::Add),
-            (BinaryOperationSymbol::Add(_), "-") => Math(MathKind::Sub),
+            (BinaryOperationSymbol::Pow(_), _) => Pow,
+            (BinaryOperationSymbol::Mul(_), "*") => Mul,
+            (BinaryOperationSymbol::Mul(_), "/") => Div,
+            (BinaryOperationSymbol::Mul(_), "%") => Mod,
+            (BinaryOperationSymbol::Add(_), "+") => Add,
+            (BinaryOperationSymbol::Add(_), "-") => Sub,
             (BinaryOperationSymbol::ComplexComparison(_), _) => ComplexComparison,
-            (BinaryOperationSymbol::CompoundComparison(_), "<=") => Cmp(ComparisonKind::LessEq),
-            (BinaryOperationSymbol::CompoundComparison(_), ">=") => Cmp(ComparisonKind::GreaterEq),
-            (BinaryOperationSymbol::CompoundComparison(_), "!=") => Eq(EqKind::NEq),
-            (BinaryOperationSymbol::CompoundComparison(_), "==") => Eq(EqKind::Eq),
-            (BinaryOperationSymbol::Comparison(_), "<") => Cmp(ComparisonKind::Less),
-            (BinaryOperationSymbol::Comparison(_), ">") => Cmp(ComparisonKind::Greater),
-            (BinaryOperationSymbol::Bit(_), "|") => Bit(BitKind::Or),
-            (BinaryOperationSymbol::Bit(_), "&") => Bit(BitKind::And),
-            (BinaryOperationSymbol::Bit(_), "^") => Bit(BitKind::Xor),
-            (BinaryOperationSymbol::Logic(_), "||") => Logic(LogicKind::Disj),
-            (BinaryOperationSymbol::Logic(_), "&&") => Logic(LogicKind::Conj),
+            (BinaryOperationSymbol::CompoundComparison(_), "<=") => LessEq,
+            (BinaryOperationSymbol::CompoundComparison(_), ">=") => GreaterEq,
+            (BinaryOperationSymbol::CompoundComparison(_), "!=") => NEq,
+            (BinaryOperationSymbol::CompoundComparison(_), "==") => Eq,
+            (BinaryOperationSymbol::Comparison(_), "<") => Less,
+            (BinaryOperationSymbol::Comparison(_), ">") => Greater,
+            (BinaryOperationSymbol::Bit(_), "|") => Or,
+            (BinaryOperationSymbol::Bit(_), "&") => And,
+            (BinaryOperationSymbol::Bit(_), "^") => Xor,
+            (BinaryOperationSymbol::Logic(_), "||") => Disj,
+            (BinaryOperationSymbol::Logic(_), "&&") => Conj,
             (BinaryOperationSymbol::Assign(_), "=") => Assign,
 
             (BinaryOperationSymbol::Mul(_), x) => panic!("Unknown mul operator found: {x}"),
