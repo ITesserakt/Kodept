@@ -177,7 +177,11 @@ impl<E: std::error::Error + 'static> IntoSpannedReportMessage for SpannedError<E
     }
 }
 
-impl<T, S: IntoSpannedReportMessage, I: IntoIterator<Item = S>> DrainReports for Result<T, I> {
+impl<T, S, I> DrainReports for Result<T, I>
+where
+    S: IntoSpannedReportMessage,
+    I: IntoIterator<Item=S>
+{
     type Output = Option<T>;
 
     fn drain(self, file_id: FileId, collector: &mut ReportCollector) -> Self::Output {

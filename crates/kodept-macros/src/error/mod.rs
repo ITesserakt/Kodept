@@ -42,6 +42,7 @@ impl Display for ErrorReported {
     }
 }
 
+#[derive(Debug)]
 pub struct Diagnostic {
     message: Cow<'static, str>,
     labels: Vec<Label>,

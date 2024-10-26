@@ -33,40 +33,25 @@ pub enum Commands {
 
 impl Commands {
     pub fn execute(self, output: PathBuf, mut reports: Reports) -> Result<(), ErrorReported> {
-        match self {
-            Commands::Graph(x) => {
-                let sources = reports
-                    .provide_collector(&GlobalReports, |collector| x.build_sources(collector))
-                    .map(Arc::new)
-                    .ok_or(ErrorReported::new())?;
-                let result = x
-                    .exec(sources.clone(), &mut reports, output)
-                    .ok_or(ErrorReported::new());
-                reports.consume(&*sources);
-                result
-            }
-            Commands::InspectParser(x) => {
-                let sources = reports
-                    .provide_collector(&GlobalReports, |collector| x.build_sources(collector))
-                    .map(Arc::new)
-                    .ok_or(ErrorReported::new())?;
-                let result = x
-                    .exec(sources.clone(), &mut reports, output)
-                    .ok_or(ErrorReported::new());
-                reports.consume(&*sources);
-                result
-            }
-            Commands::Execute(x) => {
-                let sources = reports
-                    .provide_collector(&GlobalReports, |collector| x.build_sources(collector))
-                    .map(Arc::new)
-                    .ok_or(ErrorReported::new())?;
-                let result = x
-                    .exec(sources.clone(), &mut reports, output)
-                    .ok_or(ErrorReported::new());
-                reports.consume(&*sources);
-                result
-            }
+        let sources = reports
+            .provide_collector(&GlobalReports, |collector| match &self {
+                Commands::Graph(x) => x.build_sources(collector),
+                Commands::InspectParser(x) => x.build_sources(collector),
+                Commands::Execute(x) => x.build_sources(collector),
+            })
+            .map(Arc::new)
+            .ok_or(ErrorReported::new())?;
+
+        let result = match self {
+            Commands::Graph(x) => x.exec(sources.clone(), &mut reports, output),
+            Commands::InspectParser(x) => x.exec(sources.clone(), &mut reports, output),
+            Commands::Execute(x) => x.exec(sources.clone(), &mut reports, output),
+        };
+        if let None = result {
+            reports.consume(&*sources);
+            Err(ErrorReported::new())
+        } else {
+            Ok(())
         }
     }
 }
@@ -102,7 +87,7 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
             .with_label(Label::primary("here", location.in_code))
     } else {
         let exp_msg = expected_to_string(expected);
-        
+
         Diagnostic::new(Severity::Error)
             .with_message(format!("Expected {exp_msg} after, got EOF"))
             .with_label(Label::primary("here", location.in_code))
@@ -117,7 +102,7 @@ fn expected_to_string(mut expected: Vec<Cow<'static, str>>) -> Cow<'static, str>
     let Some(last_expected) = expected.pop() else {
         return Cow::Borrowed("");
     };
-    
+
     if expected.is_empty() {
         last_expected
     } else {

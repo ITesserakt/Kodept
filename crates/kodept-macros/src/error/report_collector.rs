@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::context::FileId;
 use crate::error::report::{IntoSpannedReportMessage, Report};
 use append_only_vec::AppendOnlyVec;
@@ -51,18 +52,7 @@ where
         let report = Report::from_message(file_id, message);
         self.has_errors
             .fetch_or(report.is_error(), Ordering::AcqRel);
+        // Specialized version for mutable refs does not work
         self.reports.push(report);
-    }
-}
-
-impl<F> Reporter<F> for &mut ReportCollector<F>
-where
-    F: Clone,
-{
-    fn report(self, file_id: F, message: impl IntoSpannedReportMessage) {
-        let report = Report::from_message(file_id, message);
-        self.has_errors
-            .fetch_or(report.is_error(), Ordering::AcqRel);
-        self.reports.push_mut(report);
     }
 }
