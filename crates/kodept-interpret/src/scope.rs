@@ -20,7 +20,7 @@ pub struct ScopePeelError;
 
 /// Contains a map from each node to the nearest enclosing scope
 #[derive(Debug)]
-pub struct EnclosingScopeCache {
+pub(crate) struct EnclosingScopeCache {
     // usize represents scope id
     map: DashMap<AnyNodeId, usize>,
 }
@@ -204,6 +204,12 @@ impl<'a, T> Iterator for ScopeWalker<'a, T> {
         self.current = result.parent;
         
         Some(result)
+    }
+}
+
+impl Default for ScopeBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

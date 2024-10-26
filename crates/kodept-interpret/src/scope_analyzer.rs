@@ -49,6 +49,12 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
     }
 }
 
+impl Default for ScopeAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScopeAnalyzer {
     pub fn new() -> ScopeAnalyzer {
         Self {

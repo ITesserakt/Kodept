@@ -6,7 +6,7 @@ use crate::Path;
 use derive_more::{From, TryInto};
 use kodept_ast::graph::{AnyNodeId, Identifiable};
 use kodept_ast::interning::SharedStr;
-use kodept_ast::{Identifier, Ref, ReferenceContext};
+use kodept_ast::{Identifier, Ref};
 use kodept_inference::r#type::PolymorphicType;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]

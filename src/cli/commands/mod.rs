@@ -47,7 +47,7 @@ impl Commands {
             Commands::InspectParser(x) => x.exec(sources.clone(), &mut reports, output),
             Commands::Execute(x) => x.exec(sources.clone(), &mut reports, output),
         };
-        if let None = result {
+        if result.is_none() {
             reports.consume(&*sources);
             Err(ErrorReported::new())
         } else {
