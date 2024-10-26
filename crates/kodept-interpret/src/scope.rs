@@ -1,26 +1,28 @@
 #![allow(clippy::unwrap_used)]
 
-use crate::symbol::SymbolV2;
+use crate::symbol::{SymbolKind, SymbolV2};
+use dashmap::DashMap;
 use derive_more::Display;
+use itertools::Itertools;
 use kodept_ast::graph::{AnyNodeId, Identifiable, SyntaxTree};
 use kodept_ast::interning::SharedStr;
 use kodept_ast::ReferenceContext;
 use kodept_inference::r#type::PolymorphicType;
 use std::collections::BTreeSet;
 use std::fmt::Debug;
-use std::iter;
+use std::rc::Rc;
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Debug, Display, Error)]
 #[display("Cannot get outer scope for root one")]
 pub struct ScopePeelError;
 
-#[derive(Display, Debug, Error)]
-pub enum ScopeError {
-    #[display("No scope available at this point")]
-    NoScope,
-    #[display("Element with name `{_0}` already defined")]
-    Duplicate(String),
+/// Contains a map from each node to the nearest enclosing scope
+#[derive(Debug)]
+pub struct EnclosingScopeCache {
+    // usize represents scope id
+    map: DashMap<AnyNodeId, usize>,
 }
 
 type Index = usize;
@@ -34,6 +36,14 @@ pub struct ScopeBuilder {
     last_pushed_index: Index,
 }
 
+/// Immutable tree of scopes
+#[derive(Debug, Clone)]
+pub struct ScopeTree<Type = Option<PolymorphicType>> {
+    array: Arc<[ScopeV2<Type>]>,
+    root_scope: Index,
+    cache: Rc<EnclosingScopeCache>,
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct ScopeV2<Type = Option<PolymorphicType>> {
     parent: Option<Index>,
@@ -43,19 +53,20 @@ pub struct ScopeV2<Type = Option<PolymorphicType>> {
     is_anonymous: bool,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct ScopeSearcher<'a, Type = Option<PolymorphicType>> {
     buffer: &'a [ScopeV2<Type>],
     root_scope: Index,
+    cache: Rc<EnclosingScopeCache>,
 }
 
 #[derive(Debug)]
-pub struct ScopeSearcherMut<'a, Type = Option<PolymorphicType>> {
-    buffer: &'a mut [ScopeV2<Type>],
-    root_scope: Index,
+pub struct ScopeWalker<'a, Type = Option<PolymorphicType>> {
+    current: Option<Index>,
+    view: &'a [ScopeV2<Type>],
 }
 
-impl ScopeV2 {
+impl<T> ScopeV2<T> {
     fn new(start_from: AnyNodeId) -> Self {
         Self {
             parent: None,
@@ -67,27 +78,91 @@ impl ScopeV2 {
     }
 
     /// Inserts a new symbol and returns the old one if presented
-    pub fn insert_symbol(&mut self, symbol: SymbolV2) -> Option<SymbolV2> {
+    pub fn insert_symbol(&mut self, symbol: SymbolV2<T>) -> Option<SymbolV2<T>> {
         self.symbols.replace(symbol)
     }
 
     pub fn name(&self) -> Option<&str> {
         Some(self.name.as_ref()?.as_ref())
     }
+
+    pub fn contains_symbol(
+        &self,
+        symbol_name: &SharedStr,
+        mut symbol_kind_f: impl FnMut(SymbolKind) -> bool,
+    ) -> bool {
+        self.symbols
+            .iter()
+            .any(|v| &v.ident == symbol_name && symbol_kind_f(v.kind))
+    }
+    
+    pub fn is_anonymous(&self) -> bool {
+        self.is_anonymous
+    }
 }
 
 impl<T> ScopeSearcher<'_, T> {
     /// Finds the nearest scope that wraps up given node([`id`]).
     pub fn get_enclosing_scope(&self, id: AnyNodeId, ast: &SyntaxTree) -> &ScopeV2<T> {
-        // First, try to find scope by checking start_from with id
-        if let Some(strict_match) = self.buffer.iter().find(|it| it.start_from == id) {
-            return strict_match;
+        if let Some(cached) = self.cache.map.get(&id) {
+            return &self.buffer[*cached.value()];
         }
 
-        let parents =
-            iter::successors(Some(id), |&it| Some(ast.parent_of(it)?.get_id())).collect::<Vec<_>>();
+        let mut current = id;
+        loop {
+            // Try to find scope by comparing start_from with id
+            if let Some((idx, strict_match)) =
+                self.buffer.iter().find_position(|it| it.start_from == current)
+            {
+                self.cache.map.insert(id, idx);
+                return strict_match;
+            }
 
-        todo!()
+            match ast.parent_of(current).map(|it| it.get_id()) {
+                // node is out of ast, fail miserably
+                None => unreachable!("Node with given id do not contained in the ast!"),
+                Some(x) => current = x
+            }
+        }
+    }
+
+    // TODO: optimise
+    fn children_of(&self, node: Index) -> impl Iterator<Item=(Index, &ScopeV2<T>)> {
+        self.buffer
+            .iter()
+            .enumerate()
+            .filter(move |(_, it)| it.parent.as_ref().is_some_and(|id| id == &node))
+    }
+
+    // TODO: optimise
+    fn index_of(&self, scope: &ScopeV2<T>) -> Index
+    where
+        T: PartialEq,
+    {
+        self.buffer.iter().position(|it| it == scope).unwrap()
+    }
+
+    /// Returns the last scope for the given context, otherwise returns the last scope that still matches context and context segment that failed
+    pub fn matches<'a>(
+        &self,
+        context: &'a ReferenceContext,
+    ) -> Result<&ScopeV2<T>, (&ScopeV2<T>, Option<&'a SharedStr>)> {
+        if context.global {
+            let mut current = self.root_scope;
+            for item in &context.items {
+                let mut children = self.children_of(current);
+                let Some((match_id, _)) =
+                    children.find(|(_, it)| it.name.as_ref().is_some_and(|name| name == item))
+                else {
+                    return Err((&self.buffer[current], Some(item)));
+                };
+                current = match_id;
+            }
+            return Ok(&self.buffer[current]);
+        }
+        // TODO: implement for non-global contexts
+
+        Err((&self.buffer[self.root_scope], context.items.first()))
     }
 
     pub fn compute_context(&self, scope_index: Index) -> Option<ReferenceContext> {
@@ -109,6 +184,27 @@ impl<T> ScopeSearcher<'_, T> {
 
         Some(ReferenceContext::global(parents.into_iter().rev()))
     }
+
+    pub fn walk_bottom_up<'a>(&'a self, start: &'a ScopeV2<T>) -> ScopeWalker<T>
+    where T: PartialEq
+    {
+        let current = self.index_of(start);
+        ScopeWalker {
+            current: Some(current),
+            view: self.buffer
+        }
+    }
+}
+
+impl<'a, T> Iterator for ScopeWalker<'a, T> {
+    type Item = &'a ScopeV2<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = &self.view[self.current?];
+        self.current = result.parent;
+        
+        Some(result)
+    }
 }
 
 impl ScopeBuilder {
@@ -128,13 +224,9 @@ impl ScopeBuilder {
         ScopeSearcher {
             buffer: &self.container,
             root_scope: self.root_scope,
-        }
-    }
-
-    pub fn search_mut(&mut self) -> ScopeSearcherMut {
-        ScopeSearcherMut {
-            buffer: &mut self.container,
-            root_scope: self.root_scope,
+            cache: Rc::new(EnclosingScopeCache {
+                map: Default::default(),
+            }),
         }
     }
 
@@ -144,10 +236,6 @@ impl ScopeBuilder {
 
     pub fn current_scope_mut(&mut self) -> &mut ScopeV2 {
         &mut self.container[self.current_scope]
-    }
-
-    pub fn current_scope_index(&self) -> Index {
-        self.current_scope
     }
 
     pub fn root_scope(&self) -> &ScopeV2 {
@@ -178,5 +266,25 @@ impl ScopeBuilder {
         let parent = current.parent.ok_or(ScopePeelError)?;
         self.current_scope = parent;
         Ok(())
+    }
+
+    pub fn complete(self) -> ScopeTree {
+        ScopeTree {
+            array: Arc::from(self.container.into_boxed_slice()),
+            root_scope: self.root_scope,
+            cache: Rc::new(EnclosingScopeCache {
+                map: Default::default(),
+            }),
+        }
+    }
+}
+
+impl<T> ScopeTree<T> {
+    pub fn search(&self) -> ScopeSearcher<T> {
+        ScopeSearcher {
+            buffer: self.array.as_ref(),
+            root_scope: self.root_scope,
+            cache: self.cache.clone(),
+        }
     }
 }

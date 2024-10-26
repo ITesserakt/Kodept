@@ -71,8 +71,8 @@ impl Diagnostic {
         self
     }
 
-    pub fn with_note(mut self, note: Cow<'static, str>) -> Self {
-        self.notes.push(note);
+    pub fn with_note(mut self, note: impl Into<Cow<'static, str>>) -> Self {
+        self.notes.push(note.into());
         self
     }
 }

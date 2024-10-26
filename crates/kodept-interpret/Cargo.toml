@@ -20,8 +20,6 @@ derive_more.workspace = true
 tracing.workspace = true
 itertools.workspace = true
 nonempty-collections.workspace = true
-pin-project = "1.1.6"
-slotgraph = { path = "../slotgraph", version = "0.1" }
 thiserror.workspace = true
 
 [dependencies.kodept-macros]

@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-
+use std::hash::{Hash, Hasher};
 use crate::graph::any_node::{AnyNode};
 use derive_more::{Display, From};
 #[cfg(feature = "serde")]
@@ -131,3 +131,12 @@ impl<T> Clone for NodeId<T> {
 }
 
 impl<T> Copy for NodeId<T> {}
+
+impl<T> Hash for NodeId<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            NodeId::Root => state.write_u128(u128::MAX),
+            NodeId::Key(key) => key.hash(state)
+        }
+    }
+}

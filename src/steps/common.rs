@@ -7,6 +7,7 @@ use kodept_interpret::operator_desugaring::{
 use kodept_macros::context::Context;
 use std::num::NonZeroU16;
 use tracing::info;
+use kodept_interpret::reference_resolver::RefResolver;
 use kodept_interpret::scope_analyzer::ScopeAnalyzer;
 
 #[derive(Constructor)]
@@ -32,6 +33,10 @@ pub fn run_common_steps(
         .define_step((ScopeAnalyzer::new(),))
         .apply_with_context(ctx)?;
     let scopes = scope_analyzer.into_inner();
+    
+    let (_, ) = Pipeline
+        .define_step((RefResolver::new(scopes.search()), ))
+        .apply_with_context(ctx)?;
     
     // info!("Step 3: Infer and check types");
     // let (_,) = Pipeline

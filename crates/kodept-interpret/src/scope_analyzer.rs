@@ -19,7 +19,7 @@ use kodept_macros::visit_guard::VisitGuard;
 use kodept_macros::{Macro, MacroExt};
 
 #[derive(Debug)]
-pub struct DuplicatedSymbolErrorData {
+struct DuplicatedSymbolErrorData {
     bound_name: SharedStr,
     previous_def_id: AnyNodeId,
 }
@@ -149,7 +149,7 @@ fn extract_symbols(
                     destination_scope.insert_symbol(SymbolV2::new(
                         id,
                         name.clone(),
-                        SymbolKind::Parameter,
+                        SymbolKind::Type,
                     ))
                 } else {
                     None

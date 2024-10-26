@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::structure::rlt::new_types::Symbol;
 use crate::structure::rlt::Reference;
 
@@ -32,14 +33,14 @@ impl Context {
     }
     
     pub fn unfold(self) -> (Option<StartsFromRoot>, Vec<Reference>) {
-        let mut refs = vec![];
+        let mut refs = VecDeque::new();
         let mut current = self;
         loop {
             match current {
-                Context::Global { .. } => return (Some(StartsFromRoot), refs),
-                Context::Local => return (None, refs),
+                Context::Global { .. } => return (Some(StartsFromRoot), Vec::from(refs)),
+                Context::Local => return (None, Vec::from(refs)),
                 Context::Inner { needle, parent } => {
-                    refs.push(needle);
+                    refs.push_front(needle);
                     current = *parent;
                 }
             }

@@ -14,7 +14,6 @@ pub enum SymbolKind {
     Type,
     Variable,
     Parameter,
-    Constant,
     Function
 }
 

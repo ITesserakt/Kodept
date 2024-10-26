@@ -64,13 +64,22 @@ impl ReferenceContext {
     }
 }
 
+impl Identifier {
+    pub fn name(&self) -> &SharedStr {
+        match self {
+            Identifier::TypeReference { name, .. } => name,
+            Identifier::Reference { name, .. } => name
+        }
+    }
+}
+
 impl<'a> PopulateTree<'a> for &'a rlt::Term {
     type Root = Term;
 
     fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             rlt::Term::Reference(x) => x.convert(context).cast(),
-            rlt::Term::Contextual(x) => x.inner.convert(context).cast(),
+            rlt::Term::Contextual(x) => x.convert(context).cast(),
         }
     }
 }
