@@ -7,6 +7,7 @@ mod symbol;
 // pub mod type_checker;
 pub mod scope_analyzer;
 pub mod reference_resolver;
+pub mod linting;
 
 pub mod path {
     use std::fmt::{Display, Formatter};

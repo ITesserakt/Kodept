@@ -10,7 +10,7 @@ use kodept_ast::{
 };
 use kodept_macros::context::Context;
 use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::{Macro, MacroExt};
+use kodept_macros::Macro;
 use std::convert::Infallible;
 use BinaryExpressionKind::*;
 
@@ -82,11 +82,11 @@ impl Macro for BinaryOperatorExpander {
         });
 
         /*  BinExpr      Appl
-            |     |   => |  |
-            L     R      P  S
-                            |\
-                            L R */
-        
+        |     |   => |  |
+        L     R      P  S
+                        |\
+                        L R */
+
         ctx.ast
             .update_children_tag::<_, _, Appl, _, { tags::LEFT }, { tags::SECONDARY }>(id);
         ctx.ast
@@ -140,9 +140,9 @@ impl Macro for UnaryOperatorExpander {
             .to_string();
 
         /*  UnExpr     Appl
-              |     => |  |
-              N        P  S */
-        
+        |     => |  |
+        N        P  S */
+
         ctx.ast
             .update_children_tag::<_, _, Appl, _, { tags::NO_TAG }, { tags::SECONDARY }>(id);
         let id = id.widen().coerce::<Appl>();
@@ -172,12 +172,9 @@ impl Macro for AccessExpander {
 
     fn apply(
         &mut self,
-        guard: VisitGuard<Self::Node>,
-        ctx: &mut Self::Ctx<'_>,
+        _guard: VisitGuard<Self::Node>,
+        _ctx: &mut Self::Ctx<'_>,
     ) -> Result<(), Skip<Self::Error>> {
-        let id = guard.allow_only(VisitSide::Entering).ok_or(Skipped)?;
-        let node = self.resolve(id, ctx);
-
-        Ok(())
+        Err(Skipped)
     }
 }

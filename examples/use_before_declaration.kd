@@ -1,0 +1,8 @@
+module Test =>
+
+fun consume(anything) => ()
+
+fun main {
+    consume(x)
+    val x = 1
+}

@@ -35,8 +35,23 @@ pub trait SpannedReportMessage {
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage;
 }
 
+/// Determines whether a message will break execution
+pub enum MessageBehaviour {
+    FailFast {
+        /// Should return an explanation why does associated message cannot be reported for multiple nodes
+        reason: Cow<'static, str>
+    },
+    Suppress
+}
+
 pub trait IntoSpannedReportMessage {
+
     type Message: SpannedReportMessage + 'static;
+    
+    #[inline]
+    fn behaviour(&self) -> MessageBehaviour {
+        MessageBehaviour::Suppress
+    }
 
     fn into_message(self) -> Self::Message;
 }

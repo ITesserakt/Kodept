@@ -7,6 +7,7 @@ use kodept_interpret::operator_desugaring::{
 use kodept_macros::context::Context;
 use std::num::NonZeroU16;
 use tracing::info;
+use kodept_interpret::linting::SingleModuleBracketsLint;
 use kodept_interpret::reference_resolver::RefResolver;
 use kodept_interpret::scope_analyzer::ScopeAnalyzer;
 
@@ -17,16 +18,21 @@ pub struct Config {
 
 pub fn run_common_steps(
     ctx: &mut Context,
-    config: &Config,
+    _config: &Config,
 ) -> Option<()> {
+    info!("Step 0: Run some lints");
+    Pipeline
+        .define_step((SingleModuleBracketsLint, ))
+        .run_with_context(ctx)?;
+    
     info!("Step 1: Simplify AST");
-    let (_, _, _) = Pipeline
+    Pipeline
         .define_step((
             AccessExpander::new(),
             BinaryOperatorExpander::new(),
             UnaryOperatorExpander::new(),
         ))
-        .apply_with_context(ctx)?;
+        .run_with_context(ctx)?;
 
     info!("Step 2: Split by scopes and resolve symbols");
     let (scope_analyzer,) = Pipeline
@@ -34,9 +40,9 @@ pub fn run_common_steps(
         .apply_with_context(ctx)?;
     let scopes = scope_analyzer.into_inner();
     
-    let (_, ) = Pipeline
+    Pipeline
         .define_step((RefResolver::new(scopes.search()), ))
-        .apply_with_context(ctx)?;
+        .run_with_context(ctx)?;
     
     // info!("Step 3: Infer and check types");
     // let (_,) = Pipeline
