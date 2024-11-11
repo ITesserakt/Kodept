@@ -22,7 +22,7 @@ pub struct CodespanSettings<S> {
 }
 
 #[derive(Debug)]
-pub struct SpannedError<E: std::error::Error> {
+pub struct SpannedError<E> {
     point: CodePoint,
     severity: Severity,
     notes: Vec<Cow<'static, str>>,
@@ -138,23 +138,18 @@ impl<E: std::error::Error> SpannedError<E> {
     }
 }
 
-impl<E: std::error::Error> SpannedReportMessage for SpannedError<E> {
-    fn labels(&self) -> impl IntoIterator<Item = Label> {
-        [Label::primary("here", self.point)]
+impl<E: ToString> Into<Diagnostic> for SpannedError<E> {
+    fn into(self) -> Diagnostic {
+        Diagnostic {
+            message: Cow::Owned(self.inner.to_string()),
+            labels: vec![Label::primary("here", self.point)],
+            notes: self.notes,
+            severity: self.severity,
+        }
     }
+}
 
-    fn severity(&self) -> Severity {
-        self.severity
-    }
-
-    fn message(&self) -> Cow<'static, str> {
-        Cow::Owned(self.inner.to_string())
-    }
-
-    fn notes(&self) -> impl IntoIterator<Item=Cow<'static, str>> {
-        self.notes.clone()
-    }
-
+impl<E: ToString> SpannedReportMessage for SpannedError<E> {
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
         Diagnostic::new(self.severity)
             .with_message(self.inner.to_string())

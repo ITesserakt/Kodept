@@ -87,22 +87,6 @@ impl IntoSpannedReportMessage for Diagnostic {
 }
 
 impl SpannedReportMessage for Diagnostic {
-    fn labels(&self) -> impl IntoIterator<Item = Label> {
-        self.labels.clone()
-    }
-
-    fn severity(&self) -> Severity {
-        self.severity
-    }
-
-    fn message(&self) -> Cow<'static, str> {
-        self.message.clone()
-    }
-
-    fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>> {
-        self.notes.clone()
-    }
-
     fn with_node_location(mut self, location: CodePoint) -> impl IntoSpannedReportMessage {
         self.labels
             .push(Label::secondary("while checking here", location));

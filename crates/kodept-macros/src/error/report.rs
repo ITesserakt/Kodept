@@ -1,6 +1,6 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label as ForeignLabel};
 use kodept_core::code_point::CodePoint;
-use std::any::{type_name_of_val};
+use std::any::type_name_of_val;
 use std::borrow::Cow;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -26,12 +26,7 @@ pub struct ReportMessage {
     message: String,
 }
 
-pub trait SpannedReportMessage {
-    fn labels(&self) -> impl IntoIterator<Item = Label>;
-    fn severity(&self) -> Severity;
-    fn message(&self) -> Cow<'static, str>;
-    fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>>;
-
+pub trait SpannedReportMessage: Into<crate::error::Diagnostic> {
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage;
 }
 
@@ -39,15 +34,14 @@ pub trait SpannedReportMessage {
 pub enum MessageBehaviour {
     FailFast {
         /// Should return an explanation why does associated message cannot be reported for multiple nodes
-        reason: Cow<'static, str>
+        reason: Cow<'static, str>,
     },
-    Suppress
+    Suppress,
 }
 
 pub trait IntoSpannedReportMessage {
-
     type Message: SpannedReportMessage + 'static;
-    
+
     #[inline]
     fn behaviour(&self) -> MessageBehaviour {
         MessageBehaviour::Suppress
@@ -111,33 +105,36 @@ impl<FileId> Report<FileId> {
         let mut hasher = DefaultHasher::new();
         type_name.hash(&mut hasher);
         let hash = hasher.finish();
-        let hash = hash.to_ne_bytes().into_iter().fold(0u16, |acc, next| {
-            acc ^ next as u16
-        });
+        let hash = hash
+            .to_ne_bytes()
+            .into_iter()
+            .fold(0u16, |acc, next| acc ^ next as u16);
         format!("{:0>8X}", hash)
     }
 
     fn from_raw_message_with_code<T>(file_id: FileId, msg: T, code: String) -> Self
-    where T: SpannedReportMessage,
-        FileId: Clone
+    where
+        T: SpannedReportMessage,
+        FileId: Clone,
     {
-        let labels = msg
-            .labels()
+        let diagnostic = msg.into();
+        let labels = diagnostic
+            .labels
             .into_iter()
             .map(|it| {
-                let label = if it.primary {
+                if it.primary {
                     ForeignLabel::primary(file_id.clone(), it.point.as_range())
                 } else {
                     ForeignLabel::secondary(file_id.clone(), it.point.as_range())
-                };
-                label.with_message(it.message)
+                }
+                .with_message(it.message)
             })
             .collect();
 
-        let diagnostic = Diagnostic::new(msg.severity().into())
-            .with_message(msg.message())
+        let diagnostic = Diagnostic::new(diagnostic.severity.into())
+            .with_message(diagnostic.message)
             .with_code(code)
-            .with_notes(msg.notes().into_iter().map(|it| it.to_string()).collect())
+            .with_notes(diagnostic.notes.into_iter().map(|it| it.to_string()).collect())
             .with_labels(labels);
 
         Self { diagnostic }
@@ -187,23 +184,18 @@ impl<T: Into<ReportMessage>> IntoSpannedReportMessage for T {
     }
 }
 
+impl Into<crate::error::Diagnostic> for ReportMessage {
+    fn into(self) -> crate::error::Diagnostic {
+        crate::error::Diagnostic {
+            message: Cow::Owned(self.message),
+            labels: vec![],
+            notes: self.notes,
+            severity: self.severity,
+        }
+    }
+}
+
 impl SpannedReportMessage for ReportMessage {
-    fn labels(&self) -> impl IntoIterator<Item = Label> {
-        []
-    }
-
-    fn severity(&self) -> Severity {
-        self.severity
-    }
-
-    fn message(&self) -> Cow<'static, str> {
-        Cow::Owned(self.message.clone())
-    }
-
-    fn notes(&self) -> impl IntoIterator<Item = Cow<'static, str>> {
-        self.notes.clone()
-    }
-
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
         crate::error::Diagnostic::new(self.severity)
             .with_message(self.message)
