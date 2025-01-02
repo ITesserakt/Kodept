@@ -1,22 +1,28 @@
 {
-	inputs.nixpkgs.url = "github:NixOS/nixpks/nixpkgs-unstable";
-	inputs.fenix.url = "github:nix-community/fenix";
-	inputs.pegviz.url = "github:fasterthanlime/pegviz";
-	inputs.pegviz.flake = false;
+	description = "Programming language";
 
-	outputs = { nixpkgs, inputs, ... }: let
+	inputs = {
+		nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+		fenix.url = "github:nix-community/fenix";
+		crane.url = "github:ipetkov/crane";
+		pegviz.url = "github:fasterthanlime/pegviz";
+		pegviz.flake = false;
+	};
+
+	outputs = { self, nixpkgs, fenix, crane, pegviz }: let
 		system = "x86_64-linux";
 		pkgs = import nixpkgs { inherit system; };
 		
-		packages = import ./default.nix {
-			inherit pkgs;
-			fenix = inputs.fenix.packages.${system};
-			crane = inputs.crane;
+		outputs = import ./default.nix {
+			inherit pkgs crane;
+			fenix = fenix.packages.${system};
 			doStaticBuild = false;
 			kodept_sources = ./.;
-			pegviz_sources = inputs.pegviz;
+			pegviz_sources = pegviz;
 		};
-	in {
-		inherit packages;
+	in rec {
+		packages = outputs.packages // {
+			${system}.default = outputs.packages.${system}.kodept;
+		};
 	};
 }

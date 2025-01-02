@@ -1,15 +1,15 @@
-{ 
-	pkgs, 
-	fenix, 
-	crane, 
-	doStaticBuild, 
-	pegviz_sources, 
-	kodept_sources 
+{
+	pkgs,
+	fenix,
+	crane,
+	doStaticBuild,
+	pegviz_sources,
+	kodept_sources
 }: let
 	toolchain = with fenix; combine [
 		stable.toolchain
 		(if doStaticBuild then
-			targets.x86_64-unknown-linux-musl.stable.rust-std 
+			targets.x86_64-unknown-linux-musl.stable.rust-std
 		 else
 		 	targets.x86_64-unknown-linux-gnu.stable.rust-std
 		)
@@ -24,9 +24,9 @@
 
 	commonArgs = {
 		doDoc = false;
-		
-		CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-        CARGO_BUILD_RUSTFLAGS = if doStaticBuild then "-C target-feature=+crt-static" else "";
+
+		CARGO_BUILD_TARGET = if doStaticBuild then "x86_64-unknown-linux-musl" else "x86_64-unknown-linux-gnu";
+    CARGO_BUILD_RUSTFLAGS = if doStaticBuild then "-C target-feature=+crt-static" else "";
 	};
 
 	commonArgs-win = {
