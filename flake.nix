@@ -20,9 +20,26 @@
 			kodept_sources = ./.;
 			pegviz_sources = pegviz;
 		};
-	in rec {
+	in {
 		packages = outputs.packages // {
 			${system}.default = outputs.packages.${system}.kodept;
+		};
+
+		devShells.default = pkgs.mkShell rec {
+			packages = with pkgs; [
+				xdot
+				gnuplot
+				outputs.toolchain
+			];
+
+			toolchain = pkgs.symlinkJoin {
+				name = "kodept-toolchain";
+				paths = packages;
+			};
+		
+			shellHook = ''
+				ln -fs ${toolchain} .toolchain
+			'';
 		};
 	};
 }
