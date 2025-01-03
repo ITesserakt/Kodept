@@ -3,12 +3,12 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_name::FileName;
 use kodept_core::structure::span::CodeHolder;
-use mmap_rs::Mmap;
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::io::Read;
 use std::ops::Range;
 use std::str::from_utf8;
+use memmap2::Mmap;
 use thiserror::Error;
 use yoke::Yoke;
 

@@ -1,5 +1,5 @@
-use mmap_rs::{Mmap, MmapFlags, MmapOptions};
-use std::fs::{File};
+use memmap2::{Mmap, MmapOptions};
+use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use thiserror::Error;
@@ -7,8 +7,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[error(transparent)]
 pub enum CodeSourceError {
-    MMapError(#[from] mmap_rs::Error),
-    IO(#[from] std::io::Error)
+    IO(#[from] std::io::Error),
 }
 
 #[derive(Debug)]
@@ -23,7 +22,7 @@ pub enum CodeSource {
     MappedFile {
         name: PathBuf,
         map: Cursor<Mmap>,
-        size: u64
+        size: u64,
     },
 }
 
@@ -42,28 +41,27 @@ impl CodeSource {
     }
 
     #[allow(unsafe_code)]
-    pub fn mmap<S: Into<PathBuf>>(name: S, mut file: File, size: Option<u64>) -> Result<Self, CodeSourceError> {
+    pub fn mmap<S: Into<PathBuf>>(
+        name: S,
+        mut file: File,
+        size: Option<u64>,
+    ) -> Result<Self, CodeSourceError> {
         let size = match size {
             None => {
                 let size = file.seek(SeekFrom::End(0))?;
                 file.rewind()?;
                 size
             }
-            Some(x) => x
+            Some(x) => x,
         };
         // SAFETY: compiler is not going to modify this file.
         // But any other app can, and here we're not checking that.
-        let options = unsafe {
-            MmapOptions::new(size as usize)?
-                .with_flags(MmapFlags::SEQUENTIAL | MmapFlags::SHARED)
-                .with_file(&file, 0)
-        };
-        let map = options.map()?;
+        let map = unsafe { MmapOptions::new().map(&file) }?;
 
         Ok(Self::MappedFile {
             name: name.into(),
             map: Cursor::new(map),
-            size
+            size,
         })
     }
 }
