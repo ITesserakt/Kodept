@@ -768,18 +768,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "insta"
-version = "1.40.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6593a41c7a73841868772495db7dc1e8ecab43bb5c0b6da2059246c4b506ab60"
-dependencies = [
- "console",
- "lazy_static",
- "linked-hash-map",
- "similar",
-]
-
-[[package]]
 name = "interner"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -851,19 +839,15 @@ dependencies = [
  "ctrlc",
  "derive_more",
  "dhat",
- "extend",
  "gag",
- "insta",
  "itertools 0.13.0",
  "kodept-ast",
  "kodept-core",
- "kodept-inference",
  "kodept-interpret",
  "kodept-macros",
  "kodept-parse",
  "mmap-rs",
  "rayon",
- "replace_with",
  "tempfile",
  "thiserror",
  "tracing",
@@ -883,7 +867,6 @@ dependencies = [
  "rayon",
  "ref-cast",
  "replace_with",
- "rstest",
  "serde",
  "slotgraph",
  "slotmap",
@@ -908,7 +891,6 @@ dependencies = [
  "derive_more",
  "itertools 0.13.0",
  "nonempty-collections",
- "rstest",
  "thiserror",
  "tracing",
 ]
@@ -924,9 +906,7 @@ dependencies = [
  "kodept-core",
  "kodept-inference",
  "kodept-macros",
- "nonempty-collections",
  "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -955,7 +935,6 @@ dependencies = [
  "gag",
  "itertools 0.13.0",
  "kodept-core",
- "lazy_static",
  "nom",
  "nom-supreme",
  "nonempty-collections",
@@ -965,7 +944,6 @@ dependencies = [
  "rstest",
  "similar-asserts",
  "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -991,12 +969,6 @@ name = "libc"
 version = "0.2.158"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8adc4bb1803a324070e64a98ae98f38934d91957a99cfb3a43dcbc01bc56439"
-
-[[package]]
-name = "linked-hash-map"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "linux-raw-sys"

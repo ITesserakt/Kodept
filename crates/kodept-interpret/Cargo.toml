@@ -17,9 +17,7 @@ workspace = true
 [dependencies]
 dashmap = "6.1.0"
 derive_more.workspace = true
-tracing.workspace = true
 itertools.workspace = true
-nonempty-collections.workspace = true
 thiserror.workspace = true
 
 [dependencies.kodept-macros]
