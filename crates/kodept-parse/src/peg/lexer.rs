@@ -73,7 +73,7 @@ peg::parser! {grammar grammar() for str {
 
     rule number<T>(prefix_lower: char, prefix_upper: char, digits: rule<T>) -> () = (
         "0" [c if c == prefix_lower || c == prefix_upper] (
-            ([^'0' | '_'] (digits() {  } / "_")+) /
+            ((!("0" / "_") digits() { }) (digits() {  } / "_")*) /
             digits() {  }
         )
     )
@@ -95,9 +95,9 @@ peg::parser! {grammar grammar() for str {
         bin_lit()                                                                    /
         oct_lit()                                                                    /
         hex_lit()                                                                    /
-        sign()? whitespace()* floating_lit() e_notation()? { PackedToken::Floating } /
-        "'" i:$(!"'" [_]) "'"                              { PackedToken::Char }     /
-        "\"" i:$((!"\"" [_])*) "\""                        { PackedToken::String }
+        (sign() whitespace()*)? floating_lit() e_notation()? { PackedToken::Floating } /
+        "'" i:$(!"'" [_]) "'"                                { PackedToken::Char }     /
+        "\"" i:$((!"\"" [_])*) "\""                          { PackedToken::String }
 
     rule operator() -> PackedToken =
         "."   { PackedToken::Dot }           /

@@ -500,7 +500,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     rule traced<T>(e: rule<T>) -> T =
         &(input:$([_]*) {
             #[cfg(feature = "trace")]
-            println!("[PEG_INPUT_START]\n{}\n[PEG_TRACE_START]", input);
+            println!("[PEG_INPUT_START]\n{:?}\n[PEG_TRACE_START]", input);
         })
         e:e()? {?
             #[cfg(feature = "trace")]
