@@ -29,6 +29,7 @@
 			packages = with pkgs; [
 				xdot
 				gnuplot
+				pkgs.stdenv.cc
 				outputs.toolchain
 			];
 
@@ -38,7 +39,7 @@
 			};
 		
 			shellHook = ''
-				ln -fs ${toolchain} .toolchain
+				ln -s ${toolchain} .toolchain
 			'';
 		};
 	};

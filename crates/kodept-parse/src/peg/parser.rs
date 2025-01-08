@@ -51,7 +51,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         c:$":" _ ty:type_grammar() { (Symbol::from_located(c), ty) }
 
     rule tuple() -> rlt::Type =
-        i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(i.into()) }
+        i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(rlt::Tuple(i.into())) }
 
     pub rule type_grammar() -> rlt::Type =
         i:type_ident() { rlt::Type::Reference(i) } /

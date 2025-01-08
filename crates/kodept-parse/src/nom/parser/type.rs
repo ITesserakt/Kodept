@@ -21,7 +21,7 @@ pub(super) fn reference(input: PackedTokenStream) -> ParseResult<TypeName> {
 fn tuple(input: PackedTokenStream) -> ParseResult<rlt::Type> {
     paren_enclosed(comma_separated0(grammar))
         .context(function!())
-        .map(|it| rlt::Type::Tuple(it.into()))
+        .map(|it| rlt::Type::Tuple(rlt::Tuple(it.into())))
         .parse(input)
 }
 

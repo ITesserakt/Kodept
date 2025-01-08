@@ -30,7 +30,7 @@ impl<W: Write> Macro for ASTDotFormatter<W> {
             return Ok(());
         }
         
-        write!(&mut self.output, "{}", ctx.ast.export_dot(&[])).map_err(Error)?;
+        write!(&mut self.output, "{}", ctx.ast.export_dot()).map_err(Error)?;
         Ok(())
     }
 }

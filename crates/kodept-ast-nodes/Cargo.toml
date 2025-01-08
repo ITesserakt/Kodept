@@ -1,0 +1,16 @@
+[package]
+name = "kodept-ast-nodes"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs.workspace = true
+
+[dependencies.kodept-ast]
+path = "../kodept-ast"
+
+[dependencies.kodept-core]
+path = "../kodept-core"

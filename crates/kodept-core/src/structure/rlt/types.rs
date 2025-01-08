@@ -7,9 +7,11 @@ use crate::structure::rlt::new_types::*;
 #[derive(Debug, Clone, PartialEq, From)]
 pub enum Type {
     Reference(TypeName),
-    #[from(ignore)]
-    Tuple(Enclosed<Box<[Type]>>)
+    Tuple(Tuple)
 }
+
+#[derive(Debug, Clone, PartialEq, From)]
+pub struct Tuple(pub Enclosed<Box<[Type]>>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypedParameter {
@@ -32,7 +34,7 @@ impl Located for Type {
     fn location(&self) -> CodePoint {
         match self {
             Type::Reference(x) => x.location(),
-            Type::Tuple(x) => x.left.location()
+            Type::Tuple(x) => x.location()
         }
     }
 }
@@ -55,5 +57,11 @@ impl Located for Parameter {
             Parameter::Typed(x) => x.location(),
             Parameter::Untyped(x) => x.location(),
         }
+    }
+}
+
+impl Located for Tuple {
+    fn location(&self) -> CodePoint {
+        self.0.left.location()
     }
 }

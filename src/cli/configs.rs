@@ -22,10 +22,13 @@ use tracing::debug;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {
-    /// Do parallelization of source code when parsing
-    #[cfg_attr(not(feature = "parallel"), arg(hide = true, default_value_t = false))]
-    #[cfg_attr(not(feature = "parallel"), arg(default_value_t = true))]
-    #[arg(short, long)]
+    /// Use parallelization when parsing
+    #[arg(
+        short, 
+        long, 
+        hide = !cfg!(feature = "parallel"), 
+        default_value_t = cfg!(feature = "parallel")
+    )]
     parallel: bool,
     /// Use specific lexer implementation
     #[arg(default_value = "auto", long)]

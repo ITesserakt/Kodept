@@ -1,0 +1,18 @@
+[package]
+name = "kodept-interning"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[features]
+serde = ["dep:serde", "kodept-core/serde"]
+
+[dependencies]
+interner = "0.2.1"
+
+serde = { version = "1", optional = true, features = ["derive"] }
+
+[dependencies.kodept-core]
+path = "../kodept-core"

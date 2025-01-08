@@ -5,22 +5,20 @@ use clap::Parser;
 use kodept::codespan_settings::{ProvideCollector, Reports};
 use kodept::loader::Loader;
 use kodept::source_files::{SourceFiles, SourceView};
-use kodept::steps::pipeline::Pipeline;
-use kodept::steps::Step;
-use kodept_ast::graph::SyntaxTree;
 use kodept_core::Freeze;
 use kodept_macros::context::Context;
-use kodept_macros::default::ASTDotFormatter;
 use kodept_macros::error::report_collector::{ReportCollector, Reporter};
 use kodept_macros::error::traits::DrainReports;
 use std::path::Path;
-use kodept_ast::interning::InterningCodeHolder;
+use kodept_ast::syntax_tree::prelude::AST;
+use kodept_ast_nodes::file::FileDecl;
+use kodept_interning::InterningCodeHolder;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Graph {
-    #[command(flatten)]
+    #[command(flatten, next_help_heading = "Parsing options")]
     parsing_config: ParsingConfig,
-    #[command(flatten)]
+    #[command(flatten, next_help_heading = "Loading options")]
     loading_config: LoadingConfig,
 }
 
@@ -50,7 +48,7 @@ impl CommandWithSources for Graph {
         })?;
 
         let code_holder = InterningCodeHolder::new(&*source);
-        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder);
+        let (tree, accessor) = AST::recursively_build::<FileDecl>(rlt, code_holder);
         let output_file = match get_output_file(&source, output) {
             Ok(x) => x,
             Err(e) => {
@@ -69,9 +67,6 @@ impl CommandWithSources for Graph {
                 current_file: Freeze::new(source.describe()),
             };
 
-            let _: (_,) = Pipeline
-                .define_step((ASTDotFormatter::new(output_file),))
-                .apply_with_context(&mut context)?;
             Some(())
         })
     }

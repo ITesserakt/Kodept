@@ -1,0 +1,82 @@
+use crate::function::Func;
+use crate::properties::TopLevel;
+use crate::top_level::{EnumDecl, StructDecl};
+use crate::Unit;
+use kodept_ast::external::Component;
+use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::syntax_tree::children::ChildrenDisjoint;
+use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
+use kodept_ast::{derive_node, Str};
+use kodept_core::structure::rlt;
+use kodept_core::structure::rlt::TopLevelNode;
+
+#[derive(Debug, PartialEq)]
+pub enum ModKind {
+    Global,
+    Ordinary,
+}
+
+#[derive(Debug, PartialEq, Component)]
+pub struct FileDecl;
+
+#[derive(Debug, PartialEq, Component)]
+pub struct ModDecl {
+    pub kind: ModKind,
+    pub name: Str,
+}
+
+derive_node!(FileDecl {
+    relations = [children ModDecl,],
+    properties = []
+});
+derive_node!(ModDecl {
+    relations = [
+        children EnumDecl where tag = TopLevel,
+        children StructDecl where tag = TopLevel,
+        children Func where tag = TopLevel,
+    ],
+    properties = []
+});
+
+impl FromSyntax for FileDecl {
+    type Syntax = rlt::File;
+
+    fn from_syntax(
+        node: &rlt::File,
+        source_code: impl CodeHolder,
+        builder: &Pool,
+    ) -> ASTBuilder<Self> {
+        ASTBuilder::new(builder, FileDecl)
+            .with_children(source_code, builder, |scope| scope.many(&node.0))
+    }
+}
+
+impl FromSyntax for ModDecl {
+    type Syntax = rlt::Module;
+
+    fn from_syntax(
+        node: &rlt::Module,
+        source_code: impl CodeHolder,
+        pool: &Pool,
+    ) -> ASTBuilder<Self> {
+        let (kind, id, rest) = match node {
+            rlt::Module::Global { id, rest, .. } => (ModKind::Global, id, rest),
+            rlt::Module::Ordinary { id, rest, .. } => (ModKind::Ordinary, id, rest),
+        };
+        let name = source_code.get_chunk_located(id);
+        ASTBuilder::new(pool, ModDecl { kind, name })
+            .with_children(source_code, pool, |scope| scope.choose(Unit, rest))
+    }
+}
+
+impl Choose<TopLevelNode, ModDecl> for Unit {
+    type Tag = TopLevel;
+
+    fn branch<S: CodeHolder>(node: &TopLevelNode) -> ChildrenDisjoint<ModDecl, S, Self::Tag> {
+        match node {
+            TopLevelNode::Enum(x) => ChildrenDisjoint::new::<EnumDecl>(x),
+            TopLevelNode::Struct(x) => ChildrenDisjoint::new::<StructDecl>(x),
+            TopLevelNode::BodiedFunction(x) => ChildrenDisjoint::new::<Func>(x),
+        }
+    }
+}

@@ -82,7 +82,7 @@ impl<'a> RefResolver<'a> {
             })
     }
 
-    fn resolve_reference_with_context(&self, node: &Ref) -> Result<(), Option<SharedStr>> {
+    fn resolve_reference_with_context<'r>(&self, node: &'r Ref) -> Result<(), Option<&'r SharedStr>> {
         match self.scope_searcher.matches(&node.context) {
             Ok(scope_for_context) => {
                 if scope_for_context
@@ -93,7 +93,7 @@ impl<'a> RefResolver<'a> {
                     Err(None)
                 }
             }
-            Err((_, missing_segment)) => Err(missing_segment.cloned()),
+            Err((_, missing_segment)) => Err(missing_segment),
         }
     }
 }
@@ -128,7 +128,7 @@ impl Macro for RefResolver<'_> {
                 Ok(_) => Ok(()),
                 Err(Some(missing_segment)) => Err(RefResolverError::UnknownPath {
                     path,
-                    failed_segment: missing_segment,
+                    failed_segment: missing_segment.clone(),
                     location: ctx.rlt.get_unknown(id).unwrap().location(),
                 })?,
                 Err(None) => Err(RefResolverError::UnknownReference {

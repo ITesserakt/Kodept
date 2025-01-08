@@ -95,7 +95,7 @@ impl<T> ScopeV2<T> {
             .iter()
             .any(|v| &v.ident == symbol_name && symbol_kind_f(v.kind))
     }
-    
+
     pub fn is_anonymous(&self) -> bool {
         self.is_anonymous
     }
@@ -111,8 +111,10 @@ impl<T> ScopeSearcher<'_, T> {
         let mut current = id;
         loop {
             // Try to find scope by comparing start_from with id
-            if let Some((idx, strict_match)) =
-                self.buffer.iter().find_position(|it| it.start_from == current)
+            if let Some((idx, strict_match)) = self
+                .buffer
+                .iter()
+                .find_position(|it| it.start_from == current)
             {
                 self.cache.map.insert(id, idx);
                 return strict_match;
@@ -121,13 +123,13 @@ impl<T> ScopeSearcher<'_, T> {
             match ast.parent_of(current).map(|it| it.get_id()) {
                 // node is out of ast, fail miserably
                 None => unreachable!("Node with given id do not contained in the ast!"),
-                Some(x) => current = x
+                Some(x) => current = x,
             }
         }
     }
 
     // TODO: optimise
-    fn children_of(&self, node: Index) -> impl Iterator<Item=(Index, &ScopeV2<T>)> {
+    fn children_of(&self, node: Index) -> impl Iterator<Item = (Index, &ScopeV2<T>)> {
         self.buffer
             .iter()
             .enumerate()
@@ -151,16 +153,15 @@ impl<T> ScopeSearcher<'_, T> {
             let mut current = self.root_scope;
             for item in &context.items {
                 let mut children = self.children_of(current);
-                let Some((match_id, _)) =
-                    children.find(|(_, it)| it.name.as_ref().is_some_and(|name| name == item))
-                else {
-                    return Err((&self.buffer[current], Some(item)));
+                match children.find(|(_, it)| it.name.as_ref().is_some_and(|name| name == item)) {
+                    Some((match_id, _)) => current = match_id,
+                    None => return Err((&self.buffer[current], Some(item))),
                 };
-                current = match_id;
             }
             return Ok(&self.buffer[current]);
         }
         // TODO: implement for non-global contexts
+
 
         Err((&self.buffer[self.root_scope], context.items.first()))
     }
@@ -185,13 +186,14 @@ impl<T> ScopeSearcher<'_, T> {
         Some(ReferenceContext::global(parents.into_iter().rev()))
     }
 
-    pub fn walk_bottom_up<'a>(&'a self, start: &'a ScopeV2<T>) -> ScopeWalker<T>
-    where T: PartialEq
+    pub fn walk_bottom_up<'a>(&'a self, start: &'a ScopeV2<T>) -> ScopeWalker<'a, T>
+    where
+        T: PartialEq,
     {
         let current = self.index_of(start);
         ScopeWalker {
             current: Some(current),
-            view: self.buffer
+            view: self.buffer,
         }
     }
 }
@@ -202,7 +204,7 @@ impl<'a, T> Iterator for ScopeWalker<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let result = &self.view[self.current?];
         self.current = result.parent;
-        
+
         Some(result)
     }
 }

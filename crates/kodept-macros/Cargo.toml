@@ -25,8 +25,6 @@ tracing.workspace = true
 
 [dependencies.kodept-core]
 path = "../kodept-core"
-version = "0.2"
 
 [dependencies.kodept-ast]
 path = "../kodept-ast"
-version = "0.5"

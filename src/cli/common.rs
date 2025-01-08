@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Args, Parser};
 use tracing::Level;
 
 use crate::cli::commands::Commands;
@@ -13,41 +13,46 @@ const ABOUT_MESSAGE: &str =
 #[command(version, author, about = ABOUT_MESSAGE)]
 #[command(propagate_version = true)]
 pub struct Kodept {
-    /// Enable debugging output
-    #[arg(short, long)]
-    debug: bool,
-    /// Enable verbose output
-    #[arg(short, long, conflicts_with = "debug")]
-    verbose: bool,
-    /// Set logger output level
-    #[arg(
-    short = 's',
-    long = "severity",
-    ignore_case = true,
-    default_value = "info",
-    env = "RUST_LOG",
-    conflicts_with_all = ["debug", "verbose"]
-    )]
-    verbosity: Level,
     /// Write all output to specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
     pub output: PathBuf,
 
-    #[command(flatten)]
-    pub diagnostic_config: DiagnosticConfig,
     #[command(subcommand)]
     pub subcommands: Commands,
+    
+    #[command(flatten, next_help_heading = "Diagnostics options")]
+    pub diagnostic_config: DiagnosticConfig,
+    #[command(flatten, next_help_heading = "Logging options")]
+    logging: LoggingOptions,
+}
+
+#[derive(Debug, Args, Clone)]
+#[group(required = false, multiple = false)]
+pub struct LoggingOptions {
+    /// Enable debugging output
+    #[arg(short, long)]
+    debug: bool,
+    /// Enable verbose output
+    #[arg(short, long)]
+    verbose: bool,
+    /// Specify logger output level explicitly
+    #[arg(
+        short,
+        long,
+        ignore_case = true,
+        default_value = "info",
+        env = "RUST_LOG"
+    )]
+    severity: Level,
 }
 
 impl Kodept {
     pub fn level(&self) -> Level {
-        if self.debug {
-            Level::DEBUG
-        } else if self.verbose {
-            Level::TRACE
-        } else {
-            self.verbosity
-        }
+        self.logging
+            .debug
+            .then(|| Level::DEBUG)
+            .or(self.logging.verbose.then(|| Level::DEBUG))
+            .unwrap_or(self.logging.severity)
     }
 }
 

@@ -7,12 +7,12 @@ use codespan_reporting::files::Files;
 use codespan_reporting::term::termcolor::WriteColor;
 use codespan_reporting::term::Config;
 use extend::ext;
-use kodept_ast::graph::{AnyNode, NodeId};
-use kodept_ast::rlt_accessor::RLTAccessor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
+use kodept_ast::prelude::NodeId;
+use kodept_ast::resource::rlt::SyntaxResolver;
 use crate::error::report_collector::{ReportCollector, Reporter};
 
 #[derive(Clone, Debug)]
@@ -108,9 +108,7 @@ impl<E: std::error::Error> SpannedError<E> {
         }
     }
 
-    pub fn for_node<T>(inner: E, node_id: NodeId<T>, ctx: &RLTAccessor) -> Self
-    where
-        AnyNode: TryFrom<T>,
+    pub fn for_node(inner: E, node_id: NodeId, ctx: &SyntaxResolver) -> Self
     {
         let position = ctx.get_unknown(node_id);
         match position {

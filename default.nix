@@ -7,7 +7,7 @@
 	kodept_sources
 }: let
 	toolchain = with fenix; combine [
-		stable.toolchain
+		latest.toolchain
 		(if doStaticBuild then
 			targets.x86_64-unknown-linux-musl.stable.rust-std
 		 else

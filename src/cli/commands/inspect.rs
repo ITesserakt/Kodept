@@ -25,7 +25,7 @@ pub struct InspectParser {
     /// Additionally launch `pegviz` to produce html output
     #[arg(default_value_t = true, short = 'p', long = "pegviz")]
     use_pegviz: bool,
-    #[command(flatten)]
+    #[command(flatten, next_help_heading = "Loading options")]
     loading_config: LoadingConfig
 }
 

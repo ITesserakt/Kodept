@@ -20,11 +20,13 @@ members = [
     "crates/kodept-macros",
     "crates/kodept-interpret",
     "crates/slotgraph", 
-    "crates/kodept-ir"]
+    "crates/kodept-ir"
+, "crates/kodept-interning", "crates/kodept-ast-nodes"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
+bevy_ecs = { version = "0.15.1", default-features = false }
 thiserror = "2.0"
 extend = "1.2"
 itertools = "0.13"
@@ -62,23 +64,23 @@ yoke = "0.7.4"
 
 [dependencies.kodept-core]
 path = "crates/kodept-core"
-version = "0.2"
 
 [dependencies.kodept-parse]
 path = "crates/kodept-parse"
 version = "0.3"
 
 [dependencies.kodept-ast]
+features = ["interning"]
 path = "crates/kodept-ast"
-version = "0.5"
 
 [dependencies.kodept-macros]
 path = "crates/kodept-macros"
-version = "0.1"
 
-[dependencies.kodept-interpret]
-path = "crates/kodept-interpret"
-version = "0.1"
+[dependencies.kodept-interning]
+path = "crates/kodept-interning"
+
+[dependencies.kodept-ast-nodes]
+path = "crates/kodept-ast-nodes"
 
 [dev-dependencies]
 tempfile = "3.7.0"

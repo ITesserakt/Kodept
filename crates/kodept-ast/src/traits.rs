@@ -1,18 +1,27 @@
-use kodept_core::structure::span::CodeHolder;
+use crate::syntax_tree::prelude::{ASTBuilder, Pool};
+use crate::Str;
+use bevy_ecs::prelude::Component;
+use kodept_core::structure::span::CodeHolder as BasicCodeHolder;
+use crate::properties::tags::tags::Tagged;
+use crate::syntax_tree::children::ChildrenDisjoint;
 
-pub use super::graph::Identifiable;
-use crate::graph::{AnyNode, SubSyntaxTree};
-use crate::interning::SharedStr;
+pub trait CodeHolder: BasicCodeHolder<Str = Str> {}
+impl<T: BasicCodeHolder<Str = Str>> CodeHolder for T {}
 
-#[allow(clippy::wrong_self_convention)]
-pub trait AsEnum {
-    type Enum;
+pub trait FromSyntax: Sized {
+    type Syntax;
 
-    fn as_enum(self) -> Self::Enum;
+    fn from_syntax(
+        node: &Self::Syntax,
+        source: impl CodeHolder,
+        pool: &Pool,
+    ) -> ASTBuilder<Self>;
 }
 
-pub trait PopulateTree<'a> {
-    type Root: Into<AnyNode>;
+pub trait ASTNode: Component {}
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root>;
+pub trait Choose<T, Root>: Sized {
+    type Tag: Tagged;
+    
+    fn branch<Source: CodeHolder>(node: &T) -> ChildrenDisjoint<Root, Source, Self::Tag>;
 }

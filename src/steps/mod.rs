@@ -1,17 +1,11 @@
 use self::ApplicationResult::*;
 use crate::hlist::{FromHList, HCons, HList, HNil};
-use kodept_ast::graph::node_props::Node;
-use kodept_ast::graph::AnyNodeId;
-use kodept_ast::utils::Skip;
-use kodept_ast::visit_side::VisitSide;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_macros::context::{Context, FileId};
 use kodept_macros::error::report::{
     IntoSpannedReportMessage, MessageBehaviour, Report, SpannedReportMessage,
 };
-use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::Macro;
 use std::borrow::{BorrowMut, Cow};
 use std::collections::VecDeque;
 use tracing::{debug, warn};
