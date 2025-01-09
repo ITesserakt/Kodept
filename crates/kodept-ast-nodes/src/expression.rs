@@ -14,6 +14,7 @@ use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_core::structure::rlt::{Application, Expression, ExpressionBlock, Operation};
+use crate::literal::{Literal, Tuple};
 use crate::term::Ref;
 
 #[derive(Debug, PartialEq, Component)]
@@ -68,6 +69,8 @@ derive_node!(Exprs {
         children BinExpr where tag = BlockLevel,
         children UnExpr where tag = BlockLevel,
         children Ref where tag = BlockLevel,
+        children Literal where tag = BlockLevel,
+        children Tuple where tag = BlockLevel,
     ],
     properties = []
 });
@@ -80,6 +83,8 @@ derive_node!(App {
         optional BinExpr where tag = LeftExpr,
         optional UnExpr where tag = LeftExpr,
         optional Ref where tag = LeftExpr,
+        optional Literal where tag = LeftExpr,
+        optional Tuple where tag = LeftExpr,
 
         children Exprs where tag = RightExpr,
         children App where tag = RightExpr,
@@ -88,6 +93,8 @@ derive_node!(App {
         children BinExpr where tag = RightExpr,
         children UnExpr where tag = RightExpr,
         children Ref where tag = RightExpr,
+        children Literal where tag = RightExpr,
+        children Tuple where tag = RightExpr,
     ],
     properties = []
 });
@@ -103,6 +110,8 @@ derive_node!(Lambda {
         optional BinExpr where tag = Expr,
         optional UnExpr where tag = Expr,
         optional Ref where tag = Expr,
+        optional Literal where tag = Expr,
+        optional Tuple where tag = Expr,
     ],
     properties = []
 });
@@ -115,6 +124,8 @@ derive_node!(BinExpr {
         children BinExpr where tag = LeftExpr,
         children UnExpr where tag = LeftExpr,
         children Ref where tag = LeftExpr,
+        children Literal where tag = LeftExpr,
+        children Tuple where tag = LeftExpr,
 
         children Exprs where tag = RightExpr,
         children App where tag = RightExpr,
@@ -123,6 +134,8 @@ derive_node!(BinExpr {
         children BinExpr where tag = RightExpr,
         children UnExpr where tag = RightExpr,
         children Ref where tag = RightExpr,
+        children Literal where tag = RightExpr,
+        children Tuple where tag = RightExpr,
     ],
     properties = []
 });
@@ -135,6 +148,8 @@ derive_node!(UnExpr {
         children BinExpr where tag = Expr,
         children UnExpr where tag = Expr,
         children Ref where tag = Expr,
+        children Literal where tag = Expr,
+        children Tuple where tag = Expr,
     ],
     properties = []
 });
@@ -181,6 +196,8 @@ where
     R: HasChild<BinExpr, Tag>,
     R: HasChild<UnExpr, Tag>,
     R: HasChild<Ref, Tag>,
+    R: HasChild<Literal, Tag>,
+    R: HasChild<Tuple, Tag>
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &Operation) -> ChildrenDisjoint<R, Source, Tag> {
@@ -285,13 +302,15 @@ where
     R: HasChild<Lambda, Tag>,
     R: HasChild<IfExpr, Tag>,
     R: HasChild<Ref, Tag>,
+    R: HasChild<Literal, Tag>,
+    R: HasChild<Tuple, Tag>
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &Expression) -> ChildrenDisjoint<R, Source, Tag> {
         match node {
             Expression::Lambda(x) => ChildrenDisjoint::new::<Lambda>(x),
             Expression::Term(x) => ChildrenDisjoint::new::<Ref>(x),
-            Expression::Literal(_) => todo!(),
+            Expression::Literal(x) => Unit::branch(x),
             Expression::If(x) => ChildrenDisjoint::new::<IfExpr>(x),
         }
     }

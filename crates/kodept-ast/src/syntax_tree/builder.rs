@@ -13,7 +13,11 @@ use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 
-static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 1);
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
+    LazyLock::new(|| match std::thread::available_parallelism() {
+        Ok(x) => x.get() * 4,
+        Err(_) => 8 * 4,
+    });
 
 pub struct Pool<'e> {
     syntax: SyntaxResolver,
@@ -290,5 +294,13 @@ where
     {
         self.children_buffer.push(builder.root);
         self.insert(node.into(), builder.erase(), Tag::default());
+    }
+    
+    pub fn pool(&self) -> &'p Pool<'e> {
+        self.pool
+    }
+    
+    pub fn source(&self) -> Source {
+        self.source
     }
 }

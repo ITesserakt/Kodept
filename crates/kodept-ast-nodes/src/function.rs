@@ -1,12 +1,13 @@
 use crate::expression::Exprs;
 use crate::properties::{Param, Type};
 use crate::types::{NonTyParam, ProdTy, TyName, TyParam};
+use crate::utils::unwrap_body;
 use crate::Unit;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_core::structure::rlt::{BodiedFunction, Body};
+use kodept_core::structure::rlt::BodiedFunction;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Func {
@@ -20,7 +21,7 @@ derive_node!(Func {
 
         children TyParam where tag = Param,
         children NonTyParam where tag = Param,
-        
+
         child Exprs,
     ],
     properties = []
@@ -31,19 +32,11 @@ impl FromSyntax for Func {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
-        
+
         ASTBuilder::new(pool, Func { name }).with_children(source, pool, move |scope| {
             scope.choose(Unit, node.return_type.as_ref().map(|it| &it.1));
             scope.maybe_choose(Unit, node.params.as_ref().map(|it| it.inner.as_ref()));
-            
-            match &*node.body {
-                Body::Block(x) => scope.many::<Exprs, _>([x]),
-                Body::Simplified { expression, .. } => {
-                    let fake = ASTBuilder::new(pool, Exprs)
-                        .with_children(source, pool, |scope| scope.choose(Unit, [expression]));
-                    scope.from_builder(&*node.body, fake)
-                }
-            }
+            unwrap_body(&node.body, scope);
         })
     }
 }

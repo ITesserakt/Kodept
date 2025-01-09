@@ -10,6 +10,7 @@ use kodept_core::structure::rlt::{BlockLevelNode, InitializedVariable, Variable}
 use crate::code_flow::IfExpr;
 use crate::expression::{BinExpr, App, Exprs, Lambda, UnExpr};
 use crate::function::Func;
+use crate::literal::{Literal, Tuple};
 use crate::term::Ref;
 
 #[derive(Debug, PartialEq)]
@@ -76,7 +77,9 @@ where
     R: HasChild<IfExpr, BlockLevel>,
     R: HasChild<BinExpr, BlockLevel>,
     R: HasChild<UnExpr, BlockLevel>,
-    R: HasChild<Ref, BlockLevel>
+    R: HasChild<Ref, BlockLevel>,
+    R: HasChild<Literal, BlockLevel>,
+    R: HasChild<Tuple, BlockLevel>
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &BlockLevelNode) -> ChildrenDisjoint<R, Source, BlockLevel> {

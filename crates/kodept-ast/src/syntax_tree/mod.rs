@@ -3,6 +3,6 @@ pub mod children;
 mod storage;
 
 pub mod prelude {
-    pub use super::builder::{ASTBuilder, Pool};
+    pub use super::builder::{ASTBuilder, Pool, ChildrenScope};
     pub use super::storage::AST;
 }
