@@ -1,14 +1,14 @@
 use std::path::Path;
 use std::string::FromUtf8Error;
 
+use crate::cli::configs::LoadingConfig;
 use crate::cli::traits::CommandWithSources;
 use clap::{Parser, ValueEnum};
 use derive_more::Display;
-use kodept::codespan_settings::{Reports};
+use kodept::codespan_settings::Reports;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept_report::error::report_collector::{ReportCollector, Reporter};
 use thiserror::Error;
-use crate::cli::configs::LoadingConfig;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -26,7 +26,7 @@ pub struct InspectParser {
     #[arg(default_value_t = true, short = 'p', long = "pegviz")]
     use_pegviz: bool,
     #[command(flatten, next_help_heading = "Loading options")]
-    loading_config: LoadingConfig
+    loading_config: LoadingConfig,
 }
 
 #[allow(dead_code)]
@@ -172,13 +172,18 @@ impl CommandWithSources for InspectParser {
         Some(SourceFiles::from_sources(loader.into_sources()))
     }
 
-    fn exec_for_source(&self, source: SourceView, reports: &mut Reports, output: &Path) -> Option<()> {
+    fn exec_for_source(
+        &self,
+        source: SourceView,
+        reports: &mut Reports,
+        output: &Path,
+    ) -> Option<()> {
         use kodept::codespan_settings::ProvideCollector;
-        
+
         let filename = source.path();
         let source_name = filename.build_file_path();
         let file_output_path = output.join(source_name);
-        
+
         reports.provide_collector(source.all_files(), |collector| {
             match self.option {
                 InspectingOptions::Tokenizer => {
@@ -186,13 +191,13 @@ impl CommandWithSources for InspectParser {
                         collector.report(*source.id, e);
                         return None;
                     }
-                },
+                }
                 InspectingOptions::Parser => {
                     if let Err(e) = self.inspect_parser(&source, &file_output_path) {
                         collector.report(*source.id, e);
                         return None;
                     }
-                },
+                }
                 InspectingOptions::Both => {
                     if let Err(e) = self.inspect_tokenizer(&source, &file_output_path) {
                         collector.report(*source.id, e);

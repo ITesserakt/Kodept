@@ -1,13 +1,13 @@
+use crate::new_types::{Identifier, TypeName};
+use crate::prelude::Context;
 use derive_more::From;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::prelude::Context;
-use crate::new_types::{Identifier, TypeName};
 
 #[derive(Debug, Clone, PartialEq, From)]
 pub enum Term {
     Reference(Reference),
-    Contextual(ContextualReference)
+    Contextual(ContextualReference),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -19,14 +19,14 @@ pub enum Reference {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ContextualReference {
     pub context: Context,
-    pub inner: Reference
+    pub inner: Reference,
 }
 
 impl Located for Term {
     fn location(&self) -> CodePoint {
         match self {
             Term::Reference(x) => x.location(),
-            Term::Contextual(x) => x.location()
+            Term::Contextual(x) => x.location(),
         }
     }
 }

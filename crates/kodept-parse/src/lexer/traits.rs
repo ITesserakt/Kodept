@@ -169,21 +169,21 @@ impl Token<'_> {
             Token::Symbol(x) => x.representation(),
             Token::Operator(x) => x.representation(),
             Token::Unknown => "<???>",
-            
+
             Token::Ignore(Ignore::Comment(_)) => "<comment>",
             Token::Ignore(Ignore::MultilineComment(_)) => "<comment>",
             Token::Ignore(Ignore::Newline) => "<newline>",
             Token::Ignore(Ignore::Whitespace) => "<ws>",
-            
+
             Token::Literal(Literal::String(_)) => "<string literal>",
             Token::Literal(Literal::Char(_)) => "<char literal>",
             Token::Literal(Literal::Binary(_)) => "<binary literal>",
             Token::Literal(Literal::Octal(_)) => "<octal literal>",
             Token::Literal(Literal::Hex(_)) => "<hex literal>",
             Token::Literal(Literal::Floating(_)) => "<number literal>",
-            
+
             Token::Identifier(Identifier::Identifier(_)) => "<ident>",
-            Token::Identifier(Identifier::Type(_)) => "<Ident>"
+            Token::Identifier(Identifier::Type(_)) => "<Ident>",
         }
     }
 }
@@ -257,7 +257,7 @@ impl ToRepresentation for PackedToken {
             PackedToken::AndBit => "&",
             PackedToken::XorBit => "^",
             PackedToken::NotBit => "~",
-            PackedToken::Unknown => "<???>"
+            PackedToken::Unknown => "<???>",
         }
     }
 }
@@ -302,7 +302,7 @@ impl PackedToken {
             // OPERATORS
             "." => Some(PackedToken::Dot),
             "=>" => Some(PackedToken::Flow),
-            
+
             "+" => Some(PackedToken::Plus),
             "-" => Some(PackedToken::Sub),
             "/" => Some(PackedToken::Div),
@@ -346,7 +346,7 @@ mod tests {
         for token in all::<PackedToken>() {
             let repr = token.representation();
             let old_token = Token::from_name(repr);
-            
+
             if let Some(old_token) = old_token {
                 assert_eq!(PackedToken::from(old_token), token);
             }

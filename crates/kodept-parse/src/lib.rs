@@ -7,9 +7,9 @@ pub mod tokenizer;
 
 pub mod error;
 
+mod nom;
 mod peg;
 mod pest;
-mod nom;
 
 pub mod common;
 

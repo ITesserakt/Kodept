@@ -4,12 +4,12 @@ use codespan_reporting::files::{Error, Files};
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
+use kodept_report::{FileDescriptor, FileId};
 use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use tracing::error;
 use yoke::Yoke;
-use kodept_report::{FileDescriptor, FileId};
 
 pub struct GlobalReports;
 
@@ -58,7 +58,7 @@ impl SourceView {
     pub fn all_files(&self) -> &SourceFiles {
         self.source.backing_cart()
     }
-    
+
     pub fn describe(&self) -> FileDescriptor {
         FileDescriptor {
             name: self.source.get().path(),
@@ -87,7 +87,7 @@ impl SourceFiles {
         Self { contents: map }
     }
 
-    pub fn into_common_iter<'a>(self: &'a Arc<Self>) -> impl CommonIter<Item =SourceView> + 'a {
+    pub fn into_common_iter<'a>(self: &'a Arc<Self>) -> impl CommonIter<Item = SourceView> + 'a {
         #[cfg(not(feature = "parallel"))]
         {
             self.contents.keys().copied().map(|id| SourceView {

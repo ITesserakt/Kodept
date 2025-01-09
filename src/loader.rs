@@ -171,10 +171,7 @@ impl Loader {
                     }
                 })
                 .collect(),
-            Loader::Memory(sources) => sources
-                .into_iter()
-                .map(CodeSource::memory)
-                .collect(),
+            Loader::Memory(sources) => sources.into_iter().map(CodeSource::memory).collect(),
         }
     }
 }

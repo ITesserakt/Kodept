@@ -1,9 +1,3 @@
-use nom::branch::alt;
-use nom::sequence::tuple;
-use nom::Parser;
-use nom_supreme::ParserExt;
-use kodept_rlt::new_types::Symbol;
-use kodept_rlt::prelude as rlt;
 use crate::common::VerboseEnclosed;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
@@ -11,6 +5,12 @@ use crate::nom::parser::parameter::parameter;
 use crate::nom::parser::utils::{comma_separated0, match_token};
 use crate::nom::parser::{code_flow, literal, operator, term, ParseResult};
 use crate::token_stream::PackedTokenStream;
+use kodept_rlt::new_types::Symbol;
+use kodept_rlt::prelude as rlt;
+use nom::branch::alt;
+use nom::sequence::tuple;
+use nom::Parser;
+use nom_supreme::ParserExt;
 
 fn lambda(input: PackedTokenStream) -> ParseResult<rlt::Expression> {
     tuple((
@@ -21,11 +21,13 @@ fn lambda(input: PackedTokenStream) -> ParseResult<rlt::Expression> {
         operator::grammar,
     ))
     .context(function!())
-    .map(|it| rlt::Expression::Lambda(rlt::Lambda {
-        binds: VerboseEnclosed::from((it.0, it.1.into_boxed_slice(), it.2)).into(),
-        flow: Symbol::from_located(it.3),
-        expr: Box::new(it.4),
-    }))
+    .map(|it| {
+        rlt::Expression::Lambda(rlt::Lambda {
+            binds: VerboseEnclosed::from((it.0, it.1.into_boxed_slice(), it.2)).into(),
+            flow: Symbol::from_located(it.3),
+            expr: Box::new(it.4),
+        })
+    })
     .parse(input)
 }
 

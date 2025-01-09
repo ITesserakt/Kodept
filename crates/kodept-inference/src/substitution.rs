@@ -18,7 +18,7 @@ impl Substitutions {
         copy.merge(other.clone());
         copy
     }
-    
+
     pub fn merge(&mut self, other: Substitutions) {
         let a: HashSet<_> = other
             .0
@@ -42,16 +42,16 @@ impl Substitutions {
     pub fn single(from: TVar, to: MonomorphicType) -> Substitutions {
         Substitutions(HashMap::from([(from, to)]))
     }
-    
+
     #[must_use]
     pub fn get(&self, key: &TVar) -> Option<&MonomorphicType> {
         self.0.get(key)
     }
-    
+
     pub fn remove(&mut self, key: &TVar) {
         self.0.remove(key);
     }
-    
+
     #[cfg(test)]
     pub(crate) fn into_inner(self) -> HashMap<TVar, MonomorphicType> {
         self.0
@@ -59,8 +59,10 @@ impl Substitutions {
 }
 
 impl<M: Into<MonomorphicType>> FromIterator<(TVar, M)> for Substitutions {
-    fn from_iter<T: IntoIterator<Item=(TVar, M)>>(iter: T) -> Self {
-        Self(HashMap::from_iter(iter.into_iter().map(|(a, b)| (a, b.into()))))
+    fn from_iter<T: IntoIterator<Item = (TVar, M)>>(iter: T) -> Self {
+        Self(HashMap::from_iter(
+            iter.into_iter().map(|(a, b)| (a, b.into())),
+        ))
     }
 }
 

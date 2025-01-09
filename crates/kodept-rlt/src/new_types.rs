@@ -15,7 +15,7 @@ macro_rules! make_wrappers {
                 self.0.point
             }
         }
-        
+
         impl $name {
             #[inline(always)]
             pub fn from_located<L: kodept_core::structure::Located>(value: L) -> Self {
@@ -56,7 +56,7 @@ pub enum BinaryOperationSymbol {
     /// || &&
     Logic(Symbol),
     /// =
-    Assign(Symbol)
+    Assign(Symbol),
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
@@ -88,7 +88,7 @@ impl Located for BinaryOperationSymbol {
             BinaryOperationSymbol::Comparison(x) => x.location(),
             BinaryOperationSymbol::Bit(x) => x.location(),
             BinaryOperationSymbol::Logic(x) => x.location(),
-            BinaryOperationSymbol::Assign(x) => x.location()
+            BinaryOperationSymbol::Assign(x) => x.location(),
         }
     }
 }

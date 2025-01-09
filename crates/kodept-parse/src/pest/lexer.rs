@@ -5,7 +5,7 @@ use kodept_core::code_point::CodePoint;
 
 use crate::common::{EagerTokensProducer, TokenProducer};
 use crate::lexer::*;
-use crate::token_match::{PackedTokenMatch};
+use crate::token_match::PackedTokenMatch;
 
 #[derive(Parser)]
 #[grammar = "crates/kodept-parse/src/pest/kodept.pest"]

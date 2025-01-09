@@ -1,13 +1,13 @@
 use std::fmt::{Debug, Formatter};
 
+use crate::r#type::MonomorphicType;
 use derive_more::{Display, From};
 use itertools::Itertools;
-use crate::r#type::MonomorphicType;
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct  BVar {
+pub struct BVar {
     pub var: Var,
-    pub ty: Option<MonomorphicType>
+    pub ty: Option<MonomorphicType>,
 }
 
 #[derive(Display, Clone, PartialEq, Eq, Hash)]
@@ -177,7 +177,7 @@ impl Display for BVar {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.ty {
             None => write!(f, "{}", self.var),
-            Some(ty) => write!(f, "{} :: {}", self.var, ty)
+            Some(ty) => write!(f, "{} :: {}", self.var, ty),
         }
     }
 }
@@ -233,10 +233,10 @@ impl<S: Into<String>> From<S> for Var {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use std::collections::HashSet;
     use crate::assumption::Environment;
-    use crate::language::{app, lambda, Language, Literal, r#let, var};
-    use crate::r#type::{fun1, Tuple, var as t_var};
+    use crate::language::{app, lambda, r#let, var, Language, Literal};
+    use crate::r#type::{fun1, var as t_var, Tuple};
+    use std::collections::HashSet;
 
     #[test]
     fn test_infer_language() {
@@ -266,7 +266,8 @@ mod tests {
                     Tuple(vec![t_var(0), t_var(0)]).into(),
                     Tuple(vec![t_var(0), t_var(0)]).into()
                 ])
-            ).generalize(&HashSet::new())
+            )
+            .generalize(&HashSet::new())
         );
     }
 

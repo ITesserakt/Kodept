@@ -2,10 +2,10 @@ use codespan_reporting::files::Files;
 use codespan_reporting::term::termcolor::{ColorSpec, StandardStream, WriteColor};
 use kodept_report::error::report_collector::ReportCollector;
 use kodept_report::error::traits::Reportable;
+use kodept_report::FileId;
 use std::io::Write;
 use std::mem::take;
 use std::sync::{Arc, Mutex};
-use kodept_report::FileId;
 
 pub trait ProvideCollector<Id> {
     fn provide_collector<'a, T, F>(
@@ -31,7 +31,7 @@ pub enum Reports {
     Eager(CodespanSettings),
     Lazy {
         // TODO: ReportCollector is thread-safe already
-        //       Maybe remove ArcMutex wrapper 
+        //       Maybe remove ArcMutex wrapper
         local_reports: Arc<Mutex<ReportCollector>>,
         global_reports: Arc<Mutex<ReportCollector<()>>>,
         settings: CodespanSettings,

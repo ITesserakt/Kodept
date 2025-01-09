@@ -44,11 +44,11 @@ impl InterningMetrics {
                 - total_allocated_size_for_indexes as f64,
         }
     }
-    
+
     pub fn sharing_factor(&self) -> f64 {
         self.total_shares as f64 / self.total_items as f64
     }
-    
+
     pub fn memory_save(&self) -> (f64, &'static str) {
         const SUFFIXES: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
         let mut value = self.approximate_memory_savings;

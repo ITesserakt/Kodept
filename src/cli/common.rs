@@ -19,7 +19,7 @@ pub struct Kodept {
 
     #[command(subcommand)]
     pub subcommands: Commands,
-    
+
     #[command(flatten, next_help_heading = "Diagnostics options")]
     pub diagnostic_config: DiagnosticConfig,
     #[command(flatten, next_help_heading = "Logging options")]

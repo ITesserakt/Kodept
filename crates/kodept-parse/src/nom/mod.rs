@@ -3,8 +3,8 @@ use nom::IResult;
 use nom_supreme::error::ErrorTree;
 use thiserror::Error;
 
-mod lexer;
 mod error;
+mod lexer;
 mod parser;
 
 pub(crate) use lexer::Lexer;

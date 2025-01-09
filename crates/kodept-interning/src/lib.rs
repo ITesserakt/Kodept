@@ -2,8 +2,8 @@ pub mod metrics;
 
 use interner::global::{GlobalString, StringPool};
 use kodept_core::code_point::CodePoint;
+use kodept_core::shared_str::{SharedStr, Stringy};
 use kodept_core::structure::span::CodeHolder;
-use kodept_core::shared_str::{Stringy, SharedStr};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;

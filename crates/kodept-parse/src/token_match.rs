@@ -8,7 +8,7 @@ use crate::lexer::PackedToken;
 #[derive(Debug, Clone, Copy, PartialEq, Constructor)]
 pub struct PackedTokenMatch {
     pub token: PackedToken,
-    pub point: CodePoint
+    pub point: CodePoint,
 }
 
 static_assert_size!(PackedTokenMatch, 12);

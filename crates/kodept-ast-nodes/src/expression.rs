@@ -1,20 +1,20 @@
-use std::ops::Deref;
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
 use crate::function::Func;
+use crate::literal::{Literal, Tuple};
 use crate::properties::{BlockLevel, Expr, LeftExpr, Param, RightExpr};
+use crate::term::Ref;
 use crate::types::{NonTyParam, TyParam};
 use crate::Unit;
-use kodept_ast::{derive_node, Str};
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
+use kodept_ast::{derive_node, Str};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::{Application, Expression, ExpressionBlock, Operation};
-use crate::literal::{Literal, Tuple};
-use crate::term::Ref;
+use std::ops::Deref;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Exprs;
@@ -169,7 +169,10 @@ impl FromSyntax for App {
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, App).with_children(source, pool, |scope| {
             scope.choose::<_, _, LeftExpr>(Unit, [&node.expr]);
-            scope.maybe_choose::<_, _, RightExpr>(Unit, node.params.as_ref().map(|it| it.inner.as_ref()))
+            scope.maybe_choose::<_, _, RightExpr>(
+                Unit,
+                node.params.as_ref().map(|it| it.inner.as_ref()),
+            )
         })
     }
 }
@@ -196,7 +199,7 @@ where
     R: HasChild<UnExpr, Tag>,
     R: HasChild<Ref, Tag>,
     R: HasChild<Literal, Tag>,
-    R: HasChild<Tuple, Tag>
+    R: HasChild<Tuple, Tag>,
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &Operation) -> ChildrenDisjoint<R, Source, Tag> {
@@ -269,7 +272,7 @@ where
             (BinaryOperationSymbol::Logic(_), "||") => BinExpr::Disj,
             (BinaryOperationSymbol::Logic(_), "&&") => BinExpr::Conj,
             (BinaryOperationSymbol::Assign(_), _) => BinExpr::Assign,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
         ASTBuilder::new(pool, value).with_children(source, pool, |scope| {
             scope.choose::<_, _, LeftExpr>(Unit, [left.as_ref()]);
@@ -302,7 +305,7 @@ where
     R: HasChild<IfExpr, Tag>,
     R: HasChild<Ref, Tag>,
     R: HasChild<Literal, Tag>,
-    R: HasChild<Tuple, Tag>
+    R: HasChild<Tuple, Tag>,
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &Expression) -> ChildrenDisjoint<R, Source, Tag> {

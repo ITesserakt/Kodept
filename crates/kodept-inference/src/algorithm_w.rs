@@ -30,7 +30,7 @@ pub enum CompoundInferError<E> {
     #[error(transparent)]
     AlgoW(#[from] AlgorithmWError),
     Both(AlgorithmWError, NEVec<E>),
-    Foreign(NEVec<E>)
+    Foreign(NEVec<E>),
 }
 
 struct AlgorithmW<'e> {
@@ -196,11 +196,11 @@ impl Language {
 
         if let Some(not_found) = NEVec::from_vec(not_found) {
             if let Some(errors) = NEVec::from_vec(errors) {
-                return Err(CompoundInferError::Both(UnknownVar(not_found), errors))
+                return Err(CompoundInferError::Both(UnknownVar(not_found), errors));
             }
-            return Err(CompoundInferError::AlgoW(UnknownVar(not_found)))
+            return Err(CompoundInferError::AlgoW(UnknownVar(not_found)));
         } else if let Some(errors) = NEVec::from_vec(errors) {
-            return Err(CompoundInferError::Foreign(errors))
+            return Err(CompoundInferError::Foreign(errors));
         }
 
         debug!("Inferred raw type and constraints: ");

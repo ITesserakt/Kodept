@@ -1,8 +1,8 @@
+use crate::new_types::{Enclosed, Keyword, TypeName};
+use crate::prelude::{BodiedFunction, TypedParameter};
 use derive_more::From;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::prelude::{BodiedFunction, TypedParameter};
-use crate::new_types::{Enclosed, Keyword, TypeName};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Struct {

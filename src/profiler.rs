@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 #[global_allocator]
 #[cfg(feature = "profiler")]
@@ -34,7 +34,9 @@ impl HeapProfiler {
             .lock()
             .expect("Cannot install heap profiler")
             .replace(dhat::Profiler::new_heap());
-        HeapProfilerLock { consumed: Arc::new(AtomicBool::new(false)) }
+        HeapProfilerLock {
+            consumed: Arc::new(AtomicBool::new(false)),
+        }
     }
 }
 

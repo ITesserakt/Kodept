@@ -19,7 +19,7 @@ where
 
         ParseErrors::new(vec![match actual {
             None => ParseError::unexpected_eof(expected, location),
-            Some(actual) => ParseError::expected(expected, actual, location)
+            Some(actual) => ParseError::expected(expected, actual, location),
         }])
     }
 }

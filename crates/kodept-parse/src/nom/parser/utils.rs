@@ -38,7 +38,7 @@ pub(super) fn match_token(
     move |input| {
         let (rest, output) = any_not_ignored_token(input)?;
         let token_match = output.into_single();
-        
+
         if token_match.token == example {
             Ok((rest, token_match))
         } else {
@@ -59,7 +59,7 @@ pub(super) fn match_any_token(
     move |input| {
         let (rest, output) = any_token(input)?;
         let token_match = output.into_single();
-        
+
         if token_match.token == expected {
             Ok((rest, token_match))
         } else {

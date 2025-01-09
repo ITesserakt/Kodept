@@ -1,8 +1,8 @@
-use std::fmt::Debug;
 use crate::error::report::{IntoSpannedReportMessage, Report};
-use append_only_vec::AppendOnlyVec;
-use std::sync::atomic::{AtomicBool, Ordering};
 use crate::FileId;
+use append_only_vec::AppendOnlyVec;
+use std::fmt::Debug;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Default, Debug)]
 pub struct ReportCollector<F = FileId> {

@@ -3,8 +3,8 @@ use crate::properties::Node;
 use crate::resource::rlt::SyntaxResolver;
 use crate::syntax_tree::builder::Pool;
 use bevy_ecs::prelude::{Component, World};
-use std::ops::Index;
 use kodept_rlt::prelude::RLT;
+use std::ops::Index;
 
 #[derive(Debug)]
 pub struct AST {
@@ -35,7 +35,7 @@ impl AST {
             .filter(|it| it.contains::<Node>())
             .count()
     }
-    
+
     pub fn contains<T: Component>(&self, id: NodeId) -> bool {
         self.world.entity(id.as_inner()).contains::<T>()
     }

@@ -1,14 +1,14 @@
-use std::fmt::{Display, Formatter};
-use itertools::Itertools;
 use crate::qbe::defs::aggregate::TypeDef;
 use crate::qbe::defs::data::DataDef;
 use crate::qbe::defs::funcs::Function;
+use itertools::Itertools;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, PartialEq)]
 pub struct Module<'a> {
     fns: Vec<Function<'a>>,
     types: Vec<TypeDef>,
-    data: Vec<DataDef>
+    data: Vec<DataDef>,
 }
 
 impl Display for Module<'_> {

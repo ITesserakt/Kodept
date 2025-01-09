@@ -2,12 +2,12 @@ use crate::properties::{Param, Type};
 use crate::Unit;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_rlt::new_types;
-use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
 use kodept_rlt::prelude as rlt;
+use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
 
 #[derive(Debug, PartialEq, Component)]
 pub struct TyName {
@@ -98,15 +98,15 @@ where
 }
 
 impl<R> Choose<Parameter, R, Param> for Unit
-where 
+where
     R: HasChild<TyParam, Param>,
-    R: HasChild<NonTyParam, Param>
+    R: HasChild<NonTyParam, Param>,
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, Param> {
         match node {
             Parameter::Typed(x) => ChildrenDisjoint::new::<TyParam>(x),
-            Parameter::Untyped(x) => ChildrenDisjoint::new::<NonTyParam>(x)
+            Parameter::Untyped(x) => ChildrenDisjoint::new::<NonTyParam>(x),
         }
     }
 }

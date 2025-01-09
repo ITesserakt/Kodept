@@ -1,11 +1,11 @@
-use derive_more::Constructor;
-use ::nom::IResult;
-use nom_supreme::error::GenericErrorTree;
-use nom_supreme::final_parser::final_parser;
-use kodept_rlt::prelude::RLT;
 use crate::common::RLTProducer;
 use crate::nom::TokenVerificationError;
 use crate::token_stream::PackedTokenStream;
+use ::nom::IResult;
+use derive_more::Constructor;
+use kodept_rlt::prelude::RLT;
+use nom_supreme::error::GenericErrorTree;
+use nom_supreme::final_parser::final_parser;
 
 pub(in crate::nom) type ParseError<'t> =
     GenericErrorTree<PackedTokenStream<'t>, &'static str, &'static str, TokenVerificationError>;
@@ -46,5 +46,5 @@ mod macros {
         }};
     }
 
-    pub(crate) use {function};
+    pub(crate) use function;
 }

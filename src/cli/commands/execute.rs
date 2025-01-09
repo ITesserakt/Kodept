@@ -3,17 +3,17 @@ use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::traits::CommandWithSources;
 use clap::Args;
 use kodept::codespan_settings::{ProvideCollector, Reports};
+use kodept::context::Context;
 use kodept::loader::Loader;
 use kodept::source_files::{SourceFiles, SourceView};
+use kodept_ast::syntax_tree::prelude::AST;
+use kodept_ast_nodes::file::FileDecl;
 use kodept_core::Freeze;
 use kodept_report::error::report_collector::{ReportCollector, Reporter};
 use kodept_report::error::traits::DrainReports;
 use std::num::NonZeroU16;
 use std::path::Path;
 use tracing::debug;
-use kodept::context::Context;
-use kodept_ast::syntax_tree::prelude::AST;
-use kodept_ast_nodes::file::FileDecl;
 
 #[derive(Debug, Args, Clone)]
 pub struct Execute {
@@ -45,7 +45,7 @@ impl CommandWithSources for Execute {
                 .map_err(to_diagnostics)
                 .drain(*source.id, collector)
         })?;
-        
+
         let code_holder = || {
             #[cfg(feature = "interning")]
             return kodept_interning::InterningCodeHolder::new(&*source);

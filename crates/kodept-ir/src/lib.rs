@@ -1,2 +1,2 @@
-mod qbe;
 mod kir;
+mod qbe;

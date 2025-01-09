@@ -1,8 +1,8 @@
 use std::ops::Range;
 
-use derive_more::{Constructor, Display};
 use crate::static_assert_size;
 use crate::structure::Located;
+use derive_more::{Constructor, Display};
 
 #[derive(Constructor, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
 #[display("...{}:{}", offset, length)]
@@ -16,10 +16,7 @@ static_assert_size!(CodePoint, 8);
 impl CodePoint {
     #[must_use]
     pub const fn single_point(offset: u32) -> Self {
-        Self {
-            length: 1,
-            offset,
-        }
+        Self { length: 1, offset }
     }
 
     pub const fn as_range(&self) -> Range<usize> {

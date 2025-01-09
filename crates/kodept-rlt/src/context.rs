@@ -1,25 +1,25 @@
-use std::collections::VecDeque;
 use crate::new_types::Symbol;
 use crate::prelude::Reference;
+use std::collections::VecDeque;
 
 pub struct StartsFromRoot;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Context {
     Global {
-        colon: Symbol
+        colon: Symbol,
     },
     Local,
     Inner {
         parent: Box<Context>,
-        needle: Reference
-    }
+        needle: Reference,
+    },
 }
 
 impl Context {
     pub fn is_global(&self) -> bool {
         let mut current = self;
-        
+
         loop {
             match current {
                 Context::Global { .. } => return true,
@@ -31,7 +31,7 @@ impl Context {
             }
         }
     }
-    
+
     pub fn unfold(self) -> (Option<StartsFromRoot>, Vec<Reference>) {
         let mut refs = VecDeque::new();
         let mut current = self;

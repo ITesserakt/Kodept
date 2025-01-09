@@ -1,21 +1,21 @@
-use std::fmt::{Display, Formatter};
-use std::num::NonZeroU64;
-use derive_more::Constructor;
-use itertools::Itertools;
-use nonempty_collections::NEVec;
 use crate::qbe::constants::Constant;
 use crate::qbe::defs::aggregate::Align;
 use crate::qbe::linkage::Linkage;
 use crate::qbe::types::ExtendedType;
+use derive_more::Constructor;
+use itertools::Itertools;
+use nonempty_collections::NEVec;
+use std::fmt::{Display, Formatter};
+use std::num::NonZeroU64;
 
 #[derive(Debug, PartialEq)]
 pub enum DataItem {
     Symbol {
         name: String,
-        offset: Option<NonZeroU64>
+        offset: Option<NonZeroU64>,
     },
     Text(String),
-    Constant(Constant)
+    Constant(Constant),
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,8 +23,8 @@ pub enum DataChunk {
     Zeros(NonZeroU64),
     Filled {
         ty: ExtendedType,
-        items: NEVec<DataItem>
-    }
+        items: NEVec<DataItem>,
+    },
 }
 
 #[derive(Debug, PartialEq, Constructor)]
@@ -32,7 +32,7 @@ pub struct DataDef {
     linkage: Linkage,
     name: String,
     align: Option<Align>,
-    chunks: Vec<DataChunk>
+    chunks: Vec<DataChunk>,
 }
 
 impl Display for DataItem {
@@ -46,7 +46,7 @@ impl Display for DataItem {
                 }
             }
             DataItem::Text(s) => write!(f, "\"{s}\""),
-            DataItem::Constant(c) => write!(f, "{c}")
+            DataItem::Constant(c) => write!(f, "{c}"),
         }
     }
 }

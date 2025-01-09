@@ -97,8 +97,8 @@ mod tests {
     use nonempty_collections::nev;
 
     use crate::algorithm_u::AlgorithmUError;
-    use crate::r#type::{fun, fun1, MonomorphicType, PrimitiveType, Tuple, TVar, var};
     use crate::r#type::MonomorphicType::Constant;
+    use crate::r#type::{fun, fun1, var, MonomorphicType, PrimitiveType, TVar, Tuple};
     use crate::substitution::Substitutions;
     use crate::traits::Substitutable;
 

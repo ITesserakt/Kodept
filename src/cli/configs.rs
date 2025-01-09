@@ -17,15 +17,15 @@ use kodept_parse::lexer::{NomLexer, PegLexer, PestLexer};
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
-use tracing::debug;
 use kodept_rlt::prelude::RLT;
+use tracing::debug;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {
     /// Use parallelization when parsing
     #[arg(
-        short, 
-        long, 
+        short,
+        long,
         hide = !cfg!(feature = "parallel"), 
         default_value_t = cfg!(feature = "parallel")
     )]

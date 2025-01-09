@@ -1,7 +1,9 @@
 use crate::error::report::{
     IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage,
 };
+use crate::error::report_collector::{ReportCollector, Reporter};
 use crate::error::{Diagnostic, ErrorReported};
+use crate::FileId;
 use codespan_reporting::files::Files;
 use codespan_reporting::term::termcolor::WriteColor;
 use codespan_reporting::term::Config;
@@ -9,8 +11,6 @@ use extend::ext;
 use kodept_core::code_point::CodePoint;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
-use crate::error::report_collector::{ReportCollector, Reporter};
-use crate::FileId;
 
 #[derive(Clone, Debug)]
 pub struct CodespanSettings<S> {
@@ -50,8 +50,13 @@ impl<FileId> Reportable for Report<FileId> {
         settings: &mut CodespanSettings<W>,
         source: &'f F,
     ) {
-        codespan_reporting::term::emit(&mut settings.stream, &settings.config, source, &self.into_diagnostic())
-            .expect("Cannot emit diagnostics")
+        codespan_reporting::term::emit(
+            &mut settings.stream,
+            &settings.config,
+            source,
+            &self.into_diagnostic(),
+        )
+        .expect("Cannot emit diagnostics")
     }
 }
 
@@ -108,12 +113,12 @@ impl<E: std::error::Error> SpannedError<E> {
     pub fn with_severity(self, severity: Severity) -> Self {
         Self { severity, ..self }
     }
-    
+
     pub fn with_note(mut self, note: impl Into<Cow<'static, str>>) -> Self {
         self.notes.push(note.into());
         self
     }
-    
+
     pub fn map<F: std::error::Error>(self, f: impl FnOnce(E) -> F) -> SpannedError<F> {
         SpannedError {
             point: self.point,
@@ -161,7 +166,7 @@ impl<E: std::error::Error + 'static> IntoSpannedReportMessage for SpannedError<E
 impl<T, S, I> DrainReports for Result<T, I>
 where
     S: IntoSpannedReportMessage,
-    I: IntoIterator<Item=S>
+    I: IntoIterator<Item = S>,
 {
     type Output = Option<T>;
 

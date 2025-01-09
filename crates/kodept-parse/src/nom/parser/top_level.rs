@@ -1,11 +1,3 @@
-use nom::branch::alt;
-use nom::combinator::cut;
-use nom::sequence::tuple;
-use nom::Parser;
-use nom_supreme::ParserExt;
-use kodept_rlt::new_types::Keyword;
-use kodept_rlt::prelude as rlt;
-use kodept_rlt::prelude::TopLevelNode;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::parameter::typed_parameter;
@@ -15,13 +7,22 @@ use crate::nom::parser::utils::{
 };
 use crate::nom::parser::{function, r#type, ParseResult};
 use crate::token_stream::PackedTokenStream;
+use kodept_rlt::new_types::Keyword;
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::prelude::TopLevelNode;
+use nom::branch::alt;
+use nom::combinator::cut;
+use nom::sequence::tuple;
+use nom::Parser;
+use nom_supreme::ParserExt;
 
 fn enum_statement(input: PackedTokenStream) -> ParseResult<rlt::Enum> {
     tuple((
         tuple((
             match_token(Enum),
             match_token(Struct).or(match_token(Class)).cut(),
-        )).recognize(),
+        ))
+        .recognize(),
         r#type::reference,
         cut(alt((
             match_token(Semicolon).value(None),

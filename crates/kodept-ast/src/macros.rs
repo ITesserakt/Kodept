@@ -7,13 +7,13 @@ macro_rules! derive_node {
         }
     ) => {
         impl $crate::prelude::ASTNode for $self {}
-        
+
         $(
         impl $crate::syntax_tree::children::HasChild<$child, $($tag)?> for $self {
             type Arity = $crate::arity!($child_arity);
         }
         )*
-        
+
         $(
         $crate::property!($self => $modifier $($name)?);
         )*
@@ -25,15 +25,25 @@ macro_rules! derive_node {
 
 #[macro_export]
 macro_rules! arity {
-    (child) => { $crate::syntax_tree::children::arity::Singlular };
-    (optional) => { $crate::syntax_tree::children::arity::Optional };
-    (children) => { $crate::syntax_tree::children::arity::Plural };
+    (child) => {
+        $crate::syntax_tree::children::arity::Singlular
+    };
+    (optional) => {
+        $crate::syntax_tree::children::arity::Optional
+    };
+    (children) => {
+        $crate::syntax_tree::children::arity::Plural
+    };
 }
 
 #[macro_export]
 macro_rules! property {
-    ($self:ty => $name:ty) => { impl $crate::properties::HasProperty<$name> for $self {} };
-    ($self:ty => require $name:ty) => { impl $crate::properties::RequireProperty<$name> for $self {} };
+    ($self:ty => $name:ty) => {
+        impl $crate::properties::HasProperty<$name> for $self {}
+    };
+    ($self:ty => require $name:ty) => {
+        impl $crate::properties::RequireProperty<$name> for $self {}
+    };
 }
 
 #[macro_export]
@@ -42,7 +52,7 @@ macro_rules! derive_tag {
         #[derive(Debug, Default, $crate::external::Component)]
         #[component(storage = "SparseSet")]
         $vis struct $self;
-        
+
         impl $crate::properties::NodeProperty for $self {}
         impl $crate::properties::tags::Tagged for $self {}
     };

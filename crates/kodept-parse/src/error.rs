@@ -49,7 +49,7 @@ impl<A> ParseError<A> {
             hints: vec![],
         }
     }
-    
+
     pub fn unexpected_eof(expected: Vec<StaticStr>, location: ErrorLocation) -> Self {
         Self::ExpectedNotEOF {
             expected,
@@ -57,7 +57,7 @@ impl<A> ParseError<A> {
             hints: vec![],
         }
     }
-    
+
     pub fn with_hints(mut self, hint: Cow<'static, str>) -> Self {
         let hints = match self {
             ParseError::ExpectedInstead { ref mut hints, .. } => hints,

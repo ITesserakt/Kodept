@@ -1,14 +1,14 @@
-mod traits;
-pub mod syntax_tree;
-pub mod resource;
+pub mod macros;
 mod node_id;
 pub mod properties;
-pub mod macros;
+pub mod resource;
+pub mod syntax_tree;
+mod traits;
 mod utils;
 
 pub mod prelude {
-    pub use super::traits::{CodeHolder, ASTNode, FromSyntax, Choose};
-    pub use super::node_id::{NodeId, AnyNodeId};
+    pub use super::node_id::{AnyNodeId, NodeId};
+    pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
 }
 
 pub mod external {

@@ -1,9 +1,9 @@
 use crate::code_point::CodePoint;
 
 pub mod span {
-    use derive_more::Constructor;
     use crate::code_point::CodePoint;
     use crate::structure::Located;
+    use derive_more::Constructor;
 
     #[repr(transparent)]
     #[derive(Constructor, Debug, Clone, PartialEq, Copy)]
@@ -26,7 +26,6 @@ pub mod span {
             self.get_chunk(for_item.location())
         }
     }
-
 }
 
 pub trait Located {

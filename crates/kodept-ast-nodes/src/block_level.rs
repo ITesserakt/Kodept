@@ -1,22 +1,22 @@
+use crate::code_flow::IfExpr;
+use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
+use crate::function::Func;
+use crate::literal::{Literal, Tuple};
 use crate::properties::{BlockLevel, Type};
+use crate::term::Ref;
 use crate::types::{ProdTy, TyName};
 use crate::Unit;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_rlt::prelude::{BlockLevelNode, InitializedVariable, Variable};
-use crate::code_flow::IfExpr;
-use crate::expression::{BinExpr, App, Exprs, Lambda, UnExpr};
-use crate::function::Func;
-use crate::literal::{Literal, Tuple};
-use crate::term::Ref;
 
 #[derive(Debug, PartialEq)]
 pub enum VariableKind {
     Immutable,
-    Mutable
+    Mutable,
 }
 
 #[derive(Debug, PartialEq, Component)]
@@ -47,8 +47,12 @@ impl FromSyntax for VarDecl {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let (kind, id, ty) = match node {
-            Variable::Immutable { id, assigned_type, .. } => (VariableKind::Immutable, id, assigned_type),
-            Variable::Mutable { id, assigned_type, .. } => (VariableKind::Mutable, id, assigned_type)
+            Variable::Immutable {
+                id, assigned_type, ..
+            } => (VariableKind::Immutable, id, assigned_type),
+            Variable::Mutable {
+                id, assigned_type, ..
+            } => (VariableKind::Mutable, id, assigned_type),
         };
         let name = source.get_chunk_located(id);
         ASTBuilder::new(pool, VarDecl { kind, name }).with_children(source, pool, |scope| {
@@ -61,9 +65,8 @@ impl FromSyntax for InitVar {
     type Syntax = InitializedVariable;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
-        ASTBuilder::new(pool, InitVar).with_children(source, pool, |scope| {
-            scope.many([&node.variable])
-        })
+        ASTBuilder::new(pool, InitVar)
+            .with_children(source, pool, |scope| scope.many([&node.variable]))
     }
 }
 
@@ -79,15 +82,17 @@ where
     R: HasChild<UnExpr, BlockLevel>,
     R: HasChild<Ref, BlockLevel>,
     R: HasChild<Literal, BlockLevel>,
-    R: HasChild<Tuple, BlockLevel>
+    R: HasChild<Tuple, BlockLevel>,
 {
     #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &BlockLevelNode) -> ChildrenDisjoint<R, Source, BlockLevel> {
+    fn branch<Source: CodeHolder>(
+        node: &BlockLevelNode,
+    ) -> ChildrenDisjoint<R, Source, BlockLevel> {
         match node {
             BlockLevelNode::InitVar(x) => ChildrenDisjoint::new::<InitVar>(x),
             BlockLevelNode::Function(x) => ChildrenDisjoint::new::<Func>(x),
             BlockLevelNode::Operation(x) => Unit::branch(x),
-            BlockLevelNode::Block(x) => ChildrenDisjoint::new::<Exprs>(x)
+            BlockLevelNode::Block(x) => ChildrenDisjoint::new::<Exprs>(x),
         }
     }
 }

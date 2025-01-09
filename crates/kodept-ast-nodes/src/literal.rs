@@ -3,12 +3,12 @@ use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::properties::Expr;
 use crate::term::Ref;
 use crate::Unit;
-use kodept_ast::{derive_node, Str};
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder};
 use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::ASTBuilder;
+use kodept_ast::{derive_node, Str};
 use kodept_rlt::prelude as rlt;
 
 #[derive(Debug, PartialEq, Component)]
@@ -41,15 +41,17 @@ derive_node!(Tuple {
 });
 
 impl<R, Tag> Choose<rlt::Literal, R, Tag> for Unit
-where 
+where
     Tag: Tagged,
     R: HasChild<Tuple, Tag>,
-    R: HasChild<Literal, Tag>
+    R: HasChild<Literal, Tag>,
 {
     fn branch<Source: CodeHolder>(node: &rlt::Literal) -> ChildrenDisjoint<R, Source, Tag> {
         match node {
             rlt::Literal::Tuple(_) => ChildrenDisjoint::ad_hoc(node, |node, source, pool| {
-                let rlt::Literal::Tuple(node) = node else { unreachable!() };
+                let rlt::Literal::Tuple(node) = node else {
+                    unreachable!()
+                };
                 ASTBuilder::new(pool, Tuple).with_children(source, pool, |scope| {
                     scope.choose(Unit, node.inner.as_ref());
                 })
@@ -59,13 +61,15 @@ where
                     rlt::Literal::Binary(span) => Literal::Binary(source.get_chunk_located(span)),
                     rlt::Literal::Octal(span) => Literal::Octal(source.get_chunk_located(span)),
                     rlt::Literal::Hex(span) => Literal::Hex(source.get_chunk_located(span)),
-                    rlt::Literal::Floating(span) => Literal::Floating(source.get_chunk_located(span)),
+                    rlt::Literal::Floating(span) => {
+                        Literal::Floating(source.get_chunk_located(span))
+                    }
                     rlt::Literal::Char(span) => Literal::Char(source.get_chunk_located(span)),
                     rlt::Literal::String(span) => Literal::String(source.get_chunk_located(span)),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 };
                 ASTBuilder::new(pool, value)
-            })
+            }),
         }
     }
 }

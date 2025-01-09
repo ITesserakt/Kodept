@@ -71,7 +71,10 @@ mod macros {
         ($lvalue:ty, $params:ty) => {
             pub fn smtm(lvalue: Value, t: impl Into<$lvalue>, params: $params) -> Self {
                 Self(Instr {
-                    lvalue: Lvalue::Assignment { to: lvalue, ty: t.into() },
+                    lvalue: Lvalue::Assignment {
+                        to: lvalue,
+                        ty: t.into(),
+                    },
                     params,
                 })
             }
@@ -236,7 +239,10 @@ impl<'a> call<'a> {
         args: impl Into<Box<[Argument<'a>]>>,
     ) -> Self {
         Self {
-            lvalue: Lvalue::Assignment { to: lvalue, ty: t.into() },
+            lvalue: Lvalue::Assignment {
+                to: lvalue,
+                ty: t.into(),
+            },
             fn_name: name,
             args: args.into(),
         }

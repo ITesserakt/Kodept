@@ -3,11 +3,11 @@ use crate::r#type::TVar;
 pub mod algorithm_u;
 pub mod algorithm_w;
 pub mod assumption;
+pub mod constraint;
 pub mod language;
 pub mod substitution;
-pub mod r#type;
-pub mod constraint;
 pub mod traits;
+pub mod r#type;
 
 #[derive(Default)]
 pub(crate) struct InferState {

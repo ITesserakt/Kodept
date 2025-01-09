@@ -1,5 +1,5 @@
-use bevy_ecs::prelude::Component;
 use crate::properties::NodeProperty;
+use bevy_ecs::prelude::Component;
 
 pub trait Tagged: Default + NodeProperty {}
 

@@ -28,7 +28,7 @@ impl<I: IntoIterator> IntoCommonIter for I {
 impl<I, T> IntoCommonIter for I
 where
     I: rayon::prelude::IntoParallelIterator<Item = T>,
-    I: IntoIterator<Item = T>
+    I: IntoIterator<Item = T>,
 {
     type Item = T;
     type IntoParIter = I::Iter;
@@ -43,8 +43,7 @@ where
     }
 }
 
-impl<T: HasLength + ?Sized> HasLength for &Box<T>
-{
+impl<T: HasLength + ?Sized> HasLength for &Box<T> {
     #[inline]
     fn len(&self) -> usize {
         self.as_ref().len()

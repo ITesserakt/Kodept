@@ -81,7 +81,7 @@ where
         SyntaxVariant<'p>: TryInto<&'p T, Error: Debug>,
         Root: HasChild<U, Tag>,
         U: ASTNode,
-        T: 'p
+        T: 'p,
     {
         Self {
             inner: node.into(),

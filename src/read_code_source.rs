@@ -1,15 +1,15 @@
 use codespan_reporting::files::{line_starts, Error, Files};
+use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_name::FileName;
 use kodept_core::structure::span::CodeHolder;
+use memmap2::Mmap;
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::io::Read;
 use std::ops::Range;
 use std::str::from_utf8;
-use derive_more::Constructor;
-use memmap2::Mmap;
 use thiserror::Error;
 use yoke::Yoke;
 
@@ -94,7 +94,7 @@ impl TryFrom<CodeSource> for ReadCodeSource {
 
 impl<'a> CodeHolder for &'a ReadCodeSource {
     type Str = Cow<'a, str>;
-    
+
     fn get_chunk(self, at: CodePoint) -> Cow<'a, str> {
         match &self.source_contents {
             ReadImpl::Explicit(x) => Cow::Borrowed(&x[at.as_range()]),
@@ -107,8 +107,8 @@ impl<'a> CodeHolder for &'a ReadCodeSource {
 pub struct CloningCodeHolder<C: CodeHolder>(C);
 
 impl<C: CodeHolder> CodeHolder for CloningCodeHolder<C>
-where 
-    C::Str: Into<String>
+where
+    C::Str: Into<String>,
 {
     type Str = String;
 

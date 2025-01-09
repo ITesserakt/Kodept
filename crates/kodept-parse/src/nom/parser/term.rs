@@ -5,19 +5,19 @@
 
 use std::collections::VecDeque;
 
+use crate::lexer::PackedToken::*;
+use crate::nom::parser::macros::function;
+use crate::nom::parser::utils::match_token;
+use crate::nom::parser::ParseResult;
+use crate::token_stream::PackedTokenStream;
+use kodept_rlt::new_types::Symbol;
+use kodept_rlt::prelude::{Context, ContextualReference};
+use kodept_rlt::{new_types, prelude as rlt};
 use nom::branch::alt;
 use nom::multi::{many0, many1};
 use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
-use kodept_rlt::new_types::Symbol;
-use kodept_rlt::prelude::{Context, ContextualReference};
-use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function};
-use crate::nom::parser::utils::match_token;
-use crate::nom::parser::ParseResult;
-use crate::token_stream::PackedTokenStream;
-use kodept_rlt::{new_types, prelude as rlt};
 
 fn global_type_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((

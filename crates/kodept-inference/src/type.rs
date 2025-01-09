@@ -6,9 +6,9 @@ use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 
-use crate::InferState;
 use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
+use crate::InferState;
 
 #[allow(dead_code)]
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {

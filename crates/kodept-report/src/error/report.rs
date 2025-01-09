@@ -134,7 +134,13 @@ impl<FileId> Report<FileId> {
         let diagnostic = Diagnostic::new(diagnostic.severity.into())
             .with_message(diagnostic.message)
             .with_code(code)
-            .with_notes(diagnostic.notes.into_iter().map(|it| it.to_string()).collect())
+            .with_notes(
+                diagnostic
+                    .notes
+                    .into_iter()
+                    .map(|it| it.to_string())
+                    .collect(),
+            )
             .with_labels(labels);
 
         Self { diagnostic }

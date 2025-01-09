@@ -6,10 +6,10 @@ use std::hash::Hash;
 use Constraint::{ExplicitInstance, ImplicitInstance};
 use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
 
-use crate::constraint::{Constraint, EqConstraint};
 use crate::constraint::Constraint::Eq;
-use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
+use crate::constraint::{Constraint, EqConstraint};
 use crate::r#type::MonomorphicType::Fn;
+use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
 use crate::substitution::Substitutions;
 
 pub(crate) trait Substitutable {
@@ -28,13 +28,16 @@ pub(crate) trait ActiveTVars {
 
 pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
     type Error;
-    
+
     #[deprecated]
-    fn get(&self, key: &Key) -> Option<Cow<PolymorphicType>> where Self::Error: Debug {
+    fn get(&self, key: &Key) -> Option<Cow<PolymorphicType>>
+    where
+        Self::Error: Debug,
+    {
         self.maybe_get(key).unwrap()
     }
-    
-    fn maybe_get(&self, key: &Key) -> Result<Option<Cow<PolymorphicType>>, Self::Error>; 
+
+    fn maybe_get(&self, key: &Key) -> Result<Option<Cow<PolymorphicType>>, Self::Error>;
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -122,9 +125,7 @@ where
     type Output = HashSet<T>;
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output {
-        self.iter()
-            .flat_map(|it| it.substitute(subst))
-            .collect()
+        self.iter().flat_map(|it| it.substitute(subst)).collect()
     }
 }
 

@@ -1,12 +1,12 @@
+use crate::new_types::{Enclosed, Identifier, TypeName};
 use derive_more::From;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::new_types::{Enclosed, Identifier, TypeName};
 
 #[derive(Debug, Clone, PartialEq, From)]
 pub enum Type {
     Reference(TypeName),
-    Tuple(Tuple)
+    Tuple(Tuple),
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
@@ -33,7 +33,7 @@ impl Located for Type {
     fn location(&self) -> CodePoint {
         match self {
             Type::Reference(x) => x.location(),
-            Type::Tuple(x) => x.location()
+            Type::Tuple(x) => x.location(),
         }
     }
 }

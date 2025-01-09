@@ -1,8 +1,8 @@
+use crate::new_types::{Keyword, Symbol, TypeName};
+use crate::prelude::TopLevelNode;
 use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::new_types::{Keyword, Symbol, TypeName};
-use crate::prelude::TopLevelNode;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Module {

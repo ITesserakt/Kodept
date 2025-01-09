@@ -63,7 +63,7 @@ impl Display for Linkage {
             write!(f, "export")?;
             has_previous = true;
         }
-        if self.thread_local {        
+        if self.thread_local {
             if has_previous {
                 write!(f, " ")?;
             }

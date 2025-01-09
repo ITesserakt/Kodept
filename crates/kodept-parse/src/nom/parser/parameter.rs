@@ -1,26 +1,22 @@
+use crate::lexer::PackedToken::*;
+use crate::nom::parser::macros::function;
+use crate::nom::parser::utils::match_token;
+use crate::nom::parser::{r#type, ParseResult};
+use crate::token_stream::PackedTokenStream;
+use kodept_rlt::{new_types, prelude as rlt};
 use nom::branch::alt;
 use nom::sequence::separated_pair;
 use nom::Parser;
 use nom_supreme::ParserExt;
-use kodept_rlt::{new_types, prelude as rlt};
-use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function};
-use crate::nom::parser::{r#type, ParseResult};
-use crate::nom::parser::utils::match_token;
-use crate::token_stream::PackedTokenStream;
 
 pub(super) fn typed_parameter(input: PackedTokenStream) -> ParseResult<rlt::TypedParameter> {
-    separated_pair(
-        match_token(Identifier),
-        match_token(Colon),
-        r#type::grammar,
-    )
-    .context(function!())
-    .map(|it| rlt::TypedParameter {
-        id: new_types::Identifier::from_located(it.0),
-        parameter_type: it.1,
-    })
-    .parse(input)
+    separated_pair(match_token(Identifier), match_token(Colon), r#type::grammar)
+        .context(function!())
+        .map(|it| rlt::TypedParameter {
+            id: new_types::Identifier::from_located(it.0),
+            parameter_type: it.1,
+        })
+        .parse(input)
 }
 
 fn untyped_parameter(input: PackedTokenStream) -> ParseResult<rlt::UntypedParameter> {
@@ -30,7 +26,12 @@ fn untyped_parameter(input: PackedTokenStream) -> ParseResult<rlt::UntypedParame
         .opt()
         .parse(rest)?;
 
-    Ok((rest, rlt::UntypedParameter { id: new_types::Identifier::from_located(id) }))
+    Ok((
+        rest,
+        rlt::UntypedParameter {
+            id: new_types::Identifier::from_located(id),
+        },
+    ))
 }
 
 pub(super) fn parameter(input: PackedTokenStream) -> ParseResult<rlt::Parameter> {

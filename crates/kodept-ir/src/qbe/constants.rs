@@ -10,21 +10,21 @@ pub enum Constant {
     #[display("d_{_0}")]
     Double(f64),
     #[display("${_0}")]
-    Symbol(Name)
+    Symbol(Name),
 }
 
 #[derive(Display, Debug, PartialEq)]
 pub enum DynConstant {
     Constant(Constant),
     #[display("thread ${_0}")]
-    ThreadLocalSymbol(Name)
+    ThreadLocalSymbol(Name),
 }
 
 #[derive(Display, Debug, PartialEq)]
 pub enum Value {
     DynConstant(DynConstant),
     #[display("%{_0}")]
-    Value(Name)
+    Value(Name),
 }
 
 impl Value {

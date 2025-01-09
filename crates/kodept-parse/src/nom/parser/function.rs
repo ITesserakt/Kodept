@@ -3,7 +3,7 @@ use nom::Parser;
 use nom_supreme::ParserExt;
 
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function};
+use crate::nom::parser::macros::function;
 use crate::nom::parser::parameter::{parameter, typed_parameter};
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{block_level, r#type, ParseResult};

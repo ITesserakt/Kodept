@@ -38,7 +38,7 @@ mod nom {
     fn test_lazy() {
         make_test_impl::<LazyTokenizer<_>, _>(NomLexer::new());
     }
-    // 
+    //
     // #[test]
     // fn test_parallel() {
     //     make_test_impl::<ParallelTokenizer<_>, _>(NomLexer::new())
@@ -54,12 +54,12 @@ mod peg {
     fn test_lazy() {
         make_test_impl::<LazyTokenizer<_>, _>(PegLexer::<true>::new());
     }
-    
+
     #[test]
     fn test_eager() {
         make_test_impl::<EagerTokenizer<_, _>, _>(PegLexer::<true>::new());
     }
-    
+
     #[test]
     fn test_parallel() {
         make_test_impl::<ParallelTokenizer<_>, _>(PegLexer::<true>::new());
@@ -75,12 +75,12 @@ mod pest {
     fn test_lazy() {
         make_test_impl::<LazyTokenizer<_>, _>(PestLexer::new());
     }
-    
+
     #[test]
     fn test_eager() {
         make_test_impl::<EagerTokenizer<_, _>, _>(PestLexer::new());
     }
-    
+
     #[test]
     fn test_parallel() {
         make_test_impl::<ParallelTokenizer<_>, _>(PestLexer::new())

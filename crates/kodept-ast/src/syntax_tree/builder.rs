@@ -238,7 +238,8 @@ where
             for item in iter.into_iter() {
                 let disjoint = Chooser::branch(item);
                 let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
-                self.pool.link_syntax(NodeId::from_inner(part.root), disjoint.inner);
+                self.pool
+                    .link_syntax(NodeId::from_inner(part.root), disjoint.inner);
                 self.children_buffer.push(part.root);
                 self.insert(part.erase(), Tag::default());
             }
@@ -303,7 +304,8 @@ where
         &'a T: Into<SyntaxVariant<'p>>,
     {
         self.children_buffer.push(builder.root);
-        self.pool.link_syntax(NodeId::from_inner(builder.root), node);
+        self.pool
+            .link_syntax(NodeId::from_inner(builder.root), node);
         self.insert(builder.erase(), Tag::default());
     }
 
