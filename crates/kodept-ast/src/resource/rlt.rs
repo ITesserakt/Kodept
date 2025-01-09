@@ -75,7 +75,7 @@ impl SyntaxResolver {
 
     // TODO: probably unsound code
     #[allow(unsafe_code)]
-    pub fn insert<'r, U>(&self, id: NodeId, node: U)
+    pub fn insert<'r, U>(&'r self, id: NodeId, node: U)
     where
         U: Into<SyntaxVariant<'r>>,
     {

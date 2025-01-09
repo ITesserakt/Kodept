@@ -141,13 +141,12 @@ where
     Source: CodeHolder,
 {
     #[inline(always)]
-    fn insert<Tag>(&mut self, node: SyntaxVariant<'p>, mut part: ASTBuilder<()>, tag: Tag)
+    fn insert<Tag>(&mut self, mut part: ASTBuilder<()>, tag: Tag)
     where
         Tag: Tagged,
     {
         let child_id = part.root;
         let root_id = self.root;
-        self.pool.link_syntax(NodeId::from_inner(child_id), node);
         part.queue.push(move |w: &mut World| {
             w.entity_mut(child_id).insert(tag).insert_if_new(Node);
             w.entity_mut(root_id).add_child(child_id);
@@ -173,7 +172,8 @@ where
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
                 self.children_buffer.push(part.root);
-                self.insert::<Tag>(item.into(), part.erase(), Tag::default());
+                self.pool.link_syntax(NodeId::from_inner(part.root), item);
+                self.insert::<Tag>(part.erase(), Tag::default());
             }
             return;
         }
@@ -194,13 +194,14 @@ where
                 move || {
                     iter.for_each_with(sx, |sender, it| {
                         let part = U::from_syntax(it, source, pool);
-                        sender.send((it.into(), part)).unwrap()
+                        pool.link_syntax(NodeId::from_inner(part.root), it);
+                        sender.send(part).unwrap()
                     })
                 },
                 || {
-                    for (node, part) in rx {
+                    for part in rx {
                         self.children_buffer.push(part.root);
-                        self.insert(node, part.erase(), Tag::default());
+                        self.insert(part.erase(), Tag::default());
                     }
                 },
             );
@@ -238,8 +239,9 @@ where
             for item in iter.into_iter() {
                 let disjoint = Chooser::branch(item);
                 let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
+                self.pool.link_syntax(NodeId::from_inner(part.root), disjoint.inner);
                 self.children_buffer.push(part.root);
-                self.insert(disjoint.inner, part.erase(), Tag::default());
+                self.insert(part.erase(), Tag::default());
             }
             return;
         }
@@ -261,13 +263,14 @@ where
                     iter.for_each_with(sx, |sender, it| {
                         let disjoint = Chooser::branch(it);
                         let part = (disjoint.conversion)(disjoint.inner, source, pool);
-                        sender.send((disjoint.inner, part)).unwrap()
+                        pool.link_syntax(NodeId::from_inner(part.root), disjoint.inner);
+                        sender.send(part).unwrap()
                     })
                 },
                 move || {
-                    for (node, part) in rx {
+                    for part in rx {
                         self.children_buffer.push(part.root);
-                        self.insert(node, part.erase(), Tag::default());
+                        self.insert(part.erase(), Tag::default());
                     }
                 },
             );
@@ -301,7 +304,8 @@ where
         &'a T: Into<SyntaxVariant<'p>>,
     {
         self.children_buffer.push(builder.root);
-        self.insert(node.into(), builder.erase(), Tag::default());
+        self.pool.link_syntax(NodeId::from_inner(builder.root), node);
+        self.insert(builder.erase(), Tag::default());
     }
 
     #[inline(always)]
