@@ -94,9 +94,10 @@ impl ParseLiteral for PackedTokenStream<'_> {
             unreachable!("Bug in grammar. Any literal used should be convertible to token.")
         };
 
-        match (self.get(pos), token) {
-            (Some(a), b) if a.token == b => RuleResult::Matched(pos + 1, ()),
-            _ => RuleResult::Failed,
+        if self.get(pos).map(|it| it.token) == Some(token) {
+            RuleResult::Matched(pos + 1, ())
+        } else {
+            RuleResult::Failed
         }
     }
 }
