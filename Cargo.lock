@@ -1031,7 +1031,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bevy_ecs",
  "bevy_hierarchy",
@@ -1044,7 +1044,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast-nodes"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bevy_ecs",
  "kodept-ast",
@@ -1053,7 +1053,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "derive_more",
  "memmap2",
@@ -1098,7 +1098,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-macros"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "anyhow",
  "append-only-vec",

@@ -17,7 +17,7 @@ members = [
     "crates/kodept-parse",
     "crates/kodept-inference",
     "crates/kodept-ast",
-    "crates/kodept-macros",
+    "crates/kodept-report",
     "crates/kodept-interpret",
     "crates/kodept-ir",
     "crates/kodept-interning",
@@ -74,7 +74,7 @@ version = "0.3"
 path = "crates/kodept-ast"
 
 [dependencies.kodept-macros]
-path = "crates/kodept-macros"
+path = "crates/kodept-report"
 
 [dependencies.kodept-interning]
 path = "crates/kodept-interning"
