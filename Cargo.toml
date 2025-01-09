@@ -19,9 +19,10 @@ members = [
     "crates/kodept-ast",
     "crates/kodept-macros",
     "crates/kodept-interpret",
-    "crates/slotgraph", 
-    "crates/kodept-ir"
-, "crates/kodept-interning", "crates/kodept-ast-nodes"]
+    "crates/kodept-ir",
+    "crates/kodept-interning",
+    "crates/kodept-ast-nodes"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -93,6 +94,8 @@ interning = ["dep:kodept-interning", "kodept-ast/interning"]
 
 [profile.profiler]
 debug = true
+lto = "thin"
+strip = false
 inherits = "release"
 
 [profile.bench]
@@ -108,4 +111,3 @@ strip = true
 opt-level = 0
 debug = true
 panic = 'unwind'
-rpath = false
