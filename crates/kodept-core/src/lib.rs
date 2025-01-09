@@ -1,3 +1,5 @@
+//! This crate provides basic abstractions about source code.
+
 use std::ops::Deref;
 
 pub mod code_point;

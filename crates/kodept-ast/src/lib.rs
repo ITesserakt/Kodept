@@ -1,3 +1,6 @@
+//! Provides structures and abstractions for managing AST (abstract syntax tree).
+//! Features ECS as an implementation.
+
 pub mod macros;
 mod node_id;
 pub mod properties;

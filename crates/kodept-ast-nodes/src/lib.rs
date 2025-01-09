@@ -1,3 +1,6 @@
+//! This crate contains actual AST nodes used in Kodept with appropriate 
+//! conversion implementation from RLT nodes.
+
 pub mod block_level;
 mod code_flow;
 pub mod expression;

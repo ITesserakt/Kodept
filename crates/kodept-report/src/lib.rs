@@ -1,3 +1,5 @@
+//! This crate contains an abstraction for compiler diagnostics - `reports`.
+
 use kodept_core::file_name::FileName;
 use tracing::warn;
 

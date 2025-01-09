@@ -1,3 +1,5 @@
+//! This crate contains a wrapper around string interner.
+
 pub mod metrics;
 
 use interner::global::{GlobalString, StringPool};
