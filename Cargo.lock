@@ -1028,6 +1028,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kodept-frontend"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "bevy_hierarchy",
+]
+
+[[package]]
 name = "kodept-inference"
 version = "0.2.3"
 dependencies = [

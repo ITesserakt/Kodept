@@ -18,16 +18,17 @@ members = [
     , "crates/kodept-inference"
     , "crates/kodept-ast"
     , "crates/kodept-report"
-#    , "crates/kodept-interpret"
     , "crates/kodept-ir"
     , "crates/kodept-interning"
     , "crates/kodept-ast-nodes"
-    , "crates/kodept-rlt"]
+    , "crates/kodept-rlt"
+    , "crates/kodept-frontend"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
 bevy_ecs = { version = "0.15.1", default-features = false }
+bevy_hierarchy = { version = "0.15.1", default-features = false }
 thiserror = "2.0"
 extend = "1.2"
 itertools = "0.13"

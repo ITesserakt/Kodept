@@ -1,0 +1,11 @@
+[package]
+name = "kodept-frontend"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs.workspace = true
+bevy_hierarchy.workspace = true
