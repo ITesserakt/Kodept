@@ -7,7 +7,7 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::children::ChildrenDisjoint;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_rlt::{rlt, TopLevelNode};
+use kodept_rlt::prelude::{File, Module, TopLevelNode};
 
 #[derive(Debug, PartialEq)]
 pub enum ModKind {
@@ -38,10 +38,10 @@ derive_node!(ModDecl {
 });
 
 impl FromSyntax for FileDecl {
-    type Syntax = rlt::File;
+    type Syntax = File;
 
     fn from_syntax(
-        node: &rlt::File,
+        node: &File,
         source_code: impl CodeHolder,
         builder: &Pool,
     ) -> ASTBuilder<Self> {
@@ -51,16 +51,16 @@ impl FromSyntax for FileDecl {
 }
 
 impl FromSyntax for ModDecl {
-    type Syntax = rlt::Module;
+    type Syntax = Module;
 
     fn from_syntax(
-        node: &rlt::Module,
+        node: &Module,
         source_code: impl CodeHolder,
         pool: &Pool,
     ) -> ASTBuilder<Self> {
         let (kind, id, rest) = match node {
-            rlt::Module::Global { id, rest, .. } => (ModKind::Global, id, rest.as_ref()),
-            rlt::Module::Ordinary { id, rest, .. } => (ModKind::Ordinary, id, rest.as_ref()),
+            Module::Global { id, rest, .. } => (ModKind::Global, id, rest.as_ref()),
+            Module::Ordinary { id, rest, .. } => (ModKind::Ordinary, id, rest.as_ref()),
         };
         let name = source_code.get_chunk_located(id);
         ASTBuilder::new(pool, ModDecl { kind, name })

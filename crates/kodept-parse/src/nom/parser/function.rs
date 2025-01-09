@@ -9,7 +9,7 @@ use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{block_level, r#type, ParseResult};
 use crate::token_stream::PackedTokenStream;
 use kodept_rlt::new_types::{Keyword, Symbol};
-use kodept_rlt::{new_types, rlt};
+use kodept_rlt::{new_types, prelude as rlt};
 
 #[allow(unused)]
 // TODO

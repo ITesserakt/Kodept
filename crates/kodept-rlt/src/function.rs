@@ -1,5 +1,5 @@
 use crate::new_types::{Enclosed, Identifier, Keyword, Symbol};
-use crate::{Body, Parameter, Type, TypedParameter};
+use crate::prelude::{Body, Parameter, Type, TypedParameter};
 use derive_more::From;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;

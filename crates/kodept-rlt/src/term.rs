@@ -1,7 +1,7 @@
 use derive_more::From;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::Context;
+use crate::prelude::Context;
 use crate::new_types::{Identifier, TypeName};
 
 #[derive(Debug, Clone, PartialEq, From)]

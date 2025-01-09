@@ -1,20 +1,23 @@
-pub use self::{
-    block_level::*, code_flow::*, expression::*, file::*, function::*, literal::*, term::*,
-    top_level::*, types::*,
-    context::*
-};
-
-pub mod rlt {
-    pub use super::*;
+pub mod prelude {
+    pub use super::block_level::*;
+    pub use super::code_flow::*;
+    pub use super::expression::*;
+    pub use super::file::*;
+    pub use super::function::*;
+    pub use super::literal::*;
+    pub use super::term::*;
+    pub use super::top_level::*;
+    pub use super::types::*;
+    pub use super::context::*;
 }
 
+pub mod new_types;
 mod block_level;
 mod code_flow;
 mod expression;
 mod file;
 mod function;
 mod literal;
-pub mod new_types;
 mod term;
 mod top_level;
 mod types;

@@ -5,7 +5,9 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
-use kodept_rlt::{rlt, Parameter, Tuple};
+use kodept_rlt::new_types;
+use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
+use kodept_rlt::prelude as rlt;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct TyName {
@@ -43,7 +45,7 @@ derive_node!(TyParam {
 derive_node!(NonTyParam);
 
 impl FromSyntax for TyName {
-    type Syntax = rlt::new_types::TypeName;
+    type Syntax = new_types::TypeName;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(node);
@@ -52,7 +54,7 @@ impl FromSyntax for TyName {
 }
 
 impl FromSyntax for NonTyParam {
-    type Syntax = rlt::UntypedParameter;
+    type Syntax = UntypedParameter;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
@@ -61,7 +63,7 @@ impl FromSyntax for NonTyParam {
 }
 
 impl FromSyntax for TyParam {
-    type Syntax = rlt::TypedParameter;
+    type Syntax = TypedParameter;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);

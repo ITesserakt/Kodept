@@ -3,7 +3,7 @@ use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
 use kodept_rlt::new_types::Keyword;
-use kodept_rlt::rlt;
+use kodept_rlt::prelude as rlt;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::match_token;

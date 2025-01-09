@@ -18,7 +18,7 @@ use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
 use tracing::debug;
-use kodept_rlt::RLT;
+use kodept_rlt::prelude::RLT;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {

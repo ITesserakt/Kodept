@@ -3,7 +3,6 @@ use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::tags::NoTag;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_rlt::rlt;
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::literal::{Literal, Tuple};
 use crate::properties::Expr;
@@ -60,7 +59,7 @@ derive_node!(ElseExpr {
 });
 
 impl FromSyntax for IfExpr {
-    type Syntax = rlt::IfExpr;
+    type Syntax = kodept_rlt::prelude::IfExpr;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, IfExpr).with_children(source, pool, |scope| {
@@ -73,7 +72,7 @@ impl FromSyntax for IfExpr {
 }
 
 impl FromSyntax for ElifExpr {
-    type Syntax = rlt::ElifExpr;
+    type Syntax = kodept_rlt::prelude::ElifExpr;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, ElifExpr).with_children(source, pool, |scope| {
@@ -84,7 +83,7 @@ impl FromSyntax for ElifExpr {
 }
 
 impl FromSyntax for ElseExpr {
-    type Syntax = rlt::ElseExpr;
+    type Syntax = kodept_rlt::prelude::ElseExpr;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, ElseExpr).with_children(source, pool, |scope| {

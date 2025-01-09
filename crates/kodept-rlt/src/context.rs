@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use crate::new_types::Symbol;
-use crate::Reference;
+use crate::prelude::Reference;
 
 pub struct StartsFromRoot;
 

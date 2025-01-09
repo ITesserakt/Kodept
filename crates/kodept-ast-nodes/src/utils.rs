@@ -4,7 +4,7 @@ use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::HasChild;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, ChildrenScope};
-use kodept_rlt::Body;
+use kodept_rlt::prelude::Body;
 
 pub(crate) fn unwrap_body<'p, R, S, Tag>(node: &'p Body, scope: &mut ChildrenScope<'p, '_, R, S>)
 where

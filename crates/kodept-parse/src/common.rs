@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use kodept_core::structure::span::Span;
 use kodept_core::structure::Located;
 use kodept_rlt::new_types::Enclosed;
-use kodept_rlt::RLT;
+use kodept_rlt::prelude::RLT;
 use crate::error::{Original, ParseErrors};
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;

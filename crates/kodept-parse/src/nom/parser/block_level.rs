@@ -4,7 +4,7 @@ use crate::nom::parser::utils::{match_token, newline_separated};
 use crate::nom::parser::{function, operator, r#type, ParseResult};
 use crate::token_stream::PackedTokenStream;
 use kodept_rlt::new_types::{Keyword, Symbol};
-use kodept_rlt::{new_types, rlt};
+use kodept_rlt::{new_types, prelude as rlt};
 use nom::branch::alt;
 use nom::sequence::tuple;
 use nom::Parser;

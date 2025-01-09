@@ -1,6 +1,6 @@
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::{BlockLevelNode, IfExpr, Literal, Parameter, Term};
+use crate::prelude::{BlockLevelNode, IfExpr, Literal, Parameter, Term};
 use crate::new_types::{BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol};
 
 #[derive(Debug, Clone, PartialEq)]

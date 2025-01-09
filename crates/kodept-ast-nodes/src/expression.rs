@@ -11,8 +11,8 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_rlt::{rlt, Application, Expression, ExpressionBlock, Operation};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
+use kodept_rlt::prelude::{Application, Expression, ExpressionBlock, Operation};
 use crate::literal::{Literal, Tuple};
 use crate::term::Ref;
 
@@ -175,7 +175,7 @@ impl FromSyntax for App {
 }
 
 impl FromSyntax for Lambda {
-    type Syntax = rlt::Lambda;
+    type Syntax = kodept_rlt::prelude::Lambda;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Lambda).with_children(source, pool, |scope| {

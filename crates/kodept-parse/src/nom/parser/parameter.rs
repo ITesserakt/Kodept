@@ -2,7 +2,7 @@ use nom::branch::alt;
 use nom::sequence::separated_pair;
 use nom::Parser;
 use nom_supreme::ParserExt;
-use kodept_rlt::{new_types, rlt};
+use kodept_rlt::{new_types, prelude as rlt};
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::{function};
 use crate::nom::parser::{r#type, ParseResult};

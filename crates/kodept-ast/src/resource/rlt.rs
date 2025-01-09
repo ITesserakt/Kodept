@@ -8,7 +8,8 @@ use kodept_core::Freeze;
 use std::marker::PhantomPinned;
 use std::pin::Pin;
 use kodept_core::structure::Located;
-use kodept_rlt::{rlt, RLT};
+use kodept_rlt::{new_types, prelude as rlt};
+use kodept_rlt::prelude::RLT;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -17,7 +18,7 @@ pub enum SyntaxVariant<'r> {
     Struct(&'r rlt::Struct),
     Enum(&'r rlt::Enum),
     Type(&'r rlt::Type),
-    TypeName(&'r rlt::new_types::TypeName),
+    TypeName(&'r new_types::TypeName),
     TypedParameter(&'r rlt::TypedParameter),
     UntypedParameter(&'r rlt::UntypedParameter),
     Variable(&'r rlt::Variable),

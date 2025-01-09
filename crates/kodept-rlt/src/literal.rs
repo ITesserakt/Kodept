@@ -2,7 +2,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_core::structure::span::Span;
 use crate::new_types::Enclosed;
-use crate::Operation;
+use crate::prelude::Operation;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {

@@ -8,7 +8,6 @@ use bevy_ecs::entity::Entities;
 use bevy_ecs::prelude::{Entity, World};
 use bevy_ecs::world::CommandQueue;
 use bevy_hierarchy::BuildChildren;
-use kodept_rlt::rlt;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
@@ -38,7 +37,7 @@ impl Pool<'_> {
         self.lazy_entities.reserve_entity()
     }
 
-    pub(crate) fn syntax_root(&self) -> &rlt::File {
+    pub(crate) fn syntax_root(&self) -> &kodept_rlt::prelude::File {
         self.syntax.root()
     }
 

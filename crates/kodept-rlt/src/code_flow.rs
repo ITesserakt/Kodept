@@ -1,6 +1,6 @@
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use crate::{Body, Operation};
+use crate::prelude::{Body, Operation};
 use crate::new_types::Keyword;
 
 #[derive(Clone, Debug, PartialEq)]

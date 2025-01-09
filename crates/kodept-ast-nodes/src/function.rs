@@ -7,7 +7,7 @@ use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_rlt::BodiedFunction;
+use kodept_rlt::prelude::BodiedFunction;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Func {
