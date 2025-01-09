@@ -10,15 +10,13 @@ use nom::multi::{many0, many1};
 use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
-
+use kodept_rlt::{new_types, rlt, Context, ContextualReference};
+use kodept_rlt::new_types::Symbol;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::{function};
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::ParseResult;
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::Symbol;
-use kodept_core::structure::rlt::{new_types, Context, ContextualReference};
 
 fn global_type_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((

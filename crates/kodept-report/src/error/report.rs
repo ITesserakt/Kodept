@@ -51,7 +51,7 @@ pub trait IntoSpannedReportMessage {
 }
 
 #[derive(Debug)]
-pub struct Report<FileId = crate::context::FileId> {
+pub struct Report<FileId = crate::FileId> {
     diagnostic: Diagnostic<FileId>,
 }
 

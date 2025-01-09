@@ -3,7 +3,7 @@ use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::tags::NoTag;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_core::structure::rlt;
+use kodept_rlt::rlt;
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::literal::{Literal, Tuple};
 use crate::properties::Expr;

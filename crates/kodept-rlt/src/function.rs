@@ -1,10 +1,8 @@
+use crate::new_types::{Enclosed, Identifier, Keyword, Symbol};
+use crate::{Body, Parameter, Type, TypedParameter};
 use derive_more::From;
-
-use crate::code_point::CodePoint;
-use crate::structure::Located;
-use crate::structure::rlt::block_level::Body;
-use crate::structure::rlt::new_types::*;
-use crate::structure::rlt::types::{Parameter, Type, TypedParameter};
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BodiedFunction {

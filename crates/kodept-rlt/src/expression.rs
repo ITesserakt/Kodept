@@ -1,8 +1,7 @@
-use crate::code_point::CodePoint;
-use crate::structure::Located;
-use crate::structure::rlt::{IfExpr, Literal, Parameter, Term};
-use crate::structure::rlt::block_level::BlockLevelNode;
-use crate::structure::rlt::new_types::*;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
+use crate::{BlockLevelNode, IfExpr, Literal, Parameter, Term};
+use crate::new_types::{BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Application {

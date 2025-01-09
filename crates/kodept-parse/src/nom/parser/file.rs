@@ -3,14 +3,13 @@ use nom::multi::{many0, many1};
 use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
-
+use kodept_rlt::new_types::{Keyword, Symbol, TypeName};
+use kodept_rlt::rlt;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::{match_any_token, match_token, newline_separated};
 use crate::nom::parser::{top_level, ParseResult};
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::{Keyword, Symbol, TypeName};
 
 fn module_statement(input: PackedTokenStream) -> ParseResult<rlt::Module> {
     tuple((

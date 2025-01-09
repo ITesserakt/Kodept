@@ -11,9 +11,8 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
-use kodept_core::structure::rlt::{Application, Expression, ExpressionBlock, Operation};
+use kodept_rlt::{rlt, Application, Expression, ExpressionBlock, Operation};
+use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use crate::literal::{Literal, Tuple};
 use crate::term::Ref;
 

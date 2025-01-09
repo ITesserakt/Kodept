@@ -12,17 +12,17 @@ rust-version = "1.76.0"
 [workspace]
 resolver = "2"
 members = [
-    ".",
-    "crates/kodept-core",
-    "crates/kodept-parse",
-    "crates/kodept-inference",
-    "crates/kodept-ast",
-    "crates/kodept-report",
-    "crates/kodept-interpret",
-    "crates/kodept-ir",
-    "crates/kodept-interning",
-    "crates/kodept-ast-nodes"
-]
+    "."
+    , "crates/kodept-core"
+    , "crates/kodept-parse"
+    , "crates/kodept-inference"
+    , "crates/kodept-ast"
+    , "crates/kodept-report"
+    , "crates/kodept-interpret"
+    , "crates/kodept-ir"
+    , "crates/kodept-interning"
+    , "crates/kodept-ast-nodes"
+    , "crates/kodept-rlt"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -73,7 +73,7 @@ version = "0.3"
 [dependencies.kodept-ast]
 path = "crates/kodept-ast"
 
-[dependencies.kodept-macros]
+[dependencies.kodept-report]
 path = "crates/kodept-report"
 
 [dependencies.kodept-interning]
@@ -82,6 +82,9 @@ optional = true
 
 [dependencies.kodept-ast-nodes]
 path = "crates/kodept-ast-nodes"
+
+[dependencies.kodept-rlt]
+path = "crates/kodept-rlt"
 
 [dev-dependencies]
 tempfile = "3.7.0"

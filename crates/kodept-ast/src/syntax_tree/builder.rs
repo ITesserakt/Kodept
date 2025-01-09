@@ -8,7 +8,7 @@ use bevy_ecs::entity::Entities;
 use bevy_ecs::prelude::{Entity, World};
 use bevy_ecs::world::CommandQueue;
 use bevy_hierarchy::BuildChildren;
-use kodept_core::structure::rlt;
+use kodept_rlt::rlt;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
@@ -108,7 +108,7 @@ impl<Root> ASTBuilder<Root> {
         let mut scope = ChildrenScope {
             source,
             pool,
-            children_buffer: vec![],
+            children_buffer: Default::default(),
             queue: OnceCell::new(),
             root: self.root,
             _phantom: Default::default(),
@@ -149,9 +149,7 @@ where
         let root_id = self.root;
         self.pool.link_syntax(NodeId::from_inner(child_id), node);
         part.queue.push(move |w: &mut World| {
-            w.entity_mut(child_id)
-                .insert(tag)
-                .insert_if_new(Node);
+            w.entity_mut(child_id).insert(tag).insert_if_new(Node);
             w.entity_mut(root_id).add_child(child_id);
         });
         match self.queue.take() {
@@ -179,28 +177,33 @@ where
             }
             return;
         }
-        
+
         #[cfg(not(feature = "parallel"))]
         unreachable!();
-        
-        #[cfg(feature = "parallel")] {
+
+        #[cfg(feature = "parallel")]
+        {
             use rayon::prelude::*;
-            
+
             let (sx, rx) = std::sync::mpsc::channel();
             let iter = iter.into_par_iter();
             let source = self.source;
             let pool = self.pool;
-            
-            rayon::join(move || {
-                iter.for_each_with(sx, |sender, it| {
-                    sender.send((it.into(), U::from_syntax(it, source, pool))).unwrap()
-                })
-            }, || {
-                for (node, part) in rx {
-                    self.children_buffer.push(part.root);
-                    self.insert(node, part.erase(), Tag::default());
-                }
-            });
+
+            rayon::join(
+                move || {
+                    iter.for_each_with(sx, |sender, it| {
+                        let part = U::from_syntax(it, source, pool);
+                        sender.send((it.into(), part)).unwrap()
+                    })
+                },
+                || {
+                    for (node, part) in rx {
+                        self.children_buffer.push(part.root);
+                        self.insert(node, part.erase(), Tag::default());
+                    }
+                },
+            );
         }
     }
 
@@ -232,19 +235,20 @@ where
         'a: 'p,
     {
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
-        for item in iter.into_iter() {
-            let disjoint = Chooser::branch(item);
-            let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
-            self.children_buffer.push(part.root);
-            self.insert(disjoint.inner, part, Tag::default());
-        }
+            for item in iter.into_iter() {
+                let disjoint = Chooser::branch(item);
+                let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
+                self.children_buffer.push(part.root);
+                self.insert(disjoint.inner, part.erase(), Tag::default());
+            }
             return;
         }
 
         #[cfg(not(feature = "parallel"))]
         unreachable!();
 
-        #[cfg(feature = "parallel")] {
+        #[cfg(feature = "parallel")]
+        {
             use rayon::prelude::*;
 
             let (sx, rx) = std::sync::mpsc::channel();
@@ -252,18 +256,21 @@ where
             let source = self.source;
             let pool = self.pool;
 
-            rayon::join(move || {
-                iter.for_each_with(sx, |sender, it| {
-                    let disjoint = Chooser::branch(it);
-                    let part = (disjoint.conversion)(disjoint.inner, source, pool);
-                    sender.send((disjoint.inner, part)).unwrap()
-                })
-            }, || {
-                for (node, part) in rx {
-                    self.children_buffer.push(part.root);
-                    self.insert(node, part, Tag::default());
-                }
-            });
+            rayon::join(
+                move || {
+                    iter.for_each_with(sx, |sender, it| {
+                        let disjoint = Chooser::branch(it);
+                        let part = (disjoint.conversion)(disjoint.inner, source, pool);
+                        sender.send((disjoint.inner, part)).unwrap()
+                    })
+                },
+                move || {
+                    for (node, part) in rx {
+                        self.children_buffer.push(part.root);
+                        self.insert(node, part.erase(), Tag::default());
+                    }
+                },
+            );
         }
     }
 
@@ -283,23 +290,26 @@ where
             self.choose(chooser, iter)
         }
     }
-    
+
     #[allow(clippy::wrong_self_convention)]
+    #[inline(always)]
     pub fn from_builder<'a, T, U, Tag>(&mut self, node: &'a T, builder: ASTBuilder<U>)
-    where 
+    where
         Root: HasChild<U, Tag>,
         U: ASTNode,
         Tag: Tagged,
-        &'a T: Into<SyntaxVariant<'p>>
+        &'a T: Into<SyntaxVariant<'p>>,
     {
         self.children_buffer.push(builder.root);
         self.insert(node.into(), builder.erase(), Tag::default());
     }
-    
+
+    #[inline(always)]
     pub fn pool(&self) -> &'p Pool<'e> {
         self.pool
     }
-    
+
+    #[inline(always)]
     pub fn source(&self) -> Source {
         self.source
     }

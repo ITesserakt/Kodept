@@ -1,5 +1,5 @@
 [package]
-name = "kodept-macros"
+name = "kodept-report"
 version = "0.1.7"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
@@ -20,11 +20,7 @@ append-only-vec = "0.1.7"
 codespan-reporting = "0.11.1"
 extend.workspace = true
 derive_more.workspace = true
-thiserror.workspace = true
 tracing.workspace = true
 
 [dependencies.kodept-core]
 path = "../kodept-core"
-
-[dependencies.kodept-ast]
-path = "../kodept-ast"

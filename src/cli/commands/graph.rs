@@ -6,10 +6,10 @@ use kodept::codespan_settings::{ProvideCollector, Reports};
 use kodept::loader::Loader;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept_core::Freeze;
-use kodept_macros::context::Context;
-use kodept_macros::error::report_collector::{ReportCollector, Reporter};
-use kodept_macros::error::traits::DrainReports;
+use kodept_report::error::report_collector::{ReportCollector, Reporter};
+use kodept_report::error::traits::DrainReports;
 use std::path::Path;
+use kodept::context::Context;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
 

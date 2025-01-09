@@ -4,12 +4,12 @@ use codespan_reporting::files::{Error, Files};
 use kodept_core::code_source::CodeSource;
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
-use kodept_macros::context::{FileDescriptor, FileId};
 use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use tracing::error;
 use yoke::Yoke;
+use kodept_report::{FileDescriptor, FileId};
 
 pub struct GlobalReports;
 

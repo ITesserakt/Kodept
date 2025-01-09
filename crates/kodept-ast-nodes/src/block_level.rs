@@ -6,7 +6,7 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
-use kodept_core::structure::rlt::{BlockLevelNode, InitializedVariable, Variable};
+use kodept_rlt::{BlockLevelNode, InitializedVariable, Variable};
 use crate::code_flow::IfExpr;
 use crate::expression::{BinExpr, App, Exprs, Lambda, UnExpr};
 use crate::function::Func;

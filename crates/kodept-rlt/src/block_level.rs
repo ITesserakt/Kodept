@@ -1,13 +1,8 @@
 use derive_more::From;
-
-use crate::code_point::CodePoint;
-use crate::structure::{
-    Located,
-    rlt::expression::{ExpressionBlock, Operation},
-    rlt::new_types::*,
-    rlt::Type,
-};
-use crate::structure::rlt::BodiedFunction;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
+use crate::{BodiedFunction, ExpressionBlock, Operation, Type};
+use crate::new_types::{Identifier, Keyword, Symbol};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Body {

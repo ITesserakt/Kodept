@@ -4,11 +4,11 @@ use bevy_ecs::prelude::{Entity, Resource};
 use dashmap::DashMap;
 use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::rlt::RLT;
-use kodept_core::structure::{rlt, Located};
 use kodept_core::Freeze;
 use std::marker::PhantomPinned;
 use std::pin::Pin;
+use kodept_core::structure::Located;
+use kodept_rlt::{rlt, RLT};
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {

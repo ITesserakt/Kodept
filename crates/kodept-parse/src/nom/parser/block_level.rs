@@ -1,11 +1,10 @@
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function};
+use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::{match_token, newline_separated};
 use crate::nom::parser::{function, operator, r#type, ParseResult};
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types;
-use kodept_core::structure::rlt::new_types::{Keyword, Symbol};
+use kodept_rlt::new_types::{Keyword, Symbol};
+use kodept_rlt::{new_types, rlt};
 use nom::branch::alt;
 use nom::sequence::tuple;
 use nom::Parser;

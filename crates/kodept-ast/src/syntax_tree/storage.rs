@@ -3,9 +3,8 @@ use crate::properties::Node;
 use crate::resource::rlt::SyntaxResolver;
 use crate::syntax_tree::builder::Pool;
 use bevy_ecs::prelude::{Component, World};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::RLT;
 use std::ops::Index;
+use kodept_rlt::RLT;
 
 #[derive(Debug)]
 pub struct AST {
@@ -18,7 +17,7 @@ impl AST {
         source_code: impl CodeHolder,
     ) -> (Self, SyntaxResolver)
     where
-        for<'r> Root: FromSyntax<Syntax = rlt::File> + 'static,
+        for<'r> Root: FromSyntax<Syntax = kodept_rlt::File> + 'static,
     {
         let mut world = World::new();
         let syntax = SyntaxResolver::empty(start);

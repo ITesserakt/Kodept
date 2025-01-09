@@ -1,11 +1,11 @@
 use codespan_reporting::files::Files;
 use codespan_reporting::term::termcolor::{ColorSpec, StandardStream, WriteColor};
-use kodept_macros::context::FileId;
-use kodept_macros::error::report_collector::ReportCollector;
-use kodept_macros::error::traits::Reportable;
+use kodept_report::error::report_collector::ReportCollector;
+use kodept_report::error::traits::Reportable;
 use std::io::Write;
 use std::mem::take;
 use std::sync::{Arc, Mutex};
+use kodept_report::FileId;
 
 pub trait ProvideCollector<Id> {
     fn provide_collector<'a, T, F>(
@@ -23,7 +23,7 @@ pub trait ConsumeCollector<'a, Id> {
         F: Files<'a, FileId = Id>;
 }
 
-pub type CodespanSettings = kodept_macros::error::traits::CodespanSettings<StreamOutput>;
+pub type CodespanSettings = kodept_report::error::traits::CodespanSettings<StreamOutput>;
 
 #[derive(Debug, Clone)]
 pub enum Reports {

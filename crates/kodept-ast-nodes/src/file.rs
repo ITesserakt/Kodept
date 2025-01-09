@@ -7,8 +7,7 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::children::ChildrenDisjoint;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::TopLevelNode;
+use kodept_rlt::{rlt, TopLevelNode};
 
 #[derive(Debug, PartialEq)]
 pub enum ModKind {

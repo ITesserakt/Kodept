@@ -1,4 +1,3 @@
-use crate::context::FileId;
 use crate::error::report::{
     IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage,
 };
@@ -8,12 +7,10 @@ use codespan_reporting::term::termcolor::WriteColor;
 use codespan_reporting::term::Config;
 use extend::ext;
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
-use kodept_ast::prelude::NodeId;
-use kodept_ast::resource::rlt::SyntaxResolver;
 use crate::error::report_collector::{ReportCollector, Reporter};
+use crate::FileId;
 
 #[derive(Clone, Debug)]
 pub struct CodespanSettings<S> {
@@ -105,15 +102,6 @@ impl<E: std::error::Error> SpannedError<E> {
             severity: Severity::Error,
             notes: Default::default(),
             inner,
-        }
-    }
-
-    pub fn for_node(inner: E, node_id: NodeId, ctx: &SyntaxResolver) -> Self
-    {
-        let position = ctx.get_unknown(node_id);
-        match position {
-            None => panic!("Node is not linked with corresponding rlt node"),
-            Some(pos) => Self::new(inner, pos.location()),
         }
     }
 

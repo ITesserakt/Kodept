@@ -11,10 +11,8 @@ use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{expression, ParseResult};
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::{
-    BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
-};
+use kodept_rlt::new_types::{BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol};
+use kodept_rlt::rlt;
 
 fn left_fold<I, T, P, E, F, R>(parser: P, produce: F) -> impl Parser<I, R, E>
 where

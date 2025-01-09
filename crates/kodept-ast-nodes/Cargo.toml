@@ -12,5 +12,5 @@ bevy_ecs.workspace = true
 [dependencies.kodept-ast]
 path = "../kodept-ast"
 
-[dependencies.kodept-core]
-path = "../kodept-core"
+[dependencies.kodept-rlt]
+path = "../kodept-rlt"

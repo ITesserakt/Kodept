@@ -3,10 +3,8 @@ use nom::combinator::cut;
 use nom::sequence::tuple;
 use nom::Parser;
 use nom_supreme::ParserExt;
-
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::Keyword;
-use kodept_core::structure::rlt::TopLevelNode;
+use kodept_rlt::new_types::Keyword;
+use kodept_rlt::{rlt, TopLevelNode};
 
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;

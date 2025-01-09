@@ -1,15 +1,13 @@
-use nom::branch::alt;
-use nom::Parser;
-use nom_supreme::ParserExt;
-
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::TypeName;
-
-use crate::nom::parser::macros::{function};
+use crate::lexer::PackedToken::*;
+use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::ParseResult;
 use crate::token_stream::PackedTokenStream;
-use crate::lexer::PackedToken::*;
+use kodept_rlt::new_types::TypeName;
+use kodept_rlt::rlt;
+use nom::branch::alt;
+use nom::Parser;
+use nom_supreme::ParserExt;
 
 pub(super) fn reference(input: PackedTokenStream) -> ParseResult<TypeName> {
     match_token(Type)

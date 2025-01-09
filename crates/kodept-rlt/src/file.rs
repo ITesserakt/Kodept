@@ -1,9 +1,8 @@
 use derive_more::Constructor;
-
-use crate::code_point::CodePoint;
-use crate::structure::Located;
-use crate::structure::rlt::new_types::*;
-use crate::structure::rlt::top_level::TopLevelNode;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
+use crate::new_types::{Keyword, Symbol, TypeName};
+use crate::TopLevelNode;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Module {

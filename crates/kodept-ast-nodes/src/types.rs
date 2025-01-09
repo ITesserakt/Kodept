@@ -5,8 +5,7 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::{Parameter, Tuple};
+use kodept_rlt::{rlt, Parameter, Tuple};
 
 #[derive(Debug, PartialEq, Component)]
 pub struct TyName {

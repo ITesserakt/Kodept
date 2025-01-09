@@ -2,8 +2,8 @@ use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
-use kodept_core::structure::rlt::{ContextualReference, Reference, Term};
 use std::borrow::Cow;
+use kodept_rlt::{ContextualReference, Reference, Term};
 
 #[derive(Debug, PartialEq, Eq, Default, PartialOrd, Ord, Clone)]
 pub struct ReferenceContext {

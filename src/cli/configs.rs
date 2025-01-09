@@ -10,7 +10,6 @@ use derive_more::From;
 use kodept::codespan_settings::{CodespanSettings, Reports, StreamOutput};
 use kodept::loader::{Loader, LoadingError};
 use kodept::read_code_source::ReadCodeSource;
-use kodept_core::structure::rlt::RLT;
 use kodept_parse::common::{EagerTokensProducer, ErrorAdapter, RLTProducer, TokenProducer};
 use kodept_parse::error::ParseErrors;
 use kodept_parse::lexer::traits::ToRepresentation;
@@ -19,6 +18,7 @@ use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
 use tracing::debug;
+use kodept_rlt::RLT;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {

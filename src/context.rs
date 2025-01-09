@@ -1,17 +1,9 @@
-use crate::error::report::{IntoSpannedReportMessage, Report};
-use crate::error::report_collector::{ReportCollector, Reporter};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::prelude::AST;
-use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
-
-pub type FileId = u16;
-
-#[derive(Debug)]
-pub struct FileDescriptor {
-    pub name: FileName,
-    pub id: FileId,
-}
+use kodept_report::error::report::{IntoSpannedReportMessage, Report};
+use kodept_report::error::report_collector::{ReportCollector, Reporter};
+use kodept_report::{FileDescriptor, FileId};
 
 #[derive(Debug)]
 pub struct Context<'r> {

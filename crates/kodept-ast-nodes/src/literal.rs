@@ -9,7 +9,7 @@ use kodept_ast::prelude::{Choose, CodeHolder};
 use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::ASTBuilder;
-use kodept_core::structure::rlt;
+use kodept_rlt::rlt;
 
 #[derive(Debug, PartialEq, Component)]
 pub enum Literal {

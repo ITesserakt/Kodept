@@ -1,7 +1,7 @@
-use crate::code_point::CodePoint;
-use crate::structure::Located;
-use crate::structure::rlt::{Body, Operation};
-use crate::structure::rlt::new_types::Keyword;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
+use crate::{Body, Operation};
+use crate::new_types::Keyword;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IfExpr {

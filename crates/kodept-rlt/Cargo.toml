@@ -1,0 +1,13 @@
+[package]
+name = "kodept-rlt"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+derive_more.workspace = true
+
+[dependencies.kodept-core]
+path = "../kodept-core"
