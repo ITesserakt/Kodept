@@ -64,7 +64,7 @@ impl CommandWithSources for Graph {
         };
 
         reports.provide_collector(source.all_files(), |collector| {
-            let mut context = Context {
+            let context = Context {
                 ast: tree,
                 rlt: accessor,
                 collector,

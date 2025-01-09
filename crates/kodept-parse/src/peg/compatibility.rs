@@ -32,7 +32,7 @@ impl From<LineCol> for Position {
     }
 }
 
-impl<'t> Parse for PackedTokenStream<'t> {
+impl Parse for PackedTokenStream<'_> {
     type PositionRepr = Position;
 
     #[inline(always)]
@@ -87,7 +87,7 @@ impl<'input> ParseElem<'input> for PackedTokenStream<'input> {
     }
 }
 
-impl<'input> ParseLiteral for PackedTokenStream<'input> {
+impl ParseLiteral for PackedTokenStream<'_> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
         let Some(token) = PackedToken::from_name(literal) else {

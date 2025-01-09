@@ -18,7 +18,7 @@ members = [
     , "crates/kodept-inference"
     , "crates/kodept-ast"
     , "crates/kodept-report"
-    , "crates/kodept-interpret"
+#    , "crates/kodept-interpret"
     , "crates/kodept-ir"
     , "crates/kodept-interning"
     , "crates/kodept-ast-nodes"

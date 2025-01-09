@@ -29,7 +29,7 @@ struct BaseError<'s, O, E> {
     context: Vec<Context<O>>,
 }
 
-impl<'s, O, E> BaseError<'s, O, E>
+impl<O, E> BaseError<'_, O, E>
 where
     E: ExpectedError,
 {

@@ -40,7 +40,7 @@ struct AlgorithmW<'e> {
 
 type AWResult = Result<(AssumptionSet, Vec<Constraint>, MonomorphicType), AlgorithmWError>;
 
-impl<'e> AlgorithmW<'e> {
+impl AlgorithmW<'_> {
     fn apply(&mut self, expression: &Language) -> AWResult {
         match expression {
             Language::Var(x) => self.apply_var(x),

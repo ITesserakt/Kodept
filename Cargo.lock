@@ -1048,20 +1048,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kodept-interpret"
-version = "0.1.2"
-dependencies = [
- "dashmap",
- "derive_more",
- "itertools 0.13.0",
- "kodept-ast",
- "kodept-core",
- "kodept-inference",
- "kodept-report",
- "thiserror 2.0.9",
-]
-
-[[package]]
 name = "kodept-parse"
 version = "0.3.0"
 dependencies = [

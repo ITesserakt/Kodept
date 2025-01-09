@@ -42,9 +42,9 @@ impl Deref for SharedStr {
     }
 }
 
-impl Into<String> for SharedStr {
-    fn into(self) -> String {
-        self.deref().to_string()
+impl From<SharedStr> for String {
+    fn from(val: SharedStr) -> Self {
+        val.deref().to_string()
     }
 }
 
@@ -81,7 +81,7 @@ impl PartialEq for SharedStr {
 
 impl PartialOrd for SharedStr {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.deref().partial_cmp(other.deref())
+        Some(self.cmp(other))
     }
 }
 

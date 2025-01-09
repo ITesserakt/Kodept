@@ -210,6 +210,7 @@ pub enum PackedToken {
 static_assert_size!(Token<'static>, 32);
 static_assert_size!(PackedToken, 1);
 
+#[allow(clippy::match_like_matches_macro)]
 impl PackedToken {
     pub fn is_ignored(&self) -> bool {
         match self {

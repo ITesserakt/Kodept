@@ -50,8 +50,8 @@ impl Kodept {
     pub fn level(&self) -> Level {
         self.logging
             .debug
-            .then(|| Level::DEBUG)
-            .or(self.logging.verbose.then(|| Level::DEBUG))
+            .then_some(Level::DEBUG)
+            .or(self.logging.verbose.then_some(Level::DEBUG))
             .unwrap_or(self.logging.severity)
     }
 }

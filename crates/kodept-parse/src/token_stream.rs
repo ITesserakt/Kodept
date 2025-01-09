@@ -15,14 +15,12 @@ pub struct PackedTokenStream<'t> {
 static_assert_size!(PackedTokenStream<'static>, 16);
 
 pub struct PackedTokenStreamIter<'t> {
-    slice_iter: std::slice::Iter<'t, PackedTokenMatch>
+    slice_iter: std::slice::Iter<'t, PackedTokenMatch>,
 }
 
 impl<'t> PackedTokenStream<'t> {
     pub fn new(slice: &'t [PackedTokenMatch]) -> Self {
-        Self {
-            slice,
-        }
+        Self { slice }
     }
 
     pub fn len(&self) -> usize {
@@ -79,8 +77,9 @@ impl<'t> InputIter for PackedTokenStream<'t> {
 
     fn iter_indices(&self) -> Self::Iter {
         PackedTokenStreamIter {
-            slice_iter: self.slice.iter()
-        }.enumerate()
+            slice_iter: self.slice.iter(),
+        }
+        .enumerate()
     }
 
     fn iter_elements(&self) -> Self::IterElem {
@@ -105,7 +104,7 @@ impl<'t> InputIter for PackedTokenStream<'t> {
     }
 }
 
-impl<'t> InputTake for PackedTokenStream<'t> {
+impl InputTake for PackedTokenStream<'_> {
     fn take(&self, count: usize) -> Self {
         Self {
             slice: &self[..count],
@@ -114,20 +113,11 @@ impl<'t> InputTake for PackedTokenStream<'t> {
 
     fn take_split(&self, count: usize) -> (Self, Self) {
         let (first, second) = self.slice.split_at(count);
-        (
-            Self {
-                slice: second,
-                ..*self
-            },
-            Self {
-                slice: first,
-                ..*self
-            },
-        )
+        (Self { slice: second }, Self { slice: first })
     }
 }
 
-impl<'t> InputLength for PackedTokenStream<'t> {
+impl InputLength for PackedTokenStream<'_> {
     fn input_len(&self) -> usize {
         self.len()
     }
@@ -139,7 +129,6 @@ impl Slice<RangeTo<usize>> for PackedTokenStream<'_> {
     fn slice(&self, range: RangeTo<usize>) -> Self {
         Self {
             slice: &self[range],
-            ..*self
         }
     }
 }

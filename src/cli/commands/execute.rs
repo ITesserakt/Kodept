@@ -56,7 +56,7 @@ impl CommandWithSources for Execute {
         debug!("Produced AST with node count = {}", ast.node_count());
 
         reports.provide_collector(source.all_files(), |collector| {
-            let mut context = Context {
+            let context = Context {
                 ast,
                 rlt,
                 collector,

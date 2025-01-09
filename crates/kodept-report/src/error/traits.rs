@@ -79,7 +79,7 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
             Ok(x) => Ok(x),
             Err(e) => {
                 pub struct Helper<'e, E: std::error::Error>(&'e E);
-                impl<'e, E> From<Helper<'e, E>> for ReportMessage
+                impl<E> From<Helper<'_, E>> for ReportMessage
                 where
                     E: std::error::Error,
                 {
@@ -124,13 +124,13 @@ impl<E: std::error::Error> SpannedError<E> {
     }
 }
 
-impl<E: ToString> Into<Diagnostic> for SpannedError<E> {
-    fn into(self) -> Diagnostic {
+impl<E: ToString> From<SpannedError<E>> for Diagnostic {
+    fn from(val: SpannedError<E>) -> Self {
         Diagnostic {
-            message: Cow::Owned(self.inner.to_string()),
-            labels: vec![Label::primary("here", self.point)],
-            notes: self.notes,
-            severity: self.severity,
+            message: Cow::Owned(val.inner.to_string()),
+            labels: vec![Label::primary("here", val.point)],
+            notes: val.notes,
+            severity: val.severity,
         }
     }
 }

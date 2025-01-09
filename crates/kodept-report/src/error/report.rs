@@ -184,13 +184,13 @@ impl<T: Into<ReportMessage>> IntoSpannedReportMessage for T {
     }
 }
 
-impl Into<crate::error::Diagnostic> for ReportMessage {
-    fn into(self) -> crate::error::Diagnostic {
+impl From<ReportMessage> for crate::error::Diagnostic {
+    fn from(val: ReportMessage) -> Self {
         crate::error::Diagnostic {
-            message: Cow::Owned(self.message),
+            message: Cow::Owned(val.message),
             labels: vec![],
-            notes: self.notes,
-            severity: self.severity,
+            notes: val.notes,
+            severity: val.severity,
         }
     }
 }

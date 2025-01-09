@@ -94,7 +94,7 @@ impl ToRepresentation for Keyword {
     }
 }
 
-impl<'t> Token<'t> {
+impl Token<'_> {
     #[inline(always)]
     pub fn from_name(name: &str) -> Option<Self> {
         match name {

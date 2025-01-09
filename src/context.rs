@@ -13,7 +13,7 @@ pub struct Context<'r> {
     pub current_file: Freeze<FileDescriptor>,
 }
 
-impl<'rlt> Context<'rlt> {
+impl Context<'_> {
     pub fn report_and_fail<T>(
         &mut self,
         message: impl IntoSpannedReportMessage,

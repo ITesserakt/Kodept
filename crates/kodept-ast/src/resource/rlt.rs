@@ -4,12 +4,12 @@ use bevy_ecs::prelude::{Entity, Resource};
 use dashmap::DashMap;
 use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
 use kodept_core::Freeze;
+use kodept_rlt::prelude::RLT;
+use kodept_rlt::{new_types, prelude as rlt};
 use std::marker::PhantomPinned;
 use std::pin::Pin;
-use kodept_core::structure::Located;
-use kodept_rlt::{new_types, prelude as rlt};
-use kodept_rlt::prelude::RLT;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -39,7 +39,7 @@ pub enum SyntaxVariant<'r> {
     Elif(&'r rlt::ElifExpr),
     Else(&'r rlt::ElseExpr),
     Tuple(&'r rlt::Tuple),
-    Lambda(&'r rlt::Lambda)
+    Lambda(&'r rlt::Lambda),
 }
 
 #[derive(Debug)]
@@ -82,7 +82,8 @@ impl SyntaxResolver {
     {
         let variant = node.into();
         // SAFETY: lifetimes of node and self are equal and produced reference won't be used in 'static contexts
-        let reborrow = unsafe { std::mem::transmute::<_, SyntaxVariant<'static>>(variant) };
+        let reborrow =
+            unsafe { std::mem::transmute::<SyntaxVariant<'r>, SyntaxVariant<'static>>(variant) };
         self.mapping.insert(id.as_inner(), reborrow);
     }
 

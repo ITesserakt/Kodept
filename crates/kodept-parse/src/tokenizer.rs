@@ -68,7 +68,7 @@ mod lazy {
         }
     }
 
-    impl<'t, F> FusedIterator for Tokenizer<'t, F> where F: TokenProducer {}
+    impl<F> FusedIterator for Tokenizer<'_, F> where F: TokenProducer {}
 
     impl<'t, F> Tok<'t> for Tokenizer<'t, F>
     where

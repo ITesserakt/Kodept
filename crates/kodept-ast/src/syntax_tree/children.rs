@@ -37,12 +37,14 @@ where
     type Arity: Arity;
 }
 
+type DynFromSyntax<'p, Source> = dyn FnOnce(SyntaxVariant<'p>, Source, &'p Pool) -> ASTBuilder<()>;
+
 pub struct ChildrenDisjoint<'p, Root, Source, Tag>
 where
     Source: CodeHolder,
 {
     pub(crate) inner: SyntaxVariant<'p>,
-    pub(crate) conversion: Box<dyn FnOnce(SyntaxVariant<'p>, Source, &'p Pool) -> ASTBuilder<()>>,
+    pub(crate) conversion: Box<DynFromSyntax<'p, Source>>,
     pub(crate) _phantom: PhantomData<(Tag, Root)>,
 }
 
