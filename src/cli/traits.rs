@@ -54,11 +54,11 @@ pub trait CommandWithSources: Sized {
                     let result = self.exec_for_source(source.clone(), reports, &output);
                     let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
                     warn!("Finished `{}` in {elapsed:.2}{suffix}", source.path());
-                    result
+                    result.ok_or(())
                 })
         }) {
-            Ok(Some(())) => Some(()),
-            Ok(None) => None,
+            Ok(Ok(())) => Some(()),
+            Ok(Err(())) => None,
             Err(_) => {
                 reports.provide_collector(&*sources, |c| {
                     c.report(

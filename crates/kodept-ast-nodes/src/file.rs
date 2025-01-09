@@ -47,7 +47,7 @@ impl FromSyntax for FileDecl {
         builder: &Pool,
     ) -> ASTBuilder<Self> {
         ASTBuilder::new(builder, FileDecl)
-            .with_children(source_code, builder, |scope| scope.many(&node.0))
+            .with_children(source_code, builder, |scope| scope.many(node.0.as_ref()))
     }
 }
 
@@ -60,8 +60,8 @@ impl FromSyntax for ModDecl {
         pool: &Pool,
     ) -> ASTBuilder<Self> {
         let (kind, id, rest) = match node {
-            rlt::Module::Global { id, rest, .. } => (ModKind::Global, id, rest),
-            rlt::Module::Ordinary { id, rest, .. } => (ModKind::Ordinary, id, rest),
+            rlt::Module::Global { id, rest, .. } => (ModKind::Global, id, rest.as_ref()),
+            rlt::Module::Ordinary { id, rest, .. } => (ModKind::Ordinary, id, rest.as_ref()),
         };
         let name = source_code.get_chunk_located(id);
         ASTBuilder::new(pool, ModDecl { kind, name })

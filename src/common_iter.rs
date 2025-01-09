@@ -1,15 +1,11 @@
-
 pub trait CommonIter {
     type Item;
 
-    fn try_foreach_with<T, F>(
-        self,
-        with: T,
-        f: F,
-    ) -> Option<()>
+    fn try_foreach_with<T, E, F>(self, with: T, f: F) -> Result<(), E>
     where
         T: Send + Clone,
-        F: Fn(&mut T, Self::Item) -> Option<()>,
+        E: Send,
+        F: Fn(&mut T, Self::Item) -> Result<(), E>,
         F: Send + Sync;
 
     fn panic_fuse(self) -> impl CommonIter<Item = Self::Item>;
@@ -19,19 +15,17 @@ pub trait CommonIter {
 impl<I: Iterator> CommonIter for I {
     type Item = I::Item;
 
-    fn try_foreach_with<T, F>(self, mut with: T, f: F) -> Option<()>
+    fn try_foreach_with<T, E, F>(self, mut with: T, f: F) -> Result<(), E>
     where
-        T: Send + Clone,
-        F: Fn(&mut T, Self::Item) -> Option<()>,
-        F: Send + Sync
+        F: Fn(&mut T, Self::Item) -> Result<(), E>,
     {
         for item in self {
             f(&mut with, item)?;
         }
-        Some(())
+        Ok(())
     }
 
-    fn panic_fuse(self) -> impl CommonIter<Item=Self::Item> {
+    fn panic_fuse(self) -> impl CommonIter<Item = Self::Item> {
         self
     }
 }
@@ -40,16 +34,17 @@ impl<I: Iterator> CommonIter for I {
 impl<I: rayon::prelude::ParallelIterator> CommonIter for I {
     type Item = I::Item;
 
-    fn try_foreach_with<T, F>(self, with: T, f: F) -> Option<()>
+    fn try_foreach_with<T, E, F>(self, with: T, f: F) -> Result<(), E>
     where
         T: Send + Clone,
-        F: Fn(&mut T, Self::Item) -> Option<()>,
-        F: Send + Sync
+        E: Send,
+        F: Fn(&mut T, Self::Item) -> Result<(), E>,
+        F: Send + Sync,
     {
         rayon::prelude::ParallelIterator::try_for_each_with(self, with, f)
     }
 
-    fn panic_fuse(self) -> impl CommonIter<Item=Self::Item> {
+    fn panic_fuse(self) -> impl CommonIter<Item = Self::Item> {
         rayon::prelude::ParallelIterator::panic_fuse(self)
     }
 }

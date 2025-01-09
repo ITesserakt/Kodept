@@ -144,7 +144,7 @@ impl FromSyntax for Exprs {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Exprs).with_children(source, pool, |scope| {
-            scope.choose(Unit, node.expression.iter())
+            scope.choose(Unit, node.expression.as_ref())
         })
     }
 }
@@ -155,7 +155,7 @@ impl FromSyntax for App {
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, App).with_children(source, pool, |scope| {
             scope.choose::<_, _, LeftExpr>(Unit, [&node.expr]);
-            scope.maybe_choose::<_, _, RightExpr>(Unit, node.params.as_ref().map(|it| &it.inner))
+            scope.maybe_choose::<_, _, RightExpr>(Unit, node.params.as_ref().map(|it| it.inner.as_ref()))
         })
     }
 }
@@ -166,7 +166,7 @@ impl FromSyntax for Lambda {
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Lambda).with_children(source, pool, |scope| {
             scope.choose(Unit, [&*node.expr]);
-            scope.choose(Unit, &node.binds.inner);
+            scope.choose(Unit, node.binds.inner.as_ref());
         })
     }
 }

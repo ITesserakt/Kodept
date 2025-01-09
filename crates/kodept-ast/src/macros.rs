@@ -40,7 +40,7 @@ macro_rules! property {
 macro_rules! derive_tag {
     ($vis:vis tag $self:ident) => {
         #[derive(Debug, Default, $crate::external::Component)]
-        #[component(storage = "SparseSet")]
+        // #[component(storage = "SparseSet")]
         $vis struct $self;
         
         impl $crate::properties::NodeProperty for $self {}

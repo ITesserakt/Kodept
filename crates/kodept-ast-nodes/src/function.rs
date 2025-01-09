@@ -34,7 +34,7 @@ impl FromSyntax for Func {
         
         ASTBuilder::new(pool, Func { name }).with_children(source, pool, move |scope| {
             scope.choose(Unit, node.return_type.as_ref().map(|it| &it.1));
-            scope.maybe_choose(Unit, node.params.as_ref().map(|it| &it.inner));
+            scope.maybe_choose(Unit, node.params.as_ref().map(|it| it.inner.as_ref()));
             
             match &*node.body {
                 Body::Block(x) => scope.many::<Exprs, _>([x]),

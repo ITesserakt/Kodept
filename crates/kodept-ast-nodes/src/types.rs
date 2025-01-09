@@ -77,7 +77,7 @@ impl FromSyntax for ProdTy {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, ProdTy).with_children(source, pool, move |scope| {
-            scope.choose(Unit, &node.0.inner)
+            scope.choose(Unit, node.0.inner.as_ref())
         })
     }
 }

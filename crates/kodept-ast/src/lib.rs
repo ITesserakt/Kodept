@@ -4,6 +4,7 @@ pub mod resource;
 mod node_id;
 pub mod properties;
 pub mod macros;
+mod utils;
 
 pub mod prelude {
     pub use super::traits::{CodeHolder, ASTNode, FromSyntax, Choose};

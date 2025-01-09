@@ -1,7 +1,9 @@
 use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
+use crate::properties::tags::Tagged;
 use crate::properties::{Node, NodeProperty};
 use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
 use crate::syntax_tree::children::HasChild;
+use crate::utils::{HasLength, IntoCommonIter};
 use bevy_ecs::entity::Entities;
 use bevy_ecs::prelude::{Entity, World};
 use bevy_ecs::world::CommandQueue;
@@ -9,7 +11,9 @@ use bevy_hierarchy::BuildChildren;
 use kodept_core::structure::rlt;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
-use crate::properties::tags::Tagged;
+use std::sync::LazyLock;
+
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 1);
 
 pub struct Pool<'e> {
     syntax: SyntaxResolver,
@@ -156,24 +160,50 @@ where
     }
 
     #[inline(always)]
-    pub fn many<'t, U, Tag>(&mut self, iter: impl IntoIterator<Item = &'t U::Syntax>)
+    pub fn many<'t, U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'t U::Syntax> + HasLength)
     where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
         Tag: Tagged,
         &'t U::Syntax: Into<SyntaxVariant<'p>>,
     {
-        for item in iter.into_iter() {
-            let part = U::from_syntax(item, self.source, self.pool);
-            self.children_buffer.push(part.root);
-            self.insert::<Tag>(item.into(), part.erase(), Tag::default());
+        if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
+            for item in iter.into_iter() {
+                let part = U::from_syntax(item, self.source, self.pool);
+                self.children_buffer.push(part.root);
+                self.insert::<Tag>(item.into(), part.erase(), Tag::default());
+            }
+            return;
+        }
+        
+        #[cfg(not(feature = "parallel"))]
+        unreachable!();
+        
+        #[cfg(feature = "parallel")] {
+            use rayon::prelude::*;
+            
+            let (sx, rx) = std::sync::mpsc::channel();
+            let iter = iter.into_par_iter();
+            let source = self.source;
+            let pool = self.pool;
+            
+            rayon::join(move || {
+                iter.for_each_with(sx, |sender, it| {
+                    sender.send((it.into(), U::from_syntax(it, source, pool))).unwrap()
+                })
+            }, || {
+                for (node, part) in rx {
+                    self.children_buffer.push(part.root);
+                    self.insert(node, part.erase(), Tag::default());
+                }
+            });
         }
     }
 
     #[inline(always)]
     pub fn maybe_many<'t, U, Tag>(
         &mut self,
-        option: Option<impl IntoIterator<Item = &'t U::Syntax>>,
+        option: Option<impl IntoCommonIter<Item = &'t U::Syntax> + HasLength>,
     ) where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
@@ -189,18 +219,47 @@ where
     pub fn choose<'a, T, Chooser, Tag>(
         &mut self,
         _chooser: Chooser,
-        iter: impl IntoIterator<Item = &'a T>,
+        iter: impl IntoCommonIter<Item = &'a T> + HasLength,
     ) where
+        Root: Send,
         Chooser: Choose<T, Root, Tag>,
         Tag: Tagged,
         T: 'a,
         'a: 'p,
     {
+        if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
         for item in iter.into_iter() {
             let disjoint = Chooser::branch(item);
             let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
             self.children_buffer.push(part.root);
             self.insert(disjoint.inner, part, Tag::default());
+        }
+            return;
+        }
+
+        #[cfg(not(feature = "parallel"))]
+        unreachable!();
+
+        #[cfg(feature = "parallel")] {
+            use rayon::prelude::*;
+
+            let (sx, rx) = std::sync::mpsc::channel();
+            let iter = iter.into_par_iter();
+            let source = self.source;
+            let pool = self.pool;
+
+            rayon::join(move || {
+                iter.for_each_with(sx, |sender, it| {
+                    let disjoint = Chooser::branch(it);
+                    let part = (disjoint.conversion)(disjoint.inner, source, pool);
+                    sender.send((disjoint.inner, part)).unwrap()
+                })
+            }, || {
+                for (node, part) in rx {
+                    self.children_buffer.push(part.root);
+                    self.insert(node, part, Tag::default());
+                }
+            });
         }
     }
 
@@ -208,8 +267,9 @@ where
     pub fn maybe_choose<'a, T, Chooser, Tag>(
         &mut self,
         chooser: Chooser,
-        option: Option<impl IntoIterator<Item = &'a T>>,
+        option: Option<impl IntoCommonIter<Item = &'a T> + HasLength>,
     ) where
+        Root: Send,
         Chooser: Choose<T, Root, Tag>,
         Tag: Tagged,
         T: 'a,
