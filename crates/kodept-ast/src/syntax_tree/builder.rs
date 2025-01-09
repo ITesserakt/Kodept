@@ -133,6 +133,9 @@ impl<Root> ASTBuilder<Root> {
             _phantom: Default::default(),
         }
     }
+    pub(crate) fn id(&self) -> NodeId {
+        NodeId::from_inner(self.root)
+    }
 }
 
 impl<'p, 'e, Root, Source> ChildrenScope<'p, 'e, Root, Source>

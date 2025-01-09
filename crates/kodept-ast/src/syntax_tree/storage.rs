@@ -17,16 +17,24 @@ impl AST {
         source_code: impl CodeHolder,
     ) -> (Self, SyntaxResolver)
     where
-        for<'r> Root: FromSyntax<Syntax = kodept_rlt::prelude::File> + 'static,
+        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
     {
         let mut world = World::new();
-        let syntax = SyntaxResolver::empty(start);
-        let pool = Pool::new(syntax, &world);
+        let syntax = Self::create_in_world::<Root>(start, source_code, &mut world);
+        (AST { world }, syntax)
+    }
+    
+    pub fn create_in_world<Root>(lexeme_tree: RLT, source_code: impl CodeHolder, world: &mut World) -> SyntaxResolver
+    where 
+        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>
+    {
+        let resolver = SyntaxResolver::empty(lexeme_tree);
+        let pool = Pool::new(resolver, world);
         let whole_part = Root::from_syntax(pool.syntax_root(), source_code, &pool);
+        pool.link_syntax(whole_part.id(), pool.syntax_root());
         let syntax = pool.into_syntax_resolver();
-        whole_part.consume(&mut world);
-
-        (Self { world }, syntax)
+        whole_part.consume(world);
+        syntax
     }
 
     pub fn node_count(&self) -> usize {
