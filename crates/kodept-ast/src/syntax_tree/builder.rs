@@ -1,5 +1,4 @@
 use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
-use crate::properties::tags::tags::Tagged;
 use crate::properties::{Node, NodeProperty};
 use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
 use crate::syntax_tree::children::HasChild;
@@ -10,6 +9,7 @@ use bevy_hierarchy::BuildChildren;
 use kodept_core::structure::rlt;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
+use crate::properties::tags::Tagged;
 
 pub struct Pool<'e> {
     syntax: SyntaxResolver,
@@ -59,7 +59,7 @@ pub struct ChildrenScope<'p, 'e, Root, Source> {
 }
 
 impl<Root> ASTBuilder<Root> {
-    #[allow(private_bounds)]
+    #[must_use]
     pub fn new(pool: &Pool, root: Root) -> Self
     where
         Root: ASTNode,
@@ -77,18 +77,7 @@ impl<Root> ASTBuilder<Root> {
         }
     }
 
-    pub fn add_child<U, Tag>(&mut self, child: U)
-    where
-        Root: HasChild<U, Tag>,
-        U: ASTNode,
-        Tag: Tagged,
-    {
-        let root = self.root;
-        self.queue.push(move |w: &mut World| {
-            w.entity_mut(root).with_child((child, Node, Tag::default()));
-        });
-    }
-
+    #[must_use]
     pub fn with_property(mut self, property: impl NodeProperty) -> Self {
         let root = self.root;
         self.queue.push(move |w: &mut World| {
@@ -97,6 +86,7 @@ impl<Root> ASTBuilder<Root> {
         self
     }
 
+    #[must_use]
     #[inline(always)]
     pub fn with_children<'p, 'e, S>(
         mut self,
@@ -143,7 +133,7 @@ where
     Source: CodeHolder,
 {
     #[inline(always)]
-    fn insert<Tag>(&mut self, node: SyntaxVariant<'p>, mut part: ASTBuilder<()>)
+    fn insert<Tag>(&mut self, node: SyntaxVariant<'p>, mut part: ASTBuilder<()>, tag: Tag)
     where
         Tag: Tagged,
     {
@@ -152,7 +142,7 @@ where
         self.pool.link_syntax(NodeId::from_inner(child_id), node);
         part.queue.push(move |w: &mut World| {
             w.entity_mut(child_id)
-                .insert(Tag::default())
+                .insert(tag)
                 .insert_if_new(Node);
             w.entity_mut(root_id).add_child(child_id);
         });
@@ -176,7 +166,7 @@ where
         for item in iter.into_iter() {
             let part = U::from_syntax(item, self.source, self.pool);
             self.children_buffer.push(part.root);
-            self.insert::<Tag>(item.into(), part.erase());
+            self.insert::<Tag>(item.into(), part.erase(), Tag::default());
         }
     }
 
@@ -196,12 +186,13 @@ where
     }
 
     #[inline(always)]
-    pub fn choose<'a, T, Chooser>(
+    pub fn choose<'a, T, Chooser, Tag>(
         &mut self,
         _chooser: Chooser,
         iter: impl IntoIterator<Item = &'a T>,
     ) where
-        Chooser: Choose<T, Root>,
+        Chooser: Choose<T, Root, Tag>,
+        Tag: Tagged,
         T: 'a,
         'a: 'p,
     {
@@ -209,22 +200,35 @@ where
             let disjoint = Chooser::branch(item);
             let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
             self.children_buffer.push(part.root);
-            self.insert::<Chooser::Tag>(disjoint.inner, part);
+            self.insert(disjoint.inner, part, Tag::default());
         }
     }
 
     #[inline(always)]
-    pub fn maybe_choose<'a, T, Chooser>(
+    pub fn maybe_choose<'a, T, Chooser, Tag>(
         &mut self,
         chooser: Chooser,
         option: Option<impl IntoIterator<Item = &'a T>>,
     ) where
-        Chooser: Choose<T, Root>,
+        Chooser: Choose<T, Root, Tag>,
+        Tag: Tagged,
         T: 'a,
         'a: 'p,
     {
         if let Some(iter) = option {
             self.choose(chooser, iter)
         }
+    }
+    
+    #[allow(clippy::wrong_self_convention)]
+    pub fn from_builder<'a, T, U, Tag>(&mut self, node: &'a T, builder: ASTBuilder<U>)
+    where 
+        Root: HasChild<U, Tag>,
+        U: ASTNode,
+        Tag: Tagged,
+        &'a T: Into<SyntaxVariant<'p>>
+    {
+        self.children_buffer.push(builder.root);
+        self.insert(node.into(), builder.erase(), Tag::default());
     }
 }

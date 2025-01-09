@@ -69,10 +69,9 @@ impl FromSyntax for ModDecl {
     }
 }
 
-impl Choose<TopLevelNode, ModDecl> for Unit {
-    type Tag = TopLevel;
-
-    fn branch<S: CodeHolder>(node: &TopLevelNode) -> ChildrenDisjoint<ModDecl, S, Self::Tag> {
+impl Choose<TopLevelNode, ModDecl, TopLevel> for Unit {
+    #[inline(always)]
+    fn branch<S: CodeHolder>(node: &TopLevelNode) -> ChildrenDisjoint<ModDecl, S, TopLevel> {
         match node {
             TopLevelNode::Enum(x) => ChildrenDisjoint::new::<EnumDecl>(x),
             TopLevelNode::Struct(x) => ChildrenDisjoint::new::<StructDecl>(x),

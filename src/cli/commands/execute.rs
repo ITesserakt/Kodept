@@ -14,7 +14,6 @@ use std::path::Path;
 use tracing::debug;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
-use kodept_interning::InterningCodeHolder;
 
 #[derive(Debug, Args, Clone)]
 pub struct Execute {
@@ -46,9 +45,14 @@ impl CommandWithSources for Execute {
                 .map_err(to_diagnostics)
                 .drain(*source.id, collector)
         })?;
-
-        let code_holder = InterningCodeHolder::new(&*source);
-        let (ast, rlt) = AST::recursively_build::<FileDecl>(rlt, code_holder);
+        
+        let code_holder = || {
+            #[cfg(feature = "interning")]
+            return kodept_interning::InterningCodeHolder::new(&*source);
+            #[cfg(not(feature = "interning"))]
+            return kodept::read_code_source::CloningCodeHolder::new(&*source);
+        };
+        let (ast, rlt) = AST::recursively_build::<FileDecl>(rlt, code_holder());
         debug!("Produced AST with node count = {}", ast.node_count());
 
         reports.provide_collector(source.all_files(), |collector| {

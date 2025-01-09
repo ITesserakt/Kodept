@@ -18,4 +18,4 @@ pub mod external {
 pub type Str = kodept_core::shared_str::SharedStr;
 
 #[cfg(not(feature = "interning"))]
-pub type Str = std::borrow::Cow<'static, str>;
+pub type Str = String;

@@ -1,21 +1,10 @@
-use kodept_ast::external::Component;
-use kodept_ast::properties::NodeProperty;
-use kodept_ast::properties::tags::tags::Tagged;
+use kodept_ast::derive_tag;
 
-#[derive(Debug, Component, Default)]
-pub struct TopLevel;
-
-impl NodeProperty for TopLevel {}
-impl Tagged for TopLevel {}
-
-#[derive(Debug, Component, Default)]
-pub struct Type;
-
-impl NodeProperty for Type {}
-impl Tagged for Type {}
-
-#[derive(Debug, Component, Default)]
-pub struct Param;
-
-impl NodeProperty for Param {}
-impl Tagged for Param {}
+derive_tag!(pub tag TopLevel);
+derive_tag!(pub tag Type);
+derive_tag!(pub tag Param);
+derive_tag!(pub tag BlockLevel);
+derive_tag!(pub tag LeftExpr);
+derive_tag!(pub tag RightExpr);
+derive_tag!(pub tag Expr);
+derive_tag!(pub tag Term);

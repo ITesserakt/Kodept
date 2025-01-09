@@ -22,11 +22,11 @@ fn lambda(input: PackedTokenStream) -> ParseResult<rlt::Expression> {
         operator::grammar,
     ))
     .context(function!())
-    .map(|it| rlt::Expression::Lambda {
+    .map(|it| rlt::Expression::Lambda(rlt::Lambda {
         binds: VerboseEnclosed::from((it.0, it.1.into_boxed_slice(), it.2)).into(),
         flow: Symbol::from_located(it.3),
         expr: Box::new(it.4),
-    })
+    }))
     .parse(input)
 }
 

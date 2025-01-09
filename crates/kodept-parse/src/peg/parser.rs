@@ -196,19 +196,19 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
             right: Box::new(b)
         } }
         --
-        op:$"-" _ a:@ { rlt::Operation::TopUnary {
+        op:$"-" _ a:@ { rlt::Operation::Unary {
             operator: UnaryOperationSymbol::Neg(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
-        op:$"!" _ a:@ { rlt::Operation::TopUnary {
+        op:$"!" _ a:@ { rlt::Operation::Unary {
             operator: UnaryOperationSymbol::Not(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
-        op:$"~" _ a:@ { rlt::Operation::TopUnary {
+        op:$"~" _ a:@ { rlt::Operation::Unary {
             operator: UnaryOperationSymbol::Inv(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
-        op:$"+" _ a:@ { rlt::Operation::TopUnary {
+        op:$"+" _ a:@ { rlt::Operation::Unary {
             operator: UnaryOperationSymbol::Plus(Symbol::from_located(op)),
             expr: Box::new(a)
         } }
@@ -244,11 +244,11 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
 
     rule lambda() -> rlt::Expression =
         l:$"[" _ ps:comma_separated0(<parameter()>) _ r:$"]" _ f:$"=>" _ expr:operator_grammar() {
-        rlt::Expression::Lambda {
+        rlt::Expression::Lambda(rlt::Lambda {
             binds: VerboseEnclosed::from_located(l, ps.into_boxed_slice(), r).into(),
             flow: Symbol::from_located(f),
             expr: Box::new(expr)
-        }
+        })
     }
 
     pub rule expression_grammar() -> rlt::Expression =

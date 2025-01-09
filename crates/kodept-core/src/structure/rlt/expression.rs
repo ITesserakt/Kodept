@@ -18,7 +18,7 @@ pub enum Operation {
         dot: Symbol,
         right: Box<Operation>,
     },
-    TopUnary {
+    Unary {
         operator: UnaryOperationSymbol,
         expr: Box<Operation>,
     },
@@ -33,14 +33,17 @@ pub enum Operation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Lambda {
-        binds: Enclosed<Box<[Parameter]>>,
-        flow: Symbol,
-        expr: Box<Operation>,
-    },
+    Lambda(Lambda),
     Term(Term),
     Literal(Literal),
     If(Box<IfExpr>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Lambda {
+    pub binds: Enclosed<Box<[Parameter]>>,
+    pub flow: Symbol,
+    pub expr: Box<Operation>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -63,7 +66,7 @@ impl Located for Operation {
         match self {
             Operation::Block(x) => x.location(),
             Operation::Access { dot, .. } => dot.location(),
-            Operation::TopUnary { operator, .. } => operator.location(),
+            Operation::Unary { operator, .. } => operator.location(),
             Operation::Binary { operation, .. } => operation.location(),
             Operation::Application(x) => x.location(),
             Operation::Expression(x) => x.location(),
@@ -74,11 +77,17 @@ impl Located for Operation {
 impl Located for Expression {
     fn location(&self) -> CodePoint {
         match self {
-            Expression::Lambda { flow, .. } => flow.location(),
+            Expression::Lambda(x) => x.location(),
             Expression::Term(x) => x.location(),
             Expression::Literal(x) => x.location(),
             Expression::If(x) => x.location(),
         }
+    }
+}
+
+impl Located for Lambda {
+    fn location(&self) -> CodePoint {
+        self.flow.location()
     }
 }
 

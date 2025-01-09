@@ -37,7 +37,8 @@ pub enum SyntaxVariant<'r> {
     If(&'r rlt::IfExpr),
     Elif(&'r rlt::ElifExpr),
     Else(&'r rlt::ElseExpr),
-    Tuple(&'r rlt::Tuple)
+    Tuple(&'r rlt::Tuple),
+    Lambda(&'r rlt::Lambda)
 }
 
 #[derive(Debug)]
@@ -127,6 +128,7 @@ impl Located for SyntaxVariant<'_> {
             SyntaxVariant::Elif(x) => x.location(),
             SyntaxVariant::Else(x) => x.location(),
             SyntaxVariant::Tuple(x) => x.location(),
+            SyntaxVariant::Lambda(x) => x.location(),
         }
     }
 }

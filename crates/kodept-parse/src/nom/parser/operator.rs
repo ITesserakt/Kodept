@@ -93,7 +93,7 @@ fn top_expr(input: PackedTokenStream) -> ParseResult<rlt::Operation> {
         match_token(Plus).map(|it| UnaryOperationSymbol::Plus(Symbol::from_located(it))),
     ))
     .and(top_expr)
-    .map(|it| rlt::Operation::TopUnary {
+    .map(|it| rlt::Operation::Unary {
         operator: it.0,
         expr: Box::new(it.1),
     })

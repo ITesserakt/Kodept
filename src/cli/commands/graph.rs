@@ -12,7 +12,6 @@ use kodept_macros::error::traits::DrainReports;
 use std::path::Path;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
-use kodept_interning::InterningCodeHolder;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Graph {
@@ -47,8 +46,13 @@ impl CommandWithSources for Graph {
                 .drain(*source.id, collector)
         })?;
 
-        let code_holder = InterningCodeHolder::new(&*source);
-        let (tree, accessor) = AST::recursively_build::<FileDecl>(rlt, code_holder);
+        let code_holder = || {
+            #[cfg(feature = "interning")]
+            return kodept_interning::InterningCodeHolder::new(&*source);
+            #[cfg(not(feature = "interning"))]
+            return kodept::read_code_source::CloningCodeHolder::new(&*source);
+        };
+        let (tree, accessor) = AST::recursively_build::<FileDecl>(rlt, code_holder());
         let output_file = match get_output_file(&source, output) {
             Ok(x) => x,
             Err(e) => {

@@ -35,3 +35,15 @@ macro_rules! property {
     ($self:ty => $name:ty) => { impl $crate::properties::HasProperty<$name> for $self {} };
     ($self:ty => require $name:ty) => { impl $crate::properties::RequireProperty<$name> for $self {} };
 }
+
+#[macro_export]
+macro_rules! derive_tag {
+    ($vis:vis tag $self:ident) => {
+        #[derive(Debug, Default, $crate::external::Component)]
+        #[component(storage = "SparseSet")]
+        $vis struct $self;
+        
+        impl $crate::properties::NodeProperty for $self {}
+        impl $crate::properties::tags::Tagged for $self {}
+    };
+}

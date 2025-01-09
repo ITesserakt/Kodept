@@ -1,5 +1,5 @@
 use crate::prelude::{ASTNode, CodeHolder, FromSyntax};
-use crate::properties::tags::tags::{NoTag, Tagged};
+use crate::properties::tags::{NoTag, Tagged};
 use crate::resource::rlt::SyntaxVariant;
 use crate::syntax_tree::children::arity::Arity;
 use crate::syntax_tree::prelude::{ASTBuilder, Pool};
@@ -43,13 +43,13 @@ where
 {
     pub(crate) inner: SyntaxVariant<'p>,
     pub(crate) conversion: Box<dyn FnOnce(SyntaxVariant<'p>, Source, &'p Pool) -> ASTBuilder<()>>,
-    _phantom: PhantomData<(Tag, Root)>,
+    pub(crate) _phantom: PhantomData<(Tag, Root)>,
 }
 
 impl<'p, Root, Source, Tag> ChildrenDisjoint<'p, Root, Source, Tag>
 where
     Source: CodeHolder,
-    Tag: Tagged
+    Tag: Tagged,
 {
     #[inline(always)]
     pub fn new<'a, U>(node: &'a U::Syntax) -> Self
@@ -64,6 +64,28 @@ where
             conversion: Box::new(|node, source, pool| {
                 let node = node.try_into().unwrap();
                 U::from_syntax(node, source, pool).erase()
+            }),
+            _phantom: PhantomData,
+        }
+    }
+
+    #[inline(always)]
+    pub fn ad_hoc<'a, T, U>(
+        node: &'a T,
+        f: impl FnOnce(&'p T, Source, &'p Pool) -> ASTBuilder<U> + 'static,
+    ) -> Self
+    where
+        &'a T: Into<SyntaxVariant<'p>>,
+        SyntaxVariant<'p>: TryInto<&'p T, Error: Debug>,
+        Root: HasChild<U, Tag>,
+        U: ASTNode,
+        T: 'p
+    {
+        Self {
+            inner: node.into(),
+            conversion: Box::new(move |node, source, pool| {
+                let node = node.try_into().unwrap();
+                f(node, source, pool).erase()
             }),
             _phantom: PhantomData,
         }

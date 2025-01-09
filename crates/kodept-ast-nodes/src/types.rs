@@ -82,14 +82,13 @@ impl FromSyntax for ProdTy {
     }
 }
 
-impl<R> Choose<rlt::Type, R> for Unit
+impl<R> Choose<rlt::Type, R, Type> for Unit
 where
     R: HasChild<TyName, Type>,
     R: HasChild<ProdTy, Type>,
 {
-    type Tag = Type;
-
-    fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, Self::Tag> {
+    #[inline(always)]
+    fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, Type> {
         match node {
             rlt::Type::Reference(x) => ChildrenDisjoint::new::<TyName>(x),
             rlt::Type::Tuple(x) => ChildrenDisjoint::new::<ProdTy>(x),
@@ -97,14 +96,13 @@ where
     }
 }
 
-impl<R> Choose<Parameter, R> for Unit
+impl<R> Choose<Parameter, R, Param> for Unit
 where 
     R: HasChild<TyParam, Param>,
     R: HasChild<NonTyParam, Param>
 {
-    type Tag = Param;
-
-    fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, Self::Tag> {
+    #[inline(always)]
+    fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, Param> {
         match node {
             Parameter::Typed(x) => ChildrenDisjoint::new::<TyParam>(x),
             Parameter::Untyped(x) => ChildrenDisjoint::new::<NonTyParam>(x)

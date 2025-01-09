@@ -8,6 +8,7 @@ use std::env::current_dir;
 use std::io::Read;
 use std::ops::Range;
 use std::str::from_utf8;
+use derive_more::Constructor;
 use memmap2::Mmap;
 use thiserror::Error;
 use yoke::Yoke;
@@ -99,6 +100,20 @@ impl<'a> CodeHolder for &'a ReadCodeSource {
             ReadImpl::Explicit(x) => Cow::Borrowed(&x[at.as_range()]),
             ReadImpl::Implicit(x) => Cow::Borrowed(&x.get()[at.as_range()]),
         }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Constructor)]
+pub struct CloningCodeHolder<C: CodeHolder>(C);
+
+impl<C: CodeHolder> CodeHolder for CloningCodeHolder<C>
+where 
+    C::Str: Into<String>
+{
+    type Str = String;
+
+    fn get_chunk(self, at: CodePoint) -> Self::Str {
+        self.0.get_chunk(at).into()
     }
 }
 

@@ -70,7 +70,6 @@ path = "crates/kodept-parse"
 version = "0.3"
 
 [dependencies.kodept-ast]
-features = ["interning"]
 path = "crates/kodept-ast"
 
 [dependencies.kodept-macros]
@@ -78,6 +77,7 @@ path = "crates/kodept-macros"
 
 [dependencies.kodept-interning]
 path = "crates/kodept-interning"
+optional = true
 
 [dependencies.kodept-ast-nodes]
 path = "crates/kodept-ast-nodes"
@@ -89,6 +89,7 @@ tempfile = "3.7.0"
 profiler = ["dep:dhat", "dep:ctrlc"]
 parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
+interning = ["dep:kodept-interning", "kodept-ast/interning"]
 
 [profile.profiler]
 debug = true
@@ -99,7 +100,7 @@ opt-level = 3
 
 [profile.release]
 opt-level = 3
-lto = true
+lto = "fat"
 panic = 'unwind'
 strip = true
 

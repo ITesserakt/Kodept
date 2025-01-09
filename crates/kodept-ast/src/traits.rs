@@ -2,7 +2,7 @@ use crate::syntax_tree::prelude::{ASTBuilder, Pool};
 use crate::Str;
 use bevy_ecs::prelude::Component;
 use kodept_core::structure::span::CodeHolder as BasicCodeHolder;
-use crate::properties::tags::tags::Tagged;
+use crate::properties::tags::Tagged;
 use crate::syntax_tree::children::ChildrenDisjoint;
 
 pub trait CodeHolder: BasicCodeHolder<Str = Str> {}
@@ -20,8 +20,6 @@ pub trait FromSyntax: Sized {
 
 pub trait ASTNode: Component {}
 
-pub trait Choose<T, Root>: Sized {
-    type Tag: Tagged;
-    
-    fn branch<Source: CodeHolder>(node: &T) -> ChildrenDisjoint<Root, Source, Self::Tag>;
+pub trait Choose<T, Root, Tag: Tagged>: Sized {
+    fn branch<Source: CodeHolder>(node: &T) -> ChildrenDisjoint<Root, Source, Tag>;
 }
