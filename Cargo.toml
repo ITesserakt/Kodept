@@ -82,6 +82,7 @@ version = "0.1"
 
 [dev-dependencies]
 tempfile = "3.7.0"
+criterion = "0.5.1"
 
 [features]
 profiler = ["dep:dhat", "dep:ctrlc"]
@@ -106,3 +107,7 @@ opt-level = 0
 debug = true
 panic = 'unwind'
 rpath = false
+
+[[bench]]
+name = "ast_building"
+harness = false

@@ -1,9 +1,11 @@
 use crate::graph::children::tags::ChildTag;
 use crate::graph::children::HasChildrenMarker;
 use crate::graph::node_id::AnyNodeKey;
+use crate::graph::node_props::{HasParent, Node};
 use crate::graph::syntax_tree::utils;
 use crate::graph::syntax_tree::Graph;
 use crate::graph::{AnyNode, Identifiable, NodeId};
+use crate::interning::SharedStr;
 use crate::rlt_accessor::{RLTAccessor, RLTFamily};
 use crate::traits::PopulateTree;
 use crate::uninit::Uninit;
@@ -14,14 +16,8 @@ use slotmap::{Key, SecondaryMap};
 use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
-use crate::graph::node_props::{HasParent, Node};
-use crate::interning::SharedStr;
 
-static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
-    LazyLock::new(|| match std::thread::available_parallelism() {
-        Ok(x) => x.get() * 4,
-        Err(_) => 8 * 4,
-    });
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 0);
 
 #[derive(Debug)]
 enum GraphImpl {
@@ -166,7 +162,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
 
         #[cfg(feature = "parallel")]
         {
-            use rayon::prelude::*; 
+            use rayon::prelude::*;
 
             let (sx, rx) = std::sync::mpsc::channel();
             let iter = iter.into_par_iter();
@@ -204,7 +200,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     ) -> impl Iterator<Item = SubSyntaxTree<'rlt, U>> + '_
     where
         T: HasChildrenMarker<U, TAG>,
-        U: 'static + Node
+        U: 'static + Node,
     {
         enum Helper<I1, I2> {
             A(I1),
@@ -243,25 +239,24 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
             GraphImpl::Leaf { .. } => Helper::B(std::iter::empty()),
         }
     }
-    
+
     pub fn into_root(self) -> Uninit<'rlt, T>
-    where 
-        AnyNode: TryInto<T>
+    where
+        AnyNode: TryInto<T>,
     {
         let root = match self.graph {
             GraphImpl::Plain(g) => g.root,
             GraphImpl::Leaf { root } => root,
         };
-        
+
         let value = if let Some(rlt) = self.root_rlt_mapping {
-            Uninit::new(root)
-                .with_rlt(rlt)
+            Uninit::new(root).with_rlt(rlt)
         } else {
             Uninit::new(root)
         };
-        
+
         value.map(|it| it.try_into().ok().unwrap())
-    } 
+    }
 
     pub(super) fn consume_map<U>(
         self,

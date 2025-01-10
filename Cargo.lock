@@ -814,6 +814,7 @@ dependencies = [
  "anyhow",
  "clap",
  "codespan-reporting",
+ "criterion",
  "ctrlc",
  "derive_more",
  "dhat",
