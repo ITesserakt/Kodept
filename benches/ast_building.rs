@@ -8,6 +8,7 @@ use kodept_parse::lexer::PestLexer;
 use kodept_parse::parser::PegParser;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_rlt::prelude::RLT;
+use std::borrow::Cow;
 use std::sync::LazyLock;
 
 const FILE_CONTENTS: &str = include_str!("benchmarking_file1.kd");
@@ -43,7 +44,7 @@ fn bench_impls(c: &mut Criterion) {
         &(rlt, sources),
         |b, (rlt, sources)| {
             b.iter_with_large_drop(move || {
-                let sources = kodept::read_code_source::CloningCodeHolder::new(*sources);
+                let sources = sources.map(Cow::from);
                 AST::recursively_build::<FileDecl>(rlt.clone(), sources);
             })
         },
@@ -55,7 +56,8 @@ fn bench_impls(c: &mut Criterion) {
         &(rlt, sources),
         |b, (rlt, sources)| {
             b.iter_with_large_drop(move || {
-                let sources = kodept_interning::InterningCodeHolder::new(*sources);
+                let sources =
+                    kodept_interning::InterningCodeHolder::new(*sources).map(|it| Cow::from(it.0));
                 AST::recursively_build::<FileDecl>(rlt.clone(), sources);
             })
         },
@@ -67,7 +69,7 @@ fn bench_impls(c: &mut Criterion) {
         &(rlt, sources),
         |b, (rlt, sources)| {
             b.iter_with_large_drop(move || {
-                let sources = kodept::read_code_source::CloningCodeHolder::new(*sources);
+                let sources = sources.map(Cow::from);
                 AST::recursively_build::<FileDecl>(rlt.clone(), sources);
             })
         },
@@ -79,7 +81,8 @@ fn bench_impls(c: &mut Criterion) {
         &(rlt, sources),
         |b, (rlt, sources)| {
             b.iter_with_large_drop(move || {
-                let sources = kodept_interning::InterningCodeHolder::new(*sources);
+                let sources =
+                    kodept_interning::InterningCodeHolder::new(*sources).map(|it| Cow::from(it.0));
                 AST::recursively_build::<FileDecl>(rlt.clone(), sources);
             })
         },

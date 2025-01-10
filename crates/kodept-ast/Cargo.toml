@@ -16,7 +16,6 @@ workspace = true
 
 [features]
 default = []
-interning = []
 parallel = ["dep:rayon"]
 
 [dependencies]

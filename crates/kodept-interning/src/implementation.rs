@@ -12,7 +12,7 @@ use std::sync::{OnceLock, PoisonError, RwLock, RwLockReadGuard};
 use std::sync::atomic::Ordering;
 use crate::TOTAL_SHARES;
 
-pub(crate) struct Interned<T: ?Sized + 'static>(pub &'static T);
+pub struct Interned<T: ?Sized + 'static = str>(pub &'static T);
 
 impl<T: ?Sized> Deref for Interned<T> {
     type Target = T;
@@ -24,11 +24,9 @@ impl<T: ?Sized> Deref for Interned<T> {
 
 impl<T: ?Sized> Clone for Interned<T> {
     fn clone(&self) -> Self {
-        *self
+        Self(self.0)
     }
 }
-
-impl<T: ?Sized> Copy for Interned<T> {}
 
 // Two Interned<T> should only be equal if they are clones from the same instance.
 // Therefore, we only use the pointer to determine equality.
@@ -55,7 +53,7 @@ impl<T: ?Sized + Debug> Debug for Interned<T> {
 
 impl<T> From<&Interned<T>> for Interned<T> {
     fn from(value: &Interned<T>) -> Self {
-        *value
+        value.clone()
     }
 }
 
@@ -143,7 +141,7 @@ impl<T: ?Sized> Default for Interner<T> {
     }
 }
 
-impl Drop for Interned<str> {
+impl<T: ?Sized> Drop for Interned<T> {
     fn drop(&mut self) {
         TOTAL_SHARES.fetch_sub(1, Ordering::Relaxed);
     }
@@ -233,7 +231,7 @@ mod tests {
     #[test]
     fn same_interned_instance() {
         let a = Interned("A");
-        let b = a;
+        let b = a.clone();
 
         assert_eq!(a, b);
 

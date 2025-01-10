@@ -27,7 +27,7 @@ members = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-bevy_ecs = { version = "0.15.1", default-features = false }
+bevy_ecs = { version = "0.15.1", default-features = false, features = ["trace"] }
 bevy_hierarchy = { version = "0.15.1", default-features = false }
 thiserror = "2.0"
 extend = "1.2"
@@ -83,7 +83,7 @@ criterion = "0.5.1"
 profiler = ["dep:dhat", "dep:ctrlc"]
 parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
-interning = ["dep:kodept-interning", "kodept-ast/interning"]
+interning = ["dep:kodept-interning"]
 
 [profile.profiler]
 debug = true
