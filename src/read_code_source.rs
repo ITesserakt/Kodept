@@ -1,7 +1,6 @@
 use codespan_reporting::files::line_starts;
 use derive_more::{Constructor, From};
 use kodept_core::code_point::CodePoint;
-use kodept_core::code_source::CodeSource;
 use kodept_core::structure::span::CodeHolder;
 use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
 use memmap2::Mmap;
@@ -12,6 +11,7 @@ use std::ops::Range;
 use std::str::from_utf8;
 use thiserror::Error;
 use yoke::Yoke;
+use crate::code_source::CodeSource;
 
 #[derive(Debug, From)]
 pub struct SourceImpl(ReadImpl);

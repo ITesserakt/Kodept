@@ -1,6 +1,6 @@
 [package]
 name = "kodept-core"
-version = "0.2.11"
+version = "0.3.1"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
@@ -19,8 +19,6 @@ serde = ["dep:serde"]
 
 [dependencies]
 derive_more.workspace = true
-thiserror.workspace = true
-memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
 pathdiff = "0.2.1"
 
 serde = { version = "1", optional = true, features = ["derive"] }

@@ -9,7 +9,6 @@ use kodept::codespan_settings::Reports;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept_report::error::report_collector::{ReportCollector, Reporter};
 use thiserror::Error;
-use kodept::read_code_source::{ReadCodeSourceError, SourceImpl};
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {

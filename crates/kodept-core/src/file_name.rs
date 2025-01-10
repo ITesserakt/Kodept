@@ -1,4 +1,3 @@
-use crate::code_source::CodeSource;
 use std::borrow::Cow;
 use std::fmt::Formatter;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -10,17 +9,6 @@ pub enum FileName {
     Real(PathBuf),
     Anon,
     Custom(Cow<'static, str>),
-}
-
-impl CodeSource {
-    #[must_use]
-    pub fn path(&self) -> FileName {
-        match self {
-            CodeSource::Memory { .. } => FileName::Anon,
-            CodeSource::File { name, .. } => FileName::Real(name.clone()),
-            CodeSource::MappedFile { name, .. } => FileName::Real(name.clone()),
-        }
-    }
 }
 
 impl FileName {

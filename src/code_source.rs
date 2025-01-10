@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use thiserror::Error;
+use kodept_core::file_name::FileName;
 
 #[derive(Debug, Error)]
 #[error(transparent)]
@@ -82,6 +83,17 @@ impl Seek for CodeSource {
             CodeSource::Memory { contents, .. } => contents.seek(pos),
             CodeSource::File { file, .. } => file.seek(pos),
             CodeSource::MappedFile { map, .. } => map.seek(pos),
+        }
+    }
+}
+
+impl CodeSource {
+    #[must_use]
+    pub fn path(&self) -> FileName {
+        match self {
+            CodeSource::Memory { .. } => FileName::Anon,
+            CodeSource::File { name, .. } => FileName::Real(name.clone()),
+            CodeSource::MappedFile { name, .. } => FileName::Real(name.clone()),
         }
     }
 }

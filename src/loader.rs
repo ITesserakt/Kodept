@@ -6,9 +6,9 @@ use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use itertools::Itertools;
-use kodept_core::code_source::{CodeSource, CodeSourceError};
 use thiserror::Error;
 use tracing::{debug, warn};
+use crate::code_source::{CodeSource, CodeSourceError};
 
 pub enum Loader {
     File(Vec<(File, PathBuf)>),

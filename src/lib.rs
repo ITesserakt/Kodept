@@ -1,3 +1,4 @@
+pub mod code_source;
 pub mod codespan_settings;
 pub mod common_iter;
 pub mod loader;
