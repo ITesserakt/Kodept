@@ -6,7 +6,6 @@ use clap::Subcommand;
 use itertools::Itertools;
 use kodept::codespan_settings::{ConsumeCollector, ProvideCollector, Reports};
 use kodept::read_code_source::ReadCodeSource;
-use kodept::source_files::GlobalReports;
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_report::error::report::{Label, Severity};
 use kodept_report::error::{Diagnostic, ErrorReported};
@@ -16,6 +15,7 @@ use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use kodept_frontend::prelude::GlobalReports;
 
 mod execute;
 mod graph;

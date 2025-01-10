@@ -2,7 +2,7 @@ use clap::Parser;
 use cli::common::Kodept;
 use kodept::codespan_settings::{ConsumeCollector, Reports};
 use kodept::profiler::HeapProfiler;
-use kodept::source_files::GlobalReports;
+use kodept_frontend::prelude::GlobalReports;
 
 mod cli;
 

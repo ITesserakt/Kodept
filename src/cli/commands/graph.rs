@@ -30,7 +30,13 @@ impl CommandWithSources for Graph {
                 return None;
             }
         };
-        Some(SourceFiles::from_sources(loader.into_sources()))
+        match SourceFiles::try_from_sources(loader.into_sources()) {
+            Ok(x) => Some(x),
+            Err(e) => {
+                collector.report((), e);
+                None
+            }
+        }
     }
 
     fn exec_for_source(

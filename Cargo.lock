@@ -981,6 +981,7 @@ dependencies = [
  "kodept-ast",
  "kodept-ast-nodes",
  "kodept-core",
+ "kodept-frontend",
  "kodept-interning",
  "kodept-parse",
  "kodept-report",
@@ -1034,6 +1035,11 @@ version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "bevy_hierarchy",
+ "codespan-reporting",
+ "derive_more",
+ "kodept-core",
+ "kodept-report",
+ "yoke",
 ]
 
 [[package]]

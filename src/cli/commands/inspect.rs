@@ -9,6 +9,7 @@ use kodept::codespan_settings::Reports;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept_report::error::report_collector::{ReportCollector, Reporter};
 use thiserror::Error;
+use kodept::read_code_source::{ReadCodeSourceError, SourceImpl};
 
 #[derive(Debug, ValueEnum, Clone, Display)]
 enum InspectingOptions {
@@ -133,7 +134,7 @@ impl InspectParser {
     fn inspect_parser(
         &self,
         source: &SourceView,
-        file_output_path: &std::path::Path,
+        file_output_path: &Path,
     ) -> Result<(), InspectError<String>> {
         use kodept_parse::{
             lexer::PegLexer,
@@ -169,7 +170,13 @@ impl CommandWithSources for InspectParser {
                 return None;
             }
         };
-        Some(SourceFiles::from_sources(loader.into_sources()))
+        match SourceFiles::try_from_sources(loader.into_sources()) {
+            Ok(x) => Some(x),
+            Err(e) => {
+                collector.report((), e);
+                None
+            }
+        }
     }
 
     fn exec_for_source(

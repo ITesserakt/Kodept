@@ -5,7 +5,6 @@ use clap::Args;
 use kodept::codespan_settings::{ProvideCollector, Reports};
 use kodept::context::Context;
 use kodept::loader::Loader;
-use kodept::source_files::{SourceFiles, SourceView};
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::Freeze;
@@ -14,6 +13,7 @@ use kodept_report::error::traits::DrainReports;
 use std::num::NonZeroU16;
 use std::path::Path;
 use tracing::debug;
+use kodept::source_files::{SourceFiles, SourceView};
 
 #[derive(Debug, Args, Clone)]
 pub struct Execute {
@@ -35,7 +35,13 @@ impl CommandWithSources for Execute {
                 return None;
             }
         };
-        Some(SourceFiles::from_sources(loader.into_sources()))
+        match SourceFiles::try_from_sources(loader.into_sources()) {
+            Ok(x) => Some(x),
+            Err(e) => {
+                collector.report((), e);
+                None
+            }
+        }
     }
 
     fn exec_for_source(&self, source: SourceView, reports: &mut Reports, _: &Path) -> Option<()> {

@@ -51,41 +51,29 @@ rust.unreachable_pub = "warn"
 [dependencies]
 anyhow = "1"
 clap = { version = "4.5", features = ["derive", "env"] }
-ctrlc = { version = "3.4.4", optional = true }
 codespan-reporting = "0.11.1"
 derive_more.workspace = true
-dhat = { version = "0.3", optional = true }
-gag = { version = "1.0.0", optional = true }
 itertools.workspace = true
 memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
-rayon = { version = "1.10.0", optional = true }
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt", "ansi"] }
 yoke = "0.7.4"
 
-[dependencies.kodept-core]
-path = "crates/kodept-core"
+ctrlc = { version = "3.4.4", optional = true }
+dhat = { version = "0.3", optional = true }
+gag = { version = "1.0.0", optional = true }
+rayon = { version = "1.10.0", optional = true }
 
-[dependencies.kodept-parse]
-path = "crates/kodept-parse"
-version = "0.3"
+kodept-core = { path = "crates/kodept-core" }
+kodept-parse = { path = "crates/kodept-parse" }
+kodept-ast = { path = "crates/kodept-ast" }
+kodept-report = { path = "crates/kodept-report" }
+kodept-ast-nodes = { path = "crates/kodept-ast-nodes" }
+kodept-frontend = { path = "crates/kodept-frontend" }
+kodept-rlt = { path = "crates/kodept-rlt" }
 
-[dependencies.kodept-ast]
-path = "crates/kodept-ast"
-
-[dependencies.kodept-report]
-path = "crates/kodept-report"
-
-[dependencies.kodept-interning]
-path = "crates/kodept-interning"
-optional = true
-
-[dependencies.kodept-ast-nodes]
-path = "crates/kodept-ast-nodes"
-
-[dependencies.kodept-rlt]
-path = "crates/kodept-rlt"
+kodept-interning = { path = "crates/kodept-interning", optional = true }
 
 [dev-dependencies]
 tempfile = "3.7.0"

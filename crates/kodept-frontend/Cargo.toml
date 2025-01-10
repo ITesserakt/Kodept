@@ -9,3 +9,8 @@ workspace = true
 [dependencies]
 bevy_ecs.workspace = true
 bevy_hierarchy.workspace = true
+codespan-reporting = "0.11.1"
+derive_more.workspace = true
+kodept-core = { path = "../kodept-core" }
+kodept-report = { path = "../kodept-report" }
+yoke = "0.7.5"

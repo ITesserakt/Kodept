@@ -1,5 +1,4 @@
 use kodept::codespan_settings::{ProvideCollector, Reports};
-use kodept::common_iter::CommonIter;
 use kodept::source_files::{SourceFiles, SourceView};
 use kodept_report::error::report::Severity;
 use kodept_report::error::report_collector::{ReportCollector, Reporter};
@@ -43,19 +42,17 @@ pub trait CommandWithSources: Sized {
     where
         Self: UnwindSafe + Sync,
     {
-        let rpt = reports.clone();
+        let mut rpt = reports.clone();
         let src = sources.clone();
         match std::panic::catch_unwind(move || {
-            src.into_common_iter()
-                .panic_fuse()
-                .try_foreach_with(rpt, |reports, source| {
-                    let _ = SetPanickedSourceId(*source.id);
-                    let now = Instant::now();
-                    let result = self.exec_for_source(source.clone(), reports, &output);
-                    let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
-                    warn!("Finished `{}` in {elapsed:.2}{suffix}", source.path());
-                    result.ok_or(())
-                })
+            src.into_iter().try_for_each(|source| {
+                let _ = SetPanickedSourceId(*source.id);
+                let now = Instant::now();
+                let result = self.exec_for_source(source.clone(), &mut rpt, &output);
+                let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
+                warn!("Finished `{}` in {elapsed:.2}{suffix}", source.path());
+                result.ok_or(())
+            })
         }) {
             Ok(Ok(())) => Some(()),
             Ok(Err(())) => None,

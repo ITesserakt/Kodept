@@ -1,34 +1,42 @@
-use crate::common_iter::CommonIter;
-use crate::read_code_source::ReadCodeSource;
+use crate::prelude::Source;
+use crate::read_code_source::{ReadSource, TryReadCode};
+use bevy_ecs::prelude::Resource;
 use codespan_reporting::files::{Error, Files};
-use kodept_core::code_source::CodeSource;
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
 use kodept_report::{FileDescriptor, FileId};
 use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
-use tracing::error;
 use yoke::Yoke;
 
 pub struct GlobalReports;
 
-#[derive(Debug, Clone)]
-pub struct SourceView {
-    pub id: Freeze<FileId>,
-    source: Yoke<&'static ReadCodeSource, Arc<SourceFiles>>,
-}
-
 #[derive(Debug)]
-pub struct SourceFiles {
-    contents: HashMap<FileId, ReadCodeSource>,
+pub struct SourceView<Impl: 'static> {
+    pub id: Freeze<FileId>,
+    source: Yoke<&'static ReadSource<Impl>, Arc<SourceFiles<Impl>>>,
 }
 
-impl Deref for SourceView {
-    type Target = ReadCodeSource;
+#[derive(Debug, Resource)]
+pub struct SourceFiles<Impl> {
+    contents: HashMap<FileId, ReadSource<Impl>>,
+}
+
+impl<Impl> Deref for SourceView<Impl> {
+    type Target = ReadSource<Impl>;
 
     fn deref(&self) -> &Self::Target {
         self.source.get()
+    }
+}
+
+impl<Impl> Clone for SourceView<Impl> {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            source: self.source.clone(),
+        }
     }
 }
 
@@ -54,8 +62,8 @@ impl Files<'static> for GlobalReports {
     }
 }
 
-impl SourceView {
-    pub fn all_files(&self) -> &SourceFiles {
+impl<Impl> SourceView<Impl> {
+    pub fn all_files(&self) -> &SourceFiles<Impl> {
         self.source.backing_cart()
     }
 
@@ -67,53 +75,45 @@ impl SourceView {
     }
 }
 
-impl SourceFiles {
-    pub fn from_sources(sources: Vec<CodeSource>) -> Self {
-        let map = sources
+impl<Impl: 'static> SourceFiles<Impl> {
+    pub fn try_from_sources<T>(sources: impl IntoIterator<Item = T>) -> Result<Self, Impl::Error>
+    where
+        Impl: TryReadCode<T>,
+    {
+        let contents: Result<HashMap<_, _>, _> = sources
             .into_iter()
-            .filter_map(|it| {
-                let path = it.path();
-                match it.try_into() {
-                    Ok(source) => Some(source),
-                    Err(e) => {
-                        error!(?path, "Cannot read source, I/O error: {e}.");
-                        None
-                    }
-                }
-            })
+            .map(Impl::try_read)
             .enumerate()
-            .map(|(idx, it)| (idx as FileId, it))
+            .map(|(idx, it)| match it {
+                Ok(source) => {
+                    let id = FileId::try_from(idx).expect("Too many source files");
+                    Ok((id, source))
+                }
+                Err(e) => Err(e),
+            })
             .collect();
-        Self { contents: map }
+
+        Ok(Self {
+            contents: contents?,
+        })
     }
 
-    pub fn into_common_iter<'a>(self: &'a Arc<Self>) -> impl CommonIter<Item = SourceView> + 'a {
-        #[cfg(not(feature = "parallel"))]
-        {
-            self.contents.keys().copied().map(|id| SourceView {
-                id: Freeze::new(id),
-                source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
-            })
-        }
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-
-            self.contents
-                .par_iter()
-                .map(|it| *it.0)
-                .map(|id| SourceView {
-                    id: Freeze::new(id),
-                    source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
-                })
-        }
+    pub fn into_iter(self: &Arc<Self>) -> impl Iterator<Item = SourceView<Impl>> {
+        self.contents.keys().copied().map(move |id| SourceView {
+            id: Freeze::new(id),
+            source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
+        })
     }
 }
 
-impl<'a> Files<'a> for SourceFiles {
+impl<'a, Impl> Files<'a> for SourceFiles<Impl>
+where
+    Impl: Source,
+    Impl::Ref<'a>: AsRef<str>,
+{
     type FileId = FileId;
     type Name = FileName;
-    type Source = &'a str;
+    type Source = Impl::Ref<'a>;
 
     fn name(&'a self, id: Self::FileId) -> Result<Self::Name, Error> {
         match self.contents.get(&id) {
@@ -144,10 +144,14 @@ impl<'a> Files<'a> for SourceFiles {
     }
 }
 
-impl<'a> Files<'a> for SourceView {
+impl<'a, Impl> Files<'a> for SourceView<Impl>
+where
+    Impl: Source,
+    Impl::Ref<'a>: AsRef<str>,
+{
     type FileId = FileId;
     type Name = FileName;
-    type Source = &'a str;
+    type Source = Impl::Ref<'a>;
 
     fn name(&'a self, _: Self::FileId) -> Result<Self::Name, Error> {
         self.source.get().name(())
