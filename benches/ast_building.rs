@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughpu
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::code_point::CodePoint;
+use kodept_core::structure::rlt::RLT;
 use kodept_core::structure::span::CodeHolder;
 use kodept_parse::common::{EagerTokensProducer, RLTProducer};
 use kodept_parse::lexer::PestLexer;
@@ -64,6 +65,7 @@ where
 
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
+    let rlt = PARSED_FILE.clone();
     let sources = InlineCodeHolder(FILE_CONTENTS);
     group.throughput(Throughput::Bytes(FILE_CONTENTS.len() as u64));
 

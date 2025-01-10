@@ -22,7 +22,8 @@ members = [
     , "crates/kodept-interning"
     , "crates/kodept-ast-nodes"
     , "crates/kodept-rlt"
-    , "crates/kodept-frontend", "crates/kodept-interaction"]
+    , "crates/kodept-frontend"
+    , "crates/kodept-interaction"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
