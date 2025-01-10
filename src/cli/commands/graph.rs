@@ -11,7 +11,9 @@ use kodept_ast_nodes::file::FileDecl;
 use kodept_core::Freeze;
 use kodept_report::error::report_collector::{ReportCollector, Reporter};
 use kodept_report::error::traits::DrainReports;
+use std::borrow::Cow;
 use std::path::Path;
+use kodept_core::structure::span::CodeHolder;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Graph {
@@ -52,13 +54,19 @@ impl CommandWithSources for Graph {
                 .drain(*source.id, collector)
         })?;
 
-        let code_holder = || {
+        let (ast, rlt) = {
             #[cfg(feature = "interning")]
-            return kodept_interning::InterningCodeHolder::new(&*source);
+            {
+                let code_holder = kodept_interning::InterningCodeHolder::new(&*source)
+                    .map(|it| Cow::Borrowed(it.0));
+                AST::recursively_build::<FileDecl>(rlt, code_holder)
+            }
             #[cfg(not(feature = "interning"))]
-            return kodept::read_code_source::CloningCodeHolder::new(&*source);
+            {
+                let code_holder = source.map(|it| Cow::Owned(it.to_string()));
+                AST::recursively_build::<FileDecl>(rlt, code_holder)
+            }
         };
-        let (tree, accessor) = AST::recursively_build::<FileDecl>(rlt, code_holder());
         let output_file = match get_output_file(&source, output) {
             Ok(x) => x,
             Err(e) => {
@@ -71,8 +79,8 @@ impl CommandWithSources for Graph {
 
         reports.provide_collector(source.all_files(), |collector| {
             let context = Context {
-                ast: tree,
-                rlt: accessor,
+                ast,
+                rlt,
                 collector,
                 current_file: Freeze::new(source.describe()),
             };

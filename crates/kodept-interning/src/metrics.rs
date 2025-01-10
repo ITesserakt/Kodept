@@ -1,4 +1,4 @@
-use crate::{SharedStr, GLOBAL_STRING_POOL, TOTAL_SHARES};
+use crate::{GLOBAL_STRING_POOL, TOTAL_SHARES};
 use std::ops::Deref;
 use std::sync::atomic::Ordering;
 
@@ -14,7 +14,7 @@ struct CollectProperties {
     total_size: usize,
 }
 
-impl<A: Deref<Target = Box<str>>> FromIterator<A> for CollectProperties {
+impl<A: Deref<Target = str>> FromIterator<A> for CollectProperties {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
         let mut count = 0;
         let mut total_size = 0;
@@ -30,10 +30,11 @@ impl<A: Deref<Target = Box<str>>> FromIterator<A> for CollectProperties {
 impl InterningMetrics {
     pub fn gather() -> Self {
         let total_shares = TOTAL_SHARES.load(Ordering::Acquire);
-        let pooled_entries: CollectProperties = GLOBAL_STRING_POOL.pooled();
+        let lock = GLOBAL_STRING_POOL.entries();
+        let pooled_entries: CollectProperties = lock.iter().copied().collect();
         let coefficient = total_shares as f64 / (pooled_entries.count as f64);
 
-        let total_allocated_size_for_indexes = total_shares * size_of::<SharedStr>();
+        let total_allocated_size_for_indexes = total_shares * size_of::<&'static str>();
         let total_allocated_size_for_strings =
             pooled_entries.count * size_of::<Box<str>>() + pooled_entries.total_size;
 

@@ -10,8 +10,6 @@ workspace = true
 serde = ["dep:serde", "kodept-core/serde"]
 
 [dependencies]
-interner = "0.2.1"
-
 serde = { version = "1", optional = true, features = ["derive"] }
 
 [dependencies.kodept-core]

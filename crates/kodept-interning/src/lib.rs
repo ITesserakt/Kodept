@@ -1,34 +1,17 @@
 //! This crate contains a wrapper around string interner.
 
 pub mod metrics;
+mod implementation;
 
-use interner::global::{GlobalString, StringPool};
 use kodept_core::code_point::CodePoint;
-use kodept_core::shared_str::{SharedStr, Stringy};
 use kodept_core::structure::span::CodeHolder;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::implementation::{Interned, Interner};
 
-static GLOBAL_STRING_POOL: StringPool = StringPool::new();
+static GLOBAL_STRING_POOL: Interner<str> = Interner::new();
 static TOTAL_SHARES: AtomicUsize = AtomicUsize::new(0);
-
-#[repr(transparent)]
-struct Helper(GlobalString);
-
-#[allow(unsafe_code)]
-unsafe impl Stringy for Helper {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
-    }
-
-    fn clone(&self) -> SharedStr {
-        TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
-        SharedStr::new(Helper(self.0.clone()))
-    }
-}
 
 #[derive(Copy, Clone)]
 pub struct InterningCodeHolder<'a, C> {
@@ -52,20 +35,14 @@ where
 impl<'a, C> CodeHolder for InterningCodeHolder<'a, C>
 where
     C: CodeHolder,
-    C::Str: Into<Cow<'a, str>>,
+    C::Str: AsRef<str>,
 {
-    type Str = SharedStr;
+    type Str = Interned<str>;
 
-    fn get_chunk(self, at: CodePoint) -> SharedStr {
+    fn get_chunk(self, at: CodePoint) -> Self::Str {
         let chunk = self.inner.get_chunk(at);
 
         TOTAL_SHARES.fetch_add(1, Ordering::AcqRel);
-        SharedStr::new(Helper(GLOBAL_STRING_POOL.get(chunk)))
-    }
-}
-
-impl Drop for Helper {
-    fn drop(&mut self) {
-        TOTAL_SHARES.fetch_sub(1, Ordering::Relaxed);
+        GLOBAL_STRING_POOL.intern(chunk.as_ref())
     }
 }

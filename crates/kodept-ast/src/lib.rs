@@ -1,6 +1,8 @@
 //! Provides structures and abstractions for managing AST (abstract syntax tree).
 //! Features ECS as an implementation.
 
+use kodept_core::static_assert_size;
+
 pub mod macros;
 mod node_id;
 pub mod properties;
@@ -18,8 +20,6 @@ pub mod external {
     pub use bevy_ecs::prelude::Component;
 }
 
-#[cfg(feature = "interning")]
-pub type Str = kodept_core::shared_str::SharedStr;
-
-#[cfg(not(feature = "interning"))]
-pub type Str = String;
+// TODO: optimize size further by using readonly string
+pub type Str = std::borrow::Cow<'static, str>;
+static_assert_size!(Str, 24);

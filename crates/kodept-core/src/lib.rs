@@ -4,7 +4,6 @@ use std::ops::Deref;
 
 pub mod code_point;
 pub mod file_name;
-pub mod shared_str;
 pub mod structure;
 
 pub mod macros {
