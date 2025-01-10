@@ -89,6 +89,7 @@ path = "crates/kodept-rlt"
 
 [dev-dependencies]
 tempfile = "3.7.0"
+criterion = "0.5.1"
 
 [features]
 profiler = ["dep:dhat", "dep:ctrlc"]
@@ -115,3 +116,7 @@ strip = true
 opt-level = 0
 debug = true
 panic = 'unwind'
+
+[[bench]]
+name = "ast_building"
+harness = false

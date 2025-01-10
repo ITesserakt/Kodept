@@ -14,8 +14,8 @@ use std::sync::LazyLock;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
     LazyLock::new(|| match std::thread::available_parallelism() {
-        Ok(x) => x.get() * 4,
-        Err(_) => 8 * 4,
+        Ok(x) => x.get(),
+        Err(_) => 4,
     });
 
 pub struct Pool<'e> {
