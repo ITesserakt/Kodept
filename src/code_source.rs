@@ -4,6 +4,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use thiserror::Error;
 use kodept_core::file_name::FileName;
+use kodept_frontend::external::Component;
 
 #[derive(Debug, Error)]
 #[error(transparent)]
@@ -11,7 +12,7 @@ pub enum CodeSourceError {
     IO(#[from] std::io::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub enum CodeSource {
     Memory {
         contents: Cursor<String>,

@@ -18,6 +18,6 @@ impl From<CompilerCrash> for ReportMessage {
         } else {
             "Unknown panic happened".to_string()
         };
-        ReportMessage::new(Severity::Bug, "KC666", message)
+        ReportMessage::new(Severity::Bug, message)
     }
 }

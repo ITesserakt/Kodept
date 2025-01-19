@@ -19,15 +19,15 @@ static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
     });
 
 pub struct Pool<'e> {
-    syntax: SyntaxResolver,
+    syntax: &'e SyntaxResolver,
     lazy_entities: &'e Entities,
 }
 
 impl<'e> Pool<'e> {
-    pub fn new(syntax: SyntaxResolver, world: &'e World) -> Self {
+    pub fn new(syntax: &'e SyntaxResolver, lazy_entities: &'e Entities) -> Self {
         Self {
             syntax,
-            lazy_entities: world.entities(),
+            lazy_entities,
         }
     }
 }
@@ -39,10 +39,6 @@ impl Pool<'_> {
 
     pub(crate) fn syntax_root(&self) -> &kodept_rlt::prelude::File {
         self.syntax.root()
-    }
-
-    pub(crate) fn into_syntax_resolver(self) -> SyntaxResolver {
-        self.syntax
     }
 
     pub(crate) fn link_syntax<'r>(&'r self, id: NodeId, rlt_node: impl Into<SyntaxVariant<'r>>) {
@@ -125,6 +121,9 @@ impl<Root> ASTBuilder<Root> {
 
     pub(crate) fn consume(mut self, world: &mut World) {
         self.queue.apply(world)
+    }
+    pub(crate) fn into_inner(self) -> CommandQueue {
+        self.queue
     }
     pub(crate) fn erase(self) -> ASTBuilder<()> {
         ASTBuilder {

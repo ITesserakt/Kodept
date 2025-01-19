@@ -31,6 +31,7 @@ pub trait SpannedReportMessage: Into<crate::error::Diagnostic> {
 }
 
 /// Determines whether a message will break execution
+#[derive(Debug)]
 pub enum MessageBehaviour {
     FailFast {
         /// Should return an explanation why does associated message cannot be reported for multiple nodes
@@ -85,7 +86,7 @@ impl From<Severity> for codespan_reporting::diagnostic::Severity {
 }
 
 impl ReportMessage {
-    pub fn new<S: Into<String>>(severity: Severity, _: S, message: String) -> Self {
+    pub fn new(severity: Severity, message: String) -> Self {
         Self {
             severity,
             message,

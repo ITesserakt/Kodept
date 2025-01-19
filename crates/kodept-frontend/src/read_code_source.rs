@@ -1,11 +1,10 @@
 use codespan_reporting::files::{Error, Files};
-use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_name::FileName;
 use kodept_core::structure::span::CodeHolder;
 use std::ops::Range;
 
-#[derive(Debug, Constructor)]
+#[derive(Debug)]
 pub struct ReadSource<Impl = String> {
     source_contents: Impl,
     source_path: FileName,
@@ -45,6 +44,14 @@ impl Source for String {
 }
 
 impl<Impl> ReadSource<Impl> {
+    pub fn new(inner: Impl, source_path: FileName, line_starts: Vec<usize>) -> Self {
+        Self {
+            source_contents: inner,
+            source_path,
+            line_starts,
+        }
+    }
+    
     pub fn path(&self) -> FileName {
         self.source_path.clone()
     }

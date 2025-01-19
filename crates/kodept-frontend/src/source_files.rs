@@ -1,6 +1,6 @@
-use crate::prelude::Source;
-use crate::read_code_source::{ReadSource, TryReadCode};
-use bevy_ecs::prelude::Resource;
+use crate::external::Component;
+use crate::prelude::{Source, TryReadCode};
+use crate::read_code_source::ReadSource;
 use codespan_reporting::files::{Error, Files};
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
@@ -10,16 +10,18 @@ use std::ops::{Deref, Range};
 use std::sync::Arc;
 use yoke::Yoke;
 
+#[derive(Debug)]
 pub struct GlobalReports;
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub struct SourceView<Impl: 'static> {
     pub id: Freeze<FileId>,
     source: Yoke<&'static ReadSource<Impl>, Arc<SourceFiles<Impl>>>,
 }
 
-#[derive(Debug, Resource)]
+#[derive(Debug, Default)]
 pub struct SourceFiles<Impl> {
+    id_gen: FileId,
     contents: HashMap<FileId, ReadSource<Impl>>,
 }
 
@@ -76,33 +78,32 @@ impl<Impl> SourceView<Impl> {
 }
 
 impl<Impl: 'static> SourceFiles<Impl> {
-    pub fn try_from_sources<T>(sources: impl IntoIterator<Item = T>) -> Result<Self, Impl::Error>
+    pub fn new() -> Self {
+        Self {
+            id_gen: 0,
+            contents: Default::default(),
+        }
+    }
+
+    pub fn insert<T>(&mut self, source: T) -> Result<(), Impl::Error>
     where
         Impl: TryReadCode<T>,
     {
-        let contents: Result<HashMap<_, _>, _> = sources
-            .into_iter()
-            .map(Impl::try_read)
-            .enumerate()
-            .map(|(idx, it)| match it {
-                Ok(source) => {
-                    let id = FileId::try_from(idx).expect("Too many source files");
-                    Ok((id, source))
-                }
-                Err(e) => Err(e),
-            })
-            .collect();
-
-        Ok(Self {
-            contents: contents?,
-        })
+        let id = self.id_gen;
+        self.contents.insert(id, Impl::try_read(source)?);
+        self.id_gen = self.id_gen.checked_add(1).expect("Too many source files");
+        Ok(())
     }
 
-    pub fn into_iter(self: &Arc<Self>) -> impl Iterator<Item = SourceView<Impl>> {
-        self.contents.keys().copied().map(move |id| SourceView {
-            id: Freeze::new(id),
-            source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
-        })
+    pub fn collect(self: &Arc<Self>) -> Vec<SourceView<Impl>> {
+        self.contents
+            .keys()
+            .copied()
+            .map(move |id| SourceView {
+                id: Freeze::new(id),
+                source: Yoke::attach_to_cart(self.clone(), |this| &this.contents[&id]),
+            })
+            .collect()
     }
 }
 

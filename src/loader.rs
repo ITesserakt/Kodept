@@ -5,11 +5,12 @@ use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-use itertools::Itertools;
+use crate::code_source::{CodeSource, CodeSourceError};
+use kodept_frontend::external::Component;
 use thiserror::Error;
 use tracing::{debug, warn};
-use crate::code_source::{CodeSource, CodeSourceError};
 
+#[derive(Debug, Component)]
 pub enum Loader {
     File(Vec<(File, PathBuf)>),
     Memory(Vec<String>),
@@ -87,7 +88,8 @@ impl<'p> LoaderBuilder<'p> {
             self.starting_path
                 .read_dir()
                 .map_err(LoadingError::IOError)?
-                .filter_ok(|it| {
+                .filter_map(|it| it.ok())
+                .filter(|it| {
                     if !it.path().is_file() {
                         false
                     } else if self.accept_any_extension {
@@ -98,18 +100,11 @@ impl<'p> LoaderBuilder<'p> {
                             .is_some_and(|ext| ext == self.extension)
                     }
                 })
-                .filter_map_ok(|it| {
-                    let file = match File::open(it.path()) {
-                        Ok(f) => f,
-                        Err(e) => {
-                            warn!("Skipping file {0} because: {1}", it.path().display(), e);
-                            return None;
-                        }
-                    };
-
-                    Some((file, it.path()))
+                .map(|it| match File::open(it.path()) {
+                    Ok(f) => Ok((f, it.path())),
+                    Err(e) => Err(e),
                 })
-                .try_collect()?
+                .collect::<Result<_, _>>()?
         } else if self.starting_path.is_file()
             && self
                 .starting_path

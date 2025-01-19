@@ -1,16 +1,15 @@
 [package]
 name = "kodept-frontend"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [lints]
 workspace = true
 
 [dependencies]
 bevy_ecs.workspace = true
-bevy_hierarchy.workspace = true
 codespan-reporting = "0.11.1"
-derive_more.workspace = true
 kodept-core = { path = "../kodept-core" }
 kodept-report = { path = "../kodept-report" }
+tracing.workspace = true
 yoke = "0.7.5"

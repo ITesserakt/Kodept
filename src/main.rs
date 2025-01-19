@@ -1,27 +1,30 @@
-use clap::Parser;
-use cli::common::Kodept;
-use kodept::codespan_settings::{ConsumeCollector, Reports};
-use kodept::profiler::HeapProfiler;
-use kodept_frontend::prelude::GlobalReports;
+use crate::cli::common::LoggingOptions;
+use crate::cli::CliArgumentsPlugin;
+use bevy_ecs::prelude::Res;
+use kodept::codespan_settings::ReportsPlugin;
+use kodept::utils::profiler::HeapProfilerPlugin;
+use kodept_frontend::frontend::Frontend;
+use kodept_frontend::plugin::ExitEvent;
 
+mod actions;
 mod cli;
 
-type WideError = anyhow::Error;
-
-fn main() -> Result<(), WideError> {
-    let mut lock = HeapProfiler::install();
-    lock.consume_on_ctrlc();
-
-    let cli_arguments: Kodept = Kodept::parse();
+fn init_logging(cli_args: Res<LoggingOptions>) {
     tracing_subscriber::fmt()
-        .with_max_level(cli_arguments.level())
+        .with_max_level(cli_args.level())
         .init();
+}
 
-    let reports: Reports = cli_arguments.diagnostic_config.into();
-    let result = cli_arguments
-        .subcommands
-        .execute(cli_arguments.output, reports.clone());
-    reports.consume(&GlobalReports);
+fn main() {
+    let mut frontend = Frontend::new();
 
-    Ok(result?)
+    frontend
+        .add_event::<ExitEvent>()
+        .add_plugin(ReportsPlugin)
+        .add_plugin(HeapProfilerPlugin)
+        .add_plugin(CliArgumentsPlugin);
+
+    frontend.on_startup(init_logging);
+
+    frontend.run();
 }

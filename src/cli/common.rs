@@ -2,20 +2,20 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser};
 use tracing::Level;
-
+use kodept_frontend::external::Resource;
 use crate::cli::commands::Commands;
 use crate::cli::configs::DiagnosticConfig;
 
 const ABOUT_MESSAGE: &str =
     "Typechecks or interprets passed INPUT using Kodept programming language";
 
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug)]
 #[command(version, author, about = ABOUT_MESSAGE)]
 #[command(propagate_version = true)]
 pub struct Kodept {
     /// Write all output to specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
-    pub output: PathBuf,
+    output: PathBuf,
 
     #[command(subcommand)]
     pub subcommands: Commands,
@@ -23,10 +23,10 @@ pub struct Kodept {
     #[command(flatten, next_help_heading = "Diagnostics options")]
     pub diagnostic_config: DiagnosticConfig,
     #[command(flatten, next_help_heading = "Logging options")]
-    logging: LoggingOptions,
+    pub logging: LoggingOptions,
 }
 
-#[derive(Debug, Args, Clone)]
+#[derive(Debug, Args, Resource)]
 #[group(required = false, multiple = false)]
 pub struct LoggingOptions {
     /// Enable debugging output
@@ -46,13 +46,13 @@ pub struct LoggingOptions {
     severity: Level,
 }
 
-impl Kodept {
+impl LoggingOptions {
     pub fn level(&self) -> Level {
-        self.logging
+        self
             .debug
             .then_some(Level::DEBUG)
-            .or(self.logging.verbose.then_some(Level::DEBUG))
-            .unwrap_or(self.logging.severity)
+            .or(self.verbose.then_some(Level::DEBUG))
+            .unwrap_or(self.severity)
     }
 }
 

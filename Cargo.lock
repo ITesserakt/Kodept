@@ -120,6 +120,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "async-channel"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89b47800b0be77592da0afd425cc03468052844aff33b84e33cc696f64e77b6a"
+dependencies = [
+ "concurrent-queue",
+ "event-listener-strategy",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "async-executor"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,6 +177,7 @@ version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b747210d7db09dfacc237707d4fd31c8b43d7744cd5e5829e2c4ca86b9e47baf"
 dependencies = [
+ "arrayvec",
  "bevy_ecs_macros",
  "bevy_ptr",
  "bevy_tasks",
@@ -227,7 +240,9 @@ version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c28f2db2619203aa82342dbbe77e49aeea4f933212c0b7a1f285e94c4008e5b"
 dependencies = [
+ "async-channel",
  "async-executor",
+ "concurrent-queue",
  "futures-channel",
  "futures-lite",
  "pin-project",
@@ -665,6 +680,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "event-listener"
+version = "5.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3492acde4c3fc54c845eaab3eed8bd00c7a7d881f78bfc801e43a93dec1331ae"
+dependencies = [
+ "concurrent-queue",
+ "parking",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "event-listener-strategy"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c3e4e0dd3673c1139bf041f3008816d9cf2946bbfac2945c09e523b8d7b05b2"
+dependencies = [
+ "event-listener",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "extend"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -963,7 +999,8 @@ dependencies = [
 name = "kodept"
 version = "0.2.3"
 dependencies = [
- "anyhow",
+ "bevy_ecs",
+ "bevy_hierarchy",
  "clap",
  "codespan-reporting",
  "criterion",
@@ -971,7 +1008,6 @@ dependencies = [
  "derive_more",
  "dhat",
  "gag",
- "itertools 0.13.0",
  "kodept-ast",
  "kodept-ast-nodes",
  "kodept-core",
@@ -1026,11 +1062,10 @@ name = "kodept-frontend"
 version = "0.1.0"
 dependencies = [
  "bevy_ecs",
- "bevy_hierarchy",
  "codespan-reporting",
- "derive_more",
  "kodept-core",
  "kodept-report",
+ "tracing",
  "yoke",
 ]
 

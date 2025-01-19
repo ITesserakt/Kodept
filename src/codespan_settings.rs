@@ -1,41 +1,36 @@
-use codespan_reporting::files::Files;
+use crate::source_files::Sources;
+use bevy_ecs::prelude::{Event, EventWriter, Events, In, IntoSystem, Res, ResMut, Trigger};
 use codespan_reporting::term::termcolor::{ColorSpec, StandardStream, WriteColor};
-use kodept_report::error::report_collector::ReportCollector;
+use kodept_frontend::external::Resource;
+use kodept_frontend::frontend::Frontend;
+use kodept_frontend::plugin::{ExitEvent, Plugin};
+use kodept_frontend::prelude::{GlobalReports};
+use kodept_report::error::report::{IntoSpannedReportMessage, MessageBehaviour, Report};
 use kodept_report::error::traits::Reportable;
 use kodept_report::FileId;
+use std::error::Error;
 use std::io::Write;
-use std::mem::take;
 use std::sync::{Arc, Mutex};
-
-pub trait ProvideCollector<Id> {
-    fn provide_collector<'a, T, F>(
-        &mut self,
-        sources: &'a F,
-        f: impl FnOnce(&mut ReportCollector<F::FileId>) -> T,
-    ) -> T
-    where
-        F: Files<'a, FileId = Id>;
-}
-
-pub trait ConsumeCollector<'a, Id> {
-    fn consume<F>(self, sources: &'a F)
-    where
-        F: Files<'a, FileId = Id>;
-}
 
 pub type CodespanSettings = kodept_report::error::traits::CodespanSettings<StreamOutput>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Event)]
+pub struct ReportEmitted {
+    report: Report,
+    _behaviour: MessageBehaviour,
+}
+
+#[derive(Debug, Event)]
+pub struct GlobalReportEmitted {
+    report: Report<()>,
+    _behaviour: MessageBehaviour,
+}
+
+#[derive(Debug, Resource)]
 pub enum Reports {
     Disabled,
     Eager(CodespanSettings),
-    Lazy {
-        // TODO: ReportCollector is thread-safe already
-        //       Maybe remove ArcMutex wrapper
-        local_reports: Arc<Mutex<ReportCollector>>,
-        global_reports: Arc<Mutex<ReportCollector<()>>>,
-        settings: CodespanSettings,
-    },
+    Lazy(CodespanSettings),
 }
 
 #[derive(Clone)]
@@ -50,100 +45,120 @@ pub enum StreamOutput {
     NoOp,
 }
 
+pub struct ReportsPlugin;
+
 const POISON_LOCK_ERROR: &str = "Lock was poisoned";
 
-impl<'a> ConsumeCollector<'a, FileId> for Reports {
-    fn consume<F>(self, sources: &'a F)
-    where
-        F: Files<'a, FileId = FileId>,
-    {
-        match self {
-            Reports::Disabled => {}
-            Reports::Eager(_) => {}
-            Reports::Lazy {
-                local_reports,
-                mut settings,
-                ..
-            } => {
-                let mut lock = local_reports.lock().unwrap_or_else(|e| e.into_inner());
-                let collector = take(&mut *lock);
-                collector
-                    .into_collected_reports()
-                    .emit(&mut settings, sources)
-            }
+impl ReportEmitted {
+    pub fn new(file_id: FileId, message: impl IntoSpannedReportMessage) -> Self {
+        let behaviour = message.behaviour();
+        Self {
+            report: Report::from_message(file_id, message),
+            _behaviour: behaviour,
         }
     }
 }
 
-impl ConsumeCollector<'static, ()> for Reports {
-    fn consume<F>(self, sources: &'static F)
-    where
-        F: Files<'static, FileId = ()>,
-    {
-        match self {
-            Reports::Disabled => {}
-            Reports::Eager(_) => {}
-            Reports::Lazy {
-                global_reports,
-                mut settings,
-                ..
-            } => {
-                let mut lock = global_reports.lock().unwrap_or_else(|e| e.into_inner());
-                let collector = take(&mut *lock);
-                collector
-                    .into_collected_reports()
-                    .emit(&mut settings, sources)
-            }
+impl GlobalReportEmitted {
+    pub fn new(message: impl IntoSpannedReportMessage) -> Self {
+        let behaviour = message.behaviour();
+        Self {
+            report: Report::from_message((), message),
+            _behaviour: behaviour,
         }
     }
 }
 
-impl ProvideCollector<FileId> for Reports {
-    fn provide_collector<'a, T, F>(
-        &mut self,
-        sources: &'a F,
-        f: impl FnOnce(&mut ReportCollector<F::FileId>) -> T,
-    ) -> T
-    where
-        F: Files<'a, FileId = FileId>,
-    {
-        match self {
-            Reports::Disabled => f(&mut ReportCollector::new()),
+impl Plugin for ReportsPlugin {
+    fn build(self, world: &mut Frontend) {
+        world
+            .add_event::<GlobalReportEmitted>()
+            .add_event::<ReportEmitted>();
+        // Draining systems that applied at application exit
+        world.add_observer((|_: Trigger<ExitEvent>| true).pipe(Reports::drain));
+        world.add_observer((|_: Trigger<ExitEvent>| true).pipe(Reports::global_drain));
+        
+        // Draining systems that applied every tick
+        world.add_freestanding_systems((|| false).pipe(Reports::drain));
+        world.add_freestanding_systems((|| false).pipe(Reports::global_drain));
+    }
+}
+
+impl Reports {
+    pub fn stop_and_report<E: Error + 'static>(
+        In(result): In<Result<(), E>>,
+        mut writer: EventWriter<GlobalReportEmitted>,
+    ) {
+        let Err(error) = result else {
+            return;
+        };
+        writer.send(GlobalReportEmitted::new(error));
+    }
+
+    pub fn pipe_or_report<T, E: Error + 'static>(
+        In(result): In<Result<T, E>>,
+        mut writer: EventWriter<GlobalReportEmitted>,
+    ) -> Option<T> {
+        match result {
+            Ok(x) => Some(x),
+            Err(e) => {
+                writer.send(GlobalReportEmitted::new(e));
+                None
+            }
+        }
+    }
+
+    fn drain(
+        In(last): In<bool>,
+        mut events: ResMut<Events<ReportEmitted>>,
+        mut reports: ResMut<Reports>,
+        sources: Option<Res<Sources>>,
+    ) {
+        let Some(sources) = sources else {
+            return;
+        };
+        match &mut *reports {
+            Reports::Disabled => {
+                _ = events.drain();
+            }
             Reports::Eager(settings) => {
-                let mut collector = ReportCollector::new();
-                let result = f(&mut collector);
-                collector.into_collected_reports().emit(settings, sources);
-                result
+                events
+                    .drain()
+                    .map(|it| it.report)
+                    .for_each(|it| it.emit(settings, &**sources));
             }
-            Reports::Lazy { local_reports, .. } => {
-                let mut lock = local_reports.lock().unwrap_or_else(|e| e.into_inner());
-                f(&mut lock)
+            Reports::Lazy(settings) if last => {
+                events
+                    .drain()
+                    .map(|it| it.report)
+                    .for_each(|it| it.emit(settings, &**sources));
             }
+            Reports::Lazy(_) => {}
         }
     }
-}
 
-impl ProvideCollector<()> for Reports {
-    fn provide_collector<'a, T, F>(
-        &mut self,
-        sources: &'a F,
-        f: impl FnOnce(&mut ReportCollector<F::FileId>) -> T,
-    ) -> T
-    where
-        F: Files<'a, FileId = ()>,
-    {
-        match self {
-            Reports::Disabled => f(&mut ReportCollector::new()),
+    fn global_drain(
+        In(last): In<bool>,
+        mut events: ResMut<Events<GlobalReportEmitted>>,
+        mut reports: ResMut<Reports>,
+    ) {
+        match &mut *reports {
+            Reports::Disabled => {
+                _ = events.drain();
+            }
             Reports::Eager(settings) => {
-                let mut collector = ReportCollector::new();
-                let result = f(&mut collector);
-                collector.into_collected_reports().emit(settings, sources);
-                result
+                events
+                    .drain()
+                    .map(|it| it.report)
+                    .for_each(|it| it.emit(settings, &GlobalReports));
             }
-            Reports::Lazy { global_reports, .. } => {
-                let mut lock = global_reports.lock().unwrap_or_else(|e| e.into_inner());
-                f(&mut lock)
+            Reports::Lazy(settings) if last => {
+                events
+                    .drain()
+                    .map(|it| it.report)
+                    .for_each(|it| it.emit(settings, &GlobalReports));
             }
+            Reports::Lazy(_) => {}
         }
     }
 }

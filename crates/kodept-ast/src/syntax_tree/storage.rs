@@ -2,7 +2,9 @@ use crate::prelude::{ASTNode, CodeHolder, FromSyntax, NodeId};
 use crate::properties::Node;
 use crate::resource::rlt::SyntaxResolver;
 use crate::syntax_tree::builder::Pool;
-use bevy_ecs::prelude::{Component, World};
+use bevy_ecs::entity::Entities;
+use bevy_ecs::prelude::{Component, Entity, World};
+use bevy_ecs::world::CommandQueue;
 use kodept_rlt::prelude::RLT;
 use std::ops::Index;
 
@@ -23,18 +25,35 @@ impl AST {
         let syntax = Self::create_in_world::<Root>(start, source_code, &mut world);
         (AST { world }, syntax)
     }
-    
-    pub fn create_in_world<Root>(lexeme_tree: RLT, source_code: impl CodeHolder, world: &mut World) -> SyntaxResolver
-    where 
-        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>
+
+    pub fn create_in_world<Root>(
+        lexeme_tree: RLT,
+        source_code: impl CodeHolder,
+        world: &mut World,
+    ) -> SyntaxResolver
+    where
+        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
     {
-        let resolver = SyntaxResolver::empty(lexeme_tree);
-        let pool = Pool::new(resolver, world);
+        let mut resolver = SyntaxResolver::empty(lexeme_tree);
+        let pool = Pool::new(&mut resolver, world.entities());
         let whole_part = Root::from_syntax(pool.syntax_root(), source_code, &pool);
         pool.link_syntax(whole_part.id(), pool.syntax_root());
-        let syntax = pool.into_syntax_resolver();
         whole_part.consume(world);
-        syntax
+        resolver
+    }
+
+    pub fn create_with_resolver<Root>(
+        source_code: impl CodeHolder,
+        resolver: &SyntaxResolver,
+        entities: &Entities,
+    ) -> (Entity, CommandQueue)
+    where
+        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
+    {
+        let pool = Pool::new(resolver, entities);
+        let whole_part = Root::from_syntax(pool.syntax_root(), source_code, &pool);
+        pool.link_syntax(whole_part.id(), pool.syntax_root());
+        (whole_part.id().as_inner(), whole_part.into_inner())
     }
 
     pub fn node_count(&self) -> usize {

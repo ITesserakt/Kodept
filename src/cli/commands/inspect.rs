@@ -1,13 +1,8 @@
-use std::path::Path;
 use std::string::FromUtf8Error;
 
 use crate::cli::configs::LoadingConfig;
-use crate::cli::traits::CommandWithSources;
 use clap::{Parser, ValueEnum};
 use derive_more::Display;
-use kodept::codespan_settings::Reports;
-use kodept::source_files::{SourceFiles, SourceView};
-use kodept_report::error::report_collector::{ReportCollector, Reporter};
 use thiserror::Error;
 
 #[derive(Debug, ValueEnum, Clone, Display)]
@@ -51,22 +46,6 @@ enum InspectError<A> {
     IO(#[from] std::io::Error),
     #[error(transparent)]
     Pegviz(#[from] LaunchPegvizError),
-}
-
-#[cfg(not(feature = "trace"))]
-impl CommandWithSources for InspectParser {
-    fn build_sources(&self, collector: &mut ReportCollector<()>) -> Option<SourceFiles> {
-        #[derive(Error, Debug)]
-        #[error("Program is compiled without inspecting support")]
-        struct Unsupported;
-
-        collector.report((), Unsupported);
-        None
-    }
-
-    fn exec_for_source(&self, _: SourceView, _: &mut Reports, _: &Path) -> Option<()> {
-        unreachable!()
-    }
 }
 
 #[cfg(feature = "trace")]

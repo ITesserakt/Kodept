@@ -19,8 +19,9 @@ use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_rlt::prelude::RLT;
 use tracing::debug;
+use kodept_frontend::external::Resource;
 
-#[derive(Debug, Args, Clone)]
+#[derive(Debug, Args, Clone, Resource)]
 pub struct ParsingConfig {
     /// Use parallelization when parsing
     #[arg(
@@ -129,7 +130,7 @@ impl RLTProducer for ParserImpl {
     }
 }
 
-#[derive(Debug, Args, Clone)]
+#[derive(Debug, Args)]
 pub struct DiagnosticConfig {
     /// The display style to use when rendering a diagnostic
     #[arg(ignore_case = true, long = "style", default_value_t = DisplayStyle::Rich)]
@@ -152,7 +153,7 @@ pub struct DiagnosticConfig {
     disable: bool,
 }
 
-#[derive(Debug, Args, Clone)]
+#[derive(Debug, Args, Clone, Resource)]
 pub struct LoadingConfig {
     /// Read input from stdin
     #[arg(long = "stdin")]
@@ -263,26 +264,22 @@ impl From<DiagnosticConfig> for Reports {
         match (value.disable, value.eager) {
             (true, _) => Self::Disabled,
             (false, true) => Self::Eager(CodespanSettings { config, stream }),
-            (false, false) => Self::Lazy {
-                local_reports: Default::default(),
-                global_reports: Default::default(),
-                settings: CodespanSettings { config, stream },
-            },
+            (false, false) => Self::Lazy(CodespanSettings { config, stream }),
         }
     }
 }
 
-impl TryFrom<LoadingConfig> for Loader {
+impl TryFrom<&LoadingConfig> for Loader {
     type Error = LoadingError;
 
-    fn try_from(value: LoadingConfig) -> Result<Self, Self::Error> {
+    fn try_from(value: &LoadingConfig) -> Result<Self, Self::Error> {
         if value.read_stdin {
             let mut stdin_input = String::new();
             stdin().read_to_string(&mut stdin_input)?;
             Ok(Loader::from_single_snippet(stdin_input))
         } else {
             let builder = Loader::file();
-            let builder = match value.extension {
+            let builder = match &value.extension {
                 Extension::Any => builder.with_any_source_extension(),
                 Extension::Specified(ext) => builder.with_extension(ext),
             };

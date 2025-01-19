@@ -27,7 +27,7 @@ members = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-bevy_ecs = { version = "0.15.1", default-features = false, features = ["trace"] }
+bevy_ecs = { version = "0.15.1", default-features = false }
 bevy_hierarchy = { version = "0.15.1", default-features = false }
 thiserror = "2.0"
 extend = "1.2"
@@ -49,11 +49,11 @@ rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
 [dependencies]
-anyhow = "1"
+bevy_ecs.workspace = true
+bevy_hierarchy.workspace = true
 clap = { version = "4.5", features = ["derive", "env"] }
 codespan-reporting = "0.11.1"
 derive_more.workspace = true
-itertools.workspace = true
 memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
 thiserror.workspace = true
 tracing.workspace = true
@@ -80,8 +80,9 @@ tempfile = "3.7.0"
 criterion = "0.5.1"
 
 [features]
+default = []
 profiler = ["dep:dhat", "dep:ctrlc"]
-parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
+parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "bevy_ecs/multi_threaded"]
 trace = ["dep:gag", "kodept-parse/trace"]
 interning = ["dep:kodept-interning"]
 

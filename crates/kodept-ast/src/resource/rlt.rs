@@ -1,6 +1,6 @@
 use crate::node_id::NodeId;
 use bevy_ecs::entity::EntityHash;
-use bevy_ecs::prelude::{Entity, Resource};
+use bevy_ecs::prelude::{Entity};
 use dashmap::DashMap;
 use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
@@ -10,6 +10,7 @@ use kodept_rlt::prelude::RLT;
 use kodept_rlt::{new_types, prelude as rlt};
 use std::marker::PhantomPinned;
 use std::pin::Pin;
+use crate::external::Component;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -48,7 +49,7 @@ struct PinnedRLT {
     _phantom: PhantomPinned,
 }
 
-#[derive(Debug, Resource)]
+#[derive(Debug, Component)]
 pub struct SyntaxResolver {
     tree: Pin<Box<PinnedRLT>>,
     mapping: DashMap<Entity, SyntaxVariant<'static>, EntityHash>,

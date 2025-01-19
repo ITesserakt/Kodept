@@ -89,7 +89,7 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
                     E: std::error::Error,
                 {
                     fn from(value: Helper<E>) -> Self {
-                        Self::new(Severity::Error, "external", value.0.to_string())
+                        Self::new(Severity::Error, value.0.to_string())
                     }
                 }
 
