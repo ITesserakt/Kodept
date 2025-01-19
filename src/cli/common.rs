@@ -15,15 +15,15 @@ const ABOUT_MESSAGE: &str =
 pub struct Kodept {
     /// Write all output to specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
-    output: PathBuf,
+    pub(super) output: PathBuf,
 
     #[command(subcommand)]
-    pub subcommands: Commands,
+    pub(super) subcommands: Commands,
 
     #[command(flatten, next_help_heading = "Diagnostics options")]
-    pub diagnostic_config: DiagnosticConfig,
+    pub(super) diagnostic_config: DiagnosticConfig,
     #[command(flatten, next_help_heading = "Logging options")]
-    pub logging: LoggingOptions,
+    pub(super) logging: LoggingOptions,
 }
 
 #[derive(Debug, Args, Resource)]

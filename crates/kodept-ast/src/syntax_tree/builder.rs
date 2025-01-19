@@ -71,7 +71,7 @@ impl<Root> ASTBuilder<Root> {
         let mut queue = CommandQueue::default();
         queue.push(move |w: &mut World| {
             let mut entity = w.entity_mut(root_id);
-            entity.insert((root, Node));
+            entity.insert((root, Node { kind: std::any::type_name::<Root>() }));
         });
         Self {
             queue,
@@ -149,7 +149,7 @@ where
         let child_id = part.root;
         let root_id = self.root;
         part.queue.push(move |w: &mut World| {
-            w.entity_mut(child_id).insert(tag).insert_if_new(Node);
+            w.entity_mut(child_id).insert(tag);
             w.entity_mut(root_id).add_child(child_id);
         });
         match self.queue.take() {

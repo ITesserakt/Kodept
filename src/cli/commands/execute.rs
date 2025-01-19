@@ -28,7 +28,3 @@ impl Plugin for Execute {
             .add_plugin(BuildASTPlugin);
     }
 }
-
-fn send_exit(mut commands: Commands) {
-    commands.send_event(ExitEvent);
-}

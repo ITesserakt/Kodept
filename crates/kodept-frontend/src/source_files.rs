@@ -150,7 +150,7 @@ where
     Impl: Source,
     Impl::Ref<'a>: AsRef<str>,
 {
-    type FileId = FileId;
+    type FileId = ();
     type Name = FileName;
     type Source = Impl::Ref<'a>;
 

@@ -7,7 +7,9 @@ pub mod tags;
 pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component)]
-pub struct Node;
+pub struct Node {
+    pub kind: &'static str
+}
 
 pub trait HasProperty<Property: NodeProperty>: Sized {
     #[inline]
