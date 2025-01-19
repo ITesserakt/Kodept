@@ -2,10 +2,9 @@ use crate::actions::build_ast::BuildASTPlugin;
 use crate::actions::load_sources::LoadSourcesPlugin;
 use crate::actions::parse_sources::ParseSourcesPlugin;
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
-use bevy_ecs::prelude::Commands;
 use clap::Args;
 use kodept_frontend::frontend::Frontend;
-use kodept_frontend::plugin::{ExitEvent, Plugin};
+use kodept_frontend::plugin::Plugin;
 use std::num::NonZeroU16;
 
 #[derive(Debug, Args, Clone)]
