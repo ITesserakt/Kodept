@@ -25,7 +25,7 @@
 			${system}.default = outputs.packages.${system}.kodept;
 		};
 
-		devShells.default = pkgs.mkShell rec {
+		devShells.${system}.default = pkgs.mkShell rec {
 			packages = with pkgs; [
 				xdot
 				gnuplot
@@ -38,6 +38,7 @@
 			};
 		
 			shellHook = ''
+				rm -f .toolchain
 				ln -fs ${toolchain} .toolchain
 			'';
 		};
