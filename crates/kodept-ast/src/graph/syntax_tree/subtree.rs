@@ -17,7 +17,7 @@ use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 
-static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 0);
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
 #[derive(Debug)]
 enum GraphImpl {
@@ -124,7 +124,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     pub fn maybe_with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
         self,
         from: Option<
-            impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
+            impl utils::IntoCommonIter<Item: PopulateTree<'a, Root = U>> + utils::HasLength,
         >,
         context: impl CodeHolder<Str = SharedStr>,
     ) -> Self
@@ -139,8 +139,8 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     }
 
     pub fn with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
-        self,
-        iter: impl utils::IntoCommonIter<Item = impl PopulateTree<'a, Root = U>> + utils::HasLength,
+        mut self,
+        iter: impl utils::IntoCommonIter<Item: PopulateTree<'a, Root = U>> + utils::HasLength,
         context: impl CodeHolder<Str = SharedStr>,
     ) -> Self
     where
@@ -148,13 +148,11 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         T: HasChildrenMarker<U, TAG> + Send,
     {
         if !cfg!(feature = "parallel") || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
-            return iter
-                .into_iter()
-                .map(|it| it.convert(context))
-                .fold(self, |mut acc, next| {
-                    acc.attach_subtree(next);
-                    acc
-                });
+            for item in iter.into_iter() {
+                let subtree = item.convert(context);
+                self.attach_subtree(subtree)
+            }
+            return self;
         }
 
         #[cfg(not(feature = "parallel"))]
@@ -163,8 +161,9 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         #[cfg(feature = "parallel")]
         {
             use rayon::prelude::*;
+            use std::sync::mpsc::channel;
 
-            let (sx, rx) = std::sync::mpsc::channel();
+            let (sx, rx) = channel();
             let iter = iter.into_par_iter();
 
             let (_, result) = rayon::join(
@@ -173,10 +172,10 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
                         .for_each_with(sx, |sender, it| sender.send(it).unwrap());
                 },
                 move || {
-                    rx.into_iter().fold(self, |mut acc, next| {
-                        acc.attach_subtree(next);
-                        acc
-                    })
+                    for item in rx {
+                        self.attach_subtree(item);
+                    }
+                    self
                 },
             );
             result

@@ -32,6 +32,9 @@ pub struct Kodept {
     /// Write all output to specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
     pub output: PathBuf,
+    /// Controls how many parallel threads will be created for operations
+    #[arg(short = 'p', long, hide = cfg!(not(feature = "parallel")), default_value_t = 0)]
+    pub parallelism: usize,
 
     #[command(flatten)]
     pub diagnostic_config: DiagnosticConfig,

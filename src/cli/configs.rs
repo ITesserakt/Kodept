@@ -24,7 +24,7 @@ use tracing::debug;
 pub struct ParsingConfig {
     /// Do parallelization of source code when parsing
     #[cfg_attr(not(feature = "parallel"), arg(hide = true, default_value_t = false))]
-    #[cfg_attr(not(feature = "parallel"), arg(default_value_t = true))]
+    #[cfg_attr(feature = "parallel", arg(default_value_t = true))]
     #[arg(short, long)]
     parallel: bool,
     /// Use specific lexer implementation
