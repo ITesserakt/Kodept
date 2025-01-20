@@ -14,7 +14,7 @@ pub struct ParsingConfig {
     #[arg(
         short,
         long,
-        hide = !cfg!(feature = "parallel"), 
+        hide = !cfg!(feature = "parallel"),
         default_value_t = cfg!(feature = "parallel")
     )]
     pub parallel: bool,
@@ -160,4 +160,3 @@ impl TryFrom<&LoadingConfig> for Loader {
         }
     }
 }
-

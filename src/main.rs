@@ -14,10 +14,20 @@ fn init_tracing(level: Level) {
         .init();
 }
 
+fn init_thread_pool(parallelism: usize) {
+    #[cfg(feature = "parallel")]
+    {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(parallelism)
+            .build_global()
+            .expect("Cannot initialize rayon thread pool");
+    }
+}
+
 fn main() {
     let _guard = HeapProfilerGuard::install();
     let cli_options = Kodept::parse();
-    
+
     init_tracing(cli_options.logging.level());
     let reports = make_reports(cli_options.diagnostic_config);
 
