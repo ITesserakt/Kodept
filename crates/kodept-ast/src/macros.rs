@@ -26,7 +26,7 @@ macro_rules! derive_node {
 #[macro_export]
 macro_rules! arity {
     (child) => {
-        $crate::syntax_tree::children::arity::Singlular
+        $crate::syntax_tree::children::arity::Singular
     };
     (optional) => {
         $crate::syntax_tree::children::arity::Optional

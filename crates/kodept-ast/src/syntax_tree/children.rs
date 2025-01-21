@@ -13,9 +13,9 @@ pub mod arity {
     pub trait Arity {}
 
     /// Describes that parent must have single child of that type
-    pub struct Singlular;
+    pub struct Singular;
     #[sealed]
-    impl Arity for Singlular {}
+    impl Arity for Singular {}
 
     /// Describes that parent may not have any child of that type
     pub struct Optional;
