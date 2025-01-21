@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
+use kodept_core::code_point::CodePoint;
+use criterion::{criterion_group, BatchSize, Criterion, Throughput};
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::rlt::RLT;
+use kodept_rlt::prelude as rlt;
 use kodept_core::structure::span::CodeHolder;
 use kodept_parse::common::{EagerTokensProducer, RLTProducer};
 use kodept_parse::lexer::PestLexer;
@@ -23,6 +23,12 @@ static PARSED_FILE: LazyLock<RLT> = LazyLock::new(|| {
     parser.parse_stream(&stream).unwrap()
 });
 
+fn parsed_file(modules: usize) -> RLT {
+    let module = PARSED_FILE.0 .0.first().unwrap();
+    let modules = (0..modules).map(|_| module.clone()).collect::<Box<_>>();
+    RLT(rlt::File(modules))
+}
+
 #[derive(Debug, Copy, Clone)]
 struct InlineCodeHolder(&'static str);
 impl CodeHolder for InlineCodeHolder {
@@ -34,22 +40,59 @@ impl CodeHolder for InlineCodeHolder {
 }
 
 #[cfg(feature = "parallel")]
+fn build_thread_pool(size: usize) -> rayon::ThreadPool {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(size)
+        .build()
+        .unwrap();
+    pool
+}
+
+fn bench_complexity(c: &mut Criterion) {
+    #[cfg(feature = "parallel")]
+    let pool = build_thread_pool(9);
+    let mut group = c.benchmark_group("ast_building");
+    for size in [1, 2, 5, 10, 50, 200, 400, 700] {
+        let rlt = parsed_file(size);
+
+        group.throughput(Throughput::Elements(size as u64));
+        group.bench_function(criterion::BenchmarkId::new("complexity", size), |b| {
+            #[cfg(feature = "parallel")]
+            return pool.install(|| {
+                b.iter_batched(
+                    || rlt.clone(),
+                    |rlt| {
+                        AST::recursively_build::<FileDecl>(
+                            rlt,
+                            InlineCodeHolder(FILE_CONTENTS).map(|it| Cow::Borrowed(it)),
+                        )
+                    },
+                    BatchSize::SmallInput,
+                )
+            });
+            #[cfg(not(feature = "parallel"))]
+            return b.iter_batched(
+                || rlt.clone(),
+                |rlt| {
+                    AST::recursively_build::<FileDecl>(
+                        rlt,
+                        InlineCodeHolder(FILE_CONTENTS).map(Cow::Borrowed),
+                    )
+                },
+                BatchSize::SmallInput,
+            );
+        });
+    }
+}
+
+#[cfg(feature = "parallel")]
 fn parallel_bench<M, C>(id: &str, group: &mut criterion::BenchmarkGroup<M>, sources: C)
 where
     M: criterion::measurement::Measurement<Value: Send> + Sync,
     C: CodeHolder<Str = Cow<'static, str>>,
 {
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(1)
-        .use_current_thread()
-        .build_global()
-        .unwrap();
-
     for parallelism in 1..11 {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(parallelism)
-            .build()
-            .unwrap();
+        let pool = build_thread_pool(parallelism);
 
         group.bench_function(criterion::BenchmarkId::new(id, parallelism), |b| {
             pool.install(|| {
@@ -65,7 +108,6 @@ where
 
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
-    let rlt = PARSED_FILE.clone();
     let sources = InlineCodeHolder(FILE_CONTENTS);
     group.throughput(Throughput::Bytes(FILE_CONTENTS.len() as u64));
 
@@ -104,5 +146,17 @@ fn bench_impls(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, bench_impls);
-criterion_main!(benches);
+criterion_group!(benches, bench_impls, bench_complexity);
+
+fn main() {
+    #[cfg(feature = "parallel")]
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .use_current_thread()
+        .build_global()
+        .unwrap();
+
+    benches();
+
+    Criterion::default().configure_from_args().final_summary();
+}
