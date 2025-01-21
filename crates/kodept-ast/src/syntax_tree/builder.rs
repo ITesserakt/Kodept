@@ -12,11 +12,7 @@ use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 
-static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> =
-    LazyLock::new(|| match std::thread::available_parallelism() {
-        Ok(x) => x.get(),
-        Err(_) => 4,
-    });
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
 pub struct Pool<'e> {
     syntax: &'e SyntaxResolver,

@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::code_point::CodePoint;
@@ -32,60 +32,73 @@ impl CodeHolder for InlineCodeHolder {
     }
 }
 
+#[cfg(feature = "parallel")]
+fn parallel_bench<M, C>(id: &str, group: &mut criterion::BenchmarkGroup<M>, sources: C)
+where
+    M: criterion::measurement::Measurement<Value: Send> + Sync,
+    C: CodeHolder<Str = Cow<'static, str>>,
+{
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .use_current_thread()
+        .build_global()
+        .unwrap();
+
+    for parallelism in 1..15 {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(parallelism)
+            .build()
+            .unwrap();
+
+        group.bench_function(criterion::BenchmarkId::new(id, parallelism), |b| {
+            pool.install(|| {
+                b.iter_batched(
+                    || PARSED_FILE.clone(),
+                    |rlt| AST::recursively_build::<FileDecl>(rlt, sources),
+                    BatchSize::SmallInput,
+                )
+            })
+        });
+    }
+}
+
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
-    let rlt = PARSED_FILE.clone();
     let sources = InlineCodeHolder(FILE_CONTENTS);
     group.throughput(Throughput::Bytes(FILE_CONTENTS.as_bytes().len() as u64));
 
     #[cfg(all(not(feature = "interning"), not(feature = "parallel")))]
-    group.bench_with_input(
-        "no interning, no parallelization",
-        &(rlt, sources),
-        |b, (rlt, sources)| {
-            b.iter_with_large_drop(move || {
-                let sources = sources.map(Cow::from);
-                AST::recursively_build::<FileDecl>(rlt.clone(), sources);
-            })
-        },
-    );
+    group.bench_function("no interning, no parallelization", |b| {
+        let sources = sources.map(Cow::from);
+        b.iter_batched(
+            || PARSED_FILE.clone(),
+            |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), sources),
+            BatchSize::SmallInput,
+        )
+    });
 
     #[cfg(all(feature = "interning", not(feature = "parallel")))]
-    group.bench_with_input(
-        "interning, no parallelization",
-        &(rlt, sources),
-        |b, (rlt, sources)| {
-            b.iter_with_large_drop(move || {
-                let sources =
-                    kodept_interning::InterningCodeHolder::new(*sources).map(|it| Cow::from(it.0));
-                AST::recursively_build::<FileDecl>(rlt.clone(), sources);
-            })
-        },
-    );
+    group.bench_function("no interning, no parallelization", |b| {
+        let sources = kodept_interning::InterningCodeHolder::new(sources).map(|it| Cow::from(it.0));
+        b.iter_batched(
+            || PARSED_FILE.clone(),
+            |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), sources),
+            BatchSize::SmallInput,
+        )
+    });
 
     #[cfg(all(not(feature = "interning"), feature = "parallel"))]
-    group.bench_with_input(
+    parallel_bench(
         "no interning, parallelization",
-        &(rlt, sources),
-        |b, (rlt, sources)| {
-            b.iter_with_large_drop(move || {
-                let sources = sources.map(Cow::from);
-                AST::recursively_build::<FileDecl>(rlt.clone(), sources);
-            })
-        },
+        &mut group,
+        sources.map(Cow::from),
     );
 
     #[cfg(all(feature = "interning", feature = "parallel"))]
-    group.bench_with_input(
+    parallel_bench(
         "interning, parallelization",
-        &(rlt, sources),
-        |b, (rlt, sources)| {
-            b.iter_with_large_drop(move || {
-                let sources =
-                    kodept_interning::InterningCodeHolder::new(*sources).map(|it| Cow::from(it.0));
-                AST::recursively_build::<FileDecl>(rlt.clone(), sources);
-            })
-        },
+        &mut group,
+        kodept_interning::InterningCodeHolder::new(sources).map(|it| Cow::from(it.0)),
     );
 }
 
