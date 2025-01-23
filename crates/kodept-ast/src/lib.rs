@@ -4,16 +4,18 @@
 use kodept_core::static_assert_size;
 
 pub mod macros;
-mod node_id;
 pub mod properties;
 pub mod resource;
 pub mod syntax_tree;
 mod traits;
 mod utils;
+pub mod interaction;
 
 pub mod prelude {
-    pub use super::node_id::{AnyNodeId, NodeId};
+    use bevy_ecs::prelude::Entity;
+    
     pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
+    pub type NodeId = Entity;
 }
 
 pub mod external {

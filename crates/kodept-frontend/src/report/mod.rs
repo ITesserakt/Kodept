@@ -112,6 +112,12 @@ impl<Impl> Reports<Impl>
 where
     Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
 {
+    pub fn insert<F>(&self, report: Report<F>)
+    where 
+        F: CorrectFileId {
+        F::insert(self, report);
+    }
+    
     #[allow(private_bounds)]
     pub fn report<F, T>(&self, file_id: F, message: T) -> Execution<()>
     where

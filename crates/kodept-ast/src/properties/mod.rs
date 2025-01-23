@@ -17,8 +17,8 @@ pub struct Root;
 
 pub trait HasProperty<Property: NodeProperty>: Sized {
     #[inline]
-    fn ensure_has(id: NodeId<Self>, ast: &AST) -> bool {
-        ast.contains::<Property>(id.cast())
+    fn ensure_has(id: NodeId, ast: &AST) -> bool {
+        ast.contains::<Property>(id)
     }
 }
 
@@ -26,8 +26,8 @@ pub trait RequireProperty<Property: NodeProperty> {}
 
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {
     #[inline]
-    fn ensure_has(id: NodeId<Self>, ast: &AST) -> bool {
-        if cfg!(debug_assertions) && !ast.contains::<P>(id.cast()) {
+    fn ensure_has(id: NodeId, ast: &AST) -> bool {
+        if cfg!(debug_assertions) && !ast.contains::<P>(id) {
             panic!(
                 "Expected node {id} to has a required property `{}`",
                 std::any::type_name::<P>()

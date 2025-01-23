@@ -1,12 +1,10 @@
-use crate::prelude::{ASTNode, CodeHolder, FromSyntax, NodeId};
-use crate::properties::Node;
+use crate::interaction::Interaction;
+use crate::prelude::{CodeHolder, FromSyntax, NodeId};
+use crate::properties::{Node, Root};
 use crate::resource::rlt::SyntaxResolver;
 use crate::syntax_tree::builder::Pool;
-use bevy_ecs::entity::Entities;
-use bevy_ecs::prelude::{Component, Entity, World};
-use bevy_ecs::world::CommandQueue;
+use bevy_ecs::prelude::{Component, World};
 use kodept_rlt::prelude::RLT;
-use std::ops::Index;
 
 #[derive(Debug)]
 pub struct AST {
@@ -14,46 +12,19 @@ pub struct AST {
 }
 
 impl AST {
-    pub fn recursively_build<Root>(
-        start: RLT,
-        source_code: impl CodeHolder,
-    ) -> (Self, SyntaxResolver)
+    pub fn recursively_build<Root>(start: RLT, source_code: impl CodeHolder) -> Self
     where
         Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
     {
         let mut world = World::new();
-        let syntax = Self::create_in_world::<Root>(start, source_code, &mut world);
-        (AST { world }, syntax)
-    }
-
-    pub fn create_in_world<Root>(
-        lexeme_tree: RLT,
-        source_code: impl CodeHolder,
-        world: &mut World,
-    ) -> SyntaxResolver
-    where
-        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
-    {
-        let resolver = SyntaxResolver::empty(lexeme_tree);
-        let pool = Pool::new(&resolver, world.entities());
-        let whole_part = Root::from_syntax(pool.syntax_root(), source_code, &pool);
+        let syntax = SyntaxResolver::empty(start);
+        let pool = Pool::new(&syntax, world.entities());
+        let whole_part =
+            Root::from_syntax(pool.syntax_root(), source_code, &pool).with_property(Root);
         pool.link_syntax(whole_part.id(), pool.syntax_root());
-        whole_part.consume(world);
-        resolver
-    }
-
-    pub fn create_with_resolver<Root>(
-        source_code: impl CodeHolder,
-        resolver: &SyntaxResolver,
-        entities: &Entities,
-    ) -> (Entity, CommandQueue)
-    where
-        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
-    {
-        let pool = Pool::new(resolver, entities);
-        let whole_part = Root::from_syntax(pool.syntax_root(), source_code, &pool);
-        pool.link_syntax(whole_part.id(), pool.syntax_root());
-        (whole_part.id().as_inner(), whole_part.into_inner())
+        whole_part.consume(&mut world);
+        world.insert_resource(syntax);
+        AST { world }
     }
 
     pub fn node_count(&self) -> usize {
@@ -64,20 +35,18 @@ impl AST {
     }
 
     pub fn contains<T: Component>(&self, id: NodeId) -> bool {
-        self.world.entity(id.as_inner()).contains::<T>()
+        self.world.entity(id).contains::<T>()
     }
-}
 
-impl<T> Index<NodeId<T>> for AST
-where
-    T: ASTNode,
-{
-    type Output = T;
+    pub fn syntax_mut(&mut self) -> &mut SyntaxResolver {
+        self.world.resource_mut::<SyntaxResolver>().into_inner()
+    }
 
-    fn index(&self, index: NodeId<T>) -> &Self::Output {
-        self.world
-            .entity(index.as_inner())
-            .get()
-            .expect("Cannot get ast node")
+    pub fn syntax(&self) -> &SyntaxResolver {
+        self.world.resource()
+    }
+
+    pub fn interact(&mut self) -> Interaction {
+        Interaction::new(&mut self.world)
     }
 }

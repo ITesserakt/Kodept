@@ -1,6 +1,6 @@
-use crate::node_id::NodeId;
+use crate::prelude::NodeId;
 use bevy_ecs::entity::EntityHash;
-use bevy_ecs::prelude::{Entity};
+use bevy_ecs::prelude::{Entity, Resource};
 use dashmap::DashMap;
 use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
@@ -10,7 +10,6 @@ use kodept_rlt::prelude::RLT;
 use kodept_rlt::{new_types, prelude as rlt};
 use std::marker::PhantomPinned;
 use std::pin::Pin;
-use crate::external::Component;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -49,7 +48,7 @@ struct PinnedRLT {
     _phantom: PhantomPinned,
 }
 
-#[derive(Debug, Component)]
+#[derive(Debug, Resource)]
 pub struct SyntaxResolver {
     tree: Pin<Box<PinnedRLT>>,
     mapping: DashMap<Entity, SyntaxVariant<'static>, EntityHash>,
@@ -85,11 +84,11 @@ impl SyntaxResolver {
         // SAFETY: lifetimes of node and self are equal and produced reference won't be used in 'static contexts
         let reborrow =
             unsafe { std::mem::transmute::<SyntaxVariant<'r>, SyntaxVariant<'static>>(variant) };
-        self.mapping.insert(id.as_inner(), reborrow);
+        self.mapping.insert(id, reborrow);
     }
 
     pub fn get_unknown(&self, id: NodeId) -> Option<SyntaxVariant> {
-        let reference = self.mapping.get(&id.as_inner())?;
+        let reference = self.mapping.get(&id)?;
         Some(*reference.value())
     }
 

@@ -67,7 +67,12 @@ impl<Root> ASTBuilder<Root> {
         let mut queue = CommandQueue::default();
         queue.push(move |w: &mut World| {
             let mut entity = w.entity_mut(root_id);
-            entity.insert((root, Node { kind: std::any::type_name::<Root>() }));
+            entity.insert((
+                root,
+                Node {
+                    kind: std::any::type_name::<Root>(),
+                },
+            ));
         });
         Self {
             queue,
@@ -129,7 +134,7 @@ impl<Root> ASTBuilder<Root> {
         }
     }
     pub(crate) fn id(&self) -> NodeId {
-        NodeId::from_inner(self.root)
+        self.root
     }
 }
 
@@ -169,7 +174,7 @@ where
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
                 self.children_buffer.push(part.root);
-                self.pool.link_syntax(NodeId::from_inner(part.root), item);
+                self.pool.link_syntax(part.root, item);
                 self.insert::<Tag>(part.erase(), Tag::default());
             }
             return;
@@ -191,7 +196,7 @@ where
                 move || {
                     iter.for_each_with(sx, |sender, it| {
                         let part = U::from_syntax(it, source, pool);
-                        pool.link_syntax(NodeId::from_inner(part.root), it);
+                        pool.link_syntax(part.root, it);
                         sender.send(part).unwrap()
                     })
                 },
@@ -236,8 +241,7 @@ where
             for item in iter.into_iter() {
                 let disjoint = Chooser::branch(item);
                 let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
-                self.pool
-                    .link_syntax(NodeId::from_inner(part.root), disjoint.inner);
+                self.pool.link_syntax(part.root, disjoint.inner);
                 self.children_buffer.push(part.root);
                 self.insert(part.erase(), Tag::default());
             }
@@ -261,7 +265,7 @@ where
                     iter.for_each_with(sx, |sender, it| {
                         let disjoint = Chooser::branch(it);
                         let part = (disjoint.conversion)(disjoint.inner, source, pool);
-                        pool.link_syntax(NodeId::from_inner(part.root), disjoint.inner);
+                        pool.link_syntax(part.root, disjoint.inner);
                         sender.send(part).unwrap()
                     })
                 },
@@ -303,7 +307,7 @@ where
     {
         self.children_buffer.push(builder.root);
         self.pool
-            .link_syntax(NodeId::from_inner(builder.root), node);
+            .link_syntax(builder.root, node);
         self.insert(builder.erase(), Tag::default());
     }
 

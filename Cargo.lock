@@ -974,6 +974,7 @@ dependencies = [
  "kodept-ast-nodes",
  "kodept-core",
  "kodept-frontend",
+ "kodept-interaction",
  "kodept-interning",
  "kodept-parse",
  "kodept-report",
@@ -1039,6 +1040,19 @@ dependencies = [
  "nonempty-collections",
  "thiserror 2.0.9",
  "tracing",
+]
+
+[[package]]
+name = "kodept-interaction"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "extend",
+ "kodept-ast",
+ "kodept-ast-nodes",
+ "kodept-core",
+ "kodept-report",
+ "kodept-rlt",
 ]
 
 [[package]]

@@ -1,0 +1,17 @@
+[package]
+name = "kodept-interaction"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy_ecs.workspace = true
+extend.workspace = true
+
+kodept-ast = { path = "../kodept-ast" }
+kodept-ast-nodes = { path = "../kodept-ast-nodes" }
+kodept-core = { path = "../kodept-core" }
+kodept-report = { path = "../kodept-report" }
+kodept-rlt = { path = "../kodept-rlt" }
+
+[lints]
+workspace = true

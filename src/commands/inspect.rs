@@ -45,7 +45,7 @@ impl Command for Inspect {
                 reports.report(*source.id, message);
             }
 
-            let (mut ast, _) = build_ast(&source, rlt);
+            let mut ast = build_ast(&source, rlt);
             if self.export_ast && export_ast(&source, &config, &mut ast).is_continue() {
                  let message = ad_hoc_message(|| {
                      Diagnostic::new(Severity::Note)
