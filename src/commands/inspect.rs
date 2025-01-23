@@ -20,10 +20,10 @@ use kodept_ast::syntax_tree::prelude::AST;
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
     /// Export raw lexeme tree in .json format into a file
-    #[arg(short = 'r', action)]
+    #[arg(short = 'r', long, action)]
     export_rlt: bool,
     /// Export abstract syntax tree in .dot format into a file
-    #[arg(short = 'a', action)]
+    #[arg(short = 'a', short, action)]
     export_ast: bool,
     #[command(flatten, next_help_heading = "Parsing options")]
     parsing_config: ParsingConfig,

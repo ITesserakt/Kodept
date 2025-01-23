@@ -2,7 +2,6 @@ use clap::Parser;
 use tracing::Level;
 use crate::cli::make_reports;
 use crate::cli::primary::Kodept;
-use crate::commands::{Command, Commands};
 use crate::profiler::HeapProfilerGuard;
 
 mod cli;
@@ -22,9 +21,7 @@ fn main() {
     init_tracing(cli_options.logging.level());
     let reports = make_reports(cli_options.diagnostic_config);
 
-    let result = match cli_options.subcommands { 
-        Commands::Inspect(x) => x.exec(reports, cli_options.output_config), 
-    };
+    let result = cli_options.subcommands.exec(reports, cli_options.output_config);
     if result.is_break() {
         eprintln!("Compilation finished with errors");
     }
