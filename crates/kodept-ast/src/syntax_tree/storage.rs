@@ -34,8 +34,8 @@ impl AST {
     where
         Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
     {
-        let mut resolver = SyntaxResolver::empty(lexeme_tree);
-        let pool = Pool::new(&mut resolver, world.entities());
+        let resolver = SyntaxResolver::empty(lexeme_tree);
+        let pool = Pool::new(&resolver, world.entities());
         let whole_part = Root::from_syntax(pool.syntax_root(), source_code, &pool);
         pool.link_syntax(whole_part.id(), pool.syntax_root());
         whole_part.consume(world);

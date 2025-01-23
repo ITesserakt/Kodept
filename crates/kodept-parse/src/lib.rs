@@ -3,9 +3,11 @@
 //! - based on nom,
 //! - based on peg,
 //! - based on pest.
+//! 
 //! And 2 different implementations for parsing:
 //! - based on nom,
 //! - based on peg.
+//! 
 //! It also provides some common structures like Token, TokenStream,
 //! leveraging an abstraction around error handling etc.
 

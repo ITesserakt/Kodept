@@ -82,7 +82,7 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
             Ok(x) => Ok(x),
             Err(e) => {
                 struct Helper<'e, E: std::error::Error>(&'e E);
-                impl<'e, E: std::error::Error> IntoSpannedReportMessage for Helper<'e, E> {
+                impl<E: std::error::Error> IntoSpannedReportMessage for Helper<'_, E> {
                     type Message = ReportMessage;
 
                     fn into_message(self) -> Self::Message {

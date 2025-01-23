@@ -36,7 +36,10 @@ pub fn get_rlt(
     };
     let tokens = match tokens_result {
         Ok(x) => x,
-        Err(e) => return Break(report_each(*source.id, reports, e)),
+        Err(e) => return {
+            report_each(*source.id, reports, e);
+            Break(())
+        },
     };
     let stream = PackedTokenStream::new(&tokens);
 
@@ -47,11 +50,14 @@ pub fn get_rlt(
     };
     match rlt_result {
         Ok(x) => Continue(x),
-        Err(e) => Break(report_each(
-            *source.id,
-            reports,
-            e.map(|t| t.representation()),
-        )),
+        Err(e) => {
+            report_each(
+                *source.id,
+                reports,
+                e.map(|t| t.representation()),
+            );
+            Break(())
+        },
     }
 }
 

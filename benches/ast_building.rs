@@ -65,7 +65,7 @@ where
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     let sources = InlineCodeHolder(FILE_CONTENTS);
-    group.throughput(Throughput::Bytes(FILE_CONTENTS.as_bytes().len() as u64));
+    group.throughput(Throughput::Bytes(FILE_CONTENTS.len() as u64));
 
     #[cfg(all(not(feature = "interning"), not(feature = "parallel")))]
     group.bench_function("no interning, no parallelization", |b| {

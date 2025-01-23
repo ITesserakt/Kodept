@@ -32,7 +32,7 @@ where
     }
 }
 
-impl<'a, C> CodeHolder for InterningCodeHolder<'a, C>
+impl<C> CodeHolder for InterningCodeHolder<'_, C>
 where
     C: CodeHolder,
     C::Str: AsRef<str>,

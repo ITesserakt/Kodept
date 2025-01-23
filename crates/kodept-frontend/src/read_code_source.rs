@@ -26,6 +26,9 @@ where
     fn as_ref(&self) -> Self::Ref<'_>;
     fn len(&self) -> usize;
     fn range(&self, value: Range<usize>) -> Self::Ref<'_>;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl Source for String {
