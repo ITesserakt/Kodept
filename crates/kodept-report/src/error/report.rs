@@ -107,11 +107,8 @@ impl<FileId> Report<FileId> {
         let mut hasher = DefaultHasher::new();
         type_name.hash(&mut hasher);
         let hash = hasher.finish();
-        let hash = hash
-            .to_ne_bytes()
-            .into_iter()
-            .fold(0u16, |acc, next| acc ^ next as u16);
-        format!("{:0>8X}", hash)
+        let code = hash as u32 ^ (hash >> 32) as u32;
+        format!("{:0>8X}", code)
     }
 
     fn from_raw_message_with_code<T>(file_id: FileId, msg: T, code: String) -> Self
