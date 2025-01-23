@@ -5,6 +5,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Struct {
     pub keyword: Keyword,
     pub id: TypeName,
@@ -13,6 +14,7 @@ pub struct Struct {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Enum {
     Stack {
         keyword: Keyword,
@@ -27,6 +29,7 @@ pub enum Enum {
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TopLevelNode {
     Enum(Enum),
     Struct(Struct),

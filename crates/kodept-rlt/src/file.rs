@@ -5,6 +5,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Module {
     Global {
         keyword: Keyword,
@@ -22,9 +23,11 @@ pub enum Module {
 }
 
 #[derive(Debug, Clone, PartialEq, Constructor)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct File(pub Box<[Module]>);
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RLT(pub File);
 
 impl Module {

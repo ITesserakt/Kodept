@@ -6,8 +6,12 @@ edition = "2021"
 [lints]
 workspace = true
 
+[features]
+serde = ["dep:serde"]
+
 [dependencies]
 derive_more.workspace = true
+serde = { version = "1", features = ["derive"], optional = true }
 
 [dependencies.kodept-core]
 path = "../kodept-core"

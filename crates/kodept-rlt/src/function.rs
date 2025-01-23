@@ -5,6 +5,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BodiedFunction {
     pub keyword: Keyword,
     pub id: Identifier,

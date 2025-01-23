@@ -6,6 +6,7 @@ use derive_more::{Constructor, Display};
 
 #[derive(Constructor, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
 #[display("...{}:{}", offset, length)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CodePoint {
     pub length: u32,
     pub offset: u32,

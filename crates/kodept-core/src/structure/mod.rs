@@ -8,6 +8,7 @@ pub mod span {
 
     #[repr(transparent)]
     #[derive(Constructor, Debug, Clone, PartialEq, Copy)]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct Span {
         pub point: CodePoint,
     }

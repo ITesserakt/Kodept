@@ -7,6 +7,7 @@ macro_rules! make_wrappers {
         $(
         #[repr(transparent)]
         #[derive(Debug, Clone, PartialEq, From, Into)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         pub struct $name(pub kodept_core::structure::span::Span);
 
         impl kodept_core::structure::Located for $name {
@@ -30,6 +31,7 @@ macro_rules! make_wrappers {
 make_wrappers!(Keyword, Symbol, TypeName, Identifier,);
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UnaryOperationSymbol {
     Neg(Symbol),
     Not(Symbol),
@@ -38,6 +40,7 @@ pub enum UnaryOperationSymbol {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BinaryOperationSymbol {
     /// **
     Pow(Symbol),
@@ -60,6 +63,7 @@ pub enum BinaryOperationSymbol {
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Enclosed<T> {
     pub left: Symbol,
     pub inner: T,

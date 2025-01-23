@@ -5,6 +5,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Body {
     Block(ExpressionBlock),
     Simplified {
@@ -14,6 +15,7 @@ pub enum Body {
 }
 
 #[derive(Clone, Debug, PartialEq, From)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BlockLevelNode {
     InitVar(InitializedVariable),
     Block(ExpressionBlock),
@@ -22,6 +24,7 @@ pub enum BlockLevelNode {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Variable {
     Immutable {
         keyword: Keyword,
@@ -36,6 +39,7 @@ pub enum Variable {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InitializedVariable {
     pub variable: Variable,
     pub equals: Symbol,

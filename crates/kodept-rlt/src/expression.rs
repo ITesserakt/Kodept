@@ -4,12 +4,14 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Application {
     pub expr: Operation,
     pub params: Option<Enclosed<Box<[Operation]>>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Operation {
     Block(ExpressionBlock),
     Access {
@@ -31,6 +33,7 @@ pub enum Operation {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Expression {
     Lambda(Lambda),
     Term(Term),
@@ -39,6 +42,7 @@ pub enum Expression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Lambda {
     pub binds: Enclosed<Box<[Parameter]>>,
     pub flow: Symbol,
@@ -46,6 +50,7 @@ pub struct Lambda {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ExpressionBlock {
     pub lbrace: Symbol,
     pub expression: Box<[BlockLevelNode]>,

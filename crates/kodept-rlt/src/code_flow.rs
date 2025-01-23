@@ -4,6 +4,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IfExpr {
     pub keyword: Keyword,
     pub condition: Operation,
@@ -13,6 +14,7 @@ pub struct IfExpr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ElifExpr {
     pub keyword: Keyword,
     pub condition: Operation,
@@ -20,6 +22,7 @@ pub struct ElifExpr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ElseExpr {
     pub keyword: Keyword,
     pub body: Body,

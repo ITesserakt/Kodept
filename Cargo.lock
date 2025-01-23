@@ -1000,7 +1000,6 @@ name = "kodept"
 version = "0.2.3"
 dependencies = [
  "bevy_ecs",
- "bevy_hierarchy",
  "clap",
  "codespan-reporting",
  "criterion",
@@ -1018,6 +1017,7 @@ dependencies = [
  "kodept-rlt",
  "memmap2",
  "rayon",
+ "serde_json",
  "tempfile",
  "thiserror 2.0.9",
  "tracing",
@@ -1142,6 +1142,7 @@ version = "0.1.1"
 dependencies = [
  "derive_more",
  "kodept-core",
+ "serde",
 ]
 
 [[package]]
