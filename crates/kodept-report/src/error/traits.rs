@@ -81,7 +81,7 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
         match self {
             Ok(x) => Ok(x),
             Err(e) => {
-                pub struct Helper<'e, E: std::error::Error>(&'e E);
+                struct Helper<'e, E: std::error::Error>(&'e E);
                 impl<'e, E: std::error::Error> IntoSpannedReportMessage for Helper<'e, E> {
                     type Message = ReportMessage;
 
