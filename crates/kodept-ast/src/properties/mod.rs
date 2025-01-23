@@ -11,6 +11,10 @@ pub struct Node {
     pub kind: &'static str
 }
 
+#[derive(Debug, Component)]
+#[component(storage = "SparseSet")]
+pub struct Root;
+
 pub trait HasProperty<Property: NodeProperty>: Sized {
     #[inline]
     fn ensure_has(id: NodeId<Self>, ast: &AST) -> bool {
@@ -36,3 +40,4 @@ impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {
 
 impl NodeProperty for Node {}
 impl<T: ASTNode> RequireProperty<Node> for T {}
+impl NodeProperty for Root {}

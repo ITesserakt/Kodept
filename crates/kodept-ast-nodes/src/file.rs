@@ -7,6 +7,7 @@ use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::syntax_tree::children::ChildrenDisjoint;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, Str};
+use kodept_ast::properties::{RequireProperty, Root};
 use kodept_rlt::prelude::{File, Module, TopLevelNode};
 
 #[derive(Debug, PartialEq)]
@@ -42,6 +43,7 @@ impl FromSyntax for FileDecl {
 
     fn from_syntax(node: &File, source_code: impl CodeHolder, builder: &Pool) -> ASTBuilder<Self> {
         ASTBuilder::new(builder, FileDecl)
+            .with_property(Root)
             .with_children(source_code, builder, |scope| scope.many(node.0.as_ref()))
     }
 }
@@ -70,3 +72,5 @@ impl Choose<TopLevelNode, ModDecl, TopLevel> for Unit {
         }
     }
 }
+
+impl RequireProperty<Root> for FileDecl {}

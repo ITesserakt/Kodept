@@ -10,7 +10,7 @@ use std::ops::Index;
 
 #[derive(Debug)]
 pub struct AST {
-    world: World,
+    pub(crate) world: World,
 }
 
 impl AST {
