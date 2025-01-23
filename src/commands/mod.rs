@@ -1,19 +1,20 @@
 mod inspect;
 mod utils;
-mod typecheck;
+mod check;
 
 use crate::commands::inspect::Inspect;
 use clap::Subcommand;
 use kodept::report::GlobalReports;
 use kodept_frontend::Execution;
 use crate::cli::primary::OutputConfig;
-use crate::commands::typecheck::TypeCheck;
+use crate::commands::check::Check;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Inspect various parts of a compilation process
     Inspect(Inspect),
-    TypeCheck(TypeCheck),
+    /// Apply lints and type check input
+    Check(Check),
     // /// Output parsing process files
     // InspectParser(InspectParser),
     // /// Run type checker
@@ -28,7 +29,7 @@ impl Commands {
     pub fn exec(self, reports: GlobalReports, config: OutputConfig) -> Execution<()> {
         match self {
             Commands::Inspect(x) => x.exec(reports, config),
-            Commands::TypeCheck(x) => x.exec(reports, config)
+            Commands::Check(x) => x.exec(reports, config)
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
-use crate::{done, skip, Interacted, Interaction};
+use crate::{done, skip, Interacted};
 use bevy_ecs::prelude::{Entity, IntoSystem, Res, Single};
 use bevy_ecs::query::With;
 use kodept_ast::resource::rlt::SyntaxResolver;

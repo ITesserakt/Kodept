@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 use tracing::{info, info_span};
 
 #[derive(Debug, Parser)]
-pub struct TypeCheck {
+pub struct Check {
     /// Measure duration of different stages
     #[arg(short, long, action, default_value_t = false)]
     timings: bool,
@@ -28,7 +28,7 @@ pub struct TypeCheck {
     parsing_config: ParsingConfig,
 }
 
-impl Command for TypeCheck {
+impl Command for Check {
     fn exec(self, reports: GlobalReports, _: OutputConfig) -> Execution<()> {
         let (sources, reports) = self.timings_block("Source loading", || {
             get_all_sources(&self.loading_config, reports)
@@ -59,7 +59,7 @@ fn install_lints(ctx: &mut Ctx) {
     SingleModuleWithBrackets::install(ctx);
 }
 
-impl TypeCheck {
+impl Check {
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {
         let span = info_span!("timings-block");
         let _guard = span.enter();
