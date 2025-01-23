@@ -1,55 +1,64 @@
-use crate::cli::configs::ParsingConfig;
-use bevy_ecs::prelude::{Component, Entity, ParallelCommands, Populated, Res};
-use bevy_ecs::query::Without;
-use kodept::codespan_settings::ReportEmitted;
-use kodept::source_files::SourceView;
-use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_frontend::frontend::Frontend;
-use kodept_frontend::plugin::Plugin;
+use crate::cli::configs::{LexerImpl, ParserImpl, ParsingConfig};
+use kodept::report::Reports;
+use kodept::source::collection::SourceView;
+use kodept_parse::common::{ErrorAdapter, RLTProducer};
 use kodept_parse::error::{ParseError, ParseErrors};
+use kodept_parse::lexer::traits::ToRepresentation;
+use kodept_parse::token_stream::PackedTokenStream;
+use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, Tok, TokCtor};
 use kodept_report::error::report::{Label, Severity};
 use kodept_report::error::Diagnostic;
+use kodept_report::FileId;
+use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
-use std::fmt::Display;
-use std::fmt::Write;
+use std::fmt::{Display, Write};
+use std::ops::ControlFlow::{Break, Continue};
+use kodept_frontend::Execution;
 
-pub struct ParseSourcesPlugin;
+pub fn get_rlt(
+    config: &ParsingConfig,
+    source: &SourceView,
+    reports: &Reports,
+) -> Execution<RLT> {
+    let lexing_backend = config.get_lexing_backend(source.contents().len());
+    let input = source.contents();
 
-impl Plugin for ParseSourcesPlugin {
-    fn build(self, app: &mut Frontend) {
-        app.add_systems(parse_sources_system);
+    let tokens_result = match lexing_backend {
+        LexerImpl::Peg(x) => EagerTokenizer::new(input, x)
+            .try_into_vec()
+            .map_err(|e| e.adapt(input, 0)),
+        LexerImpl::Nom(x) => LazyTokenizer::new(input, x)
+            .try_into_vec()
+            .map_err(|e| e.adapt(input, 0)),
+        LexerImpl::Pest(x) => EagerTokenizer::new(input, x)
+            .try_into_vec()
+            .map_err(|e| e.adapt(input, 0)),
+    };
+    let tokens = match tokens_result {
+        Ok(x) => x,
+        Err(e) => return Break(report_each(*source.id, reports, e)),
+    };
+    let stream = PackedTokenStream::new(&tokens);
+
+    let parsing_backend = config.get_parsing_backend();
+    let rlt_result = match parsing_backend {
+        ParserImpl::Peg(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
+        ParserImpl::Nom(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
+    };
+    match rlt_result {
+        Ok(x) => Continue(x),
+        Err(e) => Break(report_each(
+            *source.id,
+            reports,
+            e.map(|t| t.representation()),
+        )),
     }
 }
 
-#[derive(Component)]
-struct Parsed;
-
-fn parse_sources_system(
-    query: Populated<(Entity, &SourceView), Without<Parsed>>,
-    commands: ParallelCommands,
-    config: Res<ParsingConfig>,
-) {
-    query.par_iter().for_each(|(entity, it)| {
-        let rlt = config.build_rlt(&*it);
-        match rlt {
-            Ok(rlt) => {
-                commands.command_scope(|mut commands| {
-                    commands
-                        .entity(entity)
-                        .insert((Parsed, SyntaxResolver::empty(rlt)));
-                });
-            }
-            Err(error) => {
-                let diagnostics = to_diagnostics(error);
-                commands.command_scope(|mut commands| {
-                    for diagnostic in diagnostics {
-                        commands.send_event(ReportEmitted::new(*it.id, diagnostic));
-                    }
-                    commands.entity(entity).insert(Parsed);
-                });
-            }
-        }
-    });
+fn report_each(file_id: FileId, reports: &Reports, errors: ParseErrors<&str>) {
+    for error in errors {
+        reports.report(file_id, to_diagnostic(error));
+    }
 }
 
 fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
@@ -109,8 +118,4 @@ fn expected_to_string(mut expected: Vec<Cow<'static, str>>) -> Cow<'static, str>
     } else {
         last_expected
     }
-}
-
-fn to_diagnostics<A: Display>(errors: ParseErrors<A>) -> Vec<Diagnostic> {
-    errors.into_iter().map(to_diagnostic).collect()
 }

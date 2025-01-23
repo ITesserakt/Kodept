@@ -1,4 +1,3 @@
-use crate::external::Component;
 use crate::prelude::{Source, TryReadCode};
 use crate::read_code_source::ReadSource;
 use codespan_reporting::files::{Error, Files};
@@ -10,7 +9,7 @@ use std::ops::{Deref, Range};
 use std::sync::Arc;
 use yoke::Yoke;
 
-#[derive(Debug, Component)]
+#[derive(Debug)]
 pub struct SourceView<Impl: 'static> {
     pub id: Freeze<FileId>,
     source: Yoke<&'static ReadSource<Impl>, Arc<SourceFiles<Impl>>>,

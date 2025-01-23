@@ -49,7 +49,6 @@ rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
 [dependencies]
-bevy_ecs.workspace = true
 clap = { version = "4.5", features = ["derive", "env"] }
 codespan-reporting = "0.11.1"
 derive_more.workspace = true
@@ -82,7 +81,7 @@ criterion = "0.5.1"
 [features]
 default = []
 profiler = ["dep:dhat", "dep:ctrlc"]
-parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "bevy_ecs/multi_threaded"]
+parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 interning = ["dep:kodept-interning"]
 

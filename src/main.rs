@@ -1,30 +1,31 @@
-use crate::cli::common::LoggingOptions;
-use crate::cli::CliArgumentsPlugin;
-use bevy_ecs::prelude::Res;
-use kodept::codespan_settings::ReportsPlugin;
-use kodept::utils::profiler::HeapProfilerPlugin;
-use kodept_frontend::frontend::Frontend;
-use kodept_frontend::plugin::ExitEvent;
+use clap::Parser;
+use tracing::Level;
+use crate::cli::make_reports;
+use crate::cli::primary::Kodept;
+use crate::commands::{Command, Commands};
+use crate::profiler::HeapProfilerGuard;
 
-mod actions;
 mod cli;
+mod commands;
+mod profiler;
 
-fn init_logging(cli_args: Res<LoggingOptions>) {
+fn init_tracing(level: Level) {
     tracing_subscriber::fmt()
-        .with_max_level(cli_args.level())
+        .with_max_level(level)
         .init();
 }
 
 fn main() {
-    let mut frontend = Frontend::new();
+    let _guard = HeapProfilerGuard::install();
+    let cli_options = Kodept::parse();
+    
+    init_tracing(cli_options.logging.level());
+    let reports = make_reports(cli_options.diagnostic_config);
 
-    frontend
-        .add_event::<ExitEvent>()
-        .add_plugin(ReportsPlugin)
-        .add_plugin(HeapProfilerPlugin)
-        .add_plugin(CliArgumentsPlugin);
-
-    frontend.on_startup(init_logging);
-
-    frontend.run();
+    let result = match cli_options.subcommands { 
+        Commands::Inspect(x) => x.exec(reports, cli_options.output), 
+    };
+    if result.is_break() {
+        eprintln!("Compilation finished with errors");
+    }
 }

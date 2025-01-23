@@ -1,17 +1,18 @@
-use kodept_frontend::frontend::Frontend;
-use kodept_frontend::plugin::Plugin;
+pub enum HeapProfilerGuard {
+    Empty,
+    #[cfg(feature = "profiler")]
+    Wrapper(implementation::HeapProfiler)
+}
 
 pub struct HeapProfilerPlugin;
 
-impl Plugin for HeapProfilerPlugin {
-    #[cfg(feature = "profiler")]
-    fn build(self, world: &mut Frontend) {
-        // Profiler will drop eventually, so there is no need for explicit exit observer
-        world.insert_resource(implementation::HeapProfiler::new());
+impl HeapProfilerGuard {
+    pub fn install() -> Self {
+        #[cfg(feature = "profiler")]
+        return Self::Wrapper(implementation::HeapProfiler::new());
+        #[cfg(not(feature = "profiler"))]
+        return Self::Empty;
     }
-
-    #[cfg(not(feature = "profiler"))]
-    fn build(self, _: &mut Frontend) {}
 }
 
 #[cfg(feature = "profiler")]

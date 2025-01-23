@@ -1,33 +1,17 @@
-use bevy_ecs::prelude::IntoSystemConfigs;
-use bevy_ecs::schedule::SystemConfigs;
-use bevy_ecs::system::Local;
+use std::ops::ControlFlow;
 
-pub mod frontend;
-pub mod plugin;
 mod read_code_source;
 mod source_files;
+mod report;
 
 pub mod prelude {
     pub use super::read_code_source::{ReadSource, Source, TryReadCode};
     pub use super::source_files::{SourceFiles, SourceView};
+    pub use super::report::{GlobalReports, Reports, Global};
 }
 
-pub mod external {
-    pub use bevy_ecs::prelude::{Component, Resource};
-}
+/// Some execution that can break with 
+/// failure (and this failure got reported) 
+/// or continue with value [T].
+pub type Execution<T> = ControlFlow<(), T>;
 
-pub trait SystemExt<M> {
-    fn run_once(self) -> SystemConfigs;
-}
-
-impl<M, T: IntoSystemConfigs<M>> SystemExt<M> for T {
-    fn run_once(self) -> SystemConfigs {
-        self.run_if(|mut lock: Local<bool>| match *lock {
-            true => false,
-            false => {
-                *lock = true;
-                true
-            }
-        })
-    }
-}

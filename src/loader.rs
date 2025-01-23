@@ -5,12 +5,11 @@ use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
-use crate::code_source::{CodeSource, CodeSourceError};
-use kodept_frontend::external::Component;
+use crate::source::unloaded::{CodeSource, CodeSourceError};
 use thiserror::Error;
 use tracing::{debug, warn};
 
-#[derive(Debug, Component)]
+#[derive(Debug)]
 pub enum Loader {
     File(Vec<(File, PathBuf)>),
     Memory(Vec<String>),
@@ -153,20 +152,13 @@ impl Loader {
     }
 
     #[must_use]
-    pub fn into_sources(self) -> Vec<CodeSource> {
+    pub fn into_sources(self) -> Result<Vec<CodeSource>, LoadingError> {
         match self {
             Loader::File(sources) => sources
                 .into_iter()
                 .map(|it| Self::mmap_if_needed(it.0, it.1))
-                .filter_map(|it| match it {
-                    Ok(x) => Some(x),
-                    Err(e) => {
-                        warn!("Skipping file because: {e}");
-                        None
-                    }
-                })
                 .collect(),
-            Loader::Memory(sources) => sources.into_iter().map(CodeSource::memory).collect(),
+            Loader::Memory(sources) => Ok(sources.into_iter().map(CodeSource::memory).collect()),
         }
     }
 }
@@ -191,7 +183,7 @@ mod tests {
     fn test_load_text_from_scratch() {
         let text = "Hello world";
         let loader = Loader::from_single_snippet(text);
-        let mut sources = loader.into_sources();
+        let mut sources = loader.into_sources().unwrap();
 
         assert_eq!(sources.len(), 1);
         let mut source = sources.pop().unwrap();
@@ -208,7 +200,7 @@ mod tests {
         let text = "Hello world";
         write!(file, "{0}", text).unwrap();
 
-        let mut sources = loader.into_sources();
+        let mut sources = loader.into_sources().unwrap();
         assert_eq!(sources.len(), 1);
         let mut source = sources.pop().unwrap();
         let mut output = String::new();
@@ -244,7 +236,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let sources = loader.into_sources();
+        let sources = loader.into_sources().unwrap();
         assert!(!sources.is_empty())
     }
 }
