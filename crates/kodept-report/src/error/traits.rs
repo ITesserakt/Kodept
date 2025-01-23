@@ -1,6 +1,4 @@
-use crate::error::report::{
-    IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage,
-};
+use crate::error::report::{IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage};
 use crate::error::report_collector::{ReportCollector, Reporter};
 use crate::error::{Diagnostic, ErrorReported};
 use crate::FileId;
@@ -84,12 +82,11 @@ pub impl<T, E: std::error::Error + Send + Sync + 'static> Result<T, E> {
             Ok(x) => Ok(x),
             Err(e) => {
                 pub struct Helper<'e, E: std::error::Error>(&'e E);
-                impl<E> From<Helper<'_, E>> for ReportMessage
-                where
-                    E: std::error::Error,
-                {
-                    fn from(value: Helper<E>) -> Self {
-                        Self::new(Severity::Error, value.0.to_string())
+                impl<'e, E: std::error::Error> IntoSpannedReportMessage for Helper<'e, E> {
+                    type Message = ReportMessage;
+
+                    fn into_message(self) -> Self::Message {
+                        ReportMessage::new(Severity::Error, self.0.to_string())
                     }
                 }
 

@@ -3,6 +3,7 @@ use kodept_core::code_point::CodePoint;
 use std::any::type_name_of_val;
 use std::borrow::Cow;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::marker::PhantomData;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Severity {
@@ -168,7 +169,7 @@ impl<FileId> Report<FileId> {
     }
 
     #[must_use]
-    pub(crate) fn into_diagnostic(self) -> Diagnostic<FileId> {
+    pub fn into_diagnostic(self) -> Diagnostic<FileId> {
         self.diagnostic
     }
 }
@@ -183,7 +184,7 @@ impl<E: std::error::Error> From<E> for ReportMessage {
     }
 }
 
-impl<T: Into<ReportMessage>> IntoSpannedReportMessage for T {
+impl<E: std::error::Error> IntoSpannedReportMessage for E {
     type Message = ReportMessage;
 
     fn into_message(self) -> Self::Message {
@@ -208,4 +209,25 @@ impl SpannedReportMessage for ReportMessage {
             .with_message(self.message)
             .with_node_location(location)
     }
+}
+
+pub fn ad_hoc_message<T>(f: impl FnOnce() -> T) -> impl IntoSpannedReportMessage<Message = T>
+where
+    T: SpannedReportMessage + 'static,
+{
+    struct Helper<F, T>(F, PhantomData<T>);
+
+    impl<F, T> IntoSpannedReportMessage for Helper<F, T>
+    where
+        T: SpannedReportMessage + 'static,
+        F: FnOnce() -> T,
+    {
+        type Message = T;
+
+        fn into_message(self) -> Self::Message {
+            self.0()
+        }
+    }
+    
+    Helper(f, PhantomData)
 }
