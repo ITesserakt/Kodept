@@ -23,7 +23,7 @@ pub struct Inspect {
     #[arg(short = 'r', long, action)]
     export_rlt: bool,
     /// Export abstract syntax tree in .dot format into a file
-    #[arg(short = 'a', short, action)]
+    #[arg(short = 'a', long, action)]
     export_ast: bool,
     #[command(flatten, next_help_heading = "Parsing options")]
     parsing_config: ParsingConfig,
