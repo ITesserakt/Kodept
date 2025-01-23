@@ -52,8 +52,8 @@ impl<Impl> ReadSource<Impl> {
         }
     }
     
-    pub fn path(&self) -> FileName {
-        self.source_path.clone()
+    pub fn path(&self) -> &FileName {
+        &self.source_path
     }
 
     pub fn contents(&self) -> Impl::Ref<'_>
@@ -111,7 +111,7 @@ where
     type Source = Impl::Ref<'a>;
 
     fn name(&'a self, (): ()) -> Result<Self::Name, Error> {
-        Ok(self.path())
+        Ok(self.path().clone())
     }
 
     fn source(&'a self, (): ()) -> Result<Self::Source, Error> {

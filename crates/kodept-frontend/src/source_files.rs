@@ -10,9 +10,6 @@ use std::ops::{Deref, Range};
 use std::sync::Arc;
 use yoke::Yoke;
 
-#[derive(Debug)]
-pub struct GlobalReports;
-
 #[derive(Debug, Component)]
 pub struct SourceView<Impl: 'static> {
     pub id: Freeze<FileId>,
@@ -42,28 +39,6 @@ impl<Impl> Clone for SourceView<Impl> {
     }
 }
 
-impl Files<'static> for GlobalReports {
-    type FileId = ();
-    type Name = &'static str;
-    type Source = &'static str;
-
-    fn name(&'static self, _: Self::FileId) -> Result<Self::Name, Error> {
-        Ok("<global level>")
-    }
-
-    fn source(&'static self, _: Self::FileId) -> Result<Self::Source, Error> {
-        Err(Error::FileMissing)
-    }
-
-    fn line_index(&'static self, _: Self::FileId, _: usize) -> Result<usize, Error> {
-        Err(Error::FileMissing)
-    }
-
-    fn line_range(&'static self, _: Self::FileId, _: usize) -> Result<Range<usize>, Error> {
-        Err(Error::FileMissing)
-    }
-}
-
 impl<Impl> SourceView<Impl> {
     pub fn all_files(&self) -> &SourceFiles<Impl> {
         self.source.backing_cart()
@@ -71,7 +46,7 @@ impl<Impl> SourceView<Impl> {
 
     pub fn describe(&self) -> FileDescriptor {
         FileDescriptor {
-            name: self.source.get().path(),
+            name: self.source.get().path().clone(),
             id: *self.id,
         }
     }
@@ -119,7 +94,7 @@ where
     fn name(&'a self, id: Self::FileId) -> Result<Self::Name, Error> {
         match self.contents.get(&id) {
             None => Err(Error::FileMissing),
-            Some(x) => Ok(x.path()),
+            Some(x) => Ok(x.path().clone()),
         }
     }
 

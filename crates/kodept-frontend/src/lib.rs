@@ -9,7 +9,7 @@ mod source_files;
 
 pub mod prelude {
     pub use super::read_code_source::{ReadSource, Source, TryReadCode};
-    pub use super::source_files::{GlobalReports, SourceFiles, SourceView};
+    pub use super::source_files::{SourceFiles, SourceView};
 }
 
 pub mod external {
