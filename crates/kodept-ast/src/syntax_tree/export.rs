@@ -1,4 +1,4 @@
-use crate::properties::{Node, Root};
+use crate::properties::{Name, Node, Root};
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::RunSystemOnce;
 use bevy_hierarchy::{Children, HierarchyQueryExt};
@@ -17,25 +17,32 @@ fn build_dot_system<W: Write>(
     nodes: Populated<&Children>,
     nodes_with_children: Populated<(Entity, &Children), With<Node>>,
     kinds: Populated<&Node>,
+    names: Query<&Name>,
     root: Single<Entity, With<Root>>,
 ) -> std::io::Result<W> {
     writeln!(buffer, "digraph {{")?;
+    writeln!(buffer, "\trankdir=\"LR\"")?;
+
+    let root_name = names.get(*root).map_or("", |it| it.name.as_ref());
     writeln!(
         buffer,
-        "\t{} [ label = \"{} [{}v{}]\" ]",
+        "\t{} [ label = \"{} [{}v{}]|{}\", shape = \"record\" ]",
         root.to_bits(),
         kinds.get(*root).unwrap().kind,
         root.index(),
-        root.generation()
+        root.generation(),
+        root_name
     )?;
     for node in nodes.iter_descendants(*root) {
+        let name = names.get(node).map_or("", |it| it.name.as_ref());
         writeln!(
             buffer,
-            "\t{} [ label = \"{} [{}v{}]\" ]",
+            "\t{} [ label = \"{} [{}v{}]|{}\", shape = \"record\" ]",
             node.to_bits(),
             kinds.get(node).unwrap().kind,
             node.index(),
-            node.generation()
+            node.generation(),
+            name
         )?;
     }
     for (this, children) in nodes_with_children.iter() {

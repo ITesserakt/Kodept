@@ -4,25 +4,20 @@ use crate::function::Func;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{BlockLevel, Type};
 use crate::term::Ref;
-use crate::types::{ProdTy, TyName};
+use crate::types::{ProdTy, Ty};
 use crate::Unit;
+use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::properties::{Name, RequireProperty};
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::{derive_node, Str};
 use kodept_rlt::prelude::{BlockLevelNode, InitializedVariable, Variable};
 
-#[derive(Debug, PartialEq)]
-pub enum VariableKind {
+#[derive(Debug, PartialEq, Component)]
+pub enum VarDecl {
     Immutable,
     Mutable,
-}
-
-#[derive(Debug, PartialEq, Component)]
-pub struct VarDecl {
-    pub kind: VariableKind,
-    pub name: Str,
 }
 
 #[derive(Debug, PartialEq, Component)]
@@ -30,7 +25,7 @@ pub struct InitVar;
 
 derive_node!(VarDecl {
     relations = [
-        optional TyName where tag = Type,
+        optional Ty where tag = Type,
         optional ProdTy where tag = Type,
     ],
     properties = []
@@ -49,15 +44,17 @@ impl FromSyntax for VarDecl {
         let (kind, id, ty) = match node {
             Variable::Immutable {
                 id, assigned_type, ..
-            } => (VariableKind::Immutable, id, assigned_type),
+            } => (VarDecl::Immutable, id, assigned_type),
             Variable::Mutable {
                 id, assigned_type, ..
-            } => (VariableKind::Mutable, id, assigned_type),
+            } => (VarDecl::Mutable, id, assigned_type),
         };
         let name = source.get_chunk_located(id);
-        ASTBuilder::new(pool, VarDecl { kind, name }).with_children(source, pool, |scope| {
-            scope.maybe_choose(Unit, ty.as_ref().map(|it| [&it.1]))
-        })
+        ASTBuilder::new(pool, kind)
+            .with_property(Name { name })
+            .with_children(source, pool, |scope| {
+                scope.maybe_choose(Unit, ty.as_ref().map(|it| [&it.1]))
+            })
     }
 }
 
@@ -96,3 +93,5 @@ where
         }
     }
 }
+
+impl RequireProperty<Name> for VarDecl {}

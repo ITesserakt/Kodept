@@ -1,30 +1,23 @@
 use crate::function::Func;
-use crate::types::{TyName, TyParam};
+use crate::types::{Ty, TyParam};
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
+use kodept_ast::properties::{Name, RequireProperty};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::{derive_node, Str};
+use kodept_ast::derive_node;
 use kodept_rlt::prelude::{Enum, Struct};
 
-#[derive(Debug, PartialEq)]
-pub enum EnumKind {
+#[derive(Debug, PartialEq, Component)]
+pub enum EnumDecl {
     Stack,
     Heap,
 }
 
 #[derive(Debug, PartialEq, Component)]
-pub struct EnumDecl {
-    pub kind: EnumKind,
-    pub name: Str,
-}
-
-#[derive(Debug, PartialEq, Component)]
-pub struct StructDecl {
-    pub name: Str,
-}
+pub struct StructDecl;
 
 derive_node!(EnumDecl {
-    relations = [children TyName,],
+    relations = [children Ty,],
     properties = []
 });
 
@@ -45,13 +38,15 @@ impl FromSyntax for EnumDecl {
         builder: &Pool,
     ) -> ASTBuilder<Self> {
         let (kind, id, rest) = match node {
-            Enum::Stack { id, contents, .. } => (EnumKind::Stack, id, contents),
-            Enum::Heap { id, contents, .. } => (EnumKind::Heap, id, contents),
+            Enum::Stack { id, contents, .. } => (EnumDecl::Stack, id, contents),
+            Enum::Heap { id, contents, .. } => (EnumDecl::Heap, id, contents),
         };
         let name = source.get_chunk_located(id);
-        ASTBuilder::new(builder, EnumDecl { kind, name }).with_children(source, builder, |scope| {
-            scope.maybe_many(rest.as_ref().map(|it| it.inner.as_ref()))
-        })
+        ASTBuilder::new(builder, kind)
+            .with_property(Name { name })
+            .with_children(source, builder, |scope| {
+                scope.maybe_many(rest.as_ref().map(|it| it.inner.as_ref()))
+            })
     }
 }
 
@@ -60,9 +55,15 @@ impl FromSyntax for StructDecl {
 
     fn from_syntax(node: &Struct, source: impl CodeHolder, builder: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(builder, StructDecl { name }).with_children(source, builder, |scope| {
-            scope.maybe_many::<TyParam, _>(node.parameters.as_ref().map(|it| it.inner.as_ref()));
-            scope.maybe_many::<Func, _>(node.body.as_ref().map(|it| it.inner.as_ref()));
-        })
+        ASTBuilder::new(builder, StructDecl)
+            .with_property(Name { name })
+            .with_children(source, builder, |scope| {
+                scope
+                    .maybe_many::<TyParam, _>(node.parameters.as_ref().map(|it| it.inner.as_ref()));
+                scope.maybe_many::<Func, _>(node.body.as_ref().map(|it| it.inner.as_ref()));
+            })
     }
 }
+
+impl RequireProperty<Name> for EnumDecl {}
+impl RequireProperty<Name> for StructDecl {}

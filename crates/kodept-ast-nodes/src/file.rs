@@ -2,26 +2,21 @@ use crate::function::Func;
 use crate::properties::TopLevel;
 use crate::top_level::{EnumDecl, StructDecl};
 use crate::Unit;
+use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::properties::{Name, RequireProperty};
 use kodept_ast::syntax_tree::children::ChildrenDisjoint;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::{derive_node, Str};
 use kodept_rlt::prelude::{File, Module, TopLevelNode};
-
-#[derive(Debug, PartialEq)]
-pub enum ModKind {
-    Global,
-    Ordinary,
-}
 
 #[derive(Debug, PartialEq, Component)]
 pub struct FileDecl;
 
 #[derive(Debug, PartialEq, Component)]
-pub struct ModDecl {
-    pub kind: ModKind,
-    pub name: Str,
+pub enum ModDecl {
+    Global,
+    Ordinary,
 }
 
 derive_node!(FileDecl {
@@ -51,11 +46,12 @@ impl FromSyntax for ModDecl {
 
     fn from_syntax(node: &Module, source_code: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let (kind, id, rest) = match node {
-            Module::Global { id, rest, .. } => (ModKind::Global, id, rest.as_ref()),
-            Module::Ordinary { id, rest, .. } => (ModKind::Ordinary, id, rest.as_ref()),
+            Module::Global { id, rest, .. } => (ModDecl::Global, id, rest.as_ref()),
+            Module::Ordinary { id, rest, .. } => (ModDecl::Ordinary, id, rest.as_ref()),
         };
         let name = source_code.get_chunk_located(id);
-        ASTBuilder::new(pool, ModDecl { kind, name })
+        ASTBuilder::new(pool, kind)
+            .with_property(Name { name })
             .with_children(source_code, pool, |scope| scope.choose(Unit, rest))
     }
 }
@@ -70,3 +66,5 @@ impl Choose<TopLevelNode, ModDecl, TopLevel> for Unit {
         }
     }
 }
+
+impl RequireProperty<Name> for ModDecl {}

@@ -2,54 +2,49 @@ use crate::properties::{Param, Type};
 use crate::Unit;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::properties::{Name, RequireProperty};
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::{derive_node, Str};
+use kodept_ast::derive_node;
 use kodept_rlt::new_types;
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
 
 #[derive(Debug, PartialEq, Component)]
-pub struct TyName {
-    pub name: Str,
-}
+pub struct Ty;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct ProdTy;
 
 #[derive(Debug, PartialEq, Component)]
-pub struct TyParam {
-    pub name: Str,
-}
+pub struct TyParam;
 
 #[derive(Debug, PartialEq, Component)]
-pub struct NonTyParam {
-    pub name: Str,
-}
+pub struct NonTyParam;
 
-derive_node!(TyName);
+derive_node!(Ty);
 derive_node!(ProdTy {
     relations = [
-        children TyName where tag = Type,
+        children Ty where tag = Type,
         children ProdTy where tag = Type,
     ],
     properties = []
 });
 derive_node!(TyParam {
     relations = [
-        optional TyName where tag = Type,
+        optional Ty where tag = Type,
         optional ProdTy where tag = Type,
     ],
     properties = []
 });
 derive_node!(NonTyParam);
 
-impl FromSyntax for TyName {
+impl FromSyntax for Ty {
     type Syntax = new_types::TypeName;
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(pool, TyName { name })
+        ASTBuilder::new(pool, Ty).with_property(Name { name })
     }
 }
 
@@ -58,7 +53,7 @@ impl FromSyntax for NonTyParam {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(pool, NonTyParam { name })
+        ASTBuilder::new(pool, NonTyParam).with_property(Name { name })
     }
 }
 
@@ -67,9 +62,11 @@ impl FromSyntax for TyParam {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(pool, TyParam { name }).with_children(source, pool, move |scope| {
-            scope.choose(Unit, [&node.parameter_type])
-        })
+        ASTBuilder::new(pool, TyParam)
+            .with_property(Name { name })
+            .with_children(source, pool, move |scope| {
+                scope.choose(Unit, [&node.parameter_type])
+            })
     }
 }
 
@@ -85,13 +82,13 @@ impl FromSyntax for ProdTy {
 
 impl<R> Choose<rlt::Type, R, Type> for Unit
 where
-    R: HasChild<TyName, Type>,
+    R: HasChild<Ty, Type>,
     R: HasChild<ProdTy, Type>,
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, Type> {
         match node {
-            rlt::Type::Reference(x) => ChildrenDisjoint::new::<TyName>(x),
+            rlt::Type::Reference(x) => ChildrenDisjoint::new::<Ty>(x),
             rlt::Type::Tuple(x) => ChildrenDisjoint::new::<ProdTy>(x),
         }
     }
@@ -110,3 +107,7 @@ where
         }
     }
 }
+
+impl RequireProperty<Name> for Ty {}
+impl RequireProperty<Name> for TyParam {}
+impl RequireProperty<Name> for NonTyParam {}

@@ -1005,7 +1005,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast-nodes"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bevy_ecs",
  "kodept-ast",
@@ -1051,6 +1051,7 @@ dependencies = [
  "kodept-ast",
  "kodept-ast-nodes",
  "kodept-core",
+ "kodept-inference",
  "kodept-report",
  "kodept-rlt",
 ]
