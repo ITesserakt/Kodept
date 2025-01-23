@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::source::unloaded::{CodeSource, CodeSourceError};
 use thiserror::Error;
-use tracing::{debug, warn};
+use tracing::debug;
 
 #[derive(Debug)]
 pub enum Loader {
@@ -150,8 +150,7 @@ impl Loader {
             Ok(CodeSource::file(path, file))
         }
     }
-
-    #[must_use]
+    
     pub fn into_sources(self) -> Result<Vec<CodeSource>, LoadingError> {
         match self {
             Loader::File(sources) => sources

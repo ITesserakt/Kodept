@@ -1,5 +1,6 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
-use crate::commands::utils::filesystem::require_output_file;
+use crate::cli::primary::OutputConfig;
+use crate::commands::utils::build_ast::build_ast;
 use crate::commands::utils::load_source::get_all_sources;
 use crate::commands::utils::parse_source::get_rlt;
 use crate::commands::Command;
@@ -7,15 +8,14 @@ use clap::Parser;
 use kodept::report::GlobalReports;
 use kodept::source::collection::SourceView;
 use kodept_core::code_point::CodePoint;
-use kodept_report::error::report::{ad_hoc_message, IntoSpannedReportMessage, Label, Severity};
+use kodept_frontend::Execution;
+use kodept_report::error::report::{ad_hoc_message, Label, Severity};
 use kodept_report::error::Diagnostic;
 use kodept_rlt::prelude::RLT;
 use std::ops::ControlFlow;
 use std::ops::ControlFlow::{Break, Continue};
-use std::path::{Path, PathBuf};
-use thiserror::__private::AsDisplay;
-use tracing::{error, info};
-use kodept_frontend::Execution;
+use tracing::error;
+use kodept_ast::syntax_tree::prelude::AST;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
@@ -32,45 +32,59 @@ pub struct Inspect {
 }
 
 impl Command for Inspect {
-    fn exec(self, reports: GlobalReports, output: PathBuf) -> ControlFlow<(), ()> {
+    fn exec(self, reports: GlobalReports, config: OutputConfig) -> ControlFlow<(), ()> {
         let (sources, reports) = get_all_sources(&self.loading_config, reports)?;
         for source in sources.collect() {
             let rlt = get_rlt(&self.parsing_config, &source, &reports)?;
-            if self.export_rlt {
-                if let Continue(path) = export_rlt(&source, &output, &rlt) {
-                    reports.report(
-                        *source.id,
-                        ad_hoc_message(|| {
-                            Diagnostic::new(Severity::Note)
-                                .with_message("Source file parsed into a raw lexeme tree")
-                                .with_label(Label::primary("", CodePoint::single_point(0)))
-                                .with_note(format!("Exported into {}", path.as_display()))
-                        }),
-                    );
-                }
+            if self.export_rlt && export_rlt(&source, &config, &rlt).is_continue() {
+                let message = ad_hoc_message(|| {
+                    Diagnostic::new(Severity::Note)
+                        .with_message("Source file parsed into a raw lexeme tree")
+                        .with_label(Label::primary("", CodePoint::single_point(0)))
+                });
+                reports.report(*source.id, message);
             }
-            
-            if self.export_ast {
-                
+
+            let (mut ast, _) = build_ast(&source, rlt);
+            if self.export_ast && export_ast(&source, &config, &mut ast).is_continue() {
+                 let message = ad_hoc_message(|| {
+                     Diagnostic::new(Severity::Note)
+                         .with_message("Got abstract syntax tree of source file")
+                         .with_label(Label::primary("", CodePoint::single_point(0)))
+                 });
+                reports.report(*source.id, message);
             }
         }
         Continue(())
     }
 }
 
-fn export_rlt(source: &SourceView, output: &Path, rlt: &RLT) -> Execution<PathBuf> {
-    let filename = source.path().build_file_path();
-    let (output_file, file_path) =
-        match require_output_file(&output, filename.file_name().unwrap(), "rlt.json") {
-            Ok(x) => x,
-            Err(e) => {
-                error!("Could not open file to output RLT: {e}");
-                return Break(());
-            }
-        };
+fn export_rlt(source: &SourceView, config: &OutputConfig, rlt: &RLT) -> Execution<()> {
+    let output_file = match config.open_file_for_source(source.path(), "rlt.json") {
+        Ok(x) => x,
+        Err(e) => {
+            error!("Could not open file to output RLT: {e}");
+            return Break(());
+        }
+    };
     if let Err(e) = serde_json::to_writer_pretty(output_file, &rlt) {
-        error!("Could serialize RLT into json: {e}");
+        error!("Could not serialize RLT into json: {e}");
         return Break(());
     }
-    Continue(file_path)
+    Continue(())
+}
+
+fn export_ast(source: &SourceView, config: &OutputConfig, ast: &mut AST) -> Execution<()> {
+    let output_file = match config.open_file_for_source(source.path(), "dot") {
+        Ok(x) => x,
+        Err(e) => {
+            error!("Could not open file to output RLT: {e}");
+            return Break(());
+        }
+    };
+    if let Err(e) = ast.export_dot(output_file) {
+        error!("Could not export AST into .dot: {e}");
+        return Break(());
+    }
+    Continue(())
 }

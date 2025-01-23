@@ -4,8 +4,6 @@ pub enum HeapProfilerGuard {
     Wrapper(implementation::HeapProfiler)
 }
 
-pub struct HeapProfilerPlugin;
-
 impl HeapProfilerGuard {
     pub fn install() -> Self {
         #[cfg(feature = "profiler")]

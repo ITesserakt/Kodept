@@ -23,7 +23,7 @@ fn main() {
     let reports = make_reports(cli_options.diagnostic_config);
 
     let result = match cli_options.subcommands { 
-        Commands::Inspect(x) => x.exec(reports, cli_options.output), 
+        Commands::Inspect(x) => x.exec(reports, cli_options.output_config), 
     };
     if result.is_break() {
         eprintln!("Compilation finished with errors");
