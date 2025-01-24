@@ -10,11 +10,13 @@ pub mod syntax_tree;
 mod traits;
 mod utils;
 pub mod interaction;
+mod entity;
 
 pub mod prelude {
     use bevy_ecs::prelude::Entity;
     
     pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
+    pub use super::entity::entity_ref::{NodeRef, AnyNodeRef, AnyNodeRefItem};
     pub type NodeId = Entity;
 }
 

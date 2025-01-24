@@ -17,7 +17,7 @@ pub struct Node {
 #[component(storage = "SparseSet")]
 pub struct Root;
 
-#[derive(Debug, Component)]
+#[derive(Debug, Component, Clone)]
 pub struct Name {
     pub name: Str
 }

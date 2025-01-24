@@ -26,7 +26,7 @@ fn build_dot_system<W: Write>(
     let root_name = names.get(*root).map_or("", |it| it.name.as_ref());
     writeln!(
         buffer,
-        "\t{} [ label = \"{} [{}v{}]|{}\", shape = \"record\" ]",
+        "\t{} [ label = \"{} [{}v{}]|name: `{}`\", shape = \"record\" ]",
         root.to_bits(),
         kinds.get(*root).unwrap().kind,
         root.index(),
@@ -37,7 +37,7 @@ fn build_dot_system<W: Write>(
         let name = names.get(node).map_or("", |it| it.name.as_ref());
         writeln!(
             buffer,
-            "\t{} [ label = \"{} [{}v{}]|{}\", shape = \"record\" ]",
+            "\t{} [ label = \"{} [{}v{}]|name: `{}`\", shape = \"record\" ]",
             node.to_bits(),
             kinds.get(node).unwrap().kind,
             node.index(),

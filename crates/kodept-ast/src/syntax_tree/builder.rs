@@ -123,9 +123,6 @@ impl<Root> ASTBuilder<Root> {
     pub(crate) fn consume(mut self, world: &mut World) {
         self.queue.apply(world)
     }
-    pub(crate) fn into_inner(self) -> CommandQueue {
-        self.queue
-    }
     pub(crate) fn erase(self) -> ASTBuilder<()> {
         ASTBuilder {
             queue: self.queue,
