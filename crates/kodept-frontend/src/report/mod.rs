@@ -6,7 +6,6 @@ use codespan_reporting::term::termcolor::StandardStream;
 use kodept_report::error::report::{
     ad_hoc_message, IntoSpannedReportMessage, MessageBehaviour, Report, ReportMessage, Severity,
 };
-use kodept_report::error::traits::Reportable;
 use std::ops::ControlFlow::{Break, Continue};
 use std::ops::Range;
 use std::sync::{Arc, Mutex};
@@ -40,26 +39,54 @@ impl<'a> Files<'a> for Global {
     }
 }
 
+#[derive(Debug)]
 pub enum Reports<Impl>
 where
     Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
 {
     Disabled,
     Eager {
-        settings: CodespanSettings,
+        settings: Arc<CodespanSettings>,
         sources: Arc<Sources<Impl>>,
     },
     Lazy {
-        settings: CodespanSettings,
+        settings: Arc<CodespanSettings>,
         sources: Arc<Sources<Impl>>,
-        global_sink: Mutex<Vec<Report<()>>>,
-        local_sink: Mutex<Vec<Report>>,
+        global_sink: Arc<Mutex<Vec<Report<()>>>>,
+        local_sink: Arc<Mutex<Vec<Report>>>,
     },
 }
 
+#[derive(Debug)]
 pub struct GlobalReports<Impl>(Reports<Impl>)
 where
     Impl: for<'a> Source<Ref<'a>: AsRef<str>>;
+
+impl<Impl> Clone for Reports<Impl>
+where
+    Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+{
+    fn clone(&self) -> Self {
+        match self {
+            Reports::Disabled => Reports::Disabled,
+            Reports::Eager { settings, sources } => Reports::Eager {
+                settings: settings.clone(),
+                sources: sources.clone(),
+            },
+            Reports::Lazy {
+                settings,
+                sources,
+                global_sink,
+                local_sink,
+            } => Reports::Lazy {
+                settings: settings.clone(),
+                sources: sources.clone(),
+                global_sink: global_sink.clone(),
+                local_sink: local_sink.clone(),
+            },
+        }
+    }
+}
 
 impl<Impl> GlobalReports<Impl>
 where
@@ -74,7 +101,7 @@ where
         Impl: 'static,
     {
         Self(Reports::Eager {
-            settings,
+            settings: Arc::new(settings),
             sources: Arc::new(Sources::new()),
         })
     }
@@ -84,10 +111,10 @@ where
         Impl: 'static,
     {
         Self(Reports::Lazy {
-            settings,
+            settings: Arc::new(settings),
             sources: Arc::new(Sources::new()),
-            global_sink: Mutex::new(vec![]),
-            local_sink: Mutex::new(vec![]),
+            global_sink: Arc::default(),
+            local_sink: Arc::default(),
         })
     }
 
@@ -112,12 +139,14 @@ impl<Impl> Reports<Impl>
 where
     Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
 {
+    #[allow(private_bounds)]
     pub fn insert<F>(&self, report: Report<F>)
-    where 
-        F: CorrectFileId {
+    where
+        F: CorrectFileId,
+    {
         F::insert(self, report);
     }
-    
+
     #[allow(private_bounds)]
     pub fn report<F, T>(&self, file_id: F, message: T) -> Execution<()>
     where
@@ -154,16 +183,32 @@ where
                 global_sink,
                 local_sink,
             } => {
-                let global_sink = global_sink.get_mut().unwrap_or_else(|it| it.into_inner());
-                let local_sink = local_sink.get_mut().unwrap_or_else(|it| it.into_inner());
-
-                global_sink
-                    .drain(..)
-                    .for_each(|it| it.emit(settings, &Global));
-
-                local_sink
-                    .drain(..)
-                    .for_each(|it| it.emit(settings, &**sources));
+                if let Some(global_sink) = Arc::get_mut(global_sink) {
+                    let lock = global_sink.get_mut().unwrap_or_else(|it| it.into_inner());
+                    lock.drain(..).for_each(|it| {
+                        let mut lock = settings.stream.lock();
+                        codespan_reporting::term::emit(
+                            &mut lock,
+                            &settings.config,
+                            &Global,
+                            &it.into_diagnostic(),
+                        )
+                        .expect("Cannot emit")
+                    })
+                }
+                if let Some(local_sink) = Arc::get_mut(local_sink) {
+                    let lock = local_sink.get_mut().unwrap_or_else(|it| it.into_inner());
+                    lock.drain(..).for_each(|it| {
+                        let mut lock = settings.stream.lock();
+                        codespan_reporting::term::emit(
+                            &mut lock,
+                            &settings.config,
+                            &**sources,
+                            &it.into_diagnostic(),
+                        )
+                        .expect("Cannot emit")
+                    })
+                }
             }
         }
     }
