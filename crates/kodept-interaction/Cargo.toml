@@ -5,13 +5,20 @@ edition = "2021"
 
 [dependencies]
 bevy_ecs.workspace = true
+bevy_hierarchy.workspace = true
 extend.workspace = true
+tracing.workspace = true
 
 kodept-ast = { path = "../kodept-ast" }
 kodept-ast-nodes = { path = "../kodept-ast-nodes" }
 kodept-core = { path = "../kodept-core" }
+kodept-inference = { path = "../kodept-inference" }
 kodept-report = { path = "../kodept-report" }
 kodept-rlt = { path = "../kodept-rlt" }
 
 [lints]
 workspace = true
+
+[features]
+default = []
+parallel = ["bevy_ecs/multi_threaded"]

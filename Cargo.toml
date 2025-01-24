@@ -82,7 +82,7 @@ criterion = "0.5.1"
 [features]
 default = []
 profiler = ["dep:dhat", "dep:ctrlc"]
-parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
+parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept-interaction/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 interning = ["dep:kodept-interning"]
 
