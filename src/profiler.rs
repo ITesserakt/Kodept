@@ -16,12 +16,10 @@ impl HeapProfilerGuard {
 #[cfg(feature = "profiler")]
 mod implementation {
     use dhat::*;
-    use kodept_frontend::external::Resource;
 
     #[global_allocator]
     static ALLOC: Alloc = Alloc;
-
-    #[derive(Resource)]
+    
     pub struct HeapProfiler {
         _inner: Profiler,
     }
