@@ -51,7 +51,7 @@ impl<L: Lint> Interaction for L {
         let original_system = L::interaction();
         let original_system_name = original_system.system_type_id();
         let system = original_system.pipe(
-            move |In(result): In<Interacted<Self::Error>>, mut reporter: Reporter| match result {
+            move |In(result): In<Interacted<Self::Error>>, reporter: Reporter| match result {
                 Ok(_) => trace!("System {original_system_name:?} completed"),
                 Err(Skip::Skipped) => trace!("System {original_system_name:?} skipped"),
                 Err(Skip::Failed(e)) => reporter.report(e),

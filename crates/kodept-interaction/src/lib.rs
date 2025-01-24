@@ -38,7 +38,7 @@ pub trait Interaction<M = ()> {
         let original_system = Self::interaction();
         let original_system_name = original_system.system_type_id();
         ctx.register(original_system.pipe(
-            move |In(result): In<Interacted<Self::Error>>, mut reporter: Reporter| match result {
+            move |In(result): In<Interacted<Self::Error>>, reporter: Reporter| match result {
                 Ok(()) => trace!("System {original_system_name:?} completed"),
                 Err(Skip::Skipped) => trace!("System {original_system_name:?} skipped"),
                 Err(Skip::Failed(e)) => reporter.report(e),
