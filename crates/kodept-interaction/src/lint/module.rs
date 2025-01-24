@@ -24,7 +24,7 @@ impl Lint for SingleModuleWithBrackets {
         IntoSystem::into_system(
             |query: Option<Single<Entity, With<FileDecl>>>,
              syntax: Res<SyntaxResolver>,
-             mut reporter: Reporter| {
+             reporter: Reporter| {
                 let Some(root) = query else { return skip() };
                 let Ok(node): Result<&File, _> = syntax.get(*root) else {
                     return skip();

@@ -5,16 +5,19 @@ use crate::commands::utils::load_source::get_all_sources;
 use crate::commands::utils::parse_source::get_rlt;
 use crate::commands::Command;
 use clap::Parser;
-use kodept::report::GlobalReports;
+use kodept::report::{GlobalReports};
 use kodept_ast::interaction::Interaction as Ctx;
+use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
 use kodept_interaction::lint::module::SingleModuleWithBrackets;
 use kodept_interaction::report::{ASTExt, FileDescriptor};
+use kodept_interaction::scope::ScopeBuilder;
 use kodept_interaction::Interaction;
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
-use tracing::{info, info_span};
+use tracing::{enabled, error_span, info, info_span, Level};
+use kodept_interaction::lint::rlt_linking::RLTLinkLint;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -34,22 +37,32 @@ impl Command for Check {
             get_all_sources(&self.loading_config, reports)
         })?;
         for source in sources.collect() {
+            let _guard = error_span!("", source = %source.path()).entered();
             let rlt = self.timings_block("RLT building", || {
                 get_rlt(&self.parsing_config, &source, &reports)
             })?;
             let mut ast = self.timings_block("AST building", || build_ast(&source, rlt));
 
-            ast.prepare_reporting(FileDescriptor {
-                id: *source.id,
-                file_name: source.path().clone(),
+            ast.prepare_reporting(
+                FileDescriptor {
+                    id: *source.id,
+                    file_name: source.path().clone(),
+                },
+                {
+                    let reports = reports.clone();
+                    move |report| reports.insert(report)
+                },
+            );
+
+            self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
+                install_lints(ctx);
+                ctx.launch();
             });
 
-            let mut lints_interaction = ast.interact();
-            install_lints(&mut lints_interaction);
-            self.timings_block("Linting (first pass)", || {
-                lints_interaction.launch();
+            self.interaction_block("Scope checking", &mut ast, |ctx| {
+                ScopeBuilder::install(ctx);
+                ctx.launch();
             });
-            ast.extract_reports(|it| reports.insert(it));
         }
         Continue(())
     }
@@ -57,13 +70,25 @@ impl Command for Check {
 
 fn install_lints(ctx: &mut Ctx) {
     SingleModuleWithBrackets::install(ctx);
+    RLTLinkLint::install(ctx);
 }
 
 impl Check {
+    fn interaction_block<T>(
+        &self,
+        name: impl Into<Cow<'static, str>>,
+        ast: &mut AST,
+        f: impl FnOnce(&mut Ctx) -> T,
+    ) -> T {
+        let mut ctx = ast.interact();
+        let result = self.timings_block(name, || f(&mut ctx));
+        result
+    }
+
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {
         let span = info_span!("timings-block");
         let _guard = span.enter();
-        if self.timings {
+        if self.timings && enabled!(Level::INFO) {
             let now = Instant::now();
             let result = f();
             let elapsed = now.elapsed();

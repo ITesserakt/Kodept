@@ -1,5 +1,4 @@
-use bevy_ecs::event::EventRegistry;
-use bevy_ecs::prelude::{Component, Event, EventWriter, Events, In, Single, World};
+use bevy_ecs::prelude::{Component, Res, Resource, Single, World};
 use bevy_ecs::system::SystemParam;
 use extend::ext;
 use kodept_ast::syntax_tree::prelude::AST;
@@ -16,51 +15,43 @@ pub struct FileDescriptor {
     pub file_name: FileName,
 }
 
-#[derive(Debug, Event)]
-pub struct ReportEmitted(Report);
+#[derive(Resource)]
+struct ReportWriter {
+    sink: Box<dyn Fn(Report) + Send + Sync>,
+}
 
 #[derive(SystemParam)]
 pub(crate) struct Reporter<'w> {
     file: Single<'w, &'static FileDescriptor>,
-    events: EventWriter<'w, ReportEmitted>,
+    events: Res<'w, ReportWriter>,
 }
 
 impl Reporter<'_> {
-    pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
-        self.events
-            .send(ReportEmitted(Report::from_message(self.file.id, message)));
+    pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
+        (self.events.sink)(Report::from_message(self.file.id, message));
     }
 
-    pub fn report_ad_hoc<T>(&mut self, f: impl FnOnce() -> T)
+    pub(crate) fn report_ad_hoc<T>(&self, f: impl FnOnce() -> T)
     where
         T: SpannedReportMessage + 'static,
     {
-        self.events.send(ReportEmitted(Report::from_message(
-            self.file.id,
-            ad_hoc_message(f),
-        )));
+        (self.events.sink)(Report::from_message(self.file.id, ad_hoc_message(f)));
     }
 }
 
 #[ext]
 pub impl AST {
-    fn prepare_reporting(&mut self, descriptor: FileDescriptor) {
-        self.interact().immediate_with(
-            descriptor,
-            move |In(d): In<FileDescriptor>, world: &mut World| {
-                world.spawn(d);
-
-                EventRegistry::register_event::<ReportEmitted>(world);
-            },
-        );
-    }
-
-    fn extract_reports(&mut self, f: impl FnMut(Report)) {
-        self.interact().immediate_exclusive(|w| {
-            w.resource_mut::<Events<ReportEmitted>>()
-                .drain()
-                .map(|it| it.0)
-                .for_each(f);
-        });
+    fn prepare_reporting(
+        &mut self,
+        descriptor: FileDescriptor,
+        sink: impl Fn(Report) + Send + Sync + 'static,
+    ) {
+        self.interact()
+            .immediate_exclusive(move |world: &mut World| {
+                world.insert_resource(ReportWriter {
+                    sink: Box::new(sink),
+                });
+                world.spawn(descriptor);
+            });
     }
 }

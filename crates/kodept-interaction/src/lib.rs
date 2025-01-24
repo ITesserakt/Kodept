@@ -1,11 +1,12 @@
 use crate::report::Reporter;
 use bevy_ecs::prelude::{In, IntoSystem};
+use tracing::trace;
 use kodept_report::error::report::IntoSpannedReportMessage;
 
 pub mod lint;
 mod normalize;
 pub mod report;
-mod scope;
+pub mod scope;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Skip<E> {
@@ -34,10 +35,12 @@ pub trait Interaction<M = ()> {
     fn interaction() -> impl IntoSystem<(), Interacted<Self::Error>, M>;
 
     fn install(ctx: &mut Ctx) {
-        ctx.register(Self::interaction().pipe(
-            |In(result): In<Interacted<Self::Error>>, mut reporter: Reporter| match result {
-                Ok(()) => {}
-                Err(Skip::Skipped) => {}
+        let original_system = Self::interaction();
+        let original_system_name = original_system.system_type_id();
+        ctx.register(original_system.pipe(
+            move |In(result): In<Interacted<Self::Error>>, mut reporter: Reporter| match result {
+                Ok(()) => trace!("System {original_system_name:?} completed"),
+                Err(Skip::Skipped) => trace!("System {original_system_name:?} skipped"),
                 Err(Skip::Failed(e)) => reporter.report(e),
             },
         ));

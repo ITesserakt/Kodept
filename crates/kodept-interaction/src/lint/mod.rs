@@ -5,8 +5,10 @@ use bevy_ecs::system::SystemId;
 use kodept_report::error::report::IntoSpannedReportMessage;
 use std::borrow::Cow;
 use std::sync::OnceLock;
+use tracing::trace;
 
 pub mod module;
+pub mod rlt_linking;
 
 #[derive(Debug, Component)]
 pub struct LintDescriptor {
@@ -46,10 +48,12 @@ impl<L: Lint> Interaction for L {
 
     fn install(ctx: &mut Ctx) {
         let id = ctx.immediate(|world: &mut World| world.spawn(L::descriptor()).id());
-        let system = L::interaction().pipe(
-            |In(result): In<Interacted<Self::Error>>, mut reporter: Reporter| match result {
-                Ok(_) => {}
-                Err(Skip::Skipped) => {}
+        let original_system = L::interaction();
+        let original_system_name = original_system.system_type_id();
+        let system = original_system.pipe(
+            move |In(result): In<Interacted<Self::Error>>, mut reporter: Reporter| match result {
+                Ok(_) => trace!("System {original_system_name:?} completed"),
+                Err(Skip::Skipped) => trace!("System {original_system_name:?} skipped"),
                 Err(Skip::Failed(e)) => reporter.report(e),
             },
         );
