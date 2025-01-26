@@ -1,14 +1,17 @@
+use crate::constants::Const;
 use crate::function::Func;
-use crate::properties::TopLevel;
 use crate::top_level::{EnumDecl, StructDecl};
+use crate::utils::const_disjoint;
 use crate::Unit;
 use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use kodept_ast::properties::tags::NoTag;
 use kodept_ast::properties::{Name, RequireProperty};
 use kodept_ast::syntax_tree::children::ChildrenDisjoint;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_rlt::prelude::{File, Module, TopLevelNode};
+use kodept_rlt::prelude::{Enum, File, Module, TopLevelNode};
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct FileDecl;
@@ -25,9 +28,7 @@ derive_node!(FileDecl {
 });
 derive_node!(ModDecl {
     relations = [
-        children EnumDecl where tag = TopLevel,
-        children StructDecl where tag = TopLevel,
-        children Func where tag = TopLevel,
+        children Const,
     ],
     properties = []
 });
@@ -56,13 +57,26 @@ impl FromSyntax for ModDecl {
     }
 }
 
-impl Choose<TopLevelNode, ModDecl, TopLevel> for Unit {
+impl Choose<TopLevelNode, ModDecl, NoTag> for Unit {
     #[inline(always)]
-    fn branch<S: CodeHolder>(node: &TopLevelNode) -> ChildrenDisjoint<ModDecl, S, TopLevel> {
+    fn branch<S: CodeHolder>(node: &TopLevelNode) -> ChildrenDisjoint<ModDecl, S, NoTag> {
         match node {
-            TopLevelNode::Enum(x) => ChildrenDisjoint::new::<EnumDecl>(x),
-            TopLevelNode::Struct(x) => ChildrenDisjoint::new::<StructDecl>(x),
-            TopLevelNode::BodiedFunction(x) => ChildrenDisjoint::new::<Func>(x),
+            TopLevelNode::Enum(x) => const_disjoint::<EnumDecl, _, _, _>(x, |node, source: S| {
+                source.get_chunk_located(match node {
+                    Enum::Stack { id, .. } => id,
+                    Enum::Heap { id, .. } => id,
+                })
+            }),
+            TopLevelNode::Struct(x) => {
+                const_disjoint::<StructDecl, _, _, _>(x, |node, source: S| {
+                    source.get_chunk_located(&node.id)
+                })
+            }
+            TopLevelNode::BodiedFunction(x) => {
+                const_disjoint::<Func, _, _, _>(x, |node, source: S| {
+                    source.get_chunk_located(&node.id)
+                })
+            }
         }
     }
 }

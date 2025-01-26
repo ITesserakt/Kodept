@@ -1,10 +1,12 @@
 use crate::code_flow::IfExpr;
+use crate::constants::Const;
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::function::Func;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{BlockLevel, Type};
 use crate::term::Ref;
 use crate::types::{ProdTy, Ty};
+use crate::utils::const_disjoint;
 use crate::Unit;
 use kodept_ast::derive_node;
 use kodept_ast::external::Component;
@@ -70,7 +72,7 @@ impl FromSyntax for InitVar {
 impl<R> Choose<BlockLevelNode, R, BlockLevel> for Unit
 where
     R: HasChild<InitVar, BlockLevel>,
-    R: HasChild<Func, BlockLevel>,
+    R: HasChild<Const, BlockLevel>,
     R: HasChild<Exprs, BlockLevel>,
     R: HasChild<App, BlockLevel>,
     R: HasChild<Lambda, BlockLevel>,
@@ -87,7 +89,11 @@ where
     ) -> ChildrenDisjoint<R, Source, BlockLevel> {
         match node {
             BlockLevelNode::InitVar(x) => ChildrenDisjoint::new::<InitVar>(x),
-            BlockLevelNode::Function(x) => ChildrenDisjoint::new::<Func>(x),
+            BlockLevelNode::Function(x) => {
+                const_disjoint::<Func, _, _, _>(x, |node, source: Source| {
+                    source.get_chunk_located(&node.id)
+                })
+            }
             BlockLevelNode::Operation(x) => Unit::branch(x),
             BlockLevelNode::Block(x) => ChildrenDisjoint::new::<Exprs>(x),
         }

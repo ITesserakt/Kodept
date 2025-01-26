@@ -1,12 +1,16 @@
+use crate::constants::Const;
 use crate::expression::Exprs;
 use crate::types::{Params, TyParam, TyParams};
 use crate::Unit;
-use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::properties::tags::Tagged;
+use kodept_ast::prelude::{ASTNode, CodeHolder, FromSyntax};
+use kodept_ast::properties::tags::{NoTag, Tagged};
+use kodept_ast::properties::Name;
 use kodept_ast::resource::rlt::SyntaxVariant;
-use kodept_ast::syntax_tree::children::HasChild;
+use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, ChildrenScope};
+use kodept_ast::Str;
 use kodept_rlt::prelude::{Body, Parameter, TypedParameter};
+use std::fmt::Debug;
 
 pub(crate) fn unwrap_body<'p, R, S, Tag>(node: &'p Body, scope: &mut ChildrenScope<'p, '_, R, S>)
 where
@@ -61,4 +65,25 @@ pub(crate) fn wrap_ty_params<'p, R, S, Tag>(
         |inner_scope| inner_scope.many::<TyParam, _>(params.as_ref()),
     );
     scope.from_builder(parent_node, fake);
+}
+
+pub(crate) fn const_disjoint<'p, U, R, S, Tag>(
+    node: &'p U::Syntax,
+    name_fn: impl FnOnce(&U::Syntax, S) -> Str + 'static,
+) -> ChildrenDisjoint<'p, R, S, Tag>
+where
+    &'p U::Syntax: TryFrom<SyntaxVariant<'p>, Error: Debug> + Into<SyntaxVariant<'p>>,
+    U: FromSyntax + ASTNode,
+    Const: HasChild<U>,
+    S: CodeHolder,
+    R: HasChild<Const, Tag>,
+    Tag: Tagged,
+{
+    ChildrenDisjoint::ad_hoc(node, move |node, source, pool| {
+        ASTBuilder::new(pool, Const)
+            .with_property(Name {
+                name: name_fn(node, source),
+            })
+            .with_children(source, pool, |scope| scope.many::<U, NoTag>([node]))
+    })
 }

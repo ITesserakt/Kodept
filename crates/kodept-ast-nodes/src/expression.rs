@@ -1,6 +1,5 @@
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
-use crate::function::Func;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{BlockLevel, Expr, LeftExpr, Param, RightExpr};
 use crate::term::Ref;
@@ -15,6 +14,7 @@ use kodept_ast::{derive_node, Str};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::{Application, Expression, ExpressionBlock, Operation};
 use std::ops::Deref;
+use crate::constants::Const;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Exprs;
@@ -60,7 +60,7 @@ pub enum UnExpr {
 derive_node!(Exprs {
     relations = [
         children InitVar where tag = BlockLevel,
-        children Func where tag = BlockLevel,
+        children Const where tag = BlockLevel,
         children Exprs where tag = BlockLevel,
         children App where tag = BlockLevel,
         children Lambda where tag = BlockLevel,
