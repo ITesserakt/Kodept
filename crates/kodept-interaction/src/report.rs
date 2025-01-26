@@ -2,18 +2,14 @@ use bevy_ecs::prelude::{Component, Res, Resource, Single, World};
 use bevy_ecs::system::SystemParam;
 use extend::ext;
 use kodept_ast::syntax_tree::prelude::AST;
-use kodept_core::file_name::FileName;
 use kodept_report::error::report::{
     ad_hoc_message, IntoSpannedReportMessage, Report, SpannedReportMessage,
 };
-use kodept_report::FileId;
+use kodept_report::FileDescriptor;
 
 #[derive(Debug, Component)]
 #[component(storage = "SparseSet")]
-pub struct FileDescriptor {
-    pub id: FileId,
-    pub file_name: FileName,
-}
+struct Wrapper(FileDescriptor);
 
 #[derive(Resource)]
 struct ReportWriter {
@@ -22,20 +18,20 @@ struct ReportWriter {
 
 #[derive(SystemParam)]
 pub(crate) struct Reporter<'w> {
-    file: Single<'w, &'static FileDescriptor>,
+    file: Single<'w, &'static Wrapper>,
     events: Res<'w, ReportWriter>,
 }
 
 impl Reporter<'_> {
     pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
-        (self.events.sink)(Report::from_message(self.file.id, message));
+        (self.events.sink)(Report::from_message(self.file.0.id, message));
     }
 
     pub(crate) fn report_ad_hoc<T>(&self, f: impl FnOnce() -> T)
     where
         T: SpannedReportMessage + 'static,
     {
-        (self.events.sink)(Report::from_message(self.file.id, ad_hoc_message(f)));
+        (self.events.sink)(Report::from_message(self.file.0.id, ad_hoc_message(f)));
     }
 }
 
@@ -51,7 +47,7 @@ pub impl AST {
                 world.insert_resource(ReportWriter {
                     sink: Box::new(sink),
                 });
-                world.spawn(descriptor);
+                world.spawn(Wrapper(descriptor));
             });
     }
 }

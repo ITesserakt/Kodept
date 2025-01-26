@@ -1,6 +1,6 @@
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
-use crate::{done, skip, Interacted};
+use crate::{done, skip, Result};
 use bevy_ecs::prelude::{Entity, IntoSystem, Res, Single};
 use bevy_ecs::query::With;
 use kodept_ast::resource::rlt::SyntaxResolver;
@@ -20,13 +20,13 @@ impl Lint for SingleModuleWithBrackets {
         LintDescriptor::new("single_module_with_brackets")
     }
 
-    fn lint() -> impl IntoSystem<(), Interacted<Self::Error>, ()> {
+    fn lint() -> impl IntoSystem<(), Result<Self::Error>, ()> {
         IntoSystem::into_system(
             |query: Option<Single<Entity, With<FileDecl>>>,
              syntax: Res<SyntaxResolver>,
              reporter: Reporter| {
                 let Some(root) = query else { return skip() };
-                let Ok(node): Result<&File, _> = syntax.get(*root) else {
+                let Ok(node): std::result::Result<&File, _> = syntax.get(*root) else {
                     return skip();
                 };
 

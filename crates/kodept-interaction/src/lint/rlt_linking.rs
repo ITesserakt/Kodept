@@ -1,6 +1,6 @@
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
-use crate::{done, Interacted};
+use crate::{done, Result};
 use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res, With};
 use kodept_ast::properties::Node;
 use kodept_ast::resource::rlt::SyntaxResolver;
@@ -17,7 +17,7 @@ impl Lint for RLTLinkLint {
         LintDescriptor::new("RLT_linking")
     }
 
-    fn lint() -> impl IntoSystem<(), Interacted<Self::Error>, ()> {
+    fn lint() -> impl IntoSystem<(), Result<Self::Error>, ()> {
         IntoSystem::into_system(Self::check_system)
     }
 }
@@ -27,7 +27,7 @@ impl RLTLinkLint {
         nodes: Query<Entity, With<Node>>,
         syntax: Res<SyntaxResolver>,
         reporter: Reporter,
-    ) -> Interacted<Infallible> {
+    ) -> Result<Infallible> {
         nodes.par_iter().for_each(|entity| {
             if syntax.get_unknown(entity).is_some() {
                 return;
