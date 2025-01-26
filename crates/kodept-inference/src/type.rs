@@ -55,7 +55,7 @@ pub enum MonomorphicType {
     Constant(String),
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PolymorphicType {
     pub(crate) bindings: Vec<TVar>,
     pub(crate) binding_type: MonomorphicType,
