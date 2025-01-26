@@ -17,6 +17,7 @@ pub mod prelude {
     
     pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
     pub use super::entity::entity_ref::{NodeRef, AnyNodeRef, AnyNodeRefItem};
+    pub use super::entity::traits::{FromEnum, IntoEnum};
     pub type NodeId = Entity;
 }
 

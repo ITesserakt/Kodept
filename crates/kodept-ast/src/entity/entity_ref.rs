@@ -1,8 +1,9 @@
-use std::ops::Deref;
-use bevy_ecs::prelude::EntityRef;
-use bevy_ecs::query::QueryData;
 use crate::prelude::{ASTNode, NodeId};
 use crate::properties::{NodeProperty, RequireProperty};
+use bevy_ecs::prelude::EntityRef;
+use bevy_ecs::query::QueryData;
+use std::convert::identity;
+use std::ops::Deref;
 
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]
@@ -13,16 +14,34 @@ pub struct AnyNodeRef<'w> {
 #[derive(Copy, Clone)]
 pub struct NodeRef<'w, T> {
     inner: EntityRef<'w>,
-    node: &'w T
+    node: T
 }
 
-impl<'a, 'w> AnyNodeRefItem<'a, 'w> {
-    pub fn cast<T>(self) -> Option<NodeRef<'a, T>>
+impl<'a> AnyNodeRefItem<'a, '_> {
+    #[deprecated]
+    pub fn cast<T>(self) -> Option<NodeRef<'a, &'a T>>
     where
         T: ASTNode
     {
         let value = self.inner.get::<T>()?;
         Some(NodeRef { inner: self.inner, node: value })
+    }
+    
+    #[inline(always)]
+    pub fn get<T>(self) -> Option<NodeRef<'a, &'a T>>
+    where 
+        T: ASTNode
+    {
+        self.get_map(identity)
+    }
+    
+    #[inline(always)]
+    pub fn get_map<T, U>(self, f: impl FnOnce(&'a T) -> U) -> Option<NodeRef<'a, U>>
+    where 
+        T: ASTNode
+    {
+        let value = self.inner.get::<T>()?;
+        Some(NodeRef { inner: self.inner, node: f(value) })
     }
 
     pub fn id(&self) -> NodeId {
@@ -31,6 +50,12 @@ impl<'a, 'w> AnyNodeRefItem<'a, 'w> {
 }
 
 impl<T> NodeRef<'_, T> {
+    pub fn id(&self) -> NodeId {
+        self.inner.id()
+    }
+}
+
+impl<'a, T> NodeRef<'a, &'a T> {
     pub fn property<P>(&self) -> &P
     where
         T: RequireProperty<P>,
@@ -38,9 +63,14 @@ impl<T> NodeRef<'_, T> {
     {
         self.inner.get::<P>().expect("Node must have property")
     }
+}
 
-    pub fn id(&self) -> NodeId {
-        self.inner.id()
+impl<'a, T> NodeRef<'a, T> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> NodeRef<'a, U> {
+        NodeRef {
+            inner: self.inner,
+            node: f(self.node),
+        }
     }
 }
 
@@ -48,6 +78,6 @@ impl<T> Deref for NodeRef<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.node
+        &self.node
     }
 }
