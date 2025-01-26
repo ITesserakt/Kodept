@@ -1,10 +1,11 @@
 use crate::function::Func;
-use crate::types::{Ty, TyParam};
+use crate::types::TyParam;
+use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::properties::{Name, RequireProperty};
+use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::derive_node;
+use kodept_rlt::new_types::TypeName;
 use kodept_rlt::prelude::{Enum, Struct};
 
 #[derive(Debug, PartialEq, Component)]
@@ -16,9 +17,12 @@ pub enum EnumDecl {
 #[derive(Debug, PartialEq, Component)]
 pub struct StructDecl;
 
+#[derive(Debug, PartialEq, Component)]
+pub struct EnumConst;
+
 derive_node!(EnumDecl {
-    relations = [children Ty,],
-    properties = []
+    relations = [children EnumConst,],
+    properties = [require Name,]
 });
 
 derive_node!(StructDecl {
@@ -26,7 +30,12 @@ derive_node!(StructDecl {
         children TyParam,
         children Func,
     ],
-    properties = []
+    properties = [require Name,]
+});
+
+derive_node!(EnumConst {
+    relations = [],
+    properties = [require Name,]
 });
 
 impl FromSyntax for EnumDecl {
@@ -65,5 +74,11 @@ impl FromSyntax for StructDecl {
     }
 }
 
-impl RequireProperty<Name> for EnumDecl {}
-impl RequireProperty<Name> for StructDecl {}
+impl FromSyntax for EnumConst {
+    type Syntax = TypeName;
+
+    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+        let name = source.get_chunk_located(node);
+        ASTBuilder::new(pool, EnumConst).with_property(Name { name })
+    }
+}
