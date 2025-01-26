@@ -1,0 +1,22 @@
+module Main =>
+
+struct Foo(a: (), b: ()) {
+    fun foo() => 0
+}
+
+fun foo => 1
+fun foo => 2
+
+fun bar(a: ()) {
+    val a = ""
+    val bar = ""
+    val a = ""
+
+    fun bar => 2
+}
+
+fun baz {
+    val a = 1
+
+    fun foo => ()
+}

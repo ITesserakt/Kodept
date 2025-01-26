@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::primary::OutputConfig;
 use crate::commands::utils::build_ast::build_ast;
@@ -9,15 +10,12 @@ use kodept::report::{GlobalReports};
 use kodept_ast::interaction::Interaction as Ctx;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
-use kodept_interaction::lint::module::SingleModuleWithBrackets;
-use kodept_interaction::report::{ASTExt, FileDescriptor};
-use kodept_interaction::scope::ScopeBuilder;
-use kodept_interaction::Interaction;
-use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
 use tracing::{enabled, error_span, info, info_span, Level};
-use kodept_interaction::lint::rlt_linking::RLTLinkLint;
+use kodept_interaction::Interaction;
+use kodept_interaction::prelude::{ASTExt, ExtractSymbols, RLTLinkLint, ScopeBuilder, SingleModuleWithBrackets};
+use kodept_report::FileDescriptor;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -46,7 +44,7 @@ impl Command for Check {
             ast.prepare_reporting(
                 FileDescriptor {
                     id: *source.id,
-                    file_name: source.path().clone(),
+                    name: source.path().clone(),
                 },
                 {
                     let reports = reports.clone();
@@ -61,6 +59,9 @@ impl Command for Check {
 
             self.interaction_block("Scope checking", &mut ast, |ctx| {
                 ScopeBuilder::install(ctx);
+                ExtractSymbols::install(ctx);
+                
+                ctx.launch();
                 ctx.launch();
             });
         }
