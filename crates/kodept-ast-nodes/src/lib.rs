@@ -12,5 +12,6 @@ pub mod term;
 pub mod top_level;
 pub mod types;
 mod utils;
+pub mod enums;
 
 struct Unit;
