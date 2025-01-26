@@ -1,13 +1,13 @@
 use crate::expression::Exprs;
 use crate::properties::{Param, Type};
-use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
-use crate::utils::unwrap_body;
+use crate::types::{Params, ProdTy, Ty};
+use crate::utils::{unwrap_body, wrap_params};
 use crate::Unit;
+use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::properties::{Name, RequireProperty};
+use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::derive_node;
 use kodept_rlt::prelude::BodiedFunction;
 
 #[derive(Debug, PartialEq, Component)]
@@ -18,12 +18,10 @@ derive_node!(Func {
         optional Ty where tag = Type,
         optional ProdTy where tag = Type,
 
-        children TyParam where tag = Param,
-        children NonTyParam where tag = Param,
-
+        child Params where tag = Param,
         child Exprs,
     ],
-    properties = []
+    properties = [require Name,]
 });
 
 impl FromSyntax for Func {
@@ -36,10 +34,10 @@ impl FromSyntax for Func {
             .with_property(Name { name })
             .with_children(source, pool, move |scope| {
                 scope.choose(Unit, node.return_type.as_ref().map(|it| &it.1));
-                scope.maybe_choose(Unit, node.params.as_ref().map(|it| it.inner.as_ref()));
+                if let Some(params) = node.params.as_ref() {
+                    wrap_params(node, &params.inner, scope);
+                }
                 unwrap_body(&node.body, scope);
             })
     }
 }
-
-impl RequireProperty<Name> for Func {}

@@ -1,5 +1,5 @@
 use crate::function::Func;
-use crate::types::TyParam;
+use crate::types::{TyParams};
 use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
@@ -7,6 +7,8 @@ use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_rlt::new_types::TypeName;
 use kodept_rlt::prelude::{Enum, Struct};
+use crate::properties::Param;
+use crate::utils::wrap_ty_params;
 
 #[derive(Debug, PartialEq, Component)]
 pub enum EnumDecl {
@@ -27,7 +29,7 @@ derive_node!(EnumDecl {
 
 derive_node!(StructDecl {
     relations = [
-        children TyParam,
+        child TyParams where tag = Param,
         children Func,
     ],
     properties = [require Name,]
@@ -67,8 +69,9 @@ impl FromSyntax for StructDecl {
         ASTBuilder::new(builder, StructDecl)
             .with_property(Name { name })
             .with_children(source, builder, |scope| {
-                scope
-                    .maybe_many::<TyParam, _>(node.parameters.as_ref().map(|it| it.inner.as_ref()));
+                if let Some(params) = &node.parameters {
+                    wrap_ty_params(node, &params.inner, scope);
+                }
                 scope.maybe_many::<Func, _>(node.body.as_ref().map(|it| it.inner.as_ref()));
             })
     }

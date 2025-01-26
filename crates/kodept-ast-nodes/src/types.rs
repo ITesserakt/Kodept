@@ -1,11 +1,11 @@
-use crate::properties::{Param, Type};
 use crate::Unit;
+use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
-use kodept_ast::properties::{Name, RequireProperty};
+use kodept_ast::properties::tags::Tagged;
+use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::derive_node;
 use kodept_rlt::new_types;
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
@@ -22,22 +22,46 @@ pub struct TyParam;
 #[derive(Debug, PartialEq, Component)]
 pub struct NonTyParam;
 
-derive_node!(Ty);
+#[derive(Debug, PartialEq, Component)]
+pub struct Params;
+#[derive(Debug, PartialEq, Component)]
+pub struct TyParams;
+
+derive_node!(Params {
+    relations = [
+        children TyParam,
+        children NonTyParam,
+    ],
+    properties = []
+});
+
+derive_node!(TyParams {
+    relations = [children TyParam,],
+    properties = []
+});
+
+derive_node!(Ty {
+    relations = [],
+    properties = [require Name,]
+});
 derive_node!(ProdTy {
     relations = [
-        children Ty where tag = Type,
-        children ProdTy where tag = Type,
+        children Ty,
+        children ProdTy,
     ],
     properties = []
 });
 derive_node!(TyParam {
     relations = [
-        optional Ty where tag = Type,
-        optional ProdTy where tag = Type,
+        optional Ty,
+        optional ProdTy,
     ],
-    properties = []
+    properties = [require Name,]
 });
-derive_node!(NonTyParam);
+derive_node!(NonTyParam {
+    relations = [],
+    properties = [require Name,]
+});
 
 impl FromSyntax for Ty {
     type Syntax = new_types::TypeName;
@@ -80,13 +104,14 @@ impl FromSyntax for ProdTy {
     }
 }
 
-impl<R> Choose<rlt::Type, R, Type> for Unit
+impl<R, Tag> Choose<rlt::Type, R, Tag> for Unit
 where
-    R: HasChild<Ty, Type>,
-    R: HasChild<ProdTy, Type>,
+    R: HasChild<Ty, Tag>,
+    R: HasChild<ProdTy, Tag>,
+    Tag: Tagged
 {
     #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, Type> {
+    fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, Tag> {
         match node {
             rlt::Type::Reference(x) => ChildrenDisjoint::new::<Ty>(x),
             rlt::Type::Tuple(x) => ChildrenDisjoint::new::<ProdTy>(x),
@@ -94,20 +119,17 @@ where
     }
 }
 
-impl<R> Choose<Parameter, R, Param> for Unit
+impl<R, Tag> Choose<Parameter, R, Tag> for Unit
 where
-    R: HasChild<TyParam, Param>,
-    R: HasChild<NonTyParam, Param>,
+    R: HasChild<TyParam, Tag>,
+    R: HasChild<NonTyParam, Tag>,
+    Tag: Tagged
 {
     #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, Param> {
+    fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, Tag> {
         match node {
             Parameter::Typed(x) => ChildrenDisjoint::new::<TyParam>(x),
             Parameter::Untyped(x) => ChildrenDisjoint::new::<NonTyParam>(x),
         }
     }
 }
-
-impl RequireProperty<Name> for Ty {}
-impl RequireProperty<Name> for TyParam {}
-impl RequireProperty<Name> for NonTyParam {}
