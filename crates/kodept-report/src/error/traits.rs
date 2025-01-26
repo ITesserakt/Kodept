@@ -1,5 +1,4 @@
 use crate::error::report::{IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage};
-use crate::error::report_collector::{ReportCollector, Reporter};
 use crate::error::{Diagnostic, ErrorReported};
 use crate::FileId;
 use codespan_reporting::files::Files;
@@ -22,12 +21,6 @@ pub struct SpannedError<E> {
     severity: Severity,
     notes: Vec<Cow<'static, str>>,
     inner: E,
-}
-
-pub trait DrainReports {
-    type Output;
-
-    fn drain(self, file_id: FileId, collector: &mut ReportCollector) -> Self::Output;
 }
 
 pub trait Reportable {
@@ -157,25 +150,5 @@ impl<E: std::error::Error + 'static> IntoSpannedReportMessage for SpannedError<E
 
     fn into_message(self) -> Self::Message {
         self
-    }
-}
-
-impl<T, S, I> DrainReports for Result<T, I>
-where
-    S: IntoSpannedReportMessage,
-    I: IntoIterator<Item = S>,
-{
-    type Output = Option<T>;
-
-    fn drain(self, file_id: FileId, collector: &mut ReportCollector) -> Self::Output {
-        match self {
-            Ok(x) => Some(x),
-            Err(e) => {
-                for item in e {
-                    collector.report(file_id, item);
-                }
-                None
-            }
-        }
     }
 }

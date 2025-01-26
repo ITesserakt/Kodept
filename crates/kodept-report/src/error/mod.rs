@@ -7,7 +7,6 @@ use std::fmt::Formatter;
 
 pub mod compiler_crash;
 pub mod report;
-pub mod report_collector;
 pub mod traits;
 
 #[derive(Debug, Default)]
