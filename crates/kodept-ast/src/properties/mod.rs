@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 use crate::prelude::{ASTNode, NodeId};
 use crate::syntax_tree::prelude::AST;
 use bevy_ecs::prelude::Component;
+use derive_more::{From, Into};
 use crate::Str;
 
 pub mod tags;
@@ -17,7 +18,7 @@ pub struct Node {
 #[component(storage = "SparseSet")]
 pub struct Root;
 
-#[derive(Debug, Component, Clone)]
+#[derive(Debug, Component, Clone, From, Into)]
 pub struct Name {
     pub name: Str
 }
