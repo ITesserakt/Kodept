@@ -10,3 +10,7 @@ workspace = true
 bevy_ecs.workspace = true
 kodept-ast = { path = "../kodept-ast" }
 kodept-rlt = { path = "../kodept-rlt" }
+
+[features]
+defalt = []
+parallel = ["kodept-ast/parallel", "bevy_ecs/multi_threaded"]

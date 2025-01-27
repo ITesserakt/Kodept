@@ -73,7 +73,7 @@ pub(crate) fn const_disjoint<'p, U, R, S, Tag>(
 ) -> ChildrenDisjoint<'p, R, S, Tag>
 where
     &'p U::Syntax: TryFrom<SyntaxVariant<'p>, Error: Debug> + Into<SyntaxVariant<'p>>,
-    U: FromSyntax + ASTNode,
+    U: FromSyntax<Syntax: Sync> + ASTNode,
     Const: HasChild<U>,
     S: CodeHolder,
     R: HasChild<Const, Tag>,
