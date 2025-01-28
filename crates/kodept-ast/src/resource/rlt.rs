@@ -87,16 +87,28 @@ impl SyntaxResolver {
         self.mapping.insert(id, reborrow);
     }
 
-    pub fn get_unknown(&self, id: NodeId) -> Option<SyntaxVariant> {
+    pub fn get_unknown(&self, id: NodeId) -> SyntaxVariant {
+        self.try_get_unknown(id)
+            .expect("Cannot get linked RLT node")
+    }
+
+    pub fn get_location(&self, id: NodeId) -> CodePoint {
+        self.mapping
+            .get(&id)
+            .expect("Cannot get linked RLT node")
+            .location()
+    }
+
+    pub fn try_get_unknown(&self, id: NodeId) -> Option<SyntaxVariant> {
         let reference = self.mapping.get(&id)?;
         Some(*reference.value())
     }
 
-    pub fn get<'r, U>(&'r self, id: NodeId) -> Result<&'r U, LookupError>
+    pub fn try_get<'r, U>(&'r self, id: NodeId) -> Result<&'r U, LookupError>
     where
         &'r U: TryFrom<SyntaxVariant<'r>>,
     {
-        let variant = self.get_unknown(id).ok_or(LookupError::NotFound)?;
+        let variant = self.try_get_unknown(id).ok_or(LookupError::NotFound)?;
         variant.try_into().map_err(|_| LookupError::WrongType)
     }
 }
