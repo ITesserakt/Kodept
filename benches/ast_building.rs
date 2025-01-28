@@ -44,7 +44,7 @@ where
         .build_global()
         .unwrap();
 
-    for parallelism in 1..15 {
+    for parallelism in 1..11 {
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(parallelism)
             .build()
@@ -78,7 +78,7 @@ fn bench_impls(c: &mut Criterion) {
     });
 
     #[cfg(all(feature = "interning", not(feature = "parallel")))]
-    group.bench_function("no interning, no parallelization", |b| {
+    group.bench_function("interning, no parallelization", |b| {
         let sources = kodept_interning::InterningCodeHolder::new(sources).map(|it| Cow::from(it.0));
         b.iter_batched(
             || PARSED_FILE.clone(),
