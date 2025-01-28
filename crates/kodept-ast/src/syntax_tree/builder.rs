@@ -49,7 +49,6 @@ pub struct ASTBuilder<Root> {
 }
 
 pub struct ChildrenScope<'p, 'e, Root, Source> {
-    children_buffer: Vec<Entity>,
     queue: OnceCell<CommandQueue>,
     root: Entity,
     source: Source,
@@ -104,19 +103,15 @@ impl<Root> ASTBuilder<Root> {
         let mut scope = ChildrenScope {
             source,
             pool,
-            children_buffer: Default::default(),
+            // children_buffer: Default::default(),
             queue: OnceCell::new(),
             root: self.root,
             _phantom: Default::default(),
         };
         f(&mut scope);
-        let root = self.root;
         if let Some(queue) = scope.queue.get_mut() {
             self.queue.append(queue);
         }
-        self.queue.push(move |w: &mut World| {
-            w.entity_mut(root).add_children(&scope.children_buffer);
-        });
         self
     }
 
@@ -159,6 +154,23 @@ where
         }
     }
 
+    #[inline]
+    fn insert_iter<Tag>(&mut self, iter: impl IntoIterator<Item = ASTBuilder<()>> + Send + 'static)
+    where
+        Tag: Tagged,
+    {
+        let root_id = self.root;
+        let mut queue = self.queue.take().unwrap_or_default();
+        queue.push(move |w: &mut World| {
+            iter.into_iter().for_each(|mut part| {
+                w.entity_mut(root_id).add_child(part.root);
+                w.entity_mut(part.root).insert(Tag::default());
+                part.queue.apply(w);
+            });
+        });
+        _ = self.queue.set(queue);
+    }
+
     #[inline(always)]
     pub fn many<'t, U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'t U::Syntax> + HasLength)
     where
@@ -170,9 +182,8 @@ where
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
-                self.children_buffer.push(part.root);
                 self.pool.link_syntax(part.root, item);
-                self.insert::<Tag>(part.erase(), Tag::default());
+                self.insert(part.erase(), Tag::default());
             }
             return;
         }
@@ -197,12 +208,7 @@ where
                         sender.send(part).unwrap()
                     })
                 },
-                || {
-                    for part in rx {
-                        self.children_buffer.push(part.root);
-                        self.insert(part.erase(), Tag::default());
-                    }
-                },
+                || self.insert_iter::<Tag>(rx.into_iter().map(|it| it.erase())),
             );
         }
     }
@@ -239,7 +245,6 @@ where
                 let disjoint = Chooser::branch(item);
                 let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
                 self.pool.link_syntax(part.root, disjoint.inner);
-                self.children_buffer.push(part.root);
                 self.insert(part.erase(), Tag::default());
             }
             return;
@@ -266,12 +271,7 @@ where
                         sender.send(part).unwrap()
                     })
                 },
-                move || {
-                    for part in rx {
-                        self.children_buffer.push(part.root);
-                        self.insert(part.erase(), Tag::default());
-                    }
-                },
+                move || self.insert_iter::<Tag>(rx.into_iter().map(|it| it.erase())),
             );
         }
     }
@@ -302,9 +302,7 @@ where
         Tag: Tagged,
         &'a T: Into<SyntaxVariant<'p>>,
     {
-        self.children_buffer.push(builder.root);
-        self.pool
-            .link_syntax(builder.root, node);
+        self.pool.link_syntax(builder.root, node);
         self.insert(builder.erase(), Tag::default());
     }
 
