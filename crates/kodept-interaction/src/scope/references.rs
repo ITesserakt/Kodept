@@ -135,16 +135,13 @@ impl ReferenceResolver {
     ) -> Result<Infallible> {
         for (entity, node) in query.into_iter() {
             if !node.context.global && node.context.items.is_empty() {
-                match Self::resolve_ref_without_context(
+                if let Err(Skip::Failed(e)) = Self::resolve_ref_without_context(
                     entity,
                     node,
                     &scopes_mapping,
                     &scopes,
                     &syntax,
-                ) {
-                    Err(Skip::Failed(e)) => reporter.report(e),
-                    _ => {}
-                }
+                ) { reporter.report(e) }
             }
         }
         done()
