@@ -83,8 +83,8 @@ impl Check {
         f: impl FnOnce(&mut Ctx) -> T,
     ) -> T {
         let mut ctx = ast.interact();
-        let result = self.timings_block(name, || f(&mut ctx));
-        result
+        
+        self.timings_block(name, || f(&mut ctx))
     }
 
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {

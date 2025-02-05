@@ -29,6 +29,7 @@ fn main() {
     let cli_options = Kodept::parse();
 
     init_tracing(cli_options.logging.level());
+    init_thread_pool(cli_options.parallelism);
     let reports = make_reports(cli_options.diagnostic_config);
 
     let result = cli_options.subcommands.exec(reports, cli_options.output_config);

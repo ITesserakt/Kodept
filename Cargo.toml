@@ -115,7 +115,6 @@ lto = false
 opt-level = 0
 debug = true
 panic = 'unwind'
-rpath = false
 # kodept-parse produces *a lot* of debug info
 split-debuginfo = "packed"
 

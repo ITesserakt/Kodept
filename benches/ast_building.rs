@@ -2,12 +2,12 @@ use kodept_core::code_point::CodePoint;
 use criterion::{criterion_group, BatchSize, Criterion, Throughput};
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_ast_nodes::file::FileDecl;
-use kodept_rlt::prelude as rlt;
 use kodept_core::structure::span::CodeHolder;
 use kodept_parse::common::{EagerTokensProducer, RLTProducer};
 use kodept_parse::lexer::PestLexer;
 use kodept_parse::parser::PegParser;
 use kodept_parse::token_stream::PackedTokenStream;
+use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -76,7 +76,7 @@ fn bench_complexity(c: &mut Criterion) {
                 |rlt| {
                     AST::recursively_build::<FileDecl>(
                         rlt,
-                        InlineCodeHolder(FILE_CONTENTS).map(Cow::Borrowed),
+                        InlineCodeHolder(FILE_CONTENTS).map(|it| Cow::Borrowed(it)),
                     )
                 },
                 BatchSize::SmallInput,
