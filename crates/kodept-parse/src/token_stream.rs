@@ -1,39 +1,31 @@
 use crate::token_match::PackedTokenMatch;
+use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use kodept_core::static_assert_size;
 use kodept_core::structure::Located;
-use nom::{InputIter, InputLength, InputTake, Needed, Offset, Slice, UnspecializedInput};
 use std::fmt::Debug;
-use std::iter::Enumerate;
-use std::ops::{Deref, Range, RangeTo};
+use std::ops::{Deref, Index, Range, RangeBounds};
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Copy, Constructor)]
 pub struct PackedTokenStream<'t> {
     slice: &'t [PackedTokenMatch],
 }
 
 static_assert_size!(PackedTokenStream<'static>, 16);
 
-pub struct PackedTokenStreamIter<'t> {
-    slice_iter: std::slice::Iter<'t, PackedTokenMatch>
-}
-
 impl<'t> PackedTokenStream<'t> {
-    pub fn new(slice: &'t [PackedTokenMatch]) -> Self {
-        Self {
-            slice,
-        }
-    }
-
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.slice.len()
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.slice.is_empty()
     }
 
-    pub fn sub_stream(&self, range: Range<usize>) -> PackedTokenStream {
+    pub fn sub_stream<B: RangeBounds<usize>>(&self, range: B) -> PackedTokenStream<'t>
+    where 
+        [PackedTokenMatch]: Index<B, Output = [PackedTokenMatch]>,
+    {
         Self::new(&self.slice[range])
     }
 
@@ -41,6 +33,27 @@ impl<'t> PackedTokenStream<'t> {
         match self.slice {
             [x] => *x,
             _ => unreachable!("Token stream with 1 element can be coerced to match"),
+        }
+    }
+
+    /// Original implementation: subslice_range from std lib
+    pub fn sub_stream_range(&self, suffix: PackedTokenStream) -> Option<Range<usize>> {
+        let self_start = self.slice.as_ptr() as usize;
+        let subslice_start = suffix.slice.as_ptr() as usize;
+
+        let byte_start = subslice_start.wrapping_sub(self_start);
+
+        if byte_start % size_of::<PackedTokenMatch>() != 0 {
+            return None;
+        }
+
+        let start = byte_start / size_of::<PackedTokenMatch>();
+        let end = start.wrapping_add(suffix.len());
+
+        if start <= self.len() && end <= self.len() {
+            Some(start..end)
+        } else {
+            None
         }
     }
 }
@@ -64,91 +77,30 @@ impl<'t> Deref for PackedTokenStream<'t> {
     }
 }
 
-impl Iterator for PackedTokenStreamIter<'_> {
-    type Item = PackedTokenMatch;
+#[cfg(test)]
+mod tests {
+    use crate::lexer::PackedToken;
+    use crate::token_match::PackedTokenMatch;
+    use crate::token_stream::PackedTokenStream;
+    use kodept_core::code_point::CodePoint;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.slice_iter.next().copied()
-    }
-}
-
-impl<'t> InputIter for PackedTokenStream<'t> {
-    type Item = PackedTokenMatch;
-    type Iter = Enumerate<PackedTokenStreamIter<'t>>;
-    type IterElem = PackedTokenStreamIter<'t>;
-
-    fn iter_indices(&self) -> Self::Iter {
-        PackedTokenStreamIter {
-            slice_iter: self.slice.iter()
-        }.enumerate()
-    }
-
-    fn iter_elements(&self) -> Self::IterElem {
-        PackedTokenStreamIter {
-            slice_iter: self.slice.iter(),
-        }
-    }
-
-    fn position<P>(&self, predicate: P) -> Option<usize>
-    where
-        P: Fn(Self::Item) -> bool,
-    {
-        self.slice.iter().position(|&it| predicate(it))
-    }
-
-    fn slice_index(&self, count: usize) -> Result<usize, Needed> {
-        if self.len() >= count {
-            Ok(count)
-        } else {
-            Err(Needed::new(count - self.slice.len()))
-        }
-    }
-}
-
-impl<'t> InputTake for PackedTokenStream<'t> {
-    fn take(&self, count: usize) -> Self {
-        Self {
-            slice: &self[..count],
-        }
-    }
-
-    fn take_split(&self, count: usize) -> (Self, Self) {
-        let (first, second) = self.slice.split_at(count);
-        (
-            Self {
-                slice: second,
-                ..*self
-            },
-            Self {
-                slice: first,
-                ..*self
-            },
-        )
-    }
-}
-
-impl<'t> InputLength for PackedTokenStream<'t> {
-    fn input_len(&self) -> usize {
-        self.len()
-    }
-}
-
-impl UnspecializedInput for PackedTokenStream<'_> {}
-
-impl Slice<RangeTo<usize>> for PackedTokenStream<'_> {
-    fn slice(&self, range: RangeTo<usize>) -> Self {
-        Self {
-            slice: &self[range],
-            ..*self
-        }
-    }
-}
-
-impl Offset for PackedTokenStream<'_> {
-    fn offset(&self, second: &Self) -> usize {
-        let fst = self.as_ptr();
-        let snd = second.as_ptr();
-
-        snd as usize - fst as usize
+    #[test]
+    fn test_sub_streams() {
+        let storage = &[
+            PackedTokenMatch::new(
+                PackedToken::Abstract,
+                CodePoint::new(1, 0),
+            ),
+            PackedTokenMatch::new(
+                PackedToken::With,
+                CodePoint::new(1, 1),
+            )
+        ];
+        let stream = PackedTokenStream::new(storage);
+        let suffix = stream.sub_stream(1..);
+        let empty_suffix = stream.sub_stream(2..);
+        
+        assert_eq!(stream.sub_stream_range(suffix), Some(1..2));
+        assert_eq!(stream.sub_stream_range(empty_suffix), Some(2..2));
     }
 }

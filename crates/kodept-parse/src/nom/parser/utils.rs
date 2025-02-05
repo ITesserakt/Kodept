@@ -4,91 +4,59 @@ use crate::lexer::PackedToken;
 use crate::lexer::PackedToken::{
     Comma, LBrace, LParen, Newline, RBrace, RParen, Semicolon, Whitespace,
 };
-use crate::nom::parser::{ParseError, ParseResult};
+use crate::nom::parser::PParser;
 use crate::nom::TokenVerificationError;
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
 use nom::branch::alt;
-use nom::bytes::complete::{take, take_while};
+use nom::bytes::{take, take_while};
+use nom::combinator::{cut, map, opt};
 use nom::multi::{many1, separated_list0, separated_list1};
-use nom::sequence::tuple;
-use nom::Err::Error;
-use nom::IResult;
+use nom::sequence::{preceded, terminated};
 use nom::Parser;
-use nom_supreme::error::BaseErrorKind;
-use nom_supreme::ParserExt;
 use std::fmt::Debug;
 
-#[inline]
-fn any_not_ignored_token(input: PackedTokenStream) -> ParseResult<PackedTokenStream> {
-    take_while(|it: PackedTokenMatch| it.token.is_ignored())
-        .precedes(take(1usize))
-        .parse(input)
-}
-
-#[inline]
-fn any_token(input: PackedTokenStream) -> ParseResult<PackedTokenStream> {
-    take(1usize).parse(input)
+#[inline(always)]
+pub(super) fn match_token<'t>(example: PackedToken) -> impl PParser<'t, PackedTokenMatch> {
+    preceded(
+        take_while(|it: PackedTokenMatch| it.token.is_ignored()),
+        take(1usize),
+    )
+    .map(|it: PackedTokenStream| it.into_single())
+    .map_res(move |it| {
+        (it.token == example)
+            .then_some(it)
+            .ok_or_else(|| TokenVerificationError::new(example.representation()))
+    })
 }
 
 #[inline(always)]
-pub(super) fn match_token(
-    example: PackedToken,
-) -> impl FnMut(PackedTokenStream) -> ParseResult<PackedTokenMatch> {
-    move |input| {
-        let (rest, output) = any_not_ignored_token(input)?;
-        let token_match = output.into_single();
-        
-        if token_match.token == example {
-            Ok((rest, token_match))
-        } else {
-            let repr = example.representation();
-            let error = ParseError::Base {
-                location: output,
-                kind: BaseErrorKind::External(TokenVerificationError::new(repr)),
-            };
-            Err(Error(error))
-        }
-    }
-}
-
-#[inline(always)]
-pub(super) fn match_any_token(
-    expected: PackedToken,
-) -> impl FnMut(PackedTokenStream) -> ParseResult<PackedTokenMatch> {
-    move |input| {
-        let (rest, output) = any_token(input)?;
-        let token_match = output.into_single();
-        
-        if token_match.token == expected {
-            Ok((rest, token_match))
-        } else {
-            let repr = expected.representation();
-            let error = ParseError::Base {
-                location: output,
-                kind: BaseErrorKind::External(TokenVerificationError::new(repr)),
-            };
-            Err(Error(error))
-        }
-    }
+pub(super) fn match_any_token<'t>(expected: PackedToken) -> impl PParser<'t, PackedTokenMatch> {
+    take(1usize)
+        .map(|it: PackedTokenStream| it.into_single())
+        .map_res(move |it| {
+            (it.token == expected)
+                .then_some(it)
+                .ok_or(TokenVerificationError::new(expected.representation()))
+        })
 }
 
 #[inline]
 #[allow(unused)]
-pub(super) fn inspect_input<I: Debug, O, E, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E>
+pub(super) fn inspect_input<I: Debug, P>(
+    mut parser: P,
+) -> impl Parser<I, Output = P::Output, Error = P::Error>
 where
-    P: Parser<I, O, E>,
+    P: Parser<I>,
 {
     move |input| parser.parse(dbg!(input))
 }
 
 #[inline]
 #[allow(unused)]
-pub(super) fn inspect<I: Debug, O: Debug, E: Debug, P>(
-    mut parser: P,
-) -> impl FnMut(I) -> IResult<I, O, E>
+pub(super) fn inspect<I, P>(mut parser: P) -> impl Parser<I, Output = P::Output, Error = P::Error>
 where
-    P: Parser<I, O, E>,
+    P: Parser<I, Output: Debug>,
 {
     move |input| {
         let (rest, result) = parser.parse(input)?;
@@ -98,40 +66,30 @@ where
 }
 
 #[inline]
-pub(super) fn paren_enclosed<'t, T, P>(
-    items_parser: P,
-) -> impl Parser<PackedTokenStream<'t>, VerboseEnclosed<T>, ParseError<'t>>
-where
-    P: Parser<PackedTokenStream<'t>, T, ParseError<'t>>,
-{
-    tuple((
-        match_token(LParen),
-        items_parser.cut(),
-        match_token(RParen).cut(),
-    ))
-    .map(|it| it.into())
+pub(super) fn paren_enclosed<'t, T>(
+    items_parser: impl PParser<'t, T>,
+) -> impl PParser<'t, VerboseEnclosed<T>> {
+    map(
+        (match_token(LParen), cut(items_parser), match_token(RParen)),
+        VerboseEnclosed::from,
+    )
 }
 
 #[inline]
-pub(super) fn brace_enclosed<'t, T, P>(
-    items_parser: P,
-) -> impl Parser<PackedTokenStream<'t>, VerboseEnclosed<T>, ParseError<'t>>
-where
-    P: Parser<PackedTokenStream<'t>, T, ParseError<'t>>,
-{
-    tuple((
-        match_token(LBrace),
-        items_parser.cut(),
-        match_token(RBrace).cut(),
-    ))
-    .map(|it| it.into())
+pub(super) fn brace_enclosed<'t, T>(
+    items_parser: impl PParser<'t, T>,
+) -> impl PParser<'t, VerboseEnclosed<T>> {
+    map(
+        (match_token(LBrace), cut(items_parser), match_token(RBrace)),
+        VerboseEnclosed::from,
+    )
 }
 
 #[allow(unused_parens)]
 #[inline]
-pub(super) fn newline_separated<'t, T, P: Parser<PackedTokenStream<'t>, T, ParseError<'t>>>(
-    items_parser: P,
-) -> impl Parser<PackedTokenStream<'t>, Vec<T>, ParseError<'t>> {
+pub(super) fn newline_separated<'t, T>(
+    items_parser: impl PParser<'t, T>,
+) -> impl PParser<'t, Vec<T>> {
     separated_list0(
         many1(alt((
             match_any_token(Newline),
@@ -143,21 +101,21 @@ pub(super) fn newline_separated<'t, T, P: Parser<PackedTokenStream<'t>, T, Parse
 }
 
 #[inline]
-pub(super) fn comma_separated0<'t, T, P>(
-    items_parser: P,
-) -> impl Parser<PackedTokenStream<'t>, Vec<T>, ParseError<'t>>
-where
-    P: Parser<PackedTokenStream<'t>, T, ParseError<'t>>,
-{
-    separated_list0(match_token(Comma), items_parser).terminated(match_token(Comma).opt())
+pub(super) fn comma_separated0<'t, T>(
+    items_parser: impl PParser<'t, T>,
+) -> impl PParser<'t, Vec<T>> {
+    terminated(
+        separated_list0(match_token(Comma), items_parser),
+        opt(match_token(Comma)),
+    )
 }
 
 #[inline]
-pub(super) fn comma_separated1<'t, T, P>(
-    items_parser: P,
-) -> impl Parser<PackedTokenStream<'t>, Vec<T>, ParseError<'t>>
-where
-    P: Parser<PackedTokenStream<'t>, T, ParseError<'t>>,
-{
-    separated_list1(match_token(Comma), items_parser).terminated(match_token(Comma).opt())
+pub(super) fn comma_separated1<'t, T>(
+    items_parser: impl PParser<'t, T>,
+) -> impl PParser<'t, Vec<T>> {
+    terminated(
+        separated_list1(match_token(Comma), items_parser),
+        opt(match_token(Comma)),
+    )
 }

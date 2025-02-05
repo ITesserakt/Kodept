@@ -78,19 +78,19 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
 
         Diagnostic::new(Severity::Error)
             .with_message(format!("Unexpected {actual}"))
-            .with_label(Label::primary("here", location.in_code))
+            .with_label(Label::primary("unexpected token", location.in_code))
     } else if let Some(actual) = actual {
         let exp_msg = expected_to_string(expected);
 
         Diagnostic::new(Severity::Error)
             .with_message(format!("Expected {exp_msg}, got {actual}"))
-            .with_label(Label::primary("here", location.in_code))
+            .with_label(Label::primary("unexpected token", location.in_code))
     } else {
         let exp_msg = expected_to_string(expected);
 
         Diagnostic::new(Severity::Error)
-            .with_message(format!("Expected {exp_msg} after, got EOF"))
-            .with_label(Label::primary("here", location.in_code))
+            .with_message(format!("Expected {exp_msg}, got EOF"))
+            .with_label(Label::primary("expected more", location.in_code))
     };
 
     hints

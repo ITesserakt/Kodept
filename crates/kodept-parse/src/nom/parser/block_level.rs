@@ -1,101 +1,118 @@
 use crate::lexer::PackedToken::*;
-use crate::nom::parser::macros::{function};
+use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::{match_token, newline_separated};
-use crate::nom::parser::{function, operator, r#type, ParseResult};
+use crate::nom::parser::{function, operator, r#type, PParser};
 use crate::token_stream::PackedTokenStream;
 use kodept_core::structure::rlt;
 use kodept_core::structure::rlt::new_types;
 use kodept_core::structure::rlt::new_types::{Keyword, Symbol};
 use nom::branch::alt;
-use nom::sequence::tuple;
+use nom::combinator::{cut, map, opt};
+use nom::error::context;
 use nom::Parser;
-use nom_supreme::ParserExt;
 
-fn block(input: PackedTokenStream) -> ParseResult<rlt::ExpressionBlock> {
-    tuple((
-        match_token(LBrace),
-        newline_separated(grammar),
-        match_token(RBrace),
-    ))
-    .context(function!())
-    .map(|it| rlt::ExpressionBlock {
-        lbrace: Symbol::from_located(it.0),
-        expression: it.1.into_boxed_slice(),
-        rbrace: Symbol::from_located(it.2),
+fn block<'t>() -> impl PParser<'t, rlt::ExpressionBlock> {
+    context(function!(), |input| {
+        let (rest, it) = (
+            match_token(LBrace),
+            newline_separated(grammar()),
+            match_token(RBrace),
+        )
+            .parse(input)?;
+
+        Ok((
+            rest,
+            rlt::ExpressionBlock {
+                lbrace: Symbol::from_located(it.0),
+                expression: it.1.into_boxed_slice(),
+                rbrace: Symbol::from_located(it.2),
+            },
+        ))
     })
-    .parse(input)
 }
 
-fn simple(input: PackedTokenStream) -> ParseResult<rlt::Body> {
-    tuple((match_token(Flow), grammar.cut()))
-        .context(function!())
-        .map(|it| rlt::Body::Simplified {
-            flow: Symbol::from_located(it.0),
-            expression: it.1,
-        })
-        .parse(input)
+fn simple<'t>() -> impl PParser<'t, rlt::Body> {
+    context(
+        function!(),
+        map((match_token(Flow), cut(grammar())), |it| {
+            rlt::Body::Simplified {
+                flow: Symbol::from_located(it.0),
+                expression: it.1,
+            }
+        }),
+    )
 }
 
-pub(super) fn body(input: PackedTokenStream) -> ParseResult<rlt::Body> {
-    alt((block.map(rlt::Body::Block), simple))
-        .context(function!())
-        .parse(input)
+pub(super) fn body<'t>() -> impl PParser<'t, rlt::Body> {
+    context(function!(), |input| {
+        alt((block().map(rlt::Body::Block), simple())).parse(input)
+    })
 }
 
 #[allow(unused_parens)]
-fn var_declaration(input: PackedTokenStream) -> ParseResult<rlt::Variable> {
-    let (input, kind) = match_token(Val).or(match_token(Var)).parse(input)?;
-    let (input, rest) = tuple((
-        match_token(Identifier).cut(),
-        tuple((match_token(Colon), r#type::grammar)).opt(),
-    ))
-    .cut()
-    .context(function!())
-    .parse(input)?;
+fn var_declaration<'t>() -> impl PParser<'t, rlt::Variable> {
+    |input: PackedTokenStream<'t>| {
+        let (rest, token_match) = match_token(Val).or(match_token(Var)).parse(input)?;
+        let ctor = if token_match.token == Val {
+            |keyword, id, assigned_type| rlt::Variable::Immutable {
+                keyword,
+                id,
+                assigned_type,
+            }
+        } else {
+            |keyword, id, assigned_type| rlt::Variable::Mutable {
+                keyword,
+                id,
+                assigned_type,
+            }
+        };
+        let ctor_curried =
+            move |id, assigned_type| ctor(Keyword::from_located(token_match), id, assigned_type);
 
-    if kind.token == Val {
-        Ok((
-            input,
-            rlt::Variable::Immutable {
-                keyword: Keyword::from_located(kind),
-                id: new_types::Identifier::from_located(rest.0),
-                assigned_type: rest.1.map(|it| (Symbol::from_located(it.0), it.1)),
+        let mut parser = map(
+            context(
+                function!(),
+                cut((
+                    cut(match_token(Identifier)),
+                    opt((match_token(Colon), r#type::grammar())),
+                )),
+            ),
+            |it| {
+                ctor_curried(
+                    new_types::Identifier::from_located(it.0),
+                    it.1.map(|it| (Symbol::from_located(it.0), it.1)),
+                )
             },
-        ))
-    } else {
-        Ok((
-            input,
-            rlt::Variable::Mutable {
-                keyword: Keyword::from_located(kind),
-                id: new_types::Identifier::from_located(rest.0),
-                assigned_type: rest.1.map(|it| (Symbol::from_located(it.0), it.1)),
-            },
-        ))
+        );
+        parser.parse(rest)
     }
 }
 
-fn initialized_variable(input: PackedTokenStream) -> ParseResult<rlt::InitializedVariable> {
-    tuple((
-        var_declaration,
-        match_token(Equals).cut(),
-        operator::grammar,
-    ))
-    .context(function!())
-    .map(|it| rlt::InitializedVariable {
+fn initialized_variable<'t>() -> impl PParser<'t, rlt::InitializedVariable> {
+    let parser = context(
+        function!(),
+        (
+            var_declaration(),
+            cut(match_token(Equals)),
+            operator::grammar(),
+        ),
+    );
+
+    map(parser, |it| rlt::InitializedVariable {
         variable: it.0,
         equals: Symbol::from_located(it.1),
         expression: it.2,
     })
-    .parse(input)
 }
 
-pub(super) fn grammar(input: PackedTokenStream) -> ParseResult<rlt::BlockLevelNode> {
-    alt((
-        block.map(rlt::BlockLevelNode::Block),
-        initialized_variable.map(rlt::BlockLevelNode::InitVar),
-        function::bodied.map(rlt::BlockLevelNode::Function),
-        operator::grammar.map(rlt::BlockLevelNode::Operation),
-    ))
-    .context(function!())
-    .parse(input)
+pub(super) fn grammar<'t>() -> impl PParser<'t, rlt::BlockLevelNode> {
+    context(
+        function!(),
+        alt((
+            map(block(), rlt::BlockLevelNode::Block),
+            map(initialized_variable(), rlt::BlockLevelNode::InitVar),
+            map(function::bodied(), rlt::BlockLevelNode::Function),
+            map(operator::grammar(), rlt::BlockLevelNode::Operation),
+        )),
+    )
 }

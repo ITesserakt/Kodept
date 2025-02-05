@@ -15,11 +15,11 @@ fn init_tracing(level: Level) {
         .init();
 }
 
-fn init_thread_pool(parallelism: usize) -> Result<(), WideError> {
+fn init_thread_pool(_parallelism: usize) -> Result<(), WideError> {
     #[cfg(feature = "parallel")]
     {
         rayon::ThreadPoolBuilder::new()
-            .num_threads(parallelism)
+            .num_threads(_parallelism)
             .build_global()?
     }
     Ok(())
