@@ -1,30 +1,27 @@
+use nom::branch::alt;
+use nom::error::context;
+use nom::Parser;
+
+use kodept_rlt::new_types::TypeName;
+use kodept_rlt::prelude as rlt;
+
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
-use crate::nom::parser::ParseResult;
-use crate::token_stream::PackedTokenStream;
-use kodept_rlt::new_types::TypeName;
-use kodept_rlt::prelude as rlt;
-use nom::branch::alt;
-use nom::Parser;
-use nom_supreme::ParserExt;
+use crate::nom::parser::PParser;
 
-pub(super) fn reference(input: PackedTokenStream) -> ParseResult<TypeName> {
-    match_token(Type)
-        .context(function!())
-        .map(TypeName::from_located)
-        .parse(input)
+pub(super) fn reference<'t>() -> impl PParser<'t, TypeName> {
+    context(function!(), match_token(Type)).map(TypeName::from_located)
 }
 
-fn tuple(input: PackedTokenStream) -> ParseResult<rlt::Type> {
-    paren_enclosed(comma_separated0(grammar))
-        .context(function!())
+fn tuple<'t>() -> impl PParser<'t, rlt::Type> {
+    context(function!(), paren_enclosed(comma_separated0(grammar())))
         .map(|it| rlt::Type::Tuple(rlt::Tuple(it.into())))
-        .parse(input)
 }
 
-pub(super) fn grammar(input: PackedTokenStream) -> ParseResult<rlt::Type> {
-    alt((reference.map(rlt::Type::Reference), tuple))
-        .context(function!())
-        .parse(input)
+pub(super) fn grammar<'t>() -> impl PParser<'t, rlt::Type> {
+    context(
+        function!(),
+        |input| alt((reference().map(rlt::Type::Reference), tuple())).parse(input),
+    )
 }

@@ -1,49 +1,50 @@
+use nom::combinator::{cut, opt};
+use nom::error::context;
+use nom::multi::many0;
+use nom::Parser;
+
+use kodept_rlt::new_types::Keyword;
+use kodept_rlt::prelude as rlt;
+
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::match_token;
-use crate::nom::parser::{block_level, operator, ParseResult};
-use crate::token_stream::PackedTokenStream;
-use kodept_rlt::new_types::Keyword;
-use kodept_rlt::prelude as rlt;
-use nom::multi::many0;
-use nom::sequence::tuple;
-use nom::Parser;
-use nom_supreme::ParserExt;
+use crate::nom::parser::{block_level, operator, PParser};
 
-fn else_expr(input: PackedTokenStream) -> ParseResult<rlt::ElseExpr> {
-    tuple((match_token(Else), block_level::body.cut()))
-        .context(function!())
-        .map(|it| rlt::ElseExpr {
-            keyword: Keyword::from_located(it.0),
-            body: it.1,
-        })
-        .parse(input)
+fn else_expr<'t>() -> impl PParser<'t, rlt::ElseExpr> {
+    context(function!(), (match_token(Else), cut(block_level::body()))).map(|it| rlt::ElseExpr {
+        keyword: Keyword::from_located(it.0),
+        body: it.1,
+    })
 }
 
-fn elif_expr(input: PackedTokenStream) -> ParseResult<rlt::ElifExpr> {
-    tuple((
-        match_token(Elif),
-        operator::grammar.cut(),
-        block_level::body.cut(),
-    ))
-    .context(function!())
+fn elif_expr<'t>() -> impl PParser<'t, rlt::ElifExpr> {
+    context(
+        function!(),
+        (
+            match_token(Elif),
+            cut(operator::grammar()),
+            cut(block_level::body()),
+        ),
+    )
     .map(|it| rlt::ElifExpr {
         keyword: Keyword::from_located(it.0),
         condition: it.1,
         body: it.2,
     })
-    .parse(input)
 }
 
-pub(super) fn if_expr(input: PackedTokenStream) -> ParseResult<rlt::IfExpr> {
-    tuple((
-        match_token(If),
-        operator::grammar.cut(),
-        block_level::body.cut(),
-        many0(elif_expr),
-        else_expr.opt(),
-    ))
-    .context(function!())
+pub(super) fn if_expr<'t>() -> impl PParser<'t, rlt::IfExpr> {
+    context(
+        function!(),
+        (
+            match_token(If),
+            cut(operator::grammar()),
+            cut(block_level::body()),
+            many0(elif_expr()),
+            opt(else_expr()),
+        ),
+    )
     .map(|it| rlt::IfExpr {
         keyword: Keyword::from_located(it.0),
         condition: it.1,
@@ -51,5 +52,4 @@ pub(super) fn if_expr(input: PackedTokenStream) -> ParseResult<rlt::IfExpr> {
         elif: it.3.into_boxed_slice(),
         el: it.4,
     })
-    .parse(input)
 }

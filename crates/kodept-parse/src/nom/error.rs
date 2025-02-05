@@ -1,44 +1,43 @@
 use crate::common::ErrorAdapter;
 use crate::error::{ErrorLocation, Original, ParseError, ParseErrors};
 use crate::lexer::PackedToken;
-use crate::nom::TokenVerificationError;
+use crate::nom::parser::{PError, PErrorContext, PErrorKind};
+use crate::nom::{TokenVerificationError, TError, VerboseErrorKind};
 use crate::token_stream::PackedTokenStream;
 use derive_more::Constructor;
 use itertools::Itertools;
 use kodept_core::code_point::CodePoint;
 use nom::Offset;
-use nom_supreme::error::{BaseErrorKind, ErrorTree, Expectation, GenericErrorTree, StackContext};
 use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::iter::repeat;
 
-trait ExpectedError {
+pub(super) trait ExpectedError {
     fn expected(&self) -> Cow<'static, str>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
 struct Context<O> {
     prefix: O,
-    item_name: StackContext<&'static str>,
+    item_name: PErrorContext,
 }
 
 #[derive(Debug, Constructor)]
-struct BaseError<'s, O, E> {
+struct BaseError<O, E> {
     location: O,
-    kind: BaseErrorKind<&'s str, E>,
+    kind: PErrorKind<E>,
     context: Vec<Context<O>>,
 }
 
-impl<O, E> BaseError<'_, O, E>
+impl<O, E> BaseError<O, E>
 where
     E: ExpectedError,
 {
     fn into_expected(self) -> Cow<'static, str> {
         match self.kind {
-            BaseErrorKind::Expected(Expectation::Something) => Cow::Borrowed("anything"),
-            BaseErrorKind::Expected(expectation) => Cow::Owned(expectation.to_string()),
-            BaseErrorKind::Kind(kind) => Cow::Owned(kind.description().to_string()),
-            BaseErrorKind::External(ext) => ext.expected(),
+            PErrorKind::Char(value) => Cow::Owned(value.to_string()),
+            PErrorKind::Nom(kind) => Cow::Owned(kind.description().to_string()),
+            PErrorKind::External(ext) => ext.expected(),
         }
     }
 }
@@ -49,14 +48,20 @@ impl ExpectedError for TokenVerificationError {
     }
 }
 
+impl ExpectedError for () {
+    fn expected(&self) -> Cow<'static, str> {
+        Cow::Borrowed("anything")
+    }
+}
+
 impl<T: ?Sized + ToString> ExpectedError for Box<T> {
     fn expected(&self) -> Cow<'static, str> {
         Cow::Owned(self.to_string())
     }
 }
 
-impl<O> From<(O, StackContext<&'static str>)> for Context<O> {
-    fn from(value: (O, StackContext<&'static str>)) -> Self {
+impl<O> From<(O, PErrorContext)> for Context<O> {
+    fn from(value: (O, PErrorContext)) -> Self {
         Self {
             prefix: value.0,
             item_name: value.1,
@@ -64,30 +69,24 @@ impl<O> From<(O, StackContext<&'static str>)> for Context<O> {
     }
 }
 
-fn flatten_error_tree<'a, I, E>(
-    tree: GenericErrorTree<I, &'a str, &'static str, E>,
-) -> Vec<BaseError<'a, I, E>>
-where
-    I: Clone,
-{
+fn flatten_error_tree<E>(tree: PError<E>) -> Vec<BaseError<PackedTokenStream, E>> {
     let mut current_errors = VecDeque::from([(tree, vec![])]);
     let mut base_errors = vec![];
 
     loop {
         match current_errors.pop_front() {
             None => break,
-            Some((GenericErrorTree::Base { location, kind }, context)) => {
-                base_errors.push(BaseError::new(location, kind, context))
+            Some((PError::Base { location: input, kind }, context)) => {
+                base_errors.push(BaseError::new(input, kind, context))
             }
-            Some((GenericErrorTree::Stack { base, contexts }, context)) => current_errors
-                .push_back((
-                    *base,
-                    context
-                        .into_iter()
-                        .chain(contexts.into_iter().map_into())
-                        .collect(),
-                )),
-            Some((GenericErrorTree::Alt(es), context)) => {
+            Some((PError::Stack { base, contexts }, context)) => current_errors.push_back((
+                *base,
+                context
+                    .into_iter()
+                    .chain(contexts.into_iter().map_into())
+                    .collect(),
+            )),
+            Some((PError::Alt(es), context)) => {
                 current_errors.extend(es.into_iter().zip(repeat(context)))
             }
         }
@@ -102,7 +101,7 @@ fn convert_base_errors<A, I, E>(
     mut f: impl FnMut(I, I) -> (Option<A>, ErrorLocation),
 ) -> ParseErrors<A>
 where
-    I: Copy + PartialEq + Offset,
+    I: Copy + PartialEq,
     E: ExpectedError,
 {
     let parse_errors = errors
@@ -125,13 +124,30 @@ where
     ParseErrors::new(parse_errors)
 }
 
-impl<'a, A> ErrorAdapter<A, &'a str> for ErrorTree<&'a str>
+impl<'a, A> ErrorAdapter<A, &'a str> for TError<'a>
 where
     &'a str: Original<A>,
     A: From<&'a str>,
 {
     fn adapt(self, original_input: &'a str, _: usize) -> ParseErrors<A> {
-        let base_errors = flatten_error_tree(self);
+        let base_errors = self
+            .errors
+            .into_iter()
+            .map(|(location, kind)| {
+                let (kind, contexts) = match kind {
+                    VerboseErrorKind::Context(x) => (
+                        PErrorKind::External(()),
+                        vec![Context {
+                            prefix: location,
+                            item_name: PErrorContext::Context(x),
+                        }],
+                    ),
+                    VerboseErrorKind::Char(value) => (PErrorKind::Char(value), vec![]),
+                    VerboseErrorKind::Nom(kind) => (PErrorKind::Nom(kind), vec![]),
+                };
+                BaseError::new(location, kind, contexts)
+            })
+            .collect();
         convert_base_errors(original_input, base_errors, |original, suffix| {
             let actual = suffix.get(0..1).map(A::from);
             let suffix_offset = original.offset(suffix);
@@ -143,23 +159,27 @@ where
     }
 }
 
-impl<'t> ErrorAdapter<PackedToken, PackedTokenStream<'t>> for super::parser::ParseError<'t> {
+impl<'t, E: ExpectedError> ErrorAdapter<PackedToken, PackedTokenStream<'t>> for PError<'t, E> {
     fn adapt(self, original_input: PackedTokenStream<'t>, _: usize) -> ParseErrors<PackedToken> {
         let base_errors = flatten_error_tree(self);
         convert_base_errors(original_input, base_errors, |original, suffix| {
-            let position = original.offset(&suffix);
-            match suffix.first() {
-                None => (
+            let position = original.sub_stream_range(suffix);
+            match (position, &*suffix) {
+                (Some(range), []) if range.is_empty() => (
                     None,
                     ErrorLocation::new(
-                        position,
+                        original.len() - 1,
                         original
                             .last()
                             .map(|it| it.point)
                             .unwrap_or(CodePoint::single_point(0)),
                     ),
                 ),
-                Some(first) => (Some(first.token), ErrorLocation::new(position, first.point)),
+                (Some(range), [first, ..]) => (
+                    Some(first.token),
+                    ErrorLocation::new(range.start, first.point),
+                ),
+                _ => unreachable!(),
             }
         })
     }

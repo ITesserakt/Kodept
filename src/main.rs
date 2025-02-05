@@ -14,11 +14,11 @@ fn init_tracing(level: Level) {
         .init();
 }
 
-fn init_thread_pool(parallelism: usize) {
+fn init_thread_pool(_parallelism: usize) {
     #[cfg(feature = "parallel")]
     {
         rayon::ThreadPoolBuilder::new()
-            .num_threads(parallelism)
+            .num_threads(_parallelism)
             .build_global()
             .expect("Cannot initialize rayon thread pool");
     }

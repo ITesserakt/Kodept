@@ -1,11 +1,12 @@
 use derive_more::Constructor;
 use nom::Err::{Error, Failure, Incomplete};
-use nom_supreme::error::ErrorTree;
+use nom::Parser;
 
 use kodept_core::code_point::CodePoint;
 
 use crate::common::TokenProducer;
 use crate::lexer::Token;
+use crate::nom::TError;
 use crate::token_match::PackedTokenMatch;
 
 pub(crate) const LOWER_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
@@ -14,21 +15,21 @@ pub(crate) const UPPER_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 mod grammar {
     use nom::branch::alt;
     use nom::bytes::complete::{is_a, is_not, take_while};
-    use nom::character::complete::{anychar, char, digit0, digit1, not_line_ending, one_of};
-    use nom::combinator::{map, opt, recognize, value};
+    use nom::bytes::{tag, tag_no_case};
+    use nom::character::complete::{anychar, char, not_line_ending, one_of};
+    use nom::combinator::{cut, map, not, opt, recognize, value, verify};
     use nom::error::context;
     use nom::multi::{many1, many_till};
-    use nom::sequence::{delimited, tuple};
+    use nom::number::recognize_float;
+    use nom::sequence::{delimited, preceded};
     use nom::Parser;
-    use nom_supreme::tag::complete::{tag, tag_no_case};
-    use nom_supreme::ParserExt;
 
     use crate::lexer::{
         BitOperator, ComparisonOperator, Identifier, Ignore, Keyword, Literal, LogicOperator,
         MathOperator, Operator, Symbol, Token,
     };
     use crate::nom::lexer::{LOWER_ALPHABET, UPPER_ALPHABET};
-    use crate::nom::{TResult, TokenizationError};
+    use crate::nom::TParser;
 
     macro_rules! include_literal {
         (exact $tag:literal => $token:expr) => {
@@ -48,24 +49,27 @@ mod grammar {
     };
 }
 
-    fn soft_literal_token(literal: &str) -> impl Parser<&str, &str, TokenizationError> {
-        identifier
-            .map(|it| match it {
-                Identifier::Type(x) | Identifier::Identifier(x) => x,
-            })
-            .verify(move |&it| it == literal)
+    fn soft_literal_token<'t, 's>(literal: &'s str) -> impl TParser<'t> + 's
+    where
+        't: 's
+    {
+        let name_extract = map(identifier(), |it| match it {
+            Identifier::Identifier(x) => x,
+            Identifier::Type(x) => x,
+        });
+
+        verify(name_extract, move |it: &str| it == literal)
     }
 
-    fn ignore(input: &str) -> TResult<Ignore> {
-        let comment = not_line_ending
-            .cut()
-            .preceded_by(tag("//"))
-            .recognize()
-            .map(Ignore::Comment);
-        let multiline_comment = tag("/*")
-            .precedes(many_till(anychar, tag("*/")).cut())
-            .recognize()
-            .map(Ignore::MultilineComment);
+    fn ignore<'t>() -> impl TParser<'t, Ignore<'t>> {
+        let comment = map(
+            recognize(preceded(tag("//"), cut(not_line_ending))),
+            Ignore::Comment,
+        );
+        let multiline_comment = map(
+            recognize(preceded(tag("/*"), cut(many_till(anychar, tag("*/"))))),
+            Ignore::MultilineComment,
+        );
 
         context(
             "ignore",
@@ -75,10 +79,10 @@ mod grammar {
                 value(Ignore::Newline, one_of("\r\n")),
                 multiline_comment,
             )),
-        )(input)
+        )
     }
 
-    fn keyword(input: &str) -> TResult<Keyword> {
+    fn keyword<'t>() -> impl TParser<'t, Keyword> {
         context(
             "keyword",
             alt(include_literals! {
@@ -103,10 +107,10 @@ mod grammar {
                 soft "type" => Keyword::TypeAlias,
                 soft "with" => Keyword::With,
             }),
-        )(input)
+        )
     }
 
-    fn symbol(input: &str) -> TResult<Symbol> {
+    fn symbol<'t>() -> impl TParser<'t, Symbol> {
         context(
             "symbol",
             alt(include_literals! {
@@ -122,16 +126,16 @@ mod grammar {
                 "::" => Symbol::DoubleColon,
                 ":" => Symbol::Colon,
             }),
-        )(input)
+        )
     }
 
-    fn identifier(input: &str) -> TResult<Identifier> {
+    fn identifier<'t>() -> impl TParser<'t, Identifier<'t>> {
         let identifier_parser = |alphabet| {
-            recognize(tuple((
-                tag("_").opt(),
+            recognize((
+                opt(tag("_")),
                 one_of(alphabet),
-                take_while(|it: char| it == '_' || it.is_alphanumeric()),
-            )))
+                take_while(|it: char| it == '_' || it.is_alphabetic()),
+            ))
         };
 
         context(
@@ -140,38 +144,29 @@ mod grammar {
                 map(identifier_parser(LOWER_ALPHABET), Identifier::Identifier),
                 map(identifier_parser(UPPER_ALPHABET), Identifier::Type),
             )),
-        )(input)
+        )
     }
 
-    fn literal(input: &str) -> TResult<Literal> {
-        fn number_parser<'a>(
-            prefix: &'static str,
-            alphabet: &'static str,
-        ) -> impl Parser<&'a str, &'a str, TokenizationError<'a>> {
-            tag_no_case(prefix)
-                .precedes(alt((
-                    one_of("0_")
-                        .not()
-                        .precedes(many1(one_of(alphabet).or(char('_'))))
-                        .recognize(),
-                    one_of(alphabet).recognize(),
-                )))
-                .recognize()
+    fn literal<'t>() -> impl TParser<'t, Literal<'t>> {
+        fn number_parser<'a>(prefix: &'static str, alphabet: &'static str) -> impl TParser<'a> {
+            recognize(preceded(
+                tag_no_case(prefix),
+                alt((
+                    recognize(preceded(
+                        not(one_of("_0")),
+                        many1(one_of(alphabet).or(char('_'))),
+                    )),
+                    recognize(one_of(alphabet)),
+                )),
+            ))
         }
 
         let binary = number_parser("0b", "01");
         let octal = number_parser("0c", "01234567");
         let hex = number_parser("0x", "0123456789ABCDEFabcdef");
-        let floating = recognize(tuple((
-            opt(one_of("-+")),
-            alt((
-                tuple((digit1, opt(tuple((char('.'), digit0))))).recognize(),
-                tuple((char('.'), digit1)).recognize(),
-            )),
-            opt(tuple((tag_no_case("e"), opt(one_of("-+")), digit1))),
-        )));
-        let char_p = delimited(char('\''), anychar.recognize(), char('\''));
-        let string = delimited(char('"'), is_not(r#"""#).opt(), char('"'));
+        let floating = recognize_float();
+        let char_p = delimited(char('\''), recognize(anychar), char('\''));
+        let string = delimited(char('"'), opt(is_not(r#"""#)), char('"'));
 
         context(
             "literal",
@@ -183,10 +178,10 @@ mod grammar {
                 map(char_p, Literal::Char),
                 map(string, |it| Literal::String(it.unwrap_or_default())),
             )),
-        )(input)
+        )
     }
 
-    fn operator(input: &str) -> TResult<Operator> {
+    fn operator<'t>() -> impl TParser<'t, Operator> {
         context(
             "operator",
             alt((
@@ -236,21 +231,19 @@ mod grammar {
                     Operator::Bit,
                 ),
             )),
-        )(input)
+        )
     }
 
-    pub(crate) fn token(input: &str) -> TResult<Token> {
-        context(
-            "lexer",
-            alt((
-                map(ignore, Token::Ignore),
-                map(keyword, Token::Keyword),
-                map(symbol, Token::Symbol),
-                map(identifier, Token::Identifier),
-                map(literal, Token::Literal),
-                map(operator, Token::Operator),
-            )),
-        )(input)
+    pub(crate) fn token<'t>() -> impl TParser<'t, Token<'t>> {
+        let branches = alt((
+            map(ignore(), Token::Ignore),
+            map(keyword(), Token::Keyword),
+            map(symbol(), Token::Symbol),
+            map(identifier(), Token::Identifier),
+            map(literal(), Token::Literal),
+            map(operator(), Token::Operator),
+        ));
+        context("token", branches)
     }
 }
 
@@ -258,7 +251,7 @@ mod grammar {
 pub struct Lexer;
 
 impl TokenProducer for Lexer {
-    type Error<'t> = ErrorTree<&'t str>;
+    type Error<'t> = TError<'t>;
 
     fn parse_string<'t>(
         &self,
@@ -266,7 +259,7 @@ impl TokenProducer for Lexer {
         position: usize,
     ) -> Result<PackedTokenMatch, Self::Error<'t>> {
         let input = &whole_input[position..];
-        let (rest, token) = match grammar::token(input) {
+        let (rest, token) = match grammar::token().parse(input) {
             Ok(x) => x,
             Err(Error(e) | Failure(e)) => return Err(e),
             Err(Incomplete(_)) => ("", Token::Unknown),
