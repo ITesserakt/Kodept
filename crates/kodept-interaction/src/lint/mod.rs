@@ -65,10 +65,12 @@ impl Interaction for ShowLints {
 
     fn interaction() -> InteractionWrapper<Self::Error> {
         InteractionWrapper::wrap(|lints: Query<&LintDescriptor, Changed<LintDescriptor>>| {
-            let lint_names = lints.into_iter().filter(|it| it.enabled)
+            let lint_names = lints
+                .into_iter()
+                .filter(|it| it.enabled)
                 .map(|it| format!("{}, ", it.name))
                 .collect::<String>();
-                
+
             info!("Enabled lints: [{lint_names}]");
             done()
         })

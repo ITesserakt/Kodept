@@ -1,8 +1,8 @@
 use crate::new_types::Enclosed;
 use crate::prelude::Operation;
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
 use kodept_core::structure::span::Span;
+use kodept_core::structure::Located;
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

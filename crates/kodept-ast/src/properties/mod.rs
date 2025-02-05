@@ -1,9 +1,9 @@
-use std::ops::{Deref, DerefMut};
 use crate::prelude::{ASTNode, NodeId};
 use crate::syntax_tree::prelude::AST;
+use crate::Str;
 use bevy_ecs::prelude::Component;
 use derive_more::{From, Into};
-use crate::Str;
+use std::ops::{Deref, DerefMut};
 
 pub mod tags;
 
@@ -11,7 +11,7 @@ pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component)]
 pub struct Node {
-    pub kind: &'static str
+    pub kind: &'static str,
 }
 
 #[derive(Debug, Component)]
@@ -20,7 +20,7 @@ pub struct Root;
 
 #[derive(Debug, Component, Clone, From, Into)]
 pub struct Name {
-    pub name: Str
+    pub name: Str,
 }
 
 pub trait HasProperty<Property: NodeProperty>: Sized {

@@ -1,13 +1,13 @@
+mod check;
 mod inspect;
 mod utils;
-mod check;
 
+use crate::cli::primary::OutputConfig;
+use crate::commands::check::Check;
 use crate::commands::inspect::Inspect;
 use clap::Subcommand;
 use kodept::report::GlobalReports;
 use kodept_frontend::Execution;
-use crate::cli::primary::OutputConfig;
-use crate::commands::check::Check;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
@@ -29,7 +29,7 @@ impl Commands {
     pub fn exec(self, reports: GlobalReports, config: OutputConfig) -> Execution<()> {
         match self {
             Commands::Inspect(x) => x.exec(reports, config),
-            Commands::Check(x) => x.exec(reports, config)
+            Commands::Check(x) => x.exec(reports, config),
         }
     }
 }

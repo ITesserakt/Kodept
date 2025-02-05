@@ -10,28 +10,28 @@ use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
 use kodept_ast::define_union;
 
 define_union!(pub enum NodeUnion[NodeUnionItem] {
-    FileDecl 
-    | ModDecl 
-    | StructDecl 
-    | EnumDecl 
-    | EnumConst 
-    | Func 
-    | VarDecl 
-    | InitVar 
-    | IfExpr 
-    | ElifExpr 
-    | ElseExpr 
-    | Exprs 
-    | App 
-    | Lambda 
-    | BinExpr 
-    | UnExpr 
-    | Literal 
-    | Tuple 
-    | Ref 
-    | Ty 
-    | ProdTy 
-    | TyParam 
+    FileDecl
+    | ModDecl
+    | StructDecl
+    | EnumDecl
+    | EnumConst
+    | Func
+    | VarDecl
+    | InitVar
+    | IfExpr
+    | ElifExpr
+    | ElseExpr
+    | Exprs
+    | App
+    | Lambda
+    | BinExpr
+    | UnExpr
+    | Literal
+    | Tuple
+    | Ref
+    | Ty
+    | ProdTy
+    | TyParam
     | NonTyParam
 });
 

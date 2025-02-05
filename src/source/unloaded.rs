@@ -1,9 +1,9 @@
+use derive_more::{Display, Error, From};
+use kodept_core::file_name::FileName;
+use memmap2::{Mmap, MmapOptions};
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
-use derive_more::{Display, Error, From};
-use memmap2::{Mmap, MmapOptions};
-use kodept_core::file_name::FileName;
 
 #[derive(Debug, Error, From, Display)]
 pub enum CodeSourceError {
@@ -80,7 +80,7 @@ impl Read for CodeSource {
         match self {
             CodeSource::Memory { contents } => contents.read(buf),
             CodeSource::File { file, .. } => file.read(buf),
-            CodeSource::MappedFile { map, ..} => map.read(buf)
+            CodeSource::MappedFile { map, .. } => map.read(buf),
         }
     }
 }

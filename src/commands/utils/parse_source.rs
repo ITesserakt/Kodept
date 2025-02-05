@@ -1,6 +1,7 @@
 use crate::cli::configs::{LexerImpl, ParserImpl, ParsingConfig};
 use kodept::report::Reports;
 use kodept::source::collection::SourceView;
+use kodept_frontend::Execution;
 use kodept_parse::common::{ErrorAdapter, RLTProducer};
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::lexer::traits::ToRepresentation;
@@ -13,13 +14,8 @@ use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
 use std::fmt::{Display, Write};
 use std::ops::ControlFlow::{Break, Continue};
-use kodept_frontend::Execution;
 
-pub fn get_rlt(
-    config: &ParsingConfig,
-    source: &SourceView,
-    reports: &Reports,
-) -> Execution<RLT> {
+pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -> Execution<RLT> {
     let lexing_backend = config.get_lexing_backend(source.contents().len());
     let input = source.contents();
 
@@ -36,10 +32,12 @@ pub fn get_rlt(
     };
     let tokens = match tokens_result {
         Ok(x) => x,
-        Err(e) => return {
-            report_each(*source.id, reports, e);
-            Break(())
-        },
+        Err(e) => {
+            return {
+                report_each(*source.id, reports, e);
+                Break(())
+            }
+        }
     };
     let stream = PackedTokenStream::new(&tokens);
 
@@ -51,13 +49,9 @@ pub fn get_rlt(
     match rlt_result {
         Ok(x) => Continue(x),
         Err(e) => {
-            report_each(
-                *source.id,
-                reports,
-                e.map(|t| t.representation()),
-            );
+            report_each(*source.id, reports, e.map(|t| t.representation()));
             Break(())
-        },
+        }
     }
 }
 

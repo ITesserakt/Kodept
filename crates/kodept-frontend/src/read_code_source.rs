@@ -54,7 +54,7 @@ impl<Impl> ReadSource<Impl> {
             line_starts,
         }
     }
-    
+
     pub fn path(&self) -> &FileName {
         &self.source_path
     }

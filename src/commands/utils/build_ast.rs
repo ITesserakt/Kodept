@@ -1,9 +1,9 @@
 use kodept::source::collection::SourceView;
+use kodept_ast::syntax_tree::prelude::AST;
+use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::span::CodeHolder;
 use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
-use kodept_ast::syntax_tree::prelude::AST;
-use kodept_ast_nodes::file::FileDecl;
 
 #[cfg(feature = "interning")]
 pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {

@@ -153,7 +153,7 @@ where
             }
         }
     }
-    
+
     #[allow(dead_code)]
     #[inline]
     fn insert_iter<Tag>(&mut self, iter: impl IntoIterator<Item = ASTBuilder<()>> + Send + 'static)

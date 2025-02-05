@@ -1,7 +1,7 @@
-use std::convert::Infallible;
-use derive_more::{Display, Error};
 use crate::syntax_tree::children::arity::{Optional, Plural, Singular};
+use derive_more::{Display, Error};
 use smallvec::SmallVec;
+use std::convert::Infallible;
 
 pub trait Arity {
     type Container<T>;
@@ -67,7 +67,9 @@ impl Arity for Plural {
     type Error = Infallible;
 
     #[inline]
-    fn try_from_iter<T>(iter: impl IntoIterator<Item=T>) -> Result<Self::Container<T>, Self::Error> {
+    fn try_from_iter<T>(
+        iter: impl IntoIterator<Item = T>,
+    ) -> Result<Self::Container<T>, Self::Error> {
         Ok(SmallVec::from_iter(iter))
     }
 }

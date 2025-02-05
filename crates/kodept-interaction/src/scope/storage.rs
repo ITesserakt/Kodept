@@ -7,7 +7,7 @@ pub(super) struct Scope {
     pub start_from: Entity,
     /// Defines whether symbols inside the scope are visible outside
     pub is_anonymous: bool,
-    /// Defines whether inner scopes may access symbols of this scope 
+    /// Defines whether inner scopes may access symbols of this scope
     pub opaque: bool,
 }
 
@@ -19,7 +19,7 @@ impl Scope {
             opaque: false,
         }
     }
-    
+
     pub(super) fn opaque(self, opaque: bool) -> Self {
         Self { opaque, ..self }
     }

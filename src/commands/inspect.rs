@@ -7,6 +7,7 @@ use crate::commands::Command;
 use clap::Parser;
 use kodept::report::GlobalReports;
 use kodept::source::collection::SourceView;
+use kodept_ast::syntax_tree::prelude::AST;
 use kodept_core::code_point::CodePoint;
 use kodept_frontend::Execution;
 use kodept_report::error::report::{ad_hoc_message, Label, Severity};
@@ -15,7 +16,6 @@ use kodept_rlt::prelude::RLT;
 use std::ops::ControlFlow;
 use std::ops::ControlFlow::{Break, Continue};
 use tracing::error;
-use kodept_ast::syntax_tree::prelude::AST;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
@@ -47,11 +47,11 @@ impl Command for Inspect {
 
             let mut ast = build_ast(&source, rlt);
             if self.export_ast && export_ast(&source, &config, &mut ast).is_continue() {
-                 let message = ad_hoc_message(|| {
-                     Diagnostic::new(Severity::Note)
-                         .with_message("Got abstract syntax tree of source file")
-                         .with_label(Label::primary("", CodePoint::single_point(0)))
-                 });
+                let message = ad_hoc_message(|| {
+                    Diagnostic::new(Severity::Note)
+                        .with_message("Got abstract syntax tree of source file")
+                        .with_label(Label::primary("", CodePoint::single_point(0)))
+                });
                 reports.report(*source.id, message);
             }
         }

@@ -8,14 +8,14 @@ macro_rules! define_union {
             pub id: $crate::prelude::NodeId,
             inner: $this_item<'a>
         }
-        
+
         #[derive(Clone, Copy)]
         $vis enum $this_item<'a> {
             $(
             $variant($crate::prelude::NodeRef<'a, &'a $variant>),
             )+
         }
-    
+
         $crate::define_filter!($vis, $($this_filter)? = $($variant)+);
 
         impl<'a> $crate::prelude::FromEnum<'a> for $this<'a> {
@@ -27,10 +27,10 @@ macro_rules! define_union {
                 Some($this { id, inner })
             }
         }
-        
+
         impl<'a> std::ops::Deref for $this<'a> {
             type Target = $this_item<'a>;
-            
+
             fn deref(&self) -> &Self::Target {
                 &self.inner
             }

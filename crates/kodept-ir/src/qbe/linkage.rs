@@ -1,7 +1,7 @@
-use std::fmt::Display;
 use crate::qbe::typedefs::Array;
 use derive_more::Display;
 use itertools::Itertools;
+use std::fmt::Display;
 
 use super::typedefs::Name;
 

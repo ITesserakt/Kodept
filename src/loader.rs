@@ -1,11 +1,11 @@
+use crate::source::unloaded::{CodeSource, CodeSourceError};
+use derive_more::{Display, Error, From};
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use derive_more::{Display, Error, From};
-use crate::source::unloaded::{CodeSource, CodeSourceError};
 use tracing::debug;
 
 #[derive(Debug)]
@@ -149,7 +149,7 @@ impl Loader {
             Ok(CodeSource::file(path, file))
         }
     }
-    
+
     pub fn into_sources(self) -> Result<Vec<CodeSource>, LoadingError> {
         match self {
             Loader::File(sources) => sources

@@ -8,40 +8,46 @@ use std::ops::Deref;
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]
 pub struct AnyNodeRef<'w> {
-    inner: EntityRef<'w>
+    inner: EntityRef<'w>,
 }
 
 #[derive(Copy, Clone)]
 pub struct NodeRef<'w, T> {
     inner: EntityRef<'w>,
-    node: T
+    node: T,
 }
 
 impl<'a> AnyNodeRefItem<'a, '_> {
     #[deprecated]
     pub fn cast<T>(self) -> Option<NodeRef<'a, &'a T>>
     where
-        T: ASTNode
+        T: ASTNode,
     {
         let value = self.inner.get::<T>()?;
-        Some(NodeRef { inner: self.inner, node: value })
+        Some(NodeRef {
+            inner: self.inner,
+            node: value,
+        })
     }
-    
+
     #[inline(always)]
     pub fn get<T>(self) -> Option<NodeRef<'a, &'a T>>
-    where 
-        T: ASTNode
+    where
+        T: ASTNode,
     {
         self.get_map(identity)
     }
-    
+
     #[inline(always)]
     pub fn get_map<T, U>(self, f: impl FnOnce(&'a T) -> U) -> Option<NodeRef<'a, U>>
-    where 
-        T: ASTNode
+    where
+        T: ASTNode,
     {
         let value = self.inner.get::<T>()?;
-        Some(NodeRef { inner: self.inner, node: f(value) })
+        Some(NodeRef {
+            inner: self.inner,
+            node: f(value),
+        })
     }
 
     pub fn id(&self) -> NodeId {
@@ -59,7 +65,7 @@ impl<'a, T> NodeRef<'a, &'a T> {
     pub fn property<P>(&self) -> &P
     where
         T: RequireProperty<P>,
-        P: NodeProperty
+        P: NodeProperty,
     {
         self.inner.get::<P>().expect("Node must have property")
     }

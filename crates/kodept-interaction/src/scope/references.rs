@@ -1,4 +1,3 @@
-use bevy_ecs::schedule::IntoSystemConfigs;
 use crate::prelude::Symbol;
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
@@ -7,6 +6,8 @@ use crate::scope::ScopeMapping;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, fail, Interaction, Result, Skip};
 use bevy_ecs::prelude::{Entity, Populated, Query, Res};
+use bevy_ecs::query::With;
+use bevy_ecs::schedule::IntoSystemConfigs;
 use bevy_hierarchy::Parent;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::Str;
@@ -16,7 +17,6 @@ use kodept_report::error::report::{IntoSpannedReportMessage, Label, Severity};
 use kodept_report::error::Diagnostic;
 use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
-use bevy_ecs::query::With;
 
 pub struct ReferenceResolver;
 

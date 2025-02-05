@@ -1,6 +1,6 @@
-//! This crate contains algorithm to check (and infer) types based on 
+//! This crate contains algorithm to check (and infer) types based on
 //! Hindley-Milner type system with constraints extension.
-//! Also provides some structures, allowing to model those types. 
+//! Also provides some structures, allowing to model those types.
 
 use crate::r#type::TVar;
 

@@ -12,17 +12,17 @@ use kodept_ast::define_union;
 use kodept_ast::prelude::{AnyNodeRef, IntoEnum};
 use kodept_ast::properties::{Node, Root};
 use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ast_nodes::block_level::InitVar;
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::ModDecl;
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
+use kodept_ast_nodes::types::{Params, TyParams};
 use kodept_core::structure::Located;
 use kodept_report::error::report::{Label, Severity};
 use kodept_report::error::Diagnostic;
 use std::convert::Infallible;
-use kodept_ast_nodes::block_level::InitVar;
-use kodept_ast_nodes::types::{Params, TyParams};
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
     ModDecl | StructDecl | EnumDecl | Func | Params | TyParams | Lambda | Exprs | IfExpr | InitVar
@@ -56,7 +56,7 @@ impl ScopeBuilder {
             ScopeUnionItem::IfExpr(_) => (None, true, false),
             ScopeUnionItem::InitVar(_) => (None, true, false),
             ScopeUnionItem::Params(_) => (None, false, false),
-            ScopeUnionItem::TyParams(_) => (None, false, false)
+            ScopeUnionItem::TyParams(_) => (None, false, false),
         };
         let scope_id = spawner.reserve_entity();
         if let Some(name) = name {

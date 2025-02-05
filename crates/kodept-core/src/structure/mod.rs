@@ -29,8 +29,8 @@ pub mod span {
         }
 
         fn map<T, F>(self, func: F) -> MappingCodeHolder<Self, T, F>
-        where 
-            F: FnOnce(Self::Str) -> T
+        where
+            F: FnOnce(Self::Str) -> T,
         {
             MappingCodeHolder {
                 func,

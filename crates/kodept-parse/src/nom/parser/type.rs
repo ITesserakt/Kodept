@@ -20,8 +20,7 @@ fn tuple<'t>() -> impl PParser<'t, rlt::Type> {
 }
 
 pub(super) fn grammar<'t>() -> impl PParser<'t, rlt::Type> {
-    context(
-        function!(),
-        |input| alt((reference().map(rlt::Type::Reference), tuple())).parse(input),
-    )
+    context(function!(), |input| {
+        alt((reference().map(rlt::Type::Reference), tuple())).parse(input)
+    })
 }

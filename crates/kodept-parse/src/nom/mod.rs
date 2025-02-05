@@ -11,14 +11,14 @@ pub(crate) use parser::Parser;
 
 #[derive(Debug)]
 pub struct VerboseError<T> {
-    errors: Vec<(T, VerboseErrorKind)>
+    errors: Vec<(T, VerboseErrorKind)>,
 }
 
 #[derive(Debug)]
 enum VerboseErrorKind {
     Context(&'static str),
     Char(char),
-    Nom(ErrorKind)
+    Nom(ErrorKind),
 }
 
 impl<T> ParseError<T> for VerboseError<T> {
@@ -34,7 +34,9 @@ impl<T> ParseError<T> for VerboseError<T> {
     }
 
     fn from_char(input: T, value: char) -> Self {
-        Self { errors: vec![(input, VerboseErrorKind::Char(value))] }
+        Self {
+            errors: vec![(input, VerboseErrorKind::Char(value))],
+        }
     }
 
     fn or(mut self, other: Self) -> Self {
@@ -58,11 +60,5 @@ pub struct TokenVerificationError {
     pub expected: &'static str,
 }
 
-trait TParser<'t, O = &'t str>:
-    nom::Parser<&'t str, Output = O, Error = TError<'t>>
-{
-}
-impl<'t, O, P: nom::Parser<&'t str, Output = O, Error = TError<'t>>> TParser<'t, O>
-    for P
-{
-}
+trait TParser<'t, O = &'t str>: nom::Parser<&'t str, Output = O, Error = TError<'t>> {}
+impl<'t, O, P: nom::Parser<&'t str, Output = O, Error = TError<'t>>> TParser<'t, O> for P {}

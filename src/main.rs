@@ -1,17 +1,15 @@
-use clap::Parser;
-use tracing::Level;
 use crate::cli::make_reports;
 use crate::cli::primary::Kodept;
 use crate::profiler::HeapProfilerGuard;
+use clap::Parser;
+use tracing::Level;
 
 mod cli;
 mod commands;
 mod profiler;
 
 fn init_tracing(level: Level) {
-    tracing_subscriber::fmt()
-        .with_max_level(level)
-        .init();
+    tracing_subscriber::fmt().with_max_level(level).init();
 }
 
 fn init_thread_pool(_parallelism: usize) {
@@ -32,7 +30,9 @@ fn main() {
     init_thread_pool(cli_options.parallelism);
     let reports = make_reports(cli_options.diagnostic_config);
 
-    let result = cli_options.subcommands.exec(reports, cli_options.output_config);
+    let result = cli_options
+        .subcommands
+        .exec(reports, cli_options.output_config);
     if result.is_break() {
         eprintln!("Compilation finished with errors");
     }

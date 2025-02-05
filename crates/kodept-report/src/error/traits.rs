@@ -1,4 +1,6 @@
-use crate::error::report::{IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage};
+use crate::error::report::{
+    IntoSpannedReportMessage, Label, Report, ReportMessage, Severity, SpannedReportMessage,
+};
 use crate::error::{Diagnostic, ErrorReported};
 use crate::FileId;
 use codespan_reporting::files::Files;

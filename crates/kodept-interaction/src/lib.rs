@@ -12,8 +12,8 @@ mod scope;
 
 pub mod prelude {
     pub use super::scope::builder::ScopeBuilder;
-    pub use super::scope::symbol::{Symbol, SymbolKind, DuplicatedSymbolError, ExtractSymbols};
-    pub use super::scope::references::{ReferenceResolver};
+    pub use super::scope::references::ReferenceResolver;
+    pub use super::scope::symbol::{DuplicatedSymbolError, ExtractSymbols, Symbol, SymbolKind};
 
     pub use super::report::ASTExt;
 }

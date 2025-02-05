@@ -1,12 +1,12 @@
+use crate::cli::configs::DiagnosticConfig;
+use crate::commands::Commands;
+use clap::{Args, Parser};
+use kodept_core::file_name::FileName;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, File};
 use std::io::ErrorKind;
-use std::path::{PathBuf};
-use clap::{Args, Parser};
+use std::path::PathBuf;
 use tracing::Level;
-use kodept_core::file_name::FileName;
-use crate::cli::configs::DiagnosticConfig;
-use crate::commands::Commands;
 
 #[derive(Parser, Debug)]
 #[command(version, author)]
@@ -30,7 +30,7 @@ pub struct Kodept {
 pub struct OutputConfig {
     /// Write all output to the specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
-    pub output: PathBuf
+    pub output: PathBuf,
 }
 
 #[derive(Debug, Args)]
@@ -55,8 +55,7 @@ pub struct LoggingOptions {
 
 impl LoggingOptions {
     pub fn level(&self) -> Level {
-        self
-            .debug
+        self.debug
             .then_some(Level::DEBUG)
             .or(self.verbose.then_some(Level::DEBUG))
             .unwrap_or(self.severity)
@@ -71,12 +70,14 @@ impl OutputConfig {
             Err(e) => Err(e),
         }
     }
-    
-    pub fn open_file_for_source<Q: AsRef<OsStr> + ?Sized>(&self, source: &FileName, extension: &Q) -> std::io::Result<File> {
+
+    pub fn open_file_for_source<Q: AsRef<OsStr> + ?Sized>(
+        &self,
+        source: &FileName,
+        extension: &Q,
+    ) -> std::io::Result<File> {
         self.create_missing_folders()?;
-        let new_path = source
-            .build_file_path()
-            .with_extension(extension.as_ref());
+        let new_path = source.build_file_path().with_extension(extension.as_ref());
         let name = new_path.file_name().unwrap();
         File::create(self.output.join(name))
     }

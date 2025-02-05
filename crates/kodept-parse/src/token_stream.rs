@@ -90,14 +90,8 @@ mod tests {
     #[test]
     fn test_sub_streams() {
         let storage = &[
-            PackedTokenMatch::new(
-                PackedToken::Abstract,
-                CodePoint::new(1, 0),
-            ),
-            PackedTokenMatch::new(
-                PackedToken::With,
-                CodePoint::new(1, 1),
-            )
+            PackedTokenMatch::new(PackedToken::Abstract, CodePoint::new(1, 0)),
+            PackedTokenMatch::new(PackedToken::With, CodePoint::new(1, 1)),
         ];
         let stream = PackedTokenStream::new(storage);
         let suffix = stream.sub_stream(1..);

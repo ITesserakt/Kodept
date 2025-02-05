@@ -76,7 +76,7 @@ fn bench_complexity(c: &mut Criterion) {
                 |rlt| {
                     AST::recursively_build::<FileDecl>(
                         rlt,
-                        InlineCodeHolder(FILE_CONTENTS).map(|it| Cow::Borrowed(it)),
+                        InlineCodeHolder(FILE_CONTENTS).map(Cow::Borrowed),
                     )
                 },
                 BatchSize::SmallInput,

@@ -9,7 +9,7 @@ pub(crate) mod symbol;
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Hash)]
 enum Visibility {
     #[default]
-    Private
+    Private,
 }
 
 #[derive(Debug, Resource)]

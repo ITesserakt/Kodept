@@ -34,7 +34,7 @@ pub(super) fn match_token<'t>(example: PackedToken) -> impl PParser<'t, PackedTo
 pub(super) fn match_any_token<'t>(expected: PackedToken) -> impl PParser<'t, PackedTokenMatch> {
     take(1usize)
         .map(|it: PackedTokenStream| it.into_single())
-.map_res(move |it| {
+        .map_res(move |it| {
             (it.token == expected)
                 .then_some(it)
                 .ok_or(TokenVerificationError::new(expected.representation()))

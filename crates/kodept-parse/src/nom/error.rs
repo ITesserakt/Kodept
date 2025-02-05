@@ -2,7 +2,7 @@ use crate::common::ErrorAdapter;
 use crate::error::{ErrorLocation, Original, ParseError, ParseErrors};
 use crate::lexer::PackedToken;
 use crate::nom::parser::{PError, PErrorContext, PErrorKind};
-use crate::nom::{TokenVerificationError, TError, VerboseErrorKind};
+use crate::nom::{TError, TokenVerificationError, VerboseErrorKind};
 use crate::token_stream::PackedTokenStream;
 use derive_more::Constructor;
 use itertools::Itertools;
@@ -76,9 +76,13 @@ fn flatten_error_tree<E>(tree: PError<E>) -> Vec<BaseError<PackedTokenStream, E>
     loop {
         match current_errors.pop_front() {
             None => break,
-            Some((PError::Base { location: input, kind }, context)) => {
-                base_errors.push(BaseError::new(input, kind, context))
-            }
+            Some((
+                PError::Base {
+                    location: input,
+                    kind,
+                },
+                context,
+            )) => base_errors.push(BaseError::new(input, kind, context)),
             Some((PError::Stack { base, contexts }, context)) => current_errors.push_back((
                 *base,
                 context

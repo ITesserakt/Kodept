@@ -21,12 +21,16 @@ impl<'w> Interaction<'w> {
             schedule: Schedule::new(Main),
         }
     }
-    
+
     pub fn immediate<O, M>(&mut self, system: impl IntoSystem<(), O, M>) -> O {
         self.immediate_with((), system)
     }
 
-    pub fn immediate_with<I, Input, O, M>(&mut self, input: Input, system: impl IntoSystem<I, O, M>) -> O
+    pub fn immediate_with<I, Input, O, M>(
+        &mut self,
+        input: Input,
+        system: impl IntoSystem<I, O, M>,
+    ) -> O
     where
         I: for<'a> SystemInput<Inner<'a> = Input>,
     {
@@ -34,7 +38,7 @@ impl<'w> Interaction<'w> {
             .run_system_once_with(input, system)
             .expect("Could not run system")
     }
-    
+
     pub fn immediate_exclusive<T>(&mut self, f: impl FnOnce(&mut World) -> T) -> T {
         f(self.world)
     }

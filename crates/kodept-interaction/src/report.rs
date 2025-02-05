@@ -1,4 +1,3 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use bevy_ecs::prelude::{Component, Res, Resource, Single, World};
 use bevy_ecs::system::SystemParam;
 use extend::ext;
@@ -7,6 +6,7 @@ use kodept_report::error::report::{
     ad_hoc_message, IntoSpannedReportMessage, Report, SpannedReportMessage,
 };
 use kodept_report::FileDescriptor;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug, Component)]
 #[component(storage = "SparseSet")]
@@ -15,7 +15,7 @@ struct Wrapper(FileDescriptor);
 #[derive(Resource)]
 struct ReportWriter {
     sink: Box<dyn Fn(Report) + Send + Sync>,
-    fail: AtomicBool
+    fail: AtomicBool,
 }
 
 #[derive(SystemParam)]
@@ -27,7 +27,9 @@ pub(crate) struct Reporter<'w> {
 impl Reporter<'_> {
     pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
         let report = Report::from_message(self.file.0.id, message);
-        self.events.fail.fetch_or(report.is_error(), Ordering::Relaxed);
+        self.events
+            .fail
+            .fetch_or(report.is_error(), Ordering::Relaxed);
         (self.events.sink)(report);
     }
 
@@ -36,7 +38,9 @@ impl Reporter<'_> {
         T: SpannedReportMessage + 'static,
     {
         let report = Report::from_message(self.file.0.id, ad_hoc_message(f));
-        self.events.fail.fetch_or(report.is_error(), Ordering::Relaxed);
+        self.events
+            .fail
+            .fetch_or(report.is_error(), Ordering::Relaxed);
         (self.events.sink)(report);
     }
 }

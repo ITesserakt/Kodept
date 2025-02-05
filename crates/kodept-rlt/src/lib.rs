@@ -1,6 +1,6 @@
 //! This crate contains Raw Lexeme Tree (RLT).
 //! This structure describes Kodept source code as much
-//! and capable to restore it back. 
+//! and capable to restore it back.
 
 pub mod prelude {
     pub use super::block_level::*;

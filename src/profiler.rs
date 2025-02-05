@@ -1,7 +1,7 @@
 pub enum HeapProfilerGuard {
     Empty,
     #[cfg(feature = "profiler")]
-    Wrapper(implementation::HeapProfiler)
+    Wrapper(implementation::HeapProfiler),
 }
 
 impl HeapProfilerGuard {
@@ -19,7 +19,7 @@ mod implementation {
 
     #[global_allocator]
     static ALLOC: Alloc = Alloc;
-    
+
     pub struct HeapProfiler {
         _inner: Profiler,
     }

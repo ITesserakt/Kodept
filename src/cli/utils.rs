@@ -1,8 +1,8 @@
+use clap::ValueEnum;
+use derive_more::Display;
 use std::convert::Infallible;
 use std::ffi::OsString;
 use std::str::FromStr;
-use clap::ValueEnum;
-use derive_more::Display;
 
 #[derive(Debug, Clone, Display, ValueEnum)]
 pub enum DisplayStyle {

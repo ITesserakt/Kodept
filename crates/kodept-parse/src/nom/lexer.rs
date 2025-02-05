@@ -51,7 +51,7 @@ mod grammar {
 
     fn soft_literal_token<'t, 's>(literal: &'s str) -> impl TParser<'t> + 's
     where
-        't: 's
+        't: 's,
     {
         let name_extract = map(identifier(), |it| match it {
             Identifier::Identifier(x) => x,

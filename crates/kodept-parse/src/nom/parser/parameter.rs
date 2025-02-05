@@ -14,7 +14,11 @@ use crate::nom::parser::{r#type, PParser};
 pub(super) fn typed_parameter<'t>() -> impl PParser<'t, rlt::TypedParameter> {
     context(
         function!(),
-        separated_pair(match_token(Identifier), match_token(Colon), r#type::grammar()),
+        separated_pair(
+            match_token(Identifier),
+            match_token(Colon),
+            r#type::grammar(),
+        ),
     )
     .map(|it| rlt::TypedParameter {
         id: new_types::Identifier::from_located(it.0),

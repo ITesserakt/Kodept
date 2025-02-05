@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::primary::OutputConfig;
 use crate::commands::utils::build_ast::build_ast;
@@ -6,17 +5,18 @@ use crate::commands::utils::load_source::get_all_sources;
 use crate::commands::utils::parse_source::get_rlt;
 use crate::commands::Command;
 use clap::Parser;
-use kodept::report::{GlobalReports};
+use kodept::report::GlobalReports;
 use kodept_ast::interaction::Interaction as Ctx;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
+use kodept_interaction::lint::{RLTLinkLint, ShowLints, SingleModuleWithBrackets};
+use kodept_interaction::prelude::{ASTExt, ExtractSymbols, ReferenceResolver, ScopeBuilder};
+use kodept_interaction::Interaction;
+use kodept_report::FileDescriptor;
+use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
 use tracing::{enabled, error_span, info, info_span, Level};
-use kodept_interaction::Interaction;
-use kodept_interaction::lint::{RLTLinkLint, ShowLints, SingleModuleWithBrackets};
-use kodept_interaction::prelude::{ASTExt, ExtractSymbols, ReferenceResolver, ScopeBuilder};
-use kodept_report::FileDescriptor;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -83,7 +83,7 @@ impl Check {
         f: impl FnOnce(&mut Ctx) -> T,
     ) -> T {
         let mut ctx = ast.interact();
-        
+
         self.timings_block(name, || f(&mut ctx))
     }
 

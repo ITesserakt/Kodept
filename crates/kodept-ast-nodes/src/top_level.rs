@@ -1,5 +1,7 @@
 use crate::function::Func;
-use crate::types::{TyParams};
+use crate::properties::Param;
+use crate::types::TyParams;
+use crate::utils::wrap_ty_params;
 use kodept_ast::derive_node;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
@@ -7,8 +9,6 @@ use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_rlt::new_types::TypeName;
 use kodept_rlt::prelude::{Enum, Struct};
-use crate::properties::Param;
-use crate::utils::wrap_ty_params;
 
 #[derive(Debug, PartialEq, Component)]
 pub enum EnumDecl {

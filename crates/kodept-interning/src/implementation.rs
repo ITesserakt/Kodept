@@ -6,11 +6,11 @@
 //! speed up code by shrinking the stack size of large types,
 //! and make comparisons for any type as fast as integers.
 
+use crate::TOTAL_SHARES;
 use core::{fmt::Debug, hash::Hash, ops::Deref};
 use std::collections::HashSet;
-use std::sync::{OnceLock, PoisonError, RwLock, RwLockReadGuard};
 use std::sync::atomic::Ordering;
-use crate::TOTAL_SHARES;
+use std::sync::{OnceLock, PoisonError, RwLock, RwLockReadGuard};
 
 pub struct Interned<T: ?Sized + 'static = str>(pub &'static T);
 

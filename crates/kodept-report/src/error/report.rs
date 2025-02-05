@@ -225,6 +225,6 @@ where
             self.0()
         }
     }
-    
+
     Helper(f, PhantomData)
 }

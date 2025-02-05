@@ -3,22 +3,22 @@
 
 use kodept_core::static_assert_size;
 
+mod entity;
+pub mod interaction;
 pub mod macros;
 pub mod properties;
 pub mod resource;
 pub mod syntax_tree;
 mod traits;
 mod utils;
-pub mod interaction;
-mod entity;
 
 pub mod prelude {
     use bevy_ecs::prelude::Entity;
-    
-    pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
-    pub use super::entity::entity_ref::{NodeRef, AnyNodeRef, AnyNodeRefItem};
-    pub use super::entity::traits::{FromEnum, IntoEnum};
+
     pub use super::entity::children::Arity;
+    pub use super::entity::entity_ref::{AnyNodeRef, AnyNodeRefItem, NodeRef};
+    pub use super::entity::traits::{FromEnum, IntoEnum};
+    pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
     pub type NodeId = Entity;
 }
 

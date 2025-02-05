@@ -1,14 +1,14 @@
 //! This crate contains a wrapper around string interner.
 
-pub mod metrics;
 mod implementation;
+pub mod metrics;
 
+use crate::implementation::{Interned, Interner};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use crate::implementation::{Interned, Interner};
 
 static GLOBAL_STRING_POOL: Interner<str> = Interner::new();
 static TOTAL_SHARES: AtomicUsize = AtomicUsize::new(0);

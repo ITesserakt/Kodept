@@ -1,8 +1,8 @@
+use derive_more::{Error, From};
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-use derive_more::{Error, From};
 use tracing::debug;
 
 use crate::algorithm_u::AlgorithmUError;

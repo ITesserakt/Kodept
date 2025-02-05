@@ -1,6 +1,6 @@
-use std::fmt::Formatter;
 use derive_more::with_trait::{Display, Error, From};
 use itertools::Itertools;
+use std::fmt::Formatter;
 
 use MonomorphicType::*;
 

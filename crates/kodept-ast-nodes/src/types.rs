@@ -108,7 +108,7 @@ impl<R, Tag> Choose<rlt::Type, R, Tag> for Unit
 where
     R: HasChild<Ty, Tag>,
     R: HasChild<ProdTy, Tag>,
-    Tag: Tagged
+    Tag: Tagged,
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, Tag> {
@@ -123,7 +123,7 @@ impl<R, Tag> Choose<Parameter, R, Tag> for Unit
 where
     R: HasChild<TyParam, Tag>,
     R: HasChild<NonTyParam, Tag>,
-    Tag: Tagged
+    Tag: Tagged,
 {
     #[inline(always)]
     fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, Tag> {

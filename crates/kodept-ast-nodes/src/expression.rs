@@ -1,5 +1,6 @@
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
+use crate::constants::Const;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{BlockLevel, Expr, LeftExpr, Param, RightExpr};
 use crate::term::Ref;
@@ -14,7 +15,6 @@ use kodept_ast::{derive_node, Str};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::{Application, Expression, ExpressionBlock, Operation};
 use std::ops::Deref;
-use crate::constants::Const;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Exprs;
