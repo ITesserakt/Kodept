@@ -1,7 +1,6 @@
-use std::fmt::{Display, Formatter};
-
+use std::fmt::Formatter;
+use derive_more::with_trait::{Display, Error, From};
 use itertools::Itertools;
-use thiserror::Error;
 
 use MonomorphicType::*;
 
@@ -13,14 +12,15 @@ use crate::traits::{FreeTypeVars, Substitutable};
 #[derive(Debug, Error)]
 pub struct UnificationMismatch(pub Vec<MonomorphicType>, pub Vec<MonomorphicType>);
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum AlgorithmUError {
-    #[error("Cannot unify types: {0} with {1}")]
+    #[display("Cannot unify types: {_0} with {_1}")]
+    #[from(ignore)]
     UnificationFail(MonomorphicType, MonomorphicType),
-    #[error("Cannot construct an infinite type: {0} ~ {1}")]
+    #[display("Cannot construct an infinite type: {_0} ~ {_1}")]
+    #[from(ignore)]
     InfiniteType(TVar, MonomorphicType),
-    #[error(transparent)]
-    UnificationMismatch(#[from] UnificationMismatch),
+    UnificationMismatch(UnificationMismatch),
 }
 
 struct AlgorithmU;

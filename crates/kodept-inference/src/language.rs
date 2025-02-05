@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 use crate::r#type::MonomorphicType;
 use derive_more::{Display, From};

@@ -18,5 +18,4 @@ workspace = true
 derive_more.workspace = true
 itertools.workspace = true
 nonempty-collections.workspace = true
-thiserror.workspace = true
 tracing.workspace = true

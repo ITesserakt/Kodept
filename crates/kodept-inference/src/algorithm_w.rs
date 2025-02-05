@@ -2,7 +2,7 @@ use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
-use thiserror::Error;
+use derive_more::{Error, From};
 use tracing::debug;
 
 use crate::algorithm_u::AlgorithmUError;
@@ -16,20 +16,20 @@ use crate::substitution::Substitutions;
 use crate::traits::{EnvironmentProvider, Substitutable};
 use crate::{language, InferState};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, From)]
 pub enum AlgorithmWError {
-    #[error(transparent)]
-    AlgorithmU(#[from] AlgorithmUError),
-    UnknownVar(NEVec<Var>),
-    #[error(transparent)]
-    FailedConstraints(#[from] ConstraintsSolverError),
+    AlgorithmU(AlgorithmUError),
+    #[from(ignore)]
+    UnknownVar(#[error(not(source))] NEVec<Var>),
+    FailedConstraints(ConstraintsSolverError),
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, From)]
 pub enum CompoundInferError<E> {
-    #[error(transparent)]
-    AlgoW(#[from] AlgorithmWError),
+    AlgoW(AlgorithmWError),
+    #[from(ignore)]
     Both(AlgorithmWError, NEVec<E>),
+    #[from(ignore)]
     Foreign(NEVec<E>),
 }
 

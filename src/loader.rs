@@ -4,9 +4,8 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-
+use derive_more::{Display, Error, From};
 use crate::source::unloaded::{CodeSource, CodeSourceError};
-use thiserror::Error;
 use tracing::debug;
 
 #[derive(Debug)]
@@ -15,17 +14,17 @@ pub enum Loader {
     Memory(Vec<String>),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, From, Display)]
 pub enum LoadingError {
-    #[error("Provided path should be absolute")]
+    #[display("Provided path should be absolute")]
     StartingPathNotAbsolute,
-    #[error("Provided path does not exists")]
+    #[display("Provided path does not exists")]
     InputDoesNotExists,
-    #[error("IO error: {0}")]
-    IOError(#[from] std::io::Error),
-    #[error("Cannot map file: {0}")]
-    MapError(#[from] CodeSourceError),
-    #[error("No input files")]
+    #[display("IO error: {_0}")]
+    IOError(std::io::Error),
+    #[display("Cannot map file: {_0}")]
+    MapError(CodeSourceError),
+    #[display("No input files")]
     NoInput,
 }
 

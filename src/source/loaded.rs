@@ -1,5 +1,5 @@
 use codespan_reporting::files::line_starts;
-use derive_more::From;
+use derive_more::{Display, Error, From};
 use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
 use memmap2::Mmap;
 use std::borrow::Cow;
@@ -7,7 +7,6 @@ use std::env::current_dir;
 use std::io::Read;
 use std::ops::Range;
 use std::str::from_utf8;
-use thiserror::Error;
 use yoke::Yoke;
 
 #[derive(Debug, From)]
@@ -21,12 +20,11 @@ enum ReadImpl {
     Implicit(Yoke<Cow<'static, str>, Box<Mmap>>),
 }
 
-#[derive(Debug, Error)]
-#[error(transparent)]
+#[derive(Debug, Error, Display, From)]
 pub enum CodeSourceError {
-    IO(#[from] std::io::Error),
-    UTF8Str(#[from] std::str::Utf8Error),
-    UTF8String(#[from] std::string::FromUtf8Error),
+    IO(std::io::Error),
+    UTF8Str(std::str::Utf8Error),
+    UTF8String(std::string::FromUtf8Error),
 }
 
 impl TryReadCode<super::unloaded::CodeSource> for SourceImpl {

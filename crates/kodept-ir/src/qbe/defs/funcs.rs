@@ -5,7 +5,7 @@ use crate::qbe::types::ABIType;
 use derive_more::Display;
 use itertools::Itertools;
 use nonempty_collections::NEVec;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use std::vec;
 
 #[derive(Display, Debug, Eq, PartialEq)]

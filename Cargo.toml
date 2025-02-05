@@ -29,15 +29,19 @@ members = [
 [workspace.dependencies]
 bevy_ecs = { version = "0.15.1", default-features = false }
 bevy_hierarchy = { version = "0.15.1", default-features = false }
-thiserror = "2.0"
 extend = "1.2"
 itertools = "0.13"
 nonempty-collections = "0.2.9"
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]
-version = "1.0.0"
-features = ["display", "into", "from", "deref", "deref_mut", "constructor", "try_into", "is_variant", "unwrap"]
+version = "2.0.1"
+features = [
+    "into", "from",
+    "display", "error",
+    "try_into", "try_from",
+    "constructor"
+]
 
 [workspace.lints]
 clippy.suspicious = "deny"
@@ -54,7 +58,6 @@ codespan-reporting = "0.11.1"
 derive_more.workspace = true
 memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
 serde_json = "1"
-thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt", "ansi"] }
 yoke = "0.7.4"

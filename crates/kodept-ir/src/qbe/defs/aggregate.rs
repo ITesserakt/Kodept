@@ -2,7 +2,7 @@ use crate::qbe::types::ExtendedType;
 use derive_more::{Constructor, Display};
 use itertools::Itertools;
 use nonempty_collections::NEVec;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 
 pub type Align = u16;
 

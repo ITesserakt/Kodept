@@ -178,7 +178,7 @@ dependencies = [
  "bevy_utils",
  "bitflags",
  "concurrent-queue",
- "derive_more",
+ "derive_more 1.0.0",
  "disqualified",
  "fixedbitset 0.5.7",
  "nonmax",
@@ -453,15 +453,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "convert_case"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
-dependencies = [
- "unicode-segmentation",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -577,7 +568,16 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
 dependencies = [
- "derive_more-impl",
+ "derive_more-impl 1.0.0",
+]
+
+[[package]]
+name = "derive_more"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl 2.0.1",
 ]
 
 [[package]]
@@ -586,7 +586,18 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
 dependencies = [
- "convert_case",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.94",
+ "unicode-xid",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.94",
@@ -997,7 +1008,7 @@ dependencies = [
  "codespan-reporting",
  "criterion",
  "ctrlc",
- "derive_more",
+ "derive_more 2.0.1",
  "dhat",
  "gag",
  "kodept-ast",
@@ -1013,7 +1024,6 @@ dependencies = [
  "rayon",
  "serde_json",
  "tempfile",
- "thiserror 2.0.9",
  "tracing",
  "tracing-subscriber",
  "yoke",
@@ -1026,7 +1036,7 @@ dependencies = [
  "bevy_ecs",
  "bevy_hierarchy",
  "dashmap",
- "derive_more",
+ "derive_more 2.0.1",
  "kodept-core",
  "kodept-rlt",
  "rayon",
@@ -1047,7 +1057,7 @@ dependencies = [
 name = "kodept-core"
 version = "0.3.2"
 dependencies = [
- "derive_more",
+ "derive_more 2.0.1",
  "pathdiff",
  "serde",
 ]
@@ -1066,10 +1076,9 @@ dependencies = [
 name = "kodept-inference"
 version = "0.2.4"
 dependencies = [
- "derive_more",
+ "derive_more 2.0.1",
  "itertools 0.13.0",
  "nonempty-collections",
- "thiserror 2.0.9",
  "tracing",
 ]
 
@@ -1103,7 +1112,7 @@ name = "kodept-parse"
 version = "0.3.0"
 dependencies = [
  "criterion",
- "derive_more",
+ "derive_more 2.0.1",
  "enum-iterator",
  "faster-pest",
  "gag",
@@ -1118,14 +1127,13 @@ dependencies = [
  "rayon",
  "rstest",
  "similar-asserts",
- "thiserror 2.0.9",
 ]
 
 [[package]]
 name = "kodept-qbe"
 version = "0.1.0"
 dependencies = [
- "derive_more",
+ "derive_more 2.0.1",
  "itertools 0.13.0",
  "nonempty-collections",
  "sealed 0.5.0",
@@ -1139,7 +1147,7 @@ version = "0.1.8"
 dependencies = [
  "anyhow",
  "codespan-reporting",
- "derive_more",
+ "derive_more 2.0.1",
  "extend",
  "kodept-core",
  "tracing",
@@ -1149,7 +1157,7 @@ dependencies = [
 name = "kodept-rlt"
 version = "0.1.2"
 dependencies = [
- "derive_more",
+ "derive_more 2.0.1",
  "kodept-core",
  "serde",
 ]

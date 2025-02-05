@@ -1,14 +1,13 @@
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
+use derive_more::{Display, Error, From};
 use memmap2::{Mmap, MmapOptions};
-use thiserror::Error;
 use kodept_core::file_name::FileName;
 
-#[derive(Debug, Error)]
-#[error(transparent)]
+#[derive(Debug, Error, From, Display)]
 pub enum CodeSourceError {
-    IO(#[from] std::io::Error),
+    IO(std::io::Error),
 }
 
 #[derive(Debug)]

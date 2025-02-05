@@ -24,7 +24,6 @@ parallel = ["dep:rayon"]
 derive_more.workspace = true
 itertools.workspace = true
 nonempty-collections.workspace = true
-thiserror.workspace = true
 
 nom = "7.1.3"
 nom-supreme = "0.8.0"

@@ -1,10 +1,9 @@
 use std::collections::{HashSet, VecDeque};
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
-use derive_more::Display;
+use derive_more::{Display, Error, From};
 use itertools::Either::{Left, Right};
 use itertools::{Either, Itertools};
-use thiserror::Error;
 
 use Constraint::{ExplicitInstance, ImplicitInstance};
 use ConstraintsSolverError::AlgorithmU;
@@ -17,11 +16,11 @@ use crate::substitution::Substitutions;
 use crate::traits::{ActiveTVars, FreeTypeVars, Substitutable};
 use crate::InferState;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, From)]
 pub enum ConstraintsSolverError {
-    #[error(transparent)]
-    AlgorithmU(#[from] AlgorithmUError),
-    Ambiguous(Vec<Constraint>),
+    AlgorithmU(AlgorithmUError),
+    #[from(ignore)]
+    Ambiguous(#[error(not(source))] Vec<Constraint>),
 }
 
 #[derive(Debug, PartialEq, Clone, Display)]

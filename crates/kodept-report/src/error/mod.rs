@@ -1,9 +1,8 @@
 use crate::error::report::{IntoSpannedReportMessage, Label, Severity, SpannedReportMessage};
-use derive_more::Display;
 use kodept_core::code_point::CodePoint;
 use std::borrow::Cow;
 use std::error::Error;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 
 pub mod compiler_crash;
 pub mod report;

@@ -1,4 +1,4 @@
-use thiserror::Error;
+use derive_more::{Display, Error, From};
 use crate::loader::{Loader, LoadingError};
 use crate::source::collection::Sources;
 use crate::source::loaded::CodeSourceError;
@@ -7,11 +7,10 @@ pub mod unloaded;
 pub mod loaded;
 pub mod collection;
 
-#[derive(Debug, Error)]
-#[error(transparent)]
+#[derive(Debug, Error, From, Display)]
 pub enum SourcesLoadingError {
-    Opening(#[from] LoadingError),
-    Loading(#[from] CodeSourceError)
+    Opening(LoadingError),
+    Loading(CodeSourceError)
 }
 
 pub fn load_each_source(loader: Loader) -> Result<Sources, SourcesLoadingError> {
