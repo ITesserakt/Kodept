@@ -1,0 +1,7 @@
+module Main =>
+
+fun foo {
+    val a = 1
+    fun bar => a
+    fun baz => bar
+}

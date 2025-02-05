@@ -26,7 +26,7 @@ impl Lint for SingleModuleWithBrackets {
              syntax: Res<SyntaxResolver>,
              reporter: Reporter| {
                 let Some(root) = query else { return skip() };
-                let Ok(node): std::result::Result<&File, _> = syntax.get(*root) else {
+                let Ok(node): std::result::Result<&File, _> = syntax.try_get(*root) else {
                     return skip();
                 };
 

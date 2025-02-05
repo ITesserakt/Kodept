@@ -21,10 +21,11 @@ use kodept_core::structure::Located;
 use kodept_report::error::report::{Label, Severity};
 use kodept_report::error::Diagnostic;
 use std::convert::Infallible;
+use kodept_ast_nodes::block_level::InitVar;
 use kodept_ast_nodes::types::{Params, TyParams};
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
-    ModDecl | StructDecl | EnumDecl | Func | Params | TyParams | Lambda | Exprs | IfExpr
+    ModDecl | StructDecl | EnumDecl | Func | Params | TyParams | Lambda | Exprs | IfExpr | InitVar
 });
 
 #[derive(Debug)]
@@ -36,7 +37,7 @@ impl Interaction for ScopeBuilder {
     fn interaction() -> InteractionWrapper<Self::Error> {
         type NodeFilter = (With<Node>, Or<(Changed<Parent>, Changed<Children>)>);
 
-        let config = InteractionWrapper::wrap(Self::scope_builder_interaction)
+        let config = InteractionWrapper::wrap(Self::system)
             .unwrap()
             .run_if(|query: Query<(), NodeFilter>| !query.is_empty());
         InteractionWrapper::from_configs(config)
@@ -45,31 +46,32 @@ impl Interaction for ScopeBuilder {
 
 impl ScopeBuilder {
     fn divide_by_scopes(entity: ScopeUnion, spawner: &Entities, commands: &mut Commands) -> Entity {
-        let (name, is_anonymous) = match &*entity {
-            ScopeUnionItem::ModDecl(x) => (Some(x.name().clone()), false),
-            ScopeUnionItem::StructDecl(x) => (Some(x.name().clone()), false),
-            ScopeUnionItem::EnumDecl(x) => (Some(x.name().clone()), false),
-            ScopeUnionItem::Func(x) => (Some(x.name().clone()), true),
-            ScopeUnionItem::Lambda(_) => (None, true),
-            ScopeUnionItem::Exprs(_) => (None, true),
-            ScopeUnionItem::IfExpr(_) => (None, true),
-            ScopeUnionItem::Params(_) => (None, false),
-            ScopeUnionItem::TyParams(_) => (None, false),
+        let (name, is_anonymous, opaque) = match &*entity {
+            ScopeUnionItem::ModDecl(x) => (Some(x.name().clone()), false, false),
+            ScopeUnionItem::StructDecl(x) => (Some(x.name().clone()), false, false),
+            ScopeUnionItem::EnumDecl(x) => (Some(x.name().clone()), false, false),
+            ScopeUnionItem::Func(x) => (Some(x.name().clone()), true, true),
+            ScopeUnionItem::Lambda(_) => (None, true, false),
+            ScopeUnionItem::Exprs(_) => (None, true, false),
+            ScopeUnionItem::IfExpr(_) => (None, true, false),
+            ScopeUnionItem::InitVar(_) => (None, true, false),
+            ScopeUnionItem::Params(_) => (None, false, false),
+            ScopeUnionItem::TyParams(_) => (None, false, false)
         };
         let scope_id = spawner.reserve_entity();
         if let Some(name) = name {
             commands
                 .entity(scope_id)
-                .insert((name, Scope::new(entity.id, is_anonymous)));
+                .insert((name, Scope::new(entity.id, is_anonymous).opaque(opaque)));
         } else {
             commands
                 .entity(scope_id)
-                .insert(Scope::new(entity.id, is_anonymous));
+                .insert(Scope::new(entity.id, is_anonymous).opaque(opaque));
         }
         scope_id
     }
 
-    fn scope_builder_interaction(
+    fn system(
         root: Single<Entity, With<Root>>,
         query: Query<AnyNodeRef, With<Node>>,
         children: Query<&Children, With<Node>>,
@@ -103,7 +105,7 @@ impl ScopeBuilder {
                 enclosing_scopes.insert(entity, parent);
             } else {
                 reporter.report_ad_hoc(|| {
-                    let point = syntax.get_unknown(entity).unwrap().location();
+                    let point = syntax.try_get_unknown(entity).unwrap().location();
                     Diagnostic::new(Severity::Bug)
                         .with_label(Label::primary("", point))
                         .with_message("No scope associated with this element")
@@ -112,10 +114,7 @@ impl ScopeBuilder {
             }
         }
 
-        commands.entity(root_scope).insert(Scope {
-            start_from: *root,
-            is_anonymous: false,
-        });
+        commands.entity(root_scope).insert(Scope::new(*root, false));
 
         commands.insert_resource(ScopeMapping {
             enclosing_scopes_mapping: enclosing_scopes,

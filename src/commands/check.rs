@@ -14,7 +14,8 @@ use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
 use tracing::{enabled, error_span, info, info_span, Level};
 use kodept_interaction::Interaction;
-use kodept_interaction::prelude::{ASTExt, ExtractSymbols, RLTLinkLint, ScopeBuilder, SingleModuleWithBrackets};
+use kodept_interaction::lint::{RLTLinkLint, ShowLints, SingleModuleWithBrackets};
+use kodept_interaction::prelude::{ASTExt, ExtractSymbols, ReferenceResolver, ScopeBuilder};
 use kodept_report::FileDescriptor;
 
 #[derive(Debug, Parser)]
@@ -54,13 +55,12 @@ impl Command for Check {
 
             self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
                 install_lints(ctx);
-                ctx.launch();
-            });
 
-            self.interaction_block("Scope checking", &mut ast, |ctx| {
                 ScopeBuilder::install(ctx);
                 ExtractSymbols::install(ctx);
-                
+                ReferenceResolver::install(ctx);
+
+                ctx.launch();
                 ctx.launch();
                 ctx.launch();
             });
@@ -72,6 +72,7 @@ impl Command for Check {
 fn install_lints(ctx: &mut Ctx) {
     SingleModuleWithBrackets::install(ctx);
     RLTLinkLint::install(ctx);
+    ShowLints::install(ctx);
 }
 
 impl Check {

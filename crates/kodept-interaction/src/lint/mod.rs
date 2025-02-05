@@ -1,12 +1,17 @@
-use crate::{Ctx, Interaction, InteractionWrapper, Result};
-use bevy_ecs::prelude::{Component, IntoSystem, IntoSystemConfigs, Query, World};
+use crate::{done, Ctx, Interaction, InteractionWrapper, Result};
+use bevy_ecs::prelude::{Changed, Component, IntoSystem, IntoSystemConfigs, Query, World};
 use bevy_ecs::system::SystemId;
 use kodept_report::error::report::IntoSpannedReportMessage;
 use std::borrow::Cow;
+use std::convert::Infallible;
 use std::sync::OnceLock;
+use tracing::info;
 
-pub(crate) mod module;
-pub(crate) mod rlt_linking;
+mod module;
+mod rlt_linking;
+
+pub use module::SingleModuleWithBrackets;
+pub use rlt_linking::RLTLinkLint;
 
 #[derive(Debug, Component)]
 pub struct LintDescriptor {
@@ -50,5 +55,22 @@ impl<L: Lint> Interaction for L {
             .unwrap()
             .run_if(move |lints: Query<&LintDescriptor>| lints.get(id).is_ok_and(|it| it.enabled));
         ctx.register(config);
+    }
+}
+
+pub struct ShowLints;
+
+impl Interaction for ShowLints {
+    type Error = Infallible;
+
+    fn interaction() -> InteractionWrapper<Self::Error> {
+        InteractionWrapper::wrap(|lints: Query<&LintDescriptor, Changed<LintDescriptor>>| {
+            let lint_names = lints.into_iter().filter(|it| it.enabled)
+                .map(|it| format!("{}, ", it.name))
+                .collect::<String>();
+                
+            info!("Enabled lints: [{lint_names}]");
+            done()
+        })
     }
 }

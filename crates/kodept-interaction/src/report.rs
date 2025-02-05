@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use bevy_ecs::prelude::{Component, Res, Resource, Single, World};
 use bevy_ecs::system::SystemParam;
 use extend::ext;
@@ -14,6 +15,7 @@ struct Wrapper(FileDescriptor);
 #[derive(Resource)]
 struct ReportWriter {
     sink: Box<dyn Fn(Report) + Send + Sync>,
+    fail: AtomicBool
 }
 
 #[derive(SystemParam)]
@@ -24,14 +26,18 @@ pub(crate) struct Reporter<'w> {
 
 impl Reporter<'_> {
     pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
-        (self.events.sink)(Report::from_message(self.file.0.id, message));
+        let report = Report::from_message(self.file.0.id, message);
+        self.events.fail.fetch_or(report.is_error(), Ordering::Relaxed);
+        (self.events.sink)(report);
     }
 
     pub(crate) fn report_ad_hoc<T>(&self, f: impl FnOnce() -> T)
     where
         T: SpannedReportMessage + 'static,
     {
-        (self.events.sink)(Report::from_message(self.file.0.id, ad_hoc_message(f)));
+        let report = Report::from_message(self.file.0.id, ad_hoc_message(f));
+        self.events.fail.fetch_or(report.is_error(), Ordering::Relaxed);
+        (self.events.sink)(report);
     }
 }
 
@@ -46,6 +52,7 @@ pub impl AST {
             .immediate_exclusive(move |world: &mut World| {
                 world.insert_resource(ReportWriter {
                     sink: Box::new(sink),
+                    fail: AtomicBool::new(false),
                 });
                 world.spawn(Wrapper(descriptor));
             });

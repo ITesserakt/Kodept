@@ -1,17 +1,21 @@
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
+use crate::scope::symbol::SymbolValueKind::{Function, Parameter, Variable};
 use crate::scope::{ScopeMapping, Visibility};
 use crate::{done, Interaction, InteractionWrapper, Result};
 use bevy_ecs::entity::EntityHashMap;
 use bevy_ecs::prelude::{Commands, Component, DetectChanges, Query, Res};
 use bevy_ecs::schedule::IntoSystemConfigs;
+use bevy_hierarchy::Children;
 use hashbrown::hash_set::Entry;
 use hashbrown::HashSet;
-use kodept_ast::prelude::{AnyNodeRef, IntoEnum, NodeId};
+use kodept_ast::prelude::{AnyNodeRef, Arity, IntoEnum, NodeId};
 use kodept_ast::properties::Name;
 use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ast::syntax_tree::children::arity::Singular;
 use kodept_ast::{define_union, Str};
 use kodept_ast_nodes::block_level::VarDecl;
+use kodept_ast_nodes::constants::Const;
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumConst, EnumDecl, StructDecl};
 use kodept_ast_nodes::types::{NonTyParam, TyParam};
@@ -20,14 +24,20 @@ use kodept_core::structure::Located;
 use kodept_inference::r#type::PolymorphicType;
 use kodept_report::error::report::{IntoSpannedReportMessage, Label, Severity};
 use kodept_report::error::Diagnostic;
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 use std::hash::{Hash, Hasher};
+use std::ops::{Deref, DerefMut};
 use std::sync::OnceLock;
-use kodept_ast_nodes::constants::Const;
+use SymbolKind::Value;
 
-#[derive(Debug, PartialEq, Hash, Eq)]
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub enum SymbolKind {
     Type,
+    Value(SymbolValueKind),
+}
+
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+pub enum SymbolValueKind {
     Variable,
     Parameter,
     Function,
@@ -35,36 +45,92 @@ pub enum SymbolKind {
 
 #[derive(Debug, Component, Eq)]
 pub struct Symbol {
-    pub visibility: Visibility,
-    pub kind: SymbolKind,
+    pub description: SymbolDescription,
     pub bound_node: NodeId,
-    pub name: Str,
     pub ty: OnceLock<PolymorphicType>,
 }
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub struct SymbolDescription {
+    name: Str,
+    kind: SymbolKind,
+    visibility: Visibility,
+}
+
 #[derive(Debug, Component)]
-pub struct SymbolTable(HashSet<Symbol>);
+pub(super) struct SymbolTable(HashSet<Symbol>);
+
+impl SymbolTable {
+    pub(super) fn get_type(&self, name: &impl ToOwned<Owned = Str>) -> Option<&Symbol> {
+        self.0
+            .get(&SymbolDescription::new(name.to_owned(), SymbolKind::Type))
+    }
+
+    pub(super) fn get_value(&self, name: &impl ToOwned<Owned = Str>) -> Option<&Symbol> {
+        self.0
+            .get(&SymbolDescription::new(name.to_owned(), Value(Function)))
+            .or_else(|| {
+                self.0
+                    .get(&SymbolDescription::new(name.to_owned(), Value(Variable)))
+            })
+            .or_else(|| {
+                self.0
+                    .get(&SymbolDescription::new(name.to_owned(), Value(Parameter)))
+            })
+    }
+}
+
+impl SymbolDescription {
+    pub fn new(name: Str, kind: SymbolKind) -> Self {
+        Self {
+            name,
+            kind,
+            visibility: Default::default(),
+        }
+    }
+}
+
+impl Deref for SymbolTable {
+    type Target = HashSet<Symbol>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for SymbolTable {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 impl PartialEq for Symbol {
     fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind && self.name == other.name
+        self.description == other.description
     }
 }
 
 impl Hash for Symbol {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.kind.hash(state);
-        self.name.hash(state);
+        self.description.hash(state);
+    }
+}
+
+impl Borrow<SymbolDescription> for Symbol {
+    fn borrow(&self) -> &SymbolDescription {
+        &self.description
     }
 }
 
 impl Symbol {
     pub fn new(kind: SymbolKind, bound_node: NodeId, name: impl Into<Str>) -> Self {
         Self {
-            visibility: Visibility::Private,
-            kind,
+            description: SymbolDescription {
+                name: name.into(),
+                kind,
+                visibility: Default::default(),
+            },
             bound_node,
-            name: name.into(),
             ty: OnceLock::new(),
         }
     }
@@ -126,24 +192,44 @@ impl Interaction for ExtractSymbols {
 }
 
 impl ExtractSymbols {
-    fn extract_symbol(node: SymbolUnion) -> Symbol {
+    fn extract_symbol(
+        node: SymbolUnion,
+        children: &Children,
+        query: &Query<(AnyNodeRef, &Children), SymbolUnionFilter>,
+    ) -> Symbol {
+        define_union!(enum ConstUnion[ConstUnionItem] {
+            EnumDecl | StructDecl | Func
+        });
+
         let id = node.id;
         match &*node {
             SymbolUnionItem::StructDecl(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
             SymbolUnionItem::EnumDecl(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
-            SymbolUnionItem::Func(x) => Symbol::new(SymbolKind::Function, id, x.name().clone()),
-            SymbolUnionItem::VarDecl(x) => Symbol::new(SymbolKind::Variable, id, x.name().clone()),
+            SymbolUnionItem::Func(x) => Symbol::new(Value(Function), id, x.name().clone()),
+            SymbolUnionItem::VarDecl(x) => Symbol::new(Value(Variable), id, x.name().clone()),
             SymbolUnionItem::EnumConst(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
-            SymbolUnionItem::TyParam(x) => Symbol::new(SymbolKind::Parameter, id, x.name().clone()),
-            SymbolUnionItem::NonTyParam(x) => {
-                Symbol::new(SymbolKind::Parameter, id, x.name().clone())
+            SymbolUnionItem::TyParam(x) => Symbol::new(Value(Parameter), id, x.name().clone()),
+            SymbolUnionItem::NonTyParam(x) => Symbol::new(Value(Parameter), id, x.name().clone()),
+            SymbolUnionItem::Const(_) => {
+                let iter = children
+                    .iter()
+                    .filter_map(|id| query.get(*id).ok().and_then(|(it, _)| it.into_enum()));
+                let node: ConstUnion = Singular::try_from_iter(iter).unwrap();
+                match &*node {
+                    ConstUnionItem::EnumDecl(x) => {
+                        Symbol::new(SymbolKind::Type, id, x.name().clone())
+                    }
+                    ConstUnionItem::StructDecl(x) => {
+                        Symbol::new(SymbolKind::Type, id, x.name().clone())
+                    }
+                    ConstUnionItem::Func(x) => Symbol::new(Value(Function), id, x.name().clone()),
+                }
             }
-            SymbolUnionItem::Const(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
         }
     }
 
     fn system(
-        query: Query<AnyNodeRef, SymbolUnionFilter>,
+        query: Query<(AnyNodeRef, &Children), SymbolUnionFilter>,
         scope_mapping: Res<ScopeMapping>,
         mut commands: Commands,
         reporter: Reporter,
@@ -152,25 +238,30 @@ impl ExtractSymbols {
     ) -> Result<DuplicatedSymbolError> {
         let mut symbols: EntityHashMap<HashSet<Symbol>> = EntityHashMap::default();
 
-        let iter = query
-            .into_iter()
-            .filter_map(|it| it.into_enum())
-            .map(Self::extract_symbol);
+        let iter = query.iter().filter_map(|(node, children)| {
+            let node = node.into_enum()?;
+            Some(Self::extract_symbol(node, children, &query))
+        });
         for symbol in iter {
             let bound_node = symbol.bound_node;
             let enclosing_scope = scope_mapping.enclosing_scope_id(bound_node);
             let set = symbols.entry(enclosing_scope).or_default();
             match set.entry(symbol) {
                 Entry::Occupied(x) => {
-                    let current_def_location = syntax.get_unknown(bound_node).unwrap().location();
-                    let previous_def_location =
-                        syntax.get_unknown(x.get().bound_node).unwrap().location();
+                    let current_def_location =
+                        syntax.try_get_unknown(bound_node).unwrap().location();
+                    let previous_def_location = syntax
+                        .try_get_unknown(x.get().bound_node)
+                        .unwrap()
+                        .location();
                     let scope = scopes.get(enclosing_scope).unwrap();
-                    let scope_start_location =
-                        syntax.get_unknown(scope.0.start_from).unwrap().location();
+                    let scope_start_location = syntax
+                        .try_get_unknown(scope.0.start_from)
+                        .unwrap()
+                        .location();
                     let scope_name = scope.1.map(|it| &it.name).cloned();
                     let error = DuplicatedSymbolError {
-                        bound_name: x.get().name.clone(),
+                        bound_name: x.get().description.name.clone(),
                         scope_start_location,
                         scope_name,
                         current_def_location,

@@ -29,7 +29,7 @@ impl RLTLinkLint {
         reporter: Reporter,
     ) -> Result<Infallible> {
         nodes.par_iter().for_each(|entity| {
-            if syntax.get_unknown(entity).is_some() {
+            if syntax.try_get_unknown(entity).is_some() {
                 return;
             }
             reporter.report_ad_hoc(|| {

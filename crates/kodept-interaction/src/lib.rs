@@ -5,17 +5,15 @@ use kodept_core::structure::Located;
 use kodept_report::error::report::IntoSpannedReportMessage;
 use kodept_report::error::traits::SpannedError;
 
-mod lint;
+pub mod lint;
 mod normalize;
 mod report;
 mod scope;
 
 pub mod prelude {
-    pub use super::lint::LintDescriptor;
-    pub use super::lint::{module::SingleModuleWithBrackets, rlt_linking::RLTLinkLint};
-
     pub use super::scope::builder::ScopeBuilder;
     pub use super::scope::symbol::{Symbol, SymbolKind, DuplicatedSymbolError, ExtractSymbols};
+    pub use super::scope::references::{ReferenceResolver};
 
     pub use super::report::ASTExt;
 }
@@ -39,6 +37,12 @@ fn fail<E>(error: E) -> Result<E> {
 
 fn done<E>() -> Result<E> {
     Ok(())
+}
+
+impl<E> From<E> for Skip<E> {
+    fn from(value: E) -> Self {
+        Self::Failed(value)
+    }
 }
 
 pub mod wrapper {
@@ -95,7 +99,7 @@ pub trait SpannedErrorExt<E> {
 
 impl<E: std::error::Error> SpannedErrorExt<E> for SpannedError<E> {
     fn for_node(inner: E, node_id: NodeId, syntax: &SyntaxResolver) -> Self {
-        let variant = syntax.get_unknown(node_id).unwrap();
+        let variant = syntax.try_get_unknown(node_id).unwrap();
         let point = variant.location();
         Self::new(inner, point)
     }
