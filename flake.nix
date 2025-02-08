@@ -34,11 +34,12 @@
                 pegviz_sources = pegviz;
                 useNightly = true;
             };
-		in pkgs.mkShell rec {
+		in pkgs.mkShellNoCC rec {
 			packages = with pkgs; [
 				xdot
 				gnuplot
-				pkgs.stdenv.cc
+				pkgs.clangStdenv.cc
+				mold
                 local_outputs.toolchain
 			];
 

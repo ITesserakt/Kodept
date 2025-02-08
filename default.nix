@@ -29,7 +29,12 @@
 		doDoc = false;
 
 		CARGO_BUILD_TARGET = if doStaticBuild then "x86_64-unknown-linux-musl" else "x86_64-unknown-linux-gnu";
-    CARGO_BUILD_RUSTFLAGS = if doStaticBuild then "-C target-feature=+crt-static" else "";
+        CARGO_BUILD_RUSTFLAGS = if doStaticBuild then "-C target-feature=+crt-static" else "";
+
+        buildInputs = with pkgs; [
+            clang
+            mold
+        ];
 	};
 
 	commonArgs-win = {
