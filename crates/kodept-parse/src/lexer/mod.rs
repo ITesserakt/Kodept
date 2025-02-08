@@ -3,6 +3,7 @@ pub use enums::*;
 pub mod enums;
 pub mod traits;
 
+#[cfg(feature = "nom")]
 pub type NomLexer = crate::nom::Lexer;
 pub type PegLexer<const TRACE: bool> = crate::peg::Lexer<TRACE>;
 pub type PestLexer = crate::pest::Lexer;

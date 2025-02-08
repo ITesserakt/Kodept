@@ -2,6 +2,7 @@ use crate::common::{ErrorAdapter, RLTProducer};
 use crate::error::{Original, ParseErrors};
 use crate::token_stream::PackedTokenStream;
 
+#[cfg(feature = "nom")]
 pub type NomParser = crate::nom::Parser;
 pub type PegParser<const TRACE: bool> = crate::peg::Parser<TRACE>;
 

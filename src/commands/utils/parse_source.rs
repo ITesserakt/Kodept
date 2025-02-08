@@ -6,7 +6,7 @@ use kodept_parse::common::{ErrorAdapter, RLTProducer};
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::lexer::traits::ToRepresentation;
 use kodept_parse::token_stream::PackedTokenStream;
-use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, Tok, TokCtor};
+use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
 use kodept_report::error::report::{Label, Severity};
 use kodept_report::error::Diagnostic;
 use kodept_report::FileId;
@@ -23,7 +23,8 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
         LexerImpl::Peg(x) => EagerTokenizer::new(input, x)
             .try_into_vec()
             .map_err(|e| e.adapt(input, 0)),
-        LexerImpl::Nom(x) => LazyTokenizer::new(input, x)
+        #[cfg(feature = "nom")]
+        LexerImpl::Nom(x) => kodept_parse::tokenizer::LazyTokenizer::new(input, x)
             .try_into_vec()
             .map_err(|e| e.adapt(input, 0)),
         LexerImpl::Pest(x) => EagerTokenizer::new(input, x)
@@ -44,6 +45,7 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
     let parsing_backend = config.get_parsing_backend();
     let rlt_result = match parsing_backend {
         ParserImpl::Peg(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
+        #[cfg(feature = "nom")]
         ParserImpl::Nom(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
     };
     match rlt_result {

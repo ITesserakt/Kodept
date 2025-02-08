@@ -20,6 +20,7 @@ pub mod tokenizer;
 
 pub mod error;
 
+#[cfg(feature = "nom")]
 mod nom;
 mod peg;
 mod pest;

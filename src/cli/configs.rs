@@ -3,8 +3,8 @@ use clap::{Args, ValueEnum};
 use codespan_reporting::term::ColorArg;
 use derive_more::From;
 use kodept::loader::{Loader, LoadingError};
-use kodept_parse::lexer::{NomLexer, PegLexer, PestLexer};
-use kodept_parse::parser::{NomParser, PegParser};
+use kodept_parse::lexer::{PegLexer, PestLexer};
+use kodept_parse::parser::{PegParser};
 use std::io::{stdin, Read};
 use std::path::PathBuf;
 
@@ -34,6 +34,7 @@ pub struct ParsingConfig {
 pub enum LexerChoice {
     Peg,
     Pest,
+    #[cfg(feature = "nom")]
     Nom,
     Auto,
 }
@@ -42,6 +43,7 @@ pub enum LexerChoice {
 #[derive(Debug, ValueEnum, Clone)]
 pub enum ParserChoice {
     Peg,
+    #[cfg(feature = "nom")]
     Nom,
     Auto,
 }
@@ -85,14 +87,16 @@ pub struct LoadingConfig {
 #[derive(Debug, Copy, Clone, From)]
 pub enum LexerImpl {
     Peg(PegLexer<false>),
-    Nom(NomLexer),
+    #[cfg(feature = "nom")]
+    Nom(kodept_parse::lexer::NomLexer),
     Pest(PestLexer),
 }
 
 #[derive(Debug, From)]
 pub enum ParserImpl {
     Peg(PegParser<false>),
-    Nom(NomParser),
+    #[cfg(feature = "nom")]
+    Nom(kodept_parse::parser::NomParser),
 }
 
 impl ParsingConfig {
@@ -110,12 +114,17 @@ impl ParsingConfig {
                 panic!("Cannot use peg lexer when parallelization and tracing are enabled")
             }
             (LexerChoice::Pest, _, _, _) => PestLexer::new().into(),
-            (LexerChoice::Nom, _, false, _) => NomLexer::new().into(),
+            #[cfg(feature = "nom")]
+            (LexerChoice::Nom, _, false, _) => kodept_parse::lexer::NomLexer::new().into(),
+            #[cfg(feature = "nom")]
             (LexerChoice::Nom, _, true, _) => panic!("Cannot use nom lexer in parallel context"),
             (LexerChoice::Auto, ..ONE_MB, false, _) => PestLexer::new().into(),
             (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
             (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),
-            (LexerChoice::Auto, _, true, true) => NomLexer::new().into(),
+            #[cfg(feature = "nom")]
+            (LexerChoice::Auto, _, true, true) => kodept_parse::lexer::NomLexer::new().into(),
+            #[cfg(not(feature = "nom"))]
+            (LexerChoice::Auto, _, true, true) => PestLexer::new().into()
         }
     }
 
@@ -130,10 +139,14 @@ impl ParsingConfig {
             (ParserChoice::Peg, true, true) => {
                 panic!("Cannot use peg parser when parallelization and tracing are enabled")
             }
-            (ParserChoice::Nom, _, _) => NomParser::new().into(),
+            #[cfg(feature = "nom")]
+            (ParserChoice::Nom, _, _) => kodept_parse::parser::NomParser::new().into(),
             (ParserChoice::Auto, _, false) => PegParser::new().into(),
             (ParserChoice::Auto, false, true) => PegParser::new().into(),
-            (ParserChoice::Auto, true, true) => NomParser::new().into(),
+            #[cfg(feature = "nom")]
+            (ParserChoice::Auto, true, true) => kodept_parse::parser::NomParser::new().into(),
+            #[cfg(not(feature = "nom"))]
+            (ParserChoice::Auto, true, true) => panic!("Cannot use peg parser when parallelization and tracing are enabled"),
         }
     }
 }

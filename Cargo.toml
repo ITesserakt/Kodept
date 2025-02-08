@@ -89,6 +89,7 @@ profiler = ["dep:dhat", "dep:ctrlc"]
 parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept-interaction/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 interning = ["dep:kodept-interning"]
+nom = ["kodept-parse/nom"]
 
 [profile.profiler]
 debug = true
