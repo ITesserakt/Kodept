@@ -1,3 +1,4 @@
+use std::hint::black_box;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_interning::metrics::InterningMetrics;
@@ -35,13 +36,8 @@ fn test() {
     let foo = second.clone();
 
     let metrics = InterningMetrics::gather();
-    dbg!(&metrics, foo);
-    assert!(matches!(
-        metrics,
-        InterningMetrics {
-            total_shares: 3,
-            total_items: 2,
-            ..
-        }
-    ));
+    black_box(foo);
+    assert_eq!(metrics.total_items, 2);
+    assert_eq!(metrics.total_shares, 3);
+    assert_eq!(metrics.approximate_memory_savings, 15.0);
 }

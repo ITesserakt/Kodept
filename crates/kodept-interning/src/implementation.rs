@@ -24,6 +24,7 @@ impl<T: ?Sized> Deref for Interned<T> {
 
 impl<T: ?Sized> Clone for Interned<T> {
     fn clone(&self) -> Self {
+        TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
         Self(self.0)
     }
 }
