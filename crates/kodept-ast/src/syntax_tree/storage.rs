@@ -1,10 +1,11 @@
 use crate::interaction::Interaction;
-use crate::prelude::{CodeHolder, FromSyntax, NodeId};
+use crate::prelude::{CodeHolder, FromSyntax};
 use crate::properties::{Node, Root};
 use crate::resource::rlt::SyntaxResolver;
 use crate::syntax_tree::builder::Pool;
-use bevy_ecs::prelude::{Component, World};
+use bevy_ecs::prelude::{Component, Entity, World};
 use kodept_rlt::prelude::RLT;
+use crate::node_id::Erase;
 
 #[derive(Debug)]
 pub struct AST {
@@ -34,8 +35,8 @@ impl AST {
             .count()
     }
 
-    pub fn contains<T: Component>(&self, id: NodeId) -> bool {
-        self.world.entity(id).contains::<T>()
+    pub fn contains<T: Component>(&self, id: impl Erase<Entity>) -> bool {
+        self.world.entity(id.erase()).contains::<T>()
     }
 
     pub fn syntax_mut(&mut self) -> &mut SyntaxResolver {

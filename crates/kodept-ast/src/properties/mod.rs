@@ -1,7 +1,8 @@
-use crate::prelude::{ASTNode, NodeId};
+use crate::node_id::Erase;
+use crate::prelude::ASTNode;
 use crate::syntax_tree::prelude::AST;
 use crate::Str;
-use bevy_ecs::prelude::Component;
+use bevy_ecs::prelude::{Component, Entity};
 use derive_more::{From, Into};
 use std::ops::{Deref, DerefMut};
 
@@ -25,7 +26,7 @@ pub struct Name {
 
 pub trait HasProperty<Property: NodeProperty>: Sized {
     #[inline]
-    fn ensure_has(id: NodeId, ast: &AST) -> bool {
+    fn ensure_has(id: impl Erase<Entity>, ast: &AST) -> bool {
         ast.contains::<Property>(id)
     }
 }
@@ -48,7 +49,8 @@ impl DerefMut for Name {
 
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {
     #[inline]
-    fn ensure_has(id: NodeId, ast: &AST) -> bool {
+    fn ensure_has(id: impl Erase<Entity>, ast: &AST) -> bool {
+        let id = id.erase();
         if cfg!(debug_assertions) && !ast.contains::<P>(id) {
             panic!(
                 "Expected node {id} to has a required property `{}`",

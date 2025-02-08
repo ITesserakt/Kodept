@@ -2,10 +2,11 @@ use crate::syntax_tree::children::arity::{Optional, Plural, Singular};
 use derive_more::{Display, Error};
 use smallvec::SmallVec;
 use std::convert::Infallible;
+use std::error::Error;
 
-pub trait Arity {
+pub trait TryFromIter {
     type Container<T>;
-    type Error;
+    type Error: Error;
 
     fn try_from_iter<T>(
         iter: impl IntoIterator<Item = T>,
@@ -26,7 +27,7 @@ pub enum OptionChildError {
     AtLeastTwo(#[error(not(source))] usize),
 }
 
-impl Arity for Singular {
+impl TryFromIter for Singular {
     type Container<T> = T;
     type Error = SingleChildError;
 
@@ -40,7 +41,7 @@ impl Arity for Singular {
     }
 }
 
-impl Arity for Optional {
+impl TryFromIter for Optional {
     type Container<T> = Option<T>;
 
     type Error = OptionChildError;
@@ -61,7 +62,7 @@ impl Arity for Optional {
     }
 }
 
-impl Arity for Plural {
+impl TryFromIter for Plural {
     type Container<T> = SmallVec<[T; 8]>;
 
     type Error = Infallible;

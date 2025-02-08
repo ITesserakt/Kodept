@@ -1,4 +1,3 @@
-use crate::prelude::NodeId;
 use bevy_ecs::entity::EntityHash;
 use bevy_ecs::prelude::{Entity, Resource};
 use dashmap::DashMap;
@@ -10,6 +9,7 @@ use kodept_rlt::prelude::RLT;
 use kodept_rlt::{new_types, prelude as rlt};
 use std::marker::PhantomPinned;
 use std::pin::Pin;
+use crate::node_id::Erase;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -76,7 +76,7 @@ impl SyntaxResolver {
 
     // TODO: probably unsound code
     #[allow(unsafe_code)]
-    pub fn insert<'r, U>(&'r self, id: NodeId, node: U)
+    pub fn insert<'r, U>(&'r self, id: impl Erase<Entity>, node: U)
     where
         U: Into<SyntaxVariant<'r>>,
     {
@@ -84,27 +84,29 @@ impl SyntaxResolver {
         // SAFETY: lifetimes of node and self are equal and produced reference won't be used in 'static contexts
         let reborrow =
             unsafe { std::mem::transmute::<SyntaxVariant<'r>, SyntaxVariant<'static>>(variant) };
-        self.mapping.insert(id, reborrow);
+        self.mapping.insert(id.erase(), reborrow);
     }
 
-    pub fn get_unknown(&self, id: NodeId) -> SyntaxVariant {
+    pub fn get_unknown(&self, id: impl Erase) -> SyntaxVariant {
         self.try_get_unknown(id)
             .expect("Cannot get linked RLT node")
     }
 
-    pub fn get_location(&self, id: NodeId) -> CodePoint {
+    pub fn get_location(&self, id: impl Erase) -> CodePoint {
+        let id = id.erase().into();
         self.mapping
             .get(&id)
             .expect("Cannot get linked RLT node")
             .location()
     }
 
-    pub fn try_get_unknown(&self, id: NodeId) -> Option<SyntaxVariant> {
+    pub fn try_get_unknown(&self, id: impl Erase) -> Option<SyntaxVariant> {
+        let id = id.erase().into();
         let reference = self.mapping.get(&id)?;
         Some(*reference.value())
     }
 
-    pub fn try_get<'r, U>(&'r self, id: NodeId) -> Result<&'r U, LookupError>
+    pub fn try_get<'r, U>(&'r self, id: impl Erase) -> Result<&'r U, LookupError>
     where
         &'r U: TryFrom<SyntaxVariant<'r>>,
     {

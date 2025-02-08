@@ -11,15 +11,14 @@ pub mod resource;
 pub mod syntax_tree;
 mod traits;
 mod utils;
+mod node_id;
 
 pub mod prelude {
-    use bevy_ecs::prelude::Entity;
-
-    pub use super::entity::children::Arity;
+    pub use super::entity::children::TryFromIter;
     pub use super::entity::entity_ref::{AnyNodeRef, AnyNodeRefItem, NodeRef};
     pub use super::entity::traits::{FromEnum, IntoEnum};
     pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
-    pub type NodeId = Entity;
+    pub use super::node_id::{NodeId, Erase};
 }
 
 pub mod external {

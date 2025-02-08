@@ -11,6 +11,7 @@ use bevy_hierarchy::BuildChildren;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
+use crate::node_id::Erase;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
@@ -37,8 +38,8 @@ impl Pool<'_> {
         self.syntax.root()
     }
 
-    pub(crate) fn link_syntax<'r>(&'r self, id: NodeId, rlt_node: impl Into<SyntaxVariant<'r>>) {
-        self.syntax.insert(id, rlt_node)
+    pub(crate) fn link_syntax<'r>(&'r self, id: impl Erase<Entity>, rlt_node: impl Into<SyntaxVariant<'r>>) {
+        self.syntax.insert(id.erase(), rlt_node)
     }
 }
 
@@ -125,8 +126,8 @@ impl<Root> ASTBuilder<Root> {
             _phantom: Default::default(),
         }
     }
-    pub(crate) fn id(&self) -> NodeId {
-        self.root
+    pub(crate) fn id(&self) -> NodeId<Root> {
+        self.root.into()
     }
 }
 

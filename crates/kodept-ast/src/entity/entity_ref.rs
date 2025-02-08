@@ -18,6 +18,10 @@ pub struct NodeRef<'w, T> {
 }
 
 impl<'a> AnyNodeRefItem<'a, '_> {
+    pub(crate) fn from_inner(item: EntityRef<'a>) -> Self {
+        Self { inner: item }
+    }
+    
     #[deprecated]
     pub fn cast<T>(self) -> Option<NodeRef<'a, &'a T>>
     where
@@ -51,13 +55,13 @@ impl<'a> AnyNodeRefItem<'a, '_> {
     }
 
     pub fn id(&self) -> NodeId {
-        self.inner.id()
+        self.inner.id().into()
     }
 }
 
-impl<T> NodeRef<'_, T> {
-    pub fn id(&self) -> NodeId {
-        self.inner.id()
+impl<T> NodeRef<'_, &T> {
+    pub fn id(&self) -> NodeId<T> {
+        self.inner.id().into()
     }
 }
 
