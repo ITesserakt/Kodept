@@ -1,31 +1,30 @@
+use crate::source::unloaded::{CodeSource, CodeSourceError};
+use derive_more::{Display, Error, From};
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
+use tracing::debug;
 
-use itertools::Itertools;
-use kodept_core::code_source::{CodeSource, CodeSourceError};
-use thiserror::Error;
-use tracing::{debug, warn};
-
+#[derive(Debug)]
 pub enum Loader {
     File(Vec<(File, PathBuf)>),
     Memory(Vec<String>),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, From, Display)]
 pub enum LoadingError {
-    #[error("Provided path should be absolute")]
+    #[display("Provided path should be absolute")]
     StartingPathNotAbsolute,
-    #[error("Provided path does not exists")]
+    #[display("Provided path does not exists")]
     InputDoesNotExists,
-    #[error("IO error: {0}")]
-    IOError(#[from] std::io::Error),
-    #[error("Cannot map file: {0}")]
-    MapError(#[from] CodeSourceError),
-    #[error("No input files")]
+    #[display("IO error: {_0}")]
+    IOError(std::io::Error),
+    #[display("Cannot map file: {_0}")]
+    MapError(CodeSourceError),
+    #[display("No input files")]
     NoInput,
 }
 
@@ -87,7 +86,8 @@ impl<'p> LoaderBuilder<'p> {
             self.starting_path
                 .read_dir()
                 .map_err(LoadingError::IOError)?
-                .filter_ok(|it| {
+                .filter_map(|it| it.ok())
+                .filter(|it| {
                     if !it.path().is_file() {
                         false
                     } else if self.accept_any_extension {
@@ -98,18 +98,11 @@ impl<'p> LoaderBuilder<'p> {
                             .is_some_and(|ext| ext == self.extension)
                     }
                 })
-                .filter_map_ok(|it| {
-                    let file = match File::open(it.path()) {
-                        Ok(f) => f,
-                        Err(e) => {
-                            warn!("Skipping file {0} because: {1}", it.path().display(), e);
-                            return None;
-                        }
-                    };
-
-                    Some((file, it.path()))
+                .map(|it| match File::open(it.path()) {
+                    Ok(f) => Ok((f, it.path())),
+                    Err(e) => Err(e),
                 })
-                .try_collect()?
+                .collect::<Result<_, _>>()?
         } else if self.starting_path.is_file()
             && self
                 .starting_path
@@ -157,24 +150,13 @@ impl Loader {
         }
     }
 
-    #[must_use]
-    pub fn into_sources(self) -> Vec<CodeSource> {
+    pub fn into_sources(self) -> Result<Vec<CodeSource>, LoadingError> {
         match self {
             Loader::File(sources) => sources
                 .into_iter()
                 .map(|it| Self::mmap_if_needed(it.0, it.1))
-                .filter_map(|it| match it {
-                    Ok(x) => Some(x),
-                    Err(e) => {
-                        warn!("Skipping file because: {e}");
-                        None
-                    }
-                })
                 .collect(),
-            Loader::Memory(sources) => sources
-                .into_iter()
-                .map(CodeSource::memory)
-                .collect(),
+            Loader::Memory(sources) => Ok(sources.into_iter().map(CodeSource::memory).collect()),
         }
     }
 }
@@ -199,7 +181,7 @@ mod tests {
     fn test_load_text_from_scratch() {
         let text = "Hello world";
         let loader = Loader::from_single_snippet(text);
-        let mut sources = loader.into_sources();
+        let mut sources = loader.into_sources().unwrap();
 
         assert_eq!(sources.len(), 1);
         let mut source = sources.pop().unwrap();
@@ -216,7 +198,7 @@ mod tests {
         let text = "Hello world";
         write!(file, "{0}", text).unwrap();
 
-        let mut sources = loader.into_sources();
+        let mut sources = loader.into_sources().unwrap();
         assert_eq!(sources.len(), 1);
         let mut source = sources.pop().unwrap();
         let mut output = String::new();
@@ -252,7 +234,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let sources = loader.into_sources();
+        let sources = loader.into_sources().unwrap();
         assert!(!sources.is_empty())
     }
 }

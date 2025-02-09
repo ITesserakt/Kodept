@@ -8,6 +8,8 @@ mod symbol;
 pub mod scope_analyzer;
 pub mod reference_resolver;
 pub mod linting;
+pub mod macros;
+pub mod dot_formatter;
 
 pub mod path {
     use std::fmt::{Display, Formatter};

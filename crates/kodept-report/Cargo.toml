@@ -1,6 +1,6 @@
 [package]
-name = "kodept-macros"
-version = "0.1.6"
+name = "kodept-report"
+version = "0.2.0"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
@@ -15,18 +15,13 @@ workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.86"
-append-only-vec = "0.1.7"
 codespan-reporting = "0.11.1"
-extend.workspace = true
 derive_more.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
+
+serde = { version = "1", features = ["derive"], optional = true }
 
 [dependencies.kodept-core]
 path = "../kodept-core"
-version = "0.2"
 
-[dependencies.kodept-ast]
-path = "../kodept-ast"
-version = "0.5"
+[features]
+serde = ["dep:serde", "kodept-core/serde"]

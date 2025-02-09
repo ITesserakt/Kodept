@@ -2,8 +2,19 @@ use std::borrow::Cow;
 use std::fmt::Formatter;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicU16;
+use std::sync::atomic::Ordering::SeqCst;
 use std::time::{Instant};
-use crate::code_source::CodeSource;
+use derive_more::Constructor;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FileId(u16);
+
+#[derive(Debug, Clone, Eq, Constructor)]
+pub struct FileDescriptor {
+    name: FileName,
+    id: FileId,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FileName {
@@ -12,14 +23,33 @@ pub enum FileName {
     Custom(Cow<'static, str>)
 }
 
-impl CodeSource {
-    #[must_use]
-    pub fn path(&self) -> FileName {
-        match self {
-            CodeSource::Memory { .. } => FileName::Anon,
-            CodeSource::File { name, .. } => FileName::Real(name.clone()),
-            CodeSource::MappedFile { name, .. } => FileName::Real(name.clone()),
-        }
+impl FileId {
+    pub fn generate() -> Self {
+        static ID_GENERATOR: AtomicU16 = AtomicU16::new(0);
+        let id = ID_GENERATOR.fetch_add(1, SeqCst);
+        FileId(id)
+    }
+}
+
+impl PartialEq for FileDescriptor {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Hash for FileDescriptor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl FileDescriptor {
+    pub fn name(&self) -> &FileName {
+        &self.name
+    }
+
+    pub fn id(&self) -> FileId {
+        self.id
     }
 }
 
@@ -33,14 +63,14 @@ impl FileName {
             FileName::Custom(c) => FileName::Custom(c.clone())
         }
     }
-    
+
     fn generate_hash() -> u64 {
         let instant = Instant::now();
         let mut hasher = DefaultHasher::new();
         instant.hash(&mut hasher);
         hasher.finish()
     }
-    
+
     pub fn build_file_path(&self) -> Cow<Path> {
         match self {
             FileName::Real(x) => Cow::Borrowed(x.as_path()),
@@ -54,12 +84,12 @@ impl FileName {
             }
         }
     }
-    
+
     pub fn to_string_lossy(&self) -> Cow<str> {
         match self {
             FileName::Real(x) => x.to_string_lossy(),
             FileName::Anon => "<anonymous>".into(),
-            FileName::Custom(c) => Cow::Owned(format!("<{c}>")) 
+            FileName::Custom(c) => Cow::Owned(format!("<{c}>"))
         }
     }
 }

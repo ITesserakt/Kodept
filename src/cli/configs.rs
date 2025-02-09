@@ -1,16 +1,12 @@
 use std::io::{stdin, Read};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 
 use crate::cli::utils::{DisplayStyle, Extension};
 use clap::{Args, ValueEnum};
-use codespan_reporting::term::termcolor::StandardStream;
-use codespan_reporting::term::{ColorArg, Config};
 use derive_more::From;
-use kodept::codespan_settings::{CodespanSettings, Reports, StreamOutput};
 use kodept::loader::{Loader, LoadingError};
-use kodept::read_code_source::ReadCodeSource;
-use kodept_rlt::prelude::RLT;
+use kodept::report::GlobalReports;
+use kodept::source::collection::SourceView;
 use kodept_parse::common::{EagerTokensProducer, ErrorAdapter, RLTProducer, TokenProducer};
 use kodept_parse::error::ParseErrors;
 use kodept_parse::lexer::traits::ToRepresentation;
@@ -18,6 +14,9 @@ use kodept_parse::lexer::{ASCIILexer, NomLexer, PegLexer, PestLexer};
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
+use kodept_report::codespan::external::{ColorArg, Config};
+use kodept_report::codespan::CodespanSettings;
+use kodept_rlt::prelude::RLT;
 use tracing::debug;
 
 #[derive(Debug, Args, Clone)]
@@ -61,7 +60,7 @@ enum LexerImpl {
     Peg(PegLexer<false>),
     Nom(NomLexer),
     Pest(PestLexer),
-    ASCII(ASCIILexer)
+    ASCII(ASCIILexer),
 }
 
 #[derive(Debug, From)]
@@ -114,7 +113,9 @@ impl EagerTokensProducer for LexerImpl {
             LexerImpl::Pest(x) => {
                 EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
             }
-            LexerImpl::ASCII(x) => EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0)),
+            LexerImpl::ASCII(x) => {
+                EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
+            }
         }
     }
 }
@@ -187,7 +188,7 @@ impl ParsingConfig {
             (LexerChoice::Pest, _, _, _) => PestLexer::new().into(),
             (LexerChoice::Nom, _, false, _) => NomLexer::new().into(),
             (LexerChoice::Nom, _, true, _) => panic!("Cannot use nom lexer in parallel context"),
-            (LexerChoice::Auto, _, _, _) if source.is_ascii() => ASCIILexer::new().into(), 
+            (LexerChoice::Auto, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
             (LexerChoice::Auto, ..ONE_MB, false, _) => PestLexer::new().into(),
             (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
             (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),
@@ -215,7 +216,7 @@ impl ParsingConfig {
 
     pub fn tokenize<'a>(
         &self,
-        source: &'a ReadCodeSource,
+        source: &'a SourceView,
     ) -> Result<Vec<PackedTokenMatch>, ParseErrors<&'a str>> {
         use kodept_parse::tokenizer::*;
 
@@ -240,7 +241,7 @@ impl ParsingConfig {
         }
     }
 
-    pub fn build_rlt<'a>(&self, source: &'a ReadCodeSource) -> Result<RLT, ParseErrors<&'a str>> {
+    pub fn build_rlt<'a>(&self, source: &'a SourceView) -> Result<RLT, ParseErrors<&'a str>> {
         let tokens = self.tokenize(source)?;
         let stream = PackedTokenStream::new(&tokens);
         debug!(length = tokens.len(), "Produced token stream");
@@ -253,42 +254,34 @@ impl ParsingConfig {
     }
 }
 
-impl From<DiagnosticConfig> for Reports {
-    fn from(value: DiagnosticConfig) -> Self {
+impl DiagnosticConfig {
+    pub fn make_reports(self) -> GlobalReports {
         let config = Config {
-            tab_width: value.tab_width,
-            display_style: value.style.into(),
+            display_style: self.style.into(),
+            tab_width: self.tab_width,
             ..Default::default()
         };
-        let stream = if !value.disable {
-            StreamOutput::Standard(Arc::new(Mutex::new(StandardStream::stderr(value.color.0))))
-        } else {
-            StreamOutput::NoOp
-        };
-
-        match (value.disable, value.eager) {
-            (true, _) => Self::Disabled,
-            (false, true) => Self::Eager(CodespanSettings { config, stream }),
-            (false, false) => Self::Lazy {
-                local_reports: Default::default(),
-                global_reports: Default::default(),
-                settings: CodespanSettings { config, stream },
-            },
+        if self.disable {
+            return GlobalReports::disabled();
+        }
+        match self.eager {
+            true => GlobalReports::eager(CodespanSettings::stderr(config, self.color)),
+            false => GlobalReports::lazy(CodespanSettings::stderr(config, self.color)),
         }
     }
 }
 
-impl TryFrom<LoadingConfig> for Loader {
+impl TryFrom<&LoadingConfig> for Loader {
     type Error = LoadingError;
 
-    fn try_from(value: LoadingConfig) -> Result<Self, Self::Error> {
+    fn try_from(value: &LoadingConfig) -> Result<Self, Self::Error> {
         if value.read_stdin {
             let mut stdin_input = String::new();
             stdin().read_to_string(&mut stdin_input)?;
             Ok(Loader::from_single_snippet(stdin_input))
         } else {
             let builder = Loader::file();
-            let builder = match value.extension {
+            let builder = match &value.extension {
                 Extension::Any => builder.with_any_source_extension(),
                 Extension::Specified(ext) => builder.with_extension(ext),
             };

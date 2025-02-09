@@ -1,6 +1,6 @@
 [package]
 name = "kodept"
-version = "0.2.4"
+version = "0.2.3"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
@@ -12,16 +12,16 @@ rust-version = "1.76.0"
 [workspace]
 resolver = "2"
 members = [
-    ".",
-    "crates/kodept-core",
-    "crates/kodept-parse",
-    "crates/kodept-inference",
-    "crates/kodept-ast",
-    "crates/kodept-macros",
-    "crates/kodept-interpret",
-    "crates/slotgraph", 
-    "crates/kodept-ir", 
-    "crates/kodept-rlt"]
+    "."
+    , "crates/kodept-core"
+    , "crates/kodept-parse"
+    , "crates/kodept-inference"
+    , "crates/kodept-ast"
+    , "crates/kodept-interpret"
+    , "crates/slotgraph"
+    , "crates/kodept-rlt"
+    , "crates/kodept-report"
+    , "crates/kodept-frontend"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -34,7 +34,7 @@ tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]
 version = "1.0.0"
-features = ["display", "into", "from", "deref", "deref_mut", "constructor", "try_into", "is_variant", "unwrap"]
+features = ["display", "into", "from", "deref", "deref_mut", "constructor", "try_into", "is_variant", "unwrap", "error"]
 
 [workspace.lints]
 clippy.suspicious = "deny"
@@ -46,10 +46,8 @@ rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
 [dependencies]
-anyhow = "1"
 clap = { version = "4.5", features = ["derive", "env"] }
 ctrlc = { version = "3.4.4", optional = true }
-codespan-reporting = "0.11.1"
 derive_more.workspace = true
 dhat = { version = "0.3", optional = true }
 gag = { version = "1.0.0", optional = true }
@@ -73,10 +71,6 @@ version = "0.3"
 path = "crates/kodept-ast"
 version = "0.5"
 
-[dependencies.kodept-macros]
-path = "crates/kodept-macros"
-version = "0.1"
-
 [dependencies.kodept-interpret]
 path = "crates/kodept-interpret"
 version = "0.1"
@@ -84,6 +78,14 @@ version = "0.1"
 [dependencies.kodept-rlt]
 path = "crates/kodept-rlt"
 version = "0.1"
+
+[dependencies.kodept-frontend]
+path = "crates/kodept-frontend"
+version = "0.1"
+
+[dependencies.kodept-report]
+path = "crates/kodept-report"
+version = "0.2"
 
 [dev-dependencies]
 tempfile = "3.7.0"

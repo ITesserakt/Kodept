@@ -8,11 +8,9 @@ use kodept_ast::{
     Acc, Appl, BinExpr, BinaryExpressionKind, Expression, Identifier, Operation, OperationEnumMut,
     Ref, ReferenceContext, Term, UnExpr, UnaryExpressionKind,
 };
-use kodept_macros::context::Context;
-use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::Macro;
 use std::convert::Infallible;
 use BinaryExpressionKind::*;
+use crate::macros::{Context, Macro, VisitGuard};
 
 #[derive(Default)]
 pub struct BinaryOperatorExpander;
@@ -93,7 +91,7 @@ impl Macro for BinaryOperatorExpander {
             .update_children_tag::<_, _, Appl, _, { tags::RIGHT }, { tags::SECONDARY }>(id);
         let id = id.widen().coerce::<Appl>();
         let rlt = ctx.rlt.get_unknown(id).unwrap();
-        ctx.add_child::<_, _, { tags::PRIMARY }>(
+        ctx.add_child::<_, _, {tags::PRIMARY}>(
             id,
             Ref::uninit(
                 ReferenceContext::global(["Prelude"]),

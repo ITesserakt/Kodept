@@ -4,12 +4,9 @@ use kodept_ast::{FileDecl};
 use kodept_core::code_point::CodePoint;
 use kodept_rlt::prelude::{File, Module};
 use kodept_core::structure::Located;
-use kodept_macros::context::Context;
-use kodept_macros::error::report::{IntoSpannedReportMessage, Label, Severity};
-use kodept_macros::error::Diagnostic;
-use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::Macro;
 use std::convert::Infallible;
+use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Label, Severity};
+use crate::macros::{Context, Macro, VisitGuard};
 
 /// This lint suggests to replace
 /// ```kodept

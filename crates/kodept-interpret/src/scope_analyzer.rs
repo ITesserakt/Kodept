@@ -1,3 +1,4 @@
+use crate::macros::{Context, Macro, MacroExt, VisitGuard};
 use crate::scope::{ScopeBuilder, ScopePeelError, ScopeV2};
 use crate::symbol::{SymbolKind, SymbolV2};
 use kodept_ast::graph::node_props::Node;
@@ -11,12 +12,9 @@ use kodept_ast::{
 };
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use kodept_macros::context::Context;
-use kodept_macros::error::report::{IntoSpannedReportMessage, Label, Severity};
-use kodept_macros::error::traits::SpannedError;
-use kodept_macros::error::Diagnostic;
-use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::{Macro, MacroExt};
+use kodept_report::prelude::{
+    ad_hoc_message, Diagnostic, IntoSpannedReportMessage, Label, Severity, SpannedError,
+};
 
 #[derive(Debug)]
 struct DuplicatedSymbolErrorData {
@@ -41,7 +39,10 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
     fn into_message(self) -> Self::Message {
         Diagnostic::new(Severity::Error)
             .with_label(Label::primary("here", self.current_def_location))
-            .with_label(Label::secondary("previous declaration", self.previous_def_location))
+            .with_label(Label::secondary(
+                "previous declaration",
+                self.previous_def_location,
+            ))
             .with_message(format!(
                 "Element with name `{}` already defined",
                 self.bound_name
@@ -131,60 +132,58 @@ fn extract_symbols(
 ) -> Result<(), DuplicatedSymbolErrorData> {
     let id = node.get_id();
 
-    let old_symbol =
-        match node {
-            AnyNode::StructDecl(StructDecl { name, .. }) => {
+    let old_symbol = match node {
+        AnyNode::StructDecl(StructDecl { name, .. }) => {
+            destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Type))
+        }
+        AnyNode::EnumDecl(EnumDecl { name, .. }) => {
+            destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Type))
+        }
+
+        AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => {
+            destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Function))
+        }
+        AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => {
+            destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Function))
+        }
+
+        AnyNode::VarDecl(VarDecl { name, .. }) => {
+            destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Variable))
+        }
+
+        AnyNode::TyName(ref ty @ TyName { name, .. }) => {
+            // enum struct $name { $ty_name1, $ty_name2 }
+            // insertion happens in the inner enum scope
+            if ty.parent_is::<EnumDecl>(ast) {
                 destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Type))
+            } else {
+                None
             }
-            AnyNode::EnumDecl(EnumDecl { name, .. }) => {
-                destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Type))
-            }
+        }
+        AnyNode::TyParam(TyParam { name, .. }) | AnyNode::NonTyParam(NonTyParam { name, .. }) => {
+            destination_scope.insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Parameter))
+        }
 
-            AnyNode::AbstFnDecl(AbstFnDecl { name, .. }) => destination_scope
-                .insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Function)),
-            AnyNode::BodyFnDecl(BodyFnDecl { name, .. }) => destination_scope
-                .insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Function)),
-
-            AnyNode::VarDecl(VarDecl { name, .. }) => destination_scope
-                .insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Variable)),
-
-            AnyNode::TyName(ref ty @ TyName { name, .. }) => {
-                // enum struct $name { $ty_name1, $ty_name2 }
-                // insertion happens in the inner enum scope
-                if ty.parent_is::<EnumDecl>(ast) {
-                    destination_scope.insert_symbol(SymbolV2::new(
-                        id,
-                        name.clone(),
-                        SymbolKind::Type,
-                    ))
-                } else {
-                    None
-                }
-            }
-            AnyNode::TyParam(TyParam { name, .. })
-            | AnyNode::NonTyParam(NonTyParam { name, .. }) => destination_scope
-                .insert_symbol(SymbolV2::new(id, name.clone(), SymbolKind::Parameter)),
-
-            // Again, handle each new case manually
-            AnyNode::FileDecl(_) => None,
-            AnyNode::ModDecl(_) => None,
-            AnyNode::InitVar(_) => None,
-            AnyNode::Exprs(_) => None,
-            AnyNode::Appl(_) => None,
-            AnyNode::Lambda(_) => None,
-            AnyNode::Ref(_) => None,
-            AnyNode::Acc(_) => None,
-            AnyNode::NumLit(_) => None,
-            AnyNode::CharLit(_) => None,
-            AnyNode::StrLit(_) => None,
-            AnyNode::TupleLit(_) => None,
-            AnyNode::IfExpr(_) => None,
-            AnyNode::ElifExpr(_) => None,
-            AnyNode::ElseExpr(_) => None,
-            AnyNode::BinExpr(_) => None,
-            AnyNode::UnExpr(_) => None,
-            AnyNode::ProdTy(_) => None,
-        };
+        // Again, handle each new case manually
+        AnyNode::FileDecl(_) => None,
+        AnyNode::ModDecl(_) => None,
+        AnyNode::InitVar(_) => None,
+        AnyNode::Exprs(_) => None,
+        AnyNode::Appl(_) => None,
+        AnyNode::Lambda(_) => None,
+        AnyNode::Ref(_) => None,
+        AnyNode::Acc(_) => None,
+        AnyNode::NumLit(_) => None,
+        AnyNode::CharLit(_) => None,
+        AnyNode::StrLit(_) => None,
+        AnyNode::TupleLit(_) => None,
+        AnyNode::IfExpr(_) => None,
+        AnyNode::ElifExpr(_) => None,
+        AnyNode::ElseExpr(_) => None,
+        AnyNode::BinExpr(_) => None,
+        AnyNode::UnExpr(_) => None,
+        AnyNode::ProdTy(_) => None,
+    };
 
     if let Some(old_symbol) = old_symbol {
         Err(DuplicatedSymbolErrorData {
@@ -207,10 +206,13 @@ impl Macro for ScopeAnalyzer {
         ctx: &mut Self::Ctx<'_>,
     ) -> Result<(), Skip<Self::Error>> {
         let (id, side) = guard.allow_all();
-        let node = self.resolve(id, ctx);
+        let node = Self::resolve(id, ctx);
 
         if let Err(e) = self.divide_by_scopes(node, side) {
-            ctx.report(SpannedError::for_node(e, id, &ctx.rlt).with_severity(Severity::Bug));
+            ctx.report(ad_hoc_message(|| {
+                SpannedError::new(e, ctx.rlt.get_unknown(id).unwrap().location())
+                    .with_severity(Severity::Bug)
+            }));
         }
 
         // Ensures that we're using enclosing scope for nodes

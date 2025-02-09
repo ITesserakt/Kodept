@@ -20,9 +20,9 @@ derive_more.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
 
-[dependencies.kodept-macros]
-path = "../kodept-macros"
-version = "0.1"
+[dependencies.kodept-report]
+path = "../kodept-report"
+version = "0.2"
 
 [dependencies.kodept-ast]
 path = "../kodept-ast"

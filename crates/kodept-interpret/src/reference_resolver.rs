@@ -8,12 +8,9 @@ use kodept_ast::utils::Skip::Skipped;
 use kodept_ast::{Identifier, Ref};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use kodept_macros::context::Context;
-use kodept_macros::error::report::{IntoSpannedReportMessage, Label, Severity};
-use kodept_macros::error::Diagnostic;
-use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::{Macro, MacroExt};
+use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Label, Severity};
 use SymbolKind::*;
+use crate::macros::{Context, Macro, MacroExt, VisitGuard};
 
 pub struct RefResolver<'a> {
     scope_searcher: ScopeSearcher<'a>,
@@ -109,7 +106,7 @@ impl Macro for RefResolver<'_> {
         ctx: &mut Self::Ctx<'_>,
     ) -> Result<(), Skip<Self::Error>> {
         let id = guard.allow_last().ok_or(Skipped)?;
-        let node = self.resolve(id, ctx);
+        let node = Self::resolve(id, ctx);
         let path = Path {
             context: node.context.clone(),
             ident: node.ident.name().clone(),

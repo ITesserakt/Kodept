@@ -4,12 +4,11 @@ use crate::cli::commands::inspect::InspectParser;
 use crate::cli::traits::CommandWithSources;
 use clap::Subcommand;
 use itertools::Itertools;
-use kodept::codespan_settings::{ConsumeCollector, ProvideCollector, Reports};
-use kodept::read_code_source::ReadCodeSource;
-use kodept::source_files::GlobalReports;
-use kodept_macros::error::report::{Label, Severity};
-use kodept_macros::error::{Diagnostic, ErrorReported};
+use kodept::report::GlobalReports;
+use kodept::source::collection::SourceView;
+use kodept_frontend::Execution;
 use kodept_parse::error::{ParseError, ParseErrors};
+use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Label, Severity};
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
@@ -32,31 +31,34 @@ pub enum Commands {
 }
 
 impl Commands {
-    pub fn execute(self, output: PathBuf, mut reports: Reports) -> Result<(), ErrorReported> {
-        let sources = reports
-            .provide_collector(&GlobalReports, |collector| match &self {
-                Commands::Graph(x) => x.build_sources(collector),
-                Commands::InspectParser(x) => x.build_sources(collector),
-                Commands::Execute(x) => x.build_sources(collector),
-            })
-            .map(Arc::new)
-            .ok_or(ErrorReported::new())?;
+    pub fn execute(self, output: PathBuf, reports: GlobalReports) -> Execution<()> {
+        let sources = Arc::new(match &self {
+            Commands::Graph(x) => x.build_sources(&reports),
+            Commands::InspectParser(x) => x.build_sources(&reports),
+            Commands::Execute(x) => x.build_sources(&reports),
+        }?);
+        let reports = reports.upgrade(sources.clone());
+        let sources = sources.collect();
 
-        let result = match self {
-            Commands::Graph(x) => x.exec(sources.clone(), &mut reports, output),
-            Commands::InspectParser(x) => x.exec(sources.clone(), &mut reports, output),
-            Commands::Execute(x) => x.exec(sources.clone(), &mut reports, output),
-        };
-        reports.consume(&*sources);
-        if result.is_none() {
-            Err(ErrorReported::new())
-        } else {
-            Ok(())
+        match self {
+            Commands::Graph(x) => x.exec(sources, &reports, output),
+            Commands::InspectParser(x) => x.exec(sources, &reports, output),
+            Commands::Execute(x) => x.exec(sources, &reports, output),
         }
     }
 }
 
-fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
+pub struct ParseDiagnostic(Diagnostic);
+
+impl IntoSpannedReportMessage for ParseDiagnostic {
+    type Message = Diagnostic;
+    
+    fn into_message(self) -> Self::Message {
+        self.0
+    }
+}
+
+fn to_diagnostic<A: Display>(error: ParseError<A>) -> ParseDiagnostic {
     let (expected, actual, location, hints) = match error {
         ParseError::ExpectedInstead {
             expected,
@@ -93,9 +95,10 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
             .with_label(Label::primary("expected more", location.in_code))
     };
 
-    hints
+    let diag = hints
         .into_iter()
-        .fold(diagnostic, |acc, next| acc.with_note(next))
+        .fold(diagnostic, |acc, next| acc.with_note(next));
+    ParseDiagnostic(diag)
 }
 
 fn expected_to_string(mut expected: Vec<Cow<'static, str>>) -> Cow<'static, str> {
@@ -110,11 +113,11 @@ fn expected_to_string(mut expected: Vec<Cow<'static, str>>) -> Cow<'static, str>
     }
 }
 
-fn to_diagnostics<A: Display>(errors: ParseErrors<A>) -> Vec<Diagnostic> {
+fn to_diagnostics<A: Display>(errors: ParseErrors<A>) -> Vec<ParseDiagnostic> {
     errors.into_iter().map(to_diagnostic).collect()
 }
 
-fn get_output_file(source: &ReadCodeSource, output_path: &Path) -> std::io::Result<File> {
+fn get_output_file(source: &SourceView, output_path: &Path) -> std::io::Result<File> {
     let name = source.path();
     let path = name.build_file_path().with_extension("kd.dot");
     let filename = path.file_name().unwrap();

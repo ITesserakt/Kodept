@@ -1,0 +1,12 @@
+[package]
+name = "kodept-frontend"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+kodept-core = { path = "../kodept-core" }
+kodept-report = { path = "../kodept-report" }
+yoke = "0.7.5"

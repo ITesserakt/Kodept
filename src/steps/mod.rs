@@ -6,15 +6,14 @@ use kodept_ast::utils::Skip;
 use kodept_ast::visit_side::VisitSide;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
-use kodept_macros::context::{Context, FileId};
-use kodept_macros::error::report::{
-    IntoSpannedReportMessage, MessageBehaviour, Report, SpannedReportMessage,
-};
-use kodept_macros::visit_guard::VisitGuard;
-use kodept_macros::Macro;
 use std::borrow::{BorrowMut, Cow};
 use std::collections::VecDeque;
+use std::ops::ControlFlow::{Break, Continue};
 use tracing::{debug, warn};
+use kodept_core::file_name::FileId;
+use kodept_frontend::Execution;
+use kodept_interpret::macros::{Context, Macro, VisitGuard};
+use kodept_report::prelude::{IntoSpannedReportMessage, MessageBehaviour, Report, SpannedReportMessage};
 
 pub mod common;
 pub mod pipeline;
@@ -29,7 +28,7 @@ enum ApplicationResult {
         failed_macro_type: &'static str,
         reason: Cow<'static, str>,
     },
-    /// Macro did not execute (wrong side, etc)
+    /// Macro did not execute (wrong side, etc.)
     Skipped,
     /// Macro was successfully complete
     Completed,
@@ -79,7 +78,7 @@ where
             Err(Skip::Skipped)
         };
         let location = pack.current_node_location();
-        let file_id = pack.ctx.current_file.id;
+        let file_id = pack.ctx.current_file().id();
         let tail = move || self.tail.apply(pack);
         let into_report = |e: Head::Error| match location {
             None => Report::from_message(file_id, e),
@@ -144,7 +143,7 @@ where
             SoftFailure(reports) => {
                 reports
                     .into_iter()
-                    .for_each(|it| ctx.collector.push_report(it));
+                    .for_each(|it| ctx.push_report(it));
                 metrics.failed += 1;
             }
             HardFailure {
@@ -155,7 +154,7 @@ where
                 warn!(failed_macro_type, "Cannot continue: {reason}");
                 collected_reports
                     .into_iter()
-                    .for_each(|it| ctx.collector.push_report(it));
+                    .for_each(|it| ctx.push_report(it));
                 debug!(?metrics);
                 return false;
             }
@@ -178,27 +177,27 @@ where
     fn into_contents(self) -> Self::Inputs;
 
     #[allow(private_bounds)]
-    fn apply_with_context<'a, O: FromHList<Self::Inputs>, C>(self, ctx: &mut C) -> Option<O>
+    fn apply_with_context<'a, O: FromHList<Self::Inputs>, C>(self, ctx: &mut C) -> Execution<O>
     where
         Self::Inputs: RunMacros<Ctx<'a> = Context<'a>>,
         C: BorrowMut<Context<'a>>,
     {
         let mut contents = self.into_contents();
         match run_macros(ctx, &mut contents) {
-            true => Some(O::from_hlist(contents)),
-            false => None,
+            true => Continue(O::from_hlist(contents)),
+            false => Break(()),
         }
     }
 
     #[allow(private_bounds)]
-    fn run_with_context(self, ctx: &mut Context) -> Option<()>
+    fn run_with_context(self, ctx: &mut Context) -> Execution<()>
     where
         for<'a> Self::Inputs: RunMacros<Ctx<'a> = Context<'a>>,
     {
         let mut contents = self.into_contents();
         match run_macros(ctx, &mut contents) {
-            true => Some(()),
-            false => None,
+            true => Continue(()),
+            false => Break(()),
         }
     }
 }

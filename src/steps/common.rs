@@ -4,10 +4,11 @@ use derive_more::Constructor;
 use kodept_interpret::operator_desugaring::{
     AccessExpander, BinaryOperatorExpander, UnaryOperatorExpander,
 };
-use kodept_macros::context::Context;
 use std::num::NonZeroU16;
 use tracing::info;
+use kodept_frontend::Execution;
 use kodept_interpret::linting::SingleModuleBracketsLint;
+use kodept_interpret::macros::Context;
 use kodept_interpret::reference_resolver::RefResolver;
 use kodept_interpret::scope_analyzer::ScopeAnalyzer;
 
@@ -19,7 +20,7 @@ pub struct Config {
 pub fn run_common_steps(
     ctx: &mut Context,
     _config: &Config,
-) -> Option<()> {
+) -> Execution<()> {
     info!("Step 0: Run some lints");
     Pipeline
         .define_step((SingleModuleBracketsLint, ))
@@ -49,5 +50,5 @@ pub fn run_common_steps(
     //     .define_step((TypeChecker::new(&scopes, config.recursion_depth),))
     //     .apply_with_context(ctx)?;
 
-    Some(())
+    Execution::Continue(())
 }

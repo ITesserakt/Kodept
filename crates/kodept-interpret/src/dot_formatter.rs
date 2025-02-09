@@ -1,11 +1,9 @@
-use crate::context::Context;
-use crate::visit_guard::VisitGuard;
-use crate::Macro;
 use kodept_ast::FileDecl;
 use std::io::Write;
 use derive_more::Constructor;
 use thiserror::Error;
 use kodept_ast::utils::Skip;
+use crate::macros::{Context, Macro, VisitGuard};
 
 #[derive(Constructor)]
 pub struct ASTDotFormatter<W> {
@@ -29,7 +27,7 @@ impl<W: Write> Macro for ASTDotFormatter<W> {
         if guard.allow_last().is_none() {
             return Ok(());
         }
-        
+
         write!(&mut self.output, "{}", ctx.ast.export_dot(&[])).map_err(Error)?;
         Ok(())
     }

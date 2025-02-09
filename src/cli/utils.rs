@@ -32,7 +32,7 @@ impl FromStr for Extension {
     }
 }
 
-impl From<DisplayStyle> for codespan_reporting::term::DisplayStyle {
+impl From<DisplayStyle> for kodept_report::codespan::external::DisplayStyle {
     fn from(value: DisplayStyle) -> Self {
         match value {
             DisplayStyle::Rich => Self::Rich,

@@ -185,7 +185,7 @@ impl<T> ScopeSearcher<'_, T> {
         Some(ReferenceContext::global(parents.into_iter().rev()))
     }
 
-    pub fn walk_bottom_up<'a>(&'a self, start: &'a ScopeV2<T>) -> ScopeWalker<T>
+    pub fn walk_bottom_up<'a>(&'a self, start: &'a ScopeV2<T>) -> ScopeWalker<'a, T>
     where T: PartialEq
     {
         let current = self.index_of(start);

@@ -1,13 +1,11 @@
+use std::ops::ControlFlow;
+use std::process::ExitCode;
 use clap::Parser;
 use tracing::Level;
 use cli::common::Kodept;
-use kodept::codespan_settings::{ConsumeCollector, Reports};
 use kodept::profiler::HeapProfiler;
-use kodept::source_files::GlobalReports;
 
 mod cli;
-
-type WideError = anyhow::Error;
 
 fn init_tracing(level: Level) {
     tracing_subscriber::fmt()
@@ -15,29 +13,33 @@ fn init_tracing(level: Level) {
         .init();
 }
 
-fn init_thread_pool(_parallelism: usize) -> Result<(), WideError> {
+fn init_thread_pool(_parallelism: usize) {
     #[cfg(feature = "parallel")]
     {
         rayon::ThreadPoolBuilder::new()
             .num_threads(_parallelism)
-            .build_global()?
+            .build_global()
+            .expect("Cannot init thread pool");
     }
-    Ok(())
 }
 
-fn main() -> Result<(), WideError> {
+fn main() -> ExitCode {
     let mut lock = HeapProfiler::install();
     lock.consume_on_ctrlc();
 
     let cli_arguments: Kodept = Kodept::parse();
     init_tracing(cli_arguments.level());
-    init_thread_pool(cli_arguments.parallelism)?;
+    init_thread_pool(cli_arguments.parallelism);
 
-    let reports: Reports = cli_arguments.diagnostic_config.into();
+    let reports = cli_arguments.diagnostic_config.make_reports();
     let result = cli_arguments
         .subcommands
-        .execute(cli_arguments.output, reports.clone());
-    reports.consume(&GlobalReports);
-
-    Ok(result?)
+        .execute(cli_arguments.output, reports);
+    
+    if let ControlFlow::Break(()) = result {
+        eprintln!("Compilation finished with errors");
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    }
 }

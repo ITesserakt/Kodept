@@ -1,13 +1,12 @@
-use kodept::codespan_settings::{ProvideCollector, Reports};
-use kodept::common_iter::CommonIter;
-use kodept::source_files::{SourceFiles, SourceView};
-use kodept_macros::error::report::Severity;
-use kodept_macros::error::report_collector::{ReportCollector, Reporter};
-use kodept_macros::error::Diagnostic;
+use kodept::report::{GlobalReports, Reports};
+use kodept::source::collection::{SourceView, Sources};
+use kodept_core::file_name::FileId;
+use kodept_frontend::Execution;
+use kodept_report::prelude::{ad_hoc_message, Diagnostic, Severity};
+use std::ops::ControlFlow::{Break, Continue};
 use std::panic::UnwindSafe;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::sync::Arc;
+use std::sync::OnceLock;
 use std::thread::panicking;
 use std::time::{Duration, Instant};
 use tracing::warn;
@@ -24,50 +23,46 @@ fn pick_appropriate_suffix(dur: Duration) -> (f32, &'static str) {
     }
 }
 
-static PANICKED_SOURCE: AtomicU16 = AtomicU16::new(u16::MAX);
+static PANICKED_SOURCE: OnceLock<FileId> = OnceLock::new();
 
-struct SetPanickedSourceId(u16);
+struct SetPanickedSourceId(FileId);
 
 impl Drop for SetPanickedSourceId {
     fn drop(&mut self) {
         if panicking() {
-            PANICKED_SOURCE.store(self.0, Ordering::Relaxed);
+            _ = PANICKED_SOURCE.set(self.0);
         }
     }
 }
 
 pub trait CommandWithSources: Sized {
-    fn build_sources(&self, collector: &mut ReportCollector<()>) -> Option<SourceFiles>;
+    fn build_sources(&self, report_collector: &GlobalReports) -> Execution<Sources>;
 
-    fn exec(self, sources: Arc<SourceFiles>, reports: &mut Reports, output: PathBuf) -> Option<()>
+    fn exec(self, sources: Vec<SourceView>, reports: &Reports, output: PathBuf) -> Execution<()>
     where
         Self: UnwindSafe + Sync,
     {
-        let rpt = reports.clone();
-        let src = sources.clone();
         match std::panic::catch_unwind(move || {
-            src.into_common_iter()
-                .panic_fuse()
-                .try_foreach_with(rpt, |reports, source| {
-                    let _ = SetPanickedSourceId(*source.id);
-                    let now = Instant::now();
-                    let result = self.exec_for_source(source.clone(), reports, &output);
-                    let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
-                    warn!("Finished `{}` in {elapsed:.2}{suffix}", source.path());
-                    result
-                })
+            sources.into_iter().try_for_each(|source| {
+                let _ = SetPanickedSourceId(*source.id);
+                let now = Instant::now();
+                let result = self.exec_for_source(source.clone(), reports, &output);
+                let (elapsed, suffix) = pick_appropriate_suffix(now.elapsed());
+                warn!("Finished `{}` in {elapsed:.2}{suffix}", source.path());
+                result
+            })
         }) {
-            Ok(Some(())) => Some(()),
-            Ok(None) => None,
+            Ok(Continue(())) => Continue(()),
+            Ok(Break(())) => Break(()),
             Err(_) => {
-                reports.provide_collector(&*sources, |c| {
-                    c.report(
-                        PANICKED_SOURCE.load(Ordering::Relaxed),
+                reports.report(
+                    *PANICKED_SOURCE.get().unwrap(),
+                    ad_hoc_message(|| {
                         Diagnostic::new(Severity::Bug)
-                            .with_message("Unknown panic happened. Contact Kodept developers."),
-                    )
-                });
-                None
+                            .with_message("Unknown panic happened. Contact Kodept developers.")
+                    }),
+                );
+                Break(())
             }
         }
     }
@@ -75,7 +70,7 @@ pub trait CommandWithSources: Sized {
     fn exec_for_source(
         &self,
         source: SourceView,
-        reports: &mut Reports,
+        reports: &Reports,
         output: &Path,
-    ) -> Option<()>;
+    ) -> Execution<()>;
 }
