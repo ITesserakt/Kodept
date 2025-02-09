@@ -1,6 +1,6 @@
 [package]
 name = "kodept-ast"
-version = "0.6.6"
+version = "0.6.7"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
@@ -23,7 +23,6 @@ bevy_ecs.workspace = true
 bevy_hierarchy.workspace = true
 dashmap = "6.1.0"
 derive_more.workspace = true
-sealed = "0.6.0"
 smallvec = "1.13.2"
 
 rayon = { version = "1.10.0", optional = true }

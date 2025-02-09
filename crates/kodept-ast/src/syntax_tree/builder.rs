@@ -245,9 +245,8 @@ where
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
                 let disjoint = Chooser::branch(item);
-                let part = (disjoint.conversion)(disjoint.inner, self.source, self.pool);
-                self.pool.link_syntax(part.root, disjoint.inner);
-                self.insert(part.erase(), Tag::default());
+                let part = disjoint.call(self.source, self.pool);
+                self.insert(part, Tag::default());
             }
             return;
         }
@@ -268,8 +267,7 @@ where
                 move || {
                     iter.for_each_with(sx, |sender, it| {
                         let disjoint = Chooser::branch(it);
-                        let part = (disjoint.conversion)(disjoint.inner, source, pool);
-                        pool.link_syntax(part.root, disjoint.inner);
+                        let part = disjoint.call(source, pool);
                         sender.send(part).unwrap()
                     })
                 },

@@ -1023,7 +1023,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.6.6"
+version = "0.6.7"
 dependencies = [
  "bevy_ecs",
  "bevy_hierarchy",
@@ -1032,7 +1032,6 @@ dependencies = [
  "kodept-core",
  "kodept-rlt",
  "rayon",
- "sealed 0.6.0",
  "smallvec",
 ]
 
@@ -1127,7 +1126,7 @@ dependencies = [
  "derive_more 2.0.1",
  "itertools 0.13.0",
  "nonempty-collections",
- "sealed 0.5.0",
+ "sealed",
  "similar-asserts",
  "smallvec",
 ]
@@ -1640,17 +1639,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4a8caec23b7800fb97971a1c6ae365b6239aaeddfb934d6265f8505e795699d"
 dependencies = [
  "heck 0.4.1",
- "proc-macro2",
- "quote",
- "syn 2.0.98",
-]
-
-[[package]]
-name = "sealed"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22f968c5ea23d555e670b449c1c5e7b2fc399fdaec1d304a17cd48e288abc107"
-dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
