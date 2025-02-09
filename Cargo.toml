@@ -55,7 +55,6 @@ rust.unreachable_pub = "warn"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive", "env"] }
-codespan-reporting = "0.11.1"
 derive_more.workspace = true
 memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
 serde_json = "1"

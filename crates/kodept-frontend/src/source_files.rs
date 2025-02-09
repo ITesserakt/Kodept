@@ -1,6 +1,5 @@
 use crate::prelude::{Source, TryReadCode};
 use crate::read_code_source::ReadSource;
-use codespan_reporting::files::{Error, Files};
 use kodept_core::file_name::FileName;
 use kodept_core::Freeze;
 use kodept_report::{FileDescriptor, FileId};
@@ -8,6 +7,7 @@ use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
 use yoke::Yoke;
+use kodept_report::files::external::{Error, Files};
 
 #[derive(Debug)]
 pub struct SourceView<Impl: 'static> {
@@ -17,7 +17,6 @@ pub struct SourceView<Impl: 'static> {
 
 #[derive(Debug, Default)]
 pub struct SourceFiles<Impl> {
-    id_gen: FileId,
     contents: HashMap<FileId, ReadSource<Impl>>,
 }
 
@@ -44,18 +43,14 @@ impl<Impl> SourceView<Impl> {
     }
 
     pub fn describe(&self) -> FileDescriptor {
-        FileDescriptor {
-            name: self.source.get().path().clone(),
-            id: *self.id,
-        }
+        FileDescriptor::new(self.source.get().path().clone(), *self.id)
     }
 }
 
 impl<Impl: 'static> SourceFiles<Impl> {
     pub fn new() -> Self {
         Self {
-            id_gen: 0,
-            contents: Default::default(),
+            contents: HashMap::new(),
         }
     }
 
@@ -63,9 +58,8 @@ impl<Impl: 'static> SourceFiles<Impl> {
     where
         Impl: TryReadCode<T>,
     {
-        let id = self.id_gen;
+        let id = FileId::generate();
         self.contents.insert(id, Impl::try_read(source)?);
-        self.id_gen = self.id_gen.checked_add(1).expect("Too many source files");
         Ok(())
     }
 

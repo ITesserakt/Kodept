@@ -7,13 +7,13 @@ use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::lexer::traits::ToRepresentation;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
-use kodept_report::error::report::{Label, Severity};
-use kodept_report::error::Diagnostic;
+use kodept_report::traits::ad_hoc_message;
 use kodept_report::FileId;
 use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
 use std::fmt::{Display, Write};
 use std::ops::ControlFlow::{Break, Continue};
+use kodept_report::message::{Diagnostic, Label, Severity};
 
 pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -> Execution<RLT> {
     let lexing_backend = config.get_lexing_backend(source.contents().len());
@@ -59,7 +59,7 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
 
 fn report_each(file_id: FileId, reports: &Reports, errors: ParseErrors<&str>) {
     for error in errors {
-        reports.report(file_id, to_diagnostic(error));
+        reports.report(file_id, ad_hoc_message(move || to_diagnostic(error)));
     }
 }
 

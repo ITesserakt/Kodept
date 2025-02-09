@@ -1,12 +1,12 @@
 use crate::cli::utils::{DisplayStyle, Extension};
 use clap::{Args, ValueEnum};
-use codespan_reporting::term::ColorArg;
 use derive_more::From;
 use kodept::loader::{Loader, LoadingError};
 use kodept_parse::lexer::{PegLexer, PestLexer};
 use kodept_parse::parser::{PegParser};
 use std::io::{stdin, Read};
 use std::path::PathBuf;
+use kodept_report::codespan::external::ColorArg;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {

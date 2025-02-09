@@ -1,8 +1,7 @@
 use crate::cli::configs::DiagnosticConfig;
-use codespan_reporting::term::termcolor::StandardStream;
-use codespan_reporting::term::Config;
 use kodept::report::GlobalReports;
-use kodept_report::error::traits::CodespanSettings;
+use kodept_report::codespan::CodespanSettings;
+use kodept_report::codespan::external::Config;
 
 pub mod configs;
 pub mod primary;
@@ -14,12 +13,11 @@ pub fn make_reports(value: DiagnosticConfig) -> GlobalReports {
         tab_width: value.tab_width,
         ..Default::default()
     };
-    let stream = match value.disable {
-        true => return GlobalReports::disabled(),
-        false => StandardStream::stderr(value.color.0),
-    };
+    if value.disable {
+        return GlobalReports::disabled()
+    }
     match value.eager {
-        true => GlobalReports::eager(CodespanSettings { config, stream }),
-        false => GlobalReports::lazy(CodespanSettings { config, stream }),
+        true => GlobalReports::eager(CodespanSettings::stderr(config, value.color)),
+        false => GlobalReports::lazy(CodespanSettings::stderr(config, value.color)),
     }
 }

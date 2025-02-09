@@ -7,7 +7,6 @@ edition = "2021"
 workspace = true
 
 [dependencies]
-codespan-reporting = "0.11.1"
 kodept-core = { path = "../kodept-core" }
 kodept-report = { path = "../kodept-report" }
 yoke = "0.7.5"

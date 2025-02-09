@@ -1,18 +1,18 @@
 use crate::prelude::{Source, SourceFiles};
 use crate::report::utils::CorrectFileId;
 use crate::Execution;
-use codespan_reporting::files::{Error, Files};
-use codespan_reporting::term::termcolor::StandardStream;
-use kodept_report::error::report::{
-    ad_hoc_message, IntoSpannedReportMessage, MessageBehaviour, Report, ReportMessage, Severity,
-};
+use std::mem::take;
 use std::ops::ControlFlow::{Break, Continue};
 use std::ops::Range;
 use std::sync::{Arc, Mutex};
+use kodept_report::codespan::{CodespanSettings, Reportable};
+use kodept_report::files::external::{Error, Files};
+use kodept_report::message::{ReportMessage, Severity};
+use kodept_report::report::Report;
+use kodept_report::traits::{ad_hoc_message, IntoSpannedReportMessage, MessageBehaviour};
 
 mod utils;
 
-type CodespanSettings = kodept_report::error::traits::CodespanSettings<StandardStream>;
 type Sources<Impl> = SourceFiles<Impl>;
 
 pub struct Global;
@@ -184,30 +184,17 @@ where
                 local_sink,
             } => {
                 if let Some(global_sink) = Arc::get_mut(global_sink) {
-                    let lock = global_sink.get_mut().unwrap_or_else(|it| it.into_inner());
-                    lock.drain(..).for_each(|it| {
-                        let mut lock = settings.stream.lock();
-                        codespan_reporting::term::emit(
-                            &mut lock,
-                            &settings.config,
-                            &Global,
-                            &it.into_diagnostic(),
-                        )
-                        .expect("Cannot emit")
-                    })
+                    let reports = take(global_sink.get_mut().unwrap_or_else(|it| it.into_inner()));
+                    // TODO: hide implementation, so we can touch `settings` via mut reference
+                    reports
+                        .emit(&mut &**settings, &Global)
+                        .expect("Cannot emit reports");
                 }
                 if let Some(local_sink) = Arc::get_mut(local_sink) {
-                    let lock = local_sink.get_mut().unwrap_or_else(|it| it.into_inner());
-                    lock.drain(..).for_each(|it| {
-                        let mut lock = settings.stream.lock();
-                        codespan_reporting::term::emit(
-                            &mut lock,
-                            &settings.config,
-                            &**sources,
-                            &it.into_diagnostic(),
-                        )
-                        .expect("Cannot emit")
-                    })
+                    let reports = take(local_sink.get_mut().unwrap_or_else(|it| it.into_inner()));
+                    reports
+                        .emit(&mut &**settings, &**sources)
+                        .expect("Cannot emit reports");
                 }
             }
         }

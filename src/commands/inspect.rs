@@ -10,12 +10,12 @@ use kodept::source::collection::SourceView;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_core::code_point::CodePoint;
 use kodept_frontend::Execution;
-use kodept_report::error::report::{ad_hoc_message, Label, Severity};
-use kodept_report::error::Diagnostic;
 use kodept_rlt::prelude::RLT;
 use std::ops::ControlFlow;
 use std::ops::ControlFlow::{Break, Continue};
 use tracing::error;
+use kodept_report::message::{Diagnostic, Label, Severity};
+use kodept_report::traits::ad_hoc_message;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {

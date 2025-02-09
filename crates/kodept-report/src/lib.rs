@@ -1,21 +1,21 @@
 //! This crate contains an abstraction for compiler diagnostics - `reports`.
 
-use kodept_core::file_name::FileName;
-use tracing::warn;
+use std::borrow::Cow;
 
-pub mod error;
+pub mod message;
+pub mod traits;
+pub mod report;
+pub mod codespan;
+pub mod crash;
+pub mod files;
 
-pub fn warn_about_broken_rlt<T>() {
-    warn!(
-        expected = std::any::type_name::<T>(),
-        "Skipping some checks because node in RLT either doesn't exist or has different type."
-    );
-}
+type Str = Cow<'static, str>;
 
-pub type FileId = u16;
+pub use kodept_core::file_name::{FileId, FileDescriptor};
 
-#[derive(Debug)]
-pub struct FileDescriptor {
-    pub name: FileName,
-    pub id: FileId,
+pub mod prelude {
+    pub use super::message::{ReportMessage, Severity, Diagnostic, Label, SpannedError};
+    pub use super::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage, MessageBehaviour};
+    pub use super::report::Report;
+    pub use super::codespan::{Reportable, CodespanSettings, Settings};
 }

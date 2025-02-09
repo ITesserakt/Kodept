@@ -42,16 +42,10 @@ impl Command for Check {
             })?;
             let mut ast = self.timings_block("AST building", || build_ast(&source, rlt));
 
-            ast.prepare_reporting(
-                FileDescriptor {
-                    id: *source.id,
-                    name: source.path().clone(),
-                },
-                {
-                    let reports = reports.clone();
-                    move |report| reports.insert(report)
-                },
-            );
+            ast.prepare_reporting(FileDescriptor::new(source.path().clone(), *source.id), {
+                let reports = reports.clone();
+                move |report| reports.insert(report)
+            });
 
             self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
                 install_lints(ctx);

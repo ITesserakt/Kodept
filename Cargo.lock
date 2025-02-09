@@ -103,12 +103,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.95"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
-
-[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -997,7 +991,6 @@ name = "kodept"
 version = "0.2.3"
 dependencies = [
  "clap",
- "codespan-reporting",
  "criterion",
  "ctrlc",
  "derive_more 2.0.1",
@@ -1046,7 +1039,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "derive_more 2.0.1",
  "pathdiff",
@@ -1057,7 +1050,6 @@ dependencies = [
 name = "kodept-frontend"
 version = "0.1.0"
 dependencies = [
- "codespan-reporting",
  "kodept-core",
  "kodept-report",
  "yoke",
@@ -1133,14 +1125,12 @@ dependencies = [
 
 [[package]]
 name = "kodept-report"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
- "anyhow",
  "codespan-reporting",
  "derive_more 2.0.1",
- "extend",
  "kodept-core",
- "tracing",
+ "serde",
 ]
 
 [[package]]

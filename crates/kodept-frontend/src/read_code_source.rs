@@ -1,8 +1,8 @@
-use codespan_reporting::files::{Error, Files};
 use kodept_core::code_point::CodePoint;
 use kodept_core::file_name::FileName;
 use kodept_core::structure::span::CodeHolder;
 use std::ops::Range;
+use kodept_report::files::external::{Error, Files};
 
 #[derive(Debug)]
 pub struct ReadSource<Impl = String> {

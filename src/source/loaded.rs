@@ -1,4 +1,3 @@
-use codespan_reporting::files::line_starts;
 use derive_more::{Display, Error, From};
 use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
 use memmap2::Mmap;
@@ -8,6 +7,7 @@ use std::io::Read;
 use std::ops::Range;
 use std::str::from_utf8;
 use yoke::Yoke;
+use kodept_report::files::external::line_starts;
 
 #[derive(Debug, From)]
 pub struct SourceImpl(ReadImpl);
