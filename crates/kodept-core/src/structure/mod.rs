@@ -1,23 +1,11 @@
 use crate::code_point::CodePoint;
 
+pub use span::CodeHolder;
+
 pub mod span {
     use crate::code_point::CodePoint;
     use crate::structure::Located;
-    use derive_more::Constructor;
     use std::marker::PhantomData;
-
-    #[repr(transparent)]
-    #[derive(Constructor, Debug, Clone, PartialEq, Copy)]
-    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-    pub struct Span {
-        pub point: CodePoint,
-    }
-
-    impl Located for Span {
-        fn location(&self) -> CodePoint {
-            self.point
-        }
-    }
 
     pub trait CodeHolder: Send + Sync + Sized + Copy {
         type Str;

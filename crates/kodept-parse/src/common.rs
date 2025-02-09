@@ -1,9 +1,8 @@
 use std::fmt::Debug;
-
+use kodept_core::code_point::CodePoint;
 use crate::error::{Original, ParseErrors};
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::span::Span;
 use kodept_core::structure::Located;
 use kodept_rlt::new_types::Enclosed;
 use kodept_rlt::prelude::RLT;
@@ -38,9 +37,9 @@ pub trait ErrorAdapter<A, O: Original<A>> {
 
 #[derive(Clone, Debug)]
 pub struct VerboseEnclosed<T> {
-    pub left: Span,
+    pub left: CodePoint,
     pub inner: T,
-    pub right: Span,
+    pub right: CodePoint,
 }
 
 impl<T, U: From<T>> From<VerboseEnclosed<T>> for Enclosed<U> {
@@ -63,9 +62,9 @@ impl<T> From<(PackedTokenMatch, T, PackedTokenMatch)> for VerboseEnclosed<T> {
 impl<T> VerboseEnclosed<T> {
     pub fn from_located<L: Located>(left: L, inner: T, right: L) -> Self {
         Self {
-            left: Span::new(left.location()),
+            left: left.location(),
             inner,
-            right: Span::new(right.location()),
+            right: right.location(),
         }
     }
 }

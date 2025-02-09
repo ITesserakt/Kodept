@@ -8,20 +8,19 @@ macro_rules! make_wrappers {
         #[repr(transparent)]
         #[derive(Debug, Clone, PartialEq, From, Into)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-        pub struct $name(pub kodept_core::structure::span::Span);
+        pub struct $name(pub kodept_core::code_point::CodePoint);
 
         impl kodept_core::structure::Located for $name {
             #[inline(always)]
             fn location(&self) -> kodept_core::code_point::CodePoint {
-                self.0.point
+                self.0
             }
         }
 
         impl $name {
             #[inline(always)]
             pub fn from_located<L: kodept_core::structure::Located>(value: L) -> Self {
-                let span = kodept_core::structure::span::Span::new(value.location());
-                $name(span)
+                $name(value.location())
             }
         }
         )*

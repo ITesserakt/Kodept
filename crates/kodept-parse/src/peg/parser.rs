@@ -7,7 +7,6 @@ use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
 use crate::TRACING_OPTION;
 use derive_more::Constructor;
-use kodept_core::structure::span::Span;
 use kodept_rlt::new_types::BinaryOperationSymbol;
 use kodept_rlt::new_types::UnaryOperationSymbol;
 use kodept_rlt::new_types::{Identifier, Keyword, Symbol};
@@ -81,12 +80,12 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         quiet!{ inner() } / expected!(name)
 
     pub rule literal_grammar() -> rlt::Literal =
-        i:lit(<[tok!(Binary)]>,   "<binary literal>") { rlt::Literal::Binary(Span::new(i.point)) }   /
-        i:lit(<[tok!(Octal)]>,    "<octal literal>")  { rlt::Literal::Octal(Span::new(i.point)) }    /
-        i:lit(<[tok!(Hex)]>,      "<hex literal>")    { rlt::Literal::Hex(Span::new(i.point)) }      /
-        i:lit(<[tok!(Floating)]>, "<number literal>") { rlt::Literal::Floating(Span::new(i.point)) } /
-        i:lit(<[tok!(Char)]>,     "<char literal>")   { rlt::Literal::Char(Span::new(i.point)) }     /
-        i:lit(<[tok!(String)]>,   "<string literal>") { rlt::Literal::String(Span::new(i.point)) }
+        i:lit(<[tok!(Binary)]>,   "<binary literal>") { rlt::Literal::Binary(i.point) }   /
+        i:lit(<[tok!(Octal)]>,    "<octal literal>")  { rlt::Literal::Octal(i.point) }    /
+        i:lit(<[tok!(Hex)]>,      "<hex literal>")    { rlt::Literal::Hex(i.point) }      /
+        i:lit(<[tok!(Floating)]>, "<number literal>") { rlt::Literal::Floating(i.point) } /
+        i:lit(<[tok!(Char)]>,     "<char literal>")   { rlt::Literal::Char(i.point) }     /
+        i:lit(<[tok!(String)]>,   "<string literal>") { rlt::Literal::String(i.point) }
 
     /// Operators grammar
     /// --------------------------------------------------------------------------------------------
