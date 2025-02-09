@@ -15,7 +15,7 @@ type InnerQueryData<T> = (T, Option<&'static Children>, Option<&'static Parent>)
 type InnerQuery<'w, 's, T, Filter> = Query<'w, 's, InnerQueryData<T>, (With<Node>, Filter)>;
 
 #[derive(SystemParam)]
-pub struct ASTQuery<'w, 's, T = EntityRef<'static>, Filter = ()>
+pub struct ASTQuery<'w, 's, Filter = (), T = EntityRef<'static>>
 where
     T: 'static + ReadOnlyQueryData,
     Filter: 'static + QueryFilter,
@@ -31,7 +31,7 @@ pub enum QueryError<E: Error> {
     NotFound(#[error(not(source))] Entity),
 }
 
-impl<T, F> ASTQuery<'_, '_, T, F>
+impl<T, F> ASTQuery<'_, '_, F, T>
 where
     T: 'static + ReadOnlyQueryData,
     F: 'static + QueryFilter,
@@ -59,7 +59,7 @@ where
     }
 }
 
-impl<F> ASTQuery<'_, '_, EntityRef<'static>, F>
+impl<F> ASTQuery<'_, '_, F, EntityRef<'static>>
 where
     F: 'static + QueryFilter,
 {
@@ -120,7 +120,7 @@ where
     }
 }
 
-impl<'w, F> ASTQuery<'w, '_, EntityRef<'_>, F>
+impl<'w, F> ASTQuery<'w, '_, F, EntityRef<'_>>
 where
     F: 'static + QueryFilter,
 {
