@@ -1,3 +1,4 @@
+use crate::node_id::Erase;
 use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
 use crate::properties::tags::Tagged;
 use crate::properties::{Node, NodeProperty};
@@ -11,7 +12,6 @@ use bevy_hierarchy::BuildChildren;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
-use crate::node_id::Erase;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
@@ -38,7 +38,13 @@ impl Pool<'_> {
         self.syntax.root()
     }
 
-    pub(crate) fn link_syntax<'r>(&'r self, id: impl Erase<Entity>, rlt_node: impl Into<SyntaxVariant<'r>>) {
+    /// SAFETY: inherit
+    #[allow(unsafe_code)]
+    pub(crate) unsafe fn link_syntax<'r>(
+        &'r self,
+        id: impl Erase<Entity>,
+        rlt_node: impl Into<SyntaxVariant<'r>>,
+    ) {
         self.syntax.insert(id.erase(), rlt_node)
     }
 }
@@ -174,17 +180,20 @@ where
     }
 
     #[inline(always)]
-    pub fn many<'t, U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'t U::Syntax> + HasLength)
+    #[allow(unsafe_code)]
+    pub fn many<U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'p U::Syntax> + HasLength)
     where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
         Tag: Tagged,
-        &'t U::Syntax: Into<SyntaxVariant<'p>>,
+        &'p U::Syntax: Into<SyntaxVariant<'p>>,
     {
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
-                self.pool.link_syntax(part.root, item);
+                unsafe {
+                    self.pool.link_syntax(part.root, item);
+                }
                 self.insert(part.erase(), Tag::default());
             }
             return;
@@ -206,7 +215,9 @@ where
                 move || {
                     iter.for_each_with(sx, |sender, it| {
                         let part = U::from_syntax(it, source, pool);
-                        pool.link_syntax(part.root, it);
+                        unsafe {
+                            pool.link_syntax(part.root, it);
+                        }
                         sender.send(part).unwrap()
                     })
                 },
@@ -216,14 +227,14 @@ where
     }
 
     #[inline(always)]
-    pub fn maybe_many<'t, U, Tag>(
+    pub fn maybe_many<U, Tag>(
         &mut self,
-        option: Option<impl IntoCommonIter<Item = &'t U::Syntax> + HasLength>,
+        option: Option<impl IntoCommonIter<Item = &'p U::Syntax> + HasLength>,
     ) where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
         Tag: Tagged,
-        &'t U::Syntax: Into<SyntaxVariant<'p>>,
+        &'p U::Syntax: Into<SyntaxVariant<'p>>,
     {
         if let Some(iter) = option {
             self.many(iter)
@@ -293,16 +304,16 @@ where
         }
     }
 
-    #[allow(clippy::wrong_self_convention)]
+    #[allow(clippy::wrong_self_convention, unsafe_code)]
     #[inline(always)]
-    pub fn from_builder<'a, T, U, Tag>(&mut self, node: &'a T, builder: ASTBuilder<U>)
+    pub fn from_builder<T, U, Tag>(&mut self, node: &'p T, builder: ASTBuilder<U>)
     where
         Root: HasChild<U, Tag>,
         U: ASTNode,
         Tag: Tagged,
-        &'a T: Into<SyntaxVariant<'p>>,
+        &'p T: Into<SyntaxVariant<'p>>,
     {
-        self.pool.link_syntax(builder.root, node);
+        unsafe { self.pool.link_syntax(builder.root, node) };
         self.insert(builder.erase(), Tag::default());
     }
 

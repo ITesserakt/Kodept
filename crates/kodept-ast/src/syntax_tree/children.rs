@@ -42,9 +42,9 @@ where
     Tag: Tagged,
 {
     #[inline(always)]
-    pub fn new<'a, U>(node: &'a U::Syntax) -> Self
+    pub fn new<U>(node: &'p U::Syntax) -> Self
     where
-        &'a U::Syntax: Into<SyntaxVariant<'p>>,
+        &'p U::Syntax: Into<SyntaxVariant<'p>>,
         SyntaxVariant<'p>: TryInto<&'p U::Syntax, Error: Debug>,
         Root: HasChild<U, Tag>,
         U: FromSyntax + ASTNode,
@@ -55,9 +55,10 @@ where
     }
 
     #[inline(always)]
+    #[allow(unsafe_code)]
     pub(crate) fn call(self, source: Source, pool: &'p Pool) -> ASTBuilder<()> {
         let part = (self.conversion)(self.inner, source, pool);
-        pool.link_syntax(part.id(), self.inner);
+        unsafe { pool.link_syntax(part.id(), self.inner); }
         part
     }
 

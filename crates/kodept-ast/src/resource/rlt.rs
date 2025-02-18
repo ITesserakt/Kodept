@@ -74,9 +74,9 @@ impl SyntaxResolver {
         &self.tree.inner.0
     }
 
-    // TODO: probably unsound code
+    /// SAFETY: [`node`] parameter must belong to inner tree.
     #[allow(unsafe_code)]
-    pub fn insert<'r, U>(&'r self, id: impl Erase<Entity>, node: U)
+    pub(crate) unsafe fn insert<'r, U>(&'r self, id: impl Erase<Entity>, node: U)
     where
         U: Into<SyntaxVariant<'r>>,
     {

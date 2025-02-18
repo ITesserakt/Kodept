@@ -13,6 +13,7 @@ pub struct AST {
 }
 
 impl AST {
+    #[allow(unsafe_code)]
     pub fn recursively_build<Root>(start: RLT, source_code: impl CodeHolder) -> Self
     where
         Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
@@ -22,7 +23,7 @@ impl AST {
         let pool = Pool::new(&syntax, world.entities());
         let whole_part =
             Root::from_syntax(pool.syntax_root(), source_code, &pool).with_property(Root);
-        pool.link_syntax(whole_part.id(), pool.syntax_root());
+        unsafe { pool.link_syntax(whole_part.id(), pool.syntax_root()); }
         whole_part.consume(&mut world);
         world.insert_resource(syntax);
         AST { world }
