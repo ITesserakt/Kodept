@@ -1,18 +1,18 @@
 use crate::common::ErrorAdapter;
 use crate::error::{ErrorLocation, Original, ParseError, ParseErrors};
-use crate::lexer::Token;
 use itertools::Itertools;
 use kodept_core::code_point::CodePoint;
 use lalrpop_util::ParseError::*;
-use std::convert::Infallible;
+use std::fmt::Display;
 
 fn to_point(start: usize, end: usize) -> CodePoint {
     CodePoint::new((end - start) as u32, start as u32)
 }
 
-impl<'t, A, O> ErrorAdapter<A, O> for lalrpop_util::ParseError<usize, Token<'t>, Infallible>
+impl<'t, A, O, E, T> ErrorAdapter<A, O> for lalrpop_util::ParseError<usize, T, E>
 where
     O: Original<A>,
+    T: Display
 {
     fn adapt(self, original_input: O, position: usize) -> ParseErrors<A> {
         let error = match self {

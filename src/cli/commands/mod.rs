@@ -14,7 +14,7 @@ use kodept_macros::error::report_collector::ReportCollector;
 use kodept_macros::error::traits::DrainReports;
 use kodept_macros::error::{Diagnostic, ErrorReported};
 use kodept_parse::error::{ParseError, ParseErrors};
-use kodept_parse::parser::{parse_from_top, LaLRPop, PegParser};
+use kodept_parse::parser::{parse_from_top, PegParser};
 use kodept_parse::token_match::TokenMatch;
 use kodept_parse::token_stream::TokenStream;
 use std::fmt::Display;
@@ -84,7 +84,7 @@ fn tokenize(source: &ReadCodeSource) -> Result<Vec<TokenMatch>, ParseErrors<&str
             return ParallelTokenizer::new(source.contents(), backend).try_collect_adapted();
         }
     }
-    let backend = PestLexer::new();
+    let backend = LalrpopLexer::new();
     debug!(
         backend = std::any::type_name_of_val(&backend),
         "Using sequential tokenizer"
@@ -99,7 +99,7 @@ fn build_rlt(source: &SourceView, collector: &mut ReportCollector) -> Option<RLT
     
     debug!(length = tokens.len(), "Produced token stream");
     let token_stream = TokenStream::new(&tokens);
-    let result = parse_from_top(token_stream, LaLRPop::new())
+    let result = parse_from_top(token_stream, PegParser::new())
         .map_err(|es| es.into_iter().map(to_diagnostic))
         .drain(*source.id, collector)?;
     

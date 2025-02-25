@@ -6,6 +6,7 @@ pub mod traits;
 pub type NomLexer = crate::nom::Lexer;
 pub type PegLexer<const TRACE: bool> = crate::peg::Lexer<TRACE>;
 pub type PestLexer = crate::pest::Lexer;
+pub type LalrpopLexer = crate::lalrpop::Lexer;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

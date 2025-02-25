@@ -19,17 +19,36 @@ fn bench_impls(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("peg", factor), &contents, |b, i| {
             b.iter(|| EagerTokenizer::new(i, PegLexer::<false>::new()).into_vec())
         });
-        group.bench_with_input(BenchmarkId::new("pest", factor), &contents, |b, i| {
-            b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
-        });
-        group.bench_with_input(BenchmarkId::new("lazy-pest", factor), &contents, |b, i| {
-            b.iter(|| LazyTokenizer::new(i, PestLexer::new()).into_vec())
+        group.bench_with_input(BenchmarkId::new("lazy-peg", factor), &contents, |b, i| {
+            b.iter(|| LazyTokenizer::new(i, PegLexer::<false>::new()).into_vec())
         });
         group.bench_with_input(
             BenchmarkId::new("parallel-peg", factor),
             &contents,
             |b, i| b.iter(|| ParallelTokenizer::new(i, PegLexer::<false>::new()).into_vec()),
         );
+
+        #[cfg(feature = "lalrpop")] {
+            use kodept_parse::lexer::LalrpopLexer;
+            group.bench_with_input(BenchmarkId::new("lalrpop", factor), &contents, |b, i| {
+                b.iter(|| EagerTokenizer::new(i, LalrpopLexer::new()).into_vec())
+            });
+            // group.bench_with_input(BenchmarkId::new("lazy-lalrpop", factor), &contents, |b, i| {
+            //     b.iter(|| LazyTokenizer::new(i, LalrpopLexer::new()).into_vec())
+            // });
+            group.bench_with_input(
+                BenchmarkId::new("parallel-lalrpop", factor),
+                &contents,
+                |b, i| b.iter(|| ParallelTokenizer::new(i, LalrpopLexer::new()).into_vec()),
+            );
+        }
+        
+        group.bench_with_input(BenchmarkId::new("pest", factor), &contents, |b, i| {
+            b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
+        });
+        group.bench_with_input(BenchmarkId::new("lazy-pest", factor), &contents, |b, i| {
+            b.iter(|| LazyTokenizer::new(i, PestLexer::new()).into_vec())
+        });
         group.bench_with_input(
             BenchmarkId::new("parallel-pest", factor),
             &contents,

@@ -1,0 +1,114 @@
+use crate::lexer::enums::*;
+use crate::lexer::enums::Token as EToken;
+use crate::token_match::TokenMatch;
+use kodept_core::structure::span::Span;
+use kodept_core::code_point::CodePoint;
+
+grammar();
+
+Ignore: Ignore<'input> = {
+    "\t" => Ignore::Whitespace,
+    " " => Ignore::Whitespace,
+    "\n" => Ignore::Newline,
+    "\r\n" => Ignore::Newline,
+    "\r" => Ignore::Newline
+}
+
+Keyword: Keyword = {
+    "fun"       => Keyword::Fun,
+    "val"       => Keyword::Val,
+    "var"       => Keyword::Var,
+    "match"     => Keyword::Match,
+    "while"     => Keyword::While,
+    "module"    => Keyword::Module,
+    "extend"    => Keyword::Extend,
+    "return"    => Keyword::Return,
+    "\\"        => Keyword::Lambda,
+    "if"        => Keyword::If,
+    "elif"      => Keyword::Elif,
+    "else"      => Keyword::Else,
+    "abstract"  => Keyword::Abstract,
+    "trait"     => Keyword::Trait,
+    "struct"    => Keyword::Struct,
+    "class"     => Keyword::Class,
+    "enum"      => Keyword::Enum,
+    "foreign"   => Keyword::Foreign,
+    "type"      => Keyword::TypeAlias,
+    "with"      => Keyword::With
+}
+
+Symbol: Symbol = {
+    ","  => Symbol::Comma,
+    ";"  => Symbol::Semicolon,
+    "{"  => Symbol::LBrace,
+    "}"  => Symbol::RBrace,
+    "["  => Symbol::LBracket,
+    "]"  => Symbol::RBracket,
+    "("  => Symbol::LParen,
+    ")"  => Symbol::RParen,
+    "_"  => Symbol::TypeGap,
+    "::" => Symbol::DoubleColon,
+    ":"  => Symbol::Colon,
+}
+
+Identifier: Identifier<'input> = {
+    r"_*\p{Lu}[\p{Alpha}\d_]*" => Identifier::Type(input),
+    r"_*\p{Ll}[\p{Alpha}\d_]*" => Identifier::Identifier(input)
+}
+
+BinLit: Literal<'input> = r"0[bB](([^0_][01_]+)|[01])" => Literal::Binary(input);
+OctLit: Literal<'input> = r"0[cC](([^0_][0-7]+)|[0-7])" => Literal::Octal(input);
+HexLit: Literal<'input> = r"0[xX](([^0_][0-9a-fA-F_]+)|[0-9a-fA-F])" => Literal::Hex(input);
+
+Sign = r"[+-]";
+FloatingLit = r"[0-9]+((\.[0-9]*)?|(\.[0-9])+)([eE][+-]?[0-9]+)?";
+
+Literal: Literal<'input> = {
+    BinLit,
+    OctLit,
+    HexLit,
+    Sign? r"\s"* FloatingLit => Literal::Floating(input),
+    r"'([^']|\\')'" => Literal::Char(input),
+    r#""([^"]|\\")*""# => Literal::String(input)
+}
+
+Operator: Operator = {
+    "."   => Operator::Dot,
+    "=>"  => Operator::Flow,
+    "+"   => Operator::Math(MathOperator::Plus),
+    "-"   => Operator::Math(MathOperator::Sub),
+    "**"  => Operator::Math(MathOperator::Pow),
+    "*"   => Operator::Math(MathOperator::Times),
+    "/"   => Operator::Math(MathOperator::Div),
+    "%"   => Operator::Math(MathOperator::Mod),
+    "<=>" => Operator::Comparison(ComparisonOperator::Spaceship),
+    "=="  => Operator::Comparison(ComparisonOperator::Equiv),
+    "="   => Operator::Comparison(ComparisonOperator::Equals),
+    "!="  => Operator::Comparison(ComparisonOperator::NotEquiv),
+    ">="  => Operator::Comparison(ComparisonOperator::GreaterEquals),
+    ">"   => Operator::Comparison(ComparisonOperator::Greater),
+    "<="  => Operator::Comparison(ComparisonOperator::LessEquals),
+    "<"   => Operator::Comparison(ComparisonOperator::Less),
+    "||"  => Operator::Logic(LogicOperator::OrLogic),
+    "&&"  => Operator::Logic(LogicOperator::AndLogic),
+    "!"   => Operator::Logic(LogicOperator::NotLogic),
+    "|"   => Operator::Bit(BitOperator::OrBit),
+    "&"   => Operator::Bit(BitOperator::AndBit),
+    "^"   => Operator::Bit(BitOperator::XorBit),
+    "~"   => Operator::Bit(BitOperator::NotBit),
+}
+
+Token_: EToken<'input> = {
+    Ignore => EToken::Ignore(<>),
+    Keyword => EToken::Keyword(<>),
+    Symbol => EToken::Symbol(<>),
+    Identifier => EToken::Identifier(<>),
+    Literal => EToken::Literal(<>),
+    Operator => EToken::Operator(<>)
+}
+
+TokenMatch: TokenMatch<'input> = <l:@L> <t:Token_> <r:@R> =>
+    TokenMatch::new(t, Span::new(CodePoint::new((r - l) as u32, l as u32)));
+
+pub Tokens: Vec<TokenMatch<'input>> = <i:TokenMatch*> => i;
+pub Token: TokenMatch<'input> = TokenMatch;
