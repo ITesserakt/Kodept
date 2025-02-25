@@ -1,12 +1,13 @@
 use derive_more::Constructor;
+use nom::multi::fold;
 use nom::Err::{Error, Failure, Incomplete};
-use nom::Parser;
+use nom::{IResult, Offset, Parser};
 
 use kodept_core::code_point::CodePoint;
 
-use crate::common::TokenProducer;
-use crate::lexer::Token;
-use crate::nom::TError;
+use crate::common::{EagerTokensProducer, TokenProducer};
+use crate::lexer::PackedToken;
+use crate::nom::{TError, TParser};
 use crate::token_match::PackedTokenMatch;
 
 pub(crate) const LOWER_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
@@ -17,17 +18,14 @@ mod grammar {
     use nom::bytes::complete::{is_a, is_not, take_while};
     use nom::bytes::{tag, tag_no_case};
     use nom::character::complete::{anychar, char, not_line_ending, one_of};
-    use nom::combinator::{cut, map, not, opt, recognize, value, verify};
+    use nom::combinator::{cut, not, opt, recognize, value};
     use nom::error::context;
     use nom::multi::{many1, many_till};
     use nom::number::recognize_float;
     use nom::sequence::{delimited, preceded};
     use nom::Parser;
 
-    use crate::lexer::{
-        BitOperator, ComparisonOperator, Identifier, Ignore, Keyword, Literal, LogicOperator,
-        MathOperator, Operator, Symbol, Token,
-    };
+    use crate::lexer::PackedToken;
     use crate::nom::lexer::{LOWER_ALPHABET, UPPER_ALPHABET};
     use crate::nom::TParser;
 
@@ -39,97 +37,86 @@ mod grammar {
             value($token, tag($tag))
         };
         (soft $tag:literal => $token:expr) => {
-            value($token, soft_literal_token($tag))
+            value($token, tag($tag))
         };
     }
 
     macro_rules! include_literals {
-    {$($($specifier:ident)* $tag:literal => $token:expr,)+} => {
-        ($(include_literal!($($specifier)* $tag => $token),)+)
-    };
-}
-
-    fn soft_literal_token<'t, 's>(literal: &'s str) -> impl TParser<'t> + 's
-    where
-        't: 's,
-    {
-        let name_extract = map(identifier(), |it| match it {
-            Identifier::Identifier(x) => x,
-            Identifier::Type(x) => x,
-        });
-
-        verify(name_extract, move |it: &str| it == literal)
+        {$($($specifier:ident)* $tag:literal => $token:expr,)+} => {
+            ($(include_literal!($($specifier)* $tag => $token),)+)
+        };
     }
 
-    fn ignore<'t>() -> impl TParser<'t, Ignore<'t>> {
-        let comment = map(
-            recognize(preceded(tag("//"), cut(not_line_ending))),
-            Ignore::Comment,
-        );
-        let multiline_comment = map(
-            recognize(preceded(tag("/*"), cut(many_till(anychar, tag("*/"))))),
-            Ignore::MultilineComment,
-        );
-
+    fn ignore<'t>() -> impl TParser<'t, PackedToken> {
         context(
             "ignore",
             alt((
-                comment,
-                value(Ignore::Whitespace, many1(is_a(" \t"))),
-                value(Ignore::Newline, one_of("\r\n")),
-                multiline_comment,
+                value(PackedToken::Whitespace, many1(is_a(" \t"))),
+                value(PackedToken::Newline, one_of("\r\n")),
             )),
         )
     }
 
-    fn keyword<'t>() -> impl TParser<'t, Keyword> {
+    fn ignore_unpopular<'t>() -> impl TParser<'t, PackedToken> {
+        let comment = value(
+            PackedToken::Comment,
+            recognize(preceded(tag("//"), cut(not_line_ending))),
+        );
+        let multiline_comment = value(
+            PackedToken::MultilineComment,
+            recognize(preceded(tag("/*"), cut(many_till(anychar, tag("*/"))))),
+        );
+        context("ignore", alt((comment, multiline_comment)))
+    }
+
+    fn keyword<'t>() -> impl TParser<'t, PackedToken> {
         context(
             "keyword",
             alt(include_literals! {
-                "fun" => Keyword::Fun,
-                "val" => Keyword::Val,
-                "var" => Keyword::Var,
-                soft "if" => Keyword::If,
-                soft "elif" => Keyword::Elif,
-                soft "else" => Keyword::Else,
-                "match" => Keyword::Match,
-                "while" => Keyword::While,
-                "module" => Keyword::Module,
-                "extend" => Keyword::Extend,
-                "return" => Keyword::Return,
-                "\\" => Keyword::Lambda,
-                soft "abstract" => Keyword::Abstract,
-                soft "trait" => Keyword::Trait,
-                soft "struct" => Keyword::Struct,
-                soft "class" => Keyword::Class,
-                soft "enum" => Keyword::Enum,
-                soft "foreign" => Keyword::Foreign,
-                soft "type" => Keyword::TypeAlias,
-                soft "with" => Keyword::With,
+                "fun" => PackedToken::Fun,
+                "val" => PackedToken::Val,
+                "var" => PackedToken::Var,
+                soft "if" => PackedToken::If,
+                soft "elif" => PackedToken::Elif,
+                soft "else" => PackedToken::Else,
+                "match" => PackedToken::Match,
+                "while" => PackedToken::While,
+                "module" => PackedToken::Module,
+                "extend" => PackedToken::Extend,
+                "return" => PackedToken::Return,
+                "\\" => PackedToken::Lambda,
+                soft "abstract" => PackedToken::Abstract,
+                soft "trait" => PackedToken::Trait,
+                soft "struct" => PackedToken::Struct,
+                soft "class" => PackedToken::Class,
+                soft "enum" => PackedToken::Enum,
+                soft "foreign" => PackedToken::Foreign,
+                soft "type" => PackedToken::TypeAlias,
+                soft "with" => PackedToken::With,
             }),
         )
     }
 
-    fn symbol<'t>() -> impl TParser<'t, Symbol> {
+    fn symbol<'t>() -> impl TParser<'t, PackedToken> {
         context(
             "symbol",
             alt(include_literals! {
-                "," => Symbol::Comma,
-                ";" => Symbol::Semicolon,
-                "{" => Symbol::LBrace,
-                "}" => Symbol::RBrace,
-                "[" => Symbol::LBracket,
-                "]" => Symbol::RBracket,
-                "(" => Symbol::LParen,
-                ")" => Symbol::RParen,
-                "_" => Symbol::TypeGap,
-                "::" => Symbol::DoubleColon,
-                ":" => Symbol::Colon,
+                "," => PackedToken::Comma,
+                ";" => PackedToken::Semicolon,
+                "{" => PackedToken::LBrace,
+                "}" => PackedToken::RBrace,
+                "[" => PackedToken::LBracket,
+                "]" => PackedToken::RBracket,
+                "(" => PackedToken::LParen,
+                ")" => PackedToken::RParen,
+                "_" => PackedToken::TypeGap,
+                "::" => PackedToken::DoubleColon,
+                ":" => PackedToken::Colon,
             }),
         )
     }
 
-    fn identifier<'t>() -> impl TParser<'t, Identifier<'t>> {
+    fn identifier<'t>() -> impl TParser<'t, PackedToken> {
         let identifier_parser = |alphabet| {
             recognize((
                 opt(tag("_")),
@@ -141,13 +128,13 @@ mod grammar {
         context(
             "identifier",
             alt((
-                map(identifier_parser(LOWER_ALPHABET), Identifier::Identifier),
-                map(identifier_parser(UPPER_ALPHABET), Identifier::Type),
+                value(PackedToken::Identifier, identifier_parser(LOWER_ALPHABET)),
+                value(PackedToken::Type, identifier_parser(UPPER_ALPHABET)),
             )),
         )
     }
 
-    fn literal<'t>() -> impl TParser<'t, Literal<'t>> {
+    fn literal<'t>() -> impl TParser<'t, PackedToken> {
         fn number_parser<'a>(prefix: &'static str, alphabet: &'static str) -> impl TParser<'a> {
             recognize(preceded(
                 tag_no_case(prefix),
@@ -171,77 +158,58 @@ mod grammar {
         context(
             "literal",
             alt((
-                map(binary, Literal::Binary),
-                map(octal, Literal::Octal),
-                map(hex, Literal::Hex),
-                map(floating, Literal::Floating),
-                map(char_p, Literal::Char),
-                map(string, |it| Literal::String(it.unwrap_or_default())),
+                value(PackedToken::Binary, binary),
+                value(PackedToken::Octal, octal),
+                value(PackedToken::Hex, hex),
+                value(PackedToken::Floating, floating),
+                value(PackedToken::Char, char_p),
+                value(PackedToken::String, string),
             )),
         )
     }
 
-    fn operator<'t>() -> impl TParser<'t, Operator> {
-        context(
-            "operator",
-            alt((
-                alt(include_literals! {
-                    "." => Operator::Dot,
-                    "=>" => Operator::Flow,
-                }),
-                map(
-                    alt(include_literals! {
-                    "+" => MathOperator::Plus,
-                    "-" => MathOperator::Sub,
-                    "**" => MathOperator::Pow,
-                    "*" => MathOperator::Times,
-                    "/" => MathOperator::Div,
-                    "%" => MathOperator::Mod,
-                    }),
-                    Operator::Math,
-                ),
-                map(
-                    alt(include_literals! {
-                        "<=>" => ComparisonOperator::Spaceship,
-                        "==" => ComparisonOperator::Equiv,
-                        "=" => ComparisonOperator::Equals,
-                        "!=" => ComparisonOperator::NotEquiv,
-                        ">=" => ComparisonOperator::GreaterEquals,
-                        ">" => ComparisonOperator::Greater,
-                        "<=" => ComparisonOperator::LessEquals,
-                        "<" => ComparisonOperator::Less,
-                    }),
-                    Operator::Comparison,
-                ),
-                map(
-                    alt(include_literals! {
-                        "||" => LogicOperator::OrLogic,
-                        "&&" => LogicOperator::AndLogic,
-                        "!" => LogicOperator::NotLogic,
-                    }),
-                    Operator::Logic,
-                ),
-                map(
-                    alt(include_literals! {
-                        "|" => BitOperator::OrBit,
-                        "&" => BitOperator::AndBit,
-                        "^" => BitOperator::XorBit,
-                        "~" => BitOperator::NotBit,
-                    }),
-                    Operator::Bit,
-                ),
-            )),
-        )
-    }
-
-    pub(crate) fn token<'t>() -> impl TParser<'t, Token<'t>> {
+    fn operator<'t>() -> impl TParser<'t, PackedToken> {
         let branches = alt((
-            map(ignore(), Token::Ignore),
-            map(keyword(), Token::Keyword),
-            map(symbol(), Token::Symbol),
-            map(identifier(), Token::Identifier),
-            map(literal(), Token::Literal),
-            map(operator(), Token::Operator),
+            alt(include_literals!(
+                "." => PackedToken::Dot,
+                "=>" => PackedToken::Flow,
+                "+" => PackedToken::Plus,
+                "-" => PackedToken::Sub,
+                "**" => PackedToken::Pow,
+                "*" => PackedToken::Times,
+                "/" => PackedToken::Div,
+                "%" => PackedToken::Mod,
+                "<=>" => PackedToken::Spaceship,
+                "==" => PackedToken::Equiv,
+                "=" => PackedToken::Equals,
+            )),
+            alt(include_literals!(
+                "!=" => PackedToken::NotEquiv,
+                ">=" => PackedToken::GreaterEquals,
+                ">" => PackedToken::Greater,
+                "<=" => PackedToken::LessEquals,
+                "<" => PackedToken::Less,
+                "||" => PackedToken::OrLogic,
+                "&&" => PackedToken::AndLogic,
+                "!" => PackedToken::NotLogic,
+                "|" => PackedToken::OrBit,
+                "&" => PackedToken::AndBit,
+                "^" => PackedToken::XorBit,
+                "~" => PackedToken::NotBit,
+            )),
+        ));
+        context("operator", branches)
+    }
+
+    pub(crate) fn token<'t>() -> impl TParser<'t, PackedToken> {
+        let branches = alt((
+            ignore(),
+            identifier(),
+            symbol(),
+            literal(),
+            keyword(),
+            operator(),
+            ignore_unpopular(),
         ));
         context("token", branches)
     }
@@ -262,12 +230,47 @@ impl TokenProducer for Lexer {
         let (rest, token) = match grammar::token().parse(input) {
             Ok(x) => x,
             Err(Error(e) | Failure(e)) => return Err(e),
-            Err(Incomplete(_)) => ("", Token::Unknown),
+            Err(Incomplete(_)) => ("", PackedToken::Unknown),
         };
         let matched_length = input.len() - rest.len();
         Ok(PackedTokenMatch::new(
             token.into(),
             CodePoint::new(matched_length as u32, 0),
         ))
+    }
+}
+
+impl EagerTokensProducer for Lexer {
+    type Error<'t> = TError<'t>;
+
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
+        fn token_parser(input: &str) -> IResult<&str, (PackedToken, u32), TError> {
+            let (rest, token) = grammar::token().parse(input)?;
+            let length = input.offset(rest) as u32;
+            Ok((rest, (token, length)))
+        }
+
+        fn parser<'t>() -> impl TParser<'t, Vec<PackedTokenMatch>> {
+            let mut offset = 0;
+            fold(
+                0..,
+                token_parser,
+                || vec![],
+                move |mut acc, (token, length)| {
+                    offset += length;
+                    acc.push(PackedTokenMatch::new(token, CodePoint::new(length, offset)));
+                    acc
+                },
+            )
+        }
+
+        match parser().parse_complete(input) {
+            Ok((_, x)) => Ok(x),
+            Err(Error(e) | Failure(e)) => Err(e),
+            Err(Incomplete(_)) => Ok(vec![PackedTokenMatch::new(
+                PackedToken::Unknown,
+                CodePoint::new(input.len() as u32, 0),
+            )]),
+        }
     }
 }

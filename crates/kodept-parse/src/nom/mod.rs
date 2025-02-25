@@ -61,4 +61,5 @@ pub struct TokenVerificationError {
 }
 
 trait TParser<'t, O = &'t str>: nom::Parser<&'t str, Output = O, Error = TError<'t>> {}
+#[diagnostic::do_not_recommend]
 impl<'t, O, P: nom::Parser<&'t str, Output = O, Error = TError<'t>>> TParser<'t, O> for P {}

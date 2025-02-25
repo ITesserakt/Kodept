@@ -117,7 +117,7 @@ impl ParsingConfig {
             #[cfg(feature = "nom")]
             (LexerChoice::Nom, _, false, _) => kodept_parse::lexer::NomLexer::new().into(),
             #[cfg(feature = "nom")]
-            (LexerChoice::Nom, _, true, _) => panic!("Cannot use nom lexer in parallel context"),
+            (LexerChoice::Nom, _, true, _) => kodept_parse::lexer::NomLexer::new().into(),
             (LexerChoice::Auto, ..ONE_MB, false, _) => PestLexer::new().into(),
             (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
             (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),

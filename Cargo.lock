@@ -1092,7 +1092,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "criterion",
  "derive_more 2.0.1",

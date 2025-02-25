@@ -6,6 +6,7 @@ use derive_more::{From, TryInto};
 use enum_iterator::Sequence;
 use kodept_core::static_assert_size;
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Ignore<'t> {
     Comment(&'t str),
@@ -14,6 +15,7 @@ pub enum Ignore<'t> {
     Whitespace,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum Keyword {
@@ -39,6 +41,7 @@ pub enum Keyword {
     Return,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum Symbol {
@@ -55,12 +58,14 @@ pub enum Symbol {
     Colon,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Identifier<'t> {
     Identifier(&'t str),
     Type(&'t str),
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Literal<'t> {
     Binary(&'t str),
@@ -71,6 +76,7 @@ pub enum Literal<'t> {
     String(&'t str),
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum MathOperator {
@@ -82,6 +88,7 @@ pub enum MathOperator {
     Times,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum ComparisonOperator {
@@ -95,6 +102,7 @@ pub enum ComparisonOperator {
     Spaceship,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum LogicOperator {
@@ -103,6 +111,7 @@ pub enum LogicOperator {
     NotLogic,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum BitOperator {
@@ -112,6 +121,7 @@ pub enum BitOperator {
     NotBit,
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, From, Copy)]
 #[cfg_attr(feature = "enum-iter", derive(Sequence))]
 pub enum Operator {
@@ -123,6 +133,7 @@ pub enum Operator {
     Bit(BitOperator),
 }
 
+#[deprecated]
 #[derive(Debug, PartialEq, Clone, From, Copy, TryInto)]
 pub enum Token<'t> {
     Ignore(Ignore<'t>),

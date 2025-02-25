@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use kodept_parse::lexer::{PegLexer, PestLexer};
+use kodept_parse::lexer::{NomLexer, PegLexer, PestLexer};
 use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tok, TokCtor};
 
 const FILENAME: &str = "benches/benchmarking_file1.kd";
@@ -18,6 +18,17 @@ fn bench_impls(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("peg", factor), &contents, |b, i| {
             b.iter(|| EagerTokenizer::new(i, PegLexer::<false>::new()).into_vec())
         });
+        if factor <= 10 { // lazy-peg is really slow...
+            group.bench_with_input(BenchmarkId::new("lazy-peg", factor), &contents, |b, i| {
+                b.iter(|| LazyTokenizer::new(i, PegLexer::<false>::new()).into_vec())
+            });
+        }
+        group.bench_with_input(
+            BenchmarkId::new("parallel-peg", factor),
+            &contents,
+            |b, i| b.iter(|| ParallelTokenizer::new(i, PegLexer::<false>::new()).into_vec()),
+        );
+
         group.bench_with_input(BenchmarkId::new("pest", factor), &contents, |b, i| {
             b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
         });
@@ -25,15 +36,20 @@ fn bench_impls(c: &mut Criterion) {
             b.iter(|| LazyTokenizer::new(i, PestLexer::new()).into_vec())
         });
         group.bench_with_input(
-            BenchmarkId::new("parallel-peg", factor),
-            &contents,
-            |b, i| b.iter(|| ParallelTokenizer::new(i, PegLexer::<false>::new()).into_vec()),
-        );
-        group.bench_with_input(
             BenchmarkId::new("parallel-pest", factor),
             &contents,
             |b, i| b.iter(|| ParallelTokenizer::new(i, PestLexer::new()).into_vec()),
         );
+
+        group.bench_with_input(BenchmarkId::new("parallel-nom", factor), &contents, |b, i| {
+            b.iter(|| ParallelTokenizer::new(i, NomLexer::new()).into_vec())
+        });
+        group.bench_with_input(BenchmarkId::new("nom", factor), &contents, |b, i| {
+            b.iter(|| EagerTokenizer::new(i, NomLexer::new()).into_vec())
+        });
+        group.bench_with_input(BenchmarkId::new("lazy-nom", factor), &contents, |b, i| {
+            b.iter(|| LazyTokenizer::new(i, NomLexer::new()).into_vec())
+        });
     }
 }
 
