@@ -81,9 +81,7 @@ where
 {
     ChildrenDisjoint::ad_hoc(node, move |node, source, pool| {
         ASTBuilder::new(pool, Const)
-            .with_property(Name {
-                name: name_fn(node, source),
-            })
+            .with_property(Name(name_fn(node, source)))
             .with_children(source, pool, |scope| scope.many::<U, NoTag>([node]))
     })
 }

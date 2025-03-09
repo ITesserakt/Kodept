@@ -4,28 +4,26 @@ use crate::scope::ScopeMapping;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
 use bevy_ecs::change_detection::{Res, ResMut};
-use bevy_ecs::entity::{Entities, Entity};
-use bevy_ecs::prelude::{Changed, Commands, Or, Query, Single, With};
+use bevy_ecs::entity::Entity;
+use bevy_ecs::prelude::{Changed, Commands, Or, Query, With};
 use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_hierarchy::{BuildChildren, Children, HierarchyQueryExt, Parent};
+use bevy_hierarchy::{BuildChildren, Children, Parent};
 use kodept_ast::define_union;
-use kodept_ast::prelude::{AnyNodeRef, IntoEnum};
-use kodept_ast::properties::{Node, Root};
+use kodept_ast::prelude::IntoEnum;
+use kodept_ast::properties::Node;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast_nodes::block_level::InitVar;
+use kodept_ast::syntax_tree::prelude::ASTQuery;
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::ModDecl;
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
-use kodept_ast_nodes::types::{Params, TyParams};
 use kodept_core::structure::Located;
-use kodept_report::error::report::{Label, Severity};
-use kodept_report::error::Diagnostic;
+use kodept_report::message::{Diagnostic, Label, Severity};
 use std::convert::Infallible;
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
-    ModDecl | StructDecl | EnumDecl | Func | Params | TyParams | Lambda | Exprs | IfExpr | InitVar
+    ModDecl | StructDecl | EnumDecl | Func | Lambda | Exprs | IfExpr
 });
 
 #[derive(Debug)]
@@ -45,7 +43,7 @@ impl Interaction for ScopeBuilder {
 }
 
 impl ScopeBuilder {
-    fn divide_by_scopes(entity: ScopeUnion, spawner: &Entities, commands: &mut Commands) -> Entity {
+    fn divide_by_scopes(entity: ScopeUnion, commands: &mut Commands) -> Entity {
         let (name, is_anonymous, opaque) = match &*entity {
             ScopeUnionItem::ModDecl(x) => (Some(x.name().clone()), false, false),
             ScopeUnionItem::StructDecl(x) => (Some(x.name().clone()), false, false),
@@ -54,29 +52,20 @@ impl ScopeBuilder {
             ScopeUnionItem::Lambda(_) => (None, true, false),
             ScopeUnionItem::Exprs(_) => (None, true, false),
             ScopeUnionItem::IfExpr(_) => (None, true, false),
-            ScopeUnionItem::InitVar(_) => (None, true, false),
-            ScopeUnionItem::Params(_) => (None, false, false),
-            ScopeUnionItem::TyParams(_) => (None, false, false),
         };
-        let scope_id = spawner.reserve_entity();
         if let Some(name) = name {
             commands
-                .entity(scope_id)
-                .insert((name, Scope::new(entity.id, is_anonymous).opaque(opaque)));
+                .spawn((name, Scope::new(entity.id, is_anonymous).opaque(opaque)))
+                .id()
         } else {
             commands
-                .entity(scope_id)
-                .insert(Scope::new(entity.id, is_anonymous).opaque(opaque));
+                .spawn(Scope::new(entity.id, is_anonymous).opaque(opaque))
+                .id()
         }
-        scope_id
     }
 
     fn system(
-        root: Single<Entity, With<Root>>,
-        query: Query<AnyNodeRef, With<Node>>,
-        children: Query<&Children, With<Node>>,
-        parents: Query<&Parent, With<Node>>,
-        spawner: &Entities,
+        query: ASTQuery,
         mut commands: Commands,
         reporter: Reporter,
         syntax: Res<SyntaxResolver>,
@@ -85,40 +74,36 @@ impl ScopeBuilder {
         let mut enclosing_scopes = scopes
             .map(|mut it| std::mem::take(&mut it.enclosing_scopes_mapping))
             .unwrap_or_default();
-        let root_scope = spawner.reserve_entity();
-        enclosing_scopes.insert(*root, root_scope);
 
-        for entity in children.iter_descendants_depth_first(*root) {
-            let node = query.get(entity).unwrap();
-            let parent_scope_id = parents
-                .iter_ancestors(entity)
-                .find_map(|it| enclosing_scopes.get(&it))
+        let root_scope = commands.spawn(Scope::new(query.root(), false)).id();
+        enclosing_scopes.insert(*query.root(), root_scope);
+        
+        for node in query.iter_descendants() {
+            let parent_scope_id = query
+                .iter_ancestors(node.id())
+                .find_map(|it| enclosing_scopes.get(&*it.id()))
                 .copied();
 
             if let Some(scope_node) = node.into_enum() {
-                let scope_id = Self::divide_by_scopes(scope_node, spawner, &mut commands);
+                let scope_id = Self::divide_by_scopes(scope_node, &mut commands);
                 if let Some(parent) = parent_scope_id {
                     commands.entity(scope_id).set_parent(parent);
                 }
-                enclosing_scopes.insert(entity, scope_id);
+                enclosing_scopes.insert(*node.id(), scope_id);
             } else if let Some(parent) = parent_scope_id {
-                enclosing_scopes.insert(entity, parent);
+                enclosing_scopes.insert(node.id().into(), parent);
             } else {
                 reporter.report_ad_hoc(|| {
-                    let point = syntax.try_get_unknown(entity).unwrap().location();
+                    let point = syntax.try_get_unknown(node.id()).unwrap().location();
                     Diagnostic::new(Severity::Bug)
                         .with_label(Label::primary("", point))
                         .with_message("No scope associated with this element")
-                        .with_note(format!("Entity {}", entity))
+                        .with_note(format!("Entity {}", node.id()))
                 });
             }
         }
 
-        commands.entity(root_scope).insert(Scope::new(*root, false));
-
-        commands.insert_resource(ScopeMapping {
-            enclosing_scopes_mapping: enclosing_scopes,
-        });
+        commands.insert_resource(ScopeMapping::new(enclosing_scopes, query.root()));
 
         done()
     }

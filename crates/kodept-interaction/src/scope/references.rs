@@ -1,20 +1,22 @@
-use crate::prelude::Symbol;
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
-use crate::scope::symbol::SymbolTable;
 use crate::scope::ScopeMapping;
+use crate::symbol::table::SymbolTable;
+use crate::symbol::Symbol;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, fail, Interaction, Result, Skip};
 use bevy_ecs::prelude::{Entity, Populated, Query, Res};
 use bevy_ecs::query::With;
 use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_hierarchy::Parent;
+use bevy_hierarchy::{Children, Parent};
+use kodept_ast::properties::Name;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::Str;
 use kodept_ast_nodes::term::{Identifier, Ref, ReferenceContext};
 use kodept_core::code_point::CodePoint;
-use kodept_report::error::report::{IntoSpannedReportMessage, Label, Severity};
-use kodept_report::error::Diagnostic;
+use kodept_report::message::{Diagnostic, Label, Severity};
+use kodept_report::traits::IntoSpannedReportMessage;
+use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
 
@@ -35,7 +37,10 @@ enum Error {
     #[allow(dead_code)]
     UnknownPath {
         path: Path,
-        failed_segment: Str,
+        failed_segment: Option<Str>,
+        location: CodePoint,
+    },
+    Unsupported {
         location: CodePoint,
     },
 }
@@ -66,17 +71,21 @@ impl IntoSpannedReportMessage for Error {
 
     fn into_message(self) -> Self::Message {
         match self {
-            Error::UnknownReference { path, location } => Diagnostic::new(Severity::Error)
-                .with_message(format!("Cannot find symbol `{}`", path))
-                .with_label(Label::primary("symbol not found", location)),
             Error::UnknownPath {
                 path,
-                failed_segment,
+                failed_segment: Some(segment),
                 location,
             } => Diagnostic::new(Severity::Error)
-                .with_message(format!("Cannot find `{}`", failed_segment))
+                .with_message(format!("Cannot find `{}`", segment))
                 .with_note(format!("While searching for symbol `{}`", path))
                 .with_label(Label::primary("path not found", location)),
+            Error::UnknownReference { path, location }
+            | Error::UnknownPath { path, location, .. } => Diagnostic::new(Severity::Error)
+                .with_message(format!("Cannot find symbol `{}`", path))
+                .with_label(Label::primary("symbol not found", location)),
+            Error::Unsupported { location } => Diagnostic::new(Severity::Error)
+                .with_message("Non-global paths with non-trivial context is unsupported for now")
+                .with_label(Label::primary("unsupported path", location)),
         }
     }
 }
@@ -92,29 +101,38 @@ impl Interaction for ReferenceResolver {
     }
 }
 
+type ScopeQuery<'q> = (
+    &'q Scope,
+    Option<&'q SymbolTable>,
+    Option<&'q Parent>,
+    Option<&'q Children>,
+    Option<&'q Name>,
+);
+
 impl ReferenceResolver {
+    fn search_symbol<'a>(node: &Ref, table: &'a SymbolTable) -> Option<&'a Symbol> {
+        match &node.ident {
+            Identifier::TypeReference { name } => table.get_type(name.clone()),
+            Identifier::Reference { name } => table.get_value(name.clone()).ok(),
+        }
+    }
+
     fn resolve_ref_without_context(
         id: Entity,
         node: &Ref,
         mapping: &ScopeMapping,
-        scopes: &Query<(&Scope, Option<&SymbolTable>, Option<&Parent>)>,
+        scopes: &Query<ScopeQuery>,
         syntax: &SyntaxResolver,
     ) -> Result<Error> {
-        fn search_symbol<'a>(node: &Ref, table: &'a SymbolTable) -> Option<&'a Symbol> {
-            match &node.ident {
-                Identifier::TypeReference { name } => table.get_type(name),
-                Identifier::Reference { name } => table.get_value(name),
-            }
-        }
-
         let scope_id = mapping.enclosing_scope_id(id);
         let mut current_scope_id = scope_id;
         loop {
-            let (scope, symbols, parent) = scopes.get(current_scope_id).unwrap();
-            let symbol = symbols.and_then(|table| search_symbol(node, table));
-            if symbol.is_some() && !scope.opaque {
+            let (_, symbols, parent, ..) = scopes.get(current_scope_id).unwrap();
+            let symbol = symbols.and_then(|table| Self::search_symbol(node, table));
+            if symbol.is_some() {
                 return done();
-            } else if let Some(parent) = parent {
+            }
+            if let Some(parent) = parent {
                 current_scope_id = parent.get();
                 continue;
             } else {
@@ -126,9 +144,74 @@ impl ReferenceResolver {
         }
     }
 
+    fn resolve_ref_with_global_context(
+        id: Entity,
+        node: &Ref,
+        mapping: &ScopeMapping,
+        scopes: &Query<ScopeQuery>,
+        syntax: &SyntaxResolver,
+    ) -> Result<Error> {
+        enum ControlFlow {
+            Value(Entity),
+            Layer,
+        }
+
+        let (.., children, _) = scopes.get(mapping.root_scope_id()).unwrap();
+        let mut queue = children
+            .into_iter()
+            .flatten()
+            .map(|it| ControlFlow::Value(*it))
+            .chain(Some(ControlFlow::Layer))
+            .collect::<VecDeque<_>>();
+
+        let mut context_path_iter = node.context.items.iter().peekable();
+        while let Some(flow) = queue.pop_front() {
+            match flow {
+                ControlFlow::Value(id) => {
+                    let (scope, symbols, _, children, name) = scopes.get(id).unwrap();
+                    let Some(Name(name)) = name else { continue };
+                    let Some(context_path) = context_path_iter.peek() else {
+                        continue;
+                    };
+                    if *context_path != name {
+                        continue;
+                    };
+
+                    if !scope.is_anonymous && context_path_iter.len() == 1 {
+                        let symbol = symbols.and_then(|it| Self::search_symbol(node, it));
+                        return if symbol.is_some() {
+                            done()
+                        } else {
+                            fail(Error::UnknownReference {
+                                path: node.into(),
+                                location: CodePoint::default(),
+                            })
+                        };
+                    }
+
+                    for child in children.into_iter().flatten() {
+                        queue.push_back(ControlFlow::Value(*child));
+                    }
+                }
+                ControlFlow::Layer => {
+                    if queue.is_empty() {
+                        break;
+                    }
+                    queue.push_back(ControlFlow::Layer);
+                    context_path_iter.next();
+                }
+            };
+        }
+        fail(Error::UnknownPath {
+            path: node.into(),
+            failed_segment: context_path_iter.peek().map(|it| (*it).clone()),
+            location: syntax.get_location(id),
+        })
+    }
+
     fn system(
         query: Query<(Entity, &Ref)>,
-        scopes: Populated<(&Scope, Option<&SymbolTable>, Option<&Parent>)>,
+        scopes: Populated<ScopeQuery>,
         scopes_mapping: Res<ScopeMapping>,
         syntax: Res<SyntaxResolver>,
         reporter: Reporter,
@@ -141,7 +224,23 @@ impl ReferenceResolver {
                     &scopes_mapping,
                     &scopes,
                     &syntax,
-                ) { reporter.report(e) }
+                ) {
+                    reporter.report(e);
+                }
+            } else if node.context.global {
+                if let Err(Skip::Failed(e)) = Self::resolve_ref_with_global_context(
+                    entity,
+                    node,
+                    &scopes_mapping,
+                    &scopes,
+                    &syntax,
+                ) {
+                    reporter.report(e);
+                }
+            } else {
+                reporter.report(Error::Unsupported {
+                    location: syntax.get_location(entity),
+                })
             }
         }
         done()

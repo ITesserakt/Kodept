@@ -31,7 +31,7 @@ impl FromSyntax for Func {
         let name = source.get_chunk_located(&node.id);
 
         ASTBuilder::new(pool, Func)
-            .with_property(Name { name })
+            .with_property(Name(name))
             .with_children(source, pool, move |scope| {
                 scope.choose(Unit, node.return_type.as_ref().map(|it| &it.1));
                 if let Some(params) = node.params.as_ref() {

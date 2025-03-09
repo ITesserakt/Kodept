@@ -54,7 +54,7 @@ impl FromSyntax for EnumDecl {
         };
         let name = source.get_chunk_located(id);
         ASTBuilder::new(builder, kind)
-            .with_property(Name { name })
+            .with_property(Name(name))
             .with_children(source, builder, |scope| {
                 scope.maybe_many(rest.as_ref().map(|it| it.inner.as_ref()))
             })
@@ -67,7 +67,7 @@ impl FromSyntax for StructDecl {
     fn from_syntax(node: &Struct, source: impl CodeHolder, builder: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(builder, StructDecl)
-            .with_property(Name { name })
+            .with_property(Name(name))
             .with_children(source, builder, |scope| {
                 if let Some(params) = &node.parameters {
                     wrap_ty_params(node, &params.inner, scope);
@@ -82,6 +82,6 @@ impl FromSyntax for EnumConst {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(pool, EnumConst).with_property(Name { name })
+        ASTBuilder::new(pool, EnumConst).with_property(Name(name))
     }
 }

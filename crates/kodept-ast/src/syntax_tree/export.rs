@@ -23,7 +23,7 @@ fn build_dot_system<W: Write>(
     writeln!(buffer, "digraph {{")?;
     writeln!(buffer, "\trankdir=\"LR\"")?;
 
-    let root_name = names.get(*root).map_or("", |it| it.name.as_ref());
+    let root_name = names.get(*root).map_or("", |it| &*it);
     writeln!(
         buffer,
         "\t{} [ label = \"{} [{}v{}]|name: `{}`\", shape = \"record\" ]",
@@ -34,7 +34,7 @@ fn build_dot_system<W: Write>(
         root_name
     )?;
     for node in nodes.iter_descendants(*root) {
-        let name = names.get(node).map_or("", |it| it.name.as_ref());
+        let name = names.get(node).map_or("", |it| &*it);
         writeln!(
             buffer,
             "\t{} [ label = \"{} [{}v{}]|name: `{}`\", shape = \"record\" ]",

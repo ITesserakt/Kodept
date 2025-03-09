@@ -68,7 +68,7 @@ impl FromSyntax for Ty {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(pool, Ty).with_property(Name { name })
+        ASTBuilder::new(pool, Ty).with_property(Name(name))
     }
 }
 
@@ -77,7 +77,7 @@ impl FromSyntax for NonTyParam {
 
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(pool, NonTyParam).with_property(Name { name })
+        ASTBuilder::new(pool, NonTyParam).with_property(Name(name))
     }
 }
 
@@ -87,7 +87,7 @@ impl FromSyntax for TyParam {
     fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(pool, TyParam)
-            .with_property(Name { name })
+            .with_property(Name(name))
             .with_children(source, pool, move |scope| {
                 scope.choose(Unit, [&node.parameter_type])
             })

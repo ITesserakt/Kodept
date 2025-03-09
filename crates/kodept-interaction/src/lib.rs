@@ -1,19 +1,23 @@
+#![allow(dead_code)]
+
 use crate::wrapper::InteractionWrapper;
 use kodept_ast::prelude::NodeId;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_core::structure::Located;
-use kodept_report::error::report::IntoSpannedReportMessage;
-use kodept_report::error::traits::SpannedError;
+use kodept_report::message::SpannedError;
+use kodept_report::traits::IntoSpannedReportMessage;
 
 pub mod lint;
 mod normalize;
 mod report;
 mod scope;
+mod symbol;
 
 pub mod prelude {
     pub use super::scope::builder::ScopeBuilder;
     pub use super::scope::references::ReferenceResolver;
-    pub use super::scope::symbol::{DuplicatedSymbolError, ExtractSymbols, Symbol, SymbolKind};
+
+    pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbols};
 
     pub use super::report::ASTExt;
 }
@@ -50,7 +54,7 @@ pub mod wrapper {
     use crate::Skip;
     use bevy_ecs::prelude::{In, IntoSystem, IntoSystemConfigs};
     use bevy_ecs::schedule::SystemConfigs;
-    use kodept_report::error::report::IntoSpannedReportMessage;
+    use kodept_report::traits::IntoSpannedReportMessage;
     use std::marker::PhantomData;
     use tracing::trace;
 

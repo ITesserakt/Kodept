@@ -1,0 +1,6 @@
+module A => 
+
+struct String;
+struct Person(name: String);
+
+fun foo(p: Person) => p.name

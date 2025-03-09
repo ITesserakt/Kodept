@@ -1,10 +1,10 @@
-use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
+use kodept_ast::prelude::{Erase, NodeId};
 
 #[derive(Debug, Component, Hash, Eq, PartialEq)]
-pub(super) struct Scope {
+pub(crate) struct Scope {
     /// Root entity for this scope
-    pub start_from: Entity,
+    pub start_from: NodeId,
     /// Defines whether symbols inside the scope are visible outside
     pub is_anonymous: bool,
     /// Defines whether inner scopes may access symbols of this scope
@@ -12,9 +12,9 @@ pub(super) struct Scope {
 }
 
 impl Scope {
-    pub(super) fn new(start_from: Entity, is_anonymous: bool) -> Self {
+    pub(super) fn new(start_from: impl Erase, is_anonymous: bool) -> Self {
         Self {
-            start_from,
+            start_from: start_from.erase(),
             is_anonymous,
             opaque: false,
         }

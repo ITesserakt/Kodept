@@ -6,10 +6,9 @@ use bevy_ecs::query::With;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::Located;
-use kodept_report::error::report::{Label, Severity};
-use kodept_report::error::Diagnostic;
 use kodept_rlt::prelude::{File, Module};
 use std::convert::Infallible;
+use kodept_report::message::{Diagnostic, Label, Severity};
 
 pub struct SingleModuleWithBrackets;
 

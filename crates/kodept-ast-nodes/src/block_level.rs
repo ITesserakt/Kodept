@@ -53,7 +53,7 @@ impl FromSyntax for VarDecl {
         };
         let name = source.get_chunk_located(id);
         ASTBuilder::new(pool, kind)
-            .with_property(Name { name })
+            .with_property(Name(name))
             .with_children(source, pool, |scope| {
                 scope.maybe_choose(Unit, ty.as_ref().map(|it| [&it.1]))
             })

@@ -52,7 +52,7 @@ impl FromSyntax for ModDecl {
         };
         let name = source_code.get_chunk_located(id);
         ASTBuilder::new(pool, kind)
-            .with_property(Name { name })
+            .with_property(Name(name))
             .with_children(source_code, pool, |scope| scope.choose(Unit, rest))
     }
 }

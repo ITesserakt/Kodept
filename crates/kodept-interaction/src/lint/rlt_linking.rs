@@ -4,9 +4,8 @@ use crate::{done, Result};
 use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res, With};
 use kodept_ast::properties::Node;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_report::error::report::Severity;
-use kodept_report::error::Diagnostic;
 use std::convert::Infallible;
+use kodept_report::message::{Diagnostic, Severity};
 
 pub struct RLTLinkLint;
 

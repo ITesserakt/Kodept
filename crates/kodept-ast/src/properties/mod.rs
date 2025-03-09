@@ -20,9 +20,7 @@ pub struct Node {
 pub struct Root;
 
 #[derive(Debug, Component, Clone, From, Into)]
-pub struct Name {
-    pub name: Str,
-}
+pub struct Name(pub Str);
 
 pub trait HasProperty<Property: NodeProperty>: Sized {
     #[inline]
@@ -37,13 +35,13 @@ impl Deref for Name {
     type Target = Str;
 
     fn deref(&self) -> &Self::Target {
-        &self.name
+        &self.0
     }
 }
 
 impl DerefMut for Name {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.name
+        &mut self.0
     }
 }
 
