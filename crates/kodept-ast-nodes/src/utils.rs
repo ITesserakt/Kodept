@@ -12,7 +12,7 @@ use kodept_ast::Str;
 use kodept_rlt::prelude::{Body, Parameter, TypedParameter};
 use std::fmt::Debug;
 
-pub(crate) fn unwrap_body<'p, R, S, Tag>(node: &'p Body, scope: &mut ChildrenScope<'p, '_, R, S>)
+pub(crate) fn unwrap_body<'scope, 'w, R, S, Tag>(node: &'w Body, scope: &mut ChildrenScope<'scope, 'w, R, S>)
 where
     R: HasChild<Exprs, Tag>,
     Tag: Tagged,
@@ -31,15 +31,15 @@ where
     };
 }
 
-pub(crate) fn wrap_params<'p, R, S, Tag>(
-    parent_node: &'p R::Syntax,
-    params: &'p impl AsRef<[Parameter]>,
-    scope: &mut ChildrenScope<'p, '_, R, S>,
+pub(crate) fn wrap_params<'scope, 'w, R, S, Tag>(
+    parent_node: &'w R::Syntax,
+    params: &impl AsRef<[Parameter]>,
+    scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<Params, Tag> + FromSyntax,
     Tag: Tagged,
     S: CodeHolder,
-    &'p R::Syntax: Into<SyntaxVariant<'p>>,
+    &'w R::Syntax: Into<SyntaxVariant<'w>>,
 {
     let fake = ASTBuilder::new(scope.pool(), Params).with_children(
         scope.source(),
@@ -49,15 +49,15 @@ pub(crate) fn wrap_params<'p, R, S, Tag>(
     scope.from_builder(parent_node, fake);
 }
 
-pub(crate) fn wrap_ty_params<'p, R, S, Tag>(
-    parent_node: &'p R::Syntax,
-    params: &'p impl AsRef<[TypedParameter]>,
-    scope: &mut ChildrenScope<'p, '_, R, S>,
+pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
+    parent_node: &'w R::Syntax,
+    params: &impl AsRef<[TypedParameter]>,
+    scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<TyParams, Tag> + FromSyntax,
     Tag: Tagged,
     S: CodeHolder,
-    &'p R::Syntax: Into<SyntaxVariant<'p>>,
+    &'w R::Syntax: Into<SyntaxVariant<'w>>,
 {
     let fake = ASTBuilder::new(scope.pool(), TyParams).with_children(
         scope.source(),

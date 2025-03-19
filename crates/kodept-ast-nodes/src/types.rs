@@ -66,7 +66,7 @@ derive_node!(NonTyParam {
 impl FromSyntax for Ty {
     type Syntax = new_types::TypeName;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(node);
         ASTBuilder::new(pool, Ty).with_property(Name(name))
     }
@@ -75,7 +75,7 @@ impl FromSyntax for Ty {
 impl FromSyntax for NonTyParam {
     type Syntax = UntypedParameter;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(pool, NonTyParam).with_property(Name(name))
     }
@@ -84,7 +84,7 @@ impl FromSyntax for NonTyParam {
 impl FromSyntax for TyParam {
     type Syntax = TypedParameter;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(pool, TyParam)
             .with_property(Name(name))
@@ -97,7 +97,7 @@ impl FromSyntax for TyParam {
 impl FromSyntax for ProdTy {
     type Syntax = Tuple;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, ProdTy).with_children(source, pool, move |scope| {
             scope.choose(Unit, node.0.inner.as_ref())
         })

@@ -156,7 +156,7 @@ derive_node!(UnExpr {
 impl FromSyntax for Exprs {
     type Syntax = ExpressionBlock;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Exprs).with_children(source, pool, |scope| {
             scope.choose(Unit, node.expression.as_ref())
         })
@@ -166,7 +166,7 @@ impl FromSyntax for Exprs {
 impl FromSyntax for App {
     type Syntax = Application;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, App).with_children(source, pool, |scope| {
             scope.choose::<_, _, LeftExpr>(Unit, [&node.expr]);
             scope.maybe_choose::<_, _, RightExpr>(
@@ -180,7 +180,7 @@ impl FromSyntax for App {
 impl FromSyntax for Lambda {
     type Syntax = kodept_rlt::prelude::Lambda;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Lambda).with_children(source, pool, |scope| {
             scope.choose(Unit, [&*node.expr]);
             scope.choose(Unit, node.binds.inner.as_ref());

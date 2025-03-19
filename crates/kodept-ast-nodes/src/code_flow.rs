@@ -61,7 +61,7 @@ derive_node!(ElseExpr {
 impl FromSyntax for IfExpr {
     type Syntax = kodept_rlt::prelude::IfExpr;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, IfExpr).with_children(source, pool, |scope| {
             scope.choose(Unit, [&node.condition]);
             scope.many::<ElifExpr, _>(node.elif.as_ref());
@@ -74,7 +74,7 @@ impl FromSyntax for IfExpr {
 impl FromSyntax for ElifExpr {
     type Syntax = kodept_rlt::prelude::ElifExpr;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, ElifExpr).with_children(source, pool, |scope| {
             scope.choose(Unit, [&node.condition]);
             unwrap_body::<_, _, NoTag>(&node.body, scope);
@@ -85,7 +85,7 @@ impl FromSyntax for ElifExpr {
 impl FromSyntax for ElseExpr {
     type Syntax = kodept_rlt::prelude::ElseExpr;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, ElseExpr).with_children(source, pool, |scope| {
             unwrap_body(&node.body, scope);
         })

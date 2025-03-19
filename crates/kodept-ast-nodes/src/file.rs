@@ -36,24 +36,24 @@ derive_node!(ModDecl {
 impl FromSyntax for FileDecl {
     type Syntax = File;
 
-    fn from_syntax(node: &File, source_code: impl CodeHolder, builder: &Pool) -> ASTBuilder<Self> {
-        ASTBuilder::new(builder, FileDecl)
-            .with_children(source_code, builder, |scope| scope.many(node.0.as_ref()))
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+        ASTBuilder::new(pool, FileDecl)
+            .with_children(source, pool, |scope| scope.many(node.0.as_ref()))
     }
 }
 
 impl FromSyntax for ModDecl {
     type Syntax = Module;
 
-    fn from_syntax(node: &Module, source_code: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let (kind, id, rest) = match node {
             Module::Global { id, rest, .. } => (ModDecl::Global, id, rest.as_ref()),
             Module::Ordinary { id, rest, .. } => (ModDecl::Ordinary, id, rest.as_ref()),
         };
-        let name = source_code.get_chunk_located(id);
+        let name = source.get_chunk_located(id);
         ASTBuilder::new(pool, kind)
             .with_property(Name(name))
-            .with_children(source_code, pool, |scope| scope.choose(Unit, rest))
+            .with_children(source, pool, |scope| scope.choose(Unit, rest))
     }
 }
 

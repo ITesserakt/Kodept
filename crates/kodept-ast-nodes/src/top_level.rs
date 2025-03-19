@@ -43,19 +43,19 @@ derive_node!(EnumConst {
 impl FromSyntax for EnumDecl {
     type Syntax = Enum;
 
-    fn from_syntax(
-        node: &Self::Syntax,
+    fn from_syntax<'w>(
+        node: &'w Self::Syntax,
         source: impl CodeHolder,
-        builder: &Pool,
+        pool: Pool<'w>,
     ) -> ASTBuilder<Self> {
         let (kind, id, rest) = match node {
             Enum::Stack { id, contents, .. } => (EnumDecl::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumDecl::Heap, id, contents),
         };
         let name = source.get_chunk_located(id);
-        ASTBuilder::new(builder, kind)
+        ASTBuilder::new(pool, kind)
             .with_property(Name(name))
-            .with_children(source, builder, |scope| {
+            .with_children(source, pool, |scope| {
                 scope.maybe_many(rest.as_ref().map(|it| it.inner.as_ref()))
             })
     }
@@ -64,11 +64,11 @@ impl FromSyntax for EnumDecl {
 impl FromSyntax for StructDecl {
     type Syntax = Struct;
 
-    fn from_syntax(node: &Struct, source: impl CodeHolder, builder: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(builder, StructDecl)
+        ASTBuilder::new(pool, StructDecl)
             .with_property(Name(name))
-            .with_children(source, builder, |scope| {
+            .with_children(source, pool, |scope| {
                 if let Some(params) = &node.parameters {
                     wrap_ty_params(node, &params.inner, scope);
                 }
@@ -80,7 +80,7 @@ impl FromSyntax for StructDecl {
 impl FromSyntax for EnumConst {
     type Syntax = TypeName;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(node);
         ASTBuilder::new(pool, EnumConst).with_property(Name(name))
     }

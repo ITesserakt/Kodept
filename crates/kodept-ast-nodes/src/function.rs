@@ -27,7 +27,7 @@ derive_node!(Func {
 impl FromSyntax for Func {
     type Syntax = BodiedFunction;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let name = source.get_chunk_located(&node.id);
 
         ASTBuilder::new(pool, Func)

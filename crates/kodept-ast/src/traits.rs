@@ -11,7 +11,7 @@ impl<T: BasicCodeHolder<Str = Str>> CodeHolder for T {}
 pub trait FromSyntax: Sized {
     type Syntax;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self>;
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self>;
 }
 
 pub trait ASTNode: Component {}

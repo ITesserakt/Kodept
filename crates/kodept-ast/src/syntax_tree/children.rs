@@ -25,7 +25,7 @@ where
     type Arity;
 }
 
-type DynFromSyntax<'p, Source> = dyn FnOnce(SyntaxVariant<'p>, Source, &'p Pool) -> ASTBuilder<()>;
+type DynFromSyntax<'w, Source> = dyn FnOnce(SyntaxVariant<'w>, Source, Pool<'w>) -> ASTBuilder<()>;
 
 pub struct ChildrenDisjoint<'p, Root, Source, Tag>
 where
@@ -36,16 +36,16 @@ where
     _phantom: PhantomData<(Tag, Root)>,
 }
 
-impl<'p, Root, Source, Tag> ChildrenDisjoint<'p, Root, Source, Tag>
+impl<'w, Root, Source, Tag> ChildrenDisjoint<'w, Root, Source, Tag>
 where
     Source: CodeHolder,
     Tag: Tagged,
 {
     #[inline(always)]
-    pub fn new<U>(node: &'p U::Syntax) -> Self
+    pub fn new<U>(node: &'w U::Syntax) -> Self
     where
-        &'p U::Syntax: Into<SyntaxVariant<'p>>,
-        SyntaxVariant<'p>: TryInto<&'p U::Syntax, Error: Debug>,
+        &'w U::Syntax: Into<SyntaxVariant<'w>>,
+        SyntaxVariant<'w>: TryInto<&'w U::Syntax, Error: Debug>,
         Root: HasChild<U, Tag>,
         U: FromSyntax + ASTNode,
     {
@@ -56,7 +56,7 @@ where
 
     #[inline(always)]
     #[allow(unsafe_code)]
-    pub(crate) fn call(self, source: Source, pool: &'p Pool) -> ASTBuilder<()> {
+    pub(crate) fn call(self, source: Source, pool: Pool<'w>) -> ASTBuilder<()> {
         let part = (self.conversion)(self.inner, source, pool);
         unsafe { pool.link_syntax(part.id(), self.inner); }
         part
@@ -65,14 +65,14 @@ where
     #[inline(always)]
     pub fn ad_hoc<'a, T, U>(
         node: &'a T,
-        f: impl FnOnce(&'p T, Source, &'p Pool) -> ASTBuilder<U> + 'static,
+        f: impl FnOnce(&'w T, Source, Pool<'w>) -> ASTBuilder<U> + 'static,
     ) -> Self
     where
-        &'a T: Into<SyntaxVariant<'p>>,
-        SyntaxVariant<'p>: TryInto<&'p T, Error: Debug>,
+        &'a T: Into<SyntaxVariant<'w>>,
+        SyntaxVariant<'w>: TryInto<&'w T, Error: Debug>,
         Root: HasChild<U, Tag>,
         U: ASTNode,
-        T: 'p,
+        T: 'w,
     {
         Self {
             inner: node.into(),

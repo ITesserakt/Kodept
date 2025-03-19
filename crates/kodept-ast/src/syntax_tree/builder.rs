@@ -6,14 +6,14 @@ use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
 use crate::syntax_tree::children::HasChild;
 use crate::utils::{HasLength, IntoCommonIter};
 use bevy_ecs::entity::Entities;
-use bevy_ecs::prelude::{Entity, World};
+use bevy_ecs::prelude::{Commands, Entity, World};
 use bevy_ecs::world::CommandQueue;
-use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
+#[derive(Debug, Copy, Clone)]
 pub struct Pool<'e> {
     syntax: &'e SyntaxResolver,
     lazy_entities: &'e Entities,
@@ -29,10 +29,6 @@ impl<'e> Pool<'e> {
 }
 
 impl Pool<'_> {
-    pub(crate) fn allocate(&self) -> Entity {
-        self.lazy_entities.reserve_entity()
-    }
-
     pub(crate) fn syntax_root(&self) -> &kodept_rlt::prelude::File {
         self.syntax.root()
     }
@@ -40,7 +36,7 @@ impl Pool<'_> {
     /// SAFETY: inherit
     #[allow(unsafe_code)]
     pub(crate) unsafe fn link_syntax<'r>(
-        &'r self,
+        &self,
         id: impl Erase<Entity>,
         rlt_node: impl Into<SyntaxVariant<'r>>,
     ) {
@@ -54,34 +50,34 @@ pub struct ASTBuilder<Root> {
     _phantom: PhantomData<Root>,
 }
 
-pub struct ChildrenScope<'p, 'e, Root, Source> {
-    queue: OnceCell<CommandQueue>,
+pub struct ChildrenScope<'s, 'w, Root, Source> {
     root: Entity,
+    commands: Commands<'w, 's>,
+    pool: Pool<'w>,
     source: Source,
-    pool: &'p Pool<'e>,
     _phantom: PhantomData<Root>,
 }
 
 impl<Root> ASTBuilder<Root> {
     #[must_use]
-    pub fn new(pool: &Pool, root: Root) -> Self
+    pub fn new(pool: Pool, root: Root) -> Self
     where
         Root: ASTNode,
     {
-        let root_id = pool.allocate();
         let mut queue = CommandQueue::default();
-        queue.push(move |w: &mut World| {
-            let mut entity = w.entity_mut(root_id);
-            entity.insert((
-                root,
-                Node {
-                    kind: std::any::type_name::<Root>(),
-                },
-            ));
-        });
+        let mut commands = Commands::new_from_entities(&mut queue, pool.lazy_entities);
+
+        let entity_commands = commands.spawn((
+            root,
+            Node {
+                kind: std::any::type_name::<Root>(),
+            },
+        ));
+
+        let root = entity_commands.id();
         Self {
             queue,
-            root: root_id,
+            root,
             _phantom: Default::default(),
         }
     }
@@ -97,27 +93,23 @@ impl<Root> ASTBuilder<Root> {
 
     #[must_use]
     #[inline(always)]
-    pub fn with_children<'p, 'e, S>(
+    pub fn with_children<'w, S>(
         mut self,
         source: S,
-        pool: &'p Pool<'e>,
-        f: impl FnOnce(&mut ChildrenScope<'p, 'e, Root, S>),
+        pool: Pool<'w>,
+        f: impl for<'scope> FnOnce(&'scope mut ChildrenScope<'scope, 'w, Root, S>),
     ) -> Self
     where
         S: CodeHolder,
     {
         let mut scope = ChildrenScope {
             source,
-            pool,
-            // children_buffer: Default::default(),
-            queue: OnceCell::new(),
+            commands: Commands::new_from_entities(&mut self.queue, pool.lazy_entities),
             root: self.root,
+            pool,
             _phantom: Default::default(),
         };
         f(&mut scope);
-        if let Some(queue) = scope.queue.get_mut() {
-            self.queue.append(queue);
-        }
         self
     }
 
@@ -136,7 +128,7 @@ impl<Root> ASTBuilder<Root> {
     }
 }
 
-impl<'p, 'e, Root, Source> ChildrenScope<'p, 'e, Root, Source>
+impl<'s, 'w, Root, Source> ChildrenScope<'s, 'w, Root, Source>
 where
     Source: CodeHolder,
 {
@@ -147,52 +139,25 @@ where
     {
         let child_id = part.root;
         let root_id = self.root;
-        part.queue.push(move |w: &mut World| {
-            w.entity_mut(child_id).insert(tag);
-            w.entity_mut(root_id).add_child(child_id);
-        });
-        match self.queue.take() {
-            None => self.queue.set(part.queue).unwrap(),
-            Some(mut old) => {
-                old.append(&mut part.queue);
-                self.queue.set(old).unwrap()
-            }
-        }
-    }
 
-    #[allow(dead_code)]
-    #[inline]
-    fn insert_iter<Tag>(&mut self, iter: impl IntoIterator<Item = ASTBuilder<()>> + Send + 'static)
-    where
-        Tag: Tagged,
-    {
-        let root_id = self.root;
-        let mut queue = self.queue.take().unwrap_or_default();
-        queue.push(move |w: &mut World| {
-            iter.into_iter().for_each(|mut part| {
-                w.entity_mut(root_id).add_child(part.root);
-                w.entity_mut(part.root).insert(Tag::default());
-                part.queue.apply(w);
-            });
-        });
-        _ = self.queue.set(queue);
+        self.commands.entity(child_id).insert(tag);
+        self.commands.entity(root_id).add_child(child_id);
+        self.commands.append(&mut part.queue);
     }
 
     #[inline(always)]
     #[allow(unsafe_code)]
-    pub fn many<U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'p U::Syntax> + HasLength)
+    pub fn many<U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'w U::Syntax> + HasLength)
     where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
         Tag: Tagged,
-        &'p U::Syntax: Into<SyntaxVariant<'p>>,
+        &'w U::Syntax: Into<SyntaxVariant<'w>>,
     {
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
-                unsafe {
-                    self.pool.link_syntax(part.root, item);
-                }
+                unsafe { self.pool.link_syntax(part.root, item) };
                 self.insert(part.erase(), Tag::default());
             }
             return;
@@ -214,13 +179,15 @@ where
                 move || {
                     iter.for_each_with(sx, |sender, it| {
                         let part = U::from_syntax(it, source, pool);
-                        unsafe {
-                            pool.link_syntax(part.root, it);
-                        }
+                        unsafe { pool.link_syntax(part.root, it) };
                         sender.send(part).unwrap()
                     })
                 },
-                || self.insert_iter::<Tag>(rx.into_iter().map(|it| it.erase())),
+                move || {
+                    for item in rx.into_iter() {
+                        self.insert(item.erase(), Tag::default());
+                    }
+                },
             );
         }
     }
@@ -228,12 +195,12 @@ where
     #[inline(always)]
     pub fn maybe_many<U, Tag>(
         &mut self,
-        option: Option<impl IntoCommonIter<Item = &'p U::Syntax> + HasLength>,
+        option: Option<impl IntoCommonIter<Item = &'w U::Syntax> + HasLength>,
     ) where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
         Tag: Tagged,
-        &'p U::Syntax: Into<SyntaxVariant<'p>>,
+        &'w U::Syntax: Into<SyntaxVariant<'w>>,
     {
         if let Some(iter) = option {
             self.many(iter)
@@ -250,7 +217,7 @@ where
         Chooser: Choose<T, Root, Tag>,
         Tag: Tagged,
         T: 'a,
-        'a: 'p,
+        'a: 's,
     {
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
@@ -281,7 +248,11 @@ where
                         sender.send(part).unwrap()
                     })
                 },
-                move || self.insert_iter::<Tag>(rx.into_iter().map(|it| it.erase())),
+                move || {
+                    for item in rx.into_iter() {
+                        self.insert(item.erase(), Tag::default());
+                    }
+                },
             );
         }
     }
@@ -296,7 +267,7 @@ where
         Chooser: Choose<T, Root, Tag>,
         Tag: Tagged,
         T: 'a,
-        'a: 'p,
+        'a: 's,
     {
         if let Some(iter) = option {
             self.choose(chooser, iter)
@@ -305,19 +276,19 @@ where
 
     #[allow(clippy::wrong_self_convention, unsafe_code)]
     #[inline(always)]
-    pub fn from_builder<T, U, Tag>(&mut self, node: &'p T, builder: ASTBuilder<U>)
+    pub fn from_builder<T, U, Tag>(&mut self, node: &'w T, builder: ASTBuilder<U>)
     where
         Root: HasChild<U, Tag>,
         U: ASTNode,
         Tag: Tagged,
-        &'p T: Into<SyntaxVariant<'p>>,
+        &'w T: Into<SyntaxVariant<'w>>,
     {
         unsafe { self.pool.link_syntax(builder.root, node) };
         self.insert(builder.erase(), Tag::default());
     }
 
     #[inline(always)]
-    pub fn pool(&self) -> &'p Pool<'e> {
+    pub fn pool(&self) -> Pool<'w> {
         self.pool
     }
 

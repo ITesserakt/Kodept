@@ -42,7 +42,7 @@ derive_node!(InitVar {
 impl FromSyntax for VarDecl {
     type Syntax = Variable;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let (kind, id, ty) = match node {
             Variable::Immutable {
                 id, assigned_type, ..
@@ -54,7 +54,7 @@ impl FromSyntax for VarDecl {
         let name = source.get_chunk_located(id);
         ASTBuilder::new(pool, kind)
             .with_property(Name(name))
-            .with_children(source, pool, |scope| {
+            .with_children(source, pool, move |scope| {
                 scope.maybe_choose(Unit, ty.as_ref().map(|it| [&it.1]))
             })
     }
@@ -63,7 +63,7 @@ impl FromSyntax for VarDecl {
 impl FromSyntax for InitVar {
     type Syntax = InitializedVariable;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, InitVar)
             .with_children(source, pool, |scope| scope.many([&node.variable]))
     }

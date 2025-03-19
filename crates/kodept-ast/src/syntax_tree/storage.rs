@@ -22,7 +22,7 @@ impl AST {
         let syntax = SyntaxResolver::empty(start);
         let pool = Pool::new(&syntax, world.entities());
         let whole_part =
-            Root::from_syntax(pool.syntax_root(), source_code, &pool).with_property(Root);
+            Root::from_syntax(pool.syntax_root(), source_code, pool).with_property(Root);
         unsafe { pool.link_syntax(whole_part.id(), pool.syntax_root()); }
         whole_part.consume(&mut world);
         world.insert_resource(syntax);

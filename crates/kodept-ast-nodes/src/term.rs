@@ -53,7 +53,7 @@ impl Identifier {
 impl FromSyntax for Ref {
     type Syntax = Term;
 
-    fn from_syntax(node: &Self::Syntax, source: impl CodeHolder, pool: &Pool) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
         let ident = match node {
             Term::Reference(Reference::Type(x)) => Identifier::TypeReference {
                 name: source.get_chunk_located(x),
