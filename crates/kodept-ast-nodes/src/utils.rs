@@ -12,8 +12,10 @@ use kodept_ast::Str;
 use kodept_rlt::prelude::{Body, Parameter, TypedParameter};
 use std::fmt::Debug;
 
-pub(crate) fn unwrap_body<'scope, 'w, R, S, Tag>(node: &'w Body, scope: &mut ChildrenScope<'scope, 'w, R, S>)
-where
+pub(crate) fn unwrap_body<'scope, 'w, R, S, Tag>(
+    node: &'w Body,
+    scope: &mut ChildrenScope<'scope, 'w, R, S>,
+) where
     R: HasChild<Exprs, Tag>,
     Tag: Tagged,
     S: CodeHolder,
@@ -21,19 +23,17 @@ where
     match node {
         Body::Block(x) => scope.many([x]),
         Body::Simplified { expression, .. } => {
-            let fake = ASTBuilder::new(scope.pool(), Exprs).with_children(
-                scope.source(),
-                scope.pool(),
-                |scope| scope.choose(Unit, [expression]),
-            );
-            scope.from_builder(node, fake)
+            scope.with_builder(node, |b| {
+                ASTBuilder::from_queue(b, Exprs)
+                    .with_children(|scope| scope.choose(Unit, [expression]))
+            });
         }
     };
 }
 
 pub(crate) fn wrap_params<'scope, 'w, R, S, Tag>(
     parent_node: &'w R::Syntax,
-    params: &impl AsRef<[Parameter]>,
+    params: &'w impl AsRef<[Parameter]>,
     scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<Params, Tag> + FromSyntax,
@@ -41,17 +41,14 @@ pub(crate) fn wrap_params<'scope, 'w, R, S, Tag>(
     S: CodeHolder,
     &'w R::Syntax: Into<SyntaxVariant<'w>>,
 {
-    let fake = ASTBuilder::new(scope.pool(), Params).with_children(
-        scope.source(),
-        scope.pool(),
-        |inner_scope| inner_scope.choose(Unit, params.as_ref()),
-    );
-    scope.from_builder(parent_node, fake);
+    scope.with_builder(parent_node, |q| {
+        ASTBuilder::from_queue(q, Params).with_children(|scope| scope.choose(Unit, params.as_ref()))
+    });
 }
 
 pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
     parent_node: &'w R::Syntax,
-    params: &impl AsRef<[TypedParameter]>,
+    params: &'w impl AsRef<[TypedParameter]>,
     scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<TyParams, Tag> + FromSyntax,
@@ -59,12 +56,10 @@ pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
     S: CodeHolder,
     &'w R::Syntax: Into<SyntaxVariant<'w>>,
 {
-    let fake = ASTBuilder::new(scope.pool(), TyParams).with_children(
-        scope.source(),
-        scope.pool(),
-        |inner_scope| inner_scope.many::<TyParam, _>(params.as_ref()),
-    );
-    scope.from_builder(parent_node, fake);
+    scope.with_builder(parent_node, |b| {
+        ASTBuilder::from_queue(b, TyParams)
+            .with_children(|scope| scope.many::<TyParam, _>(params.as_ref()))
+    });
 }
 
 pub(crate) fn const_disjoint<'p, U, R, S, Tag>(

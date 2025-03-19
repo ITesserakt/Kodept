@@ -1,51 +1,92 @@
-use crate::node_id::Erase;
 use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
 use crate::properties::tags::Tagged;
 use crate::properties::{Node, NodeProperty};
-use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
+use crate::resource::rlt::SyntaxVariant;
+use crate::syntax_tree::builder::queue::{BorrowedQueue, OwnedQueue, Queue};
 use crate::syntax_tree::children::HasChild;
 use crate::utils::{HasLength, IntoCommonIter};
-use bevy_ecs::entity::Entities;
 use bevy_ecs::prelude::{Commands, Entity, World};
-use bevy_ecs::world::CommandQueue;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 
+pub use pool::*;
+
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
-#[derive(Debug, Copy, Clone)]
-pub struct Pool<'e> {
-    syntax: &'e SyntaxResolver,
-    lazy_entities: &'e Entities,
-}
+mod pool {
+    use crate::node_id::Erase;
+    use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
+    use bevy_ecs::entity::{Entities, Entity};
 
-impl<'e> Pool<'e> {
-    pub fn new(syntax: &'e SyntaxResolver, lazy_entities: &'e Entities) -> Self {
-        Self {
-            syntax,
-            lazy_entities,
+    #[derive(Debug, Copy, Clone)]
+    pub struct Pool<'e> {
+        syntax: &'e SyntaxResolver,
+        lazy_entities: &'e Entities,
+    }
+
+    impl<'e> Pool<'e> {
+        pub fn new(syntax: &'e SyntaxResolver, lazy_entities: &'e Entities) -> Self {
+            Self {
+                syntax,
+                lazy_entities,
+            }
+        }
+    }
+
+    impl<'w> Pool<'w> {
+        pub(crate) fn entities(&self) -> &'w Entities {
+            self.lazy_entities
+        }
+
+        pub(crate) fn syntax_root(&self) -> &'w kodept_rlt::prelude::File {
+            self.syntax.root()
+        }
+
+        /// SAFETY: inherit
+        #[allow(unsafe_code)]
+        pub(crate) unsafe fn link_syntax(
+            &self,
+            id: impl Erase<Entity>,
+            rlt_node: impl Into<SyntaxVariant<'w>>,
+        ) {
+            self.syntax.insert(id.erase(), rlt_node)
         }
     }
 }
 
-impl Pool<'_> {
-    pub(crate) fn syntax_root(&self) -> &kodept_rlt::prelude::File {
-        self.syntax.root()
+mod queue {
+    use crate::syntax_tree::builder::Pool;
+    use bevy_ecs::prelude::{Commands, World};
+    use bevy_ecs::world::CommandQueue;
+
+    pub trait Queue: Sized {
+        fn push(&mut self, item: impl FnOnce(&mut World) + Send + 'static);
     }
 
-    /// SAFETY: inherit
-    #[allow(unsafe_code)]
-    pub(crate) unsafe fn link_syntax<'r>(
-        &self,
-        id: impl Erase<Entity>,
-        rlt_node: impl Into<SyntaxVariant<'r>>,
-    ) {
-        self.syntax.insert(id.erase(), rlt_node)
+    #[derive(Debug, Default)]
+    pub struct OwnedQueue(pub(super) CommandQueue);
+    pub struct BorrowedQueue<'w, 's, Source>(
+        pub(super) Commands<'w, 's>,
+        pub(super) Pool<'w>,
+        pub(super) Source,
+    );
+
+    impl Queue for OwnedQueue {
+        fn push(&mut self, item: impl FnOnce(&mut World) + Send + 'static) {
+            self.0.push(item);
+        }
+    }
+
+    impl<'a, 'b, Source> Queue for BorrowedQueue<'a, 'b, Source> {
+        fn push(&mut self, item: impl FnOnce(&mut World) + Send + 'static) {
+            self.0.queue(item);
+        }
     }
 }
 
-pub struct ASTBuilder<Root> {
-    queue: CommandQueue,
+#[derive(Debug)]
+pub struct ASTBuilder<Root, Queue = OwnedQueue> {
+    queue: Queue,
     root: Entity,
     _phantom: PhantomData<Root>,
 }
@@ -58,14 +99,39 @@ pub struct ChildrenScope<'s, 'w, Root, Source> {
     _phantom: PhantomData<Root>,
 }
 
+impl<Root, Q> ASTBuilder<Root, Q>
+where
+    Q: Queue,
+{
+    #[must_use]
+    pub fn with_property(mut self, property: impl NodeProperty) -> Self {
+        let root = self.root;
+        self.queue.push(move |w: &mut World| {
+            w.entity_mut(root).insert(property);
+        });
+        self
+    }
+
+    pub(crate) fn id(&self) -> NodeId<Root> {
+        self.root.into()
+    }
+    pub(crate) fn erase(self) -> ASTBuilder<(), Q> {
+        ASTBuilder {
+            queue: self.queue,
+            root: self.root,
+            _phantom: Default::default(),
+        }
+    }
+}
+
 impl<Root> ASTBuilder<Root> {
     #[must_use]
     pub fn new(pool: Pool, root: Root) -> Self
     where
         Root: ASTNode,
     {
-        let mut queue = CommandQueue::default();
-        let mut commands = Commands::new_from_entities(&mut queue, pool.lazy_entities);
+        let mut queue = OwnedQueue::default();
+        let mut commands = Commands::new_from_entities(&mut queue.0, pool.entities());
 
         let entity_commands = commands.spawn((
             root,
@@ -83,15 +149,6 @@ impl<Root> ASTBuilder<Root> {
     }
 
     #[must_use]
-    pub fn with_property(mut self, property: impl NodeProperty) -> Self {
-        let root = self.root;
-        self.queue.push(move |w: &mut World| {
-            w.entity_mut(root).insert(property);
-        });
-        self
-    }
-
-    #[must_use]
     #[inline(always)]
     pub fn with_children<'w, S>(
         mut self,
@@ -104,7 +161,7 @@ impl<Root> ASTBuilder<Root> {
     {
         let mut scope = ChildrenScope {
             source,
-            commands: Commands::new_from_entities(&mut self.queue, pool.lazy_entities),
+            commands: Commands::new_from_entities(&mut self.queue.0, pool.entities()),
             root: self.root,
             pool,
             _phantom: Default::default(),
@@ -114,17 +171,47 @@ impl<Root> ASTBuilder<Root> {
     }
 
     pub(crate) fn consume(mut self, world: &mut World) {
-        self.queue.apply(world)
+        self.queue.0.apply(world)
     }
-    pub(crate) fn erase(self) -> ASTBuilder<()> {
-        ASTBuilder {
-            queue: self.queue,
-            root: self.root,
+}
+
+impl<'w, 's, Root, Source> ASTBuilder<Root, BorrowedQueue<'w, 's, Source>> {
+    pub fn from_queue(mut queue: BorrowedQueue<'w, 's, Source>, root: Root) -> Self
+    where
+        Root: ASTNode,
+    {
+        let entity_commands = queue.0.spawn((
+            root,
+            Node {
+                kind: std::any::type_name::<Root>(),
+            },
+        ));
+        let root = entity_commands.id();
+        Self {
+            queue,
+            root,
             _phantom: Default::default(),
         }
     }
-    pub(crate) fn id(&self) -> NodeId<Root> {
-        self.root.into()
+
+    #[must_use]
+    #[inline(always)]
+    pub fn with_children(
+        mut self,
+        f: impl for<'scope> FnOnce(&'scope mut ChildrenScope<'scope, 'w, Root, Source>),
+    ) -> Self
+    where 
+        Source: CodeHolder
+    {
+        let mut scope = ChildrenScope {
+            source: self.queue.2,
+            commands: self.queue.0.reborrow(),
+            pool: self.queue.1,
+            root: self.root,
+            _phantom: Default::default(),
+        };
+        f(&mut scope);
+        self
     }
 }
 
@@ -142,7 +229,7 @@ where
 
         self.commands.entity(child_id).insert(tag);
         self.commands.entity(root_id).add_child(child_id);
-        self.commands.append(&mut part.queue);
+        self.commands.append(&mut part.queue.0);
     }
 
     #[inline(always)]
@@ -276,6 +363,7 @@ where
 
     #[allow(clippy::wrong_self_convention, unsafe_code)]
     #[inline(always)]
+    #[deprecated]
     pub fn from_builder<T, U, Tag>(&mut self, node: &'w T, builder: ASTBuilder<U>)
     where
         Root: HasChild<U, Tag>,
@@ -285,6 +373,24 @@ where
     {
         unsafe { self.pool.link_syntax(builder.root, node) };
         self.insert(builder.erase(), Tag::default());
+    }
+
+    #[allow(unsafe_code)]
+    #[inline(always)]
+    pub fn with_builder<T, F, U, Tag>(&mut self, node: &'w T, callback: F)
+    where
+        &'w T: Into<SyntaxVariant<'w>>,
+        F: for<'t> FnOnce(
+            BorrowedQueue<'w, 't, Source>,
+        ) -> ASTBuilder<U, BorrowedQueue<'w, 't, Source>>,
+        Tag: Tagged,
+        Root: HasChild<U, Tag>,
+        U: ASTNode,
+    {
+        let mut builder = callback(BorrowedQueue(self.commands.reborrow(), self.pool, self.source));
+        unsafe { self.pool.link_syntax(builder.root, node) };
+        builder.queue.0.entity(builder.root).insert(Tag::default());
+        builder.queue.0.entity(self.root).add_child(builder.root);
     }
 
     #[inline(always)]
