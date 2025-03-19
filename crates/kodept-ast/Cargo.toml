@@ -16,7 +16,7 @@ workspace = true
 
 [features]
 default = []
-parallel = ["dep:rayon"]
+parallel = ["dep:rayon", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
 
 [dependencies]
 bevy_ecs.workspace = true

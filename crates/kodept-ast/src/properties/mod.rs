@@ -9,7 +9,6 @@ use std::ops::{Deref, DerefMut};
 pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component)]
-// #[component(immutable)]
 pub struct Node {
     pub kind: &'static str,
 }
@@ -19,6 +18,7 @@ pub struct Node {
 pub struct Root;
 
 #[derive(Debug, Component, Clone, From, Into)]
+#[component(storage = "SparseSet")]
 pub struct Name(pub Str);
 
 pub trait HasProperty<Property: NodeProperty>: Sized {

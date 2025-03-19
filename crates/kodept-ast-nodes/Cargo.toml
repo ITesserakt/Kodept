@@ -13,4 +13,4 @@ kodept-rlt = { path = "../kodept-rlt" }
 
 [features]
 defalt = []
-parallel = ["kodept-ast/parallel", "bevy_ecs/multi_threaded"]
+parallel = ["kodept-ast/parallel", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
