@@ -1,6 +1,5 @@
 use crate::node_id::Erase;
 use crate::prelude::{ASTNode, AnyNodeRefItem, FromEnum, IntoEnum, NodeId, NodeRef, TryFromIter};
-use crate::properties::tags::Tagged;
 use crate::properties::{Node, Root};
 use crate::syntax_tree::children::HasChild;
 use bevy_ecs::prelude::{ChildOf, Children, Entity, EntityRef, Query, Single, With};
@@ -88,7 +87,7 @@ where
     where
         T: ASTNode + HasChild<U, Tag, Arity: TryFromIter>,
         U: ASTNode,
-        Tag: Tagged,
+        Tag: Send + Sync + 'static,
     {
         let id = id.into().into();
         let (_, children, _) = self.inner.get(id).map_err(|_| QueryError::NotFound(id))?;

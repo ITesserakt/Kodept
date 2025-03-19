@@ -1,8 +1,7 @@
 use crate::function::Func;
-use crate::properties::Param;
 use crate::types::TyParams;
 use crate::utils::wrap_ty_params;
-use kodept_ast::derive_node;
+use kodept_ast::{derive_node, relation};
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::Name;
@@ -23,20 +22,17 @@ pub struct StructDecl;
 pub struct EnumConst;
 
 derive_node!(EnumDecl {
-    relations = [children EnumConst,],
     properties = [require Name,]
 });
+relation!(EnumDecl => children EnumConst);
 
 derive_node!(StructDecl {
-    relations = [
-        child TyParams where tag = Param,
-        children Func,
-    ],
     properties = [require Name,]
 });
+relation!(StructDecl => child TyParams);
+relation!(StructDecl => children Func);
 
 derive_node!(EnumConst {
-    relations = [],
     properties = [require Name,]
 });
 

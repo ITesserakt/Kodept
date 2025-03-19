@@ -1,15 +1,15 @@
 use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
-use crate::properties::tags::Tagged;
 use crate::properties::{Node, NodeProperty};
 use crate::resource::rlt::SyntaxVariant;
 use crate::syntax_tree::builder::queue::{BorrowedQueue, OwnedQueue, Queue};
-use crate::syntax_tree::children::HasChild;
+use crate::syntax_tree::children::{ContainedBy, HasChild};
 use crate::utils::{HasLength, IntoCommonIter};
 use bevy_ecs::prelude::{Commands, Entity, World};
 use std::marker::PhantomData;
 use std::sync::LazyLock;
-
+use bevy_ecs::relationship::Relationship;
 pub use pool::*;
+use crate::syntax_tree::children::arity::Arity;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
@@ -220,15 +220,14 @@ where
     Source: CodeHolder,
 {
     #[inline(always)]
-    fn insert<Tag>(&mut self, mut part: ASTBuilder<()>, tag: Tag)
+    fn insert<R>(&mut self, mut part: ASTBuilder<()>)
     where
-        Tag: Tagged,
+        R: Relationship
     {
         let child_id = part.root;
         let root_id = self.root;
-
-        self.commands.entity(child_id).insert(tag);
-        self.commands.entity(root_id).add_child(child_id);
+        
+        self.commands.entity(root_id).add_one_related::<R>(child_id);
         self.commands.append(&mut part.queue.0);
     }
 
@@ -238,14 +237,14 @@ where
     where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
-        Tag: Tagged,
+        Tag: Send + Sync + 'static,
         &'w U::Syntax: Into<SyntaxVariant<'w>>,
     {
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
                 unsafe { self.pool.link_syntax(part.root, item) };
-                self.insert(part.erase(), Tag::default());
+                self.insert::<Root::Relationship>(part.erase());
             }
             return;
         }
@@ -272,7 +271,7 @@ where
                 },
                 move || {
                     for item in rx.into_iter() {
-                        self.insert(item.erase(), Tag::default());
+                        self.insert::<Root::Relationship>(item.erase());
                     }
                 },
             );
@@ -286,7 +285,7 @@ where
     ) where
         Root: HasChild<U, Tag>,
         U: ASTNode + FromSyntax,
-        Tag: Tagged,
+        Tag: Send + Sync + 'static,
         &'w U::Syntax: Into<SyntaxVariant<'w>>,
     {
         if let Some(iter) = option {
@@ -301,8 +300,8 @@ where
         iter: impl IntoCommonIter<Item = &'a T> + HasLength,
     ) where
         Root: Send,
-        Chooser: Choose<T, Root, Tag>,
-        Tag: Tagged,
+        Chooser: Choose<T, Root, Tag, Arity: Arity>,
+        Tag: Send + Sync + 'static,
         T: 'a,
         'a: 's,
     {
@@ -310,7 +309,7 @@ where
             for item in iter.into_iter() {
                 let disjoint = Chooser::branch(item);
                 let part = disjoint.call(self.source, self.pool);
-                self.insert(part, Tag::default());
+                self.insert::<ContainedBy<Tag, Chooser::Arity>>(part);
             }
             return;
         }
@@ -337,7 +336,7 @@ where
                 },
                 move || {
                     for item in rx.into_iter() {
-                        self.insert(item.erase(), Tag::default());
+                        self.insert::<ContainedBy<Tag, Chooser::Arity>>(item);
                     }
                 },
             );
@@ -351,8 +350,8 @@ where
         option: Option<impl IntoCommonIter<Item = &'a T> + HasLength>,
     ) where
         Root: Send,
-        Chooser: Choose<T, Root, Tag>,
-        Tag: Tagged,
+        Chooser: Choose<T, Root, Tag, Arity: Arity>,
+        Tag: Send + Sync + 'static,
         T: 'a,
         'a: 's,
     {
@@ -368,11 +367,11 @@ where
     where
         Root: HasChild<U, Tag>,
         U: ASTNode,
-        Tag: Tagged,
+        Tag: Send + Sync + 'static,
         &'w T: Into<SyntaxVariant<'w>>,
     {
         unsafe { self.pool.link_syntax(builder.root, node) };
-        self.insert(builder.erase(), Tag::default());
+        self.insert::<Root::Relationship>(builder.erase());
     }
 
     #[allow(unsafe_code)]
@@ -383,14 +382,13 @@ where
         F: for<'t> FnOnce(
             BorrowedQueue<'w, 't, Source>,
         ) -> ASTBuilder<U, BorrowedQueue<'w, 't, Source>>,
-        Tag: Tagged,
+        Tag: Send + Sync + 'static,
         Root: HasChild<U, Tag>,
         U: ASTNode,
     {
         let mut builder = callback(BorrowedQueue(self.commands.reborrow(), self.pool, self.source));
         unsafe { self.pool.link_syntax(builder.root, node) };
-        builder.queue.0.entity(builder.root).insert(Tag::default());
-        builder.queue.0.entity(self.root).add_child(builder.root);
+        builder.queue.0.entity(self.root).add_one_related::<Root::Relationship>(builder.root);
     }
 
     #[inline(always)]

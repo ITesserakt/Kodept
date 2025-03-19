@@ -3,7 +3,6 @@ use crate::expression::Exprs;
 use crate::types::{Params, TyParam, TyParams};
 use crate::Unit;
 use kodept_ast::prelude::{ASTNode, CodeHolder, FromSyntax};
-use kodept_ast::properties::tags::{NoTag, Tagged};
 use kodept_ast::properties::Name;
 use kodept_ast::resource::rlt::SyntaxVariant;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
@@ -17,7 +16,7 @@ pub(crate) fn unwrap_body<'scope, 'w, R, S, Tag>(
     scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<Exprs, Tag>,
-    Tag: Tagged,
+    Tag: Send + Sync + 'static,
     S: CodeHolder,
 {
     match node {
@@ -37,7 +36,7 @@ pub(crate) fn wrap_params<'scope, 'w, R, S, Tag>(
     scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<Params, Tag> + FromSyntax,
-    Tag: Tagged,
+    Tag: Send + Sync + 'static,
     S: CodeHolder,
     &'w R::Syntax: Into<SyntaxVariant<'w>>,
 {
@@ -52,7 +51,7 @@ pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
     scope: &mut ChildrenScope<'scope, 'w, R, S>,
 ) where
     R: HasChild<TyParams, Tag> + FromSyntax,
-    Tag: Tagged,
+    Tag: Send + Sync + 'static,
     S: CodeHolder,
     &'w R::Syntax: Into<SyntaxVariant<'w>>,
 {
@@ -62,21 +61,21 @@ pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
     });
 }
 
-pub(crate) fn const_disjoint<'p, U, R, S, Tag>(
+pub(crate) fn const_disjoint<'p, U, R, S, Arity, Tag>(
     node: &'p U::Syntax,
     name_fn: impl FnOnce(&U::Syntax, S) -> Str + 'static,
-) -> ChildrenDisjoint<'p, R, S, Tag>
+) -> ChildrenDisjoint<'p, R, S, Arity, Tag>
 where
     &'p U::Syntax: TryFrom<SyntaxVariant<'p>, Error: Debug> + Into<SyntaxVariant<'p>>,
     U: FromSyntax<Syntax: Sync> + ASTNode,
-    Const: HasChild<U>,
+    Const: HasChild<U, Tag>,
     S: CodeHolder,
-    R: HasChild<Const, Tag>,
-    Tag: Tagged,
+    R: HasChild<Const, Tag, Arity = Arity>,
+    Tag: Send + Sync + 'static,
 {
     ChildrenDisjoint::ad_hoc(node, move |node, source, pool| {
         ASTBuilder::new(pool, Const)
             .with_property(Name(name_fn(node, source)))
-            .with_children(source, pool, |scope| scope.many::<U, NoTag>([node]))
+            .with_children(source, pool, |scope| scope.many([node]))
     })
 }

@@ -1,4 +1,6 @@
 use crate::properties::{Name, Node, Root};
+use crate::syntax_tree::children::arity::Plural;
+use crate::syntax_tree::children::Contains;
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::RunSystemOnce;
 use std::io::Write;
@@ -13,8 +15,8 @@ impl super::storage::AST {
 
 fn build_dot_system<W: Write>(
     In(mut buffer): In<W>,
-    nodes: Populated<&Children>,
-    nodes_with_children: Populated<(Entity, &Children), With<Node>>,
+    nodes: Populated<&Contains<(), Plural>>,
+    nodes_with_children: Populated<(Entity, &Contains<(), Plural>), With<Node>>,
     kinds: Populated<&Node>,
     names: Query<&Name>,
     root: Single<Entity, With<Root>>,

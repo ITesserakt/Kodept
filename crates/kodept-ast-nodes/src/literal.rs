@@ -1,14 +1,12 @@
 use crate::code_flow::IfExpr;
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
-use crate::properties::Expr;
 use crate::term::Ref;
 use crate::Unit;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder};
-use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::ASTBuilder;
-use kodept_ast::{derive_node, Str};
+use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::prelude as rlt;
 
 #[derive(Debug, PartialEq, Component)]
@@ -25,28 +23,27 @@ pub enum Literal {
 pub struct Tuple;
 
 derive_node!(Literal);
-derive_node!(Tuple {
-    relations = [
-        children Exprs where tag = Expr,
-        children App where tag = Expr,
-        children Lambda where tag = Expr,
-        children IfExpr where tag = Expr,
-        children BinExpr where tag = Expr,
-        children UnExpr where tag = Expr,
-        children Ref where tag = Expr,
-        children Literal where tag = Expr,
-        children Tuple where tag = Expr,
-    ],
-    properties = []
-});
 
-impl<R, Tag> Choose<rlt::Literal, R, Tag> for Unit
+derive_node!(Tuple);
+relation!(Tuple => children Exprs);
+relation!(Tuple => children App);
+relation!(Tuple => children Lambda);
+relation!(Tuple => children IfExpr);
+relation!(Tuple => children BinExpr);
+relation!(Tuple => children UnExpr);
+relation!(Tuple => children Ref);
+relation!(Tuple => children Literal);
+relation!(Tuple => children Tuple);
+
+impl<R, Tag, A> Choose<rlt::Literal, R, Tag> for Unit
 where
-    Tag: Tagged,
-    R: HasChild<Tuple, Tag>,
-    R: HasChild<Literal, Tag>,
+    Tag: Send + Sync + 'static,
+    R: HasChild<Tuple, Tag, Arity = A>,
+    R: HasChild<Literal, Tag, Arity = A>,
 {
-    fn branch<Source: CodeHolder>(node: &rlt::Literal) -> ChildrenDisjoint<R, Source, Tag> {
+    type Arity = A;
+
+    fn branch<Source: CodeHolder>(node: &rlt::Literal) -> ChildrenDisjoint<R, Source, A, Tag> {
         match node {
             rlt::Literal::Tuple(_) => ChildrenDisjoint::ad_hoc(node, |node, source, pool| {
                 let rlt::Literal::Tuple(node) = node else {

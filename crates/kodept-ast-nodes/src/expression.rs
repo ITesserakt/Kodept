@@ -2,16 +2,15 @@ use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
 use crate::constants::Const;
 use crate::literal::{Literal, Tuple};
-use crate::properties::{BlockLevel, Expr, LeftExpr, Param, RightExpr};
+use crate::properties::{Lhs, Rhs};
 use crate::term::Ref;
 use crate::types::{NonTyParam, TyParam};
 use crate::Unit;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
-use kodept_ast::properties::tags::Tagged;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
-use kodept_ast::{derive_node, Str};
+use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::{Application, Expression, ExpressionBlock, Operation};
 use std::ops::Deref;
@@ -57,106 +56,83 @@ pub enum UnExpr {
     Plus,
 }
 
-derive_node!(Exprs {
-    relations = [
-        children InitVar where tag = BlockLevel,
-        children Const where tag = BlockLevel,
-        children Exprs where tag = BlockLevel,
-        children App where tag = BlockLevel,
-        children Lambda where tag = BlockLevel,
-        children IfExpr where tag = BlockLevel,
-        children BinExpr where tag = BlockLevel,
-        children UnExpr where tag = BlockLevel,
-        children Ref where tag = BlockLevel,
-        children Literal where tag = BlockLevel,
-        children Tuple where tag = BlockLevel,
-    ],
-    properties = []
-});
-derive_node!(App {
-    relations = [
-        optional Exprs where tag = LeftExpr,
-        optional App where tag = LeftExpr,
-        optional Lambda where tag = LeftExpr,
-        optional IfExpr where tag = LeftExpr,
-        optional BinExpr where tag = LeftExpr,
-        optional UnExpr where tag = LeftExpr,
-        optional Ref where tag = LeftExpr,
-        optional Literal where tag = LeftExpr,
-        optional Tuple where tag = LeftExpr,
+derive_node!(Exprs);
+relation!(Exprs => children InitVar);
+relation!(Exprs => children Const);
+relation!(Exprs => children Exprs);
+relation!(Exprs => children App);
+relation!(Exprs => children Lambda);
+relation!(Exprs => children IfExpr);
+relation!(Exprs => children BinExpr);
+relation!(Exprs => children UnExpr);
+relation!(Exprs => children Ref);
+relation!(Exprs => children Literal);
+relation!(Exprs => children Tuple);
 
-        children Exprs where tag = RightExpr,
-        children App where tag = RightExpr,
-        children Lambda where tag = RightExpr,
-        children IfExpr where tag = RightExpr,
-        children BinExpr where tag = RightExpr,
-        children UnExpr where tag = RightExpr,
-        children Ref where tag = RightExpr,
-        children Literal where tag = RightExpr,
-        children Tuple where tag = RightExpr,
-    ],
-    properties = []
-});
-derive_node!(Lambda {
-    relations = [
-        children TyParam where tag = Param,
-        children NonTyParam where tag = Param,
+derive_node!(App);
+relation!(App => or Lhs(optional Exprs));
+relation!(App => or Lhs(optional App));
+relation!(App => or Lhs(optional Lambda));
+relation!(App => or Lhs(optional IfExpr));
+relation!(App => or Lhs(optional BinExpr));
+relation!(App => or Lhs(optional UnExpr));
+relation!(App => or Lhs(optional Ref));
+relation!(App => or Lhs(optional Literal));
+relation!(App => or Lhs(optional Tuple));
+relation!(App => or Rhs(children Exprs));
+relation!(App => or Rhs(children App));
+relation!(App => or Rhs(children Lambda));
+relation!(App => or Rhs(children IfExpr));
+relation!(App => or Rhs(children BinExpr));
+relation!(App => or Rhs(children UnExpr));
+relation!(App => or Rhs(children Ref));
+relation!(App => or Rhs(children Literal));
+relation!(App => or Rhs(children Tuple));
 
-        optional Exprs where tag = Expr,
-        optional App where tag = Expr,
-        optional Lambda where tag = Expr,
-        optional IfExpr where tag = Expr,
-        optional BinExpr where tag = Expr,
-        optional UnExpr where tag = Expr,
-        optional Ref where tag = Expr,
-        optional Literal where tag = Expr,
-        optional Tuple where tag = Expr,
-    ],
-    properties = []
-});
-derive_node!(BinExpr {
-    relations = [
-        children Exprs where tag = LeftExpr,
-        children App where tag = LeftExpr,
-        children Lambda where tag = LeftExpr,
-        children IfExpr where tag = LeftExpr,
-        children BinExpr where tag = LeftExpr,
-        children UnExpr where tag = LeftExpr,
-        children Ref where tag = LeftExpr,
-        children Literal where tag = LeftExpr,
-        children Tuple where tag = LeftExpr,
+derive_node!(Lambda);
+relation!(Lambda => children TyParam);
+relation!(Lambda => children NonTyParam);
+relation!(Lambda => child Exprs);
 
-        children Exprs where tag = RightExpr,
-        children App where tag = RightExpr,
-        children Lambda where tag = RightExpr,
-        children IfExpr where tag = RightExpr,
-        children BinExpr where tag = RightExpr,
-        children UnExpr where tag = RightExpr,
-        children Ref where tag = RightExpr,
-        children Literal where tag = RightExpr,
-        children Tuple where tag = RightExpr,
-    ],
-    properties = []
-});
-derive_node!(UnExpr {
-    relations = [
-        children Exprs where tag = Expr,
-        children App where tag = Expr,
-        children Lambda where tag = Expr,
-        children IfExpr where tag = Expr,
-        children BinExpr where tag = Expr,
-        children UnExpr where tag = Expr,
-        children Ref where tag = Expr,
-        children Literal where tag = Expr,
-        children Tuple where tag = Expr,
-    ],
-    properties = []
-});
+derive_node!(BinExpr);
+relation!(BinExpr => or Lhs(optional Exprs));
+relation!(BinExpr => or Lhs(optional App));
+relation!(BinExpr => or Lhs(optional Lambda));
+relation!(BinExpr => or Lhs(optional IfExpr));
+relation!(BinExpr => or Lhs(optional BinExpr));
+relation!(BinExpr => or Lhs(optional UnExpr));
+relation!(BinExpr => or Lhs(optional Ref));
+relation!(BinExpr => or Lhs(optional Literal));
+relation!(BinExpr => or Lhs(optional Tuple));
+relation!(BinExpr => or Rhs(children Exprs));
+relation!(BinExpr => or Rhs(children App));
+relation!(BinExpr => or Rhs(children Lambda));
+relation!(BinExpr => or Rhs(children IfExpr));
+relation!(BinExpr => or Rhs(children BinExpr));
+relation!(BinExpr => or Rhs(children UnExpr));
+relation!(BinExpr => or Rhs(children Ref));
+relation!(BinExpr => or Rhs(children Literal));
+relation!(BinExpr => or Rhs(children Tuple));
+
+derive_node!(UnExpr);
+relation!(UnExpr => optional Exprs);
+relation!(UnExpr => optional App);
+relation!(UnExpr => optional Lambda);
+relation!(UnExpr => optional IfExpr);
+relation!(UnExpr => optional BinExpr);
+relation!(UnExpr => optional UnExpr);
+relation!(UnExpr => optional Ref);
+relation!(UnExpr => optional Literal);
+relation!(UnExpr => optional Tuple);
 
 impl FromSyntax for Exprs {
     type Syntax = ExpressionBlock;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(
+        node: &'w Self::Syntax,
+        source: impl CodeHolder,
+        pool: Pool<'w>,
+    ) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Exprs).with_children(source, pool, |scope| {
             scope.choose(Unit, node.expression.as_ref())
         })
@@ -166,13 +142,14 @@ impl FromSyntax for Exprs {
 impl FromSyntax for App {
     type Syntax = Application;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(
+        node: &'w Self::Syntax,
+        source: impl CodeHolder,
+        pool: Pool<'w>,
+    ) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, App).with_children(source, pool, |scope| {
-            scope.choose::<_, _, LeftExpr>(Unit, [&node.expr]);
-            scope.maybe_choose::<_, _, RightExpr>(
-                Unit,
-                node.params.as_ref().map(|it| it.inner.as_ref()),
-            )
+            scope.choose::<_, _, Lhs>(Unit, [&node.expr]);
+            scope.maybe_choose::<_, _, Rhs>(Unit, node.params.as_ref().map(|it| it.inner.as_ref()))
         })
     }
 }
@@ -180,29 +157,39 @@ impl FromSyntax for App {
 impl FromSyntax for Lambda {
     type Syntax = kodept_rlt::prelude::Lambda;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax<'w>(
+        node: &'w Self::Syntax,
+        source: impl CodeHolder,
+        pool: Pool<'w>,
+    ) -> ASTBuilder<Self> {
         ASTBuilder::new(pool, Lambda).with_children(source, pool, |scope| {
-            scope.choose(Unit, [&*node.expr]);
+            scope.with_builder(&*node.expr, |b| {
+                ASTBuilder::from_queue(b, Exprs).with_children(|scope| {
+                    scope.choose(Unit, [&*node.expr]);
+                })
+            });
             scope.choose(Unit, node.binds.inner.as_ref());
         })
     }
 }
 
-impl<R, Tag> Choose<Operation, R, Tag> for Unit
+impl<R, Tag, A> Choose<Operation, R, Tag> for Unit
 where
-    Tag: Tagged,
-    R: HasChild<Exprs, Tag>,
-    R: HasChild<App, Tag>,
-    R: HasChild<Lambda, Tag>,
-    R: HasChild<IfExpr, Tag>,
-    R: HasChild<BinExpr, Tag>,
-    R: HasChild<UnExpr, Tag>,
-    R: HasChild<Ref, Tag>,
-    R: HasChild<Literal, Tag>,
-    R: HasChild<Tuple, Tag>,
+    Tag: Send + Sync + 'static,
+    R: HasChild<Exprs, Tag, Arity = A>,
+    R: HasChild<App, Tag, Arity = A>,
+    R: HasChild<Lambda, Tag, Arity = A>,
+    R: HasChild<IfExpr, Tag, Arity = A>,
+    R: HasChild<BinExpr, Tag, Arity = A>,
+    R: HasChild<UnExpr, Tag, Arity = A>,
+    R: HasChild<Ref, Tag, Arity = A>,
+    R: HasChild<Literal, Tag, Arity = A>,
+    R: HasChild<Tuple, Tag, Arity = A>,
 {
+    type Arity = A;
+
     #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &Operation) -> ChildrenDisjoint<R, Source, Tag> {
+    fn branch<Source: CodeHolder>(node: &Operation) -> ChildrenDisjoint<R, Source, A, Tag> {
         match node {
             Operation::Block(x) => ChildrenDisjoint::new::<Exprs>(x),
             Operation::Access { .. } => build_access_expression(node),
@@ -214,10 +201,10 @@ where
     }
 }
 
-fn build_unary_expression<R, Tag, S>(node: &Operation) -> ChildrenDisjoint<R, S, Tag>
+fn build_unary_expression<R, Tag, A, S>(node: &Operation) -> ChildrenDisjoint<R, S, A, Tag>
 where
-    R: HasChild<UnExpr, Tag>,
-    Tag: Tagged,
+    R: HasChild<UnExpr, Tag, Arity = A>,
+    Tag: Send + Sync + 'static,
     S: CodeHolder,
 {
     ChildrenDisjoint::ad_hoc(node, |node, source, pool| {
@@ -236,10 +223,10 @@ where
     })
 }
 
-fn build_binary_expression<R, Tag, S>(node: &Operation) -> ChildrenDisjoint<R, S, Tag>
+fn build_binary_expression<R, Tag, A, S>(node: &Operation) -> ChildrenDisjoint<R, S, A, Tag>
 where
-    R: HasChild<BinExpr, Tag>,
-    Tag: Tagged,
+    R: HasChild<BinExpr, Tag, Arity = A>,
+    Tag: Send + Sync + 'static,
     S: CodeHolder,
 {
     ChildrenDisjoint::ad_hoc(node, |node, source: S, pool| {
@@ -275,16 +262,16 @@ where
             _ => unreachable!(),
         };
         ASTBuilder::new(pool, value).with_children(source, pool, |scope| {
-            scope.choose::<_, _, LeftExpr>(Unit, [left.as_ref()]);
-            scope.choose::<_, _, RightExpr>(Unit, [right.as_ref()]);
+            scope.choose::<_, _, Lhs>(Unit, [left.as_ref()]);
+            scope.choose::<_, _, Rhs>(Unit, [right.as_ref()]);
         })
     })
 }
 
-fn build_access_expression<R, Tag, S>(node: &Operation) -> ChildrenDisjoint<R, S, Tag>
+fn build_access_expression<R, Tag, A, S>(node: &Operation) -> ChildrenDisjoint<R, S, A, Tag>
 where
-    R: HasChild<BinExpr, Tag>,
-    Tag: Tagged,
+    R: HasChild<BinExpr, Tag, Arity = A>,
+    Tag: Send + Sync + 'static,
     S: CodeHolder,
 {
     ChildrenDisjoint::ad_hoc(node, |node, source, pool| {
@@ -292,23 +279,25 @@ where
             unreachable!()
         };
         ASTBuilder::new(pool, BinExpr::Access).with_children(source, pool, |state| {
-            state.choose::<_, _, LeftExpr>(Unit, [left.as_ref()]);
-            state.choose::<_, _, RightExpr>(Unit, [right.as_ref()])
+            state.choose::<_, _, Lhs>(Unit, [left.as_ref()]);
+            state.choose::<_, _, Rhs>(Unit, [right.as_ref()])
         })
     })
 }
 
-impl<R, Tag> Choose<Expression, R, Tag> for Unit
+impl<R, Tag, A> Choose<Expression, R, Tag> for Unit
 where
-    Tag: Tagged,
-    R: HasChild<Lambda, Tag>,
-    R: HasChild<IfExpr, Tag>,
-    R: HasChild<Ref, Tag>,
-    R: HasChild<Literal, Tag>,
-    R: HasChild<Tuple, Tag>,
+    Tag: Send + Sync + 'static,
+    R: HasChild<Lambda, Tag, Arity = A>,
+    R: HasChild<IfExpr, Tag, Arity = A>,
+    R: HasChild<Ref, Tag, Arity = A>,
+    R: HasChild<Literal, Tag, Arity = A>,
+    R: HasChild<Tuple, Tag, Arity = A>,
 {
+    type Arity = A;
+    
     #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &Expression) -> ChildrenDisjoint<R, Source, Tag> {
+    fn branch<Source: CodeHolder>(node: &Expression) -> ChildrenDisjoint<R, Source, A, Tag> {
         match node {
             Expression::Lambda(x) => ChildrenDisjoint::new::<Lambda>(x),
             Expression::Term(x) => ChildrenDisjoint::new::<Ref>(x),

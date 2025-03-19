@@ -1,4 +1,3 @@
-use crate::properties::tags::Tagged;
 use crate::syntax_tree::children::ChildrenDisjoint;
 use crate::syntax_tree::prelude::{ASTBuilder, Pool};
 use crate::Str;
@@ -16,6 +15,8 @@ pub trait FromSyntax: Sized {
 
 pub trait ASTNode: Component {}
 
-pub trait Choose<T, Root, Tag: Tagged>: Sized {
-    fn branch<Source: CodeHolder>(node: &T) -> ChildrenDisjoint<Root, Source, Tag>;
+pub trait Choose<T, Root, Tag> {
+    type Arity;
+    
+    fn branch<Source: CodeHolder>(node: &T) -> ChildrenDisjoint<Root, Source, Self::Arity, Tag>;
 }

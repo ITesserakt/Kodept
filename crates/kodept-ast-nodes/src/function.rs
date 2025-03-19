@@ -1,28 +1,24 @@
-use crate::expression::Exprs;
-use crate::properties::{Param, Type};
 use crate::types::{Params, ProdTy, Ty};
 use crate::utils::{unwrap_body, wrap_params};
 use crate::Unit;
-use kodept_ast::derive_node;
+use kodept_ast::{derive_node, relation};
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_rlt::prelude::BodiedFunction;
+use crate::expression::Exprs;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Func;
 
 derive_node!(Func {
-    relations = [
-        optional Ty where tag = Type,
-        optional ProdTy where tag = Type,
-
-        child Params where tag = Param,
-        child Exprs,
-    ],
     properties = [require Name,]
 });
+relation!(Func => optional Ty);
+relation!(Func => optional ProdTy);
+relation!(Func => child Exprs);
+relation!(Func => child Params);
 
 impl FromSyntax for Func {
     type Syntax = BodiedFunction;

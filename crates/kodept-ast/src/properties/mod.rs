@@ -6,12 +6,10 @@ use bevy_ecs::prelude::{Component, Entity};
 use derive_more::{From, Into};
 use std::ops::{Deref, DerefMut};
 
-pub mod tags;
-
 pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component)]
-#[component(immutable)]
+// #[component(immutable)]
 pub struct Node {
     pub kind: &'static str,
 }

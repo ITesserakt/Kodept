@@ -2,24 +2,35 @@
 macro_rules! derive_node {
     (
         $self:ty {
-            relations = [$($child_arity:ident $child:ty$( where tag = $tag:ty)?,)*],
             properties = [$($modifier:ident $($name:ident)?,)*]
         }
     ) => {
         impl $crate::prelude::ASTNode for $self {}
 
-        $(
-        impl $crate::syntax_tree::children::HasChild<$child, $($tag)?> for $self {
-            type Arity = $crate::arity!($child_arity);
-        }
-        )*
-
-        $(
-        $crate::property!($self => $modifier $($name)?);
-        )*
+        $($crate::property!($self => $modifier $($name)?);)+
     };
     ($self:ty) => {
         impl $crate::prelude::ASTNode for $self {}
+    }
+}
+
+#[macro_export]
+macro_rules! relation {
+    ($self:ty => or $name:ident($child_arity:tt $child:ty)) => {
+        impl $crate::syntax_tree::children::HasChild<$child, $name> for $self {
+            type Arity = $crate::arity!($child_arity);
+        }
+    };
+    ($self:ty => either $name:ident($child_arity:tt $child:ty)) => {
+        pub struct $name;
+        impl $crate::syntax_tree::children::HasChild<$child, $name> for $self {
+            type Arity = $crate::arity!($child_arity);
+        }
+    };
+    ($self:ty => $child_arity:tt $child:ty) => {
+        impl $crate::syntax_tree::children::HasChild<$child, ()> for $self {
+            type Arity = $crate::arity!($child_arity);
+        }
     }
 }
 
@@ -43,17 +54,5 @@ macro_rules! property {
     };
     ($self:ty => require $name:ty) => {
         impl $crate::properties::RequireProperty<$name> for $self {}
-    };
-}
-
-#[macro_export]
-macro_rules! derive_tag {
-    ($vis:vis tag $self:ident) => {
-        #[derive(Debug, Default, $crate::external::Component)]
-        #[component(storage = "SparseSet")]
-        $vis struct $self;
-
-        impl $crate::properties::NodeProperty for $self {}
-        impl $crate::properties::tags::Tagged for $self {}
     };
 }
