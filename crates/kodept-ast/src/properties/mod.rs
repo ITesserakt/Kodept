@@ -11,6 +11,7 @@ pub mod tags;
 pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component)]
+#[component(immutable)]
 pub struct Node {
     pub kind: &'static str,
 }
