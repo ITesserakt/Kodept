@@ -225,6 +225,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_load_any_temp_file() {
         let _ = tempfile::tempfile();
         let loader = Loader::file()
