@@ -1,5 +1,5 @@
 use crate::{done, Ctx, Interaction, InteractionWrapper, Result};
-use bevy_ecs::prelude::{Changed, Component, IntoSystem, IntoSystemConfigs, Query, World};
+use bevy_ecs::prelude::{Changed, Component, IntoSystem, Query, World, IntoScheduleConfigs};
 use bevy_ecs::system::SystemId;
 use std::borrow::Cow;
 use std::convert::Infallible;

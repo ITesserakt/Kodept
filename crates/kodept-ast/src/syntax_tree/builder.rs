@@ -8,7 +8,6 @@ use crate::utils::{HasLength, IntoCommonIter};
 use bevy_ecs::entity::Entities;
 use bevy_ecs::prelude::{Entity, World};
 use bevy_ecs::world::CommandQueue;
-use bevy_hierarchy::BuildChildren;
 use std::cell::OnceCell;
 use std::marker::PhantomData;
 use std::sync::LazyLock;

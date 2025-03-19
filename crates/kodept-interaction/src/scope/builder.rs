@@ -5,9 +5,7 @@ use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
 use bevy_ecs::change_detection::{Res, ResMut};
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::{Changed, Commands, Or, Query, With};
-use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_hierarchy::{BuildChildren, Children, Parent};
+use bevy_ecs::prelude::{Changed, ChildOf, Children, Commands, IntoScheduleConfigs, Or, Query, With};
 use kodept_ast::define_union;
 use kodept_ast::prelude::IntoEnum;
 use kodept_ast::properties::Node;
@@ -33,7 +31,7 @@ impl Interaction for ScopeBuilder {
     type Error = Infallible;
 
     fn interaction() -> InteractionWrapper<Self::Error> {
-        type NodeFilter = (With<Node>, Or<(Changed<Parent>, Changed<Children>)>);
+        type NodeFilter = (With<Node>, Or<(Changed<ChildOf>, Changed<Children>)>);
 
         let config = InteractionWrapper::wrap(Self::system)
             .unwrap()
@@ -87,7 +85,7 @@ impl ScopeBuilder {
             if let Some(scope_node) = node.into_enum() {
                 let scope_id = Self::divide_by_scopes(scope_node, &mut commands);
                 if let Some(parent) = parent_scope_id {
-                    commands.entity(scope_id).set_parent(parent);
+                    commands.entity(scope_id).insert(ChildOf { parent });
                 }
                 enclosing_scopes.insert(*node.id(), scope_id);
             } else if let Some(parent) = parent_scope_id {

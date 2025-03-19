@@ -3,15 +3,15 @@ use crate::prelude::{ASTNode, AnyNodeRefItem, FromEnum, IntoEnum, NodeId, NodeRe
 use crate::properties::tags::Tagged;
 use crate::properties::{Node, Root};
 use crate::syntax_tree::children::HasChild;
-use bevy_ecs::prelude::{Entity, EntityRef, Query, Single, With};
+use bevy_ecs::prelude::{ChildOf, Children, Entity, EntityRef, Query, Single, With};
 use bevy_ecs::query::{QueryEntityError, QueryFilter, ReadOnlyQueryData};
 use bevy_ecs::system::SystemParam;
-use bevy_hierarchy::{Children, Parent};
 use derive_more::{Display, Error, From};
 use std::collections::VecDeque;
 use std::error::Error;
+use bevy_ecs::relationship::Relationship;
 
-type InnerQueryData<T> = (T, Option<&'static Children>, Option<&'static Parent>);
+type InnerQueryData<T> = (T, Option<&'static Children>, Option<&'static ChildOf>);
 type InnerQuery<'w, 's, T, Filter> = Query<'w, 's, InnerQueryData<T>, (With<Node>, Filter)>;
 
 #[derive(SystemParam)]

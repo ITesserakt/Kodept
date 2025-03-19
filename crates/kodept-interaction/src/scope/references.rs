@@ -5,10 +5,8 @@ use crate::symbol::table::SymbolTable;
 use crate::symbol::Symbol;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, fail, Interaction, Result, Skip};
-use bevy_ecs::prelude::{Entity, Populated, Query, Res};
+use bevy_ecs::prelude::{ChildOf, Children, Entity, IntoScheduleConfigs, Populated, Query, Res};
 use bevy_ecs::query::With;
-use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_hierarchy::{Children, Parent};
 use kodept_ast::properties::Name;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::Str;
@@ -19,6 +17,7 @@ use kodept_report::traits::IntoSpannedReportMessage;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
+use bevy_ecs::relationship::Relationship;
 
 pub struct ReferenceResolver;
 
@@ -104,7 +103,7 @@ impl Interaction for ReferenceResolver {
 type ScopeQuery<'q> = (
     &'q Scope,
     Option<&'q SymbolTable>,
-    Option<&'q Parent>,
+    Option<&'q ChildOf>,
     Option<&'q Children>,
     Option<&'q Name>,
 );

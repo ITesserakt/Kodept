@@ -52,13 +52,14 @@ impl<E> From<E> for Skip<E> {
 pub mod wrapper {
     use crate::report::Reporter;
     use crate::Skip;
-    use bevy_ecs::prelude::{In, IntoSystem, IntoSystemConfigs};
-    use bevy_ecs::schedule::SystemConfigs;
+    use bevy_ecs::prelude::{In, IntoSystem, IntoScheduleConfigs};
     use kodept_report::traits::IntoSpannedReportMessage;
     use std::marker::PhantomData;
+    use bevy_ecs::schedule::ScheduleConfigs;
+    use bevy_ecs::system::ScheduleSystem;
     use tracing::trace;
 
-    pub struct InteractionWrapper<E>(PhantomData<E>, SystemConfigs);
+    pub struct InteractionWrapper<E>(PhantomData<E>, ScheduleConfigs<ScheduleSystem>);
 
     impl<E> InteractionWrapper<E> {
         pub(crate) fn wrap<M, S>(system: S) -> Self
@@ -74,14 +75,14 @@ pub mod wrapper {
                     Err(Skip::Failed(e)) => reporter.report(e),
                 },
             );
-            Self(PhantomData, IntoSystemConfigs::into_configs(piped_system))
+            Self(PhantomData, IntoScheduleConfigs::into_configs(piped_system))
         }
 
-        pub(crate) fn from_configs(configs: impl IntoSystemConfigs<()>) -> Self {
+        pub(crate) fn from_configs(configs: impl IntoScheduleConfigs<ScheduleSystem, ()>) -> Self {
             InteractionWrapper(PhantomData, configs.into_configs())
         }
 
-        pub fn unwrap(self) -> impl IntoSystemConfigs<()> {
+        pub fn unwrap(self) -> impl IntoScheduleConfigs<ScheduleSystem, ()> {
             self.1
         }
     }

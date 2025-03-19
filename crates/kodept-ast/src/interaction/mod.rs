@@ -1,6 +1,6 @@
-use bevy_ecs::prelude::{IntoSystem, IntoSystemConfigs, Schedule, Schedules, World};
+use bevy_ecs::prelude::{IntoScheduleConfigs, IntoSystem, Schedule, Schedules, World};
 use bevy_ecs::schedule::ScheduleLabel;
-use bevy_ecs::system::{RunSystemOnce, SystemInput};
+use bevy_ecs::system::{RunSystemOnce, ScheduleSystem, SystemInput};
 
 pub struct Interaction<'w> {
     world: &'w mut World,
@@ -35,7 +35,7 @@ impl<'w> Interaction<'w> {
         I: for<'a> SystemInput<Inner<'a> = Input>,
     {
         self.world
-            .run_system_once_with(input, system)
+            .run_system_once_with(system, input)
             .expect("Could not run system")
     }
 
@@ -43,7 +43,7 @@ impl<'w> Interaction<'w> {
         f(self.world)
     }
 
-    pub fn register<M>(&mut self, system: impl IntoSystemConfigs<M>) {
+    pub fn register<M>(&mut self, system: impl IntoScheduleConfigs<ScheduleSystem, M>) {
         self.schedule.add_systems(system);
     }
 

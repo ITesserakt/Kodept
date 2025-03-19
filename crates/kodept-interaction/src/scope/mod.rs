@@ -1,4 +1,4 @@
-use bevy_ecs::entity::EntityHashMap;
+use bevy_ecs::entity::hash_map::EntityHashMap;
 use bevy_ecs::prelude::{Entity, Resource};
 use kodept_ast::prelude::Erase;
 

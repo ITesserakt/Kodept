@@ -1,13 +1,12 @@
 use crate::properties::{Name, Node, Root};
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::RunSystemOnce;
-use bevy_hierarchy::{Children, HierarchyQueryExt};
 use std::io::Write;
 
 impl super::storage::AST {
     pub fn export_dot<W: Write + 'static>(&mut self, writer: W) -> std::io::Result<W> {
         self.world
-            .run_system_once_with(writer, build_dot_system)
+            .run_system_once_with(build_dot_system, writer)
             .expect("Cannot run system")
     }
 }

@@ -20,7 +20,6 @@ parallel = ["dep:rayon"]
 
 [dependencies]
 bevy_ecs.workspace = true
-bevy_hierarchy.workspace = true
 dashmap = "6.1.0"
 derive_more.workspace = true
 smallvec = "1.13.2"

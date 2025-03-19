@@ -7,10 +7,7 @@ use crate::symbol::{Symbol, SymbolKind};
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
 use bevy_ecs::change_detection::Res;
-use bevy_ecs::entity::EntityHashMap;
-use bevy_ecs::prelude::{Commands, DetectChanges, Query};
-use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_hierarchy::Children;
+use bevy_ecs::prelude::{Children, Commands, DetectChanges, IntoScheduleConfigs, Query};
 use hashbrown::hash_set::Entry;
 use hashbrown::HashSet;
 use kodept_ast::properties::Name;
@@ -26,6 +23,7 @@ use kodept_core::code_point::CodePoint;
 use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
+use bevy_ecs::entity::hash_map::EntityHashMap;
 
 pub struct ExtractSymbols;
 
