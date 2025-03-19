@@ -9,7 +9,11 @@ use std::borrow::Cow;
 pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
     let source =
         kodept_interning::InterningCodeHolder::new(&**source).map(|it| Cow::Borrowed(it.0));
-    AST::recursively_build::<FileDecl>(rlt, source)
+    let ast = AST::recursively_build::<FileDecl>(rlt, source);
+    let metrics = kodept_interning::metrics::InterningMetrics::gather();
+    let (saved_value, saved_suffix) = metrics.memory_save();
+    tracing::debug!(?metrics, "Interning saved {:.2}{}", saved_value, saved_suffix);
+    ast
 }
 
 #[cfg(not(feature = "interning"))]

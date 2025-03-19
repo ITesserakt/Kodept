@@ -115,12 +115,14 @@ impl<T: Internable + ?Sized> Interner<T> {
         {
             let set = lock.read().unwrap_or_else(PoisonError::into_inner);
             if let Some(value) = set.get(value) {
+                TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
                 return Interned(*value);
             }
         }
         {
             let mut set = lock.write().unwrap_or_else(PoisonError::into_inner);
             if let Some(value) = set.get(value) {
+                TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
                 Interned(*value)
             } else {
                 let leaked = value.leak();
