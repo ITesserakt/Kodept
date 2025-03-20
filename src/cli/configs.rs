@@ -14,7 +14,7 @@ use kodept_core::structure::rlt::RLT;
 use kodept_parse::common::{EagerTokensProducer, ErrorAdapter, RLTProducer, TokenProducer};
 use kodept_parse::error::ParseErrors;
 use kodept_parse::lexer::traits::ToRepresentation;
-use kodept_parse::lexer::{NomLexer, PegLexer, PestLexer};
+use kodept_parse::lexer::{ASCIILexer, NomLexer, PegLexer, PestLexer};
 use kodept_parse::parser::{NomParser, PegParser};
 use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
@@ -44,6 +44,7 @@ pub enum LexerChoice {
     Peg,
     Pest,
     Nom,
+    ASCII,
     Auto,
 }
 
@@ -60,6 +61,7 @@ enum LexerImpl {
     Peg(PegLexer<false>),
     Nom(NomLexer),
     Pest(PestLexer),
+    ASCII(ASCIILexer)
 }
 
 #[derive(Debug, From)]
@@ -74,6 +76,7 @@ impl LexerImpl {
             LexerImpl::Peg(x) => std::any::type_name_of_val(x),
             LexerImpl::Nom(x) => std::any::type_name_of_val(x),
             LexerImpl::Pest(x) => std::any::type_name_of_val(x),
+            LexerImpl::ASCII(x) => std::any::type_name_of_val(x),
         }
     }
 }
@@ -93,6 +96,8 @@ impl TokenProducer for LexerImpl {
                 .map_err(|e| e.adapt(whole_input, position)),
             LexerImpl::Pest(x) => TokenProducer::parse_string(x, whole_input, position)
                 .map_err(|e| e.adapt(whole_input, position)),
+            LexerImpl::ASCII(x) => TokenProducer::parse_string(x, whole_input, position)
+                .map_err(|e| e.adapt(whole_input, position)),
         }
     }
 }
@@ -109,6 +114,7 @@ impl EagerTokensProducer for LexerImpl {
             LexerImpl::Pest(x) => {
                 EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
             }
+            LexerImpl::ASCII(x) => EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0)),
         }
     }
 }
@@ -163,15 +169,17 @@ pub struct LoadingConfig {
 }
 
 impl ParsingConfig {
-    fn get_lexing_backend(&self, source_len: usize) -> LexerImpl {
+    fn get_lexing_backend(&self, source: &str) -> LexerImpl {
         const ONE_MB: usize = 1024 * 1024;
 
         match (
             &self.lexer,
-            source_len,
+            source.len(),
             self.parallel && cfg!(feature = "parallel"),
             cfg!(feature = "trace"),
         ) {
+            (LexerChoice::ASCII, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
+            (LexerChoice::ASCII, _, _, _) => panic!("Cannot use ascii lexer for non-ascii input"),
             (LexerChoice::Peg, _, _, false) => PegLexer::<false>::new().into(),
             (LexerChoice::Peg, _, _, true) => {
                 panic!("Cannot use peg lexer when parallelization and tracing are enabled")
@@ -179,6 +187,7 @@ impl ParsingConfig {
             (LexerChoice::Pest, _, _, _) => PestLexer::new().into(),
             (LexerChoice::Nom, _, false, _) => NomLexer::new().into(),
             (LexerChoice::Nom, _, true, _) => panic!("Cannot use nom lexer in parallel context"),
+            (LexerChoice::Auto, _, _, _) if source.is_ascii() => ASCIILexer::new().into(), 
             (LexerChoice::Auto, ..ONE_MB, false, _) => PestLexer::new().into(),
             (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
             (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),
@@ -210,7 +219,7 @@ impl ParsingConfig {
     ) -> Result<Vec<PackedTokenMatch>, ParseErrors<&'a str>> {
         use kodept_parse::tokenizer::*;
 
-        let backend = self.get_lexing_backend(source.contents().len());
+        let backend = self.get_lexing_backend(source.contents());
 
         if cfg!(feature = "parallel")
             && self.parallel
