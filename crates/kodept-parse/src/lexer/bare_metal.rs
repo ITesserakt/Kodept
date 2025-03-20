@@ -1,9 +1,9 @@
-use std::cell::Cell;
 use crate::common::{EagerTokensProducer, TokenProducer};
 use crate::lexer::bare_metal::Error::{NotANumber, UnclosedChar, UnclosedString, Unknown};
 use crate::lexer::PackedToken;
 use crate::token_match::PackedTokenMatch;
 use kodept_core::code_point::CodePoint;
+use std::cell::Cell;
 use std::convert::Infallible;
 
 struct Sink<F>(F);
@@ -41,6 +41,16 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 match not_space {
                     Some(pos) => Ok(&rest[pos..]),
                     None => Ok(&[]),
+                }
+            }
+            [b'/', b'/', rest @ ..] => {
+                // TODO: support \r\n endings
+                let separator = rest.iter().position(|it| matches!(it, b'\n'));
+                self.push(PackedToken::Comment);
+                if let Some(pos) = separator {
+                    Ok(&rest[pos..])
+                } else {
+                    Ok(&[])
                 }
             }
             [b'f', b'u', b'n', rest @ ..] => {
@@ -267,7 +277,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 }
             }
             [b'_', b'A'..=b'Z', rest @ ..] | [b'A'..=b'Z', rest @ ..] => {
-                let not_letter = rest.iter().position(|&it| !it.is_ascii_alphanumeric());
+                let not_letter = rest.iter().position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
                 self.push(PackedToken::Type);
                 match not_letter {
                     Some(pos) => Ok(&rest[pos..]),
@@ -275,7 +285,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 }
             }
             [b'_', b'a'..=b'z', rest @ ..] | [b'a'..=b'z', rest @ ..] => {
-                let not_letter = rest.iter().position(|&it| !it.is_ascii_alphanumeric());
+                let not_letter = rest.iter().position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
                 self.push(PackedToken::Identifier);
                 match not_letter {
                     Some(pos) => Ok(&rest[pos..]),
@@ -421,7 +431,7 @@ impl TokenProducer for Lexer {
 
         match sink.parse(input) {
             Ok(rest) => {
-                let length = rest.as_ptr() as usize - input.as_ptr() as usize;
+                let length = input.len() - rest.len();
                 Ok(PackedTokenMatch {
                     token,
                     point: CodePoint {
@@ -430,7 +440,7 @@ impl TokenProducer for Lexer {
                     },
                 })
             }
-            Err(e) => Ok(recover_from_error(input, e))
+            Err(e) => Ok(recover_from_error(input, e)),
         }
     }
 }
@@ -444,17 +454,17 @@ impl EagerTokensProducer for Lexer {
         let current_token = Cell::new(PackedToken::Unknown);
         let mut sink = Sink(|it| current_token.set(it));
         let mut input = input.as_bytes();
-        
+
         while !input.is_empty() {
             match sink.parse(input) {
                 Ok(rest) => {
-                    let length = rest.as_ptr() as usize - input.as_ptr() as usize;
+                    let length = input.len() - rest.len();
                     tokens.push(PackedTokenMatch {
                         token: current_token.get(),
                         point: CodePoint {
                             length: length as u32,
-                            offset
-                        }
+                            offset,
+                        },
                     });
                     offset += length as u32;
                     input = rest;
