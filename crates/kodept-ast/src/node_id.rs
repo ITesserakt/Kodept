@@ -59,6 +59,10 @@ impl<T> NodeId<T> {
             _phantom: PhantomData,
         }
     }
+    
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
 }
 
 impl<T> Clone for NodeId<T> {

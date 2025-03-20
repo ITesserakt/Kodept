@@ -160,7 +160,7 @@ where
 }
 
 pub trait NodeRelationship<Child, Tag> {
-    type Relationship: Relationship;
+    type Relationship: Relationship<Mutability = Mutable>;
     type RelationshipTarget: RelationshipTarget;
 }
 
@@ -171,7 +171,7 @@ where
     Tag: 'static + Send + Sync,
 {
     type Relationship = ContainedBy<Tag, T::Arity>;
-    type RelationshipTarget = Contains<Tag, T::Arity>;
+    type RelationshipTarget = <Self::Relationship as Relationship>::RelationshipTarget;
 }
 
 type DynFromSyntax<'w, Source> = dyn FnOnce(SyntaxVariant<'w>, Source, Pool<'w>) -> ASTBuilder<()>;

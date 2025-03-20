@@ -1,11 +1,10 @@
 use crate::interaction::Interaction;
 use crate::prelude::{CodeHolder, FromSyntax};
-use crate::properties::{Node, Root};
+use crate::properties::Root;
 use crate::resource::rlt::SyntaxResolver;
 use crate::syntax_tree::builder::Pool;
-use bevy_ecs::prelude::{Component, Entity, World};
+use bevy_ecs::prelude::World;
 use kodept_rlt::prelude::RLT;
-use crate::node_id::Erase;
 
 #[derive(Debug)]
 pub struct AST {
@@ -23,29 +22,12 @@ impl AST {
         let pool = Pool::new(&syntax, world.entities());
         let whole_part =
             Root::from_syntax(pool.syntax_root(), source_code, pool).with_property(Root);
-        unsafe { pool.link_syntax(whole_part.id(), pool.syntax_root()); }
+        unsafe {
+            pool.link_syntax(whole_part.id(), pool.syntax_root());
+        }
         whole_part.consume(&mut world);
         world.insert_resource(syntax);
         AST { world }
-    }
-
-    pub fn node_count(&self) -> usize {
-        self.world
-            .iter_entities()
-            .filter(|it| it.contains::<Node>())
-            .count()
-    }
-
-    pub fn contains<T: Component>(&self, id: impl Erase<Entity>) -> bool {
-        self.world.entity(id.erase()).contains::<T>()
-    }
-
-    pub fn syntax_mut(&mut self) -> &mut SyntaxResolver {
-        self.world.resource_mut::<SyntaxResolver>().into_inner()
-    }
-
-    pub fn syntax(&self) -> &SyntaxResolver {
-        self.world.resource()
     }
 
     pub fn interact(&mut self) -> Interaction {

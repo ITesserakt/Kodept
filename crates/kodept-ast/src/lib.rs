@@ -21,6 +21,7 @@ pub mod prelude {
     pub use super::node_id::{NodeId, Erase};
 }
 
+#[deprecated]
 pub mod external {
     pub use bevy_ecs::prelude::Component;
 }

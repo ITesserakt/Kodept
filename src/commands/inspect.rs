@@ -75,14 +75,14 @@ fn export_rlt(source: &SourceView, config: &OutputConfig, rlt: &RLT) -> Executio
 }
 
 fn export_ast(source: &SourceView, config: &OutputConfig, ast: &mut AST) -> Execution<()> {
-    let output_file = match config.open_file_for_source(source.path(), "dot") {
+    let mut output_file = match config.open_file_for_source(source.path(), "dot") {
         Ok(x) => x,
         Err(e) => {
             error!("Could not open file to output RLT: {e}");
             return Break(());
         }
     };
-    if let Err(e) = ast.export_dot(output_file) {
+    if let Err(e) = ast.export_dot(&mut output_file) {
         error!("Could not export AST into .dot: {e}");
         return Break(());
     }
