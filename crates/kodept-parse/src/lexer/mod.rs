@@ -2,10 +2,12 @@ pub use enums::*;
 
 pub mod enums;
 pub mod traits;
+mod bare_metal;
 
 pub type NomLexer = crate::nom::Lexer;
 pub type PegLexer<const TRACE: bool> = crate::peg::Lexer<TRACE>;
 pub type PestLexer = crate::pest::Lexer;
+pub type ASCIILexer = bare_metal::Lexer;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

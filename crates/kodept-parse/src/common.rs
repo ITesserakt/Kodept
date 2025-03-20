@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::fmt::Debug;
 
 use kodept_core::structure::rlt::new_types::Enclosed;
@@ -42,6 +43,12 @@ pub struct VerboseEnclosed<T> {
     pub left: Span,
     pub inner: T,
     pub right: Span,
+}
+
+impl<A, O: Original<A>> ErrorAdapter<A, O> for Infallible {
+    fn adapt(self, _: O, _: usize) -> ParseErrors<A> {
+        match self {  }
+    }
 }
 
 impl<T, U: From<T>> From<VerboseEnclosed<T>> for Enclosed<U> {

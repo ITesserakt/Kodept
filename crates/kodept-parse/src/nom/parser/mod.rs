@@ -9,7 +9,6 @@ use ::nom::IResult;
 use nom::{Needed, Parser as ParserOps};
 use std::borrow::Cow;
 use std::fmt::Formatter;
-use nom::combinator::complete;
 
 type PResult<'t, O> = IResult<PackedTokenStream<'t>, O, PError<'t>>;
 
