@@ -14,6 +14,7 @@ use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::{Application, Expression, ExpressionBlock, Operation};
 use std::ops::Deref;
+use kodept_ast::arity::Arity;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Exprs;
@@ -176,6 +177,7 @@ impl FromSyntax for Lambda {
 impl<R, Tag, A> Choose<Operation, R, Tag> for Unit
 where
     Tag: Send + Sync + 'static,
+    A: Arity,
     R: HasChild<Exprs, Tag, Arity = A>,
     R: HasChild<App, Tag, Arity = A>,
     R: HasChild<Lambda, Tag, Arity = A>,
@@ -288,6 +290,7 @@ where
 impl<R, Tag, A> Choose<Expression, R, Tag> for Unit
 where
     Tag: Send + Sync + 'static,
+    A: Arity,
     R: HasChild<Lambda, Tag, Arity = A>,
     R: HasChild<IfExpr, Tag, Arity = A>,
     R: HasChild<Ref, Tag, Arity = A>,

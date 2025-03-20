@@ -37,13 +37,13 @@ macro_rules! relation {
 #[macro_export]
 macro_rules! arity {
     (child) => {
-        $crate::syntax_tree::children::arity::Singular
+        $crate::arity::Singular
     };
     (optional) => {
-        $crate::syntax_tree::children::arity::Optional
+        $crate::arity::Optional
     };
     (children) => {
-        $crate::syntax_tree::children::arity::Plural
+        $crate::arity::Plural
     };
 }
 

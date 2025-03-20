@@ -3,6 +3,7 @@
 
 use kodept_core::static_assert_size;
 
+pub mod arity;
 mod entity;
 pub mod interaction;
 pub mod macros;
@@ -12,6 +13,7 @@ pub mod syntax_tree;
 mod traits;
 mod utils;
 mod node_id;
+mod relationship;
 
 pub mod prelude {
     pub use super::entity::children::TryFromIter;

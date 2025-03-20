@@ -7,6 +7,7 @@ use kodept_ast::prelude::{Choose, CodeHolder};
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, relation, Str};
+use kodept_ast::arity::Arity;
 use kodept_rlt::prelude as rlt;
 
 #[derive(Debug, PartialEq, Component)]
@@ -38,6 +39,7 @@ relation!(Tuple => children Tuple);
 impl<R, Tag, A> Choose<rlt::Literal, R, Tag> for Unit
 where
     Tag: Send + Sync + 'static,
+    A: Arity,
     R: HasChild<Tuple, Tag, Arity = A>,
     R: HasChild<Literal, Tag, Arity = A>,
 {

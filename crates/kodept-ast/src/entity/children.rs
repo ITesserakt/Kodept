@@ -1,8 +1,8 @@
-use crate::syntax_tree::children::arity::{Optional, Plural, Singular};
 use derive_more::{Display, Error};
 use smallvec::SmallVec;
 use std::convert::Infallible;
 use std::error::Error;
+use crate::arity::{Optional, Plural, Singular};
 
 pub trait TryFromIter {
     type Container<T>;

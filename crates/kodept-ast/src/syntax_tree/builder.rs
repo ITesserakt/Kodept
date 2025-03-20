@@ -2,14 +2,14 @@ use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
 use crate::properties::{Node, NodeProperty};
 use crate::resource::rlt::SyntaxVariant;
 use crate::syntax_tree::builder::queue::{BorrowedQueue, OwnedQueue, Queue};
-use crate::syntax_tree::children::{ContainedBy, HasChild};
+use crate::syntax_tree::children::{HasChild};
 use crate::utils::{HasLength, IntoCommonIter};
 use bevy_ecs::prelude::{Commands, Entity, World};
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 use bevy_ecs::relationship::Relationship;
 pub use pool::*;
-use crate::syntax_tree::children::arity::Arity;
+use crate::relationship::ContainedBy;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
@@ -300,7 +300,7 @@ where
         iter: impl IntoCommonIter<Item = &'a T> + HasLength,
     ) where
         Root: Send,
-        Chooser: Choose<T, Root, Tag, Arity: Arity>,
+        Chooser: Choose<T, Root, Tag>,
         Tag: Send + Sync + 'static,
         T: 'a,
         'a: 's,
@@ -350,7 +350,7 @@ where
         option: Option<impl IntoCommonIter<Item = &'a T> + HasLength>,
     ) where
         Root: Send,
-        Chooser: Choose<T, Root, Tag, Arity: Arity>,
+        Chooser: Choose<T, Root, Tag>,
         Tag: Send + Sync + 'static,
         T: 'a,
         'a: 's,

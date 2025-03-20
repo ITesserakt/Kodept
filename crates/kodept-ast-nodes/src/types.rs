@@ -1,5 +1,6 @@
 use crate::Unit;
 use kodept_ast::{derive_node, relation};
+use kodept_ast::arity::Arity;
 use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::properties::Name;
@@ -97,6 +98,7 @@ where
     R: HasChild<Ty, Tag, Arity = A>,
     R: HasChild<ProdTy, Tag, Arity = A>,
     Tag: Send + Sync + 'static,
+    A: Arity,
 {
     type Arity = A;
 
@@ -114,6 +116,7 @@ where
     R: HasChild<TyParam, Tag, Arity = A>,
     R: HasChild<NonTyParam, Tag, Arity = A>,
     Tag: Send + Sync + 'static,
+    A: Arity
 {
     type Arity = A;
     

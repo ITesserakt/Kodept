@@ -13,6 +13,7 @@ use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_ast::{derive_node, relation};
+use kodept_ast::arity::Arity;
 use kodept_rlt::prelude::{BlockLevelNode, InitializedVariable, Variable};
 
 #[derive(Debug, PartialEq, Component)]
@@ -84,6 +85,7 @@ impl FromSyntax for InitVar {
 
 impl<R, A> Choose<BlockLevelNode, R, ()> for Unit
 where
+    A: Arity,
     R: HasChild<InitVar, (), Arity = A>,
     R: HasChild<Const, (), Arity = A>,
     R: HasChild<Exprs, (), Arity = A>,
