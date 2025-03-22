@@ -16,6 +16,7 @@ pub struct Node {
 pub struct Root;
 
 #[derive(Debug, Component, Clone, From, Into, Display)]
+#[component(storage = "SparseSet")]
 pub struct Name(pub Str);
 
 pub trait HasProperty<Property: NodeProperty>: Sized {
