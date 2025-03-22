@@ -240,6 +240,8 @@ where
         Tag: Send + Sync + 'static,
         &'w U::Syntax: Into<SyntaxVariant<'w>>,
     {
+        Root::register();
+        
         if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
             for item in iter.into_iter() {
                 let part = U::from_syntax(item, self.source, self.pool);
@@ -360,20 +362,6 @@ where
         }
     }
 
-    #[allow(clippy::wrong_self_convention, unsafe_code)]
-    #[inline(always)]
-    #[deprecated]
-    pub fn from_builder<T, U, Tag>(&mut self, node: &'w T, builder: ASTBuilder<U>)
-    where
-        Root: HasChild<U, Tag>,
-        U: ASTNode,
-        Tag: Send + Sync + 'static,
-        &'w T: Into<SyntaxVariant<'w>>,
-    {
-        unsafe { self.pool.link_syntax(builder.root, node) };
-        self.insert::<Root::Relationship>(builder.erase());
-    }
-
     #[allow(unsafe_code)]
     #[inline(always)]
     pub fn with_builder<T, F, U, Tag>(&mut self, node: &'w T, callback: F)
@@ -386,6 +374,7 @@ where
         Root: HasChild<U, Tag>,
         U: ASTNode,
     {
+        Root::register();
         let mut builder = callback(BorrowedQueue(self.commands.reborrow(), self.pool, self.source));
         unsafe { self.pool.link_syntax(builder.root, node) };
         builder.queue.0.entity(self.root).add_one_related::<Root::Relationship>(builder.root);

@@ -36,7 +36,7 @@
             };
 		in pkgs.mkShellNoCC rec {
 			packages = with pkgs; [
-				xdot
+				plantuml
 				gnuplot
 				pkgs.clangStdenv.cc
 				mold

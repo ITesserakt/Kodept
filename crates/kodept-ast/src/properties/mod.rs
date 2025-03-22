@@ -1,7 +1,7 @@
 use crate::prelude::ASTNode;
 use crate::Str;
 use bevy_ecs::prelude::Component;
-use derive_more::{From, Into};
+use derive_more::{Display, From, Into};
 use std::ops::{Deref, DerefMut};
 
 pub trait NodeProperty: Component {}
@@ -15,8 +15,7 @@ pub struct Node {
 #[component(storage = "SparseSet")]
 pub struct Root;
 
-#[derive(Debug, Component, Clone, From, Into)]
-#[component(storage = "SparseSet")]
+#[derive(Debug, Component, Clone, From, Into, Display)]
 pub struct Name(pub Str);
 
 pub trait HasProperty<Property: NodeProperty>: Sized {

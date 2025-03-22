@@ -1,5 +1,5 @@
 use crate::prelude::{ASTNode, NodeId};
-use crate::properties::{NodeProperty, RequireProperty};
+use crate::properties::{HasProperty, Node, NodeProperty, RequireProperty};
 use bevy_ecs::prelude::EntityRef;
 use bevy_ecs::query::QueryData;
 use std::convert::identity;
@@ -54,6 +54,15 @@ impl<'a> AnyNodeRefItem<'a, '_> {
         })
     }
 
+    #[inline(always)]
+    pub fn kind(&self) -> &'static str {
+        self.inner.get::<Node>().unwrap().kind
+    }
+    
+    pub fn property<P: NodeProperty>(&self) -> Option<&P> {
+        self.inner.get()
+    } 
+    
     pub fn id(&self) -> NodeId {
         self.inner.id().into()
     }

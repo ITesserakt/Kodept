@@ -14,6 +14,7 @@ mod traits;
 mod utils;
 mod node_id;
 mod relationship;
+mod query;
 
 pub mod prelude {
     pub use super::entity::children::TryFromIter;

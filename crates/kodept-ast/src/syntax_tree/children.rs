@@ -69,6 +69,7 @@ where
         U: ASTNode,
         T: 'w,
     {
+        Root::register();
         Self {
             inner: node.into(),
             conversion: Box::new(move |node, source, pool| {
