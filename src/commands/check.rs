@@ -10,7 +10,7 @@ use kodept_ast::interaction::Interaction as Ctx;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
 use kodept_interaction::lint::{RLTLinkLint, ShowLints, SingleModuleWithBrackets};
-use kodept_interaction::prelude::{ASTExt, ExtractSymbols, ReferenceResolver, ScopeBuilder};
+use kodept_interaction::prelude::{ASTExt, ExtractSymbols, ReferenceResolver, ScopeBuildingPass};
 use kodept_interaction::Interaction;
 use kodept_report::FileDescriptor;
 use std::borrow::Cow;
@@ -50,7 +50,7 @@ impl Command for Check {
             self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
                 install_lints(ctx);
 
-                ScopeBuilder::install(ctx);
+                ScopeBuildingPass::install(ctx);
                 ExtractSymbols::install(ctx);
                 ReferenceResolver::install(ctx);
 

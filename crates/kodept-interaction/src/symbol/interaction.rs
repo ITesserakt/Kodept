@@ -1,13 +1,16 @@
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
-use crate::scope::ScopeMapping;
+use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
 use crate::symbol::SymbolKind::{Function, Parameter, Variable};
 use crate::symbol::{Symbol, SymbolKind};
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
 use bevy_ecs::change_detection::Res;
-use bevy_ecs::prelude::{Children, Commands, DetectChanges, IntoScheduleConfigs, Query};
+use bevy_ecs::entity::hash_map::EntityHashMap;
+use bevy_ecs::prelude::{Children, Commands, IntoScheduleConfigs, Populated, Query};
+use bevy_ecs::query::Changed;
+use bevy_ecs::relationship::Relationship;
 use hashbrown::hash_set::Entry;
 use hashbrown::HashSet;
 use kodept_ast::properties::Name;
@@ -23,7 +26,6 @@ use kodept_core::code_point::CodePoint;
 use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
-use bevy_ecs::entity::hash_map::EntityHashMap;
 
 pub struct ExtractSymbols;
 
@@ -71,7 +73,7 @@ impl Interaction for ExtractSymbols {
     fn interaction() -> InteractionWrapper<Self::Error> {
         let config = InteractionWrapper::wrap(Self::system)
             .unwrap()
-            .run_if(|mapping: Option<Res<ScopeMapping>>| mapping.is_some_and(|it| it.is_changed()));
+            .run_if(|query: Populated<(), Changed<Scoped>>| true);
         InteractionWrapper::from_configs(config)
     }
 }
@@ -107,7 +109,7 @@ impl ExtractSymbols {
 
     fn system(
         query: ASTQuery<SymbolUnionFilter>,
-        scope_mapping: Res<ScopeMapping>,
+        enclosing_scopes: Query<&Scoped>,
         mut commands: Commands,
         reporter: Reporter,
         syntax: Res<SyntaxResolver>,
@@ -118,7 +120,7 @@ impl ExtractSymbols {
         let iter = query.iter_enum().map(|it| Self::extract_symbol(it, &query));
         for symbol in iter {
             let bound_node = symbol.bound_node;
-            let enclosing_scope = scope_mapping.enclosing_scope_id(bound_node);
+            let enclosing_scope = enclosing_scopes.get(bound_node.entity()).unwrap().get();
             let set = symbols.entry(enclosing_scope).or_default();
             match set.entry(symbol) {
                 Entry::Occupied(x) => {

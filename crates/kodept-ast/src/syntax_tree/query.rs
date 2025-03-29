@@ -13,6 +13,7 @@ use bevy_ecs::relationship::Relationship;
 type InnerQueryData<T> = (T, Option<&'static Children>, Option<&'static ChildOf>);
 type InnerQuery<'w, 's, T, Filter> = Query<'w, 's, InnerQueryData<T>, (With<Node>, Filter)>;
 
+#[deprecated]
 #[derive(SystemParam)]
 pub struct ASTQuery<'w, 's, Filter = (), T = EntityRef<'static>>
 where

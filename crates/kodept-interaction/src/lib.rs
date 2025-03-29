@@ -14,7 +14,7 @@ mod scope;
 mod symbol;
 
 pub mod prelude {
-    pub use super::scope::builder::ScopeBuilder;
+    pub use super::scope::builder::ScopeBuildingPass;
     pub use super::scope::references::ReferenceResolver;
 
     pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbols};

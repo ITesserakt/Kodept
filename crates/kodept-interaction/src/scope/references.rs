@@ -1,6 +1,6 @@
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
-use crate::scope::ScopeMapping;
+use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
 use crate::symbol::Symbol;
 use crate::wrapper::InteractionWrapper;
@@ -17,7 +17,6 @@ use kodept_report::traits::IntoSpannedReportMessage;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
-use bevy_ecs::relationship::Relationship;
 
 pub struct ReferenceResolver;
 
@@ -107,6 +106,7 @@ type ScopeQuery<'q> = (
     Option<&'q Children>,
     Option<&'q Name>,
 );
+type NodeQuery<'q> = (Entity, &'q Scoped, &'q Ref);
 
 impl ReferenceResolver {
     fn search_symbol<'a>(node: &Ref, table: &'a SymbolTable) -> Option<&'a Symbol> {
@@ -117,36 +117,31 @@ impl ReferenceResolver {
     }
 
     fn resolve_ref_without_context(
-        id: Entity,
-        node: &Ref,
-        mapping: &ScopeMapping,
+        node: NodeQuery,
         scopes: &Query<ScopeQuery>,
         syntax: &SyntaxResolver,
     ) -> Result<Error> {
-        let scope_id = mapping.enclosing_scope_id(id);
-        let mut current_scope_id = scope_id;
+        let mut current_scope_id = node.1 .0;
         loop {
             let (_, symbols, parent, ..) = scopes.get(current_scope_id).unwrap();
-            let symbol = symbols.and_then(|table| Self::search_symbol(node, table));
+            let symbol = symbols.and_then(|table| Self::search_symbol(node.2, table));
             if symbol.is_some() {
                 return done();
             }
             if let Some(parent) = parent {
-                current_scope_id = parent.get();
+                current_scope_id = parent.parent;
                 continue;
             } else {
                 return fail(Error::UnknownReference {
-                    path: node.into(),
-                    location: syntax.get_location(id),
+                    path: node.2.into(),
+                    location: syntax.get_location(node.0),
                 });
             }
         }
     }
 
     fn resolve_ref_with_global_context(
-        id: Entity,
-        node: &Ref,
-        mapping: &ScopeMapping,
+        node: NodeQuery,
         scopes: &Query<ScopeQuery>,
         syntax: &SyntaxResolver,
     ) -> Result<Error> {
@@ -155,7 +150,7 @@ impl ReferenceResolver {
             Layer,
         }
 
-        let (.., children, _) = scopes.get(mapping.root_scope_id()).unwrap();
+        let (.., children, _) = scopes.iter().find(|it| it.2.is_none()).unwrap();
         let mut queue = children
             .into_iter()
             .flatten()
@@ -163,7 +158,7 @@ impl ReferenceResolver {
             .chain(Some(ControlFlow::Layer))
             .collect::<VecDeque<_>>();
 
-        let mut context_path_iter = node.context.items.iter().peekable();
+        let mut context_path_iter = node.2.context.items.iter().peekable();
         while let Some(flow) = queue.pop_front() {
             match flow {
                 ControlFlow::Value(id) => {
@@ -177,12 +172,12 @@ impl ReferenceResolver {
                     };
 
                     if !scope.is_anonymous && context_path_iter.len() == 1 {
-                        let symbol = symbols.and_then(|it| Self::search_symbol(node, it));
+                        let symbol = symbols.and_then(|it| Self::search_symbol(node.2, it));
                         return if symbol.is_some() {
                             done()
                         } else {
                             fail(Error::UnknownReference {
-                                path: node.into(),
+                                path: node.2.into(),
                                 location: CodePoint::default(),
                             })
                         };
@@ -202,38 +197,29 @@ impl ReferenceResolver {
             };
         }
         fail(Error::UnknownPath {
-            path: node.into(),
+            path: node.2.into(),
             failed_segment: context_path_iter.peek().map(|it| (*it).clone()),
-            location: syntax.get_location(id),
+            location: syntax.get_location(node.0),
         })
     }
 
     fn system(
-        query: Query<(Entity, &Ref)>,
+        query: Query<(Entity, &Scoped, &Ref)>,
         scopes: Populated<ScopeQuery>,
-        scopes_mapping: Res<ScopeMapping>,
         syntax: Res<SyntaxResolver>,
         reporter: Reporter,
     ) -> Result<Infallible> {
-        for (entity, node) in query.into_iter() {
+        for (entity, scope, node) in query.into_iter() {
             if !node.context.global && node.context.items.is_empty() {
-                if let Err(Skip::Failed(e)) = Self::resolve_ref_without_context(
-                    entity,
-                    node,
-                    &scopes_mapping,
-                    &scopes,
-                    &syntax,
-                ) {
+                if let Err(Skip::Failed(e)) =
+                    Self::resolve_ref_without_context((entity, scope, node), &scopes, &syntax)
+                {
                     reporter.report(e);
                 }
             } else if node.context.global {
-                if let Err(Skip::Failed(e)) = Self::resolve_ref_with_global_context(
-                    entity,
-                    node,
-                    &scopes_mapping,
-                    &scopes,
-                    &syntax,
-                ) {
+                if let Err(Skip::Failed(e)) =
+                    Self::resolve_ref_with_global_context((entity, scope, node), &scopes, &syntax)
+                {
                     reporter.report(e);
                 }
             } else {

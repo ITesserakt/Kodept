@@ -1,6 +1,5 @@
-use bevy_ecs::entity::hash_map::EntityHashMap;
-use bevy_ecs::prelude::{Entity, Resource};
-use kodept_ast::prelude::Erase;
+use std::ops::{Deref, DerefMut};
+use bevy_ecs::prelude::{Component, Entity};
 
 pub(crate) mod builder;
 pub(crate) mod references;
@@ -12,26 +11,26 @@ pub(super) enum Visibility {
     Private,
 }
 
-#[derive(Debug, Resource)]
-pub(crate) struct ScopeMapping {
-    /// Mapping from entity to its enclosing scope entity
-    enclosing_scopes_mapping: EntityHashMap<Entity>,
-    root_entity: Entity
+/// Attaches to the ast nodes and points to appropriate enclosing scope
+#[derive(Debug, Component)]
+#[relationship(relationship_target = Scoping)]
+pub(crate) struct Scoped(Entity);
+
+/// Describes a set of ast nodes that belongs to this scope
+#[derive(Debug, Component)]
+#[relationship_target(relationship = Scoped)]
+pub(crate) struct Scoping(Vec<Entity>);
+
+impl Deref for Scoped {
+    type Target = Entity;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl ScopeMapping {
-    pub(crate) fn new(mapping: EntityHashMap<Entity>, root_entity: impl Erase<Entity>) -> Self {
-        Self {
-            enclosing_scopes_mapping: mapping,
-            root_entity: root_entity.erase(),
-        }
-    }
-    
-    pub(crate) fn enclosing_scope_id(&self, entity: impl Erase<Entity>) -> Entity {
-        *self.enclosing_scopes_mapping.get(&entity.erase()).unwrap()
-    }
-    
-    pub(crate) fn root_scope_id(&self) -> Entity { 
-        self.enclosing_scopes_mapping[&self.root_entity]
+impl DerefMut for Scoped {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
