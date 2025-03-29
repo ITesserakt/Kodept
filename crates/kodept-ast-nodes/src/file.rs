@@ -4,14 +4,14 @@ use crate::top_level::{EnumDecl, StructDecl};
 use crate::utils::const_disjoint;
 use crate::Unit;
 use kodept_ast::{derive_node, relation};
-use kodept_ast::external::Component;
 use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
 use kodept_ast::properties::Name;
 use kodept_ast::syntax_tree::children::ChildrenDisjoint;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use kodept_rlt::prelude as rlt;
 use std::fmt::Debug;
-use kodept_ast::syntax_tree::children::arity::Plural;
+use bevy_ecs::prelude::Component;
+use kodept_ast::arity::Plural;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct FileDecl;
@@ -68,19 +68,19 @@ impl Choose<rlt::TopLevelNode, ModDecl, ()> for Unit {
     #[inline(always)]
     fn branch<S: CodeHolder>(node: &rlt::TopLevelNode) -> ChildrenDisjoint<ModDecl, S, Self::Arity, ()> {
         match node {
-            rlt::TopLevelNode::Enum(x) => const_disjoint::<EnumDecl, _, _, _, _>(x, |node, source: S| {
+            rlt::TopLevelNode::Enum(x) => const_disjoint::<EnumDecl, _, _, _>(x, |node, source: S| {
                 source.get_chunk_located(match node {
                     rlt::Enum::Stack { id, .. } => id,
                     rlt::Enum::Heap { id, .. } => id,
                 })
             }),
             rlt::TopLevelNode::Struct(x) => {
-                const_disjoint::<StructDecl, _, _, _, _>(x, |node, source: S| {
+                const_disjoint::<StructDecl, _, _, _>(x, |node, source: S| {
                     source.get_chunk_located(&node.id)
                 })
             }
             rlt::TopLevelNode::BodiedFunction(x) => {
-                const_disjoint::<Func, _, _, _, _>(x, |node, source: S| {
+                const_disjoint::<Func, _, _, _>(x, |node, source: S| {
                     source.get_chunk_located(&node.id)
                 })
             }

@@ -105,7 +105,7 @@ where
         match node {
             BlockLevelNode::InitVar(x) => ChildrenDisjoint::new::<InitVar>(x),
             BlockLevelNode::Function(x) => {
-                const_disjoint::<Func, _, _, _, _>(x, |node, source: Source| {
+                const_disjoint::<Func, _, _, _>(x, |node, source: Source| {
                     source.get_chunk_located(&node.id)
                 })
             }

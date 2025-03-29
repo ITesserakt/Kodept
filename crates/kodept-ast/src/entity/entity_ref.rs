@@ -1,5 +1,5 @@
 use crate::prelude::{ASTNode, NodeId};
-use crate::properties::{HasProperty, Node, NodeProperty, RequireProperty};
+use crate::properties::{Node, NodeProperty, RequireProperty};
 use bevy_ecs::prelude::EntityRef;
 use bevy_ecs::query::QueryData;
 use std::convert::identity;

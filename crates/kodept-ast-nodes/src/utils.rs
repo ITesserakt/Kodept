@@ -61,16 +61,16 @@ pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
     });
 }
 
-pub(crate) fn const_disjoint<'p, U, R, S, Arity, Tag>(
+pub(crate) fn const_disjoint<'p, U, R, S, Tag>(
     node: &'p U::Syntax,
     name_fn: impl FnOnce(&U::Syntax, S) -> Str + 'static,
-) -> ChildrenDisjoint<'p, R, S, Arity, Tag>
+) -> ChildrenDisjoint<'p, R, S, R::Arity, Tag>
 where
     &'p U::Syntax: TryFrom<SyntaxVariant<'p>, Error: Debug> + Into<SyntaxVariant<'p>>,
     U: FromSyntax<Syntax: Sync> + ASTNode,
     Const: HasChild<U, Tag>,
     S: CodeHolder,
-    R: HasChild<Const, Tag, Arity = Arity>,
+    R: HasChild<Const, Tag>,
     Tag: Send + Sync + 'static,
 {
     ChildrenDisjoint::ad_hoc(node, move |node, source, pool| {
