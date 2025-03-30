@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::structure::rlt::{Enum, Struct, TopLevelNode};
+use kodept_rlt::prelude::{Enum, Struct, TopLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::SubSyntaxTree;

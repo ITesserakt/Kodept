@@ -7,7 +7,7 @@ use crate::nom::parser::macros::{function};
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{operator, ParseResult};
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
+use kodept_rlt::prelude as rlt;
 use kodept_core::structure::span::Span;
 
 fn tuple_literal(input: PackedTokenStream) -> ParseResult<rlt::Literal> {

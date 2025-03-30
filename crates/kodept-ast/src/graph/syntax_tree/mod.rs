@@ -8,7 +8,6 @@ use crate::graph::{HasChildrenMarker, SubSyntaxTree};
 use crate::interning::SharedStr;
 use crate::rlt_accessor::RLTAccessor;
 use crate::traits::PopulateTree;
-use kodept_core::structure::rlt;
 use kodept_core::structure::span::CodeHolder;
 use slotgraph::dag::SecondaryDag;
 use slotgraph::export::{Config, Dot};
@@ -16,6 +15,7 @@ use std::convert::identity;
 use std::fmt::{Display, Formatter};
 use std::iter::FusedIterator;
 use std::marker::PhantomData;
+use kodept_rlt::prelude::RLT;
 
 pub mod dfs;
 pub(crate) mod subtree;
@@ -51,7 +51,7 @@ impl<P> SyntaxTree<P> {
     }
 
     pub fn recursively_build(
-        rlt_root: &rlt::RLT,
+        rlt_root: &RLT,
         context: impl CodeHolder<Str = SharedStr>,
     ) -> (Self, RLTAccessor) {
         let subtree = rlt_root.0.convert(context);

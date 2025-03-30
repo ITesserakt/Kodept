@@ -16,9 +16,10 @@ use crate::nom::parser::macros::{function};
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::ParseResult;
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::Symbol;
-use kodept_core::structure::rlt::{new_types, Context, ContextualReference};
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::Symbol;
+use kodept_rlt::new_types;
+use kodept_rlt::prelude::{Context, ContextualReference};
 
 fn global_type_ref(input: PackedTokenStream) -> ParseResult<(Context, rlt::Reference)> {
     tuple((

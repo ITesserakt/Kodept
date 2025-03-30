@@ -10,8 +10,8 @@ use crate::nom::parser::parameter::parameter;
 use crate::nom::parser::utils::{comma_separated0, match_token};
 use crate::nom::parser::{code_flow, literal, operator, term, ParseResult};
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::Symbol;
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::Symbol;
 
 fn lambda(input: PackedTokenStream) -> ParseResult<rlt::Expression> {
     tuple((

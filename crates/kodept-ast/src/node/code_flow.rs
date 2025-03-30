@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::structure::rlt;
+use kodept_rlt::prelude as rlt;
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::tags::PRIMARY;

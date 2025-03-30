@@ -1,8 +1,7 @@
 use derive_more::{From, Into};
-
-use crate::code_point::CodePoint;
-use crate::structure::Located;
-use crate::structure::span::Span;
+use kodept_core::structure::span::Span;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
 
 macro_rules! make_wrappers {
     ($($name:ident,)*) => {
@@ -11,7 +10,7 @@ macro_rules! make_wrappers {
         #[derive(Debug, Clone, PartialEq, From, Into)]
         pub struct $name(pub Span);
 
-        impl $crate::structure::Located for $name {
+        impl kodept_core::structure::Located for $name {
             #[inline(always)]
             fn location(&self) -> CodePoint {
                 self.0.point
@@ -20,8 +19,8 @@ macro_rules! make_wrappers {
         
         impl $name {
             #[inline(always)]
-            pub fn from_located<L: $crate::structure::Located>(value: L) -> Self {
-                let span = $crate::structure::span::Span::new(value.location());
+            pub fn from_located<L: kodept_core::structure::Located>(value: L) -> Self {
+                let span = kodept_core::structure::span::Span::new(value.location());
                 $name(span)
             }
         }

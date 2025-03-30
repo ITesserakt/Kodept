@@ -1,8 +1,9 @@
 use derive_more::From;
 
-use crate::code_point::CodePoint;
-use crate::structure::Located;
-use crate::structure::rlt::new_types::*;
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::Located;
+
+use crate::new_types::*;
 
 #[derive(Debug, Clone, PartialEq, From)]
 pub enum Type {

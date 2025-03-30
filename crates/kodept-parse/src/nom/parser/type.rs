@@ -2,8 +2,8 @@ use nom::branch::alt;
 use nom::Parser;
 use nom_supreme::ParserExt;
 
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::TypeName;
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::TypeName;
 
 use crate::nom::parser::macros::{function};
 use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};

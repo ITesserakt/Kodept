@@ -1,5 +1,5 @@
 use derive_more::Constructor;
-use kodept_core::structure::rlt::RLT;
+use kodept_rlt::prelude::*;
 use ::nom::IResult;
 use nom_supreme::error::GenericErrorTree;
 use nom_supreme::final_parser::final_parser;
