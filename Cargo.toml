@@ -109,12 +109,10 @@ lto = true
 panic = 'unwind'
 strip = true
 
-[profile.release-light]
+[profile.light]
+inherits = "release"
 opt-level = 2
 lto = false
-panic = "unwind"
-strip = false
-inherits = "release"
 
 [profile.dev]
 opt-level = 0
