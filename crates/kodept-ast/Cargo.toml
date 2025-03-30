@@ -32,3 +32,4 @@ path = "../kodept-core"
 
 [dependencies.kodept-rlt]
 path = "../kodept-rlt"
+version = "0.2"

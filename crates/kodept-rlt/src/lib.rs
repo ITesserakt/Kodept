@@ -15,6 +15,11 @@ pub mod prelude {
     pub use super::types::*;
 }
 
+#[deprecated(since = "0.2.0", note = "Please use `prelude` module instead")]
+pub mod rlt {
+    pub use super::prelude::*;
+}
+
 mod block_level;
 mod code_flow;
 mod context;

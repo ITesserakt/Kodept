@@ -7,11 +7,10 @@ use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
 use crate::TRACING_OPTION;
 use derive_more::Constructor;
-use kodept_rlt::new_types::BinaryOperationSymbol;
-use kodept_rlt::new_types::UnaryOperationSymbol;
-use kodept_rlt::new_types::{Identifier, Keyword, Symbol};
-use kodept_rlt::prelude as rlt;
-use kodept_rlt::prelude::RLT;
+use kodept_rlt::new_types::{
+    self, BinaryOperationSymbol, Identifier, Keyword, Symbol, UnaryOperationSymbol,
+};
+use kodept_rlt::prelude::{self as rlt, RLT};
 use peg::error::ParseError;
 
 peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
@@ -38,9 +37,9 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     rule ident() -> PackedTokenMatch =
         quiet!{ [tok!(PackedToken::Identifier)] } / expected!("<ident>")
 
-    rule type_ident() -> kodept_rlt::new_types::TypeName =
+    rule type_ident() -> new_types::TypeName =
         i:(quiet!{ [tok!(Type)] } / expected!("<Ident>")) {
-            kodept_rlt::new_types::TypeName::from_located(i.point)
+            new_types::TypeName::from_located(i.point)
         }
 
     /// Type grammar
