@@ -35,18 +35,29 @@ enum LaunchPegvizError {
 }
 
 #[cfg(not(feature = "trace"))]
-impl CommandWithSources for InspectParser {
-    fn build_sources(&self, report_collector: &GlobalReports) -> Execution<Sources> {
-        #[derive(Error, Debug)]
-        #[error("Program is compiled without inspecting support")]
-        struct Unsupported;
+mod without_trace {
+    use crate::cli::commands::inspect::InspectParser;
+    use crate::cli::traits::CommandWithSources;
+    use kodept::report::{GlobalReports, Reports};
+    use kodept::source::collection::{SourceView, Sources};
+    use kodept_frontend::Execution;
+    use std::ops::ControlFlow::Break;
+    use std::path::Path;
+    use thiserror::Error;
 
-        report_collector.report(Unsupported);
-        Break(())
-    }
+    impl CommandWithSources for InspectParser {
+        fn build_sources(&self, report_collector: &GlobalReports) -> Execution<Sources> {
+            #[derive(Error, Debug)]
+            #[error("Program is compiled without inspecting support")]
+            struct Unsupported;
 
-    fn exec_for_source(&self, _: SourceView, _: &Reports, _: &Path) -> Execution<()> {
-        unreachable!()
+            report_collector.report(Unsupported);
+            Break(())
+        }
+
+        fn exec_for_source(&self, _: SourceView, _: &Reports, _: &Path) -> Execution<()> {
+            unreachable!()
+        }
     }
 }
 
