@@ -1,7 +1,7 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::structure::rlt;
+use kodept_rlt::{new_types, prelude as rlt};
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::{Identity, SubSyntaxTree};
@@ -68,7 +68,7 @@ impl Param {
     }
 }
 
-impl<'a> PopulateTree<'a> for &'a rlt::new_types::TypeName {
+impl<'a> PopulateTree<'a> for &'a new_types::TypeName {
     type Root = TyName;
 
     fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {

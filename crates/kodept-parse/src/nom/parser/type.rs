@@ -2,8 +2,8 @@ use nom::branch::alt;
 use nom::error::context;
 use nom::Parser;
 
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::TypeName;
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::TypeName;
 
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;

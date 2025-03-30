@@ -1,7 +1,7 @@
 use crate::graph::SubSyntaxTree;
 use crate::traits::PopulateTree;
 use crate::{node, TopLevel};
-use kodept_core::structure::rlt;
+use kodept_rlt::prelude as rlt;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

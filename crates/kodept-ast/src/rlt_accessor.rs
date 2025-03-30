@@ -1,7 +1,8 @@
 use crate::graph::{AnyNode, AnyNodeKey, NodeId};
 use derive_more::{From, TryInto};
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::{rlt, Located};
+use kodept_core::structure::Located;
+use kodept_rlt::{new_types, prelude as rlt};
 use slotmap::SecondaryMap;
 
 #[derive(Copy, Clone, From, TryInto, Debug)]
@@ -11,7 +12,7 @@ pub enum RLTFamily<'r> {
     Struct(&'r rlt::Struct),
     Enum(&'r rlt::Enum),
     Type(&'r rlt::Type),
-    TypeName(&'r rlt::new_types::TypeName),
+    TypeName(&'r new_types::TypeName),
     TypedParameter(&'r rlt::TypedParameter),
     UntypedParameter(&'r rlt::UntypedParameter),
     Variable(&'r rlt::Variable),

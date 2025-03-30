@@ -798,6 +798,7 @@ dependencies = [
  "kodept-interpret",
  "kodept-macros",
  "kodept-parse",
+ "kodept-rlt",
  "memmap2",
  "rayon",
  "tempfile",
@@ -815,6 +816,7 @@ dependencies = [
  "derive_more",
  "interner",
  "kodept-core",
+ "kodept-rlt",
  "paste",
  "rayon",
  "ref-cast",
@@ -858,6 +860,7 @@ dependencies = [
  "kodept-core",
  "kodept-inference",
  "kodept-macros",
+ "kodept-rlt",
  "thiserror 2.0.9",
 ]
 
@@ -887,6 +890,7 @@ dependencies = [
  "gag",
  "itertools 0.13.0",
  "kodept-core",
+ "kodept-rlt",
  "nom",
  "nonempty-collections",
  "peg",
@@ -907,6 +911,15 @@ dependencies = [
  "sealed",
  "similar-asserts",
  "smallvec",
+]
+
+[[package]]
+name = "kodept-rlt"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "kodept-core",
+ "serde",
 ]
 
 [[package]]

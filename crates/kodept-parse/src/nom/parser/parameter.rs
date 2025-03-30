@@ -4,12 +4,12 @@ use nom::error::context;
 use nom::sequence::{separated_pair, terminated};
 use nom::Parser;
 
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::{r#type, PParser};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types;
 
 pub(super) fn typed_parameter<'t>() -> impl PParser<'t, rlt::TypedParameter> {
     context(

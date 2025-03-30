@@ -7,8 +7,9 @@ use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::{block_level, operator, PParser};
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::Keyword;
+
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::Keyword;
 
 fn else_expr<'t>() -> impl PParser<'t, rlt::ElseExpr> {
     context(function!(), (match_token(Else), cut(block_level::body()))).map(|it| rlt::ElseExpr {

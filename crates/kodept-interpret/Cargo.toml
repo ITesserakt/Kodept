@@ -35,3 +35,7 @@ version = "0.2"
 [dependencies.kodept-inference]
 path = "../kodept-inference"
 version = "0.2"
+
+[dependencies.kodept-rlt]
+path = "../kodept-rlt"
+version = "0.1"

@@ -12,8 +12,8 @@ use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{expression, PParser, PResult};
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::{
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::{
     BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
 };
 

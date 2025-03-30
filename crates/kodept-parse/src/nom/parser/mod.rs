@@ -3,7 +3,7 @@ use crate::nom::error::ExpectedError;
 use crate::nom::TokenVerificationError;
 use crate::token_stream::PackedTokenStream;
 use derive_more::{Constructor, Display};
-use kodept_core::structure::rlt::RLT;
+use kodept_rlt::prelude::RLT;
 use nom::error::{ContextError, ErrorKind, FromExternalError};
 use ::nom::IResult;
 use nom::{Needed, Parser as ParserOps};

@@ -3,10 +3,9 @@ use nom::combinator::{cut, opt, recognize, value};
 use nom::error::context;
 use nom::Parser;
 
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::new_types::Keyword;
-use kodept_core::structure::rlt::TopLevelNode;
-
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::new_types::Keyword;
+use kodept_rlt::prelude::TopLevelNode;
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
 use crate::nom::parser::parameter::typed_parameter;

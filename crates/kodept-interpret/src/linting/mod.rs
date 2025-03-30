@@ -2,7 +2,7 @@ use kodept_ast::utils::Skip;
 use kodept_ast::utils::Skip::Skipped;
 use kodept_ast::{FileDecl};
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::rlt::{File, Module};
+use kodept_rlt::prelude::{File, Module};
 use kodept_core::structure::Located;
 use kodept_macros::context::Context;
 use kodept_macros::error::report::{IntoSpannedReportMessage, Label, Severity};

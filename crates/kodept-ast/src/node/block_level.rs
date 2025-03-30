@@ -4,8 +4,7 @@ use derive_more::IsVariant;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::BlockLevelNode;
+use kodept_rlt::prelude::{self as rlt, BlockLevelNode};
 use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::Identity;

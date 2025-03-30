@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use derive_more::From;
-use kodept_core::structure::rlt;
+use kodept_rlt::prelude as rlt;
 use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
