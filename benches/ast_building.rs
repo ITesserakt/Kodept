@@ -2,8 +2,7 @@ use criterion::{criterion_group, Criterion, Throughput};
 use kodept_ast::graph::SyntaxTree;
 use kodept_ast::interning::SharedStr;
 use kodept_core::code_point::CodePoint;
-use kodept_core::structure::rlt;
-use kodept_core::structure::rlt::RLT;
+use kodept_rlt::prelude::{File, RLT};
 use kodept_core::structure::span::CodeHolder;
 use kodept_parse::common::{EagerTokensProducer, RLTProducer};
 use kodept_parse::lexer::PestLexer;
@@ -25,7 +24,7 @@ static PARSED_FILE: LazyLock<RLT> = LazyLock::new(|| {
 fn parsed_file(modules: usize) -> RLT {
     let module = PARSED_FILE.0 .0.first().unwrap();
     let modules = (0..modules).map(|_| module.clone()).collect::<Box<_>>();
-    RLT(rlt::File(modules))
+    RLT(File(modules))
 }
 
 #[derive(Debug, Copy, Clone)]
