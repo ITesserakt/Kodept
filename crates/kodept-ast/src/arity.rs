@@ -1,4 +1,3 @@
-use bevy_ecs::entity::{VisitEntities, VisitEntitiesMut};
 use bevy_ecs::prelude::Entity;
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use private::Sealed;
@@ -11,9 +10,7 @@ mod private {
 pub trait Arity: Sealed + 'static + Send + Sync {
     type Collection: RelationshipSourceCollection
     + Sync
-    + Send
-    + VisitEntities
-    + VisitEntitiesMut;
+    + Send;
     
     const VALUE: ArityValue;
 }
@@ -52,9 +49,15 @@ impl Arity for Plural {
 impl RelationshipSourceCollection for Option {
     type SourceIter<'a> = std::option::IntoIter<Entity>;
 
+    fn new() -> Self {
+        Option(Entity::PLACEHOLDER)
+    }
+
     fn with_capacity(_: usize) -> Self {
         Self(Entity::PLACEHOLDER)
     }
+
+    fn reserve(&mut self, additional: usize) {}
 
     fn add(&mut self, entity: Entity) -> bool {
         if self.0 == Entity::PLACEHOLDER {
@@ -93,6 +96,18 @@ impl RelationshipSourceCollection for Option {
     fn clear(&mut self) {
         *self = Option(Entity::PLACEHOLDER);
     }
+    
+    fn shrink_to_fit(&mut self) {}
+
+    fn is_empty(&self) -> bool { 
+        self.0 == Entity::PLACEHOLDER
+    }
+
+    fn extend_from_iter(&mut self, entities: impl IntoIterator<Item=Entity>) {
+        if let Some(first) = entities.into_iter().next() {
+            self.0 = first;
+        }
+    }
 }
 
 impl Option {
@@ -108,17 +123,5 @@ impl Option {
 impl From<Option> for std::option::Option<Entity> {
     fn from(value: Option) -> Self {
         value.into_inner()
-    }
-}
-
-impl VisitEntities for Option {
-    fn visit_entities<F: FnMut(Entity)>(&self, mut f: F) {
-        f(self.0)
-    }
-}
-
-impl VisitEntitiesMut for Option {
-    fn visit_entities_mut<F: FnMut(&mut Entity)>(&mut self, mut f: F) {
-        f(&mut self.0)
     }
 }

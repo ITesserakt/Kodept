@@ -203,14 +203,6 @@ where
             bevy_ecs::relationship::clone_relationship_target::<Self>,
         )
     }
-    fn visit_entities(this: &Self, mut func: impl FnMut(Entity)) {
-        use bevy_ecs::entity::VisitEntities;
-        this.0.visit_entities(&mut func);
-    }
-    fn visit_entities_mut(this: &mut Self, mut func: impl FnMut(&mut Entity)) {
-        use bevy_ecs::entity::VisitEntitiesMut;
-        this.0.visit_entities_mut(&mut func);
-    }
 }
 
 impl<T, A> Component for ContainedBy<T, A>
@@ -246,14 +238,6 @@ where
         use bevy_ecs::component::DefaultCloneBehaviorBase;
         (&&&bevy_ecs::component::DefaultCloneBehaviorSpecialization::<Self>::default())
             .default_clone_behavior()
-    }
-    fn visit_entities(this: &Self, mut func: impl FnMut(Entity)) {
-        use bevy_ecs::entity::VisitEntities;
-        this.0.visit_entities(&mut func);
-    }
-    fn visit_entities_mut(this: &mut Self, mut func: impl FnMut(&mut Entity)) {
-        use bevy_ecs::entity::VisitEntitiesMut;
-        this.0.visit_entities_mut(&mut func);
     }
 }
 
