@@ -13,13 +13,12 @@ pub mod dot_formatter;
 
 pub mod path {
     use std::fmt::{Display, Formatter};
-    use kodept_ast::interning::SharedStr;
-    use kodept_ast::ReferenceContext;
+    use kodept_ast::{ReferenceContext, Str};
 
     #[derive(Debug, Clone)]
     pub struct Path {
         pub context: ReferenceContext,
-        pub ident: SharedStr
+        pub ident: Str
     }
 
     impl Display for Path {

@@ -1,14 +1,12 @@
 use std::borrow::Cow;
 use derive_more::From;
 use kodept_rlt::prelude as rlt;
-use kodept_core::structure::span::CodeHolder;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::graph::SubSyntaxTree;
-use crate::interning::SharedStr;
-use crate::traits::PopulateTree;
-use crate::{node, node_sub_enum};
+use crate::traits::{CodeHolder, PopulateTree};
+use crate::{node, node_sub_enum, Str};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -22,7 +20,7 @@ node_sub_enum! {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ReferenceContext {
     pub global: bool,
-    pub items: Vec<SharedStr>,
+    pub items: Vec<Str>,
 }
 
 node! {
@@ -37,35 +35,35 @@ node! {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Identifier {
     #[from(ignore)]
-    TypeReference { name: SharedStr },
+    TypeReference { name: Str },
     #[from(ignore)]
-    Reference { name: SharedStr },
+    Reference { name: Str },
 }
 
 impl ReferenceContext {
-    pub fn global<'a>(items: impl IntoIterator<Item: Into<Cow<'a, str>>>) -> Self {
+    pub fn global(items: impl IntoIterator<Item: Into<Cow<'static, str>>>) -> Self {
         Self {
             global: true,
             items: items
                 .into_iter()
-                .map(SharedStr::new)
+                .map(|it| it.into())
                 .collect(),
         }
     }
 
-    pub fn local<'a>(items: impl IntoIterator<Item: Into<Cow<'a, str>>>) -> Self {
+    pub fn local(items: impl IntoIterator<Item: Into<Cow<'static, str>>>) -> Self {
         Self {
             global: false,
             items: items
                 .into_iter()
-                .map(SharedStr::new)
+                .map(|it| it.into())
                 .collect(),
         }
     }
 }
 
 impl Identifier {
-    pub fn name(&self) -> &SharedStr {
+    pub fn name(&self) -> &Str {
         match self {
             Identifier::TypeReference { name, .. } => name,
             Identifier::Reference { name, .. } => name
@@ -76,7 +74,7 @@ impl Identifier {
 impl<'a> PopulateTree<'a> for &'a rlt::Term {
     type Root = Term;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             rlt::Term::Reference(x) => x.convert(context).cast(),
             rlt::Term::Contextual(x) => x.convert(context).cast(),
@@ -87,7 +85,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::Term {
 impl<'a> PopulateTree<'a> for &'a rlt::ContextualReference {
     type Root = Ref;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let ident = match &self.inner {
             rlt::Reference::Type(x) => Identifier::TypeReference {
                 name: context.get_chunk_located(x),
@@ -116,7 +114,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::ContextualReference {
 impl<'a> PopulateTree<'a> for &'a rlt::Reference {
     type Root = Ref;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let ident = match self {
             rlt::Reference::Type(x) => Identifier::TypeReference {
                 name: context.get_chunk_located(x),

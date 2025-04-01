@@ -2,12 +2,10 @@
 use serde::{Deserialize, Serialize};
 
 use kodept_rlt::prelude as rlt;
-use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::SubSyntaxTree;
-use crate::traits::PopulateTree;
-use crate::{node, node_sub_enum, Operation};
-use crate::interning::SharedStr;
+use crate::traits::{CodeHolder, PopulateTree};
+use crate::{node, node_sub_enum, Operation, Str};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -23,21 +21,21 @@ node_sub_enum! {
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct NumLit {
-        pub value: SharedStr,;
+        pub value: Str,;
     }
 }
 
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct CharLit {
-        pub value: SharedStr,;
+        pub value: Str,;
     }
 }
 
 node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct StrLit {
-        pub value: SharedStr,;
+        pub value: Str,;
     }
 }
 
@@ -51,7 +49,7 @@ node! {
 impl<'a> PopulateTree<'a> for &'a rlt::Literal {
     type Root = Lit;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let from_num = |x| {
             SubSyntaxTree::new(
                 NumLit::uninit(context.get_chunk_located(x)).with_rlt(self),

@@ -6,7 +6,10 @@ use clap::Subcommand;
 use itertools::Itertools;
 use kodept::report::GlobalReports;
 use kodept::source::collection::SourceView;
+use kodept_ast::Str;
+use kodept_core::structure::span::CodeHolder;
 use kodept_frontend::Execution;
+use kodept_interning::InterningCodeHolder;
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Label, Severity};
 use std::borrow::Cow;
@@ -52,7 +55,7 @@ pub struct ParseDiagnostic(Diagnostic);
 
 impl IntoSpannedReportMessage for ParseDiagnostic {
     type Message = Diagnostic;
-    
+
     fn into_message(self) -> Self::Message {
         self.0
     }
@@ -130,4 +133,8 @@ fn ensure_path_exists(path: &Path) -> std::io::Result<()> {
         Err(e) if e.kind() != ErrorKind::AlreadyExists => Err(e)?,
         _ => Ok(()),
     }
+}
+
+fn get_code_holder(source: &SourceView) -> impl CodeHolder<Str = Str> + '_ {
+    InterningCodeHolder::new(&**source).map(|it| Cow::Borrowed(it.0))
 }

@@ -5,10 +5,8 @@ use crate::graph::node_props::Node;
 use crate::graph::syntax_tree::dfs::DfsIter;
 use crate::graph::utils::OptVec;
 use crate::graph::{HasChildrenMarker, SubSyntaxTree};
-use crate::interning::SharedStr;
 use crate::rlt_accessor::RLTAccessor;
-use crate::traits::PopulateTree;
-use kodept_core::structure::span::CodeHolder;
+use crate::traits::{CodeHolder, PopulateTree};
 use slotgraph::dag::SecondaryDag;
 use slotgraph::export::{Config, Dot};
 use std::convert::identity;
@@ -52,7 +50,7 @@ impl<P> SyntaxTree<P> {
 
     pub fn recursively_build(
         rlt_root: &RLT,
-        context: impl CodeHolder<Str = SharedStr>,
+        context: impl CodeHolder,
     ) -> (Self, RLTAccessor) {
         let subtree = rlt_root.0.convert(context);
         let (graph, accessor) = subtree.consume_map(identity);

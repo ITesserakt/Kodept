@@ -5,11 +5,9 @@ use crate::graph::node_props::{HasParent, Node};
 use crate::graph::syntax_tree::utils;
 use crate::graph::syntax_tree::Graph;
 use crate::graph::{AnyNode, Identifiable, NodeId};
-use crate::interning::SharedStr;
 use crate::rlt_accessor::{RLTAccessor, RLTFamily};
-use crate::traits::PopulateTree;
+use crate::traits::{CodeHolder, PopulateTree};
 use crate::uninit::Uninit;
-use kodept_core::structure::span::CodeHolder;
 use replace_with::replace_with_or_abort_and_return;
 use slotgraph::dag::{Dag, NodeKey};
 use slotmap::{Key, SecondaryMap};
@@ -126,7 +124,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
         from: Option<
             impl utils::IntoCommonIter<Item: PopulateTree<'a, Root = U>> + utils::HasLength,
         >,
-        context: impl CodeHolder<Str = SharedStr>,
+        context: impl CodeHolder,
     ) -> Self
     where
         T: HasChildrenMarker<U, TAG> + Send,
@@ -141,7 +139,7 @@ impl<'rlt, T> SubSyntaxTree<'rlt, T> {
     pub fn with_children_from<'a: 'rlt, const TAG: ChildTag, U>(
         mut self,
         iter: impl utils::IntoCommonIter<Item: PopulateTree<'a, Root = U>> + utils::HasLength,
-        context: impl CodeHolder<Str = SharedStr>,
+        context: impl CodeHolder,
     ) -> Self
     where
         U: Send + Node,

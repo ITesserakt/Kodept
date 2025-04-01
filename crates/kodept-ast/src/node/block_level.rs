@@ -5,13 +5,11 @@ use derive_more::IsVariant;
 use serde::{Deserialize, Serialize};
 
 use kodept_rlt::prelude::{self as rlt, BlockLevelNode};
-use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::Identity;
 use crate::graph::SubSyntaxTree;
-use crate::interning::SharedStr;
-use crate::traits::PopulateTree;
-use crate::{node, node_sub_enum, BodyFnDecl, Exprs, Operation, Type};
+use crate::traits::{CodeHolder, PopulateTree};
+use crate::{node, node_sub_enum, BodyFnDecl, Exprs, Operation, Str, Type};
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -37,7 +35,7 @@ node! {
     #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
     pub struct VarDecl {
         pub kind: VariableKind,
-        pub name: SharedStr,;
+        pub name: Str,;
         pub assigned_type: Option<Type>,
     }
 }
@@ -62,7 +60,7 @@ pub enum VariableKind {
 impl<'a> PopulateTree<'a> for &'a rlt::Body {
     type Root = Body;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             rlt::Body::Block(x) => x.convert(context).cast(),
             rlt::Body::Simplified { expression, .. } => expression.convert(context).cast(),
@@ -73,7 +71,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::Body {
 impl<'a> PopulateTree<'a> for &'a BlockLevelNode {
     type Root = BlockLevel;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         match self {
             BlockLevelNode::InitVar(x) => x.convert(context).cast(),
             BlockLevelNode::Block(x) => x.convert(context).cast(),
@@ -86,7 +84,7 @@ impl<'a> PopulateTree<'a> for &'a BlockLevelNode {
 impl<'a> PopulateTree<'a> for &'a rlt::InitializedVariable {
     type Root = InitVar;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(InitVar::uninit().with_rlt(self))
             .with_children_from([&self.expression], context)
             .with_children_from([&self.variable], context)
@@ -96,7 +94,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::InitializedVariable {
 impl<'a> PopulateTree<'a> for &'a rlt::Variable {
     type Root = VarDecl;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         let (kind, name, ty) = match self {
             rlt::Variable::Immutable {
                 id, assigned_type, ..

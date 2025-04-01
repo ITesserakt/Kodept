@@ -1,6 +1,6 @@
+use std::borrow::Cow;
 use criterion::{criterion_group, Criterion, Throughput};
 use kodept_ast::graph::SyntaxTree;
-use kodept_ast::interning::SharedStr;
 use kodept_core::code_point::CodePoint;
 use kodept_rlt::prelude::{File, RLT};
 use kodept_core::structure::span::CodeHolder;
@@ -30,10 +30,10 @@ fn parsed_file(modules: usize) -> RLT {
 #[derive(Debug, Copy, Clone)]
 struct InlineCodeHolder(&'static str);
 impl CodeHolder for InlineCodeHolder {
-    type Str = SharedStr;
-
+    type Str = Cow<'static, str>;
+    
     fn get_chunk(self, at: CodePoint) -> Self::Str {
-        SharedStr::new(&self.0[at.as_range()])
+        Cow::Borrowed(&self.0[at.as_range()])
     }
 }
 

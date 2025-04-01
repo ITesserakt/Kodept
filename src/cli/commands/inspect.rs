@@ -51,7 +51,7 @@ mod without_trace {
             #[error("Program is compiled without inspecting support")]
             struct Unsupported;
 
-            report_collector.report(Unsupported);
+            _ = report_collector.report(Unsupported);
             Break(())
         }
 

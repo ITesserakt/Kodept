@@ -3,13 +3,9 @@ use crate::scope::{ScopeBuilder, ScopePeelError, ScopeV2};
 use crate::symbol::{SymbolKind, SymbolV2};
 use kodept_ast::graph::node_props::Node;
 use kodept_ast::graph::{AnyNode, AnyNodeId, Identifiable, SyntaxTree};
-use kodept_ast::interning::SharedStr;
 use kodept_ast::utils::Skip;
 use kodept_ast::visit_side::VisitSide;
-use kodept_ast::{
-    AbstFnDecl, BodyFnDecl, EnumDecl, Exprs, ModDecl, NonTyParam, StructDecl, TyName, TyParam,
-    VarDecl,
-};
+use kodept_ast::{AbstFnDecl, BodyFnDecl, EnumDecl, Exprs, ModDecl, NonTyParam, Str, StructDecl, TyName, TyParam, VarDecl};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_report::prelude::{
@@ -18,13 +14,13 @@ use kodept_report::prelude::{
 
 #[derive(Debug)]
 struct DuplicatedSymbolErrorData {
-    bound_name: SharedStr,
+    bound_name: Str,
     previous_def_id: AnyNodeId,
 }
 
 #[derive(Debug)]
 pub struct DuplicatedSymbolError {
-    bound_name: SharedStr,
+    bound_name: Str,
     current_def_location: CodePoint,
     previous_def_location: CodePoint,
 }

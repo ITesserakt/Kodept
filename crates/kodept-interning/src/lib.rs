@@ -1,0 +1,43 @@
+//! This crate contains a wrapper around string interner.
+
+mod implementation;
+pub mod metrics;
+
+use crate::implementation::{Interned, Interner};
+use kodept_core::code_point::CodePoint;
+use kodept_core::structure::span::CodeHolder;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static GLOBAL_STRING_POOL: Interner<str> = Interner::new();
+static TOTAL_SHARES: AtomicUsize = AtomicUsize::new(0);
+
+#[derive(Copy, Clone)]
+pub struct InterningCodeHolder<C> {
+    inner: C,
+}
+
+impl<C> InterningCodeHolder<C>
+where
+    C: CodeHolder,
+{
+    pub const fn new(inner: C) -> Self {
+        Self {
+            inner,
+        }
+    }
+}
+
+impl<C> CodeHolder for InterningCodeHolder<C>
+where
+    C: CodeHolder,
+    C::Str: AsRef<str>,
+{
+    type Str = Interned<str>;
+
+    fn get_chunk(self, at: CodePoint) -> Self::Str {
+        let chunk = self.inner.get_chunk(at);
+
+        TOTAL_SHARES.fetch_add(1, Ordering::AcqRel);
+        GLOBAL_STRING_POOL.intern(chunk.as_ref())
+    }
+}

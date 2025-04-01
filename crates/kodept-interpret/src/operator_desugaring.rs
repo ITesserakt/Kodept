@@ -1,5 +1,4 @@
 use kodept_ast::graph::tags;
-use kodept_ast::interning::SharedStr;
 use kodept_ast::traits::AsEnum;
 use kodept_ast::utils::Skip;
 use kodept_ast::utils::Skip::Skipped;
@@ -95,9 +94,7 @@ impl Macro for BinaryOperatorExpander {
             id,
             Ref::uninit(
                 ReferenceContext::global(["Prelude"]),
-                Identifier::Reference {
-                    name: SharedStr::new(name),
-                },
+                Identifier::Reference { name: name.into(), },
             )
             .with_rlt(rlt)
             .map_into::<Term>()
@@ -149,9 +146,7 @@ impl Macro for UnaryOperatorExpander {
             id,
             Ref::uninit(
                 ReferenceContext::global(["Prelude"]),
-                Identifier::Reference {
-                    name: SharedStr::new(name),
-                },
+                Identifier::Reference { name: name.into() },
             )
             .with_rlt(rlt)
             .map_into::<Term>()

@@ -2,10 +2,9 @@ use crate::path::Path;
 use crate::scope::ScopeSearcher;
 use crate::symbol::SymbolKind;
 use kodept_ast::graph::{Identifiable, SyntaxTree};
-use kodept_ast::interning::SharedStr;
 use kodept_ast::utils::Skip;
 use kodept_ast::utils::Skip::Skipped;
-use kodept_ast::{Identifier, Ref};
+use kodept_ast::{Identifier, Ref, Str};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Label, Severity};
@@ -24,7 +23,7 @@ pub enum RefResolverError {
     },
     UnknownPath {
         path: Path,
-        failed_segment: SharedStr,
+        failed_segment: Str,
         location: CodePoint,
     },
 }
@@ -79,7 +78,7 @@ impl<'a> RefResolver<'a> {
             })
     }
 
-    fn resolve_reference_with_context(&self, node: &Ref) -> Result<(), Option<SharedStr>> {
+    fn resolve_reference_with_context(&self, node: &Ref) -> Result<(), Option<Str>> {
         match self.scope_searcher.matches(&node.context) {
             Ok(scope_for_context) => {
                 if scope_for_context

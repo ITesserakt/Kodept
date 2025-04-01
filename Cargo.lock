@@ -767,6 +767,7 @@ dependencies = [
  "kodept-ast",
  "kodept-core",
  "kodept-frontend",
+ "kodept-interning",
  "kodept-interpret",
  "kodept-parse",
  "kodept-report",
@@ -827,6 +828,13 @@ dependencies = [
  "nonempty-collections",
  "thiserror 2.0.12",
  "tracing",
+]
+
+[[package]]
+name = "kodept-interning"
+version = "0.1.0"
+dependencies = [
+ "kodept-core",
 ]
 
 [[package]]

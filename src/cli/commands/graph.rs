@@ -1,4 +1,4 @@
-use crate::cli::commands::{get_output_file, to_diagnostics};
+use crate::cli::commands::{get_code_holder, get_output_file, to_diagnostics};
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::traits::CommandWithSources;
 use clap::Parser;
@@ -8,7 +8,6 @@ use kodept::source::collection::{SourceView, Sources};
 use kodept::steps::pipeline::Pipeline;
 use kodept::steps::Step;
 use kodept_ast::graph::SyntaxTree;
-use kodept_ast::interning::InterningCodeHolder;
 use kodept_frontend::prelude::ExtractReports;
 use kodept_frontend::Execution;
 use kodept_interpret::dot_formatter::ASTDotFormatter;
@@ -32,7 +31,7 @@ impl CommandWithSources for Graph {
         let sources = loader.into_sources().extract_reports_global(reports)?;
         let mut storage = Sources::new();
         for source in sources {
-            storage.insert(source).extract_reports_global(reports);
+            storage.insert(source).extract_reports_global(reports)?;
         }
         Continue(storage)
     }
@@ -49,7 +48,7 @@ impl CommandWithSources for Graph {
             .map_err(|e| to_diagnostics(e).extract_reports(*source.id, reports))
             .map_or(Execution::Break(()), Continue)?;
 
-        let code_holder = InterningCodeHolder::new(&*source);
+        let code_holder = get_code_holder(&source);
         let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder);
         let output_file = get_output_file(&source, output).extract_reports(*source.id, reports)?;
 

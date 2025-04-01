@@ -5,8 +5,7 @@ use std::rc::Rc;
 use crate::Path;
 use derive_more::{From, TryInto};
 use kodept_ast::graph::{AnyNodeId, Identifiable};
-use kodept_ast::interning::SharedStr;
-use kodept_ast::{Identifier, Ref};
+use kodept_ast::{Identifier, Ref, Str};
 use kodept_inference::r#type::PolymorphicType;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
@@ -20,7 +19,7 @@ pub enum SymbolKind {
 #[derive(Debug)]
 pub struct SymbolV2<Type = Option<PolymorphicType>> {
     pub ast_node: AnyNodeId,
-    pub ident: SharedStr,
+    pub ident: Str,
     pub kind: SymbolKind,
     pub ty: Type,
 }
@@ -38,7 +37,7 @@ impl SymbolV2 {
         }
     }
     
-    pub fn new(node_id: AnyNodeId, ident: SharedStr, kind: SymbolKind) -> Self {
+    pub fn new(node_id: AnyNodeId, ident: Str, kind: SymbolKind) -> Self {
         Self {
             ast_node: node_id,
             ident,

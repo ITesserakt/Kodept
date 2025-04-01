@@ -21,7 +21,7 @@ members = [
     , "crates/slotgraph"
     , "crates/kodept-rlt"
     , "crates/kodept-report"
-    , "crates/kodept-frontend"]
+    , "crates/kodept-frontend", "crates/kodept-interning"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -85,6 +85,10 @@ version = "0.1"
 [dependencies.kodept-report]
 path = "crates/kodept-report"
 version = "0.2"
+
+[dependencies.kodept-interning]
+path = "crates/kodept-interning"
+version = "0.1"
 
 [dev-dependencies]
 tempfile = "3.7.0"

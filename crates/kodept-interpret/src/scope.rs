@@ -5,8 +5,7 @@ use dashmap::DashMap;
 use derive_more::Display;
 use itertools::Itertools;
 use kodept_ast::graph::{AnyNodeId, Identifiable, SyntaxTree};
-use kodept_ast::interning::SharedStr;
-use kodept_ast::ReferenceContext;
+use kodept_ast::{ReferenceContext, Str};
 use kodept_inference::r#type::PolymorphicType;
 use std::collections::BTreeSet;
 use std::fmt::Debug;
@@ -48,7 +47,7 @@ pub struct ScopeTree<Type = Option<PolymorphicType>> {
 pub struct ScopeV2<Type = Option<PolymorphicType>> {
     parent: Option<Index>,
     start_from: AnyNodeId,
-    name: Option<SharedStr>,
+    name: Option<Str>,
     symbols: BTreeSet<SymbolV2<Type>>,
     is_anonymous: bool,
 }
@@ -88,7 +87,7 @@ impl<T> ScopeV2<T> {
 
     pub fn contains_symbol(
         &self,
-        symbol_name: &SharedStr,
+        symbol_name: &Str,
         mut symbol_kind_f: impl FnMut(SymbolKind) -> bool,
     ) -> bool {
         self.symbols
@@ -146,7 +145,7 @@ impl<T> ScopeSearcher<'_, T> {
     pub fn matches<'a>(
         &self,
         context: &'a ReferenceContext,
-    ) -> Result<&ScopeV2<T>, (&ScopeV2<T>, Option<&'a SharedStr>)> {
+    ) -> Result<&ScopeV2<T>, (&ScopeV2<T>, Option<&'a Str>)> {
         if context.global {
             let mut current = self.root_scope;
             for item in &context.items {
@@ -182,7 +181,7 @@ impl<T> ScopeSearcher<'_, T> {
             current = scope.parent;
         }
 
-        Some(ReferenceContext::global(parents.into_iter().rev()))
+        Some(ReferenceContext::global(parents.into_iter().cloned().rev()))
     }
 
     pub fn walk_bottom_up<'a>(&'a self, start: &'a ScopeV2<T>) -> ScopeWalker<'a, T>
@@ -251,7 +250,7 @@ impl ScopeBuilder {
     pub fn push_scope(
         &mut self,
         start_from: AnyNodeId,
-        name: Option<&SharedStr>,
+        name: Option<&Str>,
         anonymous: Option<bool>,
     ) -> &mut ScopeV2 {
         let mut scope = ScopeV2::new(start_from);

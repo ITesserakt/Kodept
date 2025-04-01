@@ -1,0 +1,10 @@
+[package]
+name = "kodept-interning"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kodept-core = { path = "../kodept-core", version = "0.2" }
+
+[lints]
+workspace = true

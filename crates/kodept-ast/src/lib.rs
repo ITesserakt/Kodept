@@ -4,6 +4,7 @@ pub use ref_cast::RefCast;
 
 #[allow(unused_imports)]
 pub(crate) use graph::with_children;
+use kodept_core::static_assert_size;
 #[allow(unused_imports)]
 pub(crate) use macros::implementation::{node, parent_definition};
 
@@ -19,7 +20,6 @@ mod node;
 pub mod rlt_accessor;
 pub mod traits;
 mod uninit;
-pub mod interning;
 
 pub mod visit_side {
     use derive_more::IsVariant;
@@ -44,3 +44,7 @@ pub mod utils {
         Skipped,
     }
 }
+
+// TODO: optimize size further by using readonly string
+pub type Str = std::borrow::Cow<'static, str>;
+static_assert_size!(Str, 24);

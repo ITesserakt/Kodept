@@ -54,16 +54,13 @@ pub trait CommandWithSources: Sized {
         }) {
             Ok(Continue(())) => Continue(()),
             Ok(Break(())) => Break(()),
-            Err(_) => {
-                reports.report(
-                    *PANICKED_SOURCE.get().unwrap(),
-                    ad_hoc_message(|| {
-                        Diagnostic::new(Severity::Bug)
-                            .with_message("Unknown panic happened. Contact Kodept developers.")
-                    }),
-                );
-                Break(())
-            }
+            Err(_) => reports.report(
+                *PANICKED_SOURCE.get().unwrap(),
+                ad_hoc_message(|| {
+                    Diagnostic::new(Severity::Bug)
+                        .with_message("Unknown panic happened. Contact Kodept developers.")
+                }),
+            ),
         }
     }
 

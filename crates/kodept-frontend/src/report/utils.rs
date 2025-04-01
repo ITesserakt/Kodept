@@ -79,7 +79,7 @@ where
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
-                sink.report(file_id, e);
+                _ = sink.report(file_id, e);
                 Break(())
             }
         }
@@ -92,7 +92,7 @@ where
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
-                sink.report(e);
+                _ = sink.report(e);
                 Break(())
             }
         }
@@ -103,7 +103,7 @@ impl<E> ExtractReports for Vec<E>
 where
     E: IntoSpannedReportMessage,
 {
-    type Output = ();
+    type Output = Execution<()>;
 
     #[allow(private_bounds)]
     fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
@@ -111,17 +111,27 @@ where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
         FileId: CorrectFileId + Clone,
     {
+        let mut result = Continue(());
         for item in self {
-            sink.report(file_id.clone(), item);
+            result = match sink.report(file_id.clone(), item) {
+                Continue(_) => result,
+                Break(_) => Break(())
+            }
         }
+        result
     }
 
     fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
     {
+        let mut result = Continue(());
         for item in self {
-            sink.report(item);
+            result = match sink.report(item) {
+                Continue(_) => result,
+                Break(_) => Break(())
+            }
         }
+        result
     }
 }

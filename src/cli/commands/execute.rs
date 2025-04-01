@@ -1,4 +1,4 @@
-use crate::cli::commands::to_diagnostics;
+use crate::cli::commands::{get_code_holder, to_diagnostics};
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::traits::CommandWithSources;
 use clap::Args;
@@ -7,9 +7,9 @@ use kodept::report::{GlobalReports, Reports};
 use kodept::source::collection::{SourceView, Sources};
 use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
-use kodept_ast::interning::{debug_interning_efficiency, InterningCodeHolder};
 use kodept_frontend::prelude::ExtractReports;
 use kodept_frontend::Execution;
+use kodept_interning::metrics::InterningMetrics;
 use kodept_interpret::macros::Context;
 use std::num::NonZeroU16;
 use std::ops::ControlFlow::{Break, Continue};
@@ -35,26 +35,23 @@ impl CommandWithSources for Execute {
         let sources = loader.into_sources().extract_reports_global(reports)?;
         let mut storage = Sources::new();
         for source in sources {
-            storage.insert(source).extract_reports_global(reports);
+            // Traverse through all sources
+            _ = storage.insert(source).extract_reports_global(reports);
         }
         Continue(storage)
     }
 
-    fn exec_for_source(
-        &self,
-        source: SourceView,
-        reports: &Reports,
-        _: &Path,
-    ) -> Execution<()> {
+    fn exec_for_source(&self, source: SourceView, reports: &Reports, _: &Path) -> Execution<()> {
         let rlt = self
             .parsing_config
             .build_rlt(&source)
             .map_err(|e| to_diagnostics(e).extract_reports(*source.id, reports))
             .map_or(Break(()), Continue)?;
 
-        let code_holder = InterningCodeHolder::new(&*source);
+        let code_holder = get_code_holder(&source);
         let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder);
-        debug_interning_efficiency();
+        let metrics = InterningMetrics::gather();
+        debug!(?metrics);
         debug!("Produced AST with node count = {}", tree.node_count());
 
         let sink = {

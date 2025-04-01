@@ -2,13 +2,11 @@
 use serde::{Deserialize, Serialize};
 
 use kodept_rlt::prelude as rlt;
-use kodept_core::structure::span::CodeHolder;
 
 use crate::graph::tags::PRIMARY;
 use crate::graph::{Identity, SubSyntaxTree};
-use crate::traits::PopulateTree;
+use crate::traits::{CodeHolder, PopulateTree};
 use crate::{node, node_sub_enum, Body, Operation};
-use crate::interning::SharedStr;
 
 node_sub_enum! {
     #[derive(Debug, PartialEq)]
@@ -47,7 +45,7 @@ node! {
 impl<'a> PopulateTree<'a> for &'a rlt::IfExpr {
     type Root = IfExpr;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(IfExpr::uninit().with_rlt(self))
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
@@ -59,7 +57,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::IfExpr {
 impl<'a> PopulateTree<'a> for &'a rlt::ElifExpr {
     type Root = ElifExpr;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(ElifExpr::uninit().with_rlt(self))
             .with_children_from([&self.condition], context)
             .with_children_from([&self.body], context)
@@ -69,7 +67,7 @@ impl<'a> PopulateTree<'a> for &'a rlt::ElifExpr {
 impl<'a> PopulateTree<'a> for &'a rlt::ElseExpr {
     type Root = ElseExpr;
 
-    fn convert(self, context: impl CodeHolder<Str = SharedStr>) -> SubSyntaxTree<'a, Self::Root> {
+    fn convert(self, context: impl CodeHolder) -> SubSyntaxTree<'a, Self::Root> {
         SubSyntaxTree::new(ElseExpr::uninit().with_rlt(self))
             .with_children_from([&self.body], context)
     }
