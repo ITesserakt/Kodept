@@ -16,7 +16,7 @@
 		outputs = import ./default.nix {
 			inherit pkgs crane;
 			fenix = fenix.packages.${system};
-			doStaticBuild = false;
+			doStaticBuild = true;
 			kodept_sources = ./.;
 			pegviz_sources = pegviz;
 		};
@@ -25,11 +25,22 @@
 			${system}.default = outputs.packages.${system}.kodept;
 		};
 
-		devShells.${system}.default = pkgs.mkShell rec {
+		devShells.${system}.default = let
+            local_outputs = import ./default.nix {
+                inherit pkgs crane;
+                fenix = fenix.packages.${system};
+                doStaticBuild = false;
+                kodept_sources = ./.;
+                pegviz_sources = pegviz;
+                useNightly = true;
+            };
+		in pkgs.mkShellNoCC rec {
 			packages = with pkgs; [
 				xdot
 				gnuplot
-				outputs.toolchain
+				pkgs.clangStdenv.cc
+				mold
+                local_outputs.toolchain
 			];
 
 			toolchain = pkgs.symlinkJoin {
@@ -39,7 +50,7 @@
 		
 			shellHook = ''
 				rm -f .toolchain
-				ln -fs ${toolchain} .toolchain
+				ln -s ${toolchain} .toolchain
 			'';
 		};
 	};

@@ -3,20 +3,25 @@
 	fenix,
 	crane,
 	doStaticBuild,
+	useNightly ? false,
 	pegviz_sources,
 	kodept_sources
 }: let
-	toolchain = with fenix; combine [
-		stable.toolchain
+    toolchainType = if useNightly then "latest" else "stable";
+
+	toolchain = fenix.combine [
+		fenix.${toolchainType}.cargo
+		fenix.${toolchainType}.rustc
+		fenix.${toolchainType}.rustfmt
 		(if doStaticBuild then
-			targets.x86_64-unknown-linux-musl.stable.rust-std
+			fenix.targets.x86_64-unknown-linux-musl.${toolchainType}.rust-std
 		 else
-		 	targets.x86_64-unknown-linux-gnu.stable.rust-std
+		 	fenix.targets.x86_64-unknown-linux-gnu.${toolchainType}.rust-std
 		)
 	];
-	toolchain-win = with fenix; combine [
-	    stable.toolchain
-	    targets.x86_64-pc-windows-gnu.stable.rust-std
+	toolchain-win = fenix.combine [
+	    fenix.${toolchainType}.toolchain
+	    fenix.targets.x86_64-pc-windows-gnu.${toolchainType}.rust-std
 	];
 
 	craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
@@ -26,7 +31,12 @@
 		doDoc = false;
 
 		CARGO_BUILD_TARGET = if doStaticBuild then "x86_64-unknown-linux-musl" else "x86_64-unknown-linux-gnu";
-    CARGO_BUILD_RUSTFLAGS = if doStaticBuild then "-C target-feature=+crt-static" else "";
+        CARGO_BUILD_RUSTFLAGS = if doStaticBuild then "-C target-feature=+crt-static" else "";
+
+        buildInputs = with pkgs; [
+            clang
+            mold
+        ];
 	};
 
 	commonArgs-win = {
