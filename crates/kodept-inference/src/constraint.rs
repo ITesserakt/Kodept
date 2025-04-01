@@ -1,5 +1,5 @@
 use std::collections::{HashSet, VecDeque};
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Formatter, Display};
 
 use derive_more::Display;
 use itertools::Either::{Left, Right};

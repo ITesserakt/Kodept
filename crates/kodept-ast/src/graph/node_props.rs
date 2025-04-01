@@ -1,7 +1,6 @@
 use crate::graph::{AnyNode, AnyNodeD, SyntaxTree};
-use derive_more::Display;
 use std::error::Error;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 
 pub trait SubEnum {
     const VARIANTS: &'static [AnyNodeD];

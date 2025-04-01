@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Formatter, Display};
 
 use derive_more::{Display, From};
 use itertools::Itertools;

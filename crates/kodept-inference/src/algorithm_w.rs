@@ -194,12 +194,12 @@ impl Language {
             },
         );
 
-        if let Some(not_found) = NEVec::from_vec(not_found) {
-            if let Some(errors) = NEVec::from_vec(errors) {
+        if let Some(not_found) = NEVec::try_from_vec(not_found) {
+            if let Some(errors) = NEVec::try_from_vec(errors) {
                 return Err(CompoundInferError::Both(UnknownVar(not_found), errors))
             }
             return Err(CompoundInferError::AlgoW(UnknownVar(not_found)))
-        } else if let Some(errors) = NEVec::from_vec(errors) {
+        } else if let Some(errors) = NEVec::try_from_vec(errors) {
             return Err(CompoundInferError::Foreign(errors))
         }
 

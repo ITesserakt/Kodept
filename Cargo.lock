@@ -256,9 +256,9 @@ checksum = "4938185353434999ef52c81753c8cca8955ed38042fc29913db3751916f3b7ab"
 
 [[package]]
 name = "convert_case"
-version = "0.6.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+checksum = "bb402b8d4c85569410425650ce3eddc7d698ed96d39a73f941b08fb63082f1e7"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -375,18 +375,18 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "1.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
 dependencies = [
  "derive_more-impl",
 ]
 
 [[package]]
 name = "derive_more-impl"
-version = "1.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
 dependencies = [
  "convert_case",
  "proc-macro2",
@@ -777,12 +777,12 @@ dependencies = [
  "thiserror 2.0.11",
  "tracing",
  "tracing-subscriber",
- "yoke",
+ "yoke 0.8.0",
 ]
 
 [[package]]
 name = "kodept-ast"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "constcat",
  "derive_more",
@@ -815,12 +815,12 @@ version = "0.1.0"
 dependencies = [
  "kodept-core",
  "kodept-report",
- "yoke",
+ "yoke 0.7.5",
 ]
 
 [[package]]
 name = "kodept-inference"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "derive_more",
  "itertools 0.13.0",
@@ -846,7 +846,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "criterion",
  "derive_more",
@@ -973,9 +973,9 @@ dependencies = [
 
 [[package]]
 name = "nonempty-collections"
-version = "0.2.9"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c07626f57b1cb0ee81e5193d331209751d2e18ffa3ceaa0fd6fab63db31fafd9"
+checksum = "b7f301452dbaf00f14ca0c8204e46cf0c9a96f53543ac72cefa9b4d91c19e0ac"
 
 [[package]]
 name = "nu-ansi-term"
@@ -1910,6 +1910,17 @@ name = "yoke"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "120e6aef9aa629e3d4f52dc8cc43a015c7724194c97dfaf45180d2daf2b77f40"
+dependencies = [
+ "serde",
+ "stable_deref_trait",
+ "zerofrom",
+]
+
+[[package]]
+name = "yoke"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f41bb01b8226ef4bfd589436a297c53d118f65921786300e427be8d487695cc"
 dependencies = [
  "serde",
  "stable_deref_trait",

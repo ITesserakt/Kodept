@@ -27,13 +27,12 @@ members = [
 
 [workspace.dependencies]
 thiserror = "2.0"
-extend = "1.2"
 itertools = "0.13"
-nonempty-collections = "0.2.9"
+nonempty-collections = "0.3.0"
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]
-version = "1.0.0"
+version = "2.0.1"
 features = ["display", "into", "from", "deref", "deref_mut", "constructor", "try_into", "is_variant", "unwrap", "error"]
 
 [workspace.lints]
@@ -57,7 +56,7 @@ rayon = { version = "1.10.0", optional = true }
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt", "ansi"] }
-yoke = "0.7.4"
+yoke = "0.8.0"
 
 [dependencies.kodept-core]
 path = "crates/kodept-core"

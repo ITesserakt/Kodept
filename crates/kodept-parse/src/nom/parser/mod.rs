@@ -2,13 +2,13 @@ use crate::common::RLTProducer;
 use crate::nom::error::ExpectedError;
 use crate::nom::TokenVerificationError;
 use crate::token_stream::PackedTokenStream;
-use derive_more::{Constructor, Display};
+use derive_more::Constructor;
 use kodept_rlt::prelude::RLT;
 use nom::error::{ContextError, ErrorKind, FromExternalError};
 use ::nom::IResult;
 use nom::{Needed, Parser as ParserOps};
 use std::borrow::Cow;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 
 type PResult<'t, O> = IResult<PackedTokenStream<'t>, O, PError<'t>>;
 
@@ -163,7 +163,9 @@ impl ExpectedError for ParserError {
         match self {
             ParserError::Token(x) => x.expected(),
             ParserError::Incomplete(Needed::Unknown) => Cow::Borrowed("not EOF"),
-            ParserError::Incomplete(Needed::Size(n)) if n.get() == 1 => Cow::Borrowed("1 more token"),
+            ParserError::Incomplete(Needed::Size(n)) if n.get() == 1 => {
+                Cow::Borrowed("1 more token")
+            }
             ParserError::Incomplete(Needed::Size(n)) => Cow::Owned(format!("{} more tokens", n)),
         }
     }

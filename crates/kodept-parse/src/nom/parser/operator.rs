@@ -4,7 +4,7 @@ use nom::error::context;
 use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::Parser;
-use nonempty_collections::NEVec;
+use nonempty_collections::{IntoNonEmptyIterator, NEVec, NonEmptyIterator};
 
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
@@ -12,10 +12,8 @@ use crate::nom::parser::utils::{comma_separated0, match_token, paren_enclosed};
 use crate::nom::parser::{expression, PParser, PResult};
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
+use kodept_rlt::new_types::{BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol};
 use kodept_rlt::prelude as rlt;
-use kodept_rlt::new_types::{
-    BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol,
-};
 
 fn left_fold<I, T, P, R>(
     parser: P,
@@ -25,11 +23,11 @@ where
     P: Parser<I, Output = (T, Vec<(PackedTokenMatch, T)>)>,
     R: From<T>,
 {
-    parser.map(move |(a, tail)| match NEVec::from_vec(tail) {
+    parser.map(move |(a, tail)| match NEVec::try_from_vec(tail) {
         None => a.into(),
         Some(rest) => {
-            let (op, b) = rest.head;
-            rest.tail.into_iter().fold(
+            let ((op, b), tail) = rest.into_nonempty_iter().next();
+            tail.fold(
                 produce(a.into(), Symbol::from_located(op), b),
                 |a, (op, b)| produce(a, Symbol::from_located(op), b),
             )

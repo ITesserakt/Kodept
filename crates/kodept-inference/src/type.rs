@@ -4,7 +4,7 @@ use std::ops::BitAnd;
 
 use derive_more::{Constructor, Display as DeriveDisplay, From};
 use itertools::{concat, Itertools};
-use nonempty_collections::NEVec;
+use nonempty_collections::{IntoNonEmptyIterator, NEVec, NonEmptyIterator};
 
 use crate::InferState;
 use crate::substitution::Substitutions;
@@ -69,7 +69,8 @@ pub fn fun1<M: Into<MonomorphicType>, N: Into<MonomorphicType>>(
 }
 
 pub fn fun<M: Into<MonomorphicType>>(input: NEVec<MonomorphicType>, output: M) -> MonomorphicType {
-    match (input.head, input.tail.as_slice()) {
+    let (head, tail) = input.into_nonempty_iter().next();
+    match (head, tail.as_slice()) {
         (x, []) => fun1(x, output),
         (x, [xs @ .., last]) => fun1(
             x,

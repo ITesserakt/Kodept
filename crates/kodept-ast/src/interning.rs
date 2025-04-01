@@ -1,4 +1,4 @@
-use derive_more::{Deref, Display};
+use derive_more::Display;
 use interner::global::{GlobalString, StringPool};
 use kodept_core::code_point::CodePoint;
 use kodept_core::static_assert_size;
@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
+use std::ops::Deref;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::debug;
 
