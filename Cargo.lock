@@ -250,9 +250,9 @@ dependencies = [
 
 [[package]]
 name = "constcat"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4938185353434999ef52c81753c8cca8955ed38042fc29913db3751916f3b7ab"
+checksum = "5ffb5df6dd5dadb422897e8132f415d7a054e3cd757e5070b663f75bea1840fb"
 
 [[package]]
 name = "convert_case"
@@ -509,9 +509,9 @@ dependencies = [
 
 [[package]]
 name = "fixedbitset"
-version = "0.4.2"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
+checksum = "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99"
 
 [[package]]
 name = "futures"
@@ -730,9 +730,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -763,7 +763,7 @@ dependencies = [
  "derive_more",
  "dhat",
  "gag",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "kodept-ast",
  "kodept-core",
  "kodept-frontend",
@@ -777,7 +777,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tracing",
  "tracing-subscriber",
- "yoke 0.8.0",
+ "yoke",
 ]
 
 [[package]]
@@ -815,7 +815,7 @@ version = "0.1.0"
 dependencies = [
  "kodept-core",
  "kodept-report",
- "yoke 0.7.5",
+ "yoke",
 ]
 
 [[package]]
@@ -823,7 +823,7 @@ name = "kodept-inference"
 version = "0.2.4"
 dependencies = [
  "derive_more",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "nonempty-collections",
  "thiserror 2.0.12",
  "tracing",
@@ -835,7 +835,7 @@ version = "0.1.2"
 dependencies = [
  "dashmap",
  "derive_more",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "kodept-ast",
  "kodept-core",
  "kodept-inference",
@@ -853,7 +853,7 @@ dependencies = [
  "enum-iterator",
  "faster-pest",
  "gag",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "kodept-core",
  "kodept-rlt",
  "nom",
@@ -1109,9 +1109,9 @@ dependencies = [
 
 [[package]]
 name = "petgraph"
-version = "0.6.5"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
+checksum = "3672b37090dbd86368a4145bc067582552b29c27377cad4e0a306c97f9bd7772"
 dependencies = [
  "fixedbitset",
  "indexmap",
@@ -1489,18 +1489,18 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
-version = "0.26.3"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
+checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
 dependencies = [
  "strum_macros",
 ]
 
 [[package]]
 name = "strum_macros"
-version = "0.26.4"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+checksum = "c77a8c5abcaf0f9ce05d62342b7d298c346515365c36b673df4ebe3ced01fde8"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -1908,17 +1908,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f42320e61fe2cfd34354ecb597f86f413484a798ba44a8ca1165c58d42da6c1"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "yoke"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "120e6aef9aa629e3d4f52dc8cc43a015c7724194c97dfaf45180d2daf2b77f40"
-dependencies = [
- "serde",
- "stable_deref_trait",
- "zerofrom",
 ]
 
 [[package]]

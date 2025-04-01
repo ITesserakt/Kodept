@@ -12,7 +12,7 @@ rust-version = "1.70.0"
 [dependencies]
 slotmap = "1.0.7"
 thiserror.workspace = true
-petgraph = { version = "0.6.4", default-features = false }
+petgraph = { version = "0.7.1", default-features = false }
 serde = { version = "1.0.200", optional = true }
 
 [dev-dependencies]

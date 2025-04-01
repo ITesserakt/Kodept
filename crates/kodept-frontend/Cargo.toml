@@ -9,4 +9,4 @@ workspace = true
 [dependencies]
 kodept-core = { path = "../kodept-core" }
 kodept-report = { path = "../kodept-report" }
-yoke = "0.7.5"
+yoke = "0.8.0"
