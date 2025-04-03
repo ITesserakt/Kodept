@@ -1,5 +1,5 @@
 use derive_more::{Constructor, Display};
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use nonempty_collections::NEVec;
 use crate::qbe::types::ExtendedType;

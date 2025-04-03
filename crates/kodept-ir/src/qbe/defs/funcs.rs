@@ -1,4 +1,4 @@
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use std::vec;
 use derive_more::Display;
 use itertools::Itertools;

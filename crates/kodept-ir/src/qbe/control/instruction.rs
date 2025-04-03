@@ -9,7 +9,7 @@ use derive_more::derive::From;
 use derive_more::Display;
 use itertools::Itertools;
 use sealed::sealed;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, PartialEq)]
 pub enum Count {

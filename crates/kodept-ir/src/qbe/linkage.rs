@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::qbe::typedefs::Array;
 use derive_more::Display;
 use itertools::Itertools;

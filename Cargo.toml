@@ -21,7 +21,9 @@ members = [
     , "crates/slotgraph"
     , "crates/kodept-rlt"
     , "crates/kodept-report"
-    , "crates/kodept-frontend", "crates/kodept-interning"]
+    , "crates/kodept-frontend"
+    , "crates/kodept-interning"
+    , "crates/kodept-ir"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
