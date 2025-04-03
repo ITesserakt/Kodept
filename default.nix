@@ -13,6 +13,7 @@
 		fenix.${toolchainType}.cargo
 		fenix.${toolchainType}.rustc
 		fenix.${toolchainType}.rustfmt
+		fenix.${toolchainType}.rust-src
 		(if doStaticBuild then
 			fenix.targets.x86_64-unknown-linux-musl.${toolchainType}.rust-std
 		 else
