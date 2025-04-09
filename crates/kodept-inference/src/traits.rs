@@ -41,9 +41,10 @@ pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
     fn maybe_get(&self, key: &Key) -> Result<Option<Cow<PolymorphicType>>, Self::Error>;
 }
 
-pub trait PartialTypeInfer<Expr>: Sized {
+pub trait TypeInfer<Expr>: Sized {
     type Error;
-
+    type Output;
+    
     fn apply<'a>(&mut self, expr: &'a Expr) -> Infer<'a, Expr, Self>;
 
     fn suspend(expr: &Expr) -> Suspend<Expr, Self> {
@@ -53,6 +54,16 @@ pub trait PartialTypeInfer<Expr>: Sized {
     fn infer(expr: &Expr) -> Infer<Expr, Self> {
         Self::suspend(expr).pure()
     }
+    
+    fn infer_eagerly<'a, E>(&mut self, expr: &'a Expr, executor: impl Executor<'a, Expr, Self, Error = E>) -> Result<Self::Output, E> {
+        executor.fold(self, Self::infer(expr))
+    }
+}
+
+pub trait Executor<'a, E, T: TypeInfer<E>> {
+    type Error;
+    
+    fn fold(self, state: &mut T, value: Infer<'a, E, T>) -> Result<T::Output, Self::Error>; 
 }
 
 // -------------------------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 use std::collections::HashSet;
+use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 use tracing::debug;
@@ -14,7 +15,7 @@ use crate::process::{Infer, PartialInfer};
 use crate::r#type::PrimitiveType::Boolean;
 use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
 use crate::substitution::Substitutions;
-use crate::traits::{EnvironmentProvider, PartialTypeInfer, Substitutable};
+use crate::traits::{EnvironmentProvider, Substitutable, TypeInfer};
 use crate::{language, InferState};
 
 #[derive(Debug, Error)]
@@ -164,14 +165,19 @@ impl AlgorithmW {
     }
 }
 
-impl PartialTypeInfer<Language> for AlgorithmW {
-    type Error = ();
+impl TypeInfer<Language> for AlgorithmW {
+    type Error = Infallible;
+    type Output = PartialInfer;
 
     fn apply<'a>(&mut self, expr: &'a Language) -> Infer<'a, Language, Self> {
         match expr {
             Language::Var(x) => {
                 let fresh = self.env.new_var();
-                Infer::done_no_constraints(AssumptionSet::single(x.clone(), fresh), fresh)
+                Infer::done(PartialInfer::new(
+                    AssumptionSet::single(x.clone(), fresh),
+                    [None],
+                    fresh,
+                ))
             }
             Language::App(language::App { arg, func }) => {
                 Self::suspend(func).and_then(|_, PartialInfer(a1, c1, t1)| {
@@ -231,10 +237,22 @@ impl PartialTypeInfer<Language> for AlgorithmW {
                     })
                 })
             }
-            Language::Literal(Literal::Integral) => Infer::done_empty(PrimitiveType::i8()),
-            Language::Literal(Literal::Floating) => Infer::done_empty(PrimitiveType::f24()),
+            Language::Literal(Literal::Integral) => Infer::done(PartialInfer::new(
+                AssumptionSet::empty(),
+                [None],
+                PrimitiveType::i8(),
+            )),
+            Language::Literal(Literal::Floating) => Infer::done(PartialInfer::new(
+                AssumptionSet::empty(),
+                [None],
+                PrimitiveType::f24(),
+            )),
             Language::Literal(Literal::Tuple(items)) => {
-                let current = Infer::done_empty(Tuple(Vec::with_capacity(items.len())));
+                let current = Infer::done(PartialInfer::new(
+                    AssumptionSet::empty(),
+                    [None],
+                    Tuple(Vec::with_capacity(items.len())),
+                ));
                 items.iter().fold(current, |acc, next| {
                     acc.zip_with(Self::infer(next), |mut a, b| {
                         a.0.merge(b.0);
@@ -353,20 +371,17 @@ impl Display for AlgorithmWError {
 mod tests {
     use crate::algorithm_w::AlgorithmW;
     use crate::language::Language;
-    use crate::traits::PartialTypeInfer;
-    use proptest::{prop_assert, prop_assert_eq, proptest};
+    use crate::process::DefaultExecutor;
+    use crate::traits::TypeInfer;
+    use proptest::{prop_assert_eq, proptest};
 
     proptest! {
         #[test]
         fn proptest_infer_algorithms(expr: Language) {
-            let process = AlgorithmW::infer(&expr);
-            dbg!(&process);
-            let result = process.fold(&mut AlgorithmW::default());
-
-            prop_assert!(result.is_ok());
+            let result = AlgorithmW::default().infer_eagerly(&expr, &mut DefaultExecutor::default())?;
             let other_result = AlgorithmW::default().apply_(&expr);
 
-            prop_assert_eq!(result.unwrap(), other_result);
+            prop_assert_eq!(result, other_result);
         }
     }
 }
