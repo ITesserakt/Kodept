@@ -1,27 +1,27 @@
 use crate::assumption::AssumptionSet;
 use crate::constraint::Constraint;
 use crate::r#type::MonomorphicType;
-use crate::traits::PartialTypeInfer;
+use crate::traits::{Executor, TypeInfer};
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 
 #[derive(Debug, PartialEq)]
-pub struct PartialInfer(pub AssumptionSet, pub Vec<Constraint>, pub MonomorphicType);
+pub(crate) struct PartialInfer(pub AssumptionSet, pub Vec<Constraint>, pub MonomorphicType);
 
-pub struct Suspend<'a, E, T: PartialTypeInfer<E>>(&'a E, PhantomData<T>);
+pub struct Suspend<'a, E, T: TypeInfer<E>>(&'a E, PhantomData<T>);
 
-pub enum Continuation<'a, E, T: PartialTypeInfer<E>> {
+pub enum Continuation<'a, E, T: TypeInfer<E>> {
     Empty,
     Custom(Box<Cont<'a, E, T>>)
 }
 
-type Cont<'a, E, T> = dyn FnOnce(&mut T, PartialInfer) -> Infer<'a, E, T> + 'a;
+type Cont<'a, E, T> = dyn FnOnce(&mut T, <T as TypeInfer<E>>::Output) -> Infer<'a, E, T> + 'a;
 
 #[must_use]
 #[derive(Debug)]
-pub enum Infer<'a, E, T: PartialTypeInfer<E>> {
+pub enum Infer<'a, E, T: TypeInfer<E>> {
     Done {
-        value: PartialInfer,
+        value: T::Output,
     },
     Failed {
         state: T,
@@ -34,7 +34,50 @@ pub enum Infer<'a, E, T: PartialTypeInfer<E>> {
     },
 }
 
-impl<'a, E, T: PartialTypeInfer<E>> Debug for Continuation<'a, E, T> {
+#[derive(Debug)]
+pub struct DefaultExecutor<'a, E, T: TypeInfer<E>> {
+    stack: Vec<Continuation<'a, E, T>>
+}
+
+impl<'a, E, T: TypeInfer<E>> Default for DefaultExecutor<'a, E, T> {
+    fn default() -> Self {
+        Self {
+            stack: vec![]
+        }
+    }
+}
+
+impl<'a, E, T: TypeInfer<E>> Executor<'a, E, T> for &mut DefaultExecutor<'a, E, T> {
+    type Error = T::Error;
+
+    fn fold(self, state: &mut T, mut current: Infer<'a, E, T>) -> Result<T::Output, Self::Error> {
+        self.stack.clear();
+        
+        loop {
+            match current {
+                Infer::Done { value } => match self.stack.pop() {
+                    None => {
+                        if cfg!(debug_assertions) {
+                            assert!(self.stack.is_empty());
+                            self.stack.clear();
+                        }
+                        return Ok(value)
+                    },
+                    Some(cont) => {
+                        current = cont.call(state, value);
+                    }
+                }
+                Infer::Failed { error, .. } => return Err(error),
+                Infer::Suspended { expr, continuation } => {
+                    self.stack.push(continuation);
+                    current = state.apply(expr);
+                }
+            }
+        }
+    }
+}
+
+impl<'a, E, T: TypeInfer<E>> Debug for Continuation<'a, E, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Continuation::Empty => write!(f, "<empty>"),
@@ -43,12 +86,12 @@ impl<'a, E, T: PartialTypeInfer<E>> Debug for Continuation<'a, E, T> {
     }
 }
 
-impl<'a, E, T: PartialTypeInfer<E>> Continuation<'a, E, T> {
-    pub fn custom(f: impl FnOnce(&mut T, PartialInfer) -> Infer<'a, E, T> + 'a) -> Self {
+impl<'a, E, T: TypeInfer<E>> Continuation<'a, E, T> {
+    pub fn custom(f: impl FnOnce(&mut T, T::Output) -> Infer<'a, E, T> + 'a) -> Self {
         Self::Custom(Box::new(f))
     }
 
-    pub fn call(self, state: &mut T, value: PartialInfer) -> Infer<'a, E, T> {
+    pub fn call(self, state: &mut T, value: T::Output) -> Infer<'a, E, T> {
         match self {
             Continuation::Empty => Infer::Done { value },
             Continuation::Custom(f) => f(state, value),
@@ -56,69 +99,16 @@ impl<'a, E, T: PartialTypeInfer<E>> Continuation<'a, E, T> {
     }
 }
 
-impl<'a, E, T: PartialTypeInfer<E>> Infer<'a, E, T> {
+impl<'a, E, T: TypeInfer<E>> Infer<'a, E, T> {
     pub fn suspend(input: &'a E) -> Suspend<'a, E, T> {
         Suspend(input, PhantomData)
     }
 
-    pub fn done<I>(
-        assumptions: AssumptionSet,
-        constraints: impl IntoIterator<Item = I>,
-        ty: impl Into<MonomorphicType>,
-    ) -> Self
-    where
-        I: IntoIterator<Item = Constraint>,
-    {
-        Self::Done {
-            value: PartialInfer::new(assumptions, constraints, ty),
-        }
+    pub fn done(output: T::Output) -> Self {
+        Self::Done { value: output }
     }
 
-    pub fn done_no_constraints(assumptions: AssumptionSet, ty: impl Into<MonomorphicType>) -> Self {
-        Self::Done {
-            value: PartialInfer(assumptions, vec![], ty.into()),
-        }
-    }
-
-    pub fn done_empty(ty: impl Into<MonomorphicType>) -> Self {
-        Self::Done {
-            value: PartialInfer(AssumptionSet::empty(), vec![], ty.into()),
-        }
-    }
-
-    #[inline]
-    pub fn fold_with(
-        self,
-        state: &mut T,
-        mut f: impl FnMut(&'a E, &PartialInfer),
-    ) -> Result<PartialInfer, (&'a E, T, T::Error)> {
-        let mut stack: Vec<(&E, Continuation<'a, E, T>)> = vec![];
-        let mut current = self;
-        loop {
-            match current {
-                Infer::Done { value } => {
-                    if let Some((expr, cont)) = stack.pop() {
-                        f(expr, &value);
-                        current = cont.call(state, value);
-                    } else {
-                        return Ok(value);
-                    }
-                }
-                Infer::Failed { state, expr, error } => return Err((expr, state, error)),
-                Infer::Suspended { expr, continuation } => {
-                    stack.push((expr, continuation));
-                    current = state.apply(expr);
-                }
-            }
-        }
-    }
-
-    #[inline]
-    pub fn fold(self, state: &mut T) -> Result<PartialInfer, (&'a E, T, T::Error)> {
-        self.fold_with(state, |_, _| {})
-    }
-
-    pub fn zip_with(self, other: Self, f: impl FnOnce(PartialInfer, PartialInfer) -> PartialInfer + 'a) -> Self
+    pub fn zip_with(self, other: Self, f: impl FnOnce(T::Output, T::Output) -> T::Output + 'a) -> Self
     where
         T: 'a,
     {
@@ -138,8 +128,8 @@ impl<'a, E, T: PartialTypeInfer<E>> Infer<'a, E, T> {
     }
 }
 
-impl<'a, E, T: PartialTypeInfer<E>> Suspend<'a, E, T> {
-    pub fn map(self, f: impl FnOnce(&mut T, PartialInfer) -> PartialInfer + 'a) -> Infer<'a, E, T> {
+impl<'a, E, T: TypeInfer<E>> Suspend<'a, E, T> {
+    pub fn map(self, f: impl FnOnce(&mut T, T::Output) -> T::Output + 'a) -> Infer<'a, E, T> {
         Infer::Suspended {
             expr: self.0,
             continuation: Continuation::custom(move |s, p| Infer::Done { value: f(s, p) }),
@@ -148,7 +138,7 @@ impl<'a, E, T: PartialTypeInfer<E>> Suspend<'a, E, T> {
 
     pub fn and_then(
         self,
-        f: impl FnOnce(&mut T, PartialInfer) -> Infer<'a, E, T> + 'a,
+        f: impl FnOnce(&mut T, T::Output) -> Infer<'a, E, T> + 'a,
     ) -> Infer<'a, E, T> {
         Infer::Suspended {
             expr: self.0,
@@ -158,7 +148,7 @@ impl<'a, E, T: PartialTypeInfer<E>> Suspend<'a, E, T> {
 
     pub fn try_map(
         self,
-        f: impl FnOnce(&mut T, PartialInfer) -> Result<PartialInfer, T::Error> + 'a,
+        f: impl FnOnce(&mut T, T::Output) -> Result<T::Output, T::Error> + 'a,
     ) -> Infer<'a, E, T>
     where
         T: Clone,
@@ -181,7 +171,7 @@ impl<'a, E, T: PartialTypeInfer<E>> Suspend<'a, E, T> {
 
     pub fn try_and_then(
         self,
-        f: impl FnOnce(&mut T, PartialInfer) -> Result<Infer<'a, E, T>, T::Error> + 'a,
+        f: impl FnOnce(&mut T, T::Output) -> Result<Infer<'a, E, T>, T::Error> + 'a,
     ) -> Infer<'a, E, T>
     where
         T: Clone,
@@ -198,7 +188,7 @@ impl<'a, E, T: PartialTypeInfer<E>> Suspend<'a, E, T> {
             }),
         }
     }
-    
+
     #[inline]
     pub fn pure(self) -> Infer<'a, E, T> {
         Infer::Suspended {
@@ -209,7 +199,7 @@ impl<'a, E, T: PartialTypeInfer<E>> Suspend<'a, E, T> {
 }
 
 impl PartialInfer {
-    pub fn new<T>(
+    pub(crate) fn new<T>(
         assumptions: AssumptionSet,
         constraints: impl IntoIterator<Item = T>,
         ty: impl Into<MonomorphicType>,
