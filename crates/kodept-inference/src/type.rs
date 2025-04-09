@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
+use std::num::NonZeroU8;
 use std::ops::BitAnd;
 
-use derive_more::{Constructor, Display as DeriveDisplay, From};
+use derive_more::{Constructor, From};
 use itertools::{concat, Itertools};
 use nonempty_collections::{IntoNonEmptyIterator, NEVec, NonEmptyIterator};
 
-use crate::InferState;
 use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
+use crate::InferState;
 
 #[allow(dead_code)]
 fn expand_to_string(id: usize, alphabet: &'static str) -> String {
@@ -30,18 +31,27 @@ fn expand_to_string(id: usize, alphabet: &'static str) -> String {
     result
 }
 
-#[derive(Clone, PartialEq, DeriveDisplay, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum PrimitiveType {
-    Integral,
-    Floating,
+    /// Type with two possibilities: true & false
     Boolean,
+    // To keep future compatibility with hvm, builtin types should have 24 bytes size at max
+    /// Parameter represents the amount of bytes for number
+    I(NonZeroU8),
+    /// Parameter represents the amount of bytes for number
+    U(NonZeroU8),
+    F24,
+    /// String with some value that is known at compile time
+    StaticString(u64),
+    /// Array of some type which size is known at compile time
+    StaticArray(u64, Box<PrimitiveType>),
 }
 
 #[derive(Copy, Clone, PartialEq, Hash, Eq, From)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct TVar(pub(crate) usize);
 
 #[derive(Clone, PartialEq, Eq, Hash, Constructor)]
-
 pub struct Tuple(pub(crate) Vec<MonomorphicType>);
 
 #[derive(Clone, PartialEq, From, Eq, Hash)]
@@ -59,6 +69,39 @@ pub enum MonomorphicType {
 pub struct PolymorphicType {
     pub(crate) bindings: Vec<TVar>,
     pub(crate) binding_type: MonomorphicType,
+}
+
+impl PrimitiveType {
+    pub const fn bool() -> Self {
+        Self::Boolean
+    }
+
+    pub fn i8() -> Self {
+        Self::I(NonZeroU8::new(8).unwrap())
+    }
+
+    pub fn u8() -> Self {
+        Self::U(NonZeroU8::new(8).unwrap())
+    }
+
+    pub const fn custom(sign: bool, bits: NonZeroU8) -> Self {
+        match sign {
+            true => Self::I(bits),
+            false => Self::U(bits),
+        }
+    }
+
+    pub const fn f24() -> Self {
+        Self::F24
+    }
+
+    pub const fn string(size: u64) -> Self {
+        Self::StaticString(size)
+    }
+
+    pub fn array(count: u64, inner_type: Self) -> Self {
+        Self::StaticArray(count, Box::new(inner_type))
+    }
 }
 
 pub fn fun1<M: Into<MonomorphicType>, N: Into<MonomorphicType>>(
@@ -87,6 +130,25 @@ pub fn var<V: Into<TVar>>(id: V) -> MonomorphicType {
 
 pub fn unit_type() -> MonomorphicType {
     MonomorphicType::Tuple(Tuple(vec![]))
+}
+
+impl Display for PrimitiveType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrimitiveType::Boolean => write!(f, "boolean"),
+            PrimitiveType::I(size) => write!(f, "i{size}"),
+            PrimitiveType::U(size) => write!(f, "u{size}"),
+            PrimitiveType::F24 => write!(f, "f24"),
+            PrimitiveType::StaticString(size) => write!(f, "s{size}"),
+            PrimitiveType::StaticArray(count, ty) => write!(f, "{ty}[{count}]"),
+        }
+    }
+}
+
+impl Debug for PrimitiveType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
+    }
 }
 
 impl MonomorphicType {
@@ -297,5 +359,86 @@ impl Debug for MonomorphicType {
 impl Debug for PolymorphicType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self}")
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
+    use proptest::arbitrary::StrategyFor;
+    use proptest::prelude::{any, prop, Arbitrary, BoxedStrategy, Just, Strategy};
+    use proptest::strategy::{Map, Recursive};
+    use proptest::{prop_oneof, proptest};
+    use std::num::NonZeroU8;
+
+    impl Arbitrary for PrimitiveType {
+        type Parameters = ();
+
+        fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+            let leaf = prop_oneof![
+                Just(PrimitiveType::Boolean),
+                Just(PrimitiveType::F24),
+                (1..=24u8).prop_map(|it| PrimitiveType::I(NonZeroU8::new(it).unwrap())),
+                (1..=24u8).prop_map(|it| PrimitiveType::U(NonZeroU8::new(it).unwrap())),
+                any::<u64>().prop_map(PrimitiveType::StaticString)
+            ];
+
+            leaf.prop_recursive(2, 3, 1, |inner| {
+                (inner, any::<u64>())
+                    .prop_map(|it| PrimitiveType::StaticArray(it.1, Box::new(it.0)))
+                    .boxed()
+            })
+        }
+
+        type Strategy = Recursive<
+            PrimitiveType,
+            fn(BoxedStrategy<PrimitiveType>) -> BoxedStrategy<PrimitiveType>,
+        >;
+    }
+
+    impl Arbitrary for MonomorphicType {
+        type Parameters = ();
+
+        fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+            let leaf = prop_oneof![
+                any::<PrimitiveType>().prop_map(MonomorphicType::Primitive),
+                any::<TVar>().prop_map(MonomorphicType::Var),
+                "_{0,2}[A-Z]([A-Za-z0-9_]){0,5}".prop_map(MonomorphicType::Constant)
+            ];
+
+            leaf.prop_recursive(10, 100, 10, |inner| {
+                prop_oneof![
+                    prop::collection::vec(inner.clone(), 0..5)
+                        .prop_map(|it| MonomorphicType::Tuple(Tuple(it))),
+                    inner
+                        .clone()
+                        .prop_map(|it| MonomorphicType::Pointer(Box::new(it))),
+                    (inner.clone(), inner).prop_map(|it| fun1(it.0, it.1))
+                ]
+                .boxed()
+            })
+        }
+
+        type Strategy = Recursive<
+            MonomorphicType,
+            fn(BoxedStrategy<MonomorphicType>) -> BoxedStrategy<MonomorphicType>,
+        >;
+    }
+
+    impl Arbitrary for PolymorphicType {
+        type Parameters = ();
+
+        fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+            any::<MonomorphicType>().prop_map(|it| it.normalize())
+        }
+
+        type Strategy = Map<StrategyFor<MonomorphicType>, fn(MonomorphicType) -> PolymorphicType>;
+    }
+
+    proptest! {
+        #[test]
+        fn test(primitive in any::<PolymorphicType>()) {
+            dbg!(primitive);
+        }
     }
 }

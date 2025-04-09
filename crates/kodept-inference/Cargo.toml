@@ -1,6 +1,6 @@
 [package]
 name = "kodept-inference"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
@@ -20,3 +20,7 @@ itertools.workspace = true
 nonempty-collections.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+proptest = "1.6.0"
+proptest-derive = "0.5.1"

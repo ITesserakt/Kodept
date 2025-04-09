@@ -8,8 +8,9 @@ pub mod substitution;
 pub mod r#type;
 pub mod constraint;
 pub mod traits;
+mod process;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub(crate) struct InferState {
     variable_index: usize,
 }

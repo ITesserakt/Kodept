@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn test_multiple_substitutions() {
         let a = fun(
-            nev![fun1(var(1), PrimitiveType::Integral), var(1)],
+            nev![fun1(var(1), PrimitiveType::u8()), var(1)],
             Tuple::unit(),
         );
         let b = fun(nev![var(2), Constant("A".to_string())], Tuple::unit());
@@ -201,7 +201,7 @@ mod tests {
                 (TVar(1), Constant("A".to_string())),
                 (
                     TVar(2),
-                    fun1(Constant("A".to_string()), PrimitiveType::Integral)
+                    fun1(Constant("A".to_string()), PrimitiveType::u8())
                 )
             ])
         )

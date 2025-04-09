@@ -101,6 +101,12 @@ profiler = ["dep:dhat", "dep:ctrlc"]
 parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 
+[profile.test.package.proptest]
+opt-level = 3
+
+[profile.test.package.rand_chacha]
+opt-level = 3
+
 [profile.profiler]
 debug = true
 inherits = "release"
