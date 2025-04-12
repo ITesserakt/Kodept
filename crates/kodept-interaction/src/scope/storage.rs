@@ -1,5 +1,5 @@
-use bevy_ecs::entity::hash_map::EntityHashMap;
 use crate::scope::Scoped;
+use bevy_ecs::entity::hash_map::EntityHashMap;
 use bevy_ecs::prelude::{ChildOf, Commands, Component, Entity, Local};
 use bevy_ecs::system::SystemParam;
 use kodept_ast::prelude::{Erase, NodeId};
@@ -32,7 +32,7 @@ impl Scope {
 #[derive(SystemParam)]
 pub struct ScopeBuilder<'w, 's> {
     commands: Commands<'w, 's>,
-    scope_mapping: Local<'s, EntityHashMap<Entity>>
+    scope_mapping: Local<'s, EntityHashMap<Entity>>,
 }
 
 impl<'w, 's> ScopeBuilder<'w, 's> {
@@ -67,17 +67,19 @@ impl<'w, 's> ScopeBuilder<'w, 's> {
     }
 
     pub fn link_scopes(&mut self, scope_id: Entity, parent_scope_id: Entity) {
-        self.commands.entity(scope_id).insert(ChildOf {
-            parent: parent_scope_id,
-        });
+        self.commands
+            .entity(scope_id)
+            .insert(ChildOf(parent_scope_id));
     }
-    
+
     pub fn get_enclosing_scope(&self, node_id: NodeId) -> Option<Entity> {
         self.scope_mapping.get(&node_id.entity()).copied()
     }
-    
+
     pub fn set_enclosing_scope(&mut self, node_id: NodeId, scope_id: Entity) {
         self.scope_mapping.insert(node_id.entity(), scope_id);
-        self.commands.entity(node_id.entity()).insert(Scoped(scope_id));
+        self.commands
+            .entity(node_id.entity())
+            .insert(Scoped(scope_id));
     }
 }

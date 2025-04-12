@@ -129,7 +129,7 @@ impl ReferenceResolver {
                 return done();
             }
             if let Some(parent) = parent {
-                current_scope_id = parent.parent;
+                current_scope_id = parent.0;
                 continue;
             } else {
                 return fail(Error::UnknownReference {
