@@ -14,6 +14,7 @@
 		fenix.${toolchainType}.rustc
 		fenix.${toolchainType}.rustfmt
 		fenix.${toolchainType}.rust-src
+		fenix.${toolchainType}.rust-analyzer
 		(if doStaticBuild then
 			fenix.targets.x86_64-unknown-linux-musl.${toolchainType}.rust-std
 		 else

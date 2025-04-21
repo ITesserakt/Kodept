@@ -40,7 +40,8 @@
 				gnuplot
 				pkgs.clangStdenv.cc
 				mold
-                local_outputs.toolchain
+				local_outputs.toolchain
+				qbe
 			];
 
 			toolchain = pkgs.symlinkJoin {
