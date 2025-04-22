@@ -275,12 +275,12 @@ impl<S: Into<String>> From<S> for Var {
 mod tests {
     use crate::assumption::Environment;
     use crate::language::{app, lambda, r#let, var, BVar, Language, Literal, Special, Var};
-    use crate::r#type::{fun1, var as t_var, Tuple};
-    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
-    use proptest::strategy::{LazyJust, Recursive};
-    use proptest::prop_oneof;
-    use std::collections::HashSet;
+    use crate::r#type::{fun1, tuple, var as t_var};
     use proptest::collection::vec;
+    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+    use proptest::prop_oneof;
+    use proptest::strategy::{LazyJust, Recursive};
+    use std::collections::HashSet;
 
     impl Arbitrary for Language {
         type Parameters = ();
@@ -334,10 +334,7 @@ mod tests {
             t,
             fun1(
                 t_var(0),
-                Tuple(vec![
-                    Tuple(vec![t_var(0), t_var(0)]).into(),
-                    Tuple(vec![t_var(0), t_var(0)]).into()
-                ])
+                tuple([tuple([t_var(0), t_var(0)]), tuple([t_var(0), t_var(0)])])
             )
             .generalize(&HashSet::new())
         );

@@ -13,7 +13,7 @@ use crate::constraint::{eq_cst, explicit_cst, implicit_cst, Constraint, Constrai
 use crate::language::{Language, Literal, Special, Var};
 use crate::process::{Infer, PartialInfer};
 use crate::r#type::PrimitiveType::Boolean;
-use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
+use crate::r#type::{fun1, unit_type, MonomorphicType, PolymorphicType, PrimitiveType, TVar};
 use crate::substitution::Substitutions;
 use crate::traits::{EnvironmentProvider, Substitutable, TypeInfer};
 use crate::{language, InferState};
@@ -127,16 +127,15 @@ impl AlgorithmW {
     fn apply_tuple(&mut self, tuple: &[Language]) -> PartialInfer {
         let mut assumptions = AssumptionSet::empty();
         let mut constraints = vec![];
-        let mut items = vec![];
 
-        for item in tuple {
-            let PartialInfer(a, c, t) = self.apply_(item);
+        let items = tuple.iter().map(|it| {
+            let PartialInfer(a, c, t) = self.apply_(it);
             assumptions.merge(a);
             constraints.extend(c);
-            items.push(t);
-        }
+            t
+        }).collect();
 
-        PartialInfer(assumptions, constraints, Tuple(items).into())
+        PartialInfer(assumptions, constraints, MonomorphicType::Tuple(items))
     }
 
     fn apply_special(&mut self, special: &Special) -> PartialInfer {
@@ -251,14 +250,17 @@ impl TypeInfer<Language> for AlgorithmW {
                 let current = Infer::done(PartialInfer::new(
                     AssumptionSet::empty(),
                     [None],
-                    Tuple(Vec::with_capacity(items.len())),
+                    unit_type(),
                 ));
+                // Very bad way of doing things incoming
                 items.iter().fold(current, |acc, next| {
                     acc.zip_with(Self::infer(next), |mut a, b| {
                         a.0.merge(b.0);
                         a.1.extend(b.1);
-                        if let MonomorphicType::Tuple(Tuple(vec)) = &mut a.2 {
+                        if let MonomorphicType::Tuple(vec) = a.2 {
+                            let mut vec = vec.to_vec();
                             vec.push(b.2);
+                            a.2 = MonomorphicType::Tuple(vec.into());
                         }
                         a
                     })
