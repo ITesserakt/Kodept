@@ -12,10 +12,11 @@ pub struct Suspend<'a, E, T: TypeInfer<E>>(&'a E, PhantomData<T>);
 
 pub enum Continuation<'a, E, T: TypeInfer<E>> {
     Empty,
-    Custom(Box<Cont<'a, E, T>>)
+    Custom(Box<ContFn<'a, E, T>>),
+    Static(Box<Infer<'a, E, T>>)
 }
 
-type Cont<'a, E, T> = dyn FnOnce(&mut T, <T as TypeInfer<E>>::Output) -> Infer<'a, E, T> + 'a;
+type ContFn<'a, E, T> = dyn FnOnce(&mut T, <T as TypeInfer<E>>::Output) -> Infer<'a, E, T> + 'a;
 
 #[must_use]
 #[derive(Debug)]
@@ -81,7 +82,8 @@ impl<'a, E, T: TypeInfer<E>> Debug for Continuation<'a, E, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Continuation::Empty => write!(f, "<empty>"),
-            Continuation::Custom(_) => write!(f, "<closure>")
+            Continuation::Custom(_) => write!(f, "<closure>"),
+            Continuation::Static(_) => write!(f, "<static>")
         }
     }
 }
@@ -91,10 +93,15 @@ impl<'a, E, T: TypeInfer<E>> Continuation<'a, E, T> {
         Self::Custom(Box::new(f))
     }
 
+    pub fn known(value: Infer<'a, E, T>) -> Self {
+        Self::Static(Box::new(value))
+    }
+
     pub fn call(self, state: &mut T, value: T::Output) -> Infer<'a, E, T> {
         match self {
             Continuation::Empty => Infer::Done { value },
             Continuation::Custom(f) => f(state, value),
+            Continuation::Static(x) => *x,
         }
     }
 }
