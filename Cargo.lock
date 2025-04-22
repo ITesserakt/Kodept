@@ -859,7 +859,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-inference"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "derive_more",
  "itertools 0.14.0",

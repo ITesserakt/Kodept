@@ -65,7 +65,7 @@ impl AlgorithmU {
                 &[i1.as_ref().clone(), o1.as_ref().clone()],
                 &[i2.as_ref().clone(), o2.as_ref().clone()],
             ),
-            (Tuple(t1), Tuple(t2)) => Self::unify_vec(&t1.0, &t2.0),
+            (Tuple(t1), Tuple(t2)) => Self::unify_vec(&t1, &t2),
             (Pointer(t1), Pointer(t2)) => t1.unify(t2),
             _ => Err(UnificationFail(lhs.clone(), rhs.clone())),
         }
@@ -97,8 +97,8 @@ mod tests {
     use nonempty_collections::nev;
 
     use crate::algorithm_u::AlgorithmUError;
-    use crate::r#type::{fun, fun1, MonomorphicType, PrimitiveType, Tuple, TVar, var};
     use crate::r#type::MonomorphicType::Constant;
+    use crate::r#type::{fun, fun1, unit_type, var, MonomorphicType, PrimitiveType, TVar};
     use crate::substitution::Substitutions;
     use crate::traits::Substitutable;
 
@@ -158,8 +158,8 @@ mod tests {
 
     #[test]
     fn test_simple_function_unifying() {
-        let a = fun(nev![var(1), Constant("A".to_string())], Tuple::unit());
-        let b = fun(nev![var(1), var(2)], Tuple::unit());
+        let a = fun(nev![var(1), Constant("A".to_string())], unit_type());
+        let b = fun(nev![var(1), var(2)], unit_type());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(s, Substitutions::single(TVar(2), Constant("A".to_string())));
@@ -167,8 +167,8 @@ mod tests {
 
     #[test]
     fn test_aliasing_in_functions() {
-        let a = fun(nev![var(1)], Tuple::unit());
-        let b = fun(nev![var(2)], Tuple::unit());
+        let a = fun(nev![var(1)], unit_type());
+        let b = fun(nev![var(2)], unit_type());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(s, Substitutions::single(TVar(1), var(2)));
@@ -176,10 +176,10 @@ mod tests {
 
     #[test]
     fn test_functions_with_different_arity_should_not_unify() {
-        let a = fun(nev![Constant("A".to_string())], Tuple::unit());
+        let a = fun(nev![Constant("A".to_string())], unit_type());
         let b = fun(
             nev![Constant("A".to_string()), Constant("B".to_string())],
-            Tuple::unit(),
+            unit_type(),
         );
 
         let s = a.unify(&b).unwrap_err();
@@ -188,11 +188,8 @@ mod tests {
 
     #[test]
     fn test_multiple_substitutions() {
-        let a = fun(
-            nev![fun1(var(1), PrimitiveType::u8()), var(1)],
-            Tuple::unit(),
-        );
-        let b = fun(nev![var(2), Constant("A".to_string())], Tuple::unit());
+        let a = fun(nev![fun1(var(1), PrimitiveType::u8()), var(1)], unit_type());
+        let b = fun(nev![var(2), Constant("A".to_string())], unit_type());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(
@@ -210,7 +207,7 @@ mod tests {
     #[test]
     fn test_infinite_substitution() {
         let a = var(1);
-        let b = fun1(var(1), Tuple::unit());
+        let b = fun1(var(1), unit_type());
 
         let e = a.unify(&b).unwrap_err();
         assert!(matches!(e, AlgorithmUError::InfiniteType { .. }))
