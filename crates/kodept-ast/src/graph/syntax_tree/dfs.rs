@@ -9,9 +9,9 @@ enum TraverseState {
     Exit,
 }
 
-pub struct DfsIter<'a, P> {
+pub struct DfsIter<'a> {
     inner: DetachedDfsIter,
-    tree: &'a SyntaxTree<P>,
+    tree: &'a SyntaxTree,
 }
 
 pub struct DetachedDfsIter {
@@ -19,8 +19,8 @@ pub struct DetachedDfsIter {
     edges_buffer: Vec<AnyNodeId>,
 }
 
-impl<'a, P> DfsIter<'a, P> {
-    pub(crate) fn new(tree: &'a SyntaxTree<P>, start: AnyNodeId) -> Self {
+impl<'a> DfsIter<'a> {
+    pub(crate) fn new(tree: &'a SyntaxTree, start: AnyNodeId) -> Self {
         let mut stack = VecDeque::with_capacity(tree.inner.len());
         stack.push_back((start, TraverseState::DescendDeeper));
 
@@ -38,7 +38,7 @@ impl<'a, P> DfsIter<'a, P> {
     }
 }
 
-impl<'a, P> Iterator for DfsIter<'a, P> {
+impl<'a> Iterator for DfsIter<'a> {
     type Item = (AnyNodeId, VisitSide);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -51,7 +51,7 @@ impl<'a, P> Iterator for DfsIter<'a, P> {
 }
 
 impl DetachedDfsIter {
-    pub fn next<P>(&mut self, tree: &SyntaxTree<P>) -> Option<(AnyNodeId, VisitSide)> {
+    pub fn next(&mut self, tree: &SyntaxTree) -> Option<(AnyNodeId, VisitSide)> {
         let (current_id, descend) = loop {
             let (current_id, descend) = self.stack.pop_back()?;
 
@@ -89,4 +89,4 @@ impl DetachedDfsIter {
     }
 }
 
-impl<'a, P> FusedIterator for DfsIter<'a, P> {}
+impl<'a> FusedIterator for DfsIter<'a> {}

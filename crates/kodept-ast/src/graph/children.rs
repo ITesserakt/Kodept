@@ -23,9 +23,9 @@ where
 {
     type Container: ContainerFamily;
 
-    fn get_children<'b, P>(
+    fn get_children<'b>(
         &self,
-        tree: &'b SyntaxTree<P>,
+        tree: &'b SyntaxTree,
     ) -> ContainerT<Self::Container, &'b Child>
     {
         Self::Container::from_iter(tree.children_of(self.get_id(), TAG))

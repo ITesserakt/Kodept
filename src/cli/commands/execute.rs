@@ -1,4 +1,4 @@
-use crate::cli::commands::{get_code_holder, to_diagnostics};
+use crate::cli::commands::{get_code_holder, to_diagnostics, PrintMetricsOnDrop};
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::traits::CommandWithSources;
 use clap::Args;
@@ -9,7 +9,6 @@ use kodept::steps::common::Config;
 use kodept_ast::graph::SyntaxTree;
 use kodept_frontend::prelude::ExtractReports;
 use kodept_frontend::Execution;
-use kodept_interning::metrics::InterningMetrics;
 use kodept_interpret::macros::Context;
 use std::num::NonZeroU16;
 use std::ops::ControlFlow::{Break, Continue};
@@ -48,10 +47,8 @@ impl CommandWithSources for Execute {
             .map_err(|e| to_diagnostics(e).extract_reports(*source.id, reports))
             .map_or(Break(()), Continue)?;
 
-        let code_holder = get_code_holder(&source);
-        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder);
-        let metrics = InterningMetrics::gather();
-        debug!(?metrics);
+        let code_holder = PrintMetricsOnDrop(get_code_holder(&source));
+        let (tree, accessor) = SyntaxTree::recursively_build(&rlt, code_holder.0);
         debug!("Produced AST with node count = {}", tree.node_count());
 
         let sink = {

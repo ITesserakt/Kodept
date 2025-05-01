@@ -12,7 +12,6 @@ use slotgraph::export::{Config, Dot};
 use std::convert::identity;
 use std::fmt::{Display, Formatter};
 use std::iter::FusedIterator;
-use std::marker::PhantomData;
 use kodept_rlt::prelude::RLT;
 
 pub mod dfs;
@@ -22,14 +21,13 @@ mod utils;
 type Graph<T = AnyNode, E = ChildTag> = slotgraph::dag::Dag<T, E>;
 
 #[derive(Debug)]
-pub struct SyntaxTree<Permission = ()> {
+pub struct SyntaxTree {
     inner: Graph,
-    pub(crate) permission: PhantomData<Permission>,
 }
 
-pub type SyntaxTreeBuilder = SyntaxTree<()>;
+pub type SyntaxTreeBuilder = SyntaxTree;
 
-impl<P> SyntaxTree<P> {
+impl SyntaxTree {
     pub fn export_dot<'a>(&'a self, config: &'a [Config]) -> impl Display + 'a {
         struct Helper<'a>(SecondaryDag<String, &'static str>, &'a [Config]);
         impl Display for Helper<'_> {
@@ -56,7 +54,6 @@ impl<P> SyntaxTree<P> {
         let (graph, accessor) = subtree.consume_map(identity);
         let tree = Self {
             inner: graph,
-            permission: Default::default(),
         };
         (tree, accessor)
     }
@@ -160,7 +157,7 @@ impl<P> SyntaxTree<P> {
         self.inner.len()
     }
 
-    pub fn dfs(&self) -> DfsIter<P> {
+    pub fn dfs(&self) -> DfsIter {
         DfsIter::new(self, NodeId::Root)
     }
 

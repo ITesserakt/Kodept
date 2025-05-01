@@ -90,6 +90,7 @@ version = "0.2"
 
 [dependencies.kodept-interning]
 path = "crates/kodept-interning"
+optional = true
 version = "0.1"
 
 [dev-dependencies]
@@ -98,6 +99,7 @@ criterion = "0.5.1"
 
 [features]
 profiler = ["dep:dhat", "dep:ctrlc"]
+interning = ["dep:kodept-interning"]
 parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 

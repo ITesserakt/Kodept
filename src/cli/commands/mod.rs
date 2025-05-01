@@ -9,7 +9,6 @@ use kodept::source::collection::SourceView;
 use kodept_ast::Str;
 use kodept_core::structure::span::CodeHolder;
 use kodept_frontend::Execution;
-use kodept_interning::InterningCodeHolder;
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Label, Severity};
 use std::borrow::Cow;
@@ -135,6 +134,28 @@ fn ensure_path_exists(path: &Path) -> std::io::Result<()> {
     }
 }
 
+#[derive(Debug)]
+struct PrintMetricsOnDrop<T>(T);
+
+#[cfg(feature = "interning")]
+impl<T> Drop for PrintMetricsOnDrop<T> {
+    fn drop(&mut self) {
+        use kodept_interning::metrics::InterningMetrics;
+        use tracing::debug;
+        
+        let metrics = InterningMetrics::gather();
+        debug!(?metrics);
+    }
+}
+
+#[cfg(feature = "interning")]
 fn get_code_holder(source: &SourceView) -> impl CodeHolder<Str = Str> + '_ {
+    use kodept_interning::InterningCodeHolder;
+
     InterningCodeHolder::new(&**source).map(|it| Cow::Borrowed(it.0))
+}
+
+#[cfg(not(feature = "interning"))]
+fn get_code_holder(source: &SourceView) -> impl CodeHolder<Str = Str> + '_ {
+    source.map(|it| Cow::Owned(it.to_string()))
 }
