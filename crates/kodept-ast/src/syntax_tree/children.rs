@@ -35,15 +35,17 @@ where
     Source: CodeHolder,
 {
     #[inline(always)]
-    pub fn new<U>(node: &'w U::Syntax) -> Self
+    pub fn new<T, U>(node: &'w T) -> Self
     where
-        &'w U::Syntax: Into<SyntaxVariant<'w>>,
-        SyntaxVariant<'w>: TryInto<&'w U::Syntax, Error: Debug>,
+        &'w T: Into<SyntaxVariant<'w>>,
+        SyntaxVariant<'w>: TryInto<&'w T, Error: Debug>,
         Root: HasChild<U, Tag, Arity = Arity>,
-        U: FromSyntax + ASTNode,
+        U: FromSyntax<T> + ASTNode,
+        T: 'w
     {
         Self::ad_hoc(node, |node, source, pool| {
-            U::from_syntax(node, source, pool)
+            // U::from_syntax(node, source, pool)
+            todo!()
         })
     }
 

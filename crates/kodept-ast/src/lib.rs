@@ -7,21 +7,21 @@ pub mod arity;
 mod entity;
 pub mod interaction;
 pub mod macros;
+mod node_id;
 pub mod properties;
+pub mod query;
+mod relationship;
 pub mod resource;
 pub mod syntax_tree;
 mod traits;
 mod utils;
-mod node_id;
-mod relationship;
-pub mod query;
 
 pub mod prelude {
     pub use super::entity::children::TryFromIter;
     pub use super::entity::entity_ref::{AnyNodeRef, AnyNodeRefItem, NodeRef};
     pub use super::entity::traits::{FromEnum, IntoEnum};
+    pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
-    pub use super::node_id::{NodeId, Erase};
 }
 
 #[deprecated]

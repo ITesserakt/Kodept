@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 
 pub trait NodeProperty: Component {}
 
-#[derive(Debug, Component)]
+#[derive(Debug, Component, Display)]
 pub struct Node {
     pub kind: &'static str
 }

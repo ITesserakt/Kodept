@@ -1,14 +1,11 @@
-use crate::Unit;
-use kodept_ast::{derive_node, relation};
-use kodept_ast::arity::Arity;
-use kodept_ast::external::Component;
-use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use crate::utils::unwrap_type;
+use bevy_ecs::prelude::{Bundle, Component};
+use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::Name;
-use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
-use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
+use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::{derive_node, relation};
 use kodept_rlt::new_types;
-use kodept_rlt::prelude as rlt;
-use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
+use kodept_rlt::prelude::{Tuple, TypedParameter, UntypedParameter};
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Ty;
@@ -52,79 +49,46 @@ derive_node!(NonTyParam {
     properties = [require Name,]
 });
 
-impl FromSyntax for Ty {
-    type Syntax = new_types::TypeName;
+impl FromSyntax<new_types::TypeName> for Ty {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax(node: &new_types::TypeName, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(pool, Ty).with_property(Name(name))
+        ASTBuilder::new(Ty).with_property(Name(name)).build()
     }
 }
 
-impl FromSyntax for NonTyParam {
-    type Syntax = UntypedParameter;
+impl FromSyntax<UntypedParameter> for NonTyParam {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax(node: &UntypedParameter, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(pool, NonTyParam).with_property(Name(name))
-    }
-}
-
-impl FromSyntax for TyParam {
-    type Syntax = TypedParameter;
-
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
-        let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(pool, TyParam)
+        ASTBuilder::new(NonTyParam)
             .with_property(Name(name))
-            .with_children(source, pool, move |scope| {
-                scope.choose(Unit, [&node.parameter_type])
+            .build()
+    }
+}
+
+impl FromSyntax<TypedParameter> for TyParam {
+    type Bundle = impl Bundle;
+
+    fn from_syntax(node: &TypedParameter, source: impl CodeHolder) -> Self::Bundle {
+        let name = source.get_chunk_located(&node.id);
+        ASTBuilder::new(TyParam)
+            .with_property(Name(name))
+            .with_dyn_child(&node.parameter_type, source, unwrap_type)
+            .build()
+    }
+}
+
+impl FromSyntax<Tuple> for ProdTy {
+    type Bundle = impl Bundle;
+
+    fn from_syntax(node: &Tuple, source: impl CodeHolder) -> Self::Bundle {
+        ASTBuilder::new(ProdTy)
+            .with_dyn_children(node.0.inner.as_ref(), |it, spawner| {
+                unwrap_type(it, spawner, source)
             })
-    }
-}
-
-impl FromSyntax for ProdTy {
-    type Syntax = Tuple;
-
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
-        ASTBuilder::new(pool, ProdTy).with_children(source, pool, move |scope| {
-            scope.choose(Unit, node.0.inner.as_ref())
-        })
-    }
-}
-
-impl<R, Tag, A> Choose<rlt::Type, R, Tag> for Unit
-where
-    R: HasChild<Ty, Tag, Arity = A>,
-    R: HasChild<ProdTy, Tag, Arity = A>,
-    Tag: Send + Sync + 'static,
-    A: Arity,
-{
-    type Arity = A;
-
-    #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &rlt::Type) -> ChildrenDisjoint<R, Source, A, Tag> {
-        match node {
-            rlt::Type::Reference(x) => ChildrenDisjoint::new::<Ty>(x),
-            rlt::Type::Tuple(x) => ChildrenDisjoint::new::<ProdTy>(x),
-        }
-    }
-}
-
-impl<R, Tag, A> Choose<Parameter, R, Tag> for Unit
-where
-    R: HasChild<TyParam, Tag, Arity = A>,
-    R: HasChild<NonTyParam, Tag, Arity = A>,
-    Tag: Send + Sync + 'static,
-    A: Arity
-{
-    type Arity = A;
-    
-    #[inline(always)]
-    fn branch<Source: CodeHolder>(node: &Parameter) -> ChildrenDisjoint<R, Source, A, Tag> {
-        match node {
-            Parameter::Typed(x) => ChildrenDisjoint::new::<TyParam>(x),
-            Parameter::Untyped(x) => ChildrenDisjoint::new::<NonTyParam>(x),
-        }
+            .build()
     }
 }

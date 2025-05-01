@@ -1,13 +1,12 @@
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::literal::{Literal, Tuple};
-use crate::term::Ref;
-use crate::utils::unwrap_body;
-use crate::Unit;
-use kodept_ast::{derive_node, relation};
-use kodept_ast::external::Component;
-use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
 use crate::properties::Condition;
+use crate::term::Ref;
+use crate::utils::{unwrap_body, unwrap_operation};
+use bevy_ecs::prelude::{Bundle, Component};
+use kodept_ast::prelude::{CodeHolder, FromSyntax};
+use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::{derive_node, relation};
 
 #[derive(Debug, PartialEq, Component)]
 pub struct IfExpr;
@@ -48,36 +47,36 @@ relation!(ElifExpr => child Exprs);
 derive_node!(ElseExpr);
 relation!(ElseExpr => child Exprs);
 
-impl FromSyntax for IfExpr {
-    type Syntax = kodept_rlt::prelude::IfExpr;
+impl FromSyntax<kodept_rlt::prelude::IfExpr> for IfExpr {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
-        ASTBuilder::new(pool, IfExpr).with_children(source, pool, |scope| {
-            scope.choose(Unit, [&node.condition]);
-            scope.many::<ElifExpr, _>(node.elif.as_ref());
-            scope.many::<ElseExpr, _>(node.el.as_ref());
-            unwrap_body::<_, _, ()>(&node.body, scope);
-        })
+    fn from_syntax(node: &kodept_rlt::prelude::IfExpr, source: impl CodeHolder) -> Self::Bundle {
+        ASTBuilder::new(IfExpr)
+            .with_dyn_child(&node.condition, source, unwrap_operation)
+            .with_children::<_, ElifExpr, _>(node.elif.as_ref(), source)
+            .with_opt_child::<_, ElseExpr, _>(node.el.as_ref(), source)
+            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)
+            .build()
     }
 }
 
-impl FromSyntax for ElifExpr {
-    type Syntax = kodept_rlt::prelude::ElifExpr;
+impl FromSyntax<kodept_rlt::prelude::ElifExpr> for ElifExpr {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
-        ASTBuilder::new(pool, ElifExpr).with_children(source, pool, |scope| {
-            scope.choose(Unit, [&node.condition]);
-            unwrap_body::<_, _, ()>(&node.body, scope);
-        })
+    fn from_syntax(node: &kodept_rlt::prelude::ElifExpr, source: impl CodeHolder) -> Self::Bundle {
+        ASTBuilder::new(ElifExpr)
+            .with_dyn_child(&node.condition, source, unwrap_operation)
+            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)
+            .build()
     }
 }
 
-impl FromSyntax for ElseExpr {
-    type Syntax = kodept_rlt::prelude::ElseExpr;
+impl FromSyntax<kodept_rlt::prelude::ElseExpr> for ElseExpr {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
-        ASTBuilder::new(pool, ElseExpr).with_children(source, pool, |scope| {
-            unwrap_body(&node.body, scope);
-        })
+    fn from_syntax(node: &kodept_rlt::prelude::ElseExpr, source: impl CodeHolder) -> Self::Bundle {
+        ASTBuilder::new(ElseExpr)
+            .with_dyn_child(&node.body, source, unwrap_body)
+            .build()
     }
 }

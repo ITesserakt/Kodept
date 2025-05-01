@@ -1,15 +1,15 @@
 use crate::prelude::{ASTNode, Choose, CodeHolder, FromSyntax, NodeId};
 use crate::properties::{Node, NodeProperty};
+use crate::relationship::ContainedBy;
 use crate::resource::rlt::SyntaxVariant;
 use crate::syntax_tree::builder::queue::{BorrowedQueue, OwnedQueue, Queue};
-use crate::syntax_tree::children::{HasChild};
+use crate::syntax_tree::children::HasChild;
 use crate::utils::{HasLength, IntoCommonIter};
 use bevy_ecs::prelude::{Commands, Entity, World};
-use std::marker::PhantomData;
-use std::sync::LazyLock;
 use bevy_ecs::relationship::Relationship;
 pub use pool::*;
-use crate::relationship::ContainedBy;
+use std::marker::PhantomData;
+use std::sync::LazyLock;
 
 static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
 
@@ -200,8 +200,8 @@ impl<'w, 's, Root, Source> ASTBuilder<Root, BorrowedQueue<'w, 's, Source>> {
         mut self,
         f: impl for<'scope> FnOnce(&'scope mut ChildrenScope<'scope, 'w, Root, Source>),
     ) -> Self
-    where 
-        Source: CodeHolder
+    where
+        Source: CodeHolder,
     {
         let mut scope = ChildrenScope {
             source: self.queue.2,
@@ -222,73 +222,44 @@ where
     #[inline(always)]
     fn insert<R>(&mut self, mut part: ASTBuilder<()>)
     where
-        R: Relationship
+        R: Relationship,
     {
         let child_id = part.root;
         let root_id = self.root;
-        
+
         self.commands.entity(root_id).add_one_related::<R>(child_id);
         self.commands.append(&mut part.queue.0);
     }
 
     #[inline(always)]
     #[allow(unsafe_code)]
-    pub fn many<U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'w U::Syntax> + HasLength)
+    pub fn many<T, U, Tag>(&mut self, iter: impl IntoCommonIter<Item = &'w T> + HasLength)
     where
         Root: HasChild<U, Tag>,
-        U: ASTNode + FromSyntax,
+        U: ASTNode + FromSyntax<T>,
         Tag: Send + Sync + 'static,
-        &'w U::Syntax: Into<SyntaxVariant<'w>>,
+        &'w T: Into<SyntaxVariant<'w>>,
+        T: 'w
     {
         Root::register();
-        
-        if cfg!(not(feature = "parallel")) || iter.len() < *SWITCH_TO_PARALLEL_THRESHOLD {
-            for item in iter.into_iter() {
-                let part = U::from_syntax(item, self.source, self.pool);
-                unsafe { self.pool.link_syntax(part.root, item) };
-                self.insert::<Root::Relationship>(part.erase());
-            }
-            return;
-        }
 
-        #[cfg(not(feature = "parallel"))]
-        unreachable!();
-
-        #[cfg(feature = "parallel")]
-        {
-            use rayon::prelude::*;
-
-            let (sx, rx) = std::sync::mpsc::channel();
-            let iter = iter.into_par_iter();
-            let source = self.source;
-            let pool = self.pool;
-
-            rayon::join(
-                move || {
-                    iter.for_each_with(sx, |sender, it| {
-                        let part = U::from_syntax(it, source, pool);
-                        unsafe { pool.link_syntax(part.root, it) };
-                        sender.send(part).unwrap()
-                    })
-                },
-                move || {
-                    for item in rx.into_iter() {
-                        self.insert::<Root::Relationship>(item.erase());
-                    }
-                },
-            );
+        for item in iter.into_iter() {
+            let part = U::from_syntax(item, self.source);
+            // unsafe { self.pool.link_syntax(part.root, item) };
+            // self.insert::<Root::Relationship>(part.erase());
         }
     }
 
     #[inline(always)]
-    pub fn maybe_many<U, Tag>(
+    pub fn maybe_many<T, U, Tag>(
         &mut self,
-        option: Option<impl IntoCommonIter<Item = &'w U::Syntax> + HasLength>,
+        option: Option<impl IntoCommonIter<Item = &'w T> + HasLength>,
     ) where
         Root: HasChild<U, Tag>,
-        U: ASTNode + FromSyntax,
+        U: ASTNode + FromSyntax<T>,
         Tag: Send + Sync + 'static,
-        &'w U::Syntax: Into<SyntaxVariant<'w>>,
+        &'w T: Into<SyntaxVariant<'w>>,
+        T: 'w
     {
         if let Some(iter) = option {
             self.many(iter)
@@ -375,9 +346,17 @@ where
         U: ASTNode,
     {
         Root::register();
-        let mut builder = callback(BorrowedQueue(self.commands.reborrow(), self.pool, self.source));
+        let mut builder = callback(BorrowedQueue(
+            self.commands.reborrow(),
+            self.pool,
+            self.source,
+        ));
         unsafe { self.pool.link_syntax(builder.root, node) };
-        builder.queue.0.entity(self.root).add_one_related::<Root::Relationship>(builder.root);
+        builder
+            .queue
+            .0
+            .entity(self.root)
+            .add_one_related::<Root::Relationship>(builder.root);
     }
 
     #[inline(always)]

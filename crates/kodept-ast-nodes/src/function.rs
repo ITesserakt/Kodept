@@ -1,13 +1,13 @@
+use crate::expression::Exprs;
 use crate::types::{Params, ProdTy, Ty};
-use crate::utils::{unwrap_body, wrap_params};
-use crate::Unit;
-use kodept_ast::{derive_node, relation};
-use kodept_ast::external::Component;
+use crate::utils::{unwrap_body, unwrap_parameter, unwrap_type};
+use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::Name;
-use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
+use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::{derive_node, relation};
 use kodept_rlt::prelude::BodiedFunction;
-use crate::expression::Exprs;
+use std::convert::identity;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Func;
@@ -17,23 +17,31 @@ derive_node!(Func {
 });
 relation!(Func => optional Ty);
 relation!(Func => optional ProdTy);
-relation!(Func => child Exprs);
+relation!(Func => either Body(child Exprs));
 relation!(Func => child Params);
 
-impl FromSyntax for Func {
-    type Syntax = BodiedFunction;
+impl FromSyntax<BodiedFunction> for Func {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax(node: &BodiedFunction, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(&node.id);
 
-        ASTBuilder::new(pool, Func)
+        ASTBuilder::new(Func)
             .with_property(Name(name))
-            .with_children(source, pool, move |scope| {
-                scope.choose(Unit, node.return_type.as_ref().map(|it| &it.1));
-                if let Some(params) = node.params.as_ref() {
-                    wrap_params(node, &params.inner, scope);
-                }
-                unwrap_body(&node.body, scope);
+            .with_dyn_children(&node.return_type, |(_, it), spawner| {
+                unwrap_type(it, spawner, source)
             })
+            .with_dyn_child(&node.params, source, |it, spawner, source| {
+                spawner.spawn_raw(
+                    ASTBuilder::new(Params).with_opt_dyn_children(
+                        it.as_ref().map(|it| it.inner.as_ref()),
+                        |it, spawner| unwrap_parameter(it, spawner, source),
+                    ),
+                    node,
+                    identity,
+                )
+            })
+            .with_dyn_child(node.body.as_ref(), source, unwrap_body)
+            .build()
     }
 }

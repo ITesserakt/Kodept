@@ -1,10 +1,9 @@
 use crate::interaction::Interaction;
 use crate::prelude::{CodeHolder, FromSyntax};
-use crate::properties::Root;
 use crate::resource::rlt::SyntaxResolver;
-use crate::syntax_tree::builder::Pool;
 use bevy_ecs::prelude::World;
 use kodept_rlt::prelude::RLT;
+use crate::properties::Root;
 
 #[derive(Debug)]
 pub struct AST {
@@ -15,18 +14,15 @@ impl AST {
     #[allow(unsafe_code)]
     pub fn recursively_build<Root>(start: RLT, source_code: impl CodeHolder) -> Self
     where
-        Root: FromSyntax<Syntax = kodept_rlt::prelude::File>,
+        Root: FromSyntax<kodept_rlt::prelude::File>,
     {
         let mut world = World::new();
         let syntax = SyntaxResolver::empty(start);
-        let pool = Pool::new(&syntax, world.entities());
-        let whole_part =
-            Root::from_syntax(pool.syntax_root(), source_code, pool).with_property(Root);
-        unsafe {
-            pool.link_syntax(whole_part.id(), pool.syntax_root());
-        }
-        whole_part.consume(&mut world);
+        let whole_part = Root::from_syntax(syntax.root(), source_code);
         world.insert_resource(syntax);
+        let root_id = world.spawn((Root, whole_part)).id();
+        let syntax = world.resource_mut::<SyntaxResolver>();
+        unsafe { syntax.insert(root_id, syntax.root()) };
         AST { world }
     }
 

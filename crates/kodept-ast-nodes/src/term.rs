@@ -1,6 +1,6 @@
-use kodept_ast::external::Component;
+use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
+use kodept_ast::syntax_tree::experimental::ASTBuilder;
 use kodept_ast::{derive_node, Str};
 use kodept_rlt::prelude::{ContextualReference, Reference, Term};
 use std::borrow::Cow;
@@ -50,10 +50,10 @@ impl Identifier {
     }
 }
 
-impl FromSyntax for Ref {
-    type Syntax = Term;
+impl FromSyntax<Term> for Ref {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(node: &'w Self::Syntax, source: impl CodeHolder, pool: Pool<'w>) -> ASTBuilder<Self> {
+    fn from_syntax(node: &Term, source: impl CodeHolder) -> Self::Bundle {
         let ident = match node {
             Term::Reference(Reference::Type(x)) => Identifier::TypeReference {
                 name: source.get_chunk_located(x),
@@ -93,6 +93,6 @@ impl FromSyntax for Ref {
             }
         };
 
-        ASTBuilder::new(pool, Ref { context, ident })
+        ASTBuilder::new(Ref { context, ident }).build()
     }
 }

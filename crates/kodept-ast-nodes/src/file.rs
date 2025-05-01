@@ -1,17 +1,16 @@
 use crate::constants::Const;
 use crate::function::Func;
 use crate::top_level::{EnumDecl, StructDecl};
-use crate::utils::const_disjoint;
-use crate::Unit;
-use kodept_ast::{derive_node, relation};
-use kodept_ast::prelude::{Choose, CodeHolder, FromSyntax};
+use crate::Either;
+use bevy_ecs::{bundle::Bundle, component::Component};
+use kodept_ast::derive_node;
+use kodept_ast::prelude::CodeHolder;
+use kodept_ast::prelude::FromSyntax;
 use kodept_ast::properties::Name;
-use kodept_ast::syntax_tree::children::ChildrenDisjoint;
-use kodept_ast::syntax_tree::prelude::{ASTBuilder, Pool};
+use kodept_ast::relation;
+use kodept_ast::syntax_tree::experimental::ASTBuilder;
 use kodept_rlt::prelude as rlt;
-use std::fmt::Debug;
-use bevy_ecs::prelude::Component;
-use kodept_ast::arity::Plural;
+use kodept_rlt::prelude::TopLevelNode;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct FileDecl;
@@ -30,60 +29,47 @@ derive_node!(ModDecl {
 });
 relation!(ModDecl => children Const);
 
-impl FromSyntax for FileDecl {
-    type Syntax = rlt::File;
+impl FromSyntax<rlt::File> for FileDecl {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(
-        node: &'w Self::Syntax,
-        source: impl CodeHolder,
-        pool: Pool<'w>,
-    ) -> ASTBuilder<Self> {
-        ASTBuilder::new(pool, FileDecl)
-            .with_children(source, pool, |scope| scope.many(node.0.as_ref()))
+    fn from_syntax(node: &rlt::File, source: impl CodeHolder) -> Self::Bundle {
+        ASTBuilder::new(FileDecl)
+            .with_children(node.0.as_ref(), source)
+            .build()
     }
 }
 
-impl FromSyntax for ModDecl {
-    type Syntax = rlt::Module;
+impl FromSyntax<rlt::Module> for ModDecl {
+    type Bundle = impl Bundle;
 
-    fn from_syntax<'w>(
-        node: &'w Self::Syntax,
-        source: impl CodeHolder,
-        pool: Pool<'w>,
-    ) -> ASTBuilder<Self> {
-        let (kind, id, rest) = match node {
-            rlt::Module::Global { id, rest, .. } => (ModDecl::Global, id, rest.as_ref()),
-            rlt::Module::Ordinary { id, rest, .. } => (ModDecl::Ordinary, id, rest.as_ref()),
+    fn from_syntax(node: &rlt::Module, source: impl CodeHolder) -> Self::Bundle {
+        let (value, name, rest) = match node {
+            rlt::Module::Global { id, rest, .. } => {
+                (ModDecl::Global, source.get_chunk_located(id), rest)
+            }
+            rlt::Module::Ordinary { id, rest, .. } => {
+                (ModDecl::Ordinary, source.get_chunk_located(id), rest)
+            }
         };
-        let name = source.get_chunk_located(id);
-        ASTBuilder::new(pool, kind)
+        ASTBuilder::new(value)
             .with_property(Name(name))
-            .with_children(source, pool, |scope| scope.choose(Unit, rest))
-    }
-}
-
-impl Choose<rlt::TopLevelNode, ModDecl, ()> for Unit {
-    type Arity = Plural;
-    
-    #[inline(always)]
-    fn branch<S: CodeHolder>(node: &rlt::TopLevelNode) -> ChildrenDisjoint<ModDecl, S, Self::Arity, ()> {
-        match node {
-            rlt::TopLevelNode::Enum(x) => const_disjoint::<EnumDecl, _, _, _>(x, |node, source: S| {
-                source.get_chunk_located(match node {
-                    rlt::Enum::Stack { id, .. } => id,
-                    rlt::Enum::Heap { id, .. } => id,
-                })
-            }),
-            rlt::TopLevelNode::Struct(x) => {
-                const_disjoint::<StructDecl, _, _, _>(x, |node, source: S| {
-                    source.get_chunk_located(&node.id)
-                })
-            }
-            rlt::TopLevelNode::BodiedFunction(x) => {
-                const_disjoint::<Func, _, _, _>(x, |node, source: S| {
-                    source.get_chunk_located(&node.id)
-                })
-            }
-        }
+            .with_dyn_children(rest.as_ref(), |it, spawner| match it {
+                TopLevelNode::Enum(x) => spawner.spawn_raw(
+                    ASTBuilder::new(Const).with_child::<_, EnumDecl, _>(x, source),
+                    x,
+                    Either::Left,
+                ),
+                TopLevelNode::Struct(x) => spawner.spawn_raw(
+                    ASTBuilder::new(Const).with_child::<_, StructDecl, _>(x, source),
+                    x,
+                    |x| Either::Right(Either::Left(x)),
+                ),
+                TopLevelNode::BodiedFunction(x) => spawner.spawn_raw(
+                    ASTBuilder::new(Const).with_child::<_, Func, _>(x, source),
+                    x,
+                    |x| Either::Right(Either::Right(x)),
+                ),
+            })
+            .build()
     }
 }

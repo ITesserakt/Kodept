@@ -1,81 +1,250 @@
-use crate::constants::Const;
-use crate::expression::Exprs;
-use crate::types::{Params, TyParam, TyParams};
-use crate::Unit;
-use kodept_ast::prelude::{ASTNode, CodeHolder, FromSyntax};
-use kodept_ast::properties::Name;
-use kodept_ast::resource::rlt::SyntaxVariant;
-use kodept_ast::syntax_tree::children::{ChildrenDisjoint, HasChild};
-use kodept_ast::syntax_tree::prelude::{ASTBuilder, ChildrenScope};
+use crate::block_level::InitVar;
+use crate::code_flow::IfExpr;
+use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
+use crate::function::Func;
+use crate::literal::{Literal, Tuple};
+use crate::properties::{Lhs, Rhs};
+use crate::term::Ref;
+use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
+use crate::Either;
+use kodept_ast::arity::Arity;
+use kodept_ast::prelude::CodeHolder;
+use kodept_ast::syntax_tree::children::HasChild;
+use kodept_ast::syntax_tree::experimental::{ASTBuilder, BundleUnion, NodeSpawner};
 use kodept_ast::Str;
-use kodept_rlt::prelude::{Body, Parameter, TypedParameter};
-use std::fmt::Debug;
+use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::prelude::{BlockLevelNode, Body, Expression, Operation, Parameter, Type};
+use std::ops::Deref;
 
-pub(crate) fn unwrap_body<'scope, 'w, R, S, Tag>(
-    node: &'w Body,
-    scope: &mut ChildrenScope<'scope, 'w, R, S>,
-) where
-    R: HasChild<Exprs, Tag>,
-    Tag: Send + Sync + 'static,
-    S: CodeHolder,
+pub(crate) fn unwrap_type<R, T, A>(
+    node: &Type,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
+where
+    A: Arity,
+    R: HasChild<Ty, T, Arity = A>,
+    R: HasChild<ProdTy, T, Arity = A>,
 {
     match node {
-        Body::Block(x) => scope.many([x]),
-        Body::Simplified { expression, .. } => {
-            scope.with_builder(node, |b| {
-                ASTBuilder::from_queue(b, Exprs)
-                    .with_children(|scope| scope.choose(Unit, [expression]))
-            });
-        }
-    };
+        Type::Reference(x) => spawner.spawn::<_, Ty, _>(x, source, Either::Left),
+        Type::Tuple(x) => spawner.spawn::<_, ProdTy, _>(x, source, Either::Right),
+    }
 }
 
-pub(crate) fn wrap_params<'scope, 'w, R, S, Tag>(
-    parent_node: &'w R::Syntax,
-    params: &'w impl AsRef<[Parameter]>,
-    scope: &mut ChildrenScope<'scope, 'w, R, S>,
-) where
-    R: HasChild<Params, Tag> + FromSyntax,
-    Tag: Send + Sync + 'static,
-    S: CodeHolder,
-    &'w R::Syntax: Into<SyntaxVariant<'w>>,
-{
-    scope.with_builder(parent_node, |q| {
-        ASTBuilder::from_queue(q, Params).with_children(|scope| scope.choose(Unit, params.as_ref()))
-    });
-}
-
-pub(crate) fn wrap_ty_params<'scope, 'w, R, S, Tag>(
-    parent_node: &'w R::Syntax,
-    params: &'w impl AsRef<[TypedParameter]>,
-    scope: &mut ChildrenScope<'scope, 'w, R, S>,
-) where
-    R: HasChild<TyParams, Tag> + FromSyntax,
-    Tag: Send + Sync + 'static,
-    S: CodeHolder,
-    &'w R::Syntax: Into<SyntaxVariant<'w>>,
-{
-    scope.with_builder(parent_node, |b| {
-        ASTBuilder::from_queue(b, TyParams)
-            .with_children(|scope| scope.many::<TyParam, _>(params.as_ref()))
-    });
-}
-
-pub(crate) fn const_disjoint<'p, U, R, S, Tag>(
-    node: &'p U::Syntax,
-    name_fn: impl FnOnce(&U::Syntax, S) -> Str + 'static,
-) -> ChildrenDisjoint<'p, R, S, R::Arity, Tag>
+pub(crate) fn unwrap_body<R, T, A>(
+    node: &Body,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
 where
-    &'p U::Syntax: TryFrom<SyntaxVariant<'p>, Error: Debug> + Into<SyntaxVariant<'p>>,
-    U: FromSyntax<Syntax: Sync> + ASTNode,
-    Const: HasChild<U, Tag>,
-    S: CodeHolder,
-    R: HasChild<Const, Tag>,
-    Tag: Send + Sync + 'static,
+    A: Arity,
+    R: HasChild<Exprs, T, Arity = A>,
 {
-    ChildrenDisjoint::ad_hoc(node, move |node, source, pool| {
-        ASTBuilder::new(pool, Const)
-            .with_property(Name(name_fn(node, source)))
-            .with_children(source, pool, |scope| scope.many([node]))
-    })
+    match node {
+        Body::Block(x) => spawner.spawn::<_, Exprs, _>(x, source, Either::Left),
+        Body::Simplified { expression, .. } => spawner.spawn_raw(
+            ASTBuilder::new(Exprs).with_dyn_child(expression, source, unwrap_block_level),
+            expression,
+            Either::Right,
+        ),
+    }
+}
+
+pub(crate) fn unwrap_block_level<R, T, A>(
+    node: &BlockLevelNode,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
+where
+    A: Arity,
+    R: HasChild<InitVar, T, Arity = A>,
+    R: HasChild<Exprs, T, Arity = A>,
+    R: HasChild<Func, T, Arity = A>,
+    R: HasChild<BinExpr, T, Arity = A>,
+    R: HasChild<UnExpr, T, Arity = A>,
+    R: HasChild<App, T, Arity = A>,
+    R: HasChild<Lambda, T, Arity = A>,
+    R: HasChild<Ref, T, Arity = A>,
+    R: HasChild<Tuple, T, Arity = A>,
+    R: HasChild<Literal, T, Arity = A>,
+    R: HasChild<IfExpr, T, Arity = A>,
+{
+    match node {
+        BlockLevelNode::InitVar(x) => {
+            spawner.spawn::<_, InitVar, _>(x, source, |x| Either::Left(Either::Left(x)))
+        }
+        BlockLevelNode::Block(x) => {
+            spawner.spawn::<_, Exprs, _>(x, source, |x| Either::Left(Either::Right(x)))
+        }
+        BlockLevelNode::Function(x) => {
+            spawner.spawn::<_, Func, _>(x, source, |x| Either::Right(Either::Left(x)))
+        }
+        BlockLevelNode::Operation(x) => {
+            Either::Right(Either::Right(unwrap_operation(x, spawner, source)))
+        }
+    }
+}
+
+pub(crate) fn unwrap_parameter<R, T, A>(
+    node: &Parameter,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
+where
+    A: Arity,
+    R: HasChild<TyParam, T, Arity = A>,
+    R: HasChild<NonTyParam, T, Arity = A>,
+{
+    match &node {
+        Parameter::Typed(x) => spawner.spawn::<_, TyParam, _>(x, source, Either::Left),
+        Parameter::Untyped(x) => spawner.spawn::<_, NonTyParam, _>(x, source, Either::Right),
+    }
+}
+
+pub(crate) fn unwrap_operation<R, T, A>(
+    node: &Operation,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
+where
+    A: Arity,
+    R: HasChild<Exprs, T, Arity = A>,
+    R: HasChild<BinExpr, T, Arity = A>,
+    R: HasChild<UnExpr, T, Arity = A>,
+    R: HasChild<App, T, Arity = A>,
+    R: HasChild<Lambda, T, Arity = A>,
+    R: HasChild<Ref, T, Arity = A>,
+    R: HasChild<Tuple, T, Arity = A>,
+    R: HasChild<Literal, T, Arity = A>,
+    R: HasChild<IfExpr, T, Arity = A>,
+{
+    match node {
+        Operation::Block(x) => {
+            spawner.spawn::<_, Exprs, _>(x, source, |x| Either::Left(Either::Left(Either::Left(x))))
+        }
+        Operation::Access { left, right, .. } => spawner.spawn_raw(
+            ASTBuilder::new(BinExpr::Access)
+                .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
+                .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
+            node,
+            |x| Either::Left(Either::Left(Either::Right(x))),
+        ),
+        Operation::Binary {
+            left,
+            operation,
+            right,
+        } => {
+            let op_text: Str = source.get_chunk_located(operation);
+            let value = match (operation, op_text.deref()) {
+                (BinaryOperationSymbol::Pow(_), _) => BinExpr::Pow,
+                (BinaryOperationSymbol::Mul(_), "*") => BinExpr::Mul,
+                (BinaryOperationSymbol::Mul(_), "/") => BinExpr::Div,
+                (BinaryOperationSymbol::Mul(_), "%") => BinExpr::Mod,
+                (BinaryOperationSymbol::Add(_), "+") => BinExpr::Add,
+                (BinaryOperationSymbol::Add(_), "-") => BinExpr::Add,
+                (BinaryOperationSymbol::ComplexComparison(_), _) => BinExpr::ComplexComparison,
+                (BinaryOperationSymbol::CompoundComparison(_), "<=") => BinExpr::LessEq,
+                (BinaryOperationSymbol::CompoundComparison(_), ">=") => BinExpr::GreaterEq,
+                (BinaryOperationSymbol::CompoundComparison(_), "!=") => BinExpr::NEq,
+                (BinaryOperationSymbol::CompoundComparison(_), "==") => BinExpr::Eq,
+                (BinaryOperationSymbol::Comparison(_), "<") => BinExpr::Less,
+                (BinaryOperationSymbol::Comparison(_), ">") => BinExpr::Greater,
+                (BinaryOperationSymbol::Bit(_), "|") => BinExpr::Or,
+                (BinaryOperationSymbol::Bit(_), "&") => BinExpr::And,
+                (BinaryOperationSymbol::Bit(_), "^") => BinExpr::Xor,
+                (BinaryOperationSymbol::Logic(_), "||") => BinExpr::Disj,
+                (BinaryOperationSymbol::Logic(_), "&&") => BinExpr::Conj,
+                (BinaryOperationSymbol::Assign(_), _) => BinExpr::Assign,
+                _ => unreachable!(),
+            };
+            spawner.spawn_raw(
+                ASTBuilder::new(value)
+                    .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
+                    .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
+                node,
+                |x| Either::Left(Either::Right(Either::Left(x))),
+            )
+        }
+        Operation::Unary { operator, expr } => {
+            let value = match operator {
+                UnaryOperationSymbol::Neg(_) => UnExpr::Neg,
+                UnaryOperationSymbol::Not(_) => UnExpr::Not,
+                UnaryOperationSymbol::Inv(_) => UnExpr::Inv,
+                UnaryOperationSymbol::Plus(_) => UnExpr::Plus,
+            };
+            spawner.spawn_raw(
+                ASTBuilder::new(value).with_dyn_child(expr.as_ref(), source, unwrap_operation),
+                node,
+                |x| Either::Left(Either::Right(Either::Right(x))),
+            )
+        }
+        Operation::Application(x) => {
+            spawner.spawn::<_, App, _>(x, source, |x| Either::Right(Either::Left(x)))
+        }
+        Operation::Expression(x) => {
+            Either::Right(Either::Right(unwrap_expression(x, spawner, source)))
+        }
+    }
+}
+
+pub(crate) fn unwrap_expression<R, T, A>(
+    node: &Expression,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
+where
+    A: Arity,
+    R: HasChild<Lambda, T, Arity = A>,
+    R: HasChild<Ref, T, Arity = A>,
+    R: HasChild<Tuple, T, Arity = A>,
+    R: HasChild<Literal, T, Arity = A>,
+    R: HasChild<IfExpr, T, Arity = A>,
+{
+    match node {
+        Expression::Lambda(x) => {
+            spawner.spawn::<_, Lambda, _>(x, source, |x| Either::Left(Either::Left(x)))
+        }
+        Expression::Term(x) => {
+            spawner.spawn::<_, Ref, _>(x, source, |x| Either::Left(Either::Right(x)))
+        }
+        Expression::Literal(x) => Either::Right(Either::Left(unwrap_literal(x, spawner, source))),
+        Expression::If(x) => {
+            spawner.spawn::<_, IfExpr, _>(x, source, |x| Either::Right(Either::Right(x)))
+        }
+    }
+}
+
+pub(crate) fn unwrap_literal<R, T, A>(
+    node: &rlt::Literal,
+    spawner: &mut NodeSpawner<R, T, A>,
+    source: impl CodeHolder,
+) -> impl BundleUnion
+where
+    A: Arity,
+    R: HasChild<Tuple, T, Arity = A>,
+    R: HasChild<Literal, T, Arity = A>,
+{
+    match node {
+        rlt::Literal::Tuple(x) => spawner.spawn_raw(
+            ASTBuilder::new(Tuple).with_dyn_children(x.inner.as_ref(), |it, spawner| {
+                unwrap_operation(it, spawner, source)
+            }),
+            node,
+            Either::Left,
+        ),
+        _ => {
+            let value = match node {
+                rlt::Literal::Binary(span) => Literal::Binary(source.get_chunk_located(span)),
+                rlt::Literal::Octal(span) => Literal::Octal(source.get_chunk_located(span)),
+                rlt::Literal::Hex(span) => Literal::Hex(source.get_chunk_located(span)),
+                rlt::Literal::Floating(span) => Literal::Floating(source.get_chunk_located(span)),
+                rlt::Literal::Char(span) => Literal::Char(source.get_chunk_located(span)),
+                rlt::Literal::String(span) => Literal::String(source.get_chunk_located(span)),
+                _ => unreachable!(),
+            };
+            spawner.spawn_raw(ASTBuilder::new(value), node, Either::Right)
+        }
+    }
 }
