@@ -6,7 +6,7 @@ macro_rules! make_wrappers {
     ($($name:ident,)*) => {
         $(
         #[repr(transparent)]
-        #[derive(Debug, Clone, PartialEq, From, Into)]
+        #[derive(Debug, Clone, PartialEq, From, Into, Copy)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         pub struct $name(pub kodept_core::code_point::CodePoint);
 
@@ -29,7 +29,7 @@ macro_rules! make_wrappers {
 
 make_wrappers!(Keyword, Symbol, TypeName, Identifier,);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum UnaryOperationSymbol {
     Neg(Symbol),
@@ -38,7 +38,7 @@ pub enum UnaryOperationSymbol {
     Plus(Symbol),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BinaryOperationSymbol {
     /// **

@@ -1,7 +1,7 @@
 use crate::new_types::Keyword;
 use crate::prelude::{Body, Operation};
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -56,5 +56,26 @@ impl Located for CodeFlow {
         match self {
             CodeFlow::If(x) => x.location(),
         }
+    }
+}
+
+impl SpanBounds for IfExpr {
+    fn bounds(&self) -> Span {
+        self.keyword.0
+            + self.body.bounds()
+            + self.elif.last().map(|it| it.bounds())
+            + self.el.as_ref().map(|it| it.bounds())
+    }
+}
+
+impl SpanBounds for ElifExpr {
+    fn bounds(&self) -> Span {
+        self.keyword.0 + self.body.bounds()
+    }
+}
+
+impl SpanBounds for ElseExpr {
+    fn bounds(&self) -> Span {
+        self.keyword.0 + self.body.bounds()
     }
 }

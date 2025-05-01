@@ -1,4 +1,4 @@
-use crate::code_point::CodePoint;
+use crate::code_point::{CodePoint, Span};
 
 pub use span::CodeHolder;
 
@@ -73,3 +73,8 @@ pub mod span {
 pub trait Located {
     fn location(&self) -> CodePoint;
 }
+
+pub trait SpanBounds {
+    fn bounds(&self) -> Span;
+}
+

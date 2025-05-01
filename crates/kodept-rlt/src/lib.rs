@@ -15,6 +15,10 @@ pub mod prelude {
     pub use super::types::*;
 }
 
+pub mod exported {
+    pub use kodept_core::structure::{Located, SpanBounds};
+}
+
 mod block_level;
 mod code_flow;
 mod context;

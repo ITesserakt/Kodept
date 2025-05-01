@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::ops::{Add, Range};
 
 use crate::static_assert_size;
 use crate::structure::Located;
@@ -12,7 +12,16 @@ pub struct CodePoint {
     pub offset: u32,
 }
 
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Default, Display)]
+#[display("{start}..{end}", start = offset, end = offset + length)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Span {
+    pub length: u32,
+    pub offset: u32
+}
+
 static_assert_size!(CodePoint, 8);
+static_assert_size!(Span, 8);
 
 impl CodePoint {
     #[must_use]
@@ -27,8 +36,106 @@ impl CodePoint {
     }
 }
 
+impl Span {
+    #[inline]
+    pub const fn with(self, other: Self) -> Self {
+        let [min, max] = if other.offset < self.offset {
+            [other, self]
+        } else {
+            [self, other]
+        };
+
+        Self {
+            offset: min.offset,
+            length: max.offset + max.length - min.offset,
+        }
+    }
+
+    pub const fn with_opt(self, other: Option<Self>) -> Self {
+        match other {
+            None => self,
+            Some(other) => self.with(other),
+        }
+    }
+}
+
 impl Located for CodePoint {
     fn location(&self) -> CodePoint {
         *self
+    }
+}
+
+impl Add for Span {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        self.with(rhs)
+    }
+}
+
+impl Add<Option<Self>> for Span {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Option<Self>) -> Self::Output {
+        self.with_opt(rhs)
+    }
+}
+
+impl Add for CodePoint {
+    type Output = Span;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Span::from(self) + Span::from(rhs)
+    }
+}
+
+impl Add<Span> for CodePoint {
+    type Output = Span;
+
+    fn add(self, rhs: Span) -> Self::Output {
+        Span::from(self) + rhs
+    }
+}
+
+impl Add<CodePoint> for Span {
+    type Output = Self;
+
+    fn add(self, rhs: CodePoint) -> Self::Output {
+        self + Span::from(rhs)
+    }
+}
+
+impl Add<Option<Self>> for CodePoint {
+    type Output = Span;
+
+    fn add(self, rhs: Option<Self>) -> Self::Output {
+        Span::from(self) + rhs.map(Span::from)
+    }
+}
+
+impl Add<Option<CodePoint>> for Span {
+    type Output = Span;
+
+    fn add(self, rhs: Option<CodePoint>) -> Self::Output {
+        self + rhs.map(Span::from)
+    }
+}
+
+impl Add<Option<Span>> for CodePoint {
+    type Output = Span;
+
+    fn add(self, rhs: Option<Span>) -> Self::Output {
+        Span::from(self) + rhs
+    }
+}
+
+impl From<CodePoint> for Span {
+    fn from(value: CodePoint) -> Self {
+        Self {
+            length: value.length,
+            offset: value.offset,
+        }
     }
 }

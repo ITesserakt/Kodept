@@ -1,8 +1,8 @@
 use crate::new_types::{Identifier, Keyword, Symbol};
 use crate::prelude::{BodiedFunction, ExpressionBlock, Operation, Type};
 use derive_more::From;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -77,6 +77,49 @@ impl Located for BlockLevelNode {
             BlockLevelNode::Block(x) => x.location(),
             BlockLevelNode::Function(x) => x.location(),
             BlockLevelNode::Operation(x) => x.location(),
+        }
+    }
+}
+
+impl SpanBounds for Body {
+    fn bounds(&self) -> Span {
+        match self {
+            Body::Block(x) => x.bounds(),
+            Body::Simplified { flow, expression } => flow.0 + expression.bounds(),
+        }
+    }
+}
+
+impl SpanBounds for BlockLevelNode {
+    fn bounds(&self) -> Span {
+        match self {
+            BlockLevelNode::InitVar(x) => x.bounds(),
+            BlockLevelNode::Block(x) => x.bounds(),
+            BlockLevelNode::Function(x) => x.bounds(),
+            BlockLevelNode::Operation(x) => x.bounds(),
+        }
+    }
+}
+
+impl SpanBounds for InitializedVariable {
+    fn bounds(&self) -> Span {
+        self.variable.bounds() + self.expression.bounds()
+    }
+}
+
+impl SpanBounds for Variable {
+    fn bounds(&self) -> Span {
+        match self {
+            Variable::Immutable {
+                keyword,
+                assigned_type,
+                ..
+            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()),
+            Variable::Mutable {
+                keyword,
+                assigned_type,
+                ..
+            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()),
         }
     }
 }

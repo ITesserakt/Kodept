@@ -1,8 +1,8 @@
 use crate::new_types::{Identifier, TypeName};
 use crate::prelude::Context;
 use derive_more::From;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -54,6 +54,15 @@ impl Located for Reference {
         match self {
             Reference::Type(x) => x.location(),
             Reference::Identifier(x) => x.location(),
+        }
+    }
+}
+
+impl SpanBounds for Term {
+    fn bounds(&self) -> Span {
+        match self {
+            Term::Reference(x) => x.location().into(),
+            Term::Contextual(x) => x.location().into()
         }
     }
 }

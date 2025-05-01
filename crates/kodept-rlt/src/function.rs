@@ -1,8 +1,8 @@
 use crate::new_types::{Enclosed, Identifier, Keyword, Symbol};
 use crate::prelude::{Body, Parameter, Type, TypedParameter};
 use derive_more::From;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -31,6 +31,12 @@ pub enum Function {
 impl Located for BodiedFunction {
     fn location(&self) -> CodePoint {
         self.keyword.location()
+    }
+}
+
+impl SpanBounds for BodiedFunction {
+    fn bounds(&self) -> Span {
+        self.keyword.0 + self.body.bounds()
     }
 }
 

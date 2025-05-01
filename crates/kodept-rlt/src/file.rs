@@ -1,8 +1,8 @@
 use crate::new_types::{Keyword, Symbol, TypeName};
 use crate::prelude::TopLevelNode;
 use derive_more::Constructor;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -48,5 +48,20 @@ impl Located for Module {
 impl Located for File {
     fn location(&self) -> CodePoint {
         CodePoint::new(0, 0)
+    }
+}
+
+impl SpanBounds for File {
+    fn bounds(&self) -> Span {
+        CodePoint::single_point(0) + self.0.first().map(|it| it.bounds()) + self.0.last().map(|it| it.bounds())
+    }
+}
+
+impl SpanBounds for Module {
+    fn bounds(&self) -> Span {
+        match self {
+            Module::Global { keyword, id, flow, rest } => keyword.0 + rest.last().map(|it| it.bounds()),
+            Module::Ordinary { keyword, id, lbrace, rest, rbrace } => keyword.0 + rbrace.0
+        }
     }
 }

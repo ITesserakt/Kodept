@@ -1,8 +1,8 @@
 use crate::new_types::{Enclosed, Keyword, TypeName};
 use crate::prelude::{BodiedFunction, TypedParameter};
 use derive_more::From;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -67,5 +67,34 @@ impl Enum {
             Enum::Stack { id, .. } => id,
             Enum::Heap { id, .. } => id,
         }
+    }
+}
+
+impl SpanBounds for TopLevelNode {
+    fn bounds(&self) -> Span {
+        match self {
+            TopLevelNode::Enum(x) => x.bounds(),
+            TopLevelNode::Struct(x) => x.bounds(),
+            TopLevelNode::BodiedFunction(x) => x.bounds(),
+        }
+    }
+}
+
+impl SpanBounds for Enum {
+    fn bounds(&self) -> Span {
+        match self {
+            Enum::Stack {
+                keyword, contents, ..
+            } => keyword.0 + contents.as_ref().map(|it| it.right.0),
+            Enum::Heap {
+                keyword, contents, ..
+            } => keyword.0 + contents.as_ref().map(|it| it.right.0),
+        }
+    }
+}
+
+impl SpanBounds for Struct {
+    fn bounds(&self) -> Span {
+        self.keyword.0 + self.body.as_ref().map(|it| it.right.0)
     }
 }

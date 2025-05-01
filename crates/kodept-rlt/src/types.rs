@@ -1,7 +1,7 @@
 use crate::new_types::{Enclosed, Identifier, TypeName};
 use derive_more::From;
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -67,5 +67,26 @@ impl Located for Parameter {
 impl Located for Tuple {
     fn location(&self) -> CodePoint {
         self.0.left.location()
+    }
+}
+
+impl SpanBounds for Type {
+    fn bounds(&self) -> Span {
+        match self {
+            Type::Reference(x) => x.0.into(),
+            Type::Tuple(x) => x.0.left.0 + x.0.right.0
+        }
+    }
+}
+
+impl SpanBounds for TypedParameter {
+    fn bounds(&self) -> Span {
+        self.id.0 + self.parameter_type.bounds()
+    }
+}
+
+impl SpanBounds for UntypedParameter {
+    fn bounds(&self) -> Span {
+        self.id.0.into()
     }
 }
