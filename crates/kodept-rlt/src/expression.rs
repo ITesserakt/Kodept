@@ -103,7 +103,7 @@ impl Located for ExpressionBlock {
 
 impl SpanBounds for ExpressionBlock {
     fn bounds(&self) -> Span {
-        dbg!(self.lbrace.0) + dbg!(self.rbrace.0)
+        self.lbrace.0 + self.rbrace.0
     }
 }
 

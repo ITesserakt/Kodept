@@ -35,7 +35,7 @@ pub enum ArityValue {
 #[derive(Debug)]
 pub struct ContainedBy<T, A>(Entity, PhantomData<(T, A)>);
 
-/// Describes all entities that is children for this entity
+/// Describes all entities that are children for this entity
 ///
 /// Type parameters:
 /// * [T] - Associated with this relationship tag
