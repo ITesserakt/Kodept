@@ -376,7 +376,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
             rlt::ExpressionBlock {
                 lbrace: Symbol::from_located(lb),
                 expression: i.into_boxed_slice(),
-                rbrace: Symbol::from_located(lb)
+                rbrace: Symbol::from_located(rb)
             }
         }
 
