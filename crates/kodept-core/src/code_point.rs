@@ -17,7 +17,7 @@ pub struct CodePoint {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Span {
     pub length: u32,
-    pub offset: u32
+    pub offset: u32,
 }
 
 static_assert_size!(CodePoint, 8);
@@ -56,6 +56,10 @@ impl Span {
             None => self,
             Some(other) => self.with(other),
         }
+    }
+
+    pub const fn as_range(self) -> Range<usize> {
+        self.offset as usize..(self.offset + self.length) as usize
     }
 }
 

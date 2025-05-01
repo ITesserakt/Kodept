@@ -1214,7 +1214,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-report"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "codespan-reporting",
  "derive_more 2.0.1",

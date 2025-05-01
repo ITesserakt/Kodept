@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 use std::error::Error;
 use crate::Str;
-use kodept_core::code_point::CodePoint;
+use kodept_core::code_point::{CodePoint, Span};
 use crate::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Label {
-    pub(crate) point: CodePoint,
+    pub(crate) point: Span,
     pub(crate) primary: bool,
     pub(crate) message: Str,
 }
@@ -41,7 +41,7 @@ pub struct ReportMessage {
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SpannedError<E> {
-    point: CodePoint,
+    point: Span,
     severity: Severity,
     notes: Vec<Str>,
     inner: E,
@@ -61,17 +61,17 @@ impl Severity {
 }
 
 impl Label {
-    pub fn primary(message: impl Into<Str>, at: CodePoint) -> Self {
+    pub fn primary(message: impl Into<Str>, at: impl Into<Span>) -> Self {
         Self {
-            point: at,
+            point: at.into(),
             primary: true,
             message: message.into(),
         }
     }
 
-    pub fn secondary(message: impl Into<Str>, at: CodePoint) -> Self {
+    pub fn secondary(message: impl Into<Str>, at: impl Into<Span>) -> Self {
         Self {
-            point: at,
+            point: at.into(),
             primary: false,
             message: message.into(),
         }
@@ -122,9 +122,9 @@ impl ReportMessage {
 }
 
 impl<E: Error> SpannedError<E> {
-    pub fn new(inner: E, at: CodePoint) -> Self {
+    pub fn new(inner: E, at: impl Into<Span>) -> Self {
         Self {
-            point: at,
+            point: at.into(),
             severity: Severity::Error,
             notes: Default::default(),
             inner,
