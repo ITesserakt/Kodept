@@ -5,8 +5,10 @@ use crate::term::Ref;
 use crate::utils::{unwrap_body, unwrap_operation};
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, relation};
+use kodept_ast::properties::SourceSpan;
+use kodept_rlt::exported::SpanBounds;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct IfExpr;
@@ -52,6 +54,7 @@ impl FromSyntax<kodept_rlt::prelude::IfExpr> for IfExpr {
 
     fn from_syntax(node: &kodept_rlt::prelude::IfExpr, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(IfExpr)
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(&node.condition, source, unwrap_operation)
             .with_children::<_, ElifExpr, _>(node.elif.as_ref(), source)
             .with_opt_child::<_, ElseExpr, _>(node.el.as_ref(), source)
@@ -65,6 +68,7 @@ impl FromSyntax<kodept_rlt::prelude::ElifExpr> for ElifExpr {
 
     fn from_syntax(node: &kodept_rlt::prelude::ElifExpr, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(ElifExpr)
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(&node.condition, source, unwrap_operation)
             .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)
             .build()
@@ -76,6 +80,7 @@ impl FromSyntax<kodept_rlt::prelude::ElseExpr> for ElseExpr {
 
     fn from_syntax(node: &kodept_rlt::prelude::ElseExpr, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(ElseExpr)
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(&node.body, source, unwrap_body)
             .build()
     }

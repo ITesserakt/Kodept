@@ -9,9 +9,11 @@ use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
 use crate::Either;
 use kodept_ast::arity::Arity;
 use kodept_ast::prelude::CodeHolder;
+use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::{ASTBuilder, BundleUnion, NodeSpawner};
+use kodept_ast::syntax_tree::prelude::{ASTBuilder, BundleUnion, NodeSpawner};
 use kodept_ast::Str;
+use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::{BlockLevelNode, Body, Expression, Operation, Parameter, Type};
@@ -45,7 +47,9 @@ where
     match node {
         Body::Block(x) => spawner.spawn::<_, Exprs, _>(x, source, Either::Left),
         Body::Simplified { expression, .. } => spawner.spawn_raw(
-            ASTBuilder::new(Exprs).with_dyn_child(expression, source, unwrap_block_level),
+            ASTBuilder::new(Exprs)
+                .with_property(SourceSpan(expression.bounds()))
+                .with_dyn_child(expression, source, unwrap_block_level),
             expression,
             Either::Right,
         ),
@@ -126,6 +130,7 @@ where
         }
         Operation::Access { left, right, .. } => spawner.spawn_raw(
             ASTBuilder::new(BinExpr::Access)
+                .with_property(SourceSpan(left.bounds() + right.bounds()))
                 .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
                 .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
             node,
@@ -161,6 +166,7 @@ where
             };
             spawner.spawn_raw(
                 ASTBuilder::new(value)
+                    .with_property(SourceSpan(left.bounds() + right.bounds()))
                     .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
                     .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
                 node,
@@ -175,7 +181,9 @@ where
                 UnaryOperationSymbol::Plus(_) => UnExpr::Plus,
             };
             spawner.spawn_raw(
-                ASTBuilder::new(value).with_dyn_child(expr.as_ref(), source, unwrap_operation),
+                ASTBuilder::new(value)
+                    .with_property(SourceSpan(operator.location() + expr.bounds()))
+                    .with_dyn_child(expr.as_ref(), source, unwrap_operation),
                 node,
                 |x| Either::Left(Either::Right(Either::Right(x))),
             )
@@ -228,9 +236,11 @@ where
 {
     match node {
         rlt::Literal::Tuple(x) => spawner.spawn_raw(
-            ASTBuilder::new(Tuple).with_dyn_children(x.inner.as_ref(), |it, spawner| {
-                unwrap_operation(it, spawner, source)
-            }),
+            ASTBuilder::new(Tuple)
+                .with_property(SourceSpan(x.left.0 + x.right.0))
+                .with_dyn_children(x.inner.as_ref(), |it, spawner| {
+                    unwrap_operation(it, spawner, source)
+                }),
             node,
             Either::Left,
         ),
@@ -244,7 +254,11 @@ where
                 rlt::Literal::String(span) => Literal::String(source.get_chunk_located(span)),
                 _ => unreachable!(),
             };
-            spawner.spawn_raw(ASTBuilder::new(value), node, Either::Right)
+            spawner.spawn_raw(
+                ASTBuilder::new(value).with_property(SourceSpan(node.bounds())),
+                node,
+                Either::Right,
+            )
         }
     }
 }

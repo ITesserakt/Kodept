@@ -1,10 +1,10 @@
 use super::children::HasChild;
 use crate::arity::Arity;
-use crate::properties::HasProperty;
+use crate::properties::{HasProperty, Lexeme, SourceSpan};
 use crate::properties::Node;
 use crate::properties::NodeProperty;
 use crate::relationship::{ContainedBy, Contains, NodeRelationship};
-use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
+use crate::resource::rlt::{LexemeId, SyntaxResolver, SyntaxVariant};
 use crate::traits::ASTNode;
 use crate::traits::CodeHolder;
 use crate::traits::FromSyntax;
@@ -40,6 +40,7 @@ type ChildrenSpawn<N, R, C, T, const CAP: usize = SMALLVEC_CAPACITY> = SpawnRela
 >;
 type DynChildrenSpawn<T, A> =
     SpawnRelatedBundle<ContainedBy<T, A>, SpawnWith<DynSpawnFn<ContainedBy<T, A>>>>;
+type DefaultBundle<R, P, C> = (R, Node, Lexeme, P, C);
 
 pub trait BundleUnion: Send + Sync + 'static {
     fn spawn_with<R: Relationship>(self, spawner: &mut RelatedSpawner<R>);
@@ -75,18 +76,18 @@ impl<R, Tag, A> NodeSpawner<R, Tag, A>
 where
     A: Arity,
 {
-    #[allow(unsafe_code)]
+    #[allow(unsafe_code, private_bounds)]
     #[inline(always)]
     pub fn spawn_raw<'s, U, P, C, V>(
         &mut self,
         builder: ASTBuilder<U, P, C>,
         rlt_link: impl Into<SyntaxVariant<'s>>,
-        wrap: impl FnOnce(NodeBundle<(U, Node, P, C)>) -> V,
+        wrap: impl FnOnce(NodeBundle<DefaultBundle<U, P, C>>) -> V,
     ) -> V
     where
         R: HasChild<U, Tag, Arity = A>,
         U: ASTNode,
-        P: Bundle,
+        P: Bundle + ContainsProperty<SourceSpan>,
         C: Bundle,
         V: BundleUnion,
     {
@@ -301,6 +302,29 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         }
     }
 
+    pub fn with_opt_dyn_child<T, Tag, A, U, S>(
+        self,
+        node: Option<T>,
+        source: S,
+        conversion: impl FnOnce(T, &mut NodeSpawner<R, Tag, A>, S) -> U,
+    ) -> ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>
+    where
+        A: Arity,
+        U: BundleUnion,
+        Tag: Send + Sync + 'static,
+    {
+        let child = node.map(|it| conversion(it, &mut Self::spawner(), source));
+        let closure: DynSpawnFn<ContainedBy<Tag, A>> = Box::new(|spawner| {
+             child.map(|it| it.spawn_with(spawner));
+        });
+        let bundle = Contains::<Tag, A>::spawn(SpawnWith(closure));
+        ASTBuilder {
+            root: self.root,
+            properties: self.properties,
+            children: (self.children, bundle),
+        }
+    }
+
     pub fn with_opt_dyn_children<'a, I, Tag, A, U>(
         self,
         iter: Option<I>,
@@ -401,12 +425,10 @@ impl<E: BundleEffect> BundleEffect for NodeLinkEffect<E> {
     #[allow(unsafe_code)]
     fn apply(self, entity: &mut EntityWorldMut) {
         self.other_effect.apply(entity);
-        let id = entity.id();
-        let rlt = entity.resource_mut::<SyntaxResolver>();
+        let mut rlt = entity.resource_mut::<SyntaxResolver>();
         // SAFETY: link_ptr always belongs to the tree
-        unsafe {
-            rlt.insert(id, self.link_ptr);
-        }
+        let lexeme = unsafe { rlt.link(self.link_ptr) };
+        entity.insert(Lexeme(lexeme));
     }
 }
 
@@ -429,14 +451,17 @@ impl<T: DynamicBundle> DynamicBundle for NodeBundle<T> {
 //   `StorageType` into the callback.
 #[allow(unsafe_code)]
 unsafe impl<T: Bundle> Bundle for NodeBundle<T> {
+    #[inline]
     fn component_ids(components: &mut ComponentsRegistrator, ids: &mut impl FnMut(ComponentId)) {
         T::component_ids(components, ids);
     }
 
+    #[inline]
     fn get_component_ids(components: &Components, ids: &mut impl FnMut(Option<ComponentId>)) {
         T::get_component_ids(components, ids);
     }
 
+    #[inline]
     fn register_required_components(
         _components: &mut ComponentsRegistrator,
         _required_components: &mut RequiredComponents,
@@ -445,19 +470,27 @@ unsafe impl<T: Bundle> Bundle for NodeBundle<T> {
     }
 }
 
+trait ContainsProperty<P: NodeProperty> {}
+
+impl<P: NodeProperty> ContainsProperty<P> for P {}
+impl<P: NodeProperty> ContainsProperty<P> for (P,) {} 
+impl<B, C: ContainsProperty<P>, P: NodeProperty> ContainsProperty<P> for (B, C) {} 
+
+#[allow(private_bounds)]
 impl<R, P, C> ASTBuilder<R, P, C>
 where
     R: ASTNode,
-    P: Bundle,
+    P: Bundle + ContainsProperty<SourceSpan>,
     C: Bundle,
 {
     #[allow(unsafe_code)]
-    pub fn build(self) -> (R, Node, P, C) {
+    pub fn build(self) -> DefaultBundle<R, P, C> {
         (
             self.root,
             Node {
                 kind: std::any::type_name::<R>(),
             },
+            Lexeme(LexemeId::PLACEHOLDER),
             self.properties,
             self.children,
         )

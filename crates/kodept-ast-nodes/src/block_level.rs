@@ -7,9 +7,10 @@ use crate::utils::{unwrap_operation, unwrap_type};
 use bevy_ecs::bundle::Bundle;
 use bevy_ecs::prelude::Component;
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::properties::Name;
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::properties::{Name, SourceSpan};
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, relation};
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude::{InitializedVariable, Variable};
 
 #[derive(Debug, PartialEq, Component)]
@@ -54,6 +55,7 @@ impl FromSyntax<Variable> for VarDecl {
         let name = source.get_chunk_located(id);
         ASTBuilder::new(kind)
             .with_property(Name(name))
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(ty.as_ref().map(|it| &it.1), |it, spawner| {
                 unwrap_type(it, spawner, source)
             })
@@ -66,6 +68,7 @@ impl FromSyntax<InitializedVariable> for InitVar {
 
     fn from_syntax(node: &InitializedVariable, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(InitVar)
+            .with_property(SourceSpan(node.bounds()))
             .with_child::<_, VarDecl, _>(&node.variable, source)
             .with_dyn_child(&node.expression, source, unwrap_operation)
             .build()

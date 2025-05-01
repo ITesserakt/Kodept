@@ -6,9 +6,10 @@ use bevy_ecs::{bundle::Bundle, component::Component};
 use kodept_ast::derive_node;
 use kodept_ast::prelude::CodeHolder;
 use kodept_ast::prelude::FromSyntax;
-use kodept_ast::properties::Name;
+use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::relation;
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::TopLevelNode;
 
@@ -34,6 +35,7 @@ impl FromSyntax<rlt::File> for FileDecl {
 
     fn from_syntax(node: &rlt::File, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(FileDecl)
+            .with_property(SourceSpan(node.bounds()))
             .with_children(node.0.as_ref(), source)
             .build()
     }
@@ -53,19 +55,26 @@ impl FromSyntax<rlt::Module> for ModDecl {
         };
         ASTBuilder::new(value)
             .with_property(Name(name))
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(rest.as_ref(), |it, spawner| match it {
                 TopLevelNode::Enum(x) => spawner.spawn_raw(
-                    ASTBuilder::new(Const).with_child::<_, EnumDecl, _>(x, source),
+                    ASTBuilder::new(Const)
+                        .with_child::<_, EnumDecl, _>(x, source)
+                        .with_property(SourceSpan(x.bounds())),
                     x,
                     Either::Left,
                 ),
                 TopLevelNode::Struct(x) => spawner.spawn_raw(
-                    ASTBuilder::new(Const).with_child::<_, StructDecl, _>(x, source),
+                    ASTBuilder::new(Const)
+                        .with_child::<_, StructDecl, _>(x, source)
+                        .with_property(SourceSpan(x.bounds())),
                     x,
                     |x| Either::Right(Either::Left(x)),
                 ),
                 TopLevelNode::BodiedFunction(x) => spawner.spawn_raw(
-                    ASTBuilder::new(Const).with_child::<_, Func, _>(x, source),
+                    ASTBuilder::new(Const)
+                        .with_child::<_, Func, _>(x, source)
+                        .with_property(SourceSpan(x.bounds())),
                     x,
                     |x| Either::Right(Either::Right(x)),
                 ),

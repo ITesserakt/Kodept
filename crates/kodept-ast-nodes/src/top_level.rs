@@ -2,9 +2,10 @@ use crate::function::Func;
 use crate::types::TyParams;
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::properties::Name;
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::properties::{Name, SourceSpan};
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, relation};
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types::TypeName;
 use kodept_rlt::prelude::{Enum, Struct};
 use std::convert::identity;
@@ -29,7 +30,7 @@ relation!(EnumDecl => children EnumConst);
 derive_node!(StructDecl {
     properties = [require Name,]
 });
-relation!(StructDecl => child TyParams);
+relation!(StructDecl => optional TyParams);
 relation!(StructDecl => children Func);
 
 derive_node!(EnumConst {
@@ -47,6 +48,7 @@ impl FromSyntax<Enum> for EnumDecl {
         let name = source.get_chunk_located(id);
         ASTBuilder::new(kind)
             .with_property(Name(name))
+            .with_property(SourceSpan(node.bounds()))
             .with_opt_children(rest.as_ref().map(|it| it.inner.as_ref()), source)
             .build()
     }
@@ -59,14 +61,20 @@ impl FromSyntax<Struct> for StructDecl {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(StructDecl)
             .with_property(Name(name))
-            .with_dyn_child(&node.parameters, source, move |it, spawner, source| {
-                spawner.spawn_raw(
-                    ASTBuilder::new(TyParams)
-                        .with_opt_children(it.as_ref().map(|it| it.inner.as_ref()), source),
-                    node,
-                    identity,
-                )
-            })
+            .with_property(SourceSpan(node.bounds()))
+            .with_opt_dyn_child(
+                node.parameters.as_ref(),
+                source,
+                move |it, spawner, source| {
+                    spawner.spawn_raw(
+                        ASTBuilder::new(TyParams)
+                            .with_property(SourceSpan(it.left.0 + it.right.0))
+                            .with_children(it.inner.as_ref(), source),
+                        node,
+                        identity,
+                    )
+                },
+            )
             .with_opt_children::<_, Func, _>(node.body.as_ref().map(|it| it.inner.as_ref()), source)
             .build()
     }
@@ -77,6 +85,9 @@ impl FromSyntax<TypeName> for EnumConst {
 
     fn from_syntax(node: &TypeName, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(EnumConst).with_property(Name(name)).build()
+        ASTBuilder::new(EnumConst)
+            .with_property(Name(name))
+            .with_property(SourceSpan(node.0.into()))
+            .build()
     }
 }

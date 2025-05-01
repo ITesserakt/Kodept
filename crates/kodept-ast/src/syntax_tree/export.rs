@@ -16,6 +16,7 @@ impl super::storage::AST {
 fn label<W: Write>(buffer: &mut W, node: AnyNodeRefItem) -> std::io::Result<()> {
     writeln!(buffer, "object \"{}\" {{", node.id().to_bits())?;
     writeln!(buffer, "\tkind = {}", node.kind())?;
+    writeln!(buffer, "\tspan = {}", node.span())?;
     writeln!(buffer, "\tindex = {}", node.id().index())?;
     writeln!(buffer, "\tgeneration = {}", node.id().generation())?;
     if let Some(name) = node.property::<Name>() {

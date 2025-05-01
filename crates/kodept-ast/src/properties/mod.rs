@@ -1,8 +1,10 @@
-use crate::prelude::ASTNode;
 use crate::Str;
 use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use std::ops::{Deref, DerefMut};
+use kodept_core::code_point::{CodePoint, Span};
+use crate::prelude::ASTNode;
+use crate::resource::rlt::LexemeId;
 
 pub trait NodeProperty: Component {}
 
@@ -13,11 +15,20 @@ pub struct Node {
 
 #[derive(Debug, Component)]
 #[component(storage = "SparseSet")]
+#[component(immutable)]
 pub struct Root;
 
 #[derive(Debug, Component, Clone, From, Into, Display)]
 #[component(storage = "SparseSet")]
 pub struct Name(pub Str);
+
+#[derive(Debug, Component, Copy, Clone, From, Into, Display)]
+#[component(immutable)]
+pub struct Lexeme(pub LexemeId);
+
+#[derive(Debug, Component, Copy, Clone, From, Into, Display)]
+#[component(immutable)]
+pub struct SourceSpan(pub Span);
 
 pub trait HasProperty<Property: NodeProperty>: Sized {
 }
@@ -38,11 +49,15 @@ impl DerefMut for Name {
     }
 }
 
+impl NodeProperty for Node {}
+impl NodeProperty for Root {}
+impl NodeProperty for Name {}
+impl NodeProperty for Lexeme {}
+impl NodeProperty for SourceSpan {}
+
+impl<T: ASTNode> RequireProperty<Node> for T {}
+impl<T: ASTNode> RequireProperty<Lexeme> for T {}
+impl<T: ASTNode> RequireProperty<SourceSpan> for T {}
+
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {
 }
-
-impl NodeProperty for Node {}
-impl<T: ASTNode> RequireProperty<Node> for T {}
-impl NodeProperty for Root {}
-
-impl NodeProperty for Name {}

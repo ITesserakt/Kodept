@@ -1,7 +1,9 @@
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::properties::SourceSpan;
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, Str};
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude::{ContextualReference, Reference, Term};
 use std::borrow::Cow;
 
@@ -93,6 +95,8 @@ impl FromSyntax<Term> for Ref {
             }
         };
 
-        ASTBuilder::new(Ref { context, ident }).build()
+        ASTBuilder::new(Ref { context, ident })
+            .with_property(SourceSpan(node.bounds()))
+            .build()
     }
 }

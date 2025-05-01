@@ -1,15 +1,14 @@
-use bevy_ecs::entity::EntityHash;
 use bevy_ecs::prelude::{Entity, Resource};
-use dashmap::DashMap;
-use derive_more::{From, TryInto};
+use derive_more::{Display, From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_core::Freeze;
 use kodept_rlt::prelude::RLT;
 use kodept_rlt::{new_types, prelude as rlt};
+use std::collections::HashMap;
 use std::marker::PhantomPinned;
 use std::pin::Pin;
-use crate::node_id::Erase;
+use crate::prelude::Erase;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -42,6 +41,9 @@ pub enum SyntaxVariant<'r> {
     Lambda(&'r rlt::Lambda),
 }
 
+#[derive(Debug, Display, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct LexemeId(u32);
+
 #[derive(Debug)]
 struct PinnedRLT {
     inner: Freeze<RLT>,
@@ -51,12 +53,17 @@ struct PinnedRLT {
 #[derive(Debug, Resource)]
 pub struct SyntaxResolver {
     tree: Pin<Box<PinnedRLT>>,
-    mapping: DashMap<Entity, SyntaxVariant<'static>, EntityHash>,
+    generator: u32,
+    mapping: HashMap<LexemeId, SyntaxVariant<'static>>,
 }
 
 pub enum LookupError {
     NotFound,
     WrongType,
+}
+
+impl LexemeId {
+    pub(crate) const PLACEHOLDER: LexemeId = LexemeId(u32::MAX);
 }
 
 impl SyntaxResolver {
@@ -66,6 +73,7 @@ impl SyntaxResolver {
                 inner: Freeze::new(tree),
                 _phantom: Default::default(),
             }),
+            generator: 0,
             mapping: Default::default(),
         }
     }
@@ -74,43 +82,49 @@ impl SyntaxResolver {
         &self.tree.inner.0
     }
 
-    /// SAFETY: [`node`] parameter must belong to inner tree.
+    /// SAFETY: [`node`] parameter must belong to the inner tree.
     #[allow(unsafe_code)]
-    pub(crate) unsafe fn insert<'r, U>(&self, id: impl Erase<Entity>, node: U)
-    where
-        U: Into<SyntaxVariant<'r>>,
+    pub(crate) unsafe fn link(&mut self, node: SyntaxVariant<'static>) -> LexemeId
     {
-        let variant = node.into();
-        // SAFETY: lifetimes of node and self are equal and produced reference won't be used in 'static contexts
-        let reborrow =
-            unsafe { std::mem::transmute::<SyntaxVariant<'r>, SyntaxVariant<'static>>(variant) };
-        self.mapping.insert(id.erase(), reborrow);
+        let id = LexemeId(self.generator);
+        self.generator += 1;
+        self.mapping.insert(id, node);
+        id
     }
 
     pub fn get_unknown(&self, id: impl Erase) -> SyntaxVariant {
-        self.try_get_unknown(id)
+        todo!();
+        self.try_get_unknown(Entity::PLACEHOLDER)
             .expect("Cannot get linked RLT node")
     }
-
+    
     pub fn get_location(&self, id: impl Erase) -> CodePoint {
-        let id = id.erase().into();
-        self.mapping
-            .get(&id)
-            .expect("Cannot get linked RLT node")
-            .location()
+        todo!();
+        if let Some(node) = self.mapping.get(todo!()) {
+            node.location()
+        } else if false {
+            self.root().location()
+        } else {
+            panic!("Cannot get linked RLT node")
+        }
     }
 
     pub fn try_get_unknown(&self, id: impl Erase) -> Option<SyntaxVariant> {
-        let id = id.erase().into();
-        let reference = self.mapping.get(&id)?;
-        Some(*reference.value())
+        if let Some(node) = self.mapping.get(todo!()) {
+            Some(*node)
+        } else if false {
+            Some(self.root().into())
+        } else {
+            None
+        }
     }
 
     pub fn try_get<'r, U>(&'r self, id: impl Erase) -> Result<&'r U, LookupError>
     where
         &'r U: TryFrom<SyntaxVariant<'r>>,
     {
-        let variant = self.try_get_unknown(id).ok_or(LookupError::NotFound)?;
+        todo!();
+        let variant = self.try_get_unknown(Entity::PLACEHOLDER).ok_or(LookupError::NotFound)?;
         variant.try_into().map_err(|_| LookupError::WrongType)
     }
 }

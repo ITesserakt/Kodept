@@ -9,8 +9,10 @@ use crate::types::{NonTyParam, TyParam};
 use crate::utils::{unwrap_block_level, unwrap_operation, unwrap_parameter};
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::properties::SourceSpan;
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, relation};
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude::{Application, ExpressionBlock};
 use std::convert::identity;
 
@@ -130,6 +132,7 @@ impl FromSyntax<ExpressionBlock> for Exprs {
 
     fn from_syntax(node: &ExpressionBlock, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(Exprs)
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(node.expression.as_ref(), |it, spawner| {
                 unwrap_block_level(it, spawner, source)
             })
@@ -142,6 +145,7 @@ impl FromSyntax<Application> for App {
 
     fn from_syntax(node: &Application, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(App)
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(&node.expr, source, unwrap_operation::<_, Lhs, _>)
             .with_opt_dyn_children(
                 node.params.as_ref().map(|it| it.inner.as_ref()),
@@ -156,9 +160,12 @@ impl FromSyntax<kodept_rlt::prelude::Lambda> for Lambda {
 
     fn from_syntax(node: &kodept_rlt::prelude::Lambda, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(Lambda)
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(node.expr.as_ref(), source, |it, spawner, source| {
                 spawner.spawn_raw(
-                    ASTBuilder::new(Exprs).with_dyn_child(it, source, unwrap_operation),
+                    ASTBuilder::new(Exprs)
+                        .with_property(SourceSpan(it.bounds()))
+                        .with_dyn_child(it, source, unwrap_operation),
                     it,
                     identity,
                 )

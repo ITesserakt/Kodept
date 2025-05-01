@@ -1,9 +1,10 @@
 use crate::utils::unwrap_type;
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
-use kodept_ast::properties::Name;
-use kodept_ast::syntax_tree::experimental::ASTBuilder;
+use kodept_ast::properties::{Name, SourceSpan};
+use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_ast::{derive_node, relation};
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types;
 use kodept_rlt::prelude::{Tuple, TypedParameter, UntypedParameter};
 
@@ -54,7 +55,10 @@ impl FromSyntax<new_types::TypeName> for Ty {
 
     fn from_syntax(node: &new_types::TypeName, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(Ty).with_property(Name(name)).build()
+        ASTBuilder::new(Ty)
+            .with_property(Name(name))
+            .with_property(SourceSpan(node.0.into()))
+            .build()
     }
 }
 
@@ -65,6 +69,7 @@ impl FromSyntax<UntypedParameter> for NonTyParam {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(NonTyParam)
             .with_property(Name(name))
+            .with_property(SourceSpan(node.bounds()))
             .build()
     }
 }
@@ -76,6 +81,7 @@ impl FromSyntax<TypedParameter> for TyParam {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(TyParam)
             .with_property(Name(name))
+            .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(&node.parameter_type, source, unwrap_type)
             .build()
     }
@@ -86,6 +92,7 @@ impl FromSyntax<Tuple> for ProdTy {
 
     fn from_syntax(node: &Tuple, source: impl CodeHolder) -> Self::Bundle {
         ASTBuilder::new(ProdTy)
+            .with_property(SourceSpan(node.0.left.0 + node.0.right.0))
             .with_dyn_children(node.0.inner.as_ref(), |it, spawner| {
                 unwrap_type(it, spawner, source)
             })
