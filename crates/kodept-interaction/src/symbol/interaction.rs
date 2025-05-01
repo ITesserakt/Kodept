@@ -6,15 +6,13 @@ use crate::symbol::SymbolKind::{Function, Parameter, Variable};
 use crate::symbol::{Symbol, SymbolKind};
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
-use bevy_ecs::change_detection::Res;
 use bevy_ecs::entity::hash_map::EntityHashMap;
 use bevy_ecs::prelude::{Children, Commands, IntoScheduleConfigs, Populated, Query};
 use bevy_ecs::query::Changed;
 use bevy_ecs::relationship::Relationship;
 use hashbrown::hash_set::Entry;
 use hashbrown::HashSet;
-use kodept_ast::properties::Name;
-use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::syntax_tree::prelude::ASTQuery;
 use kodept_ast::{define_union, Str};
 use kodept_ast_nodes::block_level::VarDecl;
@@ -22,7 +20,7 @@ use kodept_ast_nodes::constants::Const;
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumConst, EnumDecl, StructDecl};
 use kodept_ast_nodes::types::{NonTyParam, TyParam};
-use kodept_core::code_point::CodePoint;
+use kodept_core::code_point::Span;
 use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
@@ -37,9 +35,9 @@ define_union!(enum SymbolUnion[SymbolUnionItem, SymbolUnionFilter] {
 pub struct DuplicatedSymbolError {
     bound_name: Str,
     scope_name: Option<Str>,
-    scope_start_location: CodePoint,
-    current_def_location: CodePoint,
-    previous_def_location: CodePoint,
+    scope_start_location: Span,
+    current_def_location: Span,
+    previous_def_location: Span,
 }
 
 impl IntoSpannedReportMessage for DuplicatedSymbolError {
@@ -112,7 +110,7 @@ impl ExtractSymbols {
         enclosing_scopes: Query<&Scoped>,
         mut commands: Commands,
         reporter: Reporter,
-        syntax: Res<SyntaxResolver>,
+        spans: Query<&SourceSpan>,
         scopes: Query<(&Scope, Option<&Name>, Option<&Children>)>,
     ) -> crate::Result<DuplicatedSymbolError> {
         let mut symbols: EntityHashMap<HashSet<Symbol>> = EntityHashMap::default();
@@ -124,10 +122,10 @@ impl ExtractSymbols {
             let set = symbols.entry(enclosing_scope).or_default();
             match set.entry(symbol) {
                 Entry::Occupied(x) => {
-                    let current_def_location = syntax.get_location(bound_node);
-                    let previous_def_location = syntax.get_location(x.get().bound_node);
+                    let current_def_location = spans.get(bound_node.entity()).unwrap().0;
+                    let previous_def_location = spans.get(x.get().bound_node.entity()).unwrap().0;
                     let (scope, name, _) = scopes.get(enclosing_scope).unwrap();
-                    let scope_start_location = syntax.get_location(scope.start_from);
+                    let scope_start_location = spans.get(scope.start_from.entity()).unwrap().0;
                     let error = DuplicatedSymbolError {
                         bound_name: x.get().description.name.clone(),
                         scope_start_location,

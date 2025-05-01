@@ -1,10 +1,6 @@
 #![allow(dead_code)]
 
 use crate::wrapper::InteractionWrapper;
-use kodept_ast::prelude::NodeId;
-use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_core::structure::Located;
-use kodept_report::message::SpannedError;
 use kodept_report::traits::IntoSpannedReportMessage;
 
 pub mod lint;
@@ -52,11 +48,11 @@ impl<E> From<E> for Skip<E> {
 pub mod wrapper {
     use crate::report::Reporter;
     use crate::Skip;
-    use bevy_ecs::prelude::{In, IntoSystem, IntoScheduleConfigs};
-    use kodept_report::traits::IntoSpannedReportMessage;
-    use std::marker::PhantomData;
+    use bevy_ecs::prelude::{In, IntoScheduleConfigs, IntoSystem};
     use bevy_ecs::schedule::ScheduleConfigs;
     use bevy_ecs::system::ScheduleSystem;
+    use kodept_report::traits::IntoSpannedReportMessage;
+    use std::marker::PhantomData;
     use tracing::trace;
 
     pub struct InteractionWrapper<E>(PhantomData<E>, ScheduleConfigs<ScheduleSystem>);
@@ -95,17 +91,5 @@ pub trait Interaction<M = ()> {
 
     fn install(ctx: &mut Ctx) {
         ctx.register(Self::interaction().unwrap());
-    }
-}
-
-pub trait SpannedErrorExt<E> {
-    fn for_node(inner: E, node_id: NodeId, syntax: &SyntaxResolver) -> Self;
-}
-
-impl<E: std::error::Error> SpannedErrorExt<E> for SpannedError<E> {
-    fn for_node(inner: E, node_id: NodeId, syntax: &SyntaxResolver) -> Self {
-        let variant = syntax.try_get_unknown(node_id).unwrap();
-        let point = variant.location();
-        Self::new(inner, point)
     }
 }

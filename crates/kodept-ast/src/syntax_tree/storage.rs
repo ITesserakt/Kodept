@@ -1,7 +1,7 @@
 use crate::interaction::Interaction;
 use crate::prelude::{CodeHolder, FromSyntax};
 use crate::properties::{Lexeme, Root};
-use crate::resource::rlt::SyntaxResolver;
+use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
 use bevy_ecs::prelude::World;
 use kodept_rlt::prelude::RLT;
 
@@ -17,10 +17,11 @@ impl AST {
         Root: FromSyntax<kodept_rlt::prelude::File>,
     {
         let mut world = World::new();
-        let syntax = SyntaxResolver::empty(start);
+        let mut syntax = SyntaxResolver::empty(start);
         let whole_part = Root::from_syntax(syntax.root(), source_code);
+        let id = unsafe { syntax.link(std::mem::transmute(SyntaxVariant::from(syntax.root()))) };
         world.insert_resource(syntax);
-        world.spawn((Root, whole_part));
+        world.spawn((Root, whole_part)).insert(Lexeme(id));
         AST { world }
     }
 

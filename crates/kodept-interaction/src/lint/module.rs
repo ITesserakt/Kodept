@@ -1,14 +1,15 @@
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
 use crate::{done, skip, Result};
-use bevy_ecs::prelude::{Entity, IntoSystem, Res, Single};
+use bevy_ecs::prelude::{IntoSystem, Res, Single};
 use bevy_ecs::query::With;
+use kodept_ast::properties::Lexeme;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::Located;
+use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_rlt::prelude::{File, Module};
 use std::convert::Infallible;
-use kodept_report::message::{Diagnostic, Label, Severity};
 
 pub struct SingleModuleWithBrackets;
 
@@ -21,11 +22,11 @@ impl Lint for SingleModuleWithBrackets {
 
     fn lint() -> impl IntoSystem<(), Result<Self::Error>, ()> {
         IntoSystem::into_system(
-            |query: Option<Single<Entity, With<FileDecl>>>,
+            |query: Option<Single<&Lexeme, With<FileDecl>>>,
              syntax: Res<SyntaxResolver>,
              reporter: Reporter| {
                 let Some(root) = query else { return skip() };
-                let Ok(node): std::result::Result<&File, _> = syntax.try_get(*root) else {
+                let Ok(node) = syntax.try_get::<File>(root.0) else {
                     return skip();
                 };
 

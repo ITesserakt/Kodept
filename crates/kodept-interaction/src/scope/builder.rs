@@ -2,22 +2,20 @@ use crate::report::Reporter;
 use crate::scope::storage::ScopeBuilder;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
-use bevy_ecs::change_detection::Res;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{Changed, ChildOf, Children, IntoScheduleConfigs, Or, Query, With};
 use kodept_ast::define_union;
 use kodept_ast::prelude::IntoEnum;
-use kodept_ast::properties::Node;
+use kodept_ast::properties::{Node, SourceSpan};
 use kodept_ast::query::AnyNodeQuery;
-use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::{FileDecl, ModDecl};
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
-use std::convert::Infallible;
 use kodept_report::message::Severity;
 use kodept_report::prelude::{Diagnostic, Label};
+use std::convert::Infallible;
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
     FileDecl | ModDecl | StructDecl | EnumDecl | Func | Lambda | Exprs | IfExpr
@@ -56,8 +54,8 @@ impl ScopeBuildingPass {
 
     fn system(
         nodes: AnyNodeQuery,
+        spans: Query<&SourceSpan>,
         reporter: Reporter,
-        syntax: Res<SyntaxResolver>,
         mut builder: ScopeBuilder
     ) -> crate::Result<Infallible> {
         for (parent_id, node_id) in nodes.iter_top_down() {
@@ -71,10 +69,8 @@ impl ScopeBuildingPass {
                 builder.set_enclosing_scope(node_id, parent);
             } else {
                 reporter.report_ad_hoc(|| {
-                    let point = syntax.get_location(parent_scope.unwrap());
-                    
                     Diagnostic::new(Severity::Bug)
-                        .with_label(Label::primary("", point))
+                        .with_label(Label::primary("", spans.get(parent_scope.unwrap()).unwrap().0))
                         .with_message("No scope associated with this element")
                         .with_note(format!("Entity {}", node.id()))
                 })

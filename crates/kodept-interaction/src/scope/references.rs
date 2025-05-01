@@ -5,13 +5,12 @@ use crate::symbol::table::SymbolTable;
 use crate::symbol::Symbol;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, fail, Interaction, Result, Skip};
-use bevy_ecs::prelude::{ChildOf, Children, Entity, IntoScheduleConfigs, Populated, Query, Res};
+use bevy_ecs::prelude::{ChildOf, Children, Entity, IntoScheduleConfigs, Populated, Query};
 use bevy_ecs::query::With;
-use kodept_ast::properties::Name;
-use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::Str;
 use kodept_ast_nodes::term::{Identifier, Ref, ReferenceContext};
-use kodept_core::code_point::CodePoint;
+use kodept_core::code_point::Span;
 use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::collections::VecDeque;
@@ -30,16 +29,16 @@ struct Path {
 enum Error {
     UnknownReference {
         path: Path,
-        location: CodePoint,
+        location: Span,
     },
     #[allow(dead_code)]
     UnknownPath {
         path: Path,
         failed_segment: Option<Str>,
-        location: CodePoint,
+        location: Span,
     },
     Unsupported {
-        location: CodePoint,
+        location: Span,
     },
 }
 
@@ -106,7 +105,7 @@ type ScopeQuery<'q> = (
     Option<&'q Children>,
     Option<&'q Name>,
 );
-type NodeQuery<'q> = (Entity, &'q Scoped, &'q Ref);
+type NodeQuery<'q> = (Entity, &'q Scoped, &'q Ref, &'q SourceSpan);
 
 impl ReferenceResolver {
     fn search_symbol<'a>(node: &Ref, table: &'a SymbolTable) -> Option<&'a Symbol> {
@@ -116,11 +115,7 @@ impl ReferenceResolver {
         }
     }
 
-    fn resolve_ref_without_context(
-        node: NodeQuery,
-        scopes: &Query<ScopeQuery>,
-        syntax: &SyntaxResolver,
-    ) -> Result<Error> {
+    fn resolve_ref_without_context(node: NodeQuery, scopes: &Query<ScopeQuery>) -> Result<Error> {
         let mut current_scope_id = node.1 .0;
         loop {
             let (_, symbols, parent, ..) = scopes.get(current_scope_id).unwrap();
@@ -134,7 +129,7 @@ impl ReferenceResolver {
             } else {
                 return fail(Error::UnknownReference {
                     path: node.2.into(),
-                    location: syntax.get_location(node.0),
+                    location: node.3 .0,
                 });
             }
         }
@@ -143,7 +138,6 @@ impl ReferenceResolver {
     fn resolve_ref_with_global_context(
         node: NodeQuery,
         scopes: &Query<ScopeQuery>,
-        syntax: &SyntaxResolver,
     ) -> Result<Error> {
         enum ControlFlow {
             Value(Entity),
@@ -178,7 +172,7 @@ impl ReferenceResolver {
                         } else {
                             fail(Error::UnknownReference {
                                 path: node.2.into(),
-                                location: CodePoint::default(),
+                                location: node.3 .0,
                             })
                         };
                     }
@@ -199,33 +193,30 @@ impl ReferenceResolver {
         fail(Error::UnknownPath {
             path: node.2.into(),
             failed_segment: context_path_iter.peek().map(|it| (*it).clone()),
-            location: syntax.get_location(node.0),
+            location: node.3 .0,
         })
     }
 
     fn system(
-        query: Query<(Entity, &Scoped, &Ref)>,
+        query: Query<(Entity, &Scoped, &Ref, &SourceSpan)>,
         scopes: Populated<ScopeQuery>,
-        syntax: Res<SyntaxResolver>,
         reporter: Reporter,
     ) -> Result<Infallible> {
-        for (entity, scope, node) in query.into_iter() {
+        for (entity, scope, node, span) in query.into_iter() {
             if !node.context.global && node.context.items.is_empty() {
                 if let Err(Skip::Failed(e)) =
-                    Self::resolve_ref_without_context((entity, scope, node), &scopes, &syntax)
+                    Self::resolve_ref_without_context((entity, scope, node, span), &scopes)
                 {
                     reporter.report(e);
                 }
             } else if node.context.global {
                 if let Err(Skip::Failed(e)) =
-                    Self::resolve_ref_with_global_context((entity, scope, node), &scopes, &syntax)
+                    Self::resolve_ref_with_global_context((entity, scope, node, span), &scopes)
                 {
                     reporter.report(e);
                 }
             } else {
-                reporter.report(Error::Unsupported {
-                    location: syntax.get_location(entity),
-                })
+                reporter.report(Error::Unsupported { location: span.0 })
             }
         }
         done()

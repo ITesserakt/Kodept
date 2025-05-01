@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::{Entity, Resource};
+use bevy_ecs::prelude::Resource;
 use derive_more::{Display, From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
@@ -8,7 +8,6 @@ use kodept_rlt::{new_types, prelude as rlt};
 use std::collections::HashMap;
 use std::marker::PhantomPinned;
 use std::pin::Pin;
-use crate::prelude::Erase;
 
 #[derive(Debug, Copy, Clone, PartialEq, TryInto, From)]
 pub enum SyntaxVariant<'r> {
@@ -84,47 +83,39 @@ impl SyntaxResolver {
 
     /// SAFETY: [`node`] parameter must belong to the inner tree.
     #[allow(unsafe_code)]
-    pub(crate) unsafe fn link(&mut self, node: SyntaxVariant<'static>) -> LexemeId
-    {
+    pub(crate) unsafe fn link(&mut self, node: SyntaxVariant<'static>) -> LexemeId {
         let id = LexemeId(self.generator);
         self.generator += 1;
         self.mapping.insert(id, node);
         id
     }
 
-    pub fn get_unknown(&self, id: impl Erase) -> SyntaxVariant {
-        todo!();
-        self.try_get_unknown(Entity::PLACEHOLDER)
+    pub fn get_unknown(&self, id: LexemeId) -> SyntaxVariant {
+        self.try_get_unknown(id)
             .expect("Cannot get linked RLT node")
     }
-    
-    pub fn get_location(&self, id: impl Erase) -> CodePoint {
-        todo!();
-        if let Some(node) = self.mapping.get(todo!()) {
+
+    pub fn get_location(&self, id: LexemeId) -> CodePoint {
+        if let Some(node) = self.mapping.get(&id) {
             node.location()
-        } else if false {
-            self.root().location()
         } else {
             panic!("Cannot get linked RLT node")
         }
     }
 
-    pub fn try_get_unknown(&self, id: impl Erase) -> Option<SyntaxVariant> {
-        if let Some(node) = self.mapping.get(todo!()) {
+    pub fn try_get_unknown(&self, id: LexemeId) -> Option<SyntaxVariant> {
+        if let Some(node) = self.mapping.get(&id) {
             Some(*node)
-        } else if false {
-            Some(self.root().into())
         } else {
             None
         }
     }
 
-    pub fn try_get<'r, U>(&'r self, id: impl Erase) -> Result<&'r U, LookupError>
+    pub fn try_get<'r, U>(&'r self, id: LexemeId) -> Result<&'r U, LookupError>
     where
         &'r U: TryFrom<SyntaxVariant<'r>>,
     {
-        todo!();
-        let variant = self.try_get_unknown(Entity::PLACEHOLDER).ok_or(LookupError::NotFound)?;
+        let variant = self.try_get_unknown(id).ok_or(LookupError::NotFound)?;
         variant.try_into().map_err(|_| LookupError::WrongType)
     }
 }

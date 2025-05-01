@@ -2,7 +2,7 @@ use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
 use crate::{done, Result};
 use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res};
-use kodept_ast::properties::Node;
+use kodept_ast::properties::{Lexeme, Node};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use std::convert::Infallible;
 use kodept_report::message::{Diagnostic, Severity};
@@ -23,12 +23,12 @@ impl Lint for RLTLinkLint {
 
 impl RLTLinkLint {
     fn check_system(
-        nodes: Query<(Entity, &Node)>,
+        nodes: Query<(Entity, &Node, Option<&Lexeme>)>,
         syntax: Res<SyntaxResolver>,
         reporter: Reporter,
     ) -> Result<Infallible> {
-        nodes.par_iter().for_each(|(entity, kind)| {
-            if syntax.try_get_unknown(entity).is_some() {
+        nodes.par_iter().for_each(|(entity, kind, lexeme)| {
+            if lexeme.is_some_and(|it| syntax.try_get_unknown(it.0).is_some()) {
                 return;
             }
             reporter.report_ad_hoc(|| {
