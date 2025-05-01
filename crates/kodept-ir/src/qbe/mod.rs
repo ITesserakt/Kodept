@@ -14,6 +14,7 @@ pub mod typedefs {
 
 #[cfg(test)]
 mod tests {
+    use nonempty_collections::nev;
     use crate::qbe::constants::{Constant, Value};
     use crate::qbe::control::block::{Block, Jump};
     use crate::qbe::control::instruction::{add, call};
@@ -22,7 +23,6 @@ mod tests {
     use crate::qbe::linkage::Linkage;
     use crate::qbe::module::Module;
     use crate::qbe::types::{Byte, Word};
-    use nonempty_collections::nev;
 
     use super::control::instruction::Argument;
     use super::types::Long;

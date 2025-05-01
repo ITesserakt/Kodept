@@ -137,7 +137,7 @@ impl ExtractSymbols {
                     continue;
                 }
                 Entry::Vacant(x) => x.insert(),
-            }
+            };
         }
 
         for (scope_id, set) in symbols {

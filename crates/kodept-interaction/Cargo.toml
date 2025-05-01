@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 bevy_ecs.workspace = true
 extend.workspace = true
-hashbrown = "0.14.5"
+hashbrown = "0.15.2"
 tracing.workspace = true
 
 kodept-ast = { path = "../kodept-ast" }

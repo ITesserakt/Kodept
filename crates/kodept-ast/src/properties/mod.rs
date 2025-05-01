@@ -1,16 +1,16 @@
+use crate::prelude::ASTNode;
+use crate::resource::rlt::LexemeId;
 use crate::Str;
 use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
+use kodept_core::code_point::Span;
 use std::ops::{Deref, DerefMut};
-use kodept_core::code_point::{CodePoint, Span};
-use crate::prelude::ASTNode;
-use crate::resource::rlt::LexemeId;
 
 pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component, Display)]
 pub struct Node {
-    pub kind: &'static str
+    pub kind: &'static str,
 }
 
 #[derive(Debug, Component)]
@@ -30,8 +30,7 @@ pub struct Lexeme(pub LexemeId);
 #[component(immutable)]
 pub struct SourceSpan(pub Span);
 
-pub trait HasProperty<Property: NodeProperty>: Sized {
-}
+pub trait HasProperty<Property: NodeProperty>: Sized {}
 
 pub trait RequireProperty<Property: NodeProperty> {}
 
@@ -59,5 +58,4 @@ impl<T: ASTNode> RequireProperty<Node> for T {}
 impl<T: ASTNode> RequireProperty<Lexeme> for T {}
 impl<T: ASTNode> RequireProperty<SourceSpan> for T {}
 
-impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {
-}
+impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {}
