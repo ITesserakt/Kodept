@@ -1,7 +1,3 @@
-pub trait HasLength {
-    fn len(&self) -> usize;
-}
-
 pub trait IntoCommonIter {
     type Item;
     #[cfg(feature = "parallel")]
@@ -40,40 +36,5 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         <I as IntoIterator>::into_iter(self)
-    }
-}
-
-impl<T: HasLength + ?Sized> HasLength for &Box<T> {
-    #[inline]
-    fn len(&self) -> usize {
-        self.as_ref().len()
-    }
-}
-
-impl<T> HasLength for [T] {
-    #[inline]
-    fn len(&self) -> usize {
-        <[T]>::len(self)
-    }
-}
-
-impl<T, const N: usize> HasLength for [T; N] {
-    #[inline(always)]
-    fn len(&self) -> usize {
-        N
-    }
-}
-
-impl<T> HasLength for &[T] {
-    #[inline]
-    fn len(&self) -> usize {
-        <[T]>::len(self)
-    }
-}
-
-impl<T> HasLength for Option<T> {
-    #[inline]
-    fn len(&self) -> usize {
-        self.as_ref().map_or(0, |_| 1)
     }
 }

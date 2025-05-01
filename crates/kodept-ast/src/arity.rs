@@ -57,7 +57,7 @@ impl RelationshipSourceCollection for Option {
         Self(Entity::PLACEHOLDER)
     }
 
-    fn reserve(&mut self, additional: usize) {}
+    fn reserve(&mut self, _: usize) {}
 
     fn add(&mut self, entity: Entity) -> bool {
         if self.0 == Entity::PLACEHOLDER {

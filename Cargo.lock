@@ -1107,7 +1107,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "bevy_ecs",
  "dashmap",
@@ -1120,7 +1120,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast-nodes"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "bevy_ecs",
  "kodept-ast",

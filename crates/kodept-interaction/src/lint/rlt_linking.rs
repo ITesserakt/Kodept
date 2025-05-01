@@ -1,11 +1,10 @@
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
 use crate::{done, Result};
-use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res, With};
+use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res};
 use kodept_ast::properties::Node;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use std::convert::Infallible;
-use bevy_ecs::change_detection::MaybeLocation;
 use kodept_report::message::{Diagnostic, Severity};
 
 pub struct RLTLinkLint;

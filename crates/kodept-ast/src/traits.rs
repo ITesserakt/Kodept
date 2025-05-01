@@ -1,5 +1,3 @@
-use crate::arity::Arity;
-use crate::syntax_tree::children::ChildrenDisjoint;
 use crate::Str;
 use bevy_ecs::bundle::Bundle;
 use bevy_ecs::prelude::Component;
@@ -15,9 +13,3 @@ pub trait FromSyntax<Syntax>: Sized {
 }
 
 pub trait ASTNode: Component {}
-
-pub trait Choose<T, Root, Tag> {
-    type Arity: Arity;
-
-    fn branch<Source: CodeHolder>(node: &T) -> ChildrenDisjoint<Root, Source, Self::Arity, Tag>;
-}

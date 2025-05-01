@@ -21,7 +21,7 @@ pub mod prelude {
     pub use super::entity::entity_ref::{AnyNodeRef, AnyNodeRefItem, NodeRef};
     pub use super::entity::traits::{FromEnum, IntoEnum};
     pub use super::node_id::{Erase, NodeId};
-    pub use super::traits::{ASTNode, Choose, CodeHolder, FromSyntax};
+    pub use super::traits::{ASTNode, CodeHolder, FromSyntax};
 }
 
 #[deprecated]
