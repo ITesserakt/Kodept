@@ -2,12 +2,14 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
-
+use std::marker::PhantomData;
+use std::sync::Arc;
 use Constraint::{ExplicitInstance, ImplicitInstance};
 use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
 
 use crate::constraint::Constraint::Eq;
 use crate::constraint::{Constraint, EqConstraint};
+use crate::process::{Infer, Suspend};
 use crate::r#type::MonomorphicType::Fn;
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
 use crate::substitution::Substitutions;
@@ -40,6 +42,35 @@ pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
     fn maybe_get(&self, key: &Key) -> Result<Option<Cow<PolymorphicType>>, Self::Error>;
 }
 
+pub trait TypeInfer<Expr>: Sized {
+    type Error;
+    type Output;
+
+    fn apply<'a>(&mut self, expr: &'a Expr) -> Infer<'a, Expr, Self>;
+
+    fn suspend(expr: &Expr) -> Suspend<Expr, Self> {
+        Infer::suspend(expr)
+    }
+
+    fn infer(expr: &Expr) -> Infer<Expr, Self> {
+        Self::suspend(expr).pure()
+    }
+
+    fn infer_eagerly<'a, E>(
+        &mut self,
+        expr: &'a Expr,
+        executor: impl Executor<'a, Expr, Self, Error = E>,
+    ) -> Result<Self::Output, E> {
+        executor.fold(self, Self::infer(expr))
+    }
+}
+
+pub trait Executor<'a, E, T: TypeInfer<E>> {
+    type Error;
+
+    fn fold(self, state: &mut T, value: Infer<'a, E, T>) -> Result<T::Output, Self::Error>;
+}
+
 // -------------------------------------------------------------------------------------------------
 
 impl Substitutable for TVar {
@@ -58,11 +89,11 @@ impl Substitutable for MonomorphicType {
             Primitive(_) | Constant(_) => self.clone(),
             Var(x) => subst.get(x).unwrap_or(self).clone(),
             Fn(input, output) => Fn(
-                Box::new(input.substitute(subst)),
-                Box::new(output.substitute(subst)),
+                Arc::new(input.substitute(subst)),
+                Arc::new(output.substitute(subst)),
             ),
-            Tuple(inner) => Tuple(crate::r#type::Tuple(inner.0.substitute(subst))),
-            Pointer(inner) => Pointer(Box::new(inner.substitute(subst))),
+            Tuple(inner) => Tuple(ChangeOutputType::wrap(inner).substitute(subst)),
+            Pointer(inner) => Pointer(Arc::new(inner.substitute(subst))),
         }
     }
 }
@@ -110,11 +141,34 @@ impl<T: Substitutable> Substitutable for &T {
     }
 }
 
+#[repr(transparent)]
+pub struct ChangeOutputType<I, T: ?Sized>(PhantomData<I>, T);
+
 impl<T: Substitutable> Substitutable for [T] {
     type Output = Vec<T::Output>;
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output {
         self.iter().map(|it| it.substitute(subst)).collect()
+    }
+}
+
+impl<I, T> ChangeOutputType<I, T> {
+    pub fn wrap(slice: &[T]) -> ChangeOutputType<I, &[T]> {
+        // SAFETY: slice is safe to transmute into `ChangeOutputType` because
+        // the latter is `transparent`
+        ChangeOutputType(PhantomData, slice)
+    }
+}
+
+impl<I, T> Substitutable for ChangeOutputType<I, &[T]>
+where
+    T: Substitutable,
+    I: FromIterator<T::Output>,
+{
+    type Output = I;
+
+    fn substitute(&self, subst: &Substitutions) -> Self::Output {
+        self.1.iter().map(|it| it.substitute(subst)).collect()
     }
 }
 
@@ -143,7 +197,7 @@ impl FreeTypeVars for &MonomorphicType {
             Primitive(_) | Constant(_) => HashSet::new(),
             Var(x) => HashSet::from([*x]),
             Fn(input, output) => &input.free_types() | &output.free_types(),
-            Tuple(crate::r#type::Tuple(vec)) => vec.free_types(),
+            Tuple(vec) => vec.free_types(),
             Pointer(x) => x.free_types(),
         }
     }

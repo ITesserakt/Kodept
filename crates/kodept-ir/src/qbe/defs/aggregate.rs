@@ -1,8 +1,8 @@
-use crate::qbe::types::ExtendedType;
 use derive_more::{Constructor, Display};
+use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 use nonempty_collections::NEVec;
-use std::fmt::{Display, Formatter};
+use crate::qbe::types::ExtendedType;
 
 pub type Align = u16;
 
@@ -39,7 +39,7 @@ impl TypeDef {
         match self {
             TypeDef::Regular { name, .. } => name,
             TypeDef::Union { name, .. } => name,
-            TypeDef::Opaque { name, .. } => name,
+            TypeDef::Opaque { name, .. } => name
         }
     }
 }

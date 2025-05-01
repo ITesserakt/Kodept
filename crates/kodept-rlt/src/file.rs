@@ -60,8 +60,8 @@ impl SpanBounds for File {
 impl SpanBounds for Module {
     fn bounds(&self) -> Span {
         match self {
-            Module::Global { keyword, id, flow, rest } => keyword.0 + rest.last().map(|it| it.bounds()),
-            Module::Ordinary { keyword, id, lbrace, rest, rbrace } => keyword.0 + rbrace.0
+            Module::Global { keyword, rest, .. } => keyword.0 + rest.last().map(|it| it.bounds()),
+            Module::Ordinary { keyword, rbrace, .. } => keyword.0 + rbrace.0
         }
     }
 }

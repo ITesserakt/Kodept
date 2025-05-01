@@ -1,4 +1,4 @@
-//! This crate contains algorithm to check (and infer) types based on
+//! This crate contains an algorithm to check (and infer) types based on
 //! Hindley-Milner type system with constraints extension.
 //! Also provides some structures, allowing to model those types.
 
@@ -11,9 +11,10 @@ pub mod constraint;
 pub mod language;
 pub mod substitution;
 pub mod traits;
+mod process;
 pub mod r#type;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub(crate) struct InferState {
     variable_index: usize,
 }

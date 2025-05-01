@@ -6,33 +6,29 @@ pub mod metrics;
 use crate::implementation::{Interned, Interner};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
-use std::borrow::Cow;
-use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 static GLOBAL_STRING_POOL: Interner<str> = Interner::new();
 static TOTAL_SHARES: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Copy, Clone)]
-pub struct InterningCodeHolder<'a, C> {
+pub struct InterningCodeHolder<C> {
     inner: C,
-    _phantom: PhantomData<&'a ()>,
 }
 
-impl<'a, C> InterningCodeHolder<'a, C>
+impl<C> InterningCodeHolder<C>
 where
     C: CodeHolder,
-    C::Str: Into<Cow<'a, str>>,
+    C::Str: AsRef<str>,
 {
     pub const fn new(inner: C) -> Self {
         Self {
             inner,
-            _phantom: PhantomData,
         }
     }
 }
 
-impl<C> CodeHolder for InterningCodeHolder<'_, C>
+impl<C> CodeHolder for InterningCodeHolder<C>
 where
     C: CodeHolder,
     C::Str: AsRef<str>,

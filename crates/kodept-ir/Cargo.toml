@@ -8,7 +8,7 @@ derive_more.workspace = true
 itertools.workspace = true
 nonempty-collections.workspace = true
 sealed = "0.5.0"
-smallvec = "1.13.2"
+smallvec = "1.14.0"
 
 [dev-dependencies]
 similar-asserts = "1.5.0"

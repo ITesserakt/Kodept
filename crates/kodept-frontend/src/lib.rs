@@ -7,7 +7,7 @@ mod traits;
 
 pub mod prelude {
     pub use super::read_code_source::{ReadSource, Source, TryReadCode};
-    pub use super::report::{Global, GlobalReports, Reports};
+    pub use super::report::{Global, GlobalReports, Reports, ExtractReports};
     pub use super::source_files::{SourceFiles, SourceView};
     pub use super::traits::{Compiler, Interpreter};
 }

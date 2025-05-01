@@ -2,18 +2,20 @@ use derive_more::{Error, From};
 use itertools::{concat, Itertools};
 use nonempty_collections::NEVec;
 use std::collections::HashSet;
+use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
 use tracing::debug;
 
 use crate::algorithm_u::AlgorithmUError;
 use crate::algorithm_w::AlgorithmWError::UnknownVar;
-use crate::assumption::AssumptionSet;
+use crate::assumption::{AssumptionSet, TypeTableOps};
 use crate::constraint::{eq_cst, explicit_cst, implicit_cst, Constraint, ConstraintsSolverError};
 use crate::language::{Language, Literal, Special, Var};
+use crate::process::{Infer, PartialInfer};
 use crate::r#type::PrimitiveType::Boolean;
-use crate::r#type::{fun1, MonomorphicType, PolymorphicType, PrimitiveType, TVar, Tuple};
+use crate::r#type::{fun1, unit_type, MonomorphicType, PolymorphicType, PrimitiveType, TVar};
 use crate::substitution::Substitutions;
-use crate::traits::{EnvironmentProvider, Substitutable};
+use crate::traits::{EnvironmentProvider, Substitutable, TypeInfer};
 use crate::{language, InferState};
 
 #[derive(Debug, Error, From)]
@@ -33,15 +35,14 @@ pub enum CompoundInferError<E> {
     Foreign(NEVec<E>),
 }
 
-struct AlgorithmW<'e> {
+#[derive(Debug, Clone, Default)]
+struct AlgorithmW {
     monomorphic_set: HashSet<TVar>,
-    env: &'e mut InferState,
+    env: InferState,
 }
 
-type AWResult = Result<(AssumptionSet, Vec<Constraint>, MonomorphicType), AlgorithmWError>;
-
-impl AlgorithmW<'_> {
-    fn apply(&mut self, expression: &Language) -> AWResult {
+impl AlgorithmW {
+    fn apply_(&mut self, expression: &Language) -> PartialInfer {
         match expression {
             Language::Var(x) => self.apply_var(x),
             Language::App(x) => self.apply_app(x),
@@ -49,46 +50,34 @@ impl AlgorithmW<'_> {
             Language::Let(x) => self.apply_let(x),
             Language::Special(x) => self.apply_special(x),
             Language::Literal(x) => match x {
-                Literal::Integral => Ok((
-                    AssumptionSet::empty(),
-                    vec![],
-                    PrimitiveType::Integral.into(),
-                )),
-                Literal::Floating => Ok((
-                    AssumptionSet::empty(),
-                    vec![],
-                    PrimitiveType::Floating.into(),
-                )),
+                Literal::Integral => {
+                    PartialInfer::new(AssumptionSet::empty(), [None], PrimitiveType::i8())
+                }
+                Literal::Floating => {
+                    PartialInfer::new(AssumptionSet::empty(), [None], PrimitiveType::f24())
+                }
                 Literal::Tuple(vec) => self.apply_tuple(vec),
             },
         }
     }
 
-    fn apply_var(&mut self, var: &Var) -> AWResult {
+    fn apply_var(&mut self, var: &Var) -> PartialInfer {
         let fresh = self.env.new_var();
-        Ok((
-            AssumptionSet::single(var.clone(), fresh),
-            vec![],
-            fresh.into(),
-        ))
+        PartialInfer::new(AssumptionSet::single(var.clone(), fresh), [None], fresh)
     }
 
-    fn apply_app(&mut self, language::App { arg, func }: &language::App) -> AWResult {
-        let (as1, cs1, t1) = self.apply(func)?;
-        let (as2, cs2, t2) = self.apply(arg)?;
+    fn apply_app(&mut self, language::App { arg, func }: &language::App) -> PartialInfer {
+        let PartialInfer(as1, cs1, t1) = self.apply_(func);
+        let PartialInfer(as2, cs2, t2) = self.apply_(arg);
         let tv = self.env.new_var();
 
-        Ok((
-            as1 + as2,
-            concat([cs1, cs2, vec![eq_cst(t1, fun1(t2, tv))]]),
-            tv.into(),
-        ))
+        PartialInfer::new(as1 + as2, [cs1, cs2, vec![eq_cst(t1, fun1(t2, tv))]], tv)
     }
 
-    fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> AWResult {
+    fn apply_lambda(&mut self, language::Lambda { bind, expr }: &language::Lambda) -> PartialInfer {
         let tv = self.env.new_var();
         self.monomorphic_set.insert(tv);
-        let (as1, cs1, t1) = self.apply(expr)?;
+        let PartialInfer(as1, cs1, t1) = self.apply_(expr);
 
         let mut as_ = as1.clone();
         as_.remove(&bind.var);
@@ -102,7 +91,7 @@ impl AlgorithmW<'_> {
             .as_ref()
             .map_or(vec![], |it| vec![eq_cst(tv, it.clone())]);
 
-        Ok((as_, concat([cs1, eq_cs, bound]), fun1(tv, t1)))
+        PartialInfer::new(as_, [cs1, eq_cs, bound], fun1(tv, t1))
     }
 
     fn apply_let(
@@ -112,9 +101,9 @@ impl AlgorithmW<'_> {
             bind,
             usage,
         }: &language::Let,
-    ) -> AWResult {
-        let (as1, cs1, t1) = self.apply(binder)?;
-        let (as2, cs2, t2) = self.apply(usage)?;
+    ) -> PartialInfer {
+        let PartialInfer(as1, cs1, t1) = self.apply_(binder);
+        let PartialInfer(as2, cs2, t2) = self.apply_(usage);
 
         let mut as_ = as1.clone() + &as2;
         as_.remove(&bind.var);
@@ -132,41 +121,171 @@ impl AlgorithmW<'_> {
             )]
         });
 
-        Ok((as_, concat([cs1, cs2, im_cs, bound]), t2))
+        PartialInfer::new(as_, [cs1, cs2, im_cs, bound], t2)
     }
 
-    fn apply_tuple(&mut self, tuple: &[Language]) -> AWResult {
-        let ctx: Vec<_> = tuple.iter().map(|it| self.apply(it)).try_collect()?;
-        let (a, c, t): (Vec<_>, Vec<_>, Vec<_>) = ctx.into_iter().multiunzip();
-        Ok((
-            AssumptionSet::merge_many(a),
-            c.into_iter().flatten().collect(),
-            Tuple(t).into(),
-        ))
+    fn apply_tuple(&mut self, tuple: &[Language]) -> PartialInfer {
+        let mut assumptions = AssumptionSet::empty();
+        let mut constraints = vec![];
+
+        let items = tuple.iter().map(|it| {
+            let PartialInfer(a, c, t) = self.apply_(it);
+            assumptions.merge(a);
+            constraints.extend(c);
+            t
+        }).collect();
+
+        PartialInfer(assumptions, constraints, MonomorphicType::Tuple(items))
     }
 
-    fn apply_special(&mut self, special: &Special) -> AWResult {
+    fn apply_special(&mut self, special: &Special) -> PartialInfer {
         match special {
             Special::If {
                 condition,
                 body,
                 otherwise,
             } => {
-                let (as1, cs1, t1) = self.apply(condition)?;
-                let (as2, cs2, t2) = self.apply(body)?;
-                let (as3, cs3, t3) = self.apply(otherwise)?;
+                let PartialInfer(as1, cs1, t1) = self.apply_(condition);
+                let PartialInfer(as2, cs2, t2) = self.apply_(body);
+                let PartialInfer(as3, cs3, t3) = self.apply_(otherwise);
 
-                Ok((
+                PartialInfer::new(
                     as1 + as2 + as3,
-                    concat([
+                    [
                         cs1,
                         cs2,
                         cs3,
                         vec![eq_cst(t1, Boolean), eq_cst(t2.clone(), t3)],
-                    ]),
+                    ],
                     t2,
+                )
+            }
+        }
+    }
+}
+
+impl TypeInfer<Language> for AlgorithmW {
+    type Error = Infallible;
+    type Output = PartialInfer;
+
+    fn apply<'a>(&mut self, expr: &'a Language) -> Infer<'a, Language, Self> {
+        match expr {
+            Language::Var(x) => {
+                let fresh = self.env.new_var();
+                Infer::done(PartialInfer::new(
+                    AssumptionSet::single(x.clone(), fresh),
+                    [None],
+                    fresh,
                 ))
             }
+            Language::App(language::App { arg, func }) => {
+                Self::suspend(func).and_then(|_, PartialInfer(a1, c1, t1)| {
+                    Self::suspend(arg).map(|state, PartialInfer(a2, c2, t2)| {
+                        let fresh = state.env.new_var();
+                        PartialInfer::new(
+                            a1 + a2,
+                            [c1, c2, vec![eq_cst(t1, fun1(t2, fresh))]],
+                            fresh,
+                        )
+                    })
+                })
+            }
+            Language::Lambda(language::Lambda { bind, expr }) => {
+                let tv = self.env.new_var();
+                self.monomorphic_set.insert(tv);
+                Self::suspend(expr).map(move |_, PartialInfer(as1, cs1, t1)| {
+                    let mut as_ = as1.clone();
+                    as_.remove(&bind.var);
+                    let eq_cs = as1
+                        .get(&bind.var)
+                        .iter()
+                        .map(|it| eq_cst(tv, it.clone()))
+                        .collect();
+                    let bound = bind
+                        .ty
+                        .as_ref()
+                        .map_or(vec![], |it| vec![eq_cst(tv, it.clone())]);
+                    PartialInfer::new(as_, [cs1, eq_cs, bound], fun1(tv, t1))
+                })
+            }
+            Language::Let(language::Let {
+                binder,
+                bind,
+                usage,
+            }) => {
+                Self::suspend(binder).and_then(move |_, PartialInfer(as1, cs1, t1)| {
+                    Self::suspend(usage).map(move |state, PartialInfer(as2, cs2, t2)| {
+                        let mut as_ = as1.clone() + &as2;
+                        as_.remove(&bind.var);
+                        let im_cs = as2
+                            .get(&bind.var)
+                            .iter()
+                            .chain(as1.get(&bind.var).iter()) // support for fix
+                            .map(|it| {
+                                implicit_cst(it.clone(), state.monomorphic_set.clone(), t1.clone())
+                            })
+                            .collect();
+                        let bound = bind.ty.as_ref().map_or(vec![], |it| {
+                            vec![implicit_cst(
+                                it.clone(),
+                                state.monomorphic_set.clone(),
+                                t1.clone(),
+                            )]
+                        });
+                        PartialInfer::new(as_, [cs1, cs2, im_cs, bound], t2)
+                    })
+                })
+            }
+            Language::Literal(Literal::Integral) => Infer::done(PartialInfer::new(
+                AssumptionSet::empty(),
+                [None],
+                PrimitiveType::i8(),
+            )),
+            Language::Literal(Literal::Floating) => Infer::done(PartialInfer::new(
+                AssumptionSet::empty(),
+                [None],
+                PrimitiveType::f24(),
+            )),
+            Language::Literal(Literal::Tuple(items)) => {
+                let current = Infer::done(PartialInfer::new(
+                    AssumptionSet::empty(),
+                    [None],
+                    unit_type(),
+                ));
+                // Very bad way of doing things incoming
+                items.iter().fold(current, |acc, next| {
+                    acc.zip_with(Self::infer(next), |mut a, b| {
+                        a.0.merge(b.0);
+                        a.1.extend(b.1);
+                        if let MonomorphicType::Tuple(vec) = a.2 {
+                            let mut vec = vec.to_vec();
+                            vec.push(b.2);
+                            a.2 = MonomorphicType::Tuple(vec.into());
+                        }
+                        a
+                    })
+                })
+            }
+            Language::Special(Special::If {
+                condition,
+                body,
+                otherwise,
+            }) => Self::suspend(condition).and_then(move |_, PartialInfer(as1, c1, t1)| {
+                Self::suspend(body).and_then(move |_, PartialInfer(as2, c2, t2)| {
+                    Self::suspend(otherwise).map(move |_, PartialInfer(as3, c3, t3)| {
+                        PartialInfer::new(
+                            as1 + as2 + as3,
+                            [
+                                c1,
+                                c2,
+                                c3,
+                                vec![eq_cst(t1, Boolean), eq_cst(t2.clone(), t3)],
+                            ],
+                            t2,
+                        )
+                    })
+                })
+            }),
         }
     }
 }
@@ -177,7 +296,7 @@ impl Language {
         context: &mut AlgorithmW,
         table: &impl EnvironmentProvider<Var, Error = E>,
     ) -> Result<(Substitutions, MonomorphicType), CompoundInferError<E>> {
-        let (a, c, t) = context.apply(self)?;
+        let PartialInfer(a, c, t) = context.apply_(self);
         let (errors, not_found, explicits) = a.keys().fold(
             (Vec::new(), Vec::new(), Vec::new()),
             |(mut errors, mut not_found, mut cst), next| {
@@ -194,18 +313,18 @@ impl Language {
             },
         );
 
-        if let Some(not_found) = NEVec::from_vec(not_found) {
-            if let Some(errors) = NEVec::from_vec(errors) {
+        if let Some(not_found) = NEVec::try_from_vec(not_found) {
+            if let Some(errors) = NEVec::try_from_vec(errors) {
                 return Err(CompoundInferError::Both(UnknownVar(not_found), errors));
             }
             return Err(CompoundInferError::AlgoW(UnknownVar(not_found)));
-        } else if let Some(errors) = NEVec::from_vec(errors) {
+        } else if let Some(errors) = NEVec::try_from_vec(errors) {
             return Err(CompoundInferError::Foreign(errors));
         }
 
         debug!("Inferred raw type and constraints: ");
         debug!("{c:?} ++ {explicits:?}, {t}");
-        let substitutions = Constraint::solve(concat([c, explicits]), context.env)
+        let substitutions = Constraint::solve(concat([c, explicits]), &mut context.env)
             .map_err(AlgorithmWError::FailedConstraints)?;
         let t = t.substitute(&substitutions);
         debug!("Inferred type and substitutions: ");
@@ -216,7 +335,7 @@ impl Language {
     pub(crate) fn infer_with_env<E>(
         &self,
         context: &impl EnvironmentProvider<Var, Error = E>,
-        env: &mut InferState,
+        env: InferState,
     ) -> Result<PolymorphicType, CompoundInferError<E>> {
         let mut ctx = AlgorithmW {
             monomorphic_set: Default::default(),
@@ -232,7 +351,7 @@ impl Language {
         &self,
         table: &impl EnvironmentProvider<Var, Error = E>,
     ) -> Result<PolymorphicType, CompoundInferError<E>> {
-        self.infer_with_env(table, &mut InferState::default())
+        self.infer_with_env(table, InferState::default())
     }
 }
 
@@ -246,6 +365,25 @@ impl Display for AlgorithmWError {
                 vs.iter().into_iter().join(", ")
             ),
             AlgorithmWError::FailedConstraints(x) => write!(f, "{x}"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::algorithm_w::AlgorithmW;
+    use crate::language::Language;
+    use crate::process::DefaultExecutor;
+    use crate::traits::TypeInfer;
+    use proptest::{prop_assert_eq, proptest};
+
+    proptest! {
+        #[test]
+        fn proptest_infer_algorithms(expr: Language) {
+            let result = AlgorithmW::default().infer_eagerly(&expr, &mut DefaultExecutor::default())?;
+            let other_result = AlgorithmW::default().apply_(&expr);
+
+            prop_assert_eq!(result, other_result);
         }
     }
 }

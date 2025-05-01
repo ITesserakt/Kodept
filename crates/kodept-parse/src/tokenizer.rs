@@ -164,7 +164,7 @@ mod parallel {
     use rayon::prelude::*;
     use std::fmt::Debug;
 
-    const CHUNK_SIZE: usize = 480;
+    const CHUNK_SIZE: usize = 600;
 
     #[derive(Debug)]
     pub struct Tokenizer<'t, F> {

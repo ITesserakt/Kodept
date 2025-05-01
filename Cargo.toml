@@ -30,8 +30,8 @@ members = [
 [workspace.dependencies]
 bevy_ecs = { version = "0.16.0", default-features = false, features = ["std"] }
 extend = "1.2"
-itertools = "0.13"
-nonempty-collections = "0.2.9"
+itertools = "0.14.0"
+nonempty-collections = "0.3.0"
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]
@@ -59,7 +59,7 @@ memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
 serde_json = "1"
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt", "ansi"] }
-yoke = "0.7.4"
+yoke = "0.8.0"
 
 ctrlc = { version = "3.4.4", optional = true }
 dhat = { version = "0.3", optional = true }
@@ -88,6 +88,12 @@ parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept
 trace = ["dep:gag", "kodept-parse/trace"]
 interning = ["dep:kodept-interning"]
 nom = ["kodept-parse/nom"]
+
+[profile.test.package.proptest]
+opt-level = 3
+
+[profile.test.package.rand_chacha]
+opt-level = 3
 
 [profile.profiler]
 debug = true

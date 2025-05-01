@@ -5,7 +5,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::Parser;
 
-use nonempty_collections::NEVec;
+use nonempty_collections::{IntoIteratorExt, NonEmptyIterator};
 
 use crate::lexer::PackedToken::*;
 use crate::nom::parser::macros::function;
@@ -24,11 +24,11 @@ where
     P: Parser<I, Output = (T, Vec<(PackedTokenMatch, T)>)>,
     R: From<T>,
 {
-    parser.map(move |(a, tail)| match NEVec::from_vec(tail) {
+    parser.map(move |(a, tail)| match tail.try_into_nonempty_iter() {
         None => a.into(),
         Some(rest) => {
-            let (op, b) = rest.head;
-            rest.tail.into_iter().fold(
+            let ((op, b), tail) = rest.next();
+            tail.fold(
                 produce(a.into(), Symbol::from_located(op), b),
                 |a, (op, b)| produce(a, Symbol::from_located(op), b),
             )

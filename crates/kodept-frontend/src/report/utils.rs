@@ -1,8 +1,24 @@
-use crate::prelude::Source;
+use crate::prelude::{GlobalReports, Source};
 use crate::report::{Global, Reports};
-use kodept_report::prelude::Reportable;
+use crate::Execution;
+use kodept_report::prelude::{IntoSpannedReportMessage, Reportable};
 use kodept_report::report::Report;
 use kodept_report::FileId;
+use std::ops::ControlFlow::{Break, Continue};
+
+pub trait ExtractReports {
+    type Output;
+
+    #[allow(private_bounds)]
+    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+        FileId: CorrectFileId + Clone;
+
+    fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>;
+}
 
 pub(super) trait CorrectFileId: Sized + Clone {
     fn insert<Impl>(collector: &Reports<Impl>, message: Report<Self>)
@@ -45,5 +61,77 @@ impl CorrectFileId for FileId {
                 lock.push(report);
             }
         }
+    }
+}
+
+impl<T, E> ExtractReports for Result<T, E>
+where
+    E: IntoSpannedReportMessage,
+{
+    type Output = Execution<T>;
+
+    #[allow(private_bounds)]
+    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+        FileId: CorrectFileId,
+    {
+        match self {
+            Ok(x) => Continue(x),
+            Err(e) => {
+                _ = sink.report(file_id, e);
+                Break(())
+            }
+        }
+    }
+
+    fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+    {
+        match self {
+            Ok(x) => Continue(x),
+            Err(e) => {
+                _ = sink.report(e);
+                Break(())
+            }
+        }
+    }
+}
+
+impl<E> ExtractReports for Vec<E>
+where
+    E: IntoSpannedReportMessage,
+{
+    type Output = Execution<()>;
+
+    #[allow(private_bounds)]
+    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+        FileId: CorrectFileId + Clone,
+    {
+        let mut result = Continue(());
+        for item in self {
+            result = match sink.report(file_id.clone(), item) {
+                Continue(_) => result,
+                Break(_) => Break(())
+            }
+        }
+        result
+    }
+
+    fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+    {
+        let mut result = Continue(());
+        for item in self {
+            result = match sink.report(item) {
+                Continue(_) => result,
+                Break(_) => Break(())
+            }
+        }
+        result
     }
 }

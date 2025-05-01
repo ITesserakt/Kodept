@@ -13,6 +13,8 @@ use kodept_report::traits::{ad_hoc_message, IntoSpannedReportMessage, MessageBeh
 
 mod utils;
 
+pub use utils::ExtractReports;
+
 type Sources<Impl> = SourceFiles<Impl>;
 
 pub struct Global;

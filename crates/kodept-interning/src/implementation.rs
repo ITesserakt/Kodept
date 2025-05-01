@@ -1,5 +1,5 @@
 //! *ORIGINAL CODE BELONGS TO BEVY* and licensed under Apache 2.0 license
-
+//!
 //! Provides types used to statically intern immutable values.
 //!
 //! Interning is a pattern used to save memory by deduplicating identical values,
