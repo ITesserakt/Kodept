@@ -5,10 +5,12 @@ use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
 use std::ops::{Deref, DerefMut};
+use kodept_core::file_name::FileDescriptor;
 
 pub trait NodeProperty: Component {}
 
 #[derive(Debug, Component, Display)]
+#[component(immutable)]
 pub struct Node {
     pub kind: &'static str,
 }
@@ -16,7 +18,9 @@ pub struct Node {
 #[derive(Debug, Component)]
 #[component(storage = "SparseSet")]
 #[component(immutable)]
-pub struct Root;
+pub struct Root {
+    pub associated_file: FileDescriptor
+}
 
 #[derive(Debug, Component, Clone, From, Into, Display)]
 #[component(storage = "SparseSet")]

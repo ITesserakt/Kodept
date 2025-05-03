@@ -42,7 +42,7 @@ impl Command for Check {
             })?;
             let mut ast = self.timings_block("AST building", || build_ast(&source, rlt));
 
-            ast.prepare_reporting(FileDescriptor::new(source.path().clone(), *source.id), {
+            ast.prepare_reporting({
                 let reports = reports.clone();
                 move |report| reports.insert(report)
             });

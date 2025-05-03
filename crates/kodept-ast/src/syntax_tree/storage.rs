@@ -1,27 +1,41 @@
 use crate::interaction::Interaction;
 use crate::prelude::{CodeHolder, FromSyntax};
-use crate::properties::{Lexeme, Root};
+use crate::properties::Lexeme;
 use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
 use bevy_ecs::prelude::World;
+use derive_more::Constructor;
+use kodept_core::file_name::FileDescriptor;
 use kodept_rlt::prelude::RLT;
 
 #[derive(Debug)]
 pub struct AST {
-    pub(crate) world: World,
+    world: World,
+}
+
+#[derive(Debug, Constructor)]
+pub struct SourceCode<S: CodeHolder> {
+    code: S,
+    descriptor: FileDescriptor,
 }
 
 impl AST {
     #[allow(unsafe_code)]
-    pub fn recursively_build<Root>(start: RLT, source_code: impl CodeHolder) -> Self
+    pub fn recursively_build<Root>(start: RLT, source_code: SourceCode<impl CodeHolder>) -> Self
     where
         Root: FromSyntax<kodept_rlt::prelude::File>,
     {
         let mut world = World::new();
         let mut syntax = SyntaxResolver::empty(start);
-        let whole_part = Root::from_syntax(syntax.root(), source_code);
+        let whole_part = Root::from_syntax(syntax.root(), source_code.code);
         let id = unsafe { syntax.link(std::mem::transmute(SyntaxVariant::from(syntax.root()))) };
         world.insert_resource(syntax);
-        world.spawn((Root, whole_part)).insert(Lexeme(id));
+        let mut entity = world.spawn((
+            crate::properties::Root {
+                associated_file: source_code.descriptor,
+            },
+            whole_part,
+        ));
+        entity.insert(Lexeme(id));
         AST { world }
     }
 

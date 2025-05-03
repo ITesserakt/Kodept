@@ -1,6 +1,6 @@
 use kodept_core::code_point::CodePoint;
 use criterion::{criterion_group, BatchSize, Criterion, Throughput};
-use kodept_ast::syntax_tree::prelude::AST;
+use kodept_ast::syntax_tree::prelude::{SourceCode, AST};
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::span::CodeHolder;
 use kodept_parse::common::{EagerTokensProducer, RLTProducer};
@@ -11,6 +11,7 @@ use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
 use std::sync::LazyLock;
+use kodept_core::file_name::{FileDescriptor, FileId, FileName};
 
 const FILE_CONTENTS: &str = include_str!("benchmarking_file1.kd");
 
@@ -27,6 +28,10 @@ fn parsed_file(modules: usize) -> RLT {
     let module = PARSED_FILE.0 .0.first().unwrap();
     let modules = (0..modules).map(|_| module.clone()).collect::<Box<_>>();
     RLT(rlt::File(modules))
+}
+
+fn wrap_source_code<S: CodeHolder<Str = Cow<'static, str>>>(holder: S) -> SourceCode<S> {
+    SourceCode::new(holder, FileDescriptor::new(FileName::Anon, FileId::generate()))
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -62,9 +67,10 @@ fn bench_complexity(c: &mut Criterion) {
                 b.iter_batched(
                     || rlt.clone(),
                     |rlt| {
+                        let code_holder = InlineCodeHolder(FILE_CONTENTS).map(|it| Cow::Borrowed(it));
                         AST::recursively_build::<FileDecl>(
                             rlt,
-                            InlineCodeHolder(FILE_CONTENTS).map(|it| Cow::Borrowed(it)),
+                            wrap_source_code(code_holder),
                         )
                     },
                     BatchSize::SmallInput,
@@ -74,9 +80,10 @@ fn bench_complexity(c: &mut Criterion) {
             return b.iter_batched(
                 || rlt.clone(),
                 |rlt| {
+                    let code_holder = InlineCodeHolder(FILE_CONTENTS).map(Cow::Borrowed);
                     AST::recursively_build::<FileDecl>(
                         rlt,
-                        InlineCodeHolder(FILE_CONTENTS).map(Cow::Borrowed),
+                        wrap_source_code(code_holder),
                     )
                 },
                 BatchSize::SmallInput,
@@ -98,7 +105,7 @@ where
             pool.install(|| {
                 b.iter_batched(
                     || PARSED_FILE.clone(),
-                    |rlt| AST::recursively_build::<FileDecl>(rlt, sources),
+                    |rlt| AST::recursively_build::<FileDecl>(rlt, wrap_source_code(sources)),
                     BatchSize::SmallInput,
                 )
             })
@@ -116,7 +123,7 @@ fn bench_impls(c: &mut Criterion) {
         let sources = sources.map(Cow::from);
         b.iter_batched(
             || PARSED_FILE.clone(),
-            |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), sources),
+            |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), wrap_source_code(sources)),
             BatchSize::SmallInput,
         )
     });
@@ -126,7 +133,7 @@ fn bench_impls(c: &mut Criterion) {
         let sources = kodept_interning::InterningCodeHolder::new(sources).map(|it| Cow::from(it.0));
         b.iter_batched(
             || PARSED_FILE.clone(),
-            |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), sources),
+            |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), wrap_source_code(sources)),
             BatchSize::SmallInput,
         )
     });

@@ -26,13 +26,13 @@ impl<'w> Interaction<'w> {
         self.immediate_with((), system)
     }
 
-    pub fn immediate_with<I, Input, O, M>(
+    pub fn immediate_with<'a, I, Input, O, M>(
         &mut self,
         input: Input,
         system: impl IntoSystem<I, O, M>,
     ) -> O
     where
-        I: for<'a> SystemInput<Inner<'a> = Input>,
+        I: SystemInput<Inner<'a> = Input>
     {
         self.world
             .run_system_once_with(system, input)

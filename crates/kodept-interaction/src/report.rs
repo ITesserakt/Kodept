@@ -1,15 +1,11 @@
-use bevy_ecs::prelude::{Component, Res, Resource, Single, World};
+use bevy_ecs::prelude::{Res, Resource, Single, World};
 use bevy_ecs::system::SystemParam;
 use extend::ext;
+use kodept_ast::properties::Root;
 use kodept_ast::syntax_tree::prelude::AST;
-use kodept_report::FileDescriptor;
-use std::sync::atomic::{AtomicBool, Ordering};
 use kodept_report::report::Report;
 use kodept_report::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage};
-
-#[derive(Debug, Component)]
-#[component(storage = "SparseSet")]
-struct Wrapper(FileDescriptor);
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Resource)]
 struct ReportWriter {
@@ -19,13 +15,13 @@ struct ReportWriter {
 
 #[derive(SystemParam)]
 pub(crate) struct Reporter<'w> {
-    file: Single<'w, &'static Wrapper>,
+    root: Single<'w, &'static Root>,
     events: Res<'w, ReportWriter>,
 }
 
 impl Reporter<'_> {
     pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
-        let report = Report::from_message(self.file.0.id(), message);
+        let report = Report::from_message(self.root.associated_file.id(), message);
         self.events
             .fail
             .fetch_or(report.is_error(), Ordering::Relaxed);
@@ -36,7 +32,7 @@ impl Reporter<'_> {
     where
         T: SpannedReportMessage,
     {
-        let report = Report::from_message(self.file.0.id(), ad_hoc_message(f));
+        let report = Report::from_message(self.root.associated_file.id(), ad_hoc_message(f));
         self.events
             .fail
             .fetch_or(report.is_error(), Ordering::Relaxed);
@@ -48,7 +44,6 @@ impl Reporter<'_> {
 pub impl AST {
     fn prepare_reporting(
         &mut self,
-        descriptor: FileDescriptor,
         sink: impl Fn(Report) + Send + Sync + 'static,
     ) {
         self.interact()
@@ -57,7 +52,6 @@ pub impl AST {
                     sink: Box::new(sink),
                     fail: AtomicBool::new(false),
                 });
-                world.spawn(Wrapper(descriptor));
             });
     }
 }
