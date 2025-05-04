@@ -24,6 +24,10 @@ impl<'a> AnyNodeRefItem<'a, '_> {
         Self { inner: item }
     }
     
+    pub(crate) fn as_inner(&self) -> EntityRef {
+        self.inner
+    }
+    
     #[deprecated]
     pub fn cast<T>(self) -> Option<NodeRef<'a, &'a T>>
     where
