@@ -16,11 +16,11 @@ workspace = true
 
 [features]
 default = []
-parallel = ["dep:rayon", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
+parallel = ["dep:rayon", "bevy_ecs/multi_threaded"]
+reflect = ["bevy_ecs/bevy_reflect"]
 
 [dependencies]
 bevy_ecs.workspace = true
-dashmap = "6.1.0"
 derive_more.workspace = true
 smallvec = "1.13.2"
 

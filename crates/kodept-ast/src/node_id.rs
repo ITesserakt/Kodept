@@ -1,6 +1,7 @@
-use std::borrow::Borrow;
 use bevy_ecs::prelude::Entity;
+use bevy_ecs::relationship::RelationshipSourceCollection;
 use derive_more::Into;
+use std::borrow::Borrow;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -59,7 +60,7 @@ impl<T> NodeId<T> {
             _phantom: PhantomData,
         }
     }
-    
+
     pub fn entity(&self) -> Entity {
         self.entity
     }
@@ -131,5 +132,48 @@ impl<T> Display for NodeId<T> {
 impl<T> Borrow<Entity> for NodeId<T> {
     fn borrow(&self) -> &Entity {
         &self.entity
+    }
+}
+
+impl<T> RelationshipSourceCollection for NodeId<T> {
+    type SourceIter<'a>
+        = std::option::IntoIter<Entity>
+    where
+        T: 'a;
+
+    fn new() -> Self {
+        Self::NULL
+    }
+
+    fn with_capacity(_capacity: usize) -> Self {
+        Self::NULL
+    }
+
+    fn reserve(&mut self, additional: usize) {
+        self.entity.reserve(additional)
+    }
+
+    fn add(&mut self, entity: Entity) -> bool {
+        self.entity.add(entity)
+    }
+
+    fn remove(&mut self, entity: Entity) -> bool {
+        self.entity.remove(entity)
+    }
+
+    fn iter(&self) -> Self::SourceIter<'_> {
+        self.entity.iter()
+    }
+
+    fn len(&self) -> usize {
+        self.entity.len()
+    }
+
+    fn clear(&mut self) {
+        self.entity.clear()
+    }
+
+    fn shrink_to_fit(&mut self) {
+        self.entity.shrink_to_fit()
     }
 }

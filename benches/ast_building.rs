@@ -14,6 +14,7 @@ use std::sync::LazyLock;
 use kodept_core::file_name::{FileDescriptor, FileId, FileName};
 
 const FILE_CONTENTS: &str = include_str!("benchmarking_file1.kd");
+const MODULES_COUNT: u64 = 10;
 
 static PARSED_FILE: LazyLock<RLT> = LazyLock::new(|| {
     let lexer = PestLexer::new();
@@ -24,7 +25,7 @@ static PARSED_FILE: LazyLock<RLT> = LazyLock::new(|| {
     parser.parse_stream(&stream).unwrap()
 });
 
-fn parsed_file(modules: usize) -> RLT {
+fn parsed_file(modules: u64) -> RLT {
     let module = PARSED_FILE.0 .0.first().unwrap();
     let modules = (0..modules).map(|_| module.clone()).collect::<Box<_>>();
     RLT(rlt::File(modules))
@@ -104,7 +105,7 @@ where
         group.bench_function(criterion::BenchmarkId::new(id, parallelism), |b| {
             pool.install(|| {
                 b.iter_batched(
-                    || PARSED_FILE.clone(),
+                    || parsed_file(MODULES_COUNT),
                     |rlt| AST::recursively_build::<FileDecl>(rlt, wrap_source_code(sources)),
                     BatchSize::SmallInput,
                 )
@@ -116,13 +117,13 @@ where
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     let sources = InlineCodeHolder(FILE_CONTENTS);
-    group.throughput(Throughput::Bytes(FILE_CONTENTS.len() as u64));
+    group.throughput(Throughput::Elements(MODULES_COUNT));
 
     #[cfg(all(not(feature = "interning"), not(feature = "parallel")))]
     group.bench_function("no interning, no parallelization", |b| {
         let sources = sources.map(Cow::from);
         b.iter_batched(
-            || PARSED_FILE.clone(),
+            || parsed_file(MODULES_COUNT),
             |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), wrap_source_code(sources)),
             BatchSize::SmallInput,
         )
@@ -132,7 +133,7 @@ fn bench_impls(c: &mut Criterion) {
     group.bench_function("interning, no parallelization", |b| {
         let sources = kodept_interning::InterningCodeHolder::new(sources).map(|it| Cow::from(it.0));
         b.iter_batched(
-            || PARSED_FILE.clone(),
+            || parsed_file(MODULES_COUNT),
             |rlt| AST::recursively_build::<FileDecl>(rlt.clone(), wrap_source_code(sources)),
             BatchSize::SmallInput,
         )

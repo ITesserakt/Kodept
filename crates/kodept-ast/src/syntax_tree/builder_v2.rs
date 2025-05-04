@@ -1,9 +1,9 @@
 use super::children::HasChild;
 use crate::arity::Arity;
-use crate::properties::{HasProperty, Lexeme, SourceSpan};
 use crate::properties::Node;
 use crate::properties::NodeProperty;
-use crate::relationship::{ContainedBy, Contains, NodeRelationship};
+use crate::properties::{HasProperty, Lexeme, SourceSpan};
+use crate::relationship::{AnyContainedBy, ContainedBy, Contains, NodeRelationship};
 use crate::resource::rlt::{LexemeId, SyntaxResolver, SyntaxVariant};
 use crate::traits::ASTNode;
 use crate::traits::CodeHolder;
@@ -60,6 +60,7 @@ pub struct ASTBuilder<Root, Properties, Children> {
     properties: Properties,
     children: Children,
 }
+
 #[derive(Debug)]
 pub struct NodeBundle<T>(T, SyntaxVariant<'static>);
 
@@ -91,10 +92,10 @@ where
         C: Bundle,
         V: BundleUnion,
     {
-        <R as NodeRelationship<U, Tag>>::register();
-        wrap(NodeBundle(builder.build(), unsafe {
-            std::mem::transmute(rlt_link.into())
-        }))
+        wrap(NodeBundle(
+            builder.build(),
+            unsafe { std::mem::transmute(rlt_link.into()) },
+        ))
     }
 
     #[allow(unsafe_code)]
@@ -112,11 +113,11 @@ where
         &'a T: Into<SyntaxVariant<'a>>,
         T: 'static,
     {
-        <R as NodeRelationship<U, Tag>>::register();
         let variant = node.into();
-        wrap(NodeBundle(U::from_syntax(node, source), unsafe {
-            std::mem::transmute(variant)
-        }))
+        wrap(NodeBundle(
+            U::from_syntax(node, source),
+            unsafe { std::mem::transmute(variant) },
+        ))
     }
 
     pub const fn new() -> Self {
@@ -212,7 +213,6 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         #[cfg(feature = "parallel")]
         use rayon::prelude::*;
 
-        <R as NodeRelationship<U, Tag>>::register();
         #[cfg(not(feature = "parallel"))]
         let children: ChildrenCollection<NodeBundle<U::Bundle>> = iter
             .into_iter()
@@ -315,7 +315,7 @@ impl<R, P, C> ASTBuilder<R, P, C> {
     {
         let child = node.map(|it| conversion(it, &mut Self::spawner(), source));
         let closure: DynSpawnFn<ContainedBy<Tag, A>> = Box::new(|spawner| {
-             child.map(|it| it.spawn_with(spawner));
+            child.map(|it| it.spawn_with(spawner));
         });
         let bundle = Contains::<Tag, A>::spawn(SpawnWith(closure));
         ASTBuilder {
@@ -397,7 +397,6 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         #[cfg(feature = "parallel")]
         use rayon::prelude::*;
 
-        <R as NodeRelationship<U, Tag>>::register();
         #[cfg(not(feature = "parallel"))]
         let children: Option<ChildrenCollection<NodeBundle<U::Bundle>>> = iter.map(|it| {
             it.into_iter()
@@ -436,8 +435,10 @@ impl<T: DynamicBundle> DynamicBundle for NodeBundle<T> {
     type Effect = NodeLinkEffect<T::Effect>;
 
     fn get_components(self, func: &mut impl FnMut(StorageType, OwningPtr<'_>)) -> Self::Effect {
+        let other_effect = self.0.get_components(func);
+
         NodeLinkEffect {
-            other_effect: self.0.get_components(func),
+            other_effect,
             link_ptr: self.1,
         }
     }
@@ -466,15 +467,15 @@ unsafe impl<T: Bundle> Bundle for NodeBundle<T> {
         _components: &mut ComponentsRegistrator,
         _required_components: &mut RequiredComponents,
     ) {
-        T::register_required_components(_components, _required_components)
+        T::register_required_components(_components, _required_components);
     }
 }
 
 trait ContainsProperty<P: NodeProperty> {}
 
 impl<P: NodeProperty> ContainsProperty<P> for P {}
-impl<P: NodeProperty> ContainsProperty<P> for (P,) {} 
-impl<B, C: ContainsProperty<P>, P: NodeProperty> ContainsProperty<P> for (B, C) {} 
+impl<P: NodeProperty> ContainsProperty<P> for (P,) {}
+impl<B, C: ContainsProperty<P>, P: NodeProperty> ContainsProperty<P> for (B, C) {}
 
 #[allow(private_bounds)]
 impl<R, P, C> ASTBuilder<R, P, C>

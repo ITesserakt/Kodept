@@ -1,21 +1,16 @@
-use crate::arity::Arity;
+use crate::arity::{Arity, Optional, Singular};
 use crate::prelude::ASTNode;
 use crate::syntax_tree::children::HasChild;
-use bevy_ecs::component::{
-    Component, ComponentId, Components, ComponentsRegistrator, Mutable, RequiredComponents,
-    StorageType,
-};
+use bevy_ecs::component::{Component, ComponentId, HookContext, Immutable};
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::RelationshipTarget;
+use bevy_ecs::prelude::Resource;
 use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
-use dashmap::setref::multiple::RefMulti;
-use dashmap::{DashMap, DashSet};
+use bevy_ecs::world::DeferredWorld;
+use smallvec::SmallVec;
 use std::any::TypeId;
-use std::hash::RandomState;
-use std::iter::Map;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use std::sync::LazyLock;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum ArityValue {
@@ -32,90 +27,96 @@ pub enum ArityValue {
 /// Type Parameters:
 /// * [T] - Associated with this relationship tag
 /// * [A] - Degree of relationship
-#[derive(Debug)]
-pub struct ContainedBy<T, A>(Entity, PhantomData<(T, A)>);
+#[derive(Debug, Component)]
+#[relationship(relationship_target = Contains<T, A>)]
+#[component(on_add = ContainedBy::<T, A>::on_add_hook)]
+#[component(on_remove = ContainedBy::<T, A>::on_remove_hook)]
+#[repr(transparent)]
+pub struct ContainedBy<T, A>
+where
+    T: Send + Sync + 'static,
+    A: Arity,
+{
+    #[relationship]
+    parent: Entity,
+    _phantom: PhantomData<(T, A)>,
+}
 
 /// Describes all entities that are children for this entity
 ///
 /// Type parameters:
 /// * [T] - Associated with this relationship tag
 /// * [A] - Degree of relationship
-#[derive(Debug)]
-pub struct Contains<T, A: Arity>(A::Collection, PhantomData<(T, A)>);
+#[derive(Debug, Component)]
+#[relationship_target(relationship = ContainedBy<T, A>, linked_spawn)]
+#[repr(transparent)]
+pub struct Contains<T, A>
+where
+    T: Send + Sync + 'static,
+    A: Arity,
+{
+    #[relationship]
+    nodes: A::Collection,
+    _phantom: PhantomData<(T, A)>,
+}
+
+/// Describes a parent entity for some node for any tag or arity
+#[derive(Debug, Component)]
+#[relationship(relationship_target = AllChildren)]
+#[repr(transparent)]
+pub struct AnyContainedBy(Entity);
+
+const ALL_CHILDREN_BUFFER_SIZE: usize = 2;
+
+/// Describes all child nodes for any tag or arity
+#[derive(Debug, Component)]
+#[relationship_target(relationship = AnyContainedBy)]
+pub struct AllChildren(SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]>);
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
-pub(crate) struct RelationshipMetadata {
-    forward_id: TypeId,
-    backward_id: TypeId,
+pub struct RelationshipMetadata {
+    forward_id: ComponentId,
+    backward_id: ComponentId,
     arity: ArityValue,
     tag_id: TypeId,
     tag_name: &'static str,
 }
 
-impl RelationshipMetadata {
-    fn new<T, U, Tag>() -> Self
-    where
-        T: HasChild<U, Tag>,
-        U: ASTNode,
-        Tag: 'static,
-    {
-        Self {
-            forward_id: TypeId::of::<<T::Relationship as Relationship>::RelationshipTarget>(),
-            backward_id: TypeId::of::<T::Relationship>(),
-            arity: <T::Arity>::VALUE,
-            tag_id: TypeId::of::<Tag>(),
-            tag_name: std::any::type_name::<Tag>(),
-        }
-    }
-}
-
-static NODE_RELATIONSHIP_METADATA: LazyLock<DashSet<RelationshipMetadata>> =
-    LazyLock::new(|| DashSet::new());
-
-pub(crate) struct NodeRelationships;
+#[derive(Debug, Resource, Default)]
+pub(crate) struct NodeRelationships(HashSet<RelationshipMetadata>);
 
 pub trait NodeRelationship<Child, Tag> {
-    type Relationship: Relationship<Mutability = Mutable>;
-
-    fn register();
+    type Relationship: Relationship<Mutability = Immutable>;
 }
 
 impl RelationshipMetadata {
-    pub(crate) fn tag_name(&self) -> &'static str {
+    pub fn tag_name(&self) -> &'static str {
         self.tag_name
     }
 
-    pub(crate) fn is_empty_tag(&self) -> bool {
+    pub fn is_empty_tag(&self) -> bool {
         self.tag_id == TypeId::of::<()>()
     }
 
-    pub(crate) fn arity(&self) -> ArityValue {
+    pub fn arity(&self) -> ArityValue {
         self.arity
     }
 
-    pub(crate) fn forward_component_id(&self, components: &Components) -> ComponentId {
-        components.get_id(self.forward_id).unwrap()
+    pub fn forward_component_id(&self) -> ComponentId {
+        self.forward_id
     }
 
-    pub(crate) fn backward_component_id(&self, components: &Components) -> ComponentId {
-        components.get_id(self.backward_id).unwrap()
+    pub fn backward_component_id(&self) -> ComponentId {
+        self.backward_id
     }
 }
 
-impl IntoIterator for NodeRelationships {
+impl<'a> IntoIterator for &'a NodeRelationships {
     type Item = RelationshipMetadata;
-    type IntoIter = Map<
-        dashmap::iter_set::Iter<
-            'static,
-            RelationshipMetadata,
-            RandomState,
-            DashMap<RelationshipMetadata, ()>,
-        >,
-        fn(RefMulti<RelationshipMetadata>) -> RelationshipMetadata,
-    >;
+    type IntoIter = std::iter::Cloned<std::collections::hash_set::Iter<'a, RelationshipMetadata>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        NODE_RELATIONSHIP_METADATA.iter().map(|it| *it.key())
+        self.0.iter().cloned()
     }
 }
 
@@ -126,19 +127,68 @@ where
     Tag: 'static + Send + Sync,
 {
     type Relationship = ContainedBy<Tag, T::Arity>;
-
-    fn register() {
-        NODE_RELATIONSHIP_METADATA.insert(RelationshipMetadata::new::<T, U, Tag>());
-    }
 }
 
-impl<T, A> From<Entity> for ContainedBy<T, A> {
+impl<T, A> From<Entity> for ContainedBy<T, A>
+where
+    T: Send + Sync + 'static,
+    A: Arity,
+{
     fn from(value: Entity) -> Self {
-        ContainedBy(value, PhantomData)
+        ContainedBy {
+            parent: value,
+            _phantom: PhantomData,
+        }
     }
 }
 
-impl<T, A> Deref for ContainedBy<T, A> {
+impl<T, A> Deref for ContainedBy<T, A>
+where
+    T: Send + Sync + 'static,
+    A: Arity,
+{
+    type Target = Entity;
+
+    fn deref(&self) -> &Self::Target {
+        &self.parent
+    }
+}
+
+impl<T, A> DerefMut for ContainedBy<T, A>
+where
+    T: Send + Sync + 'static,
+    A: Arity,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.parent
+    }
+}
+
+impl<T, A, C> AsRef<C> for Contains<T, A>
+where
+    T: Send + Sync + 'static,
+    A::Collection: AsRef<C>,
+    A: Arity,
+{
+    fn as_ref(&self) -> &C {
+        self.nodes.as_ref()
+    }
+}
+
+impl<'a, T, A> IntoIterator for &'a Contains<T, A>
+where
+    T: Send + Sync + 'static,
+    A: Arity,
+{
+    type Item = Entity;
+    type IntoIter = <A::Collection as RelationshipSourceCollection>::SourceIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.nodes.iter()
+    }
+}
+
+impl Deref for AnyContainedBy {
     type Target = Entity;
 
     fn deref(&self) -> &Self::Target {
@@ -146,135 +196,94 @@ impl<T, A> Deref for ContainedBy<T, A> {
     }
 }
 
-impl<T, A> DerefMut for ContainedBy<T, A> {
+impl DerefMut for AnyContainedBy {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T, A: Arity, C> AsRef<C> for Contains<T, A>
-where
-    A::Collection: AsRef<C>,
-{
-    fn as_ref(&self) -> &C {
-        self.0.as_ref()
-    }
-}
-
-impl<'a, T, A> IntoIterator for &'a Contains<T, A>
-where
-    A: Arity,
-{
+impl<'a> IntoIterator for &'a AllChildren {
     type Item = Entity;
-    type IntoIter = <A::Collection as RelationshipSourceCollection>::SourceIter<'a>;
+    type IntoIter =
+        <SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]> as RelationshipSourceCollection>::SourceIter<
+            'a,
+        >;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
     }
 }
 
-impl<T, A> Component for Contains<T, A>
+impl<T> Clone for Contains<T, Singular>
+where
+    T: Send + Sync + 'static,
+{
+    fn clone(&self) -> Self {
+        Self {
+            nodes: self.nodes,
+            _phantom: Default::default(),
+        }
+    }
+}
+
+impl<T> Clone for Contains<T, Optional>
+where
+    T: Send + Sync + 'static,
+{
+    fn clone(&self) -> Self {
+        Self {
+            nodes: self.nodes,
+            _phantom: Default::default(),
+        }
+    }
+}
+
+impl<T, A> Clone for ContainedBy<T, A>
 where
     T: Send + Sync + 'static,
     A: Arity,
 {
-    const STORAGE_TYPE: StorageType = StorageType::Table;
-    type Mutability = Mutable;
-    fn on_replace() -> Option<bevy_ecs::component::ComponentHook> {
-        Some(<Self as RelationshipTarget>::on_replace)
-    }
-    fn register_required_components(
-        _requiree: ComponentId,
-        components: &mut ComponentsRegistrator,
-        _required_components: &mut RequiredComponents,
-        _inheritance_depth: u16,
-        recursion_check_stack: &mut Vec<ComponentId>,
-    ) {
-        bevy_ecs::component::enforce_no_required_components_recursion(
-            components,
-            recursion_check_stack,
-        );
-        let self_id = components.register_component::<Self>();
-        recursion_check_stack.push(self_id);
-        recursion_check_stack.pop();
-    }
-    fn clone_behavior() -> bevy_ecs::component::ComponentCloneBehavior {
-        bevy_ecs::component::ComponentCloneBehavior::Custom(
-            bevy_ecs::relationship::clone_relationship_target::<Self>,
-        )
+    fn clone(&self) -> Self {
+        Self {
+            parent: self.parent,
+            _phantom: Default::default(),
+        }
     }
 }
 
-impl<T, A> Component for ContainedBy<T, A>
+impl<T, A> ContainedBy<T, A>
 where
     T: Send + Sync + 'static,
     A: Arity,
 {
-    const STORAGE_TYPE: StorageType = StorageType::Table;
-    type Mutability = Mutable;
+    fn on_add_hook(mut world: DeferredWorld, ctx: HookContext) {
+        let forward_id = world.component_id::<Contains<T, A>>().unwrap();
+        let metadata = RelationshipMetadata {
+            forward_id,
+            backward_id: ctx.component_id,
+            arity: A::VALUE,
+            tag_id: TypeId::of::<T>(),
+            tag_name: std::any::type_name::<T>(),
+        };
 
-    fn on_insert() -> Option<bevy_ecs::component::ComponentHook> {
-        Some(<Self as Relationship>::on_insert)
-    }
-    fn on_replace() -> Option<bevy_ecs::component::ComponentHook> {
-        Some(<Self as Relationship>::on_replace)
-    }
-    fn register_required_components(
-        _requiree: ComponentId,
-        components: &mut ComponentsRegistrator,
-        _required_components: &mut RequiredComponents,
-        _inheritance_depth: u16,
-        recursion_check_stack: &mut Vec<ComponentId>,
-    ) {
-        bevy_ecs::component::enforce_no_required_components_recursion(
-            components,
-            recursion_check_stack,
-        );
-        let self_id = components.register_component::<Self>();
-        recursion_check_stack.push(self_id);
-        recursion_check_stack.pop();
-    }
-    fn clone_behavior() -> bevy_ecs::component::ComponentCloneBehavior {
-        use bevy_ecs::component::DefaultCloneBehaviorBase;
-        (&&&bevy_ecs::component::DefaultCloneBehaviorSpecialization::<Self>::default())
-            .default_clone_behavior()
-    }
-}
+        if !world.get_resource::<NodeRelationships>().is_some_and(|it| it.0.contains(&metadata)) {
+            if let Some(mut relationships) = world.get_resource_mut::<NodeRelationships>() {
+                relationships.0.insert(metadata);
+            } else {
+                world.commands().insert_resource(NodeRelationships(HashSet::from([
+                    metadata
+                ])));
+            }
+        }
 
-impl<T, A> Relationship for ContainedBy<T, A>
-where
-    T: 'static + Send + Sync,
-    A: Arity,
-{
-    type RelationshipTarget = Contains<T, A>;
-
-    fn get(&self) -> Entity {
-        self.0
+        // TODO: slow code ahead
+        let (fetcher, mut commands) = world.entities_and_commands();
+        let this = fetcher.get(ctx.entity).unwrap().get::<Self>().unwrap();
+        commands.entity(this.parent).add_one_related::<AnyContainedBy>(ctx.entity);
     }
 
-    fn from(entity: Entity) -> Self {
-        Self(entity, PhantomData)
-    }
-}
-
-impl<T, A> RelationshipTarget for Contains<T, A>
-where
-    T: 'static + Send + Sync,
-    A: Arity,
-{
-    const LINKED_SPAWN: bool = true;
-    type Relationship = ContainedBy<T, A>;
-    type Collection = A::Collection;
-
-    fn collection(&self) -> &Self::Collection {
-        &self.0
-    }
-
-    fn collection_mut_risky(&mut self) -> &mut Self::Collection {
-        &mut self.0
-    }
-
-    fn from_collection_risky(collection: Self::Collection) -> Self {
-        Self(collection, PhantomData)
+    fn on_remove_hook(mut world: DeferredWorld, ctx: HookContext) {
+        let mut commands = world.commands();
+        commands.entity(ctx.entity).remove::<AnyContainedBy>();
     }
 }

@@ -1,58 +1,56 @@
 use crate::arity::{Optional, Plural, Singular};
-use crate::prelude::{AnyNodeRefItem, NodeId};
+use crate::prelude::{AnyNodeRefItem, Erase, NodeId};
 use crate::properties::{Node, Root};
-use crate::relationship::{ArityValue, Contains, NodeRelationships, RelationshipMetadata};
-use bevy_ecs::component::Components;
-use bevy_ecs::prelude::{Entity, EntityRef, Query, Single};
+use crate::relationship::{
+    AllChildren, ArityValue, Contains, NodeRelationships, RelationshipMetadata,
+};
+use bevy_ecs::prelude::{Entity, EntityRef, Query, Res, Single};
 use bevy_ecs::ptr::Ptr;
 use bevy_ecs::query::{QueryEntityError, With};
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use bevy_ecs::system::SystemParam;
-use std::iter::repeat;
+use std::iter::{once, repeat};
 
 #[derive(SystemParam)]
 pub struct AnyNodeQuery<'w, 's> {
     query: Query<'w, 's, EntityRef<'static>, With<Node>>,
+    nodes: Query<'w, 's, &'static AllChildren, With<Node>>,
     root: Single<'w, Entity, With<Root>>,
-    components: &'w Components,
+    relationships: Res<'w, NodeRelationships>,
 }
 
 pub(crate) struct TopDownIteratorWithMetadata<'w, 's> {
     stack: Vec<(Option<(Entity, RelationshipMetadata)>, Entity)>,
     nodes: Query<'w, 's, EntityRef<'static>, With<Node>>,
-    components: &'w Components,
-}
-
-pub struct TopDownIterator<'w, 's> {
-    stack: Vec<(Option<Entity>, Entity)>,
-    nodes: Query<'w, 's, EntityRef<'static>, With<Node>>,
-    components: &'w Components,
+    relationships: &'w NodeRelationships,
 }
 
 impl<'w, 's> AnyNodeQuery<'w, 's> {
-    pub fn iter_top_down(&self) -> TopDownIterator<'_, 's> {
-        TopDownIterator {
-            stack: Vec::from([(None, *self.root)]),
-            nodes: self.query.as_readonly(),
-            components: self.components,
-        }
+    pub fn iter_top_down<'a>(
+        &'a self,
+    ) -> impl Iterator<Item = AnyNodeRefItem<'a, 'w>> + use<'w, 'a> {
+        once(*self.root)
+            .chain(self.nodes.iter_descendants_depth_first(*self.root))
+            .map(|it| AnyNodeRefItem::from_inner(self.query.get(it).unwrap()))
     }
-    
-    pub fn iter_top_down_from(&self, id: NodeId) -> TopDownIterator<'_, 's> { 
-        TopDownIterator {
-            stack: vec![(None, id.entity())],
-            nodes: self.query.as_readonly(),
-            components: &self.components,
-        }
+
+    pub fn iter_top_down_from<'a, E: Erase>(
+        &'a self,
+        id: E,
+    ) -> impl Iterator<Item = AnyNodeRefItem<'a, 'w>> + use<'w, 'a, E> {
+        let id = id.erase().entity();
+        once(id)
+            .chain(self.nodes.iter_descendants_depth_first(id))
+            .map(|it| AnyNodeRefItem::from_inner(self.query.get(it).unwrap()))
     }
-    
-    pub(crate) fn iter_top_down_with_metadata(&self) -> TopDownIteratorWithMetadata<'_, 's> {
+
+    pub(crate) fn iter_top_down_with_metadata(&self) -> TopDownIteratorWithMetadata {
         TopDownIteratorWithMetadata {
             stack: vec![(None, *self.root)],
             nodes: self.query.as_readonly(),
-            components: self.components,
+            relationships: &*self.relationships,
         }
-    } 
+    }
 
     pub fn get(&self, id: NodeId) -> Result<AnyNodeRefItem<'_, 'w>, QueryEntityError> {
         let reference = self.query.get(id.entity())?;
@@ -68,7 +66,7 @@ impl<'w, 's> AnyNodeQuery<'w, 's> {
 
 impl<'w, 's> TopDownIteratorWithMetadata<'w, 's> {
     #[allow(unsafe_code)]
-    fn extract_siblings(ptr: Ptr, arity: ArityValue) -> impl Iterator<Item=Entity> + '_ {
+    fn extract_siblings(ptr: Ptr, arity: ArityValue) -> impl Iterator<Item = Entity> + '_ {
         enum Helper<'a> {
             A(<Entity as RelationshipSourceCollection>::SourceIter<'a>),
             B(<crate::arity::Option as RelationshipSourceCollection>::SourceIter<'a>),
@@ -82,17 +80,23 @@ impl<'w, 's> TopDownIteratorWithMetadata<'w, 's> {
                 match self {
                     Helper::A(x) => x.next(),
                     Helper::B(x) => x.next(),
-                    Helper::C(x) => x.next()
+                    Helper::C(x) => x.next(),
                 }
             }
         }
 
         // SAFETY: There are only 3 arities, so it's safe to cast ptr to one of them.
-        //         Also, tag does not matter because it's phantom type.
+        //         Also, tag does not matter because it's a phantom type.
         match arity {
-            ArityValue::Singular => Helper::A(unsafe { ptr.deref::<Contains<(), Singular>>() }.into_iter()),
-            ArityValue::Optional => Helper::B(unsafe { ptr.deref::<Contains<(), Optional>>() }.into_iter()),
-            ArityValue::Plural => Helper::C(unsafe { ptr.deref::<Contains<(), Plural>>() }.into_iter()),
+            ArityValue::Singular => {
+                Helper::A(unsafe { ptr.deref::<Contains<(), Singular>>() }.into_iter())
+            }
+            ArityValue::Optional => {
+                Helper::B(unsafe { ptr.deref::<Contains<(), Optional>>() }.into_iter())
+            }
+            ArityValue::Plural => {
+                Helper::C(unsafe { ptr.deref::<Contains<(), Plural>>() }.into_iter())
+            }
         }
     }
 }
@@ -103,45 +107,22 @@ impl<'w, 's> Iterator for TopDownIteratorWithMetadata<'w, 's> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let (parent, current) = self.stack.pop()?;
-        let reference = self.nodes.get(current).unwrap();
 
-        let iter = NodeRelationships
+        let reference = self.nodes.get(current).unwrap();
+        let iter = self
+            .relationships
             .into_iter()
             .filter_map(|meta| {
-                let component_id = meta.forward_component_id(self.components);
+                let component_id = meta.forward_component_id();
                 let ptr = reference.get_by_id(component_id).ok()?;
                 Some((ptr, meta))
             })
             .flat_map(|(ptr, meta)| Self::extract_siblings(ptr, meta.arity()).zip(repeat(meta)));
 
-        for (sibling, meta) in iter {
-            self.stack.push((Some((current, meta)), sibling));
+        for (child, meta) in iter {
+            self.stack.push((Some((current, meta)), child));
         }
 
         Some((parent.map(|it| (it.0.into(), it.1)), current.into()))
-    }
-}
-
-impl<'w, 's> Iterator for TopDownIterator<'w, 's> {
-    type Item = (Option<NodeId>, NodeId);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (parent, current) = self.stack.pop()?;
-        let reference = self.nodes.get(current).unwrap();
-
-        let iter = NodeRelationships
-            .into_iter()
-            .map(|meta| {
-                let component_id = meta.forward_component_id(self.components);
-                let ptr = reference.get_by_id(component_id).unwrap();
-                (ptr, meta)
-            })
-            .flat_map(|(ptr, meta)| TopDownIteratorWithMetadata::extract_siblings(ptr, meta.arity()));
-
-        for sibling in iter {
-            self.stack.push((Some(current), sibling));
-        }
-
-        Some((parent.map(|it| it.into()), current.into()))
     }
 }

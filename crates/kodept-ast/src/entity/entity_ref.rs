@@ -4,6 +4,8 @@ use bevy_ecs::prelude::EntityRef;
 use bevy_ecs::query::QueryData;
 use std::convert::identity;
 use std::ops::Deref;
+use bevy_ecs::relationship::Relationship;
+use crate::relationship::AnyContainedBy;
 
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]
@@ -69,6 +71,10 @@ impl<'a> AnyNodeRefItem<'a, '_> {
     
     pub fn id(&self) -> NodeId {
         self.inner.id().into()
+    }
+    
+    pub fn parent(&self) -> Option<NodeId> {
+        self.inner.get::<AnyContainedBy>().map(|it| it.get().into())
     }
 }
 

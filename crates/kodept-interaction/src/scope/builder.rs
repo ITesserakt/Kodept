@@ -58,15 +58,15 @@ impl ScopeBuildingPass {
         reporter: Reporter,
         mut builder: ScopeBuilder
     ) -> crate::Result<Infallible> {
-        for (parent_id, node_id) in nodes.iter_top_down() {
-            let node = nodes.get(node_id).unwrap();
+        for node in nodes.iter_top_down() {
+            let parent_id = node.parent();
             let parent_scope = parent_id.and_then(|it| builder.get_enclosing_scope(it));
             
             if let Some(node_enum) = node.into_enum() {
                 let this_scope_id = Self::divide_by_scopes(node_enum, &mut builder);
                 parent_scope.map(|it| builder.link_scopes(this_scope_id, it));
             } else if let Some(parent) = parent_scope {
-                builder.set_enclosing_scope(node_id, parent);
+                builder.set_enclosing_scope(node.id(), parent);
             } else {
                 reporter.report_ad_hoc(|| {
                     Diagnostic::new(Severity::Bug)

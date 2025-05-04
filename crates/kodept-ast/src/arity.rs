@@ -1,24 +1,23 @@
+use crate::relationship::ArityValue;
+use bevy_ecs::entity::{EntityMapper, MapEntities};
 use bevy_ecs::prelude::Entity;
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use private::Sealed;
-use crate::relationship::ArityValue;
 
 mod private {
     pub trait Sealed {}
 }
 
 pub trait Arity: Sealed + 'static + Send + Sync {
-    type Collection: RelationshipSourceCollection
-    + Sync
-    + Send;
-    
+    type Collection: RelationshipSourceCollection + MapEntities + Send + Sync + 'static;
+
     const VALUE: ArityValue;
 }
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct Option(Entity);
 
-/// Describes that parent must have single child of that type
+/// Describes that parent must have a single child of that type
 /// One-to-one relationship
 pub struct Singular;
 
@@ -96,17 +95,23 @@ impl RelationshipSourceCollection for Option {
     fn clear(&mut self) {
         *self = Option(Entity::PLACEHOLDER);
     }
-    
+
     fn shrink_to_fit(&mut self) {}
 
-    fn is_empty(&self) -> bool { 
+    fn is_empty(&self) -> bool {
         self.0 == Entity::PLACEHOLDER
     }
 
-    fn extend_from_iter(&mut self, entities: impl IntoIterator<Item=Entity>) {
+    fn extend_from_iter(&mut self, entities: impl IntoIterator<Item = Entity>) {
         if let Some(first) = entities.into_iter().next() {
             self.0 = first;
         }
+    }
+}
+
+impl MapEntities for Option {
+    fn map_entities<E: EntityMapper>(&mut self, entity_mapper: &mut E) {
+        self.into_inner().map_entities(entity_mapper) 
     }
 }
 
