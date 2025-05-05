@@ -113,13 +113,15 @@ impl SpanBounds for Variable {
             Variable::Immutable {
                 keyword,
                 assigned_type,
+                id,
                 ..
-            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()),
+            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()) + id.0,
             Variable::Mutable {
                 keyword,
                 assigned_type,
+                id,
                 ..
-            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()),
+            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()) + id.0,
         }
     }
 }
