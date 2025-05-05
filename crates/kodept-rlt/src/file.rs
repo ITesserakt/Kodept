@@ -53,15 +53,24 @@ impl Located for File {
 
 impl SpanBounds for File {
     fn bounds(&self) -> Span {
-        CodePoint::single_point(0) + self.0.first().map(|it| it.bounds()) + self.0.last().map(|it| it.bounds())
+        CodePoint::single_point(0)
+            + self.0.first().map(|it| it.bounds())
+            + self.0.last().map(|it| it.bounds())
     }
 }
 
 impl SpanBounds for Module {
     fn bounds(&self) -> Span {
         match self {
-            Module::Global { keyword, rest, .. } => keyword.0 + rest.last().map(|it| it.bounds()),
-            Module::Ordinary { keyword, rbrace, .. } => keyword.0 + rbrace.0
+            Module::Global {
+                keyword,
+                flow,
+                rest,
+                ..
+            } => keyword.0 + flow.0 + rest.last().map(|it| it.bounds()),
+            Module::Ordinary {
+                keyword, rbrace, ..
+            } => keyword.0 + rbrace.0,
         }
     }
 }
