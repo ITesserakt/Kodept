@@ -1,4 +1,4 @@
-use crate::function::Func;
+use crate::function::FuncDecl;
 use crate::types::TyParams;
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
@@ -31,7 +31,7 @@ derive_node!(StructDecl {
     properties = [require Name,]
 });
 relation!(StructDecl => optional TyParams);
-relation!(StructDecl => children Func);
+relation!(StructDecl => children FuncDecl);
 
 derive_node!(EnumConst {
     properties = [require Name,]
@@ -75,7 +75,10 @@ impl FromSyntax<Struct> for StructDecl {
                     )
                 },
             )
-            .with_opt_children::<_, Func, _>(node.body.as_ref().map(|it| it.inner.as_ref()), source)
+            .with_opt_children::<_, FuncDecl, _>(
+                node.body.as_ref().map(|it| it.inner.as_ref()),
+                source,
+            )
             .build()
     }
 }

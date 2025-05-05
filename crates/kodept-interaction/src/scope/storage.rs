@@ -3,6 +3,7 @@ use bevy_ecs::prelude::Component;
 use kodept_ast::prelude::{Erase, NodeId};
 
 #[derive(Debug, Component, Hash, Eq, PartialEq)]
+#[component(immutable)]
 #[require(SymbolTable)]
 pub(crate) struct Scope {
     /// Root entity for this scope

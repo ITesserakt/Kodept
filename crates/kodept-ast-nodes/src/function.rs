@@ -11,40 +11,67 @@ use kodept_rlt::prelude::BodiedFunction;
 use std::convert::identity;
 
 #[derive(Debug, PartialEq, Component)]
-pub struct Func;
+pub struct FuncDecl;
 
-derive_node!(Func {
+#[derive(Debug, PartialEq, Component)]
+pub struct FuncBody;
+
+#[derive(Debug, PartialEq, Component)]
+pub struct FuncSignature;
+
+derive_node!(FuncDecl);
+relation!(FuncDecl => either Sig(child FuncSignature));
+relation!(FuncDecl => child FuncBody);
+
+derive_node!(FuncBody);
+relation!(FuncBody => optional Ty);
+relation!(FuncBody => optional ProdTy);
+relation!(FuncBody => child Exprs);
+relation!(FuncBody => either P(optional Params));
+
+derive_node!(FuncSignature {
     properties = [require Name,]
 });
-relation!(Func => optional Ty);
-relation!(Func => optional ProdTy);
-relation!(Func => child Exprs);
-relation!(Func => either P(optional Params));
 
-impl FromSyntax<BodiedFunction> for Func {
+impl FromSyntax<BodiedFunction> for FuncDecl {
     type Bundle = impl Bundle;
 
     fn from_syntax(node: &BodiedFunction, source: impl CodeHolder) -> Self::Bundle {
-        let name = source.get_chunk_located(&node.id);
-
-        ASTBuilder::new(Func)
-            .with_property(Name::new(name))
+        ASTBuilder::new(FuncDecl)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_children(&node.return_type, |(_, it), spawner| {
-                unwrap_type(it, spawner, source)
-            })
-            .with_opt_dyn_child(node.params.as_ref(), source, |it, spawner, source| {
+            .with_dyn_child(node, source, |it, spawner, source| {
+                let name = source.get_chunk_located(&it.id);
                 spawner.spawn_raw(
-                    ASTBuilder::new(Params)
-                        .with_property(SourceSpan(it.left.0 + it.right.0))
-                        .with_dyn_children(it.inner.as_ref(), |it, spawner| {
-                            unwrap_parameter(it, spawner, source)
-                        }),
-                    node,
+                    ASTBuilder::new(FuncSignature)
+                        .with_property(Name::new(name))
+                        .with_property(SourceSpan(it.keyword.0 + it.id.0)),
+                    it,
                     identity,
                 )
             })
-            .with_dyn_child(node.body.as_ref(), source, unwrap_body)
+            .with_dyn_child(node, source, |it, spawner, source| {
+                let builder = ASTBuilder::new(FuncBody)
+                    .with_property(SourceSpan(
+                        it.body.bounds() + it.params.as_ref().map(|it| it.left.0),
+                    ))
+                    .with_dyn_children(&node.return_type, |(_, it), spawner| {
+                        unwrap_type(it, spawner, source)
+                    })
+                    .with_opt_dyn_child(node.params.as_ref(), source, |it, spawner, source| {
+                        spawner.spawn_raw(
+                            ASTBuilder::new(Params)
+                                .with_property(SourceSpan(it.left.0 + it.right.0))
+                                .with_dyn_children(it.inner.as_ref(), |it, spawner| {
+                                    unwrap_parameter(it, spawner, source)
+                                }),
+                            node,
+                            identity,
+                        )
+                    })
+                    .with_dyn_child(node.body.as_ref(), source, unwrap_body);
+
+                spawner.spawn_raw(builder, it, identity)
+            })
             .build()
     }
 }

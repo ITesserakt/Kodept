@@ -12,13 +12,13 @@ use kodept_ast::properties::Node;
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::{FileDecl, ModDecl};
-use kodept_ast_nodes::function::Func;
+use kodept_ast_nodes::function::FuncBody;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
 use kodept_report::prelude::{Diagnostic, Label, Severity};
 use std::convert::Infallible;
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
-    FileDecl | ModDecl | StructDecl | EnumDecl | Func | Lambda | Exprs | IfExpr
+    FileDecl | ModDecl | StructDecl | EnumDecl | FuncBody | Lambda | Exprs | IfExpr
 });
 
 #[derive(Debug)]
@@ -42,7 +42,7 @@ impl ScopeBuildingPass {
             ScopeUnionItem::ModDecl(x) => (Some(x.name().clone()), false, false),
             ScopeUnionItem::StructDecl(x) => (Some(x.name().clone()), false, false),
             ScopeUnionItem::EnumDecl(x) => (Some(x.name().clone()), false, false),
-            ScopeUnionItem::Func(x) => (Some(x.name().clone()), true, true),
+            ScopeUnionItem::FuncBody(_) => (None, true, true),
             ScopeUnionItem::Lambda(_) => (None, true, false),
             ScopeUnionItem::Exprs(_) => (None, true, false),
             ScopeUnionItem::IfExpr(_) => (None, true, false),

@@ -1,7 +1,7 @@
 use crate::block_level::{InitVar, VarDecl};
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::file::{FileDecl, ModDecl};
-use crate::function::Func;
+use crate::function::{FuncBody, FuncDecl, FuncSignature};
 use crate::literal::{Literal, Tuple};
 use crate::top_level::{EnumConst, EnumDecl, StructDecl};
 use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
@@ -15,7 +15,9 @@ define_union!(pub enum NodeUnion[NodeUnionItem] {
     | StructDecl
     | EnumDecl
     | EnumConst
-    | Func
+    | FuncDecl
+    | FuncBody
+    | FuncSignature
     | VarDecl
     | InitVar
     | IfExpr
@@ -33,10 +35,4 @@ define_union!(pub enum NodeUnion[NodeUnionItem] {
     | ProdTy
     | TyParam
     | NonTyParam
-});
-
-define_union!(pub enum TopLevelUnion[TopLevelUnionItem, TopLevelUnionFilter] {
-    StructDecl
-    | EnumDecl
-    | Func
 });

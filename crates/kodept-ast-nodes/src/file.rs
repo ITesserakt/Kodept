@@ -1,5 +1,4 @@
-use crate::constants::Const;
-use crate::function::Func;
+use crate::function::FuncDecl;
 use crate::top_level::{EnumDecl, StructDecl};
 use crate::Either;
 use bevy_ecs::{bundle::Bundle, component::Component};
@@ -28,7 +27,9 @@ relation!(FileDecl => children ModDecl);
 derive_node!(ModDecl {
     properties = [require Name,]
 });
-relation!(ModDecl => children Const);
+relation!(ModDecl => children EnumDecl);
+relation!(ModDecl => children StructDecl);
+relation!(ModDecl => children FuncDecl);
 
 impl FromSyntax<rlt::File> for FileDecl {
     type Bundle = impl Bundle;
@@ -57,27 +58,13 @@ impl FromSyntax<rlt::Module> for ModDecl {
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(rest.as_ref(), |it, spawner| match it {
-                TopLevelNode::Enum(x) => spawner.spawn_raw(
-                    ASTBuilder::new(Const)
-                        .with_child::<_, EnumDecl, _>(x, source)
-                        .with_property(SourceSpan(x.bounds())),
-                    x,
-                    Either::Left,
-                ),
-                TopLevelNode::Struct(x) => spawner.spawn_raw(
-                    ASTBuilder::new(Const)
-                        .with_child::<_, StructDecl, _>(x, source)
-                        .with_property(SourceSpan(x.bounds())),
-                    x,
-                    |x| Either::Right(Either::Left(x)),
-                ),
-                TopLevelNode::BodiedFunction(x) => spawner.spawn_raw(
-                    ASTBuilder::new(Const)
-                        .with_child::<_, Func, _>(x, source)
-                        .with_property(SourceSpan(x.bounds())),
-                    x,
-                    |x| Either::Right(Either::Right(x)),
-                ),
+                TopLevelNode::Enum(x) => spawner.spawn::<_, EnumDecl, _>(x, source, Either::Left),
+                TopLevelNode::Struct(x) => {
+                    spawner.spawn::<_, StructDecl, _>(x, source, |x| Either::Right(Either::Left(x)))
+                }
+                TopLevelNode::BodiedFunction(x) => {
+                    spawner.spawn::<_, FuncDecl, _>(x, source, |x| Either::Right(Either::Right(x)))
+                }
             })
             .build()
     }

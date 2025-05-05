@@ -62,6 +62,9 @@ pub struct DiagnosticConfig {
     /// Output diagnostics eagerly
     #[arg(long, default_value_t = false)]
     pub eager: bool,
+    /// Show all context lines
+    #[arg(long = "full-context", default_value_t = false)]
+    pub show_full_context_lines: bool,
     /// Disable output of diagnostics to stderr
     #[arg(
     conflicts_with_all = ["style", "tab_width", "color", "eager"],

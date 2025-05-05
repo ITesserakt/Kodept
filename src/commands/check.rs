@@ -9,7 +9,9 @@ use kodept::report::GlobalReports;
 use kodept_ast::interaction::Interaction as Ctx;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
-use kodept_interaction::lint::{RLTLinkLint, ShowLints, SingleModuleWithBrackets};
+use kodept_interaction::lint::{
+    DebugScopesLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets,
+};
 use kodept_interaction::prelude::{install_reporting_support, ExtractSymbols, ScopeBuildingPass};
 use kodept_interaction::Interaction;
 use std::borrow::Cow;
@@ -22,6 +24,9 @@ pub struct Check {
     /// Measure duration of different stages
     #[arg(short, long, action, default_value_t = false)]
     timings: bool,
+    /// Enable some lints during analysis that are disabled by default
+    #[arg(long)]
+    enabled_lints: Vec<String>,
 
     #[command(flatten, next_help_heading = "Loading options")]
     loading_config: LoadingConfig,
@@ -46,7 +51,7 @@ impl Command for Check {
                     let reports = reports.clone();
                     move |r| reports.insert(r)
                 });
-                install_lints(ctx);
+                self.install_lints(ctx);
 
                 ScopeBuildingPass::install(ctx);
                 ExtractSymbols::install(ctx);
@@ -62,12 +67,6 @@ impl Command for Check {
     }
 }
 
-fn install_lints(ctx: &mut Ctx) {
-    SingleModuleWithBrackets::install(ctx);
-    RLTLinkLint::install(ctx);
-    ShowLints::install(ctx);
-}
-
 impl Check {
     fn interaction_block<T>(
         &self,
@@ -78,6 +77,28 @@ impl Check {
         let mut ctx = ast.interact();
 
         self.timings_block(name, || f(&mut ctx))
+    }
+
+    fn install_lints(&self, ctx: &mut Ctx) {
+        SingleModuleWithBrackets::install(ctx);
+        RLTLinkLint::install(ctx);
+        ShowLints::install(ctx);
+        DebugScopesLint::install(ctx);
+
+        ctx.immediate_exclusive(|w| {
+            let mut lint_query = w.query::<&mut LintDescriptor>();
+
+            for mut descriptor in lint_query.iter_mut(w) {
+                let search = self
+                    .enabled_lints
+                    .iter()
+                    .find(|name| *name == descriptor.name());
+
+                if search.is_some() {
+                    descriptor.enabled = true;
+                }
+            }
+        });
     }
 
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {

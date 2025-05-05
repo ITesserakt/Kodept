@@ -8,11 +8,15 @@ pub mod primary;
 pub mod utils;
 
 pub fn make_reports(value: DiagnosticConfig) -> GlobalReports {
-    let config = Config {
+    let mut config = Config {
         display_style: value.style.into(),
         tab_width: value.tab_width,
         ..Default::default()
     };
+    if value.show_full_context_lines {
+        config.start_context_lines = usize::MAX;
+        config.end_context_lines = usize::MAX;
+    }
     if value.disable {
         return GlobalReports::disabled()
     }

@@ -9,13 +9,15 @@ use kodept_report::traits::IntoSpannedReportMessage;
 
 mod module;
 mod rlt_linking;
+mod debug;
 
 pub use module::SingleModuleWithBrackets;
 pub use rlt_linking::RLTLinkLint;
+pub use debug::*;
 
 #[derive(Debug, Component)]
 pub struct LintDescriptor {
-    enabled: bool,
+    pub enabled: bool,
     name: Cow<'static, str>,
     system_id: OnceLock<SystemId>,
 }
@@ -28,9 +30,20 @@ impl LintDescriptor {
             system_id: OnceLock::new(),
         }
     }
+    
+    pub fn disabled_by_default(self) -> Self {
+        Self {
+            enabled: false,
+            ..self
+        }
+    }
 
     pub fn set_system(&mut self, id: SystemId) {
         _ = self.system_id.set(id);
+    }
+    
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 

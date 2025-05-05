@@ -14,7 +14,7 @@ use kodept_ast::define_union;
 use kodept_ast::prelude::AnyNodeRef;
 use kodept_ast::properties::{Name, Node, SourceSpan};
 use kodept_ast_nodes::block_level::VarDecl;
-use kodept_ast_nodes::function::Func;
+use kodept_ast_nodes::function::FuncSignature;
 use kodept_ast_nodes::top_level::{EnumConst, EnumDecl, StructDecl};
 use kodept_ast_nodes::types::{NonTyParam, TyParam};
 use kodept_core::code_point::Span;
@@ -26,7 +26,7 @@ use SymbolKind::Type;
 pub struct ExtractSymbols;
 
 define_union!(enum SymbolUnion[SymbolUnionItem, SymbolUnionFilter] {
-    StructDecl | EnumDecl | Func | VarDecl | EnumConst | TyParam | NonTyParam
+    StructDecl | EnumDecl | FuncSignature | VarDecl | EnumConst | TyParam | NonTyParam
 });
 
 #[derive(Debug)]
@@ -88,7 +88,7 @@ impl ExtractSymbols {
             let (kind, name) = match node.inner {
                 SymbolUnionItem::StructDecl(x) => (Type, x.name().clone()),
                 SymbolUnionItem::EnumDecl(x) => (Type, x.name().clone()),
-                SymbolUnionItem::Func(x) => (Function, x.name().clone()),
+                SymbolUnionItem::FuncSignature(x) => (Function, x.name().clone()),
                 SymbolUnionItem::VarDecl(x) => (Variable, x.name().clone()),
                 SymbolUnionItem::EnumConst(x) => (Function, x.name().clone()),
                 SymbolUnionItem::TyParam(x) => (Parameter, x.name().clone()),

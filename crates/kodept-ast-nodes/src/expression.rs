@@ -1,7 +1,6 @@
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
-use crate::constants::Const;
-use crate::function::Func;
+use crate::function::FuncDecl;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{Lhs, Rhs};
 use crate::term::Ref;
@@ -59,7 +58,6 @@ pub enum UnExpr {
 
 derive_node!(Exprs);
 relation!(Exprs => children InitVar);
-relation!(Exprs => children Const);
 relation!(Exprs => children Exprs);
 relation!(Exprs => children App);
 relation!(Exprs => children Lambda);
@@ -69,7 +67,7 @@ relation!(Exprs => children UnExpr);
 relation!(Exprs => children Ref);
 relation!(Exprs => children Literal);
 relation!(Exprs => children Tuple);
-relation!(Exprs => children Func);
+relation!(Exprs => children FuncDecl);
 
 derive_node!(App);
 relation!(App => or Lhs(optional Exprs));
