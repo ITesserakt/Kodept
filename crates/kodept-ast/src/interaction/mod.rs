@@ -47,8 +47,10 @@ impl<'w> Interaction<'w> {
         self.schedule.add_systems(system);
     }
 
+    /// Runs all registered systems once
     pub fn launch(&mut self) {
         self.schedule.run(self.world);
         self.schedule.apply_deferred(self.world);
+        self.world.clear_trackers();
     }
 }

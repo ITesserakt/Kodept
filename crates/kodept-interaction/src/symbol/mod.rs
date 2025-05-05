@@ -1,14 +1,13 @@
-pub(crate) mod table;
 pub(crate) mod interaction;
+pub(crate) mod table;
 
+use crate::scope::Visibility;
+use bevy_ecs::prelude::Name;
+use kodept_ast::prelude::NodeId;
+use kodept_inference::r#type::PolymorphicType;
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::sync::OnceLock;
-use kodept_ast::external::Component;
-use kodept_ast::prelude::NodeId;
-use kodept_ast::Str;
-use kodept_inference::r#type::PolymorphicType;
-use crate::scope::Visibility;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub(crate) enum SymbolKind {
@@ -18,7 +17,7 @@ pub(crate) enum SymbolKind {
     Function,
 }
 
-#[derive(Debug, Component, Eq)]
+#[derive(Debug, Eq)]
 pub(crate) struct Symbol {
     pub description: SymbolDescription,
     pub bound_node: NodeId,
@@ -27,7 +26,7 @@ pub(crate) struct Symbol {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct SymbolDescription {
-    name: Str,
+    name: Name,
     kind: SymbolKind,
     visibility: Visibility,
 }
@@ -51,10 +50,10 @@ impl Borrow<SymbolDescription> for Symbol {
 }
 
 impl Symbol {
-    pub(crate) fn new(kind: SymbolKind, bound_node: NodeId, name: impl Into<Str>) -> Self {
+    pub(crate) fn new(kind: SymbolKind, bound_node: NodeId, name: Name) -> Self {
         Self {
             description: SymbolDescription {
-                name: name.into(),
+                name,
                 kind,
                 visibility: Default::default(),
             },
@@ -69,7 +68,7 @@ impl Symbol {
 }
 
 impl SymbolDescription {
-    pub(crate) fn new(name: Str, kind: SymbolKind) -> Self {
+    pub(crate) fn new(name: Name, kind: SymbolKind) -> Self {
         Self {
             name,
             kind,

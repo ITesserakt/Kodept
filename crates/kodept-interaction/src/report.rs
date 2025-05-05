@@ -1,57 +1,38 @@
-use bevy_ecs::prelude::{Res, Resource, Single, World};
+use bevy_ecs::prelude::{Commands, Event, Single, Trigger};
 use bevy_ecs::system::SystemParam;
-use extend::ext;
+use kodept_ast::interaction::Interaction;
 use kodept_ast::properties::Root;
-use kodept_ast::syntax_tree::prelude::AST;
 use kodept_report::report::Report;
 use kodept_report::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage};
-use std::sync::atomic::{AtomicBool, Ordering};
 
-#[derive(Resource)]
-struct ReportWriter {
-    sink: Box<dyn Fn(Report) + Send + Sync>,
-    fail: AtomicBool,
-}
+#[derive(Debug, Event)]
+struct ReportEvent(Report);
 
 #[derive(SystemParam)]
-pub(crate) struct Reporter<'w> {
+pub(crate) struct Reporter<'w, 's> {
     root: Single<'w, &'static Root>,
-    events: Res<'w, ReportWriter>,
+    events: Commands<'w, 's>
 }
 
-impl Reporter<'_> {
-    pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
+impl Reporter<'_, '_> {
+    pub(crate) fn report(&mut self, message: impl IntoSpannedReportMessage) {
         let report = Report::from_message(self.root.associated_file.id(), message);
-        self.events
-            .fail
-            .fetch_or(report.is_error(), Ordering::Relaxed);
-        (self.events.sink)(report);
+        self.events.trigger(ReportEvent(report));
     }
 
-    pub(crate) fn report_ad_hoc<T>(&self, f: impl FnOnce() -> T)
+    pub(crate) fn report_ad_hoc<T>(&mut self, f: impl FnOnce() -> T)
     where
         T: SpannedReportMessage,
     {
         let report = Report::from_message(self.root.associated_file.id(), ad_hoc_message(f));
-        self.events
-            .fail
-            .fetch_or(report.is_error(), Ordering::Relaxed);
-        (self.events.sink)(report);
+        self.events.trigger(ReportEvent(report));
     }
 }
 
-#[ext]
-pub impl AST {
-    fn prepare_reporting(
-        &mut self,
-        sink: impl Fn(Report) + Send + Sync + 'static,
-    ) {
-        self.interact()
-            .immediate_exclusive(move |world: &mut World| {
-                world.insert_resource(ReportWriter {
-                    sink: Box::new(sink),
-                    fail: AtomicBool::new(false),
-                });
-            });
-    }
+pub fn install_reporting_support(ctx: &mut Interaction, mut handler: impl FnMut(Report) + Send + Sync + 'static) {
+    ctx.immediate_exclusive(move |w| {
+        w.add_observer(move |t: Trigger<ReportEvent>| {
+            handler(t.0.clone())
+        });
+    });
 }

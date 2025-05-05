@@ -1,11 +1,11 @@
-use crate::prelude::{ASTNode, NodeId};
+use crate::prelude::{ASTNode, IntoEnum, NodeId};
 use crate::properties::{Node, NodeProperty, RequireProperty, SourceSpan};
 use bevy_ecs::prelude::EntityRef;
 use bevy_ecs::query::QueryData;
 use std::convert::identity;
 use std::ops::Deref;
 use bevy_ecs::relationship::Relationship;
-use crate::relationship::AnyContainedBy;
+use crate::relationship::ChildOf;
 
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]
@@ -22,10 +22,6 @@ pub struct NodeRef<'w, T> {
 impl<'a> AnyNodeRefItem<'a, '_> {
     pub(crate) fn from_inner(item: EntityRef<'a>) -> Self {
         Self { inner: item }
-    }
-    
-    pub(crate) fn as_inner(&self) -> EntityRef {
-        self.inner
     }
     
     #[deprecated]
@@ -78,8 +74,15 @@ impl<'a> AnyNodeRefItem<'a, '_> {
     }
     
     pub fn parent(&self) -> Option<NodeId> {
-        self.inner.get::<AnyContainedBy>().map(|it| it.get().into())
+        self.inner.get::<ChildOf>().map(|it| it.get().into())
     }
+    
+    pub fn to_enum<E>(self) -> Option<E>
+    where 
+        Self: IntoEnum<E>
+    {
+        IntoEnum::into_enum(self)
+    } 
 }
 
 impl<T> NodeRef<'_, &T> {

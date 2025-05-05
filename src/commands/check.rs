@@ -10,13 +10,12 @@ use kodept_ast::interaction::Interaction as Ctx;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
 use kodept_interaction::lint::{RLTLinkLint, ShowLints, SingleModuleWithBrackets};
-use kodept_interaction::prelude::{ASTExt, ExtractSymbols, ReferenceResolver, ScopeBuildingPass};
+use kodept_interaction::prelude::{install_reporting_support, ExtractSymbols, ScopeBuildingPass};
 use kodept_interaction::Interaction;
-use kodept_report::FileDescriptor;
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
-use tracing::{enabled, error_span, info, info_span, Level};
+use tracing::{debug, enabled, error_span, info, info_span, Level};
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -42,21 +41,21 @@ impl Command for Check {
             })?;
             let mut ast = self.timings_block("AST building", || build_ast(&source, rlt));
 
-            ast.prepare_reporting({
-                let reports = reports.clone();
-                move |report| reports.insert(report)
-            });
-
             self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
+                install_reporting_support(ctx, {
+                    let reports = reports.clone();
+                    move |r| reports.insert(r)
+                });
                 install_lints(ctx);
 
                 ScopeBuildingPass::install(ctx);
                 ExtractSymbols::install(ctx);
-                ReferenceResolver::install(ctx);
+                // ReferenceResolver::install(ctx);
 
-                ctx.launch();
-                ctx.launch();
-                ctx.launch();
+                for _ in 0..10 {
+                    ctx.launch();
+                    debug!("Pass completed");
+                }
             });
         }
         Continue(())

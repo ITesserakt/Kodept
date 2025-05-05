@@ -21,3 +21,4 @@ workspace = true
 
 [features]
 default = []
+parallel = ["bevy_ecs/multi_threaded", "kodept-ast-nodes/parallel", "kodept-ast/parallel"]

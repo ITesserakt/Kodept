@@ -9,7 +9,6 @@ pub mod interaction;
 pub mod macros;
 mod node_id;
 pub mod properties;
-pub mod query;
 mod relationship;
 pub mod resource;
 pub mod syntax_tree;
@@ -22,6 +21,7 @@ pub mod prelude {
     pub use super::entity::traits::{FromEnum, IntoEnum};
     pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, CodeHolder, FromSyntax};
+    pub use super::relationship::{ChildOf, Children};
 }
 
 #[deprecated]

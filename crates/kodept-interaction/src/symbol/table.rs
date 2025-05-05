@@ -1,12 +1,12 @@
 use crate::symbol::SymbolKind::{Function, Parameter, Variable};
 use crate::symbol::{Symbol, SymbolDescription, SymbolKind};
-use hashbrown::HashSet;
-use kodept_ast::external::Component;
-use kodept_ast::Str;
+use bevy_ecs::prelude::{Component, Name};
+use hashbrown::hash_set::Entry;
+use hashbrown::{DefaultHashBuilder, HashSet};
 use SymbolKind::Type;
 
-#[derive(Debug, Component)]
 /// Contains symbols from a specific scope
+#[derive(Debug, Component, Default)]
 pub(crate) struct SymbolTable(HashSet<Symbol>);
 
 #[derive(Debug)]
@@ -27,26 +27,16 @@ impl SymbolSearchError<'_> {
 }
 
 impl SymbolTable {
-    pub(crate) fn empty() -> Self {
-        Self(HashSet::new())
+    pub(super) fn entry(&mut self, symbol: Symbol) -> Entry<Symbol, DefaultHashBuilder> {
+        self.0.entry(symbol)
     }
-
-    pub(crate) fn new(set: HashSet<Symbol>) -> Self {
-        Self(set)
-    }
-
-    pub(crate) fn get_type<T>(&self, name: T) -> Option<&Symbol>
-    where
-        T: Into<Str>,
-    {
+    
+    pub(crate) fn get_type(&self, name: Name) -> Option<&Symbol> {
         self.get(name, Type)
     }
 
-    pub(crate) fn get_value<T>(&self, name: T) -> Result<&Symbol, SymbolSearchError>
-    where
-        T: Into<Str>,
-    {
-        let mut description = SymbolDescription::new(name.into(), Variable);
+    pub(crate) fn get_value(&self, name: Name) -> Result<&Symbol, SymbolSearchError> {
+        let mut description = SymbolDescription::new(name, Variable);
         let symbol_as_var = self.0.get(&description);
         description.kind = Function;
         let symbol_as_func = self.0.get(&description);
@@ -75,11 +65,8 @@ impl SymbolTable {
         }
     }
 
-    pub(crate) fn get<T>(&self, name: T, kind: SymbolKind) -> Option<&Symbol>
-    where
-        T: Into<Str>,
-    {
-        let description = SymbolDescription::new(name.into(), kind);
+    pub(crate) fn get(&self, name: Name, kind: SymbolKind) -> Option<&Symbol> {
+        let description = SymbolDescription::new(name, kind);
         self.0.get(&description)
     }
 }

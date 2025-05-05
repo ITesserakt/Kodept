@@ -6,17 +6,14 @@ use crate::symbol::SymbolKind::{Function, Parameter, Variable};
 use crate::symbol::{Symbol, SymbolKind};
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
-use bevy_ecs::entity::hash_map::EntityHashMap;
-use bevy_ecs::prelude::{Children, Commands, IntoScheduleConfigs, Populated, Query};
-use bevy_ecs::query::Changed;
+use bevy_ecs::prelude::{any_match_filter, Added, Query, Without};
 use bevy_ecs::relationship::Relationship;
+use bevy_ecs::schedule::IntoScheduleConfigs;
 use hashbrown::hash_set::Entry;
-use hashbrown::HashSet;
-use kodept_ast::properties::{Name, SourceSpan};
-use kodept_ast::syntax_tree::prelude::ASTQuery;
-use kodept_ast::{define_union, Str};
+use kodept_ast::define_union;
+use kodept_ast::prelude::AnyNodeRef;
+use kodept_ast::properties::{Name, Node, SourceSpan};
 use kodept_ast_nodes::block_level::VarDecl;
-use kodept_ast_nodes::constants::Const;
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumConst, EnumDecl, StructDecl};
 use kodept_ast_nodes::types::{NonTyParam, TyParam};
@@ -24,20 +21,21 @@ use kodept_core::code_point::Span;
 use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
+use SymbolKind::Type;
 
 pub struct ExtractSymbols;
 
 define_union!(enum SymbolUnion[SymbolUnionItem, SymbolUnionFilter] {
-    StructDecl | EnumDecl | Func | Const | VarDecl | EnumConst | TyParam| NonTyParam
+    StructDecl | EnumDecl | Func | VarDecl | EnumConst | TyParam | NonTyParam
 });
 
 #[derive(Debug)]
 pub struct DuplicatedSymbolError {
-    bound_name: Str,
-    scope_name: Option<Str>,
-    scope_start_location: Span,
-    current_def_location: Span,
-    previous_def_location: Span,
+    bound_name: Name,
+    scope_name: Option<Name>,
+    scope_start: Span,
+    current_def: Span,
+    previous_def: Span,
 }
 
 impl IntoSpannedReportMessage for DuplicatedSymbolError {
@@ -49,18 +47,15 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
                 "Element with name `{}` already defined",
                 self.bound_name
             ))
-            .with_label(Label::primary("", self.current_def_location))
-            .with_label(Label::secondary(
-                "previous declaration",
-                self.previous_def_location,
-            ))
+            .with_label(Label::primary("", self.current_def))
+            .with_label(Label::secondary("previous declaration", self.previous_def))
             .with_label(Label::secondary(
                 if let Some(name) = self.scope_name {
                     Cow::Owned(format!("in scope `{name}`"))
                 } else {
                     "in scope".into()
                 },
-                self.scope_start_location,
+                self.scope_start,
             ))
     }
 }
@@ -71,77 +66,49 @@ impl Interaction for ExtractSymbols {
     fn interaction() -> InteractionWrapper<Self::Error> {
         let config = InteractionWrapper::wrap(Self::system)
             .unwrap()
-            .run_if(|query: Populated<(), Changed<Scoped>>| true);
+            .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>);
         InteractionWrapper::from_configs(config)
     }
 }
 
 impl ExtractSymbols {
-    fn extract_symbol(node: SymbolUnion, query: &ASTQuery<SymbolUnionFilter>) -> Symbol {
-        define_union!(enum ConstUnion[ConstUnionItem] {
-            EnumDecl | StructDecl | Func
-        });
-
-        let id = node.id;
-        match &*node {
-            SymbolUnionItem::StructDecl(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
-            SymbolUnionItem::EnumDecl(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
-            SymbolUnionItem::Func(x) => Symbol::new(Function, id, x.name().clone()),
-            SymbolUnionItem::VarDecl(x) => Symbol::new(Variable, id, x.name().clone()),
-            SymbolUnionItem::EnumConst(x) => Symbol::new(SymbolKind::Type, id, x.name().clone()),
-            SymbolUnionItem::TyParam(x) => Symbol::new(Parameter, id, x.name().clone()),
-            SymbolUnionItem::NonTyParam(x) => Symbol::new(Parameter, id, x.name().clone()),
-            SymbolUnionItem::Const(x) => {
-                if let Ok(Some(x)) = query.children_as::<_, EnumDecl, _>(x.id()) {
-                    Symbol::new(SymbolKind::Type, id, x.name().clone())
-                } else if let Ok(Some(x)) = query.children_as::<_, StructDecl, _>(x.id()) {
-                    Symbol::new(SymbolKind::Type, id, x.name().clone())
-                } else if let Ok(Some(x)) = query.children_as::<_, Func, _>(x.id()) {
-                    Symbol::new(Function, id, x.name().clone())
-                } else {
-                    unreachable!()
-                }
-            }
-        }
-    }
-
+    /// Symbol rules:
+    /// - there is should be only one symbol of some kind per scope
+    /// - `Identifier::Type` should have `Type` kind
     fn system(
-        query: ASTQuery<SymbolUnionFilter>,
-        enclosing_scopes: Query<&Scoped>,
-        mut commands: Commands,
-        reporter: Reporter,
+        query: Query<(AnyNodeRef, &Scoped), (SymbolUnionFilter, Added<Scoped>)>,
+        mut symbol_tables: Query<(&mut SymbolTable, Option<&Name>, &Scope), Without<Node>>,
         spans: Query<&SourceSpan>,
-        scopes: Query<(&Scope, Option<&Name>, Option<&Children>)>,
+        mut reporter: Reporter,
     ) -> crate::Result<DuplicatedSymbolError> {
-        let mut symbols: EntityHashMap<HashSet<Symbol>> = EntityHashMap::default();
-
-        let iter = query.iter_enum().map(|it| Self::extract_symbol(it, &query));
-        for symbol in iter {
-            let bound_node = symbol.bound_node;
-            let enclosing_scope = enclosing_scopes.get(bound_node.entity()).unwrap().get();
-            let set = symbols.entry(enclosing_scope).or_default();
-            match set.entry(symbol) {
-                Entry::Occupied(x) => {
-                    let current_def_location = spans.get(bound_node.entity()).unwrap().0;
-                    let previous_def_location = spans.get(x.get().bound_node.entity()).unwrap().0;
-                    let (scope, name, _) = scopes.get(enclosing_scope).unwrap();
-                    let scope_start_location = spans.get(scope.start_from.entity()).unwrap().0;
-                    let error = DuplicatedSymbolError {
-                        bound_name: x.get().description.name.clone(),
-                        scope_start_location,
-                        scope_name: name.map(|it| &it.0).cloned(),
-                        current_def_location,
-                        previous_def_location,
-                    };
-                    reporter.report(error);
-                    continue;
-                }
-                Entry::Vacant(x) => x.insert(),
+        for (node, scoped) in query.iter() {
+            let Some(node) = node.to_enum::<SymbolUnion>() else {
+                continue;
             };
-        }
+            let (kind, name) = match node.inner {
+                SymbolUnionItem::StructDecl(x) => (Type, x.name().clone()),
+                SymbolUnionItem::EnumDecl(x) => (Type, x.name().clone()),
+                SymbolUnionItem::Func(x) => (Function, x.name().clone()),
+                SymbolUnionItem::VarDecl(x) => (Variable, x.name().clone()),
+                SymbolUnionItem::EnumConst(x) => (Function, x.name().clone()),
+                SymbolUnionItem::TyParam(x) => (Parameter, x.name().clone()),
+                SymbolUnionItem::NonTyParam(x) => (Parameter, x.name().clone()),
+            };
+            let symbol = Symbol::new(kind, node.id, name.clone());
 
-        for (scope_id, set) in symbols {
-            commands.entity(scope_id).insert(SymbolTable::new(set));
+            let (mut table, scope_name, scope) = symbol_tables.get_mut(scoped.get()).unwrap();
+            match table.entry(symbol) {
+                Entry::Occupied(x) => reporter.report(DuplicatedSymbolError {
+                    bound_name: name,
+                    scope_name: scope_name.cloned(),
+                    scope_start: spans.get(scope.start_from.entity()).unwrap().0,
+                    current_def: spans.get(node.id.entity()).unwrap().0,
+                    previous_def: spans.get(x.get().bound_node.entity()).unwrap().0,
+                }),
+                Entry::Vacant(x) => {
+                    x.insert();
+                }
+            };
         }
 
         done()

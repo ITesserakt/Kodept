@@ -1,8 +1,9 @@
+use crate::arity::{Optional, Plural, Singular};
 use crate::prelude::AnyNodeRefItem;
-use crate::properties::Name;
-use crate::query::AnyNodeQuery;
+use crate::properties::{Name, Node, Root};
+use crate::relationship::{ArityValue, Contains, NodeRelationships};
+use bevy_ecs::prelude::{Entity, EntityRef, InMut, Query, Res, Single, With};
 use std::io::Write;
-use bevy_ecs::system::InMut;
 
 impl super::storage::AST {
     pub fn export_dot<W: Write + 'static>(&mut self, writer: &mut W) -> std::io::Result<()> {
@@ -26,27 +27,68 @@ fn label<W: Write>(buffer: &mut W, node: AnyNodeRefItem) -> std::io::Result<()> 
 
 fn extract_system<W: Write>(
     InMut(buffer): InMut<W>,
-    query: AnyNodeQuery,
+    relationships: Res<NodeRelationships>,
+    nodes: Query<EntityRef, With<Node>>,
+    root: Single<Entity, With<Root>>
 ) -> std::io::Result<()> {
     writeln!(buffer, "@startuml")?;
 
-    for (edge, id) in query.iter_top_down_with_metadata() {
-        let node = query.get(id).unwrap();
-        label(buffer, node)?;
-        if let Some((parent_id, meta)) = edge {
-            if meta.is_empty_tag() {
-                writeln!(buffer, "\t{} --> {}", parent_id.to_bits(), id.to_bits())?;
-            } else {
-                writeln!(
-                    buffer,
-                    "\t{} --> {}: {}",
-                    parent_id.to_bits(),
-                    id.to_bits(),
-                    meta.tag_name()
-                )?;
+    let mut stack = vec![(None, *root)];
+
+    while let Some((edge, current)) = stack.pop() {
+        let Ok(this) = nodes.get(current) else {
+            return Ok(());
+        };
+
+        for meta in relationships.into_iter() {
+            let component_id = meta.forward_component_id();
+            let Ok(ptr) = this.get_by_id(component_id) else {
+                continue;
+            };
+
+            #[allow(unsafe_code)]
+            match meta.arity() {
+                ArityValue::Singular => {
+                    for child in unsafe { ptr.deref::<Contains<(), Singular>>() } {
+                        stack.push((Some((current, meta)), child))
+                    }
+                }
+                ArityValue::Optional => {
+                    for child in unsafe { ptr.deref::<Contains<(), Optional>>() } {
+                        stack.push((Some((current, meta)), child))
+                    }
+                }
+                ArityValue::Plural => {
+                    for child in unsafe { ptr.deref::<Contains<(), Plural>>() } {
+                        stack.push((Some((current, meta)), child))
+                    }
+                }
             }
         }
+
+        label(buffer, AnyNodeRefItem::from_inner(this))?;
+        let Some((parent_id, meta)) = edge else {
+            continue;
+        };
+
+        if meta.is_empty_tag() {
+            writeln!(
+                buffer,
+                "\t{} --> {}",
+                parent_id.to_bits(),
+                current.to_bits()
+            )?;
+        } else {
+            writeln!(
+                buffer,
+                "\t{} --> {}: {}",
+                parent_id.to_bits(),
+                current.to_bits(),
+                meta.tag_name()
+            )?;
+        }
     }
+
     writeln!(buffer, "@enduml")?;
     Ok(())
 }

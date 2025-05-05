@@ -1,5 +1,5 @@
 use crate::{done, Ctx, Interaction, InteractionWrapper, Result};
-use bevy_ecs::prelude::{Changed, Component, IntoSystem, Query, World, IntoScheduleConfigs};
+use bevy_ecs::prelude::{Changed, Component, IntoSystem, Query, World, IntoScheduleConfigs, Populated};
 use bevy_ecs::system::SystemId;
 use std::borrow::Cow;
 use std::convert::Infallible;
@@ -64,7 +64,7 @@ impl Interaction for ShowLints {
     type Error = Infallible;
 
     fn interaction() -> InteractionWrapper<Self::Error> {
-        InteractionWrapper::wrap(|lints: Query<&LintDescriptor, Changed<LintDescriptor>>| {
+        InteractionWrapper::wrap(|lints: Populated<&LintDescriptor, Changed<LintDescriptor>>| {
             let lint_names = lints
                 .into_iter()
                 .filter(|it| it.enabled)

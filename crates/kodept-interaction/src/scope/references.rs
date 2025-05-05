@@ -16,6 +16,7 @@ use kodept_report::traits::IntoSpannedReportMessage;
 use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 
 pub struct ReferenceResolver;
 
@@ -110,8 +111,8 @@ type NodeQuery<'q> = (Entity, &'q Scoped, &'q Ref, &'q SourceSpan);
 impl ReferenceResolver {
     fn search_symbol<'a>(node: &Ref, table: &'a SymbolTable) -> Option<&'a Symbol> {
         match &node.ident {
-            Identifier::TypeReference { name } => table.get_type(name.clone()),
-            Identifier::Reference { name } => table.get_value(name.clone()).ok(),
+            Identifier::TypeReference { name } => table.get_type(Name::new(name.clone())),
+            Identifier::Reference { name } => table.get_value(Name::new(name.clone())).ok(),
         }
     }
 
@@ -157,11 +158,11 @@ impl ReferenceResolver {
             match flow {
                 ControlFlow::Value(id) => {
                     let (scope, symbols, _, children, name) = scopes.get(id).unwrap();
-                    let Some(Name(name)) = name else { continue };
+                    let Some(name) = name else { continue };
                     let Some(context_path) = context_path_iter.peek() else {
                         continue;
                     };
-                    if *context_path != name {
+                    if *context_path != name.deref() {
                         continue;
                     };
 
@@ -200,7 +201,7 @@ impl ReferenceResolver {
     fn system(
         query: Query<(Entity, &Scoped, &Ref, &SourceSpan)>,
         scopes: Populated<ScopeQuery>,
-        reporter: Reporter,
+        mut reporter: Reporter,
     ) -> Result<Infallible> {
         for (entity, scope, node, span) in query.into_iter() {
             if !node.context.global && node.context.items.is_empty() {

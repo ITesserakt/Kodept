@@ -3,7 +3,7 @@ use crate::arity::Arity;
 use crate::properties::Node;
 use crate::properties::NodeProperty;
 use crate::properties::{HasProperty, Lexeme, SourceSpan};
-use crate::relationship::{AnyContainedBy, ContainedBy, Contains, NodeRelationship};
+use crate::relationship::{ContainedBy, Contains, NodeRelationship};
 use crate::resource::rlt::{LexemeId, SyntaxResolver, SyntaxVariant};
 use crate::traits::ASTNode;
 use crate::traits::CodeHolder;

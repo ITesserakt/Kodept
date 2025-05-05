@@ -16,7 +16,7 @@ pub(super) enum Visibility {
 #[relationship(relationship_target = Scoping)]
 pub(crate) struct Scoped(Entity);
 
-/// Describes a set of ast nodes that belongs to this scope
+/// Attaches to the scope entity and describes a set of ast nodes that belongs to this one
 #[derive(Debug, Component)]
 #[relationship_target(relationship = Scoped)]
 pub(crate) struct Scoping(Vec<Entity>);

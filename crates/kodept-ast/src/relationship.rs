@@ -62,16 +62,16 @@ where
 
 /// Describes a parent entity for some node for any tag or arity
 #[derive(Debug, Component)]
-#[relationship(relationship_target = AllChildren)]
+#[relationship(relationship_target = Children)]
 #[repr(transparent)]
-pub struct AnyContainedBy(Entity);
+pub struct ChildOf(Entity);
 
 const ALL_CHILDREN_BUFFER_SIZE: usize = 2;
 
 /// Describes all child nodes for any tag or arity
 #[derive(Debug, Component)]
-#[relationship_target(relationship = AnyContainedBy)]
-pub struct AllChildren(SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]>);
+#[relationship_target(relationship = ChildOf)]
+pub struct Children(SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]>);
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
 pub struct RelationshipMetadata {
@@ -188,7 +188,7 @@ where
     }
 }
 
-impl Deref for AnyContainedBy {
+impl Deref for ChildOf {
     type Target = Entity;
 
     fn deref(&self) -> &Self::Target {
@@ -196,13 +196,13 @@ impl Deref for AnyContainedBy {
     }
 }
 
-impl DerefMut for AnyContainedBy {
+impl DerefMut for ChildOf {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<'a> IntoIterator for &'a AllChildren {
+impl<'a> IntoIterator for &'a Children {
     type Item = Entity;
     type IntoIter =
         <SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]> as RelationshipSourceCollection>::SourceIter<
@@ -279,11 +279,11 @@ where
         // TODO: slow code ahead
         let (fetcher, mut commands) = world.entities_and_commands();
         let this = fetcher.get(ctx.entity).unwrap().get::<Self>().unwrap();
-        commands.entity(this.parent).add_one_related::<AnyContainedBy>(ctx.entity);
+        commands.entity(this.parent).add_one_related::<ChildOf>(ctx.entity);
     }
 
     fn on_remove_hook(mut world: DeferredWorld, ctx: HookContext) {
         let mut commands = world.commands();
-        commands.entity(ctx.entity).remove::<AnyContainedBy>();
+        commands.entity(ctx.entity).remove::<ChildOf>();
     }
 }

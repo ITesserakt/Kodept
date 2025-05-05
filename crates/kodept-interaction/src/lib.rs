@@ -12,10 +12,8 @@ mod symbol;
 pub mod prelude {
     pub use super::scope::builder::ScopeBuildingPass;
     pub use super::scope::references::ReferenceResolver;
-
+    pub use super::report::install_reporting_support;
     pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbols};
-
-    pub use super::report::ASTExt;
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -65,7 +63,7 @@ pub mod wrapper {
         {
             let name = system.system_type_id();
             let piped_system = system.pipe(
-                move |In(result): In<crate::Result<E>>, reporter: Reporter| match result {
+                move |In(result): In<crate::Result<E>>, mut reporter: Reporter| match result {
                     Ok(()) => trace!("System {name:?} completed"),
                     Err(Skip::Skipped) => trace!("System {name:?} skipped"),
                     Err(Skip::Failed(e)) => reporter.report(e),

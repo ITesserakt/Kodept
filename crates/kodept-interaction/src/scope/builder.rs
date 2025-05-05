@@ -1,20 +1,20 @@
 use crate::report::Reporter;
-use crate::scope::storage::ScopeBuilder;
+use crate::scope::storage::Scope;
+use crate::scope::Scoped;
 use crate::wrapper::InteractionWrapper;
 use crate::{done, Interaction};
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::{Changed, ChildOf, Children, IntoScheduleConfigs, Or, Query, With};
+use bevy_ecs::prelude::{any_match_filter, Commands, IntoScheduleConfigs, Query, With, Without};
+use bevy_ecs::relationship::Relationship;
 use kodept_ast::define_union;
-use kodept_ast::prelude::IntoEnum;
-use kodept_ast::properties::{Node, SourceSpan};
-use kodept_ast::query::AnyNodeQuery;
+use kodept_ast::prelude::{AnyNodeRef, ChildOf, IntoEnum};
+use kodept_ast::properties::Node;
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::{FileDecl, ModDecl};
 use kodept_ast_nodes::function::Func;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
-use kodept_report::message::Severity;
-use kodept_report::prelude::{Diagnostic, Label};
+use kodept_report::prelude::{Diagnostic, Label, Severity};
 use std::convert::Infallible;
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
@@ -28,19 +28,17 @@ impl Interaction for ScopeBuildingPass {
     type Error = Infallible;
 
     fn interaction() -> InteractionWrapper<Self::Error> {
-        type NodeFilter = (With<Node>, Or<(Changed<ChildOf>, Changed<Children>)>);
-
         let config = InteractionWrapper::wrap(Self::system)
             .unwrap()
-            .run_if(|query: Query<(), NodeFilter>| !query.is_empty());
+            .run_if(any_match_filter::<(With<Node>, Without<Scoped>)>);
         InteractionWrapper::from_configs(config)
     }
 }
 
 impl ScopeBuildingPass {
-    fn divide_by_scopes(entity: ScopeUnion, builder: &mut ScopeBuilder) -> Entity {
-        let (name, is_anonymous, opaque) = match &*entity {
-            ScopeUnionItem::FileDecl(_) => (None, false, false), 
+    fn divide_by_scopes(entity: ScopeUnion, commands: &mut Commands) -> Entity {
+        let (name, is_anonymous, is_opaque) = match &*entity {
+            ScopeUnionItem::FileDecl(_) => (None, false, false),
             ScopeUnionItem::ModDecl(x) => (Some(x.name().clone()), false, false),
             ScopeUnionItem::StructDecl(x) => (Some(x.name().clone()), false, false),
             ScopeUnionItem::EnumDecl(x) => (Some(x.name().clone()), false, false),
@@ -49,32 +47,56 @@ impl ScopeBuildingPass {
             ScopeUnionItem::Exprs(_) => (None, true, false),
             ScopeUnionItem::IfExpr(_) => (None, true, false),
         };
-        builder.allocate_scope(entity.id, name, is_anonymous, opaque)
+
+        let mut scope_entity = if let Some(name) = name {
+            commands.spawn((Scope::new(entity.id, is_anonymous).opaque(is_opaque), name))
+        } else {
+            commands.spawn(Scope::new(entity.id, is_anonymous).opaque(is_opaque))
+        };
+
+        scope_entity
+            .add_one_related::<Scoped>(entity.id.entity())
+            .id()
     }
 
+    /// If the current node is a start of scope, spawn new scope.
+    ///
+    /// Otherwise, propagate `scoped` component from parent if it has one
     fn system(
-        nodes: AnyNodeQuery,
-        spans: Query<&SourceSpan>,
-        reporter: Reporter,
-        mut builder: ScopeBuilder
+        unscoped: Query<(AnyNodeRef, Option<&ChildOf>), (Without<Scoped>, With<Node>)>,
+        scoped: Query<&Scoped>,
+        mut commands: Commands,
+        mut reporter: Reporter,
     ) -> crate::Result<Infallible> {
-        for node in nodes.iter_top_down() {
-            let parent_id = node.parent();
-            let parent_scope = parent_id.and_then(|it| builder.get_enclosing_scope(it));
-            
+        let mut amount_of_processed = 0;
+        let mut last_unprocessed = None;
+
+        unscoped.iter().for_each(|(node, parent)| {
             if let Some(node_enum) = node.into_enum() {
-                let this_scope_id = Self::divide_by_scopes(node_enum, &mut builder);
-                parent_scope.map(|it| builder.link_scopes(this_scope_id, it));
-            } else if let Some(parent) = parent_scope {
-                builder.set_enclosing_scope(node.id(), parent);
+                Self::divide_by_scopes(node_enum, &mut commands);
+                amount_of_processed += 1;
+            } else if let Some(scope) = parent.and_then(|it| scoped.get(it.get()).ok()) {
+                commands
+                    .entity(scope.0)
+                    .add_one_related::<Scoped>(node.id().entity());
+                amount_of_processed += 1;
             } else {
-                reporter.report_ad_hoc(|| {
-                    Diagnostic::new(Severity::Bug)
-                        .with_label(Label::primary("", spans.get(parent_scope.unwrap()).unwrap().0))
-                        .with_message("No scope associated with this element")
-                        .with_note(format!("Entity {}", node.id()))
-                })
+                // We should repeat the whole process to get more `scoped`...
+                // If there are no processed nodes, then it's a bug
+                last_unprocessed = Some(node);
             }
+        });
+
+        if amount_of_processed == 0 {
+            reporter.report_ad_hoc(|| {
+                let mut diag = Diagnostic::new(Severity::Bug)
+                    .with_message("Cannot create new scope or link with any other")
+                    .with_note("Possible out-of-tree nodes?");
+                if let Some(last) = last_unprocessed {
+                    diag = diag.with_label(Label::primary("unprocessed node", last.span()))
+                }
+                diag
+            })
         }
 
         done()
