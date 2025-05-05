@@ -28,7 +28,7 @@ impl FromSyntax<BodiedFunction> for Func {
         let name = source.get_chunk_located(&node.id);
 
         ASTBuilder::new(Func)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(&node.return_type, |(_, it), spawner| {
                 unwrap_type(it, spawner, source)

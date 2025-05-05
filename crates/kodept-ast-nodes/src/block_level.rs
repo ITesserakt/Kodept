@@ -54,7 +54,7 @@ impl FromSyntax<Variable> for VarDecl {
         };
         let name = source.get_chunk_located(id);
         ASTBuilder::new(kind)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(ty.as_ref().map(|it| &it.1), |it, spawner| {
                 unwrap_type(it, spawner, source)

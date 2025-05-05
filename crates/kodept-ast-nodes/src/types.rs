@@ -56,7 +56,7 @@ impl FromSyntax<new_types::TypeName> for Ty {
     fn from_syntax(node: &new_types::TypeName, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(node);
         ASTBuilder::new(Ty)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.0.into()))
             .build()
     }
@@ -68,7 +68,7 @@ impl FromSyntax<UntypedParameter> for NonTyParam {
     fn from_syntax(node: &UntypedParameter, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(NonTyParam)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .build()
     }
@@ -80,7 +80,7 @@ impl FromSyntax<TypedParameter> for TyParam {
     fn from_syntax(node: &TypedParameter, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(TyParam)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(&node.parameter_type, source, unwrap_type)
             .build()

@@ -47,7 +47,7 @@ impl FromSyntax<Enum> for EnumDecl {
         };
         let name = source.get_chunk_located(id);
         ASTBuilder::new(kind)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_opt_children(rest.as_ref().map(|it| it.inner.as_ref()), source)
             .build()
@@ -60,7 +60,7 @@ impl FromSyntax<Struct> for StructDecl {
     fn from_syntax(node: &Struct, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(&node.id);
         ASTBuilder::new(StructDecl)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_opt_dyn_child(
                 node.parameters.as_ref(),
@@ -86,7 +86,7 @@ impl FromSyntax<TypeName> for EnumConst {
     fn from_syntax(node: &TypeName, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(node);
         ASTBuilder::new(EnumConst)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.0.into()))
             .build()
     }

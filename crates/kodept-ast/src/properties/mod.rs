@@ -1,11 +1,11 @@
 use crate::prelude::ASTNode;
 use crate::resource::rlt::LexemeId;
-use crate::Str;
 use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
-use std::ops::{Deref, DerefMut};
 use kodept_core::file_name::FileDescriptor;
+
+pub use bevy_ecs::name::Name;
 
 pub trait NodeProperty: Component {}
 
@@ -19,12 +19,8 @@ pub struct Node {
 #[component(storage = "SparseSet")]
 #[component(immutable)]
 pub struct Root {
-    pub associated_file: FileDescriptor
+    pub associated_file: FileDescriptor,
 }
-
-#[derive(Debug, Component, Clone, From, Into, Display)]
-#[component(storage = "SparseSet")]
-pub struct Name(pub Str);
 
 #[derive(Debug, Component, Copy, Clone, From, Into, Display)]
 #[component(immutable)]
@@ -37,20 +33,6 @@ pub struct SourceSpan(pub Span);
 pub trait HasProperty<Property: NodeProperty>: Sized {}
 
 pub trait RequireProperty<Property: NodeProperty> {}
-
-impl Deref for Name {
-    type Target = Str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Name {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
 
 impl NodeProperty for Node {}
 impl NodeProperty for Root {}

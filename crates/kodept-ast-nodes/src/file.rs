@@ -54,7 +54,7 @@ impl FromSyntax<rlt::Module> for ModDecl {
             }
         };
         ASTBuilder::new(value)
-            .with_property(Name(name))
+            .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(rest.as_ref(), |it, spawner| match it {
                 TopLevelNode::Enum(x) => spawner.spawn_raw(
