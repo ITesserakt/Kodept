@@ -1,7 +1,7 @@
 use crate::traits::{IntoSpannedReportMessage, SpannedReportMessage};
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Report<FileId = crate::FileId> {
     diagnostic: Diagnostic<FileId>,
 }
