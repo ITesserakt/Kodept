@@ -42,7 +42,7 @@ impl Command for Inspect {
                         .with_message("Source file parsed into a raw lexeme tree")
                         .with_label(Label::primary("", CodePoint::single_point(0)))
                 });
-                reports.report(*source.id, message);
+                _ = reports.report(*source.id, message);
             }
 
             let mut ast = build_ast(&source, rlt);
@@ -52,7 +52,7 @@ impl Command for Inspect {
                         .with_message("Got abstract syntax tree of source file")
                         .with_label(Label::primary("", CodePoint::single_point(0)))
                 });
-                reports.report(*source.id, message);
+                _ = reports.report(*source.id, message);
             }
         }
         Continue(())

@@ -4,8 +4,8 @@ use crate::{done, Result};
 use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res};
 use kodept_ast::properties::{Lexeme, Node};
 use kodept_ast::resource::rlt::SyntaxResolver;
-use std::convert::Infallible;
 use kodept_report::message::{Diagnostic, Severity};
+use std::convert::Infallible;
 
 pub struct RLTLinkLint;
 
@@ -13,7 +13,7 @@ impl Lint for RLTLinkLint {
     type Error = Infallible;
 
     fn descriptor() -> LintDescriptor {
-        LintDescriptor::new("RLT_linking")
+        LintDescriptor::new("RLT_linking").run_on_each_pass()
     }
 
     fn lint() -> impl IntoSystem<(), Result<Self::Error>, ()> {

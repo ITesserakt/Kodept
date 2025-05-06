@@ -3,9 +3,9 @@ use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
 use crate::symbol::Symbol;
-use crate::wrapper::InteractionWrapper;
-use crate::{done, fail, Interaction, Result, Skip};
-use bevy_ecs::prelude::{ChildOf, Children, Entity, IntoScheduleConfigs, Populated, Query};
+use crate::wrapper::InteractionExt;
+use crate::{done, fail, Ctx, Interaction, Result};
+use bevy_ecs::prelude::{ChildOf, Children, Entity, IntoScheduleConfigs, Query};
 use bevy_ecs::query::With;
 use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::Str;
@@ -91,11 +91,11 @@ impl IntoSpannedReportMessage for Error {
 impl Interaction for ReferenceResolver {
     type Error = Infallible;
 
-    fn interaction() -> InteractionWrapper<Self::Error> {
-        let config = InteractionWrapper::wrap(Self::system)
-            .unwrap()
-            .run_if(|query: Query<(), With<SymbolTable>>| !query.is_empty());
-        InteractionWrapper::from_configs(config)
+    fn install(ctx: &mut Ctx) {
+        ctx.register(
+            Self::wrap_system(Self::system)
+                .run_if(|query: Query<(), With<SymbolTable>>| !query.is_empty()),
+        )
     }
 }
 
@@ -200,25 +200,12 @@ impl ReferenceResolver {
 
     fn system(
         query: Query<(Entity, &Scoped, &Ref, &SourceSpan)>,
-        scopes: Populated<ScopeQuery>,
         mut reporter: Reporter,
     ) -> Result<Infallible> {
-        for (entity, scope, node, span) in query.into_iter() {
-            if !node.context.global && node.context.items.is_empty() {
-                if let Err(Skip::Failed(e)) =
-                    Self::resolve_ref_without_context((entity, scope, node, span), &scopes)
-                {
-                    reporter.report(e);
-                }
-            } else if node.context.global {
-                if let Err(Skip::Failed(e)) =
-                    Self::resolve_ref_with_global_context((entity, scope, node, span), &scopes)
-                {
-                    reporter.report(e);
-                }
-            } else {
-                reporter.report(Error::Unsupported { location: span.0 })
-            }
+        for (_, _, _, span) in query.iter() {
+            reporter.report_ad_hoc(|| {
+                Diagnostic::new(Severity::Note).with_label(Label::primary("unresolved ref", span.0))
+            })
         }
         done()
     }

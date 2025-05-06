@@ -59,7 +59,7 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
 
 fn report_each(file_id: FileId, reports: &Reports, errors: ParseErrors<&str>) {
     for error in errors {
-        reports.report(file_id, ad_hoc_message(move || to_diagnostic(error)));
+        _ = reports.report(file_id, ad_hoc_message(move || to_diagnostic(error)));
     }
 }
 

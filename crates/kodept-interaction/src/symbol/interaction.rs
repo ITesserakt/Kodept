@@ -4,8 +4,8 @@ use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
 use crate::symbol::SymbolKind::{Function, Parameter, Variable};
 use crate::symbol::{Symbol, SymbolKind};
-use crate::wrapper::InteractionWrapper;
-use crate::{done, Interaction};
+use crate::wrapper::InteractionExt;
+use crate::{done, Ctx, Interaction};
 use bevy_ecs::prelude::{any_match_filter, Added, Query, Without};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::schedule::IntoScheduleConfigs;
@@ -63,11 +63,11 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
 impl Interaction for ExtractSymbols {
     type Error = DuplicatedSymbolError;
 
-    fn interaction() -> InteractionWrapper<Self::Error> {
-        let config = InteractionWrapper::wrap(Self::system)
-            .unwrap()
-            .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>);
-        InteractionWrapper::from_configs(config)
+    fn install(ctx: &mut Ctx) {
+        ctx.register(
+            Self::wrap_system(Self::system)
+                .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>),
+        )
     }
 }
 

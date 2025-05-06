@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::wrapper::InteractionWrapper;
 use kodept_report::traits::IntoSpannedReportMessage;
+use std::borrow::Cow;
 
 pub mod lint;
 mod normalize;
@@ -10,84 +10,73 @@ mod scope;
 mod symbol;
 
 pub mod prelude {
+    pub use super::report::install_reporting_support;
     pub use super::scope::builder::ScopeBuildingPass;
     pub use super::scope::references::ReferenceResolver;
-    pub use super::report::install_reporting_support;
     pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbols};
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum Skip<E> {
-    Skipped,
-    Failed(E),
-}
-
-pub type Result<E> = std::result::Result<(), Skip<E>>;
+pub type Result<E> = std::result::Result<(), E>;
 type Ctx<'w> = kodept_ast::interaction::Interaction<'w>;
 
-fn skip<E>() -> Result<E> {
-    Err(Skip::Skipped)
-}
-
 fn fail<E>(error: E) -> Result<E> {
-    Err(Skip::Failed(error))
+    Err(error)
 }
 
 fn done<E>() -> Result<E> {
     Ok(())
 }
 
-impl<E> From<E> for Skip<E> {
-    fn from(value: E) -> Self {
-        Self::Failed(value)
-    }
-}
-
 pub mod wrapper {
     use crate::report::Reporter;
-    use crate::Skip;
-    use bevy_ecs::prelude::{In, IntoScheduleConfigs, IntoSystem};
-    use bevy_ecs::schedule::ScheduleConfigs;
-    use bevy_ecs::system::ScheduleSystem;
-    use kodept_report::traits::IntoSpannedReportMessage;
-    use std::marker::PhantomData;
+    use crate::Interaction;
+    use bevy_ecs::prelude::*;
+    use kodept_report::prelude::{IntoSpannedReportMessage, MessageBehaviour};
     use tracing::trace;
 
-    pub struct InteractionWrapper<E>(PhantomData<E>, ScheduleConfigs<ScheduleSystem>);
-
-    impl<E> InteractionWrapper<E> {
-        pub(crate) fn wrap<M, S>(system: S) -> Self
+    pub trait InteractionExt: Interaction {
+        fn wrap_system<S, M>(system: S) -> impl IntoSystem<(), Result, ()>
         where
-            S: IntoSystem<(), crate::Result<E>, M>,
-            E: IntoSpannedReportMessage + 'static,
+            S: IntoSystem<(), crate::Result<Self::Error>, M>;
+    }
+
+    impl<I: Interaction> InteractionExt for I {
+        fn wrap_system<S, M>(system: S) -> impl IntoSystem<(), Result, ()>
+        where
+            S: IntoSystem<(), crate::Result<Self::Error>, M>,
         {
-            let name = system.system_type_id();
-            let piped_system = system.pipe(
-                move |In(result): In<crate::Result<E>>, mut reporter: Reporter| match result {
-                    Ok(()) => trace!("System {name:?} completed"),
-                    Err(Skip::Skipped) => trace!("System {name:?} skipped"),
-                    Err(Skip::Failed(e)) => reporter.report(e),
+            let name = I::name();
+            let id = system.system_type_id();
+            let system = system.pipe(
+                move |In(result): In<crate::Result<Self::Error>>, mut reporter: Reporter| {
+                    match result {
+                        Ok(()) => {
+                            trace!("System {name}#{id:?} completed");
+                            Ok(())
+                        }
+                        Err(e) => {
+                            let behaviour = e.behaviour();
+                            reporter.report(e);
+                            match behaviour {
+                                MessageBehaviour::FailFast { reason } => Err(reason.into()),
+                                MessageBehaviour::Suppress => Ok(()),
+                            }
+                        }
+                    }
                 },
             );
-            Self(PhantomData, IntoScheduleConfigs::into_configs(piped_system))
-        }
-
-        pub(crate) fn from_configs(configs: impl IntoScheduleConfigs<ScheduleSystem, ()>) -> Self {
-            InteractionWrapper(PhantomData, configs.into_configs())
-        }
-
-        pub fn unwrap(self) -> impl IntoScheduleConfigs<ScheduleSystem, ()> {
-            self.1
+            IntoSystem::into_system(system)
         }
     }
 }
 
-pub trait Interaction<M = ()> {
+pub trait Interaction: Sized {
     type Error: IntoSpannedReportMessage + 'static;
 
-    fn interaction() -> InteractionWrapper<Self::Error>;
-
-    fn install(ctx: &mut Ctx) {
-        ctx.register(Self::interaction().unwrap());
+    fn name() -> Cow<'static, str> {
+        let name = std::any::type_name::<Self>();
+        Cow::Borrowed(name.rsplit_once("::").map_or(name, |it| it.1))
     }
+
+    fn install(ctx: &mut Ctx);
 }

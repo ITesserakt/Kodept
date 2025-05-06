@@ -1,21 +1,21 @@
-use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
-use crate::wrapper::InteractionWrapper;
-use crate::{done, Interaction};
+use crate::wrapper::InteractionExt;
+use crate::{done, fail, Ctx, Interaction};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{any_match_filter, Commands, IntoScheduleConfigs, Query, With, Without};
 use bevy_ecs::relationship::Relationship;
 use kodept_ast::define_union;
 use kodept_ast::prelude::{AnyNodeRef, ChildOf, IntoEnum};
-use kodept_ast::properties::Node;
+use kodept_ast::properties::{Node, SourceSpan};
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::{FileDecl, ModDecl};
 use kodept_ast_nodes::function::FuncBody;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
-use kodept_report::prelude::{Diagnostic, Label, Severity};
-use std::convert::Infallible;
+use kodept_report::prelude::{
+    Diagnostic, IntoSpannedReportMessage, Label, MessageBehaviour, Severity,
+};
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
     FileDecl | ModDecl | StructDecl | EnumDecl | FuncBody | Lambda | Exprs | IfExpr
@@ -24,14 +24,34 @@ define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
 #[derive(Debug)]
 pub struct ScopeBuildingPass;
 
-impl Interaction for ScopeBuildingPass {
-    type Error = Infallible;
+pub struct CannotLinkError(Option<SourceSpan>);
 
-    fn interaction() -> InteractionWrapper<Self::Error> {
-        let config = InteractionWrapper::wrap(Self::system)
-            .unwrap()
-            .run_if(any_match_filter::<(With<Node>, Without<Scoped>)>);
-        InteractionWrapper::from_configs(config)
+impl IntoSpannedReportMessage for CannotLinkError {
+    type Message = Diagnostic;
+
+    fn behaviour(&self) -> MessageBehaviour {
+        MessageBehaviour::fail_fast("Critical bug in compiler, cannot proceed")
+    }
+
+    fn into_message(self) -> Self::Message {
+        let mut diag = Diagnostic::new(Severity::Bug)
+            .with_message("Cannot create new scope or link with any other")
+            .with_note("Possible out-of-tree nodes?");
+        if let Some(last) = self.0 {
+            diag = diag.with_label(Label::primary("unprocessed node", last))
+        }
+        diag
+    }
+}
+
+impl Interaction for ScopeBuildingPass {
+    type Error = CannotLinkError;
+
+    fn install(ctx: &mut Ctx) {
+        ctx.register(
+            Self::wrap_system(Self::system)
+                .run_if(any_match_filter::<(With<Node>, Without<Scoped>)>),
+        )
     }
 }
 
@@ -66,8 +86,7 @@ impl ScopeBuildingPass {
         unscoped: Query<(AnyNodeRef, Option<&ChildOf>), (Without<Scoped>, With<Node>)>,
         scoped: Query<&Scoped>,
         mut commands: Commands,
-        mut reporter: Reporter,
-    ) -> crate::Result<Infallible> {
+    ) -> crate::Result<CannotLinkError> {
         let mut amount_of_processed = 0;
         let mut last_unprocessed = None;
 
@@ -83,20 +102,12 @@ impl ScopeBuildingPass {
             } else {
                 // We should repeat the whole process to get more `scoped`...
                 // If there are no processed nodes, then it's a bug
-                last_unprocessed = Some(node);
+                last_unprocessed = Some(node.span());
             }
         });
 
         if amount_of_processed == 0 {
-            reporter.report_ad_hoc(|| {
-                let mut diag = Diagnostic::new(Severity::Bug)
-                    .with_message("Cannot create new scope or link with any other")
-                    .with_note("Possible out-of-tree nodes?");
-                if let Some(last) = last_unprocessed {
-                    diag = diag.with_label(Label::primary("unprocessed node", last.span()))
-                }
-                diag
-            })
+            fail(CannotLinkError(last_unprocessed))?;
         }
 
         done()

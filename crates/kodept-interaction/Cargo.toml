@@ -1,11 +1,10 @@
 [package]
 name = "kodept-interaction"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
 bevy_ecs.workspace = true
-extend.workspace = true
 hashbrown = "0.15.2"
 tracing.workspace = true
 
