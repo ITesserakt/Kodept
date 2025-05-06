@@ -35,7 +35,7 @@ pub struct Diagnostic {
 pub struct ReportMessage {
     severity: Severity,
     notes: Vec<Str>,
-    message: String,
+    message: Str,
 }
 
 #[derive(Debug)]
@@ -107,10 +107,10 @@ impl Diagnostic {
 }
 
 impl ReportMessage {
-    pub fn new(severity: Severity, message: String) -> Self {
+    pub fn new(severity: Severity, message: impl Into<Str>) -> Self {
         Self {
             severity,
-            message,
+            message: message.into(),
             notes: Default::default(),
         }
     }
@@ -153,7 +153,7 @@ impl<E: Error> SpannedError<E> {
 impl From<ReportMessage> for Diagnostic {
     fn from(value: ReportMessage) -> Self {
         let mut this = Self::new(value.severity);
-        this.message = value.message.into();
+        this.message = value.message;
         this.notes = value.notes;
         this
     }
