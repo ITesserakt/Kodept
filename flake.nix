@@ -19,6 +19,7 @@
 			doStaticBuild = true;
 			kodept_sources = ./.;
 			pegviz_sources = pegviz;
+			useNightly = true;
 		};
 	in {
 		packages = outputs.packages // {
@@ -36,10 +37,10 @@
             };
 		in pkgs.mkShellNoCC rec {
 			packages = with pkgs; [
-				plantuml
-				gnuplot
-				pkgs.clangStdenv.cc
-				mold
+                plantuml
+                gnuplot
+                pkgs.clangStdenv.cc
+                mold
                 local_outputs.toolchain
 			];
 
