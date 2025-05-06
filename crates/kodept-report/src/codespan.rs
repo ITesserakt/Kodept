@@ -1,11 +1,11 @@
+use crate::files::external::{Error, Files};
 use crate::report::Report;
-use codespan_reporting::term::termcolor::{StandardStream, WriteColor};
-use codespan_reporting::term::{ColorArg, Config};
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream, WriteColor};
+use codespan_reporting::term::Config;
 use derive_more::Constructor;
-use crate::files::external::{Files, Error};
 
 pub mod external {
-    pub use codespan_reporting::term::{Config, ColorArg, DisplayStyle};
+    pub use codespan_reporting::term::{Config, DisplayStyle, termcolor::ColorChoice};
 }
 
 #[derive(Clone, Debug, Constructor)]
@@ -29,10 +29,10 @@ pub trait Reportable {
 }
 
 impl CodespanSettings {
-    pub fn stderr(config: Config, color: ColorArg) -> Self {
-        Self::new(config, StandardStream::stderr(color.0))
+    pub fn stderr(config: Config, color: ColorChoice) -> Self {
+        Self::new(config, StandardStream::stderr(color))
     }
-} 
+}
 
 impl<FileId> Reportable for Report<FileId> {
     type FileId = FileId;

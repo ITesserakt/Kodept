@@ -3,10 +3,10 @@ use clap::{Args, ValueEnum};
 use derive_more::From;
 use kodept::loader::{Loader, LoadingError};
 use kodept_parse::lexer::{PegLexer, PestLexer};
-use kodept_parse::parser::{PegParser};
+use kodept_parse::parser::PegParser;
+use kodept_report::codespan::external::ColorChoice;
 use std::io::{stdin, Read};
 use std::path::PathBuf;
-use kodept_report::codespan::external::ColorArg;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {
@@ -58,7 +58,7 @@ pub struct DiagnosticConfig {
     pub tab_width: usize,
     /// Adjust color output settings
     #[arg(short, long, default_value = "auto")]
-    pub color: ColorArg,
+    pub color: ColorChoice,
     /// Output diagnostics eagerly
     #[arg(long, default_value_t = false)]
     pub eager: bool,
@@ -127,7 +127,7 @@ impl ParsingConfig {
             #[cfg(feature = "nom")]
             (LexerChoice::Auto, _, true, true) => kodept_parse::lexer::NomLexer::new().into(),
             #[cfg(not(feature = "nom"))]
-            (LexerChoice::Auto, _, true, true) => PestLexer::new().into()
+            (LexerChoice::Auto, _, true, true) => PestLexer::new().into(),
         }
     }
 
@@ -149,7 +149,9 @@ impl ParsingConfig {
             #[cfg(feature = "nom")]
             (ParserChoice::Auto, true, true) => kodept_parse::parser::NomParser::new().into(),
             #[cfg(not(feature = "nom"))]
-            (ParserChoice::Auto, true, true) => panic!("Cannot use peg parser when parallelization and tracing are enabled"),
+            (ParserChoice::Auto, true, true) => {
+                panic!("Cannot use peg parser when parallelization and tracing are enabled")
+            }
         }
     }
 }
