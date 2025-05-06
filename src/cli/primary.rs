@@ -57,7 +57,7 @@ impl LoggingOptions {
     pub fn level(&self) -> Level {
         self.debug
             .then_some(Level::DEBUG)
-            .or(self.verbose.then_some(Level::DEBUG))
+            .or(self.verbose.then_some(Level::TRACE))
             .unwrap_or(self.severity)
     }
 }
