@@ -33,7 +33,7 @@ impl Context {
         }
     }
 
-    pub fn unfold(self) -> (Option<StartsFromRoot>, Vec<Reference>) {
+    pub fn unfold(&self) -> (Option<StartsFromRoot>, Vec<&Reference>) {
         let mut refs = VecDeque::new();
         let mut current = self;
         loop {
@@ -42,7 +42,7 @@ impl Context {
                 Context::Local => return (None, Vec::from(refs)),
                 Context::Inner { needle, parent } => {
                     refs.push_front(needle);
-                    current = *parent;
+                    current = &*parent;
                 }
             }
         }

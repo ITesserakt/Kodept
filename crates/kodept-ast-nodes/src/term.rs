@@ -13,7 +13,7 @@ pub struct ReferenceContext {
     pub items: Vec<Str>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Identifier {
     TypeReference { name: Str },
     Reference { name: Str },
@@ -40,6 +40,16 @@ impl ReferenceContext {
             global: false,
             items: items.into_iter().map(|it| Str::from(it.into())).collect(),
         }
+    }
+    
+    /// Means that this context has no items in it and it is local
+    pub const fn is_empty_local_context(&self) -> bool {
+        !self.global && self.items.is_empty() 
+    }
+
+    /// Means that this context has no items in it and it is global
+    pub const fn is_empty_global_context(&self) -> bool {
+        self.global && self.items.is_empty()
     }
 }
 
@@ -79,13 +89,13 @@ impl FromSyntax<Term> for Ref {
         let context = match node {
             Term::Reference(_) => ReferenceContext::default(),
             Term::Contextual(ContextualReference { context, .. }) => {
-                let (from_root, refs) = context.clone().unfold();
+                let (from_root, refs) = context.unfold();
                 ReferenceContext {
                     global: from_root.is_some(),
                     items: refs
                         .into_iter()
                         .map(|it| match it {
-                            Reference::Type(x) => source.get_chunk_located(&x),
+                            Reference::Type(x) => source.get_chunk_located(x),
                             Reference::Identifier(_) => {
                                 panic!("Context built with ordinary references is unsupported")
                             }

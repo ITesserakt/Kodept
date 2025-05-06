@@ -36,8 +36,8 @@ impl Located for Term {
 
 impl Located for ContextualReference {
     fn location(&self) -> CodePoint {
-        let (is_global, unfolded) = self.context.clone().unfold();
-        let first = unfolded.first().unwrap_or(&self.inner);
+        let (is_global, unfolded) = self.context.unfold();
+        let first = unfolded.first().copied().unwrap_or(&self.inner);
         let last = &self.inner;
         let length = last.location().offset + last.location().length - first.location().offset;
         if is_global.is_some() {
