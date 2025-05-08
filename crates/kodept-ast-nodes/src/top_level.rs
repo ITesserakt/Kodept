@@ -1,5 +1,5 @@
 use crate::function::FuncDecl;
-use crate::types::TyParams;
+use crate::types::TyParam;
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::{Name, SourceSpan};
@@ -8,7 +8,6 @@ use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types::TypeName;
 use kodept_rlt::prelude::{Enum, Struct};
-use std::convert::identity;
 
 #[derive(Debug, PartialEq, Component)]
 pub enum EnumDecl {
@@ -30,8 +29,8 @@ relation!(EnumDecl => children EnumConst);
 derive_node!(StructDecl {
     properties = [require Name,]
 });
-relation!(StructDecl => optional TyParams);
 relation!(StructDecl => children FuncDecl);
+relation!(StructDecl => either P(children TyParam));
 
 derive_node!(EnumConst {
     properties = [require Name,]
@@ -62,18 +61,9 @@ impl FromSyntax<Struct> for StructDecl {
         ASTBuilder::new(StructDecl)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_opt_dyn_child(
-                node.parameters.as_ref(),
+            .with_opt_children::<_, TyParam, _>(
+                node.parameters.as_ref().map(|it| it.inner.as_ref()),
                 source,
-                move |it, spawner, source| {
-                    spawner.spawn_raw(
-                        ASTBuilder::new(TyParams)
-                            .with_property(SourceSpan(it.left.0 + it.right.0))
-                            .with_children(it.inner.as_ref(), source),
-                        node,
-                        identity,
-                    )
-                },
             )
             .with_opt_children::<_, FuncDecl, _>(
                 node.body.as_ref().map(|it| it.inner.as_ref()),

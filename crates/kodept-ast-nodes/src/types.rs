@@ -20,18 +20,6 @@ pub struct TyParam;
 #[derive(Debug, PartialEq, Component)]
 pub struct NonTyParam;
 
-#[derive(Debug, PartialEq, Component)]
-pub struct Params;
-#[derive(Debug, PartialEq, Component)]
-pub struct TyParams;
-
-derive_node!(Params);
-relation!(Params => children TyParam);
-relation!(Params => children NonTyParam);
-
-derive_node!(TyParams);
-relation!(TyParams => children TyParam);
-
 derive_node!(Ty {
     properties = [require Name,]
 });

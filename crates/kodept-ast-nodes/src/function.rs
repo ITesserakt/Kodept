@@ -1,5 +1,5 @@
 use crate::expression::Exprs;
-use crate::types::{Params, ProdTy, Ty};
+use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
 use crate::utils::{unwrap_body, unwrap_parameter, unwrap_type};
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
@@ -27,7 +27,8 @@ derive_node!(FuncBody);
 relation!(FuncBody => optional Ty);
 relation!(FuncBody => optional ProdTy);
 relation!(FuncBody => child Exprs);
-relation!(FuncBody => either P(optional Params));
+relation!(FuncBody => either P(children TyParam));
+relation!(FuncBody => or P(children NonTyParam));
 
 derive_node!(FuncSignature {
     properties = [require Name,]
@@ -57,17 +58,10 @@ impl FromSyntax<BodiedFunction> for FuncDecl {
                     .with_dyn_children(&node.return_type, |(_, it), spawner| {
                         unwrap_type(it, spawner, source)
                     })
-                    .with_opt_dyn_child(node.params.as_ref(), source, |it, spawner, source| {
-                        spawner.spawn_raw(
-                            ASTBuilder::new(Params)
-                                .with_property(SourceSpan(it.left.0 + it.right.0))
-                                .with_dyn_children(it.inner.as_ref(), |it, spawner| {
-                                    unwrap_parameter(it, spawner, source)
-                                }),
-                            node,
-                            identity,
-                        )
-                    })
+                    .with_opt_dyn_children(
+                        node.params.as_ref().map(|it| it.inner.as_ref()),
+                        |it, spawner| unwrap_parameter(it, spawner, source),
+                    )
                     .with_dyn_child(node.body.as_ref(), source, unwrap_body);
 
                 spawner.spawn_raw(builder, it, identity)
