@@ -99,60 +99,60 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         --
         a:(@) _ op:$"||" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Logic(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Disjunction(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$"&&" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Logic(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Conjunction(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         --
         a:(@) _ op:$"|" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Or(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$"&" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::And(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$"^" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Bit(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Xor(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         --
         a:(@) _ op:$"<" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Comparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Less(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$">" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Comparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Greater(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         --
         a:(@) _ op:$"<=" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::LessEq(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$"!=" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::NEq(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$"==" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Eq(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$">=" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::CompoundComparison(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::GreaterEq(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         --
@@ -169,7 +169,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         } }
         a:(@) _ op:$"-" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Add(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Sub(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         --
@@ -180,12 +180,12 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         } }
         a:(@) _ op:$"/" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Div(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         a:(@) _ op:$"%" _ b:@ { rlt::Operation::Binary {
             left: Box::new(a),
-            operation: BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+            operation: BinaryOperationSymbol::Rem(Symbol::from_located(op)),
             right: Box::new(b)
         } }
         --

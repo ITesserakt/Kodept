@@ -6,6 +6,7 @@ use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct BodiedFunction {
     pub keyword: Keyword,
     pub id: Identifier,

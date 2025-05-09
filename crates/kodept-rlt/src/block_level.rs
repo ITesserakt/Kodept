@@ -6,6 +6,7 @@ use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum Body {
     Block(ExpressionBlock),
     Simplified {
@@ -25,6 +26,7 @@ pub enum BlockLevelNode {
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum Variable {
     Immutable {
         keyword: Keyword,
@@ -40,6 +42,7 @@ pub enum Variable {
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct InitializedVariable {
     pub variable: Variable,
     pub equals: Symbol,
@@ -123,5 +126,61 @@ impl SpanBounds for Variable {
                 ..
             } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()) + id.0,
         }
+    }
+}
+
+#[cfg(feature = "arbitrary")]
+mod arb {
+    use crate::block_level::{Body, InitializedVariable};
+    use crate::new_types::{Enclosed, Identifier, Keyword, Symbol};
+    use crate::prelude::{BlockLevelNode, BodiedFunction, ExpressionBlock, Operation, Parameter, Type};
+    use proptest::collection::vec;
+    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+    use proptest::prop_oneof;
+
+    impl Arbitrary for BlockLevelNode {
+        type Parameters = ();
+
+        fn arbitrary_with((): Self::Parameters) -> Self::Strategy {
+            let leaf = prop_oneof![
+                any::<InitializedVariable>().prop_map(BlockLevelNode::InitVar),
+                any::<Operation>().prop_map(BlockLevelNode::Operation)
+            ];
+
+            leaf.prop_recursive(4, 20, 5, |inner| {
+                prop_oneof![
+                    (any::<Symbol>(), vec(inner.clone(), 0..10), any::<Symbol>()).prop_map(|it| {
+                        BlockLevelNode::Block(ExpressionBlock {
+                            lbrace: it.0,
+                            rbrace: it.2,
+                            expression: it.1.into_boxed_slice(),
+                        })
+                    }),
+                    (
+                        any::<Identifier>(),
+                        any::<Keyword>(),
+                        any::<Option<Enclosed<Box<[Parameter]>>>>(),
+                        any::<Option<(Symbol, Type)>>(),
+                        any::<Symbol>(),
+                        inner
+                    )
+                        .prop_map(|it| {
+                            BlockLevelNode::Function(BodiedFunction {
+                                id: it.0,
+                                keyword: it.1,
+                                params: it.2,
+                                return_type: it.3,
+                                body: Box::new(Body::Simplified {
+                                    flow: it.4,
+                                    expression: it.5,
+                                }),
+                            })
+                        })
+                ]
+            })
+            .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Self>;
     }
 }

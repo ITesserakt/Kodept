@@ -12,12 +12,10 @@ use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, BundleUnion, NodeSpawner};
-use kodept_ast::Str;
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::{BlockLevelNode, Body, Expression, Operation, Parameter, Type};
-use std::ops::Deref;
 
 pub(crate) fn unwrap_type<R, T, A>(
     node: &Type,
@@ -141,28 +139,26 @@ where
             operation,
             right,
         } => {
-            let op_text: Str = source.get_chunk_located(operation);
-            let value = match (operation, op_text.deref()) {
-                (BinaryOperationSymbol::Pow(_), _) => BinExpr::Pow,
-                (BinaryOperationSymbol::Mul(_), "*") => BinExpr::Mul,
-                (BinaryOperationSymbol::Mul(_), "/") => BinExpr::Div,
-                (BinaryOperationSymbol::Mul(_), "%") => BinExpr::Mod,
-                (BinaryOperationSymbol::Add(_), "+") => BinExpr::Add,
-                (BinaryOperationSymbol::Add(_), "-") => BinExpr::Add,
-                (BinaryOperationSymbol::ComplexComparison(_), _) => BinExpr::ComplexComparison,
-                (BinaryOperationSymbol::CompoundComparison(_), "<=") => BinExpr::LessEq,
-                (BinaryOperationSymbol::CompoundComparison(_), ">=") => BinExpr::GreaterEq,
-                (BinaryOperationSymbol::CompoundComparison(_), "!=") => BinExpr::NEq,
-                (BinaryOperationSymbol::CompoundComparison(_), "==") => BinExpr::Eq,
-                (BinaryOperationSymbol::Comparison(_), "<") => BinExpr::Less,
-                (BinaryOperationSymbol::Comparison(_), ">") => BinExpr::Greater,
-                (BinaryOperationSymbol::Bit(_), "|") => BinExpr::Or,
-                (BinaryOperationSymbol::Bit(_), "&") => BinExpr::And,
-                (BinaryOperationSymbol::Bit(_), "^") => BinExpr::Xor,
-                (BinaryOperationSymbol::Logic(_), "||") => BinExpr::Disj,
-                (BinaryOperationSymbol::Logic(_), "&&") => BinExpr::Conj,
-                (BinaryOperationSymbol::Assign(_), _) => BinExpr::Assign,
-                _ => unreachable!(),
+            let value = match operation {
+                BinaryOperationSymbol::Pow(_) => BinExpr::Pow,
+                BinaryOperationSymbol::Mul(_) => BinExpr::Mul,
+                BinaryOperationSymbol::Div(_) => BinExpr::Div,
+                BinaryOperationSymbol::Rem(_) => BinExpr::Mod,
+                BinaryOperationSymbol::Add(_) => BinExpr::Add,
+                BinaryOperationSymbol::Sub(_) => BinExpr::Sub,
+                BinaryOperationSymbol::ComplexComparison(_) => BinExpr::ComplexComparison,
+                BinaryOperationSymbol::LessEq(_) => BinExpr::LessEq,
+                BinaryOperationSymbol::NEq(_) => BinExpr::NEq,
+                BinaryOperationSymbol::Eq(_) => BinExpr::Eq,
+                BinaryOperationSymbol::GreaterEq(_) => BinExpr::GreaterEq,
+                BinaryOperationSymbol::Less(_) => BinExpr::Less,
+                BinaryOperationSymbol::Greater(_) => BinExpr::Greater,
+                BinaryOperationSymbol::Or(_) => BinExpr::Or,
+                BinaryOperationSymbol::And(_) => BinExpr::And,
+                BinaryOperationSymbol::Xor(_) => BinExpr::Xor,
+                BinaryOperationSymbol::Disjunction(_) => BinExpr::Disj,
+                BinaryOperationSymbol::Conjunction(_) => BinExpr::Conj,
+                BinaryOperationSymbol::Assign(_) => BinExpr::Assign
             };
             spawner.spawn_raw(
                 ASTBuilder::new(value)

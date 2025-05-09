@@ -1112,7 +1112,9 @@ version = "0.2.6"
 dependencies = [
  "bevy_ecs",
  "kodept-ast",
+ "kodept-core",
  "kodept-rlt",
+ "proptest",
 ]
 
 [[package]]
@@ -1121,6 +1123,7 @@ version = "0.4.2"
 dependencies = [
  "derive_more 2.0.1",
  "pathdiff",
+ "proptest",
  "serde",
 ]
 
@@ -1217,6 +1220,8 @@ version = "0.2.1"
 dependencies = [
  "derive_more 2.0.1",
  "kodept-core",
+ "proptest",
+ "proptest-derive",
  "serde",
 ]
 

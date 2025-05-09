@@ -142,3 +142,137 @@ impl SpanBounds for Application {
         self.expr.bounds() + self.params.as_ref().map(|it| it.left.0 + it.right.0)
     }
 }
+
+#[cfg(feature = "arbitrary")]
+mod arb {
+    use crate::block_level::BlockLevelNode;
+    use crate::expression::{Application, ExpressionBlock, Operation};
+    use crate::literal::Literal;
+    use crate::new_types::{BinaryOperationSymbol, Enclosed, Symbol, UnaryOperationSymbol};
+    use crate::prelude::{Expression, Lambda};
+    use crate::term::Term;
+    use crate::types::Parameter;
+    use kodept_core::code_point::CodePoint;
+    use proptest::collection::vec;
+    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+    use proptest::prop_oneof;
+
+    impl Arbitrary for Operation {
+        type Parameters = ();
+
+        fn arbitrary_with((): Self::Parameters) -> Self::Strategy {
+            let leaf = prop_oneof![
+                any::<Term>().prop_map(|it| Operation::Expression(Expression::Term(it))),
+                any::<CodePoint>()
+                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Binary(it)))),
+                any::<CodePoint>()
+                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Octal(it)))),
+                any::<CodePoint>()
+                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Hex(it)))),
+                any::<CodePoint>().prop_map(|it| Operation::Expression(Expression::Literal(
+                    Literal::Floating(it)
+                ))),
+                any::<CodePoint>()
+                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Char(it)))),
+                any::<CodePoint>()
+                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::String(it)))),
+            ];
+            leaf.prop_recursive(20, 200, 5, |inner| {
+                prop_oneof![
+                    (inner.clone(), any::<Symbol>(), inner.clone()).prop_map(|it| {
+                        Operation::Access {
+                            left: Box::new(it.0),
+                            dot: it.1,
+                            right: Box::new(it.2),
+                        }
+                    }),
+                    (any::<UnaryOperationSymbol>(), inner.clone()).prop_map(|it| {
+                        Operation::Unary {
+                            operator: it.0,
+                            expr: Box::new(it.1),
+                        }
+                    }),
+                    (inner.clone(), any::<BinaryOperationSymbol>(), inner.clone()).prop_map(|it| {
+                        Operation::Binary {
+                            left: Box::new(it.0),
+                            operation: it.1,
+                            right: Box::new(it.2),
+                        }
+                    }),
+                    (
+                        inner.clone(),
+                        proptest::option::of((
+                            any::<Symbol>(),
+                            vec(inner.clone(), 0..5),
+                            any::<Symbol>()
+                        ))
+                    )
+                        .prop_map(|it| {
+                            Operation::Application(Box::new(Application {
+                                expr: it.0,
+                                params: it.1.map(Enclosed::from),
+                            }))
+                        }),
+                    (
+                        inner.clone(),
+                        any::<Symbol>(),
+                        (
+                            any::<Symbol>(),
+                            vec(any::<Parameter>(), 0..10),
+                            any::<Symbol>()
+                        )
+                    )
+                        .prop_map(|it| {
+                            Operation::Expression(Expression::Lambda(Lambda {
+                                flow: it.1,
+                                expr: Box::new(it.0),
+                                binds: it.2.into(),
+                            }))
+                        }),
+                    (any::<Symbol>(), vec(inner.clone(), 0..10), any::<Symbol>()).prop_map(|it| {
+                        Operation::Block(ExpressionBlock {
+                            lbrace: it.0,
+                            rbrace: it.2,
+                            expression: it.1.into_iter().map(BlockLevelNode::Operation).collect(),
+                        })
+                    }),
+                    // TODO: generate ifs
+                ]
+            })
+            .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Self>;
+    }
+
+    impl Arbitrary for ExpressionBlock {
+        type Parameters = ();
+
+        fn arbitrary_with((): Self::Parameters) -> Self::Strategy {
+            (
+                any::<Symbol>(),
+                vec(any::<BlockLevelNode>(), 0..10),
+                any::<Symbol>(),
+            )
+                .prop_map(|it| ExpressionBlock {
+                    lbrace: it.0,
+                    rbrace: it.2,
+                    expression: it.1.into_boxed_slice(),
+                })
+                .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Self>;
+    }
+}
+
+#[cfg(all(test, feature = "arbitrary"))]
+mod tests {
+    use crate::expression::Operation;
+    use proptest::proptest;
+
+    proptest! {
+        #[test]
+        fn test_generation(_: Operation) {}
+    }
+}

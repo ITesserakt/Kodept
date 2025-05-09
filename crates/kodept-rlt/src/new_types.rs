@@ -8,6 +8,7 @@ macro_rules! make_wrappers {
         #[repr(transparent)]
         #[derive(Debug, Clone, PartialEq, From, Into, Copy)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        #[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
         pub struct $name(pub kodept_core::code_point::CodePoint);
 
         impl kodept_core::structure::Located for $name {
@@ -31,6 +32,7 @@ make_wrappers!(Keyword, Symbol, TypeName, Identifier,);
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum UnaryOperationSymbol {
     Neg(Symbol),
     Not(Symbol),
@@ -40,29 +42,41 @@ pub enum UnaryOperationSymbol {
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum BinaryOperationSymbol {
     /// **
     Pow(Symbol),
     /// * / %
     Mul(Symbol),
+    Div(Symbol),
+    Rem(Symbol),
     /// + -
     Add(Symbol),
+    Sub(Symbol),
     /// <=>
     ComplexComparison(Symbol),
     /// <= != == >=
-    CompoundComparison(Symbol),
+    LessEq(Symbol),
+    NEq(Symbol),
+    Eq(Symbol),
+    GreaterEq(Symbol),
     /// < >
-    Comparison(Symbol),
+    Less(Symbol),
+    Greater(Symbol),
     /// | & ^
-    Bit(Symbol),
+    Or(Symbol),
+    And(Symbol),
+    Xor(Symbol),
     /// || &&
-    Logic(Symbol),
+    Disjunction(Symbol),
+    Conjunction(Symbol),
     /// =
     Assign(Symbol),
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct Enclosed<T> {
     pub left: Symbol,
     pub inner: T,
@@ -83,15 +97,35 @@ impl Located for UnaryOperationSymbol {
 impl Located for BinaryOperationSymbol {
     fn location(&self) -> CodePoint {
         match self {
-            BinaryOperationSymbol::Pow(x) => x.location(),
-            BinaryOperationSymbol::Mul(x) => x.location(),
-            BinaryOperationSymbol::Add(x) => x.location(),
-            BinaryOperationSymbol::ComplexComparison(x) => x.location(),
-            BinaryOperationSymbol::CompoundComparison(x) => x.location(),
-            BinaryOperationSymbol::Comparison(x) => x.location(),
-            BinaryOperationSymbol::Bit(x) => x.location(),
-            BinaryOperationSymbol::Logic(x) => x.location(),
-            BinaryOperationSymbol::Assign(x) => x.location(),
+            BinaryOperationSymbol::Pow(x) => x.location(), 
+            BinaryOperationSymbol::Mul(x) => x.location(), 
+            BinaryOperationSymbol::Div(x) => x.location(), 
+            BinaryOperationSymbol::Rem(x) => x.location(), 
+            BinaryOperationSymbol::Add(x) => x.location(), 
+            BinaryOperationSymbol::Sub(x) => x.location(), 
+            BinaryOperationSymbol::ComplexComparison(x) => x.location(), 
+            BinaryOperationSymbol::LessEq(x) => x.location(), 
+            BinaryOperationSymbol::NEq(x) => x.location(), 
+            BinaryOperationSymbol::Eq(x) => x.location(), 
+            BinaryOperationSymbol::GreaterEq(x) => x.location(), 
+            BinaryOperationSymbol::Less(x) => x.location(), 
+            BinaryOperationSymbol::Greater(x) => x.location(), 
+            BinaryOperationSymbol::Or(x) => x.location(), 
+            BinaryOperationSymbol::And(x) => x.location(), 
+            BinaryOperationSymbol::Xor(x) => x.location(), 
+            BinaryOperationSymbol::Disjunction(x) => x.location(), 
+            BinaryOperationSymbol::Conjunction(x) => x.location(), 
+            BinaryOperationSymbol::Assign(x) => x.location(), 
+        }
+    }
+}
+
+impl<T> From<(Symbol, Vec<T>, Symbol)> for Enclosed<Box<[T]>> {
+    fn from(value: (Symbol, Vec<T>, Symbol)) -> Self {
+        Self {
+            left: value.0,
+            right: value.2,
+            inner: value.1.into_boxed_slice()
         }
     }
 }

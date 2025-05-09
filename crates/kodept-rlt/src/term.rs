@@ -6,6 +6,7 @@ use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum Term {
     Reference(Reference),
     Contextual(ContextualReference),
@@ -13,6 +14,7 @@ pub enum Term {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum Reference {
     Type(TypeName),
     Identifier(Identifier),
@@ -20,6 +22,7 @@ pub enum Reference {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct ContextualReference {
     pub context: Context,
     pub inner: Reference,
@@ -39,7 +42,7 @@ impl Located for ContextualReference {
         let (is_global, unfolded) = self.context.unfold();
         let first = unfolded.first().copied().unwrap_or(&self.inner);
         let last = &self.inner;
-        let length = last.location().offset + last.location().length - first.location().offset;
+        let length = (first.bounds() + last.bounds()).length;
         if is_global.is_some() {
             // Shift to the left by 2 symbols for '::'
             CodePoint::new(length + 2, first.location().offset - 2)
@@ -61,8 +64,14 @@ impl Located for Reference {
 impl SpanBounds for Term {
     fn bounds(&self) -> Span {
         match self {
-            Term::Reference(x) => x.location().into(),
+            Term::Reference(x) => x.bounds(),
             Term::Contextual(x) => x.location().into()
         }
+    }
+}
+
+impl SpanBounds for Reference {
+    fn bounds(&self) -> Span {
+        self.location().into()
     }
 }

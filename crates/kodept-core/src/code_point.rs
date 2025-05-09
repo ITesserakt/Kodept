@@ -143,3 +143,21 @@ impl From<CodePoint> for Span {
         }
     }
 }
+
+#[cfg(feature = "arbitrary")]
+const _: () = {
+    use crate::code_point::CodePoint;
+    use proptest::prelude::{Arbitrary, Strategy};
+    use proptest::strategy::Map;
+    use std::ops::Range;
+
+    impl Arbitrary for CodePoint {
+        type Parameters = ();
+
+        fn arbitrary_with((): Self::Parameters) -> Self::Strategy {
+            (0..100u32, 0..1000u32).prop_map(|it| CodePoint::new(it.0, it.1))
+        }
+
+        type Strategy = Map<(Range<u32>, Range<u32>), fn((u32, u32)) -> CodePoint>;
+    }
+};

@@ -11,6 +11,11 @@ bevy_ecs.workspace = true
 kodept-ast = { path = "../kodept-ast" }
 kodept-rlt = { path = "../kodept-rlt" }
 
+[dev-dependencies]
+kodept-core = { version = "0.4", path = "../kodept-core" }
+kodept-rlt = { version = "0.2", features = ["arbitrary"], path = "../kodept-rlt" }
+proptest = "1.6.0"
+
 [features]
 defalt = []
 parallel = ["kodept-ast/parallel", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]

@@ -12,10 +12,12 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct Tuple(pub Enclosed<Box<[Type]>>);
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct TypedParameter {
     pub id: Identifier,
     pub parameter_type: Type,
@@ -23,12 +25,14 @@ pub struct TypedParameter {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct UntypedParameter {
     pub id: Identifier,
 }
 
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum Parameter {
     Typed(TypedParameter),
     Untyped(UntypedParameter),
@@ -74,7 +78,7 @@ impl SpanBounds for Type {
     fn bounds(&self) -> Span {
         match self {
             Type::Reference(x) => x.0.into(),
-            Type::Tuple(x) => x.0.left.0 + x.0.right.0
+            Type::Tuple(x) => x.0.left.0 + x.0.right.0,
         }
     }
 }
@@ -88,5 +92,29 @@ impl SpanBounds for TypedParameter {
 impl SpanBounds for UntypedParameter {
     fn bounds(&self) -> Span {
         self.id.0.into()
+    }
+}
+
+#[cfg(feature = "arbitrary")]
+mod arb {
+    use crate::new_types::{Enclosed, Symbol, TypeName};
+    use crate::types::{Tuple, Type};
+    use proptest::collection::vec;
+    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+
+    impl Arbitrary for Type {
+        type Parameters = ();
+
+        fn arbitrary_with((): Self::Parameters) -> Self::Strategy {
+            any::<TypeName>()
+                .prop_map(Type::Reference)
+                .prop_recursive(4, 20, 5, |inner| {
+                    (any::<Symbol>(), vec(inner, 0..10), any::<Symbol>())
+                        .prop_map(|it| Type::Tuple(Tuple(Enclosed::from(it))))
+                })
+                .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Type>;
     }
 }

@@ -18,7 +18,7 @@ use kodept_rlt::prelude as rlt;
 
 fn left_fold<I, T, P, R>(
     parser: P,
-    produce: impl Fn(R, Symbol, T) -> R,
+    produce: impl Fn(R, PackedTokenMatch, T) -> R,
 ) -> impl Parser<I, Output = R, Error = P::Error>
 where
     P: Parser<I, Output = (T, Vec<(PackedTokenMatch, T)>)>,
@@ -29,8 +29,8 @@ where
         Some(rest) => {
             let ((op, b), tail) = rest.next();
             tail.fold(
-                produce(a.into(), Symbol::from_located(op), b),
-                |a, (op, b)| produce(a, Symbol::from_located(op), b),
+                produce(a.into(), op, b),
+                |a, (op, b)| produce(a, op, b),
             )
         }
     })
@@ -66,7 +66,7 @@ fn access<'t>() -> impl PParser<'t, rlt::Operation> {
         left_fold((atom(), many0((match_token(Dot), atom()))), |a, op, b| {
             rlt::Operation::Access {
                 left: Box::new(a),
-                dot: op,
+                dot: Symbol::from_located(op),
                 right: Box::new(b),
             }
         }),
@@ -127,7 +127,12 @@ fn mul_expr<'t>() -> impl PParser<'t, rlt::Operation> {
             )),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::Mul(op),
+                operation: match op.token {
+                    Times => BinaryOperationSymbol::Mul(Symbol::from_located(op)),
+                    Div => BinaryOperationSymbol::Div(Symbol::from_located(op)),
+                    Mod => BinaryOperationSymbol::Rem(Symbol::from_located(op)),
+                    _ => unreachable!()
+                },
                 right: Box::new(b),
             },
         ),
@@ -143,7 +148,11 @@ fn add_expr<'t>() -> impl PParser<'t, rlt::Operation> {
             )),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::Add(op),
+                operation: match op.token {
+                    Plus => BinaryOperationSymbol::Add(Symbol::from_located(op)),
+                    Sub => BinaryOperationSymbol::Sub(Symbol::from_located(op)),
+                    _ => unreachable!()
+                },
                 right: Box::new(b),
             },
         ),
@@ -157,7 +166,7 @@ fn complex_cmp<'t>() -> impl PParser<'t, rlt::Operation> {
             add_expr().and(many0(match_token(Spaceship).and(add_expr()))),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::ComplexComparison(op),
+                operation: BinaryOperationSymbol::ComplexComparison(Symbol::from_located(op)),
                 right: Box::new(b),
             },
         ),
@@ -179,7 +188,13 @@ fn compound_cmp<'t>() -> impl PParser<'t, rlt::Operation> {
             )),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::CompoundComparison(op),
+                operation: match op.token {
+                    LessEquals => BinaryOperationSymbol::LessEq(Symbol::from_located(op)),
+                    NotEquiv => BinaryOperationSymbol::NEq(Symbol::from_located(op)),
+                    Equiv => BinaryOperationSymbol::Eq(Symbol::from_located(op)),
+                    GreaterEquals => BinaryOperationSymbol::GreaterEq(Symbol::from_located(op)),
+                    _ => unreachable!()
+                },
                 right: Box::new(b),
             },
         ),
@@ -195,7 +210,11 @@ fn simple_cmp<'t>() -> impl PParser<'t, rlt::Operation> {
             )),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::Comparison(op),
+                operation: match op.token {
+                    Less => BinaryOperationSymbol::Less(Symbol::from_located(op)),
+                    Greater => BinaryOperationSymbol::Greater(Symbol::from_located(op)),
+                    _ => unreachable!()
+                },
                 right: Box::new(b),
             },
         ),
@@ -212,7 +231,12 @@ fn bit_expr<'t>() -> impl PParser<'t, rlt::Operation> {
             )),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::Bit(op),
+                operation: match op.token {
+                    OrBit => BinaryOperationSymbol::Or(Symbol::from_located(op)),
+                    AndBit => BinaryOperationSymbol::And(Symbol::from_located(op)),
+                    XorBit => BinaryOperationSymbol::Xor(Symbol::from_located(op)),
+                    _ => unreachable!()
+                },
                 right: Box::new(b),
             },
         ),
@@ -228,7 +252,11 @@ fn logic_expr<'t>() -> impl PParser<'t, rlt::Operation> {
             )),
             |a, op, b| rlt::Operation::Binary {
                 left: Box::new(a),
-                operation: BinaryOperationSymbol::Logic(op),
+                operation: match op.token {
+                    OrLogic => BinaryOperationSymbol::Disjunction(Symbol::from_located(op)),
+                    AndLogic => BinaryOperationSymbol::Conjunction(Symbol::from_located(op)),
+                    _ => unreachable!()
+                },
                 right: Box::new(b),
             },
         ),

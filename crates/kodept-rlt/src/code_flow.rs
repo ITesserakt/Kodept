@@ -5,6 +5,7 @@ use kodept_core::structure::{Located, SpanBounds};
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct IfExpr {
     pub keyword: Keyword,
     pub condition: Operation,
@@ -15,6 +16,7 @@ pub struct IfExpr {
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct ElifExpr {
     pub keyword: Keyword,
     pub condition: Operation,
@@ -23,12 +25,14 @@ pub struct ElifExpr {
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub struct ElseExpr {
     pub keyword: Keyword,
     pub body: Body,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum CodeFlow {
     If(IfExpr),
 }
