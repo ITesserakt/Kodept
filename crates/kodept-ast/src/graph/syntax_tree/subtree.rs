@@ -15,7 +15,7 @@ use std::convert::identity;
 use std::marker::PhantomData;
 use std::sync::LazyLock;
 
-static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 10);
+static SWITCH_TO_PARALLEL_THRESHOLD: LazyLock<usize> = LazyLock::new(|| 2);
 
 #[derive(Debug)]
 enum GraphImpl {

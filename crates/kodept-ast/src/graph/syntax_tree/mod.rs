@@ -168,4 +168,11 @@ impl SyntaxTree {
             .map(|it| &it.1.value)
             .collect()
     }
+    
+    pub fn raw_any_children<T>(&self, id: NodeId<T>) -> OptVec<&AnyNode> {
+        self.inner
+            .children(id.into())
+            .map(|it| &it.1.value)
+            .collect()
+    }
 }
