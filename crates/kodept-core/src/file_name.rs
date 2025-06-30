@@ -69,7 +69,7 @@ impl FileName {
         hasher.finish()
     }
 
-    pub fn build_file_path(&self) -> Cow<Path> {
+    pub fn build_file_path(&self) -> Cow<'_, Path> {
         match self {
             FileName::Real(x) => Cow::Borrowed(x.as_path()),
             FileName::Anon => {
@@ -83,7 +83,7 @@ impl FileName {
         }
     }
 
-    pub fn to_string_lossy(&self) -> Cow<str> {
+    pub fn to_string_lossy(&self) -> Cow<'_, str> {
         match self {
             FileName::Real(x) => x.to_string_lossy(),
             FileName::Anon => "<anonymous>".into(),

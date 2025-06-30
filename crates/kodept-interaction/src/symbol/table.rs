@@ -27,7 +27,7 @@ impl SymbolSearchError<'_> {
 }
 
 impl SymbolTable {
-    pub(super) fn entry(&mut self, symbol: Symbol) -> Entry<Symbol, DefaultHashBuilder> {
+    pub(super) fn entry(&mut self, symbol: Symbol) -> Entry<'_, Symbol, DefaultHashBuilder> {
         self.0.entry(symbol)
     }
     
@@ -35,7 +35,7 @@ impl SymbolTable {
         self.get(name, Type)
     }
 
-    pub(crate) fn get_value(&self, name: Name) -> Result<&Symbol, SymbolSearchError> {
+    pub(crate) fn get_value(&self, name: Name) -> Result<&'_ Symbol, SymbolSearchError<'_>> {
         let mut description = SymbolDescription::new(name, Variable);
         let symbol_as_var = self.0.get(&description);
         description.kind = Function;

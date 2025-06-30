@@ -32,14 +32,14 @@ pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
     type Error;
 
     #[deprecated]
-    fn get(&self, key: &Key) -> Option<Cow<PolymorphicType>>
+    fn get(&self, key: &Key) -> Option<Cow<'_, PolymorphicType>>
     where
         Self::Error: Debug,
     {
         self.maybe_get(key).unwrap()
     }
 
-    fn maybe_get(&self, key: &Key) -> Result<Option<Cow<PolymorphicType>>, Self::Error>;
+    fn maybe_get(&self, key: &Key) -> Result<Option<Cow<'_, PolymorphicType>>, Self::Error>;
 }
 
 pub trait TypeInfer<Expr>: Sized {
@@ -48,11 +48,11 @@ pub trait TypeInfer<Expr>: Sized {
 
     fn apply<'a>(&mut self, expr: &'a Expr) -> Infer<'a, Expr, Self>;
 
-    fn suspend(expr: &Expr) -> Suspend<Expr, Self> {
+    fn suspend(expr: &Expr) -> Suspend<'_, Expr, Self> {
         Infer::suspend(expr)
     }
 
-    fn infer(expr: &Expr) -> Infer<Expr, Self> {
+    fn infer(expr: &Expr) -> Infer<'_, Expr, Self> {
         Self::suspend(expr).pure()
     }
 

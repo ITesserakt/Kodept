@@ -39,7 +39,7 @@ impl AST {
         AST { world }
     }
 
-    pub fn interact(&mut self) -> Interaction {
+    pub fn interact(&mut self) -> Interaction<'_> {
         Interaction::new(&mut self.world)
     }
 }

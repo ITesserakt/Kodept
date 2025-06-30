@@ -93,7 +93,7 @@ impl AssumptionSet {
         self.0.entry(key.into()).or_default().push(value.into())
     }
 
-    pub fn get<K>(&self, key: &K) -> Cow<[MonomorphicType]>
+    pub fn get<K>(&self, key: &K) -> Cow<'_, [MonomorphicType]>
     where
         Var: Borrow<K>,
         K: Hash + Eq,
@@ -173,7 +173,7 @@ impl Display for Environment {
 impl EnvironmentProvider<Var> for Environment {
     type Error = Infallible;
 
-    fn maybe_get(&self, key: &Var) -> Result<Option<Cow<PolymorphicType>>, Self::Error> {
+    fn maybe_get(&self, key: &Var) -> Result<Option<Cow<'_, PolymorphicType>>, Self::Error> {
         Ok(self.0.get(key).map(Cow::Borrowed))
     }
 }

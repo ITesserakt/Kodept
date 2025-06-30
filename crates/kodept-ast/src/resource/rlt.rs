@@ -90,7 +90,7 @@ impl SyntaxResolver {
         id
     }
 
-    pub fn get_unknown(&self, id: LexemeId) -> SyntaxVariant {
+    pub fn get_unknown(&self, id: LexemeId) -> SyntaxVariant<'_> {
         self.try_get_unknown(id)
             .expect("Cannot get linked RLT node")
     }
@@ -103,7 +103,7 @@ impl SyntaxResolver {
         }
     }
 
-    pub fn try_get_unknown(&self, id: LexemeId) -> Option<SyntaxVariant> {
+    pub fn try_get_unknown(&self, id: LexemeId) -> Option<SyntaxVariant<'_>> {
         if let Some(node) = self.mapping.get(&id) {
             Some(*node)
         } else {
