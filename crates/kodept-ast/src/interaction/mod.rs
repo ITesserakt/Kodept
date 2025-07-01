@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::{IntoScheduleConfigs, IntoSystem, Schedule, Schedules, World};
-use bevy_ecs::schedule::ScheduleLabel;
+use bevy_ecs::schedule::{InternedSystemSet, ScheduleLabel};
 use bevy_ecs::system::{RunSystemOnce, ScheduleSystem, SystemInput};
 
 pub struct Interaction<'w> {
@@ -43,8 +43,14 @@ impl<'w> Interaction<'w> {
         f(self.world)
     }
 
-    pub fn register<M>(&mut self, system: impl IntoScheduleConfigs<ScheduleSystem, M>) {
+    pub fn register<M>(&mut self, system: impl IntoScheduleConfigs<ScheduleSystem, M>) -> &mut Self {
         self.schedule.add_systems(system);
+        self
+    }
+    
+    pub fn configure_sets<M>(&mut self, sets: impl IntoScheduleConfigs<InternedSystemSet, M>) -> &mut Self {
+        self.schedule.configure_sets(sets);
+        self
     }
 
     /// Runs all registered systems once
