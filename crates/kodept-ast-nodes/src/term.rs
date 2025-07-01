@@ -41,10 +41,10 @@ impl ReferenceContext {
             items: items.into_iter().map(|it| Str::from(it.into())).collect(),
         }
     }
-    
+
     /// Means that this context has no items in it and it is local
     pub const fn is_empty_local_context(&self) -> bool {
-        !self.global && self.items.is_empty() 
+        !self.global && self.items.is_empty()
     }
 
     /// Means that this context has no items in it and it is global
