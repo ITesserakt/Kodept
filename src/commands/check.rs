@@ -12,7 +12,9 @@ use kodept_frontend::Execution;
 use kodept_interaction::lint::{
     DebugScopesLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets,
 };
-use kodept_interaction::prelude::{install_reporting_support, ExtractSymbols, ScopeBuildingPass};
+use kodept_interaction::prelude::{
+    install_reporting_support, ExtractSymbolsPass, Phases, ReferenceResolverPass, ScopeBuildingPass,
+};
 use kodept_interaction::Interaction;
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
@@ -53,9 +55,10 @@ impl Command for Check {
                 });
                 self.install_lints(ctx);
 
+                Phases::install(ctx);
                 ScopeBuildingPass::install(ctx);
-                ExtractSymbols::install(ctx);
-                // ReferenceResolver::install(ctx);
+                ExtractSymbolsPass::install(ctx);
+                ReferenceResolverPass::install(ctx);
 
                 for _ in 0..10 {
                     ctx.launch();

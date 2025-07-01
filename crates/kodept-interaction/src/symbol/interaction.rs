@@ -2,14 +2,15 @@ use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
-use crate::symbol::SymbolKind::{Function, Parameter, Variable};
-use crate::symbol::{Symbol, SymbolKind};
+use crate::symbol::Symbol;
+use crate::symbol::SymbolKind::{Const, Function, Parameter, Type, Variable};
 use crate::wrapper::InteractionExt;
 use crate::{done, Ctx, Interaction};
-use bevy_ecs::prelude::{any_match_filter, Added, Query, Without};
+use bevy_ecs::prelude::{
+    any_match_filter, Added, Commands, Query, ResMut, Resource, SystemSet, Without,
+};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use hashbrown::hash_set::Entry;
 use kodept_ast::define_union;
 use kodept_ast::prelude::AnyNodeRef;
 use kodept_ast::properties::{Name, Node, SourceSpan};
@@ -21,9 +22,13 @@ use kodept_core::code_point::Span;
 use kodept_report::message::{Diagnostic, Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
-use SymbolKind::Type;
+use std::collections::hash_map::Entry;
 
-pub struct ExtractSymbols;
+#[derive(Debug, Clone, Eq, PartialEq, Hash, SystemSet)]
+pub struct ExtractSymbolsPass;
+
+#[derive(Debug, Resource, Default, PartialEq)]
+pub(crate) struct ExtractSymbolsLock(bool);
 
 define_union!(enum SymbolUnion[SymbolUnionItem, SymbolUnionFilter] {
     StructDecl | EnumDecl | FuncSignature | VarDecl | EnumConst | TyParam | NonTyParam
@@ -36,6 +41,10 @@ pub struct DuplicatedSymbolError {
     scope_start: Span,
     current_def: Span,
     previous_def: Span,
+}
+
+impl ExtractSymbolsLock {
+    pub(crate) const UNLOCKED: Self = ExtractSymbolsLock(false);
 }
 
 impl IntoSpannedReportMessage for DuplicatedSymbolError {
@@ -60,18 +69,28 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
     }
 }
 
-impl Interaction for ExtractSymbols {
+impl Interaction for ExtractSymbolsPass {
     type Error = DuplicatedSymbolError;
 
     fn install(ctx: &mut Ctx) {
+        ctx.register(Self::disable_lock_system);
+
         ctx.register(
             Self::wrap_system(Self::system)
-                .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>),
-        )
+                .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>)
+                .after(Self::disable_lock_system)
+                .in_set(ExtractSymbolsPass),
+        );
     }
 }
 
-impl ExtractSymbols {
+impl ExtractSymbolsPass {
+    fn disable_lock_system(lock: Option<ResMut<ExtractSymbolsLock>>) {
+        if let Some(mut lock) = lock {
+            lock.0 = false;
+        }
+    }
+
     /// Symbol rules:
     /// - there is should be only one symbol of some kind per scope
     /// - `Identifier::Type` should have `Type` kind
@@ -79,8 +98,11 @@ impl ExtractSymbols {
         query: Query<(AnyNodeRef, &Scoped), (SymbolUnionFilter, Added<Scoped>)>,
         mut symbol_tables: Query<(&mut SymbolTable, Option<&Name>, &Scope), Without<Node>>,
         spans: Query<&SourceSpan>,
-        mut reporter: Reporter,
+        reporter: Reporter,
+        mut commands: Commands,
     ) -> crate::Result<DuplicatedSymbolError> {
+        commands.insert_resource(ExtractSymbolsLock(true));
+
         for (node, scoped) in query.iter() {
             let Some(node) = node.to_enum::<SymbolUnion>() else {
                 continue;
@@ -90,7 +112,7 @@ impl ExtractSymbols {
                 SymbolUnionItem::EnumDecl(x) => (Type, x.name().clone()),
                 SymbolUnionItem::FuncSignature(x) => (Function, x.name().clone()),
                 SymbolUnionItem::VarDecl(x) => (Variable, x.name().clone()),
-                SymbolUnionItem::EnumConst(x) => (Function, x.name().clone()),
+                SymbolUnionItem::EnumConst(x) => (Const, x.name().clone()),
                 SymbolUnionItem::TyParam(x) => (Parameter, x.name().clone()),
                 SymbolUnionItem::NonTyParam(x) => (Parameter, x.name().clone()),
             };
@@ -103,10 +125,10 @@ impl ExtractSymbols {
                     scope_name: scope_name.cloned(),
                     scope_start: spans.get(scope.start_from.entity()).unwrap().0,
                     current_def: spans.get(node.id.entity()).unwrap().0,
-                    previous_def: spans.get(x.get().bound_node.entity()).unwrap().0,
+                    previous_def: spans.get(x.key().bound_node.entity()).unwrap().0,
                 }),
                 Entry::Vacant(x) => {
-                    x.insert();
+                    x.insert(());
                 }
             };
         }

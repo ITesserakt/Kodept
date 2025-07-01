@@ -5,15 +5,17 @@ use std::borrow::Cow;
 
 pub mod lint;
 mod normalize;
+mod phase;
 mod report;
 mod scope;
 mod symbol;
 
 pub mod prelude {
+    pub use super::phase::Phases;
     pub use super::report::install_reporting_support;
     pub use super::scope::builder::ScopeBuildingPass;
-    pub use super::scope::references::ReferenceResolver;
-    pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbols};
+    pub use super::scope::references::ReferenceResolverPass;
+    pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbolsPass};
 }
 
 pub type Result<E> = std::result::Result<(), E>;
@@ -27,14 +29,14 @@ fn done<E>() -> Result<E> {
     Ok(())
 }
 
-pub mod wrapper {
+pub(crate) mod wrapper {
     use crate::report::Reporter;
     use crate::Interaction;
     use bevy_ecs::prelude::*;
     use kodept_report::prelude::{IntoSpannedReportMessage, MessageBehaviour};
     use tracing::trace;
 
-    pub trait InteractionExt: Interaction {
+    pub(crate) trait InteractionExt: Interaction {
         fn wrap_system<S, M>(system: S) -> impl IntoSystem<(), Result, ()>
         where
             S: IntoSystem<(), crate::Result<Self::Error>, M>;
@@ -48,19 +50,17 @@ pub mod wrapper {
             let name = I::name();
             let id = system.system_type_id();
             let system = system.pipe(
-                move |In(result): In<crate::Result<Self::Error>>, mut reporter: Reporter| {
-                    match result {
-                        Ok(()) => {
-                            trace!("System {name}#{id:?} completed");
-                            Ok(())
-                        }
-                        Err(e) => {
-                            let behaviour = e.behaviour();
-                            reporter.report(e);
-                            match behaviour {
-                                MessageBehaviour::FailFast { reason } => Err(reason.into()),
-                                MessageBehaviour::Suppress => Ok(()),
-                            }
+                move |In(result): In<crate::Result<Self::Error>>, reporter: Reporter| match result {
+                    Ok(()) => {
+                        trace!("System {name}#{id:?} completed");
+                        Ok(())
+                    }
+                    Err(e) => {
+                        let behaviour = e.behaviour();
+                        reporter.report(e);
+                        match behaviour {
+                            MessageBehaviour::FailFast { reason } => Err(reason.into()),
+                            MessageBehaviour::Suppress => Ok(()),
                         }
                     }
                 },

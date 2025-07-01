@@ -37,7 +37,7 @@ impl Lint for SingleModuleWithBrackets {
         IntoSystem::into_system(
             |query: Single<(&Lexeme, Entity), With<FileDecl>>,
              syntax: Res<SyntaxResolver>,
-             mut reporter: Reporter| {
+             reporter: Reporter| {
                 let Ok(node) = syntax.try_get::<File>(query.0 .0) else {
                     return fail(SuspiciousStructure(query.1));
                 };

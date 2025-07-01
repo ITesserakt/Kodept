@@ -1,212 +1,296 @@
-use crate::report::Reporter;
+use crate::prelude::ExtractSymbolsPass;
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
-use crate::symbol::Symbol;
+use crate::symbol::{DeferRefResolution, RefToSymbol, SymbolDescription, SymbolKind};
 use crate::wrapper::InteractionExt;
-use crate::{done, fail, Ctx, Interaction, Result};
-use bevy_ecs::prelude::{ChildOf, Children, Entity, IntoScheduleConfigs, Query};
-use bevy_ecs::query::With;
-use kodept_ast::properties::{Name, SourceSpan};
+use crate::{done, Ctx, Interaction};
+use bevy_ecs::entity::EntityHashSet;
+use bevy_ecs::hierarchy::Children;
+use bevy_ecs::prelude::{
+    ChildOf, Commands, Entity, Has, IntoScheduleConfigs, Name, Populated, Query, SystemSet, With,
+    Without,
+};
+use bevy_ecs::query::Added;
+use bevy_ecs::relationship::RelationshipSourceCollection;
+use bevy_ecs::resource::Resource;
+use bevy_ecs::system::{Res, ResMut};
+use kodept_ast::prelude::HierarchicalQuery;
+use kodept_ast::properties::SourceSpan;
 use kodept_ast::Str;
+use kodept_ast_nodes::expression::BinExpr;
+use kodept_ast_nodes::file::ModDecl;
+use kodept_ast_nodes::properties::Rhs;
 use kodept_ast_nodes::term::{Identifier, Ref, ReferenceContext};
-use kodept_core::code_point::Span;
-use kodept_report::message::{Diagnostic, Label, Severity};
+use kodept_report::message::Diagnostic;
+use kodept_report::prelude::{Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
-use std::collections::VecDeque;
 use std::convert::Infallible;
-use std::fmt::{Display, Formatter};
-use std::ops::Deref;
+use std::iter::once;
+use tracing::debug;
 
-pub struct ReferenceResolver;
+#[derive(Debug, Clone, Hash, Eq, PartialEq, SystemSet)]
+pub struct ReferenceResolverPass;
 
-#[derive(Debug)]
-struct Path {
-    context: ReferenceContext,
-    ident: String,
-}
+#[derive(Debug, Resource)]
+pub(crate) struct UnresolvedReferences(EntityHashSet);
 
 #[derive(Debug)]
-enum Error {
-    UnknownReference {
-        path: Path,
-        location: Span,
-    },
-    #[allow(dead_code)]
-    UnknownPath {
-        path: Path,
-        failed_segment: Option<Str>,
-        location: Span,
-    },
-    Unsupported {
-        location: Span,
-    },
+struct ReferenceNotResolvedError {
+    ref_name: Str,
+    ref_span: SourceSpan,
+    resolved_scope_span: Option<SourceSpan>,
 }
 
-impl From<&Ref> for Path {
-    fn from(value: &Ref) -> Self {
-        Self {
-            context: value.context.clone(),
-            ident: value.ident.name().to_string(),
-        }
+impl UnresolvedReferences {
+    fn insert(&mut self, value: Entity) {
+        self.0.insert(value);
+    }
+
+    fn remove(&mut self, value: Entity) {
+        self.0.remove(value);
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.0.iter().copied()
     }
 }
 
-impl Display for Path {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.context.global {
-            write!(f, "::")?;
-        }
-        for item in &self.context.items {
-            write!(f, "{}::", item)?;
-        }
-        write!(f, "{}", self.ident)
-    }
-}
-
-impl IntoSpannedReportMessage for Error {
+impl IntoSpannedReportMessage for ReferenceNotResolvedError {
     type Message = Diagnostic;
 
     fn into_message(self) -> Self::Message {
-        match self {
-            Error::UnknownPath {
-                path,
-                failed_segment: Some(segment),
-                location,
-            } => Diagnostic::new(Severity::Error)
-                .with_message(format!("Cannot find `{}`", segment))
-                .with_note(format!("While searching for symbol `{}`", path))
-                .with_label(Label::primary("path not found", location)),
-            Error::UnknownReference { path, location }
-            | Error::UnknownPath { path, location, .. } => Diagnostic::new(Severity::Error)
-                .with_message(format!("Cannot find symbol `{}`", path))
-                .with_label(Label::primary("symbol not found", location)),
-            Error::Unsupported { location } => Diagnostic::new(Severity::Error)
-                .with_message("Non-global paths with non-trivial context is unsupported for now")
-                .with_label(Label::primary("unsupported path", location)),
-        }
+        Diagnostic::new(Severity::Error)
+            .with_message(format!("Cannot resolve reference `{}`", self.ref_name))
+            .with_label(Label::primary("not found in scope", self.ref_span))
     }
 }
 
-impl Interaction for ReferenceResolver {
+impl Interaction for ReferenceResolverPass {
     type Error = Infallible;
 
     fn install(ctx: &mut Ctx) {
-        ctx.register(
-            Self::wrap_system(Self::system)
-                .run_if(|query: Query<(), With<SymbolTable>>| !query.is_empty()),
+        let set = (
+            defer_reference_resolution_in_accesses_system,
+            Self::wrap_system(system).in_set(ReferenceResolverPass),
         )
+            .chain();
+
+        ctx.immediate_exclusive(|w| w.insert_resource(UnresolvedReferences(EntityHashSet::new())));
+        ctx.register(set);
+        ctx.register(add_references_into_unresolved_system);
+        ctx.register(debug_unresolved_amount_system);
+        ctx.register(remove_resolved_references_from_unresolved_system);
+        ctx.configure_sets((ExtractSymbolsPass, ReferenceResolverPass).chain());
     }
 }
 
-type ScopeQuery<'q> = (
-    &'q Scope,
-    Option<&'q SymbolTable>,
-    Option<&'q ChildOf>,
-    Option<&'q Children>,
-    Option<&'q Name>,
-);
-type NodeQuery<'q> = (Entity, &'q Scoped, &'q Ref, &'q SourceSpan);
+fn defer_reference_resolution_in_accesses_system(
+    query: HierarchicalQuery<
+        BinExpr,
+        Ref,
+        Rhs,
+        (Without<DeferRefResolution>, Without<RefToSymbol>),
+    >,
+    mut commands: Commands,
+) {
+    for (_, child_id, parent, _) in query.iter() {
+        commands
+            .entity(child_id.entity())
+            .insert_if(DeferRefResolution, || matches!(parent, BinExpr::Access));
+    }
+}
 
-impl ReferenceResolver {
-    fn search_symbol<'a>(node: &Ref, table: &'a SymbolTable) -> Option<&'a Symbol> {
-        match &node.ident {
-            Identifier::TypeReference { name } => table.get_type(Name::new(name.clone())),
-            Identifier::Reference { name } => table.get_value(Name::new(name.clone())).ok(),
+fn add_references_into_unresolved_system(
+    query: Query<Entity, Added<Ref>>,
+    mut unresolved_refs: ResMut<UnresolvedReferences>,
+) {
+    for id in query {
+        unresolved_refs.insert(id);
+    }
+}
+
+fn remove_resolved_references_from_unresolved_system(
+    query: Query<Entity, Added<RefToSymbol>>,
+    mut unresolved_refs: ResMut<UnresolvedReferences>,
+) {
+    for id in query {
+        unresolved_refs.remove(id);
+    }
+}
+
+fn debug_unresolved_amount_system(unresolved_refs: Res<UnresolvedReferences>) {
+    debug!("Still not resolved {} references", unresolved_refs.len());
+}
+
+const CANNOT_GET_SYMBOL_TABLE_FAILURE: &'static str = "Cannot get symbol table for given scope";
+const CANNOT_GET_SCOPE_NAME_FAILURE: &'static str = "Cannot get name for given scope";
+const CANNOT_GET_SUBSCOPE_FAILURE: &'static str = "Cannot get subscope for given scope";
+
+fn resolve_ref_at(
+    symbol_to_find: &mut SymbolDescription,
+    current_scope_id: Entity,
+    table: &SymbolTable,
+) -> Option<RefToSymbol> {
+    symbol_to_find.reset();
+    loop {
+        if let Some(_) = table.get(symbol_to_find) {
+            return Some(RefToSymbol::new(current_scope_id, symbol_to_find));
+        }
+        if !symbol_to_find.iter_kinds() {
+            return None;
         }
     }
+}
 
-    fn resolve_ref_without_context(node: NodeQuery, scopes: &Query<ScopeQuery>) -> Result<Error> {
-        let mut current_scope_id = node.1 .0;
-        loop {
-            let (_, symbols, parent, ..) = scopes.get(current_scope_id).unwrap();
-            let symbol = symbols.and_then(|table| Self::search_symbol(node.2, table));
-            if symbol.is_some() {
-                return done();
+fn resolve_ref_with_empty_local_context(
+    symbol_to_find: &mut SymbolDescription,
+    current_scope_id: Entity,
+    scope_parents_query: Query<&ChildOf, With<Scope>>,
+    symbol_tables_query: Query<&SymbolTable>,
+) -> Option<RefToSymbol> {
+    for scope_id in
+        once(current_scope_id).chain(scope_parents_query.iter_ancestors(current_scope_id))
+    {
+        let table = symbol_tables_query
+            .get(scope_id)
+            .expect(CANNOT_GET_SYMBOL_TABLE_FAILURE);
+        if let Some(result) = resolve_ref_at(symbol_to_find, scope_id, table) {
+            return Some(result);
+        }
+    }
+    None
+}
+
+fn resolve_ref_at_through_context(
+    context: &ReferenceContext,
+    symbol_to_find: &mut SymbolDescription,
+    starting_scope_id: Entity,
+    scope_children_query: Query<&Children, With<Scope>>,
+    scope_names_query: Query<Option<&Name>, With<Scope>>,
+    symbol_tables_query: Query<&SymbolTable>,
+) -> Option<RefToSymbol> {
+    let mut stack = Vec::with_capacity(context.items.len());
+    stack.extend(
+        scope_children_query
+            .get(starting_scope_id)
+            .iter()
+            .flat_map(|it| it.iter())
+            .map(|it| (*it, 0)),
+    );
+
+    let mut maybe_target_scope = None;
+    while let Some((scope_id, index)) = stack.pop() {
+        let scope_name = scope_names_query
+            .get(scope_id)
+            .expect(CANNOT_GET_SCOPE_NAME_FAILURE);
+        let part = &context.items[index];
+        if scope_name.is_none_or(|it| it.as_str() != part) {
+            continue;
+        }
+
+        if index == context.items.len() - 1 {
+            maybe_target_scope = Some(scope_id);
+            break;
+        }
+
+        stack.extend(
+            scope_children_query
+                .get(scope_id)
+                .iter()
+                .flat_map(|it| it.iter())
+                .map(|it| (*it, index + 1))
+                .rev(),
+        );
+    }
+
+    let target_scope = maybe_target_scope?;
+    let table = symbol_tables_query
+        .get(target_scope)
+        .expect(CANNOT_GET_SYMBOL_TABLE_FAILURE);
+    resolve_ref_at(symbol_to_find, target_scope, table)
+}
+
+fn system(
+    references: Populated<
+        (Entity, &Ref, &Scoped, &SourceSpan),
+        (Without<RefToSymbol>, Without<DeferRefResolution>),
+    >,
+    scope_parents: Query<&ChildOf, With<Scope>>,
+    scope_children: Query<&Children, With<Scope>>,
+    scope_names: Query<Option<&Name>, With<Scope>>,
+    symbol_tables: Query<&SymbolTable>,
+    scopes: Query<&Scope>,
+    modules: Query<Has<ModDecl>>,
+    mut commands: Commands,
+) -> crate::Result<Infallible> {
+    for (id, reference, scoped, _) in references.iter() {
+        let mut symbol_description = match &reference.ident {
+            Identifier::TypeReference { name } => {
+                SymbolDescription::new(Name::new(name.clone()), SymbolKind::Type)
             }
-            if let Some(parent) = parent {
-                current_scope_id = parent.0;
-                continue;
-            } else {
-                return fail(Error::UnknownReference {
-                    path: node.2.into(),
-                    location: node.3 .0,
+            Identifier::Reference { name } => {
+                SymbolDescription::new(Name::new(name.clone()), SymbolKind::Variable)
+            }
+        };
+
+        // There are four different situations...
+        let result = if reference.context.is_empty_local_context() {
+            // Ascend by scopes until we find the appropriate symbol
+            resolve_ref_with_empty_local_context(
+                &mut symbol_description,
+                scoped.0,
+                scope_parents,
+                symbol_tables,
+            )
+        } else if reference.context.is_empty_global_context() {
+            let root_scope_id = scope_parents.root_ancestor::<ChildOf>(scoped.0);
+            let table = symbol_tables
+                .get(root_scope_id)
+                .expect(CANNOT_GET_SYMBOL_TABLE_FAILURE);
+            resolve_ref_at(&mut symbol_description, root_scope_id, table)
+        } else if reference.context.global {
+            // Take root scope and descend deeper through context
+            let root_scope = scope_parents.root_ancestor::<ChildOf>(scoped.0);
+            resolve_ref_at_through_context(
+                &reference.context,
+                &mut symbol_description,
+                root_scope,
+                scope_children,
+                scope_names,
+                symbol_tables,
+            )
+        } else {
+            // Find scope of the current module. Later, we can add check for imports
+            // Than descend deeper through context
+            let mod_scope = once(scoped.0)
+                .chain(scope_parents.iter_ancestors(scoped.0))
+                .find(|it| {
+                    let scope = scopes.get(*it).expect("Cannot get given scope");
+                    modules.get(scope.start_from.entity()).unwrap_or(false)
                 });
+            match mod_scope {
+                Some(mod_scope) => resolve_ref_at_through_context(
+                    &reference.context,
+                    &mut symbol_description,
+                    mod_scope,
+                    scope_children,
+                    scope_names,
+                    symbol_tables,
+                ),
+                // Some modules are still not scoped, suppress fail and skip
+                None => continue,
             }
+        };
+
+        if let Some(ref_to_symbol) = result {
+            commands.entity(id).insert(ref_to_symbol);
         }
     }
 
-    fn resolve_ref_with_global_context(
-        node: NodeQuery,
-        scopes: &Query<ScopeQuery>,
-    ) -> Result<Error> {
-        enum ControlFlow {
-            Value(Entity),
-            Layer,
-        }
-
-        let (.., children, _) = scopes.iter().find(|it| it.2.is_none()).unwrap();
-        let mut queue = children
-            .into_iter()
-            .flatten()
-            .map(|it| ControlFlow::Value(*it))
-            .chain(Some(ControlFlow::Layer))
-            .collect::<VecDeque<_>>();
-
-        let mut context_path_iter = node.2.context.items.iter().peekable();
-        while let Some(flow) = queue.pop_front() {
-            match flow {
-                ControlFlow::Value(id) => {
-                    let (scope, symbols, _, children, name) = scopes.get(id).unwrap();
-                    let Some(name) = name else { continue };
-                    let Some(context_path) = context_path_iter.peek() else {
-                        continue;
-                    };
-                    if *context_path != name.deref() {
-                        continue;
-                    };
-
-                    if !scope.is_anonymous && context_path_iter.len() == 1 {
-                        let symbol = symbols.and_then(|it| Self::search_symbol(node.2, it));
-                        return if symbol.is_some() {
-                            done()
-                        } else {
-                            fail(Error::UnknownReference {
-                                path: node.2.into(),
-                                location: node.3 .0,
-                            })
-                        };
-                    }
-
-                    for child in children.into_iter().flatten() {
-                        queue.push_back(ControlFlow::Value(*child));
-                    }
-                }
-                ControlFlow::Layer => {
-                    if queue.is_empty() {
-                        break;
-                    }
-                    queue.push_back(ControlFlow::Layer);
-                    context_path_iter.next();
-                }
-            };
-        }
-        fail(Error::UnknownPath {
-            path: node.2.into(),
-            failed_segment: context_path_iter.peek().map(|it| (*it).clone()),
-            location: node.3 .0,
-        })
-    }
-
-    fn system(
-        query: Query<(Entity, &Scoped, &Ref, &SourceSpan)>,
-        mut reporter: Reporter,
-    ) -> Result<Infallible> {
-        for (_, _, _, span) in query.iter() {
-            reporter.report_ad_hoc(|| {
-                Diagnostic::new(Severity::Note).with_label(Label::primary("unresolved ref", span.0))
-            })
-        }
-        done()
-    }
+    done()
 }

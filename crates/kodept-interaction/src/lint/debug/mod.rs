@@ -21,7 +21,7 @@ impl Lint for DebugScopesLint {
         IntoSystem::into_system(
             |scopes: Populated<(&Scope, NameOrEntity), Added<Scope>>,
              spans: Query<&SourceSpan>,
-             mut reporter: Reporter| {
+             reporter: Reporter| {
                 for (scope, name) in scopes.iter() {
                     reporter.report_ad_hoc(|| {
                         Diagnostic::new(Severity::Note)

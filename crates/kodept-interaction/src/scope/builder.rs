@@ -1,10 +1,14 @@
+use crate::phase::{CurrentPhase, Phase};
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::wrapper::InteractionExt;
 use crate::{done, fail, Ctx, Interaction};
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::{any_match_filter, Commands, IntoScheduleConfigs, Query, With, Without};
+use bevy_ecs::prelude::{
+    Commands, IntoScheduleConfigs, Populated, Query, SystemSet, With, Without,
+};
 use bevy_ecs::relationship::Relationship;
+use bevy_ecs::system::ResMut;
 use kodept_ast::define_union;
 use kodept_ast::prelude::{AnyNodeRef, ChildOf, IntoEnum};
 use kodept_ast::properties::{Node, SourceSpan};
@@ -21,10 +25,10 @@ define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
     FileDecl | ModDecl | StructDecl | EnumDecl | FuncBody | Lambda | Exprs | IfExpr
 });
 
-#[derive(Debug)]
+#[derive(Debug, SystemSet, Clone, Hash, Eq, PartialEq)]
 pub struct ScopeBuildingPass;
 
-pub struct CannotLinkError(Option<SourceSpan>);
+pub struct CannotLinkError(SourceSpan);
 
 impl IntoSpannedReportMessage for CannotLinkError {
     type Message = Diagnostic;
@@ -34,13 +38,10 @@ impl IntoSpannedReportMessage for CannotLinkError {
     }
 
     fn into_message(self) -> Self::Message {
-        let mut diag = Diagnostic::new(Severity::Bug)
+        Diagnostic::new(Severity::Bug)
             .with_message("Cannot create new scope or link with any other")
-            .with_note("Possible out-of-tree nodes?");
-        if let Some(last) = self.0 {
-            diag = diag.with_label(Label::primary("unprocessed node", last))
-        }
-        diag
+            .with_note("Possible out-of-tree nodes?")
+            .with_label(Label::primary("unprocessed node", self.0))
     }
 }
 
@@ -48,30 +49,28 @@ impl Interaction for ScopeBuildingPass {
     type Error = CannotLinkError;
 
     fn install(ctx: &mut Ctx) {
-        ctx.register(
-            Self::wrap_system(Self::system)
-                .run_if(any_match_filter::<(With<Node>, Without<Scoped>)>),
-        )
+        ctx.register(Self::link_scopes.in_set(ScopeBuildingPass));
+        ctx.register(Self::wrap_system(Self::system).in_set(ScopeBuildingPass));
     }
 }
 
 impl ScopeBuildingPass {
-    fn divide_by_scopes(entity: ScopeUnion, commands: &mut Commands) -> Entity {
-        let (name, is_anonymous, is_opaque) = match &*entity {
-            ScopeUnionItem::FileDecl(_) => (None, false, false),
-            ScopeUnionItem::ModDecl(x) => (Some(x.name().clone()), false, false),
-            ScopeUnionItem::StructDecl(x) => (Some(x.name().clone()), false, false),
-            ScopeUnionItem::EnumDecl(x) => (Some(x.name().clone()), false, false),
-            ScopeUnionItem::FuncBody(_) => (None, true, true),
-            ScopeUnionItem::Lambda(_) => (None, true, false),
-            ScopeUnionItem::Exprs(_) => (None, true, false),
-            ScopeUnionItem::IfExpr(_) => (None, true, false),
+    fn spawn_scope(entity: ScopeUnion, commands: &mut Commands) -> Entity {
+        let name = match &*entity {
+            ScopeUnionItem::FileDecl(_) => None,
+            ScopeUnionItem::ModDecl(x) => Some(x.name().clone()),
+            ScopeUnionItem::StructDecl(x) => Some(x.name().clone()),
+            ScopeUnionItem::EnumDecl(x) => Some(x.name().clone()),
+            ScopeUnionItem::FuncBody(_) => None,
+            ScopeUnionItem::Lambda(_) => None,
+            ScopeUnionItem::Exprs(_) => None,
+            ScopeUnionItem::IfExpr(_) => None,
         };
 
         let mut scope_entity = if let Some(name) = name {
-            commands.spawn((Scope::new(entity.id, is_anonymous).opaque(is_opaque), name))
+            commands.spawn((Scope::new(entity.id), name))
         } else {
-            commands.spawn(Scope::new(entity.id, is_anonymous).opaque(is_opaque))
+            commands.spawn(Scope::new(entity.id))
         };
 
         scope_entity
@@ -83,33 +82,48 @@ impl ScopeBuildingPass {
     ///
     /// Otherwise, propagate `scoped` component from parent if it has one
     fn system(
-        unscoped: Query<(AnyNodeRef, Option<&ChildOf>), (Without<Scoped>, With<Node>)>,
+        unscoped: Populated<(AnyNodeRef, Option<&ChildOf>), (Without<Scoped>, With<Node>)>,
         scoped: Query<&Scoped>,
+        mut phase: ResMut<CurrentPhase>,
         mut commands: Commands,
     ) -> crate::Result<CannotLinkError> {
-        let mut amount_of_processed = 0;
+        **phase = Phase::ScopeBuilding;
+        let mut processed_any = false;
         let mut last_unprocessed = None;
 
-        unscoped.iter().for_each(|(node, parent)| {
+        for (node, parent) in unscoped.iter() {
             if let Some(node_enum) = node.into_enum() {
-                Self::divide_by_scopes(node_enum, &mut commands);
-                amount_of_processed += 1;
-            } else if let Some(scope) = parent.and_then(|it| scoped.get(it.get()).ok()) {
+                Self::spawn_scope(node_enum, &mut commands);
+                processed_any = true;
+            } else if let Some(parent_scope) = parent.and_then(|it| scoped.get(it.get()).ok()) {
                 commands
-                    .entity(scope.0)
+                    .entity(parent_scope.0)
                     .add_one_related::<Scoped>(node.id().entity());
-                amount_of_processed += 1;
+                processed_any = true;
             } else {
-                // We should repeat the whole process to get more `scoped`...
-                // If there are no processed nodes, then it's a bug
                 last_unprocessed = Some(node.span());
             }
-        });
+        }
 
-        if amount_of_processed == 0 {
-            fail(CannotLinkError(last_unprocessed))?;
+        if let Some(last_unprocessed) = last_unprocessed {
+            if !processed_any {
+                fail(CannotLinkError(last_unprocessed))?;
+            }
         }
 
         done()
+    }
+
+    fn link_scopes(query: Query<(Option<&ChildOf>, &Scoped)>, mut commands: Commands) {
+        for (parent, scoped) in query.iter() {
+            let Some(parent) = parent else { continue };
+            let Ok((_, parent_scoped)) = query.get(parent.get()) else {
+                continue;
+            };
+
+            if scoped.0 != parent_scoped.0 {
+                commands.entity(parent_scoped.0).add_child(scoped.0);
+            }
+        }
     }
 }

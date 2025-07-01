@@ -25,7 +25,7 @@ impl RLTLinkLint {
     fn check_system(
         nodes: Query<(Entity, &Node, Option<&Lexeme>)>,
         syntax: Res<SyntaxResolver>,
-        mut reporter: Reporter,
+        reporter: Reporter,
     ) -> Result<Infallible> {
         nodes.iter().for_each(|(entity, kind, lexeme)| {
             if lexeme.is_some_and(|it| syntax.try_get_unknown(it.0).is_some()) {

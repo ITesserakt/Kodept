@@ -132,6 +132,6 @@ impl Interaction for ShowLints {
                 info!("Enabled lints: [{lint_names}]");
                 done()
             },
-        ))
+        ));
     }
 }
