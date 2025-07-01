@@ -132,7 +132,7 @@ impl<T: Internable + ?Sized> Interner<T> {
         }
     }
 
-    pub(crate) fn entries(&self) -> RwLockReadGuard<HashSet<&'static T>> {
+    pub(crate) fn entries(&self) -> RwLockReadGuard<'_, HashSet<&'static T>> {
         let lock = self.0.get_or_init(Default::default);
         lock.read().unwrap_or_else(PoisonError::into_inner)
     }
