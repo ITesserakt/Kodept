@@ -6,6 +6,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use bevy_ecs::entity::{ContainsEntity, EntityEquivalent};
 
 /// Ids that their associated type can be erased
 pub trait Erase<Erased = NodeId> {
@@ -177,3 +178,12 @@ impl<T> RelationshipSourceCollection for NodeId<T> {
         self.entity.shrink_to_fit()
     }
 }
+
+impl<T> ContainsEntity for NodeId<T> {
+    fn entity(&self) -> Entity {
+        self.entity
+    }
+}
+
+#[allow(unsafe_code)]
+unsafe impl<T> EntityEquivalent for NodeId<T> {}
