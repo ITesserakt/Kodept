@@ -4,12 +4,10 @@ pub(crate) mod table;
 use crate::scope::Visibility;
 use crate::symbol::table::SymbolTable;
 use bevy_ecs::prelude::{Component, Entity, Name};
-use kodept_ast::prelude::NodeId;
+use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast_nodes::term::Ref;
 use kodept_inference::r#type::PolymorphicType;
-use std::borrow::Borrow;
-use std::hash::{Hash, Hasher};
-use std::sync::OnceLock;
+use std::hash::Hash;
 
 #[derive(Debug, Component)]
 pub(crate) struct RefToSymbol {
@@ -30,11 +28,10 @@ pub(crate) enum SymbolKind {
     Function,
 }
 
-#[derive(Debug, Eq)]
-pub(crate) struct Symbol {
-    pub description: SymbolDescription,
+#[derive(Debug)]
+pub(crate) struct SymbolData {
     pub bound_node: NodeId,
-    pub ty: OnceLock<PolymorphicType>,
+    ty: Option<PolymorphicType>,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -42,6 +39,32 @@ pub(crate) struct SymbolDescription {
     name: Name,
     pub kind: SymbolKind,
     visibility: Visibility,
+}
+
+impl SymbolData {
+    pub(crate) fn new(bound_node: impl Erase) -> Self {
+        Self {
+            bound_node: bound_node.erase(),
+            ty: None,
+        }
+    }
+
+    pub(crate) fn with_type(mut self, ty: impl Into<PolymorphicType>) -> Self {
+        self.ty = Some(ty.into());
+        self
+    }
+
+    pub(crate) fn set_type(&mut self, ty: PolymorphicType) {
+        _ = self.ty.insert(ty);
+    }
+
+    pub(crate) fn is_type_known(&self) -> bool {
+        self.ty.is_some()
+    }
+
+    pub(crate) fn get_type(&self) -> Option<&PolymorphicType> {
+        self.ty.as_ref()
+    }
 }
 
 impl RefToSymbol {
@@ -53,46 +76,15 @@ impl RefToSymbol {
         }
     }
 
-    pub(crate) fn resolve<'a>(&self, reference: &Ref, table: &'a SymbolTable) -> &'a Symbol {
+    pub(crate) fn resolve<'a>(
+        &self,
+        reference: &Ref,
+        table: &'a SymbolTable,
+    ) -> (SymbolDescription, &'a SymbolData) {
         let description =
             SymbolDescription::new(Name::new(reference.ident.name().to_string()), self.kind);
-        table.get(&description).unwrap()
-    }
-}
-
-impl PartialEq for Symbol {
-    fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-    }
-}
-
-impl Hash for Symbol {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.description.hash(state);
-    }
-}
-
-impl Borrow<SymbolDescription> for Symbol {
-    fn borrow(&self) -> &SymbolDescription {
-        &self.description
-    }
-}
-
-impl Symbol {
-    pub(crate) fn new(kind: SymbolKind, bound_node: NodeId, name: Name) -> Self {
-        Self {
-            description: SymbolDescription {
-                name,
-                kind,
-                visibility: Default::default(),
-            },
-            bound_node,
-            ty: OnceLock::new(),
-        }
-    }
-
-    pub(crate) fn with_type(&mut self, ty: PolymorphicType) {
-        _ = self.ty.set(ty);
+        let symbol = table.get(&description).unwrap();
+        (description, symbol)
     }
 }
 

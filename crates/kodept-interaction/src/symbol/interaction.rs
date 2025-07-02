@@ -2,8 +2,8 @@ use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
-use crate::symbol::Symbol;
 use crate::symbol::SymbolKind::{Const, Function, Parameter, Type, Variable};
+use crate::symbol::{SymbolData, SymbolDescription};
 use crate::wrapper::InteractionExt;
 use crate::{done, Ctx, Interaction};
 use bevy_ecs::prelude::{
@@ -116,19 +116,19 @@ impl ExtractSymbolsPass {
                 SymbolUnionItem::TyParam(x) => (Parameter, x.name().clone()),
                 SymbolUnionItem::NonTyParam(x) => (Parameter, x.name().clone()),
             };
-            let symbol = Symbol::new(kind, node.id, name.clone());
+            let description = SymbolDescription::new(name.clone(), kind);
 
             let (mut table, scope_name, scope) = symbol_tables.get_mut(scoped.get()).unwrap();
-            match table.entry(symbol) {
+            match table.entry(description) {
                 Entry::Occupied(x) => reporter.report(DuplicatedSymbolError {
                     bound_name: name,
                     scope_name: scope_name.cloned(),
                     scope_start: spans.get(scope.start_from.entity()).unwrap().0,
                     current_def: spans.get(node.id.entity()).unwrap().0,
-                    previous_def: spans.get(x.key().bound_node.entity()).unwrap().0,
+                    previous_def: spans.get(x.get().bound_node.entity()).unwrap().0,
                 }),
                 Entry::Vacant(x) => {
-                    x.insert(());
+                    x.insert(SymbolData::new(node.id));
                 }
             };
         }

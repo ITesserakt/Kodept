@@ -23,6 +23,7 @@ pub mod prelude {
     pub use super::relationship::{ChildOf, Children};
     pub use super::traits::{ASTNode, CodeHolder, FromSyntax};
     pub use crate::entity::children::HierarchicalQuery;
+    pub use crate::entity::properties::PropertyQuery;
 }
 
 #[deprecated]

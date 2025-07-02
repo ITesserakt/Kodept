@@ -1,3 +1,4 @@
+use bevy_ecs::entity::{ContainsEntity, EntityEquivalent};
 use bevy_ecs::prelude::Entity;
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use derive_more::Into;
@@ -6,7 +7,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use bevy_ecs::entity::{ContainsEntity, EntityEquivalent};
 
 /// Ids that their associated type can be erased
 pub trait Erase<Erased = NodeId> {

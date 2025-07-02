@@ -8,15 +8,16 @@ use std::marker::PhantomData;
 #[derive(Debug, PartialEq)]
 pub(crate) struct PartialInfer(pub AssumptionSet, pub Vec<Constraint>, pub MonomorphicType);
 
-pub struct Suspend<'a, E, T: TypeInfer<E>>(&'a E, PhantomData<T>);
+pub struct Suspend<E, T: TypeInfer<E>>(E, PhantomData<T>);
 
 pub enum Continuation<'a, E, T: TypeInfer<E>> {
     Empty,
     Custom(Box<ContFn<'a, E, T>>),
-    Static(Box<Infer<'a, E, T>>)
+    Static(Box<Infer<'a, E, T>>),
 }
 
-type ContFn<'a, E, T> = dyn FnOnce(&mut T, <T as TypeInfer<E>>::Output) -> Infer<'a, E, T> + 'a;
+type ContFn<'a, E, T> =
+    dyn 'a + for<'b> FnOnce(&'b mut T, <T as TypeInfer<E>>::Output) -> Infer<'a, E, T>;
 
 #[must_use]
 #[derive(Debug)]
@@ -26,34 +27,35 @@ pub enum Infer<'a, E, T: TypeInfer<E>> {
     },
     Failed {
         state: T,
-        expr: &'a E,
+        expr: E,
         error: T::Error,
     },
     Suspended {
-        expr: &'a E,
+        expr: E,
         continuation: Continuation<'a, E, T>,
     },
 }
 
 #[derive(Debug)]
 pub struct DefaultExecutor<'a, E, T: TypeInfer<E>> {
-    stack: Vec<Continuation<'a, E, T>>
+    stack: Vec<Continuation<'a, E, T>>,
 }
 
-impl<'a, E, T: TypeInfer<E>> Default for DefaultExecutor<'a, E, T> {
+impl<'a, E, T: TypeInfer<E>> Default for DefaultExecutor<'_, E, T> {
     fn default() -> Self {
-        Self {
-            stack: vec![]
-        }
+        Self { stack: vec![] }
     }
 }
 
 impl<'a, E, T: TypeInfer<E>> Executor<'a, E, T> for &mut DefaultExecutor<'a, E, T> {
     type Error = T::Error;
 
-    fn fold(self, state: &mut T, mut current: Infer<'a, E, T>) -> Result<T::Output, Self::Error> {
+    fn fold(self, state: &mut T, mut current: Infer<'a, E, T>) -> Result<T::Output, Self::Error>
+    where
+        E: 'a,
+    {
         self.stack.clear();
-        
+
         loop {
             match current {
                 Infer::Done { value } => match self.stack.pop() {
@@ -62,12 +64,12 @@ impl<'a, E, T: TypeInfer<E>> Executor<'a, E, T> for &mut DefaultExecutor<'a, E, 
                             assert!(self.stack.is_empty());
                             self.stack.clear();
                         }
-                        return Ok(value)
-                    },
+                        return Ok(value);
+                    }
                     Some(cont) => {
                         current = cont.call(state, value);
                     }
-                }
+                },
                 Infer::Failed { error, .. } => return Err(error),
                 Infer::Suspended { expr, continuation } => {
                     self.stack.push(continuation);
@@ -78,18 +80,18 @@ impl<'a, E, T: TypeInfer<E>> Executor<'a, E, T> for &mut DefaultExecutor<'a, E, 
     }
 }
 
-impl<'a, E, T: TypeInfer<E>> Debug for Continuation<'a, E, T> {
+impl<E, T: TypeInfer<E>> Debug for Continuation<'_, E, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Continuation::Empty => write!(f, "<empty>"),
             Continuation::Custom(_) => write!(f, "<closure>"),
-            Continuation::Static(_) => write!(f, "<static>")
+            Continuation::Static(_) => write!(f, "<static>"),
         }
     }
 }
 
 impl<'a, E, T: TypeInfer<E>> Continuation<'a, E, T> {
-    pub fn custom(f: impl FnOnce(&mut T, T::Output) -> Infer<'a, E, T> + 'a) -> Self {
+    pub fn custom(f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Infer<'a, E, T>) -> Self {
         Self::Custom(Box::new(f))
     }
 
@@ -107,7 +109,7 @@ impl<'a, E, T: TypeInfer<E>> Continuation<'a, E, T> {
 }
 
 impl<'a, E, T: TypeInfer<E>> Infer<'a, E, T> {
-    pub fn suspend(input: &'a E) -> Suspend<'a, E, T> {
+    pub fn suspend(input: E) -> Suspend<E, T> {
         Suspend(input, PhantomData)
     }
 
@@ -115,9 +117,15 @@ impl<'a, E, T: TypeInfer<E>> Infer<'a, E, T> {
         Self::Done { value: output }
     }
 
-    pub fn zip_with(self, other: Self, f: impl FnOnce(T::Output, T::Output) -> T::Output + 'a) -> Self
+    pub fn zip_with(
+        self,
+        other: Self,
+        f: impl 'a + FnOnce(T::Output, T::Output) -> T::Output,
+    ) -> Self
     where
+        E: 'a,
         T: 'a,
+        T::Output: 'a,
     {
         match self {
             Infer::Done { value: a } => match other {
@@ -128,24 +136,26 @@ impl<'a, E, T: TypeInfer<E>> Infer<'a, E, T> {
                 }
             },
             e @ Infer::Failed { .. } => e,
-            Infer::Suspended { expr, continuation } => {
-                T::suspend(expr).and_then(move |state, a| continuation.call(state, a).zip_with(other, f))
-            }
+            Infer::Suspended { expr, continuation } => T::suspend(expr)
+                .and_then(move |state, a| continuation.call(state, a).zip_with(other, f)),
         }
     }
 }
 
-impl<'a, E, T: TypeInfer<E>> Suspend<'a, E, T> {
-    pub fn map(self, f: impl FnOnce(&mut T, T::Output) -> T::Output + 'a) -> Infer<'a, E, T> {
+impl<E, T: TypeInfer<E>> Suspend<E, T> {
+    pub fn map<'a>(
+        self,
+        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> T::Output,
+    ) -> Infer<'a, E, T> {
         Infer::Suspended {
             expr: self.0,
             continuation: Continuation::custom(move |s, p| Infer::Done { value: f(s, p) }),
         }
     }
 
-    pub fn and_then(
+    pub fn and_then<'a>(
         self,
-        f: impl FnOnce(&mut T, T::Output) -> Infer<'a, E, T> + 'a,
+        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Infer<'a, E, T>,
     ) -> Infer<'a, E, T> {
         Infer::Suspended {
             expr: self.0,
@@ -153,12 +163,13 @@ impl<'a, E, T: TypeInfer<E>> Suspend<'a, E, T> {
         }
     }
 
-    pub fn try_map(
+    pub fn try_map<'a>(
         self,
-        f: impl FnOnce(&mut T, T::Output) -> Result<T::Output, T::Error> + 'a,
+        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Result<T::Output, T::Error>,
     ) -> Infer<'a, E, T>
     where
         T: Clone,
+        E: Copy + 'a,
     {
         Infer::Suspended {
             expr: self.0,
@@ -176,12 +187,13 @@ impl<'a, E, T: TypeInfer<E>> Suspend<'a, E, T> {
         }
     }
 
-    pub fn try_and_then(
+    pub fn try_and_then<'a>(
         self,
-        f: impl FnOnce(&mut T, T::Output) -> Result<Infer<'a, E, T>, T::Error> + 'a,
+        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Result<Infer<'a, E, T>, T::Error>,
     ) -> Infer<'a, E, T>
     where
         T: Clone,
+        E: Copy + 'a,
     {
         Infer::Suspended {
             expr: self.0,
@@ -197,10 +209,10 @@ impl<'a, E, T: TypeInfer<E>> Suspend<'a, E, T> {
     }
 
     #[inline]
-    pub fn pure(self) -> Infer<'a, E, T> {
+    pub fn pure<'a>(self) -> Infer<'a, E, T> {
         Infer::Suspended {
             expr: self.0,
-            continuation: Continuation::Empty
+            continuation: Continuation::Empty,
         }
     }
 }

@@ -3,16 +3,17 @@ use crate::prelude::{ASTNode, NodeId};
 use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::HasChild;
 use bevy_ecs::prelude::{Entity, Query, RelationshipTarget};
+use bevy_ecs::query::{QueryEntityError, QueryFilter};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::system::SystemParam;
 use derive_more::{Display, Error};
 use smallvec::SmallVec;
 use std::convert::Infallible;
 use std::error::Error;
-use bevy_ecs::query::QueryFilter;
 
 type Rel<T, U, Tag> = <T as NodeRelationship<U, Tag>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
+type Container<A, T> = <A as TryFromIter>::Container<T>;
 
 #[derive(SystemParam)]
 pub struct HierarchicalQuery<'w, 's, T, U, Tag = (), Filter = ()>
@@ -21,10 +22,10 @@ where
     T: ASTNode,
     U: ASTNode,
     Tag: 'static,
-    Filter: QueryFilter + 'static
+    Filter: QueryFilter + 'static,
 {
     parent_query: Query<'w, 's, (Entity, &'static T, &'static Target<Rel<T, U, Tag>>), Filter>,
-    children_query: Query<'w, 's, (Entity, &'static U), Filter>,
+    children_query: Query<'w, 's, (Entity, &'static U, &'static Rel<T, U, Tag>), Filter>,
 }
 
 pub trait TryFromIter {
@@ -56,19 +57,59 @@ where
     T: ASTNode,
     U: ASTNode,
     Tag: 'static,
-    Filter: QueryFilter + 'static
+    Filter: QueryFilter + 'static,
 {
     pub fn iter(&self) -> impl Iterator<Item = (NodeId<T>, NodeId<U>, &T, &U)> + '_ {
         self.parent_query.iter().flat_map(|parent| {
-            self.children_query.iter_many(parent.2.iter()).map(move |child| {
-                (
-                    NodeId::from(parent.0),
-                    NodeId::from(child.0),
-                    parent.1,
-                    child.1,
-                )
-            })
+            self.children_query
+                .iter_many(parent.2.iter())
+                .map(move |child| {
+                    (
+                        NodeId::from(parent.0),
+                        NodeId::from(child.0),
+                        parent.1,
+                        child.1,
+                    )
+                })
         })
+    }
+
+    /// Retrieves from world references to both parent and child by given *parent* id.
+    /// Essentially, this method costs one constant lookup into world and one iteration through all found children, so overall time complexity is `O(n)` where `n` is amount of children with respect to arity.
+    /// If arity is [`Singular`] then `n == 1` and so on.
+    ///
+    /// # Panics
+    ///
+    /// Panics if amount of found children does not conform with the arity of this relationship.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is no such parent with given id.
+    pub fn get_down(
+        &self,
+        id: NodeId<T>,
+    ) -> Result<(&T, Container<T::Arity, (NodeId<U>, &U)>), QueryEntityError>
+    where
+        T::Arity: TryFromIter,
+    {
+        let (_, parent, children) = self.parent_query.get(id.entity())?;
+        let iter = self.children_query.iter_many(children.iter());
+        let container =
+            <T::Arity as TryFromIter>::try_from_iter(iter.map(|it| (it.0.into(), it.1)))
+                .expect("Cannot collect children into container");
+        Ok((parent, container))
+    }
+
+    /// Retrieves from world references to both parent and child by given *child* id.
+    /// Essentially, this method costs two constant lookups into world, so overall time complexity is `O(1)`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is no such child with given id or there is no parent of type [`T`]
+    pub fn get_up(&self, id: NodeId<U>) -> Result<(NodeId<T>, &T, &U), QueryEntityError> {
+        let (_, child, parent) = self.children_query.get(id.entity())?;
+        let (parent_id, parent, _) = self.parent_query.get(parent.get())?;
+        Ok((parent_id.into(), parent, child))
     }
 }
 

@@ -128,12 +128,15 @@ impl AlgorithmW {
         let mut assumptions = AssumptionSet::empty();
         let mut constraints = vec![];
 
-        let items = tuple.iter().map(|it| {
-            let PartialInfer(a, c, t) = self.apply_(it);
-            assumptions.merge(a);
-            constraints.extend(c);
-            t
-        }).collect();
+        let items = tuple
+            .iter()
+            .map(|it| {
+                let PartialInfer(a, c, t) = self.apply_(it);
+                assumptions.merge(a);
+                constraints.extend(c);
+                t
+            })
+            .collect();
 
         PartialInfer(assumptions, constraints, MonomorphicType::Tuple(items))
     }
@@ -164,11 +167,14 @@ impl AlgorithmW {
     }
 }
 
-impl TypeInfer<Language> for AlgorithmW {
+impl<'a> TypeInfer<&'a Language> for AlgorithmW {
     type Error = Infallible;
     type Output = PartialInfer;
 
-    fn apply<'a>(&mut self, expr: &'a Language) -> Infer<'a, Language, Self> {
+    fn apply<'b>(&mut self, expr: &'a Language) -> Infer<'b, &'a Language, Self>
+    where
+        &'a Language: 'b,
+    {
         match expr {
             Language::Var(x) => {
                 let fresh = self.env.new_var();

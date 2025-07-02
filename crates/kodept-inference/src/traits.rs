@@ -46,21 +46,26 @@ pub trait TypeInfer<Expr>: Sized {
     type Error;
     type Output;
 
-    fn apply<'a>(&mut self, expr: &'a Expr) -> Infer<'a, Expr, Self>;
+    fn apply<'a>(&mut self, expr: Expr) -> Infer<'a, Expr, Self>
+    where
+        Expr: 'a;
 
-    fn suspend(expr: &Expr) -> Suspend<'_, Expr, Self> {
+    fn suspend(expr: Expr) -> Suspend<Expr, Self> {
         Infer::suspend(expr)
     }
 
-    fn infer(expr: &Expr) -> Infer<'_, Expr, Self> {
+    fn infer<'a>(expr: Expr) -> Infer<'a, Expr, Self> {
         Self::suspend(expr).pure()
     }
 
     fn infer_eagerly<'a, E>(
         &mut self,
-        expr: &'a Expr,
+        expr: Expr,
         executor: impl Executor<'a, Expr, Self, Error = E>,
-    ) -> Result<Self::Output, E> {
+    ) -> Result<Self::Output, E>
+    where
+        Expr: 'a,
+    {
         executor.fold(self, Self::infer(expr))
     }
 }
@@ -68,7 +73,9 @@ pub trait TypeInfer<Expr>: Sized {
 pub trait Executor<'a, E, T: TypeInfer<E>> {
     type Error;
 
-    fn fold(self, state: &mut T, value: Infer<'a, E, T>) -> Result<T::Output, Self::Error>;
+    fn fold(self, state: &mut T, value: Infer<'a, E, T>) -> Result<T::Output, Self::Error>
+    where
+        E: 'a;
 }
 
 // -------------------------------------------------------------------------------------------------

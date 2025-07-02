@@ -4,6 +4,7 @@ use crate::InferState;
 use derive_more::From;
 use itertools::Itertools;
 use nonempty_collections::{IntoNonEmptyIterator, NEVec, NonEmptyIterator};
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU8;
@@ -58,7 +59,7 @@ pub enum MonomorphicType {
     Fn(Arc<MonomorphicType>, Arc<MonomorphicType>),
     Tuple(Arc<[MonomorphicType]>),
     Pointer(Arc<MonomorphicType>),
-    Constant(String),
+    Constant(Cow<'static, str>),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -361,8 +362,8 @@ pub mod tests {
     use crate::r#type::{fun1, var, MonomorphicType, PolymorphicType, PrimitiveType, TVar};
     use proptest::arbitrary::StrategyFor;
     use proptest::prelude::{any, prop, Arbitrary, BoxedStrategy, Just, Strategy};
-    use proptest::strategy::{Map, Recursive};
     use proptest::prop_oneof;
+    use proptest::strategy::{Map, Recursive};
     use std::num::NonZeroU8;
     use std::sync::Arc;
 
@@ -398,7 +399,8 @@ pub mod tests {
             let leaf = prop_oneof![
                 any::<PrimitiveType>().prop_map(MonomorphicType::Primitive),
                 any::<TVar>().prop_map(MonomorphicType::Var),
-                "_{0,2}[A-Z]([A-Za-z0-9_]){0,5}".prop_map(MonomorphicType::Constant)
+                "_{0,2}[A-Z]([A-Za-z0-9_]){0,5}"
+                    .prop_map(|it| MonomorphicType::Constant(it.into()))
             ];
 
             leaf.prop_recursive(10, 100, 10, |inner| {

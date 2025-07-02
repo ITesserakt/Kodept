@@ -13,7 +13,8 @@ use kodept_interaction::lint::{
     DebugScopesLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets,
 };
 use kodept_interaction::prelude::{
-    install_reporting_support, ExtractSymbolsPass, Phases, ReferenceResolverPass, ScopeBuildingPass,
+    install_reporting_support, ExtractSymbolsPass, Phases, ReferenceResolverPass,
+    ScopeBuildingPass, TypeInferPass,
 };
 use kodept_interaction::Interaction;
 use std::borrow::Cow;
@@ -59,6 +60,7 @@ impl Command for Check {
                 ScopeBuildingPass::install(ctx);
                 ExtractSymbolsPass::install(ctx);
                 ReferenceResolverPass::install(ctx);
+                TypeInferPass::install(ctx);
 
                 for _ in 0..10 {
                     ctx.launch();

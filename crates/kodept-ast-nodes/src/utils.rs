@@ -14,7 +14,7 @@ use kodept_ast::syntax_tree::children::HasChild;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, BundleUnion, NodeSpawner};
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
-use kodept_rlt::prelude as rlt;
+use kodept_rlt::prelude::{self as rlt};
 use kodept_rlt::prelude::{BlockLevelNode, Body, Expression, Operation, Parameter, Type};
 
 pub(crate) fn unwrap_type<R, T, A>(
@@ -158,7 +158,7 @@ where
                 BinaryOperationSymbol::Xor(_) => BinExpr::Xor,
                 BinaryOperationSymbol::Disjunction(_) => BinExpr::Disj,
                 BinaryOperationSymbol::Conjunction(_) => BinExpr::Conj,
-                BinaryOperationSymbol::Assign(_) => BinExpr::Assign
+                BinaryOperationSymbol::Assign(_) => BinExpr::Assign,
             };
             spawner.spawn_raw(
                 ASTBuilder::new(value)
@@ -241,15 +241,8 @@ where
             Either::Left,
         ),
         _ => {
-            let value = match node {
-                rlt::Literal::Binary(span) => Literal::Binary(source.get_chunk_located(span)),
-                rlt::Literal::Octal(span) => Literal::Octal(source.get_chunk_located(span)),
-                rlt::Literal::Hex(span) => Literal::Hex(source.get_chunk_located(span)),
-                rlt::Literal::Floating(span) => Literal::Floating(source.get_chunk_located(span)),
-                rlt::Literal::Char(span) => Literal::Char(source.get_chunk_located(span)),
-                rlt::Literal::String(span) => Literal::String(source.get_chunk_located(span)),
-                _ => unreachable!(),
-            };
+            let text = source.get_chunk_located(node);
+            let value = Literal::from_str(node, text);
             spawner.spawn_raw(
                 ASTBuilder::new(value).with_property(SourceSpan(node.bounds())),
                 node,

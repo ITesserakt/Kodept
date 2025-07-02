@@ -104,8 +104,8 @@ mod tests {
 
     #[test]
     fn test_tautology_example_on_constants() {
-        let a = Constant("A".to_string());
-        let b = Constant("A".to_string());
+        let a = Constant("A".into());
+        let b = Constant("A".into());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(s.into_inner(), HashMap::new());
@@ -113,8 +113,8 @@ mod tests {
 
     #[test]
     fn test_different_constants_should_not_unify() {
-        let a = Constant("A".to_string());
-        let b = Constant("B".to_string());
+        let a = Constant("A".into());
+        let b = Constant("B".into());
 
         let e = a.unify(&b).unwrap_err();
         assert!(matches!(e, AlgorithmUError::UnificationFail(..)))
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn test_variables_should_be_always_unified() {
         let a = TVar(1);
-        let b = Constant("A".to_string());
+        let b = Constant("A".into());
 
         let s1 = MonomorphicType::Var(a).unify(&b).unwrap();
         let s2 = b.unify(&MonomorphicType::Var(a)).unwrap();
@@ -158,11 +158,11 @@ mod tests {
 
     #[test]
     fn test_simple_function_unifying() {
-        let a = fun(nev![var(1), Constant("A".to_string())], unit_type());
+        let a = fun(nev![var(1), Constant("A".into())], unit_type());
         let b = fun(nev![var(1), var(2)], unit_type());
 
         let s = a.unify(&b).unwrap();
-        assert_eq!(s, Substitutions::single(TVar(2), Constant("A".to_string())));
+        assert_eq!(s, Substitutions::single(TVar(2), Constant("A".into())));
     }
 
     #[test]
@@ -176,9 +176,9 @@ mod tests {
 
     #[test]
     fn test_functions_with_different_arity_should_not_unify() {
-        let a = fun(nev![Constant("A".to_string())], unit_type());
+        let a = fun(nev![Constant("A".into())], unit_type());
         let b = fun(
-            nev![Constant("A".to_string()), Constant("B".to_string())],
+            nev![Constant("A".into()), Constant("B".into())],
             unit_type(),
         );
 
@@ -189,17 +189,14 @@ mod tests {
     #[test]
     fn test_multiple_substitutions() {
         let a = fun(nev![fun1(var(1), PrimitiveType::u8()), var(1)], unit_type());
-        let b = fun(nev![var(2), Constant("A".to_string())], unit_type());
+        let b = fun(nev![var(2), Constant("A".into())], unit_type());
 
         let s = a.unify(&b).unwrap();
         assert_eq!(
             s.into_inner(),
             HashMap::from([
-                (TVar(1), Constant("A".to_string())),
-                (
-                    TVar(2),
-                    fun1(Constant("A".to_string()), PrimitiveType::u8())
-                )
+                (TVar(1), Constant("A".into())),
+                (TVar(2), fun1(Constant("A".into()), PrimitiveType::u8()))
             ])
         )
     }
@@ -217,7 +214,7 @@ mod tests {
     fn test_transitive_substitutions() {
         let a = var(1);
         let b = var(2);
-        let c = Constant("A".to_string());
+        let c = Constant("A".into());
 
         let s1 = a.unify(&b).unwrap();
         let s2 = b.unify(&a).unwrap();
@@ -233,8 +230,8 @@ mod tests {
     #[test]
     fn test_different_substitutions_of_same_variable() {
         let a = var(1);
-        let b = Constant("A".to_string());
-        let c = Constant("B".to_string());
+        let b = Constant("A".into());
+        let c = Constant("B".into());
 
         let s = a.unify(&b).unwrap();
         let e = a.substitute(&s).unify(&c).unwrap_err();
@@ -245,18 +242,15 @@ mod tests {
 
     #[test]
     fn test_complex_unification() {
-        let a = fun1(
-            fun1(fun1(Constant("A".to_string()), var(1)), var(2)),
-            var(3),
-        );
-        let b = fun(nev![var(3), var(2), var(1)], Constant("A".to_string()));
+        let a = fun1(fun1(fun1(Constant("A".into()), var(1)), var(2)), var(3));
+        let b = fun(nev![var(3), var(2), var(1)], Constant("A".into()));
 
         let s1 = a.unify(&b).unwrap();
         let s2 = b.unify(&a).unwrap();
 
         assert_eq!(s1, s2);
         assert_eq!(a.substitute(&s1), b.substitute(&s1));
-        let h = fun1(Constant("A".to_string()), Constant("A".to_string()));
+        let h = fun1(Constant("A".into()), Constant("A".into()));
         assert_eq!(
             a.substitute(&s1),
             fun1(fun1(h.clone(), h.clone()), fun1(h.clone(), h))

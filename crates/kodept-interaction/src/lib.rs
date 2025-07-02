@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![feature(hash_set_entry)]
 
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
@@ -9,6 +10,7 @@ mod phase;
 mod report;
 mod scope;
 mod symbol;
+mod typing;
 
 pub mod prelude {
     pub use super::phase::Phases;
@@ -16,6 +18,7 @@ pub mod prelude {
     pub use super::scope::builder::ScopeBuildingPass;
     pub use super::scope::references::ReferenceResolverPass;
     pub use super::symbol::interaction::{DuplicatedSymbolError, ExtractSymbolsPass};
+    pub use super::typing::TypeInferPass;
 }
 
 pub type Result<E> = std::result::Result<(), E>;

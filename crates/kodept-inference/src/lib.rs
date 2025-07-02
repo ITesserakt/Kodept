@@ -9,10 +9,15 @@ pub mod algorithm_w;
 pub mod assumption;
 pub mod constraint;
 pub mod language;
+mod process;
 pub mod substitution;
 pub mod traits;
-mod process;
 pub mod r#type;
+
+pub mod prelude {
+    pub use super::process::{Continuation, DefaultExecutor, Infer, Suspend};
+    pub use super::traits::TypeInfer;
+}
 
 #[derive(Default, Clone, Debug)]
 pub(crate) struct InferState {
