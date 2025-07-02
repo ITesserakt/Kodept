@@ -37,6 +37,7 @@ relation!(InitVar => optional IfExpr);
 relation!(InitVar => optional BinExpr);
 relation!(InitVar => optional UnExpr);
 relation!(InitVar => optional Ref);
+relation!(InitVar => optional Ty);
 relation!(InitVar => optional Literal);
 relation!(InitVar => optional Tuple);
 

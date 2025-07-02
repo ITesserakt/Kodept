@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use crate::code_flow::IfExpr;
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
 use crate::term::Ref;
+use crate::types::Ty;
 use bevy_ecs::prelude::Component;
 use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::prelude as rlt;
@@ -28,6 +29,7 @@ relation!(Tuple => children IfExpr);
 relation!(Tuple => children BinExpr);
 relation!(Tuple => children UnExpr);
 relation!(Tuple => children Ref);
+relation!(Tuple => children Ty);
 relation!(Tuple => children Literal);
 relation!(Tuple => children Tuple);
 

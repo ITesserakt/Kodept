@@ -244,7 +244,7 @@ impl EagerTokensProducer for Lexer {
     type Error<'t> = TError<'t>;
 
     fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
-        fn token_parser(input: &str) -> IResult<&str, (PackedToken, u32), TError> {
+        fn token_parser(input: &str) -> IResult<&'_ str, (PackedToken, u32), TError<'_>> {
             let (rest, token) = grammar::token().parse(input)?;
             let length = input.offset(rest) as u32;
             Ok((rest, (token, length)))

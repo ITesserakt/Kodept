@@ -1,4 +1,5 @@
 use crate::new_types::{Enclosed, Identifier, TypeName};
+use crate::prelude::Context;
 use derive_more::From;
 use kodept_core::code_point::{CodePoint, Span};
 use kodept_core::structure::{Located, SpanBounds};
@@ -6,6 +7,7 @@ use kodept_core::structure::{Located, SpanBounds};
 #[derive(Debug, Clone, PartialEq, From)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Type {
+    ContextualReference(Context, TypeName),
     Reference(TypeName),
     Tuple(Tuple),
 }
@@ -41,6 +43,17 @@ pub enum Parameter {
 impl Located for Type {
     fn location(&self) -> CodePoint {
         match self {
+            Type::ContextualReference(context, ty) => {
+                let (is_global, unfolded) = context.unfold();
+                let first = unfolded.first().map_or(ty.location(), |it| it.location());
+                let last = ty.location();
+                let length = (first + last).length;
+                if is_global.is_some() {
+                    CodePoint::new(length + 2, first.offset - 2)
+                } else {
+                    CodePoint::new(length, first.offset)
+                }
+            }
             Type::Reference(x) => x.location(),
             Type::Tuple(x) => x.location(),
         }
@@ -79,6 +92,7 @@ impl SpanBounds for Type {
         match self {
             Type::Reference(x) => x.0.into(),
             Type::Tuple(x) => x.0.left.0 + x.0.right.0,
+            Type::ContextualReference(_, _) => self.location().into(),
         }
     }
 }

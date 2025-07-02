@@ -9,7 +9,7 @@ use crate::TRACING_OPTION;
 use derive_more::Constructor;
 use kodept_rlt::new_types::BinaryOperationSymbol;
 use kodept_rlt::new_types::UnaryOperationSymbol;
-use kodept_rlt::new_types::{Identifier, Keyword, Symbol};
+use kodept_rlt::new_types::{Identifier, Keyword, Symbol, TypeName};
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use peg::error::ParseError;
@@ -53,7 +53,9 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(rlt::Tuple(i.into())) }
 
     pub rule type_grammar() -> rlt::Type =
-        i:type_ident() { rlt::Type::Reference(i) } /
+        i:global_type_ref() { rlt::Type::ContextualReference(i.0, i.1) } /
+        i:type_ident()      { rlt::Type::Reference(i) }                  /
+        i:local_type_ref()  { rlt::Type::ContextualReference(i.0, i.1) } /
         tuple()
 
     /// Parameters grammar
@@ -264,16 +266,12 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     /// | Type | ::{X::}X | X::X{::X} |
     /// | Ref  | ::{X::}x | X::{X::}x |
 
-    rule type_ref() -> rlt::Reference = t:type_ident() { rlt::Reference::Type(t) }
+    rule type_ref() -> TypeName = t:type_ident() { t }
 
-    rule variable_ref() -> rlt::Reference =
-        t:ident() { rlt::Reference::Identifier(Identifier::from_located(t.point)) }
+    rule variable_ref() -> Identifier =
+        t:ident() { Identifier::from_located(t.point) }
 
-    rule ref() -> rlt::Reference =
-        variable_ref() /
-        type_ref()
-
-    rule global_type_ref() -> (rlt::Context, rlt::Reference) =
+    rule global_type_ref() -> (rlt::Context, TypeName) =
         g:$"::" ctx:(type_ref() ++ "::") {
             let start = rlt::Context::Global {
                 colon: Symbol::from_located(g)
@@ -287,7 +285,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
             (context, last)
         }
 
-    rule global_ref() -> (rlt::Context, rlt::Reference) =
+    rule global_ref() -> (rlt::Context, Identifier) =
         g:$"::" ctx:(type_ref() ++ (!("::" variable_ref()) "::")) "::" v:variable_ref() {
             let start = rlt::Context::Global {
                 colon: Symbol::from_located(g)
@@ -299,7 +297,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
             (context, v)
         }
 
-    rule local_type_ref() -> (rlt::Context, rlt::Reference) =
+    rule local_type_ref() -> (rlt::Context, TypeName) =
         ctx:(type_ref() **<2,> "::") {
             let start = rlt::Context::Local;
             let mut ctx = ctx;
@@ -311,7 +309,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
             (context, last)
         }
 
-    rule local_ref() -> (rlt::Context, rlt::Reference) =
+    rule local_ref() -> (rlt::Context, Identifier) =
         ctx:(type_ref() ++ (!("::" variable_ref()) "::")) "::" v:variable_ref() {
             let start = rlt::Context::Local;
             let context = ctx.into_iter().fold(start, |acc, next| rlt::Context::Inner {
@@ -321,19 +319,27 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
             (context, v)
         }
 
-    rule contextual() -> rlt::ContextualReference = i:(
-        global_ref()      /
+    rule contextual_var() -> rlt::Contextual<Identifier> = i:(
+        global_ref() /
+        local_ref()
+    ) { rlt::Contextual {
+        context: i.0,
+        inner: i.1
+    } }
+
+    rule contextual_type() -> rlt::Contextual<TypeName> = i:(
         global_type_ref() /
-        local_ref()       /
         local_type_ref()
-    ) { rlt::ContextualReference {
+    ) { rlt::Contextual {
         context: i.0,
         inner: i.1
     } }
 
     pub rule term_grammar() -> rlt::Term =
-        i:contextual() { rlt::Term::Contextual(i) } /
-        i:ref()        { rlt::Term::Reference(i) }
+        i:contextual_var()   { rlt::Term::ContextualReference(i) } /
+        i:contextual_type()  { rlt::Term::ContextualConstant(i) }  /
+        i:variable_ref()     { rlt::Term::Reference(i) }           /
+        i:type_ref()         { rlt::Term::Constant(i) }
 
     /// Code flow grammar
     /// --------------------------------------------------------------------------------------------

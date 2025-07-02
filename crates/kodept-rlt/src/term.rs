@@ -8,56 +8,52 @@ use kodept_core::structure::{Located, SpanBounds};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
 pub enum Term {
-    Reference(Reference),
-    Contextual(ContextualReference),
+    Reference(Identifier),
+    ContextualReference(Contextual<Identifier>),
+    Constant(TypeName),
+    ContextualConstant(Contextual<TypeName>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
-pub enum Reference {
-    Type(TypeName),
-    Identifier(Identifier),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
-pub struct ContextualReference {
+pub struct Contextual<T> {
     pub context: Context,
-    pub inner: Reference,
+    pub inner: T,
 }
 
 impl Located for Term {
     fn location(&self) -> CodePoint {
         match self {
             Term::Reference(x) => x.location(),
-            Term::Contextual(x) => x.location(),
+            Term::ContextualReference(x) => x.location(),
+            Term::Constant(x) => x.location(),
+            Term::ContextualConstant(x) => x.location(),
         }
     }
 }
 
-impl Located for ContextualReference {
+impl<T: Located> Located for Contextual<T> {
     fn location(&self) -> CodePoint {
         let (is_global, unfolded) = self.context.unfold();
-        let first = unfolded.first().copied().unwrap_or(&self.inner);
-        let last = &self.inner;
-        let length = (first.bounds() + last.bounds()).length;
+        let first = unfolded
+            .first()
+            .map_or(self.inner.location(), |it| it.location());
+        let last = self.inner.location();
+        let length = (first + last).length;
         if is_global.is_some() {
             // Shift to the left by 2 symbols for '::'
-            CodePoint::new(length + 2, first.location().offset - 2)
+            CodePoint::new(length + 2, first.offset - 2)
         } else {
-            CodePoint::new(length, first.location().offset)
+            CodePoint::new(length, first.offset)
         }
     }
 }
 
-impl Located for Reference {
-    fn location(&self) -> CodePoint {
-        match self {
-            Reference::Type(x) => x.location(),
-            Reference::Identifier(x) => x.location(),
-        }
+impl<T: Located> SpanBounds for Contextual<T> {
+    #[inline]
+    fn bounds(&self) -> Span {
+        self.location().into()
     }
 }
 
@@ -65,13 +61,9 @@ impl SpanBounds for Term {
     fn bounds(&self) -> Span {
         match self {
             Term::Reference(x) => x.bounds(),
-            Term::Contextual(x) => x.location().into()
+            Term::ContextualReference(x) => x.bounds(),
+            Term::Constant(x) => x.bounds(),
+            Term::ContextualConstant(x) => x.bounds(),
         }
-    }
-}
-
-impl SpanBounds for Reference {
-    fn bounds(&self) -> Span {
-        self.location().into()
     }
 }

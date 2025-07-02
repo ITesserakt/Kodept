@@ -1,5 +1,4 @@
-use crate::new_types::Symbol;
-use crate::prelude::Reference;
+use crate::new_types::{Symbol, TypeName};
 use std::collections::VecDeque;
 
 pub struct StartsFromRoot;
@@ -13,7 +12,7 @@ pub enum Context {
     Local,
     Inner {
         parent: Box<Context>,
-        needle: Reference,
+        needle: TypeName,
     },
 }
 
@@ -33,7 +32,7 @@ impl Context {
         }
     }
 
-    pub fn unfold(&self) -> (Option<StartsFromRoot>, Vec<&Reference>) {
+    pub fn unfold(&self) -> (Option<StartsFromRoot>, Vec<&TypeName>) {
         let mut refs = VecDeque::new();
         let mut current = self;
         loop {
@@ -53,7 +52,6 @@ impl Context {
 mod arb {
     use crate::new_types::{Symbol, TypeName};
     use crate::prelude::Context;
-    use crate::term::Reference;
     use kodept_core::code_point::CodePoint;
     use proptest::prelude::{any, Arbitrary, BoxedStrategy, Just, Strategy};
     use proptest::prop_oneof;
@@ -77,7 +75,7 @@ mod arb {
             ];
             leaf.prop_recursive(4, 20, 5, |inner| {
                 (points_with_offset(), inner).prop_map(|it| Context::Inner {
-                    needle: Reference::Type(TypeName::from(it.0)),
+                    needle: TypeName::from(it.0),
                     parent: Box::new(it.1),
                 })
             })

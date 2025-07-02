@@ -11,16 +11,16 @@ use nom::multi::{many0, many1};
 use nom::sequence::{preceded, terminated};
 use nom::Parser;
 
-use kodept_rlt::new_types::Symbol;
-use kodept_rlt::prelude::{Context, ContextualReference};
-use kodept_rlt::{new_types, prelude as rlt};
+use kodept_rlt::new_types::{Identifier, Symbol, TypeName};
+use kodept_rlt::prelude as rlt;
+use kodept_rlt::prelude::{Context, Contextual};
 
-use crate::lexer::PackedToken::*;
+use crate::lexer::PackedToken::{self, *};
 use crate::nom::parser::macros::function;
 use crate::nom::parser::utils::match_token;
 use crate::nom::parser::PParser;
 
-fn global_type_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
+fn global_type_ref<'t>() -> impl PParser<'t, (Context, TypeName)> {
     context(
         function!(),
         (
@@ -41,7 +41,7 @@ fn global_type_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
     })
 }
 
-fn global_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
+fn global_ref<'t>() -> impl PParser<'t, (Context, Identifier)> {
     context(
         function!(),
         (
@@ -62,7 +62,7 @@ fn global_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
     })
 }
 
-fn local_type_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
+fn local_type_ref<'t>() -> impl PParser<'t, (Context, TypeName)> {
     context(
         function!(),
         (
@@ -85,7 +85,7 @@ fn local_type_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
     })
 }
 
-fn local_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
+fn local_ref<'t>() -> impl PParser<'t, (Context, Identifier)> {
     context(
         function!(),
         (
@@ -103,42 +103,37 @@ fn local_ref<'t>() -> impl PParser<'t, (Context, rlt::Reference)> {
     })
 }
 
-fn variable_ref<'t>() -> impl PParser<'t, rlt::Reference> {
-    context(function!(), match_token(Identifier))
-        .map(|it| rlt::Reference::Identifier(new_types::Identifier::from_located(it)))
+fn variable_ref<'t>() -> impl PParser<'t, Identifier> {
+    context(function!(), match_token(PackedToken::Identifier))
+        .map(|it| Identifier::from_located(it))
 }
 
-fn type_ref<'t>() -> impl PParser<'t, rlt::Reference> {
-    context(function!(), match_token(Type))
-        .map(|it| rlt::Reference::Identifier(new_types::Identifier::from_located(it)))
+fn type_ref<'t>() -> impl PParser<'t, TypeName> {
+    context(function!(), match_token(Type)).map(|it| TypeName::from_located(it))
 }
 
-fn contextual<'t>() -> impl PParser<'t, ContextualReference> {
-    context(
-        function!(),
-        alt((
-            global_type_ref(),
-            global_ref(),
-            local_ref(),
-            local_type_ref(),
-        )),
-    )
-    .map(|it| ContextualReference {
+fn contextual_variable<'t>() -> impl PParser<'t, Contextual<Identifier>> {
+    context(function!(), alt((global_ref(), local_ref()))).map(|it| Contextual {
         context: it.0,
         inner: it.1,
     })
 }
 
-fn reference<'t>() -> impl PParser<'t, rlt::Reference> {
-    context(function!(), variable_ref().or(type_ref()))
+fn contextual_type<'t>() -> impl PParser<'t, Contextual<TypeName>> {
+    context(function!(), alt((global_type_ref(), local_type_ref()))).map(|it| Contextual {
+        context: it.0,
+        inner: it.1,
+    })
 }
 
 pub(super) fn grammar<'t>() -> impl PParser<'t, rlt::Term> {
     context(
         function!(),
         alt((
-            contextual().map(rlt::Term::Contextual),
-            reference().map(rlt::Term::Reference),
+            contextual_variable().map(rlt::Term::ContextualReference),
+            contextual_type().map(rlt::Term::ContextualConstant),
+            variable_ref().map(rlt::Term::Reference),
+            type_ref().map(rlt::Term::Constant),
         )),
     )
 }

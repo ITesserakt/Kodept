@@ -18,6 +18,13 @@ macro_rules! make_wrappers {
             }
         }
 
+        impl kodept_core::structure::SpanBounds for $name {
+            #[inline]
+            fn bounds(&self) -> kodept_core::code_point::Span {
+                self.0.into()
+            }
+        }
+
         impl $name {
             #[inline(always)]
             pub fn from_located<L: kodept_core::structure::Located>(value: L) -> Self {
@@ -97,25 +104,25 @@ impl Located for UnaryOperationSymbol {
 impl Located for BinaryOperationSymbol {
     fn location(&self) -> CodePoint {
         match self {
-            BinaryOperationSymbol::Pow(x) => x.location(), 
-            BinaryOperationSymbol::Mul(x) => x.location(), 
-            BinaryOperationSymbol::Div(x) => x.location(), 
-            BinaryOperationSymbol::Rem(x) => x.location(), 
-            BinaryOperationSymbol::Add(x) => x.location(), 
-            BinaryOperationSymbol::Sub(x) => x.location(), 
-            BinaryOperationSymbol::ComplexComparison(x) => x.location(), 
-            BinaryOperationSymbol::LessEq(x) => x.location(), 
-            BinaryOperationSymbol::NEq(x) => x.location(), 
-            BinaryOperationSymbol::Eq(x) => x.location(), 
-            BinaryOperationSymbol::GreaterEq(x) => x.location(), 
-            BinaryOperationSymbol::Less(x) => x.location(), 
-            BinaryOperationSymbol::Greater(x) => x.location(), 
-            BinaryOperationSymbol::Or(x) => x.location(), 
-            BinaryOperationSymbol::And(x) => x.location(), 
-            BinaryOperationSymbol::Xor(x) => x.location(), 
-            BinaryOperationSymbol::Disjunction(x) => x.location(), 
-            BinaryOperationSymbol::Conjunction(x) => x.location(), 
-            BinaryOperationSymbol::Assign(x) => x.location(), 
+            BinaryOperationSymbol::Pow(x) => x.location(),
+            BinaryOperationSymbol::Mul(x) => x.location(),
+            BinaryOperationSymbol::Div(x) => x.location(),
+            BinaryOperationSymbol::Rem(x) => x.location(),
+            BinaryOperationSymbol::Add(x) => x.location(),
+            BinaryOperationSymbol::Sub(x) => x.location(),
+            BinaryOperationSymbol::ComplexComparison(x) => x.location(),
+            BinaryOperationSymbol::LessEq(x) => x.location(),
+            BinaryOperationSymbol::NEq(x) => x.location(),
+            BinaryOperationSymbol::Eq(x) => x.location(),
+            BinaryOperationSymbol::GreaterEq(x) => x.location(),
+            BinaryOperationSymbol::Less(x) => x.location(),
+            BinaryOperationSymbol::Greater(x) => x.location(),
+            BinaryOperationSymbol::Or(x) => x.location(),
+            BinaryOperationSymbol::And(x) => x.location(),
+            BinaryOperationSymbol::Xor(x) => x.location(),
+            BinaryOperationSymbol::Disjunction(x) => x.location(),
+            BinaryOperationSymbol::Conjunction(x) => x.location(),
+            BinaryOperationSymbol::Assign(x) => x.location(),
         }
     }
 }
@@ -125,7 +132,7 @@ impl<T> From<(Symbol, Vec<T>, Symbol)> for Enclosed<Box<[T]>> {
         Self {
             left: value.0,
             right: value.2,
-            inner: value.1.into_boxed_slice()
+            inner: value.1.into_boxed_slice(),
         }
     }
 }

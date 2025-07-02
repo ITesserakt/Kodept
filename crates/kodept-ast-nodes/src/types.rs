@@ -1,15 +1,19 @@
+use crate::term::ReferenceContext;
 use crate::utils::unwrap_type;
 use bevy_ecs::prelude::{Bundle, Component};
 use kodept_ast::prelude::{CodeHolder, FromSyntax};
 use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::syntax_tree::prelude::ASTBuilder;
-use kodept_ast::{derive_node, relation};
+use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types;
 use kodept_rlt::prelude::{Tuple, TypedParameter, UntypedParameter};
 
 #[derive(Debug, PartialEq, Component)]
-pub struct Ty;
+pub struct Ty {
+    pub context: ReferenceContext,
+    pub ident: Str,
+}
 
 #[derive(Debug, PartialEq, Component)]
 pub struct ProdTy;
@@ -20,9 +24,7 @@ pub struct TyParam;
 #[derive(Debug, PartialEq, Component)]
 pub struct NonTyParam;
 
-derive_node!(Ty {
-    properties = [require Name,]
-});
+derive_node!(Ty);
 
 derive_node!(ProdTy);
 relation!(ProdTy => children Ty);
@@ -43,10 +45,12 @@ impl FromSyntax<new_types::TypeName> for Ty {
 
     fn from_syntax(node: &new_types::TypeName, source: impl CodeHolder) -> Self::Bundle {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(Ty)
-            .with_property(Name::new(name))
-            .with_property(SourceSpan(node.0.into()))
-            .build()
+        ASTBuilder::new(Ty {
+            context: ReferenceContext::empty(false),
+            ident: name,
+        })
+        .with_property(SourceSpan(node.0.into()))
+        .build()
     }
 }
 

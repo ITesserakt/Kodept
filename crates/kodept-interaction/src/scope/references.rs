@@ -11,7 +11,7 @@ use bevy_ecs::prelude::{
     ChildOf, Commands, Entity, Has, IntoScheduleConfigs, Name, Populated, Query, SystemSet, With,
     Without,
 };
-use bevy_ecs::query::Added;
+use bevy_ecs::query::{Added, AnyOf};
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use bevy_ecs::resource::Resource;
 use bevy_ecs::system::{Res, ResMut};
@@ -21,7 +21,8 @@ use kodept_ast::Str;
 use kodept_ast_nodes::expression::BinExpr;
 use kodept_ast_nodes::file::ModDecl;
 use kodept_ast_nodes::properties::Rhs;
-use kodept_ast_nodes::term::{Identifier, Ref, ReferenceContext};
+use kodept_ast_nodes::term::{Ref, ReferenceContext};
+use kodept_ast_nodes::types::Ty;
 use kodept_report::message::Diagnostic;
 use kodept_report::prelude::{Label, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
@@ -217,7 +218,7 @@ fn resolve_ref_at_through_context(
 
 fn system(
     references: Populated<
-        (Entity, &Ref, &Scoped, &SourceSpan),
+        (Entity, AnyOf<(&Ref, &Ty)>, &Scoped, &SourceSpan),
         (Without<RefToSymbol>, Without<DeferRefResolution>),
     >,
     scope_parents: Query<&ChildOf, With<Scope>>,
@@ -229,17 +230,21 @@ fn system(
     mut commands: Commands,
 ) -> crate::Result<Infallible> {
     for (id, reference, scoped, _) in references.iter() {
-        let mut symbol_description = match &reference.ident {
-            Identifier::TypeReference { name } => {
-                SymbolDescription::new(Name::new(name.clone()), SymbolKind::Type)
-            }
-            Identifier::Reference { name } => {
-                SymbolDescription::new(Name::new(name.clone()), SymbolKind::Variable)
-            }
+        let (context, mut symbol_description) = match reference {
+            (None, None) => unreachable!("It's guaranteed to have either `ref` or `ty`"),
+            (None, Some(ty)) => (
+                &ty.context,
+                SymbolDescription::new(Name::new(ty.ident.clone()), SymbolKind::Type),
+            ),
+            (Some(r), None) => (
+                &r.context,
+                SymbolDescription::new(Name::new(r.ident.clone()), SymbolKind::Variable),
+            ),
+            (Some(_), Some(_)) => unreachable!("Both of `ref` and `ty` cannot be on one entity"),
         };
 
         // There are four different situations...
-        let result = if reference.context.is_empty_local_context() {
+        let result = if context.is_empty_local_context() {
             // Ascend by scopes until we find the appropriate symbol
             resolve_ref_with_empty_local_context(
                 &mut symbol_description,
@@ -247,17 +252,17 @@ fn system(
                 scope_parents,
                 symbol_tables,
             )
-        } else if reference.context.is_empty_global_context() {
+        } else if context.is_empty_global_context() {
             let root_scope_id = scope_parents.root_ancestor::<ChildOf>(scoped.0);
             let table = symbol_tables
                 .get(root_scope_id)
                 .expect(CANNOT_GET_SYMBOL_TABLE_FAILURE);
             resolve_ref_at(&mut symbol_description, root_scope_id, table)
-        } else if reference.context.global {
+        } else if context.global {
             // Take root scope and descend deeper through context
             let root_scope = scope_parents.root_ancestor::<ChildOf>(scoped.0);
             resolve_ref_at_through_context(
-                &reference.context,
+                &context,
                 &mut symbol_description,
                 root_scope,
                 scope_children,
@@ -275,7 +280,7 @@ fn system(
                 });
             match mod_scope {
                 Some(mod_scope) => resolve_ref_at_through_context(
-                    &reference.context,
+                    &context,
                     &mut symbol_description,
                     mod_scope,
                     scope_children,

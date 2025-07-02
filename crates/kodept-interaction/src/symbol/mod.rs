@@ -81,8 +81,7 @@ impl RefToSymbol {
         reference: &Ref,
         table: &'a SymbolTable,
     ) -> (SymbolDescription, &'a SymbolData) {
-        let description =
-            SymbolDescription::new(Name::new(reference.ident.name().to_string()), self.kind);
+        let description = SymbolDescription::new(Name::new(reference.ident.clone()), self.kind);
         let symbol = table.get(&description).unwrap();
         (description, symbol)
     }
