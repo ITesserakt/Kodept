@@ -69,6 +69,7 @@ mod macros {
             }
         };
         ($lvalue:ty, $params:ty) => {
+            #[allow(unused_variables, unreachable_code)]
             pub fn smtm(lvalue: Value, t: impl Into<$lvalue>, params: $params) -> Self {
                 Self(Instr {
                     lvalue: Lvalue::Assignment {
