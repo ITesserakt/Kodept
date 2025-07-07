@@ -8,6 +8,7 @@ use kodept_ast::syntax_tree::experimental::BundleUnion;
 
 pub mod block_level;
 pub mod code_flow;
+pub mod consts;
 pub mod enums;
 pub mod expression;
 pub mod file;

@@ -1,7 +1,7 @@
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
+use crate::consts::Const;
 use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
-use crate::function::FuncDecl;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{Lhs, Rhs};
 use crate::term::{Ref, ReferenceContext};
@@ -80,7 +80,7 @@ where
     A: Arity,
     R: HasChild<InitVar, T, Arity = A>,
     R: HasChild<Exprs, T, Arity = A>,
-    R: HasChild<FuncDecl, T, Arity = A>,
+    R: HasChild<Const, T, Arity = A>,
     R: HasChild<BinExpr, T, Arity = A>,
     R: HasChild<UnExpr, T, Arity = A>,
     R: HasChild<App, T, Arity = A>,
@@ -94,7 +94,7 @@ where
     match node {
         BlockLevelNode::InitVar(x) => spawner.spawn::<_, InitVar, _>(x, source, Either::v41),
         BlockLevelNode::Block(x) => spawner.spawn::<_, Exprs, _>(x, source, Either::v42),
-        BlockLevelNode::Function(x) => spawner.spawn::<_, FuncDecl, _>(x, source, Either::v43),
+        BlockLevelNode::Function(x) => spawner.spawn::<_, Const, _>(x, source, Either::v43),
         BlockLevelNode::Operation(x) => Either::v44(unwrap_operation(x, spawner, source)),
     }
 }

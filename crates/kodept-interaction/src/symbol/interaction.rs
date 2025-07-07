@@ -2,7 +2,7 @@ use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
-use crate::symbol::SymbolKind::{Const, Function, Parameter, Type, Variable};
+use crate::symbol::SymbolKind::{self, Function, Parameter, Type, Variable};
 use crate::symbol::{SymbolData, SymbolDescription};
 use crate::wrapper::InteractionExt;
 use crate::{done, Ctx, Interaction};
@@ -15,8 +15,8 @@ use kodept_ast::define_union;
 use kodept_ast::prelude::AnyNodeRef;
 use kodept_ast::properties::{Name, Node, SourceSpan};
 use kodept_ast_nodes::block_level::VarDecl;
-use kodept_ast_nodes::function::FuncSignature;
-use kodept_ast_nodes::top_level::{EnumConst, EnumDecl, StructDecl};
+use kodept_ast_nodes::consts::Const;
+use kodept_ast_nodes::top_level::EnumConst;
 use kodept_ast_nodes::types::{NonTyParam, TyParam};
 use kodept_core::code_point::Span;
 use kodept_report::message::{Diagnostic, Label, Severity};
@@ -31,7 +31,7 @@ pub struct ExtractSymbolsPass;
 pub(crate) struct ExtractSymbolsLock(bool);
 
 define_union!(enum SymbolUnion[SymbolUnionItem, SymbolUnionFilter] {
-    StructDecl | EnumDecl | FuncSignature | VarDecl | EnumConst | TyParam | NonTyParam
+    Const | VarDecl | EnumConst | TyParam | NonTyParam
 });
 
 #[derive(Debug)]
@@ -108,11 +108,14 @@ impl ExtractSymbolsPass {
                 continue;
             };
             let (kind, name) = match node.inner {
-                SymbolUnionItem::StructDecl(x) => (Type, x.name().clone()),
-                SymbolUnionItem::EnumDecl(x) => (Type, x.name().clone()),
-                SymbolUnionItem::FuncSignature(x) => (Function, x.name().clone()),
+                SymbolUnionItem::Const(x) => match &*x {
+                    Const::Enum => (Type, x.name().clone()),
+                    Const::Struct => (Type, x.name().clone()),
+                    Const::Fn => (Function, x.name().clone()),
+                    Const::Value => (SymbolKind::Const, x.name().clone()),
+                },
                 SymbolUnionItem::VarDecl(x) => (Variable, x.name().clone()),
-                SymbolUnionItem::EnumConst(x) => (Const, x.name().clone()),
+                SymbolUnionItem::EnumConst(x) => (SymbolKind::Const, x.name().clone()),
                 SymbolUnionItem::TyParam(x) => (Parameter, x.name().clone()),
                 SymbolUnionItem::NonTyParam(x) => (Parameter, x.name().clone()),
             };

@@ -13,6 +13,7 @@ use std::pin::Pin;
 pub enum SyntaxVariant<'r> {
     File(&'r rlt::File),
     Module(&'r rlt::Module),
+    TopLevel(&'r rlt::TopLevelNode),
     Struct(&'r rlt::Struct),
     Enum(&'r rlt::Enum),
     Type(&'r rlt::Type),
@@ -123,6 +124,7 @@ impl Located for SyntaxVariant<'_> {
         match self {
             SyntaxVariant::File(x) => x.location(),
             SyntaxVariant::Module(x) => x.location(),
+            SyntaxVariant::TopLevel(x) => x.location(),
             SyntaxVariant::Struct(x) => x.location(),
             SyntaxVariant::Enum(x) => x.location(),
             SyntaxVariant::Type(x) => x.location(),

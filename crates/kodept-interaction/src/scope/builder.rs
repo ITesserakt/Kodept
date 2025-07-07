@@ -15,14 +15,14 @@ use kodept_ast::properties::{Node, SourceSpan};
 use kodept_ast_nodes::code_flow::IfExpr;
 use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::{FileDecl, ModDecl};
-use kodept_ast_nodes::function::FuncBody;
+use kodept_ast_nodes::function::FuncDecl;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
 use kodept_report::prelude::{
     Diagnostic, IntoSpannedReportMessage, Label, MessageBehaviour, Severity,
 };
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
-    FileDecl | ModDecl | StructDecl | EnumDecl | FuncBody | Lambda | Exprs | IfExpr
+    FileDecl | ModDecl | StructDecl | EnumDecl | FuncDecl | Lambda | Exprs | IfExpr
 });
 
 #[derive(Debug, SystemSet, Clone, Hash, Eq, PartialEq)]
@@ -61,7 +61,7 @@ impl ScopeBuildingPass {
             ScopeUnionItem::ModDecl(x) => Some(x.name().clone()),
             ScopeUnionItem::StructDecl(x) => Some(x.name().clone()),
             ScopeUnionItem::EnumDecl(x) => Some(x.name().clone()),
-            ScopeUnionItem::FuncBody(_) => None,
+            ScopeUnionItem::FuncDecl(x) => Some(x.name().clone()),
             ScopeUnionItem::Lambda(_) => None,
             ScopeUnionItem::Exprs(_) => None,
             ScopeUnionItem::IfExpr(_) => None,

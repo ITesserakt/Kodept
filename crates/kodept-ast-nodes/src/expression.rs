@@ -1,6 +1,6 @@
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
-use crate::function::FuncDecl;
+use crate::consts::Const;
 use crate::literal::{Literal, Tuple};
 use crate::properties::{Lhs, Rhs};
 use crate::term::Ref;
@@ -68,7 +68,7 @@ relation!(Exprs => children Ref);
 relation!(Exprs => children Ty);
 relation!(Exprs => children Literal);
 relation!(Exprs => children Tuple);
-relation!(Exprs => children FuncDecl);
+relation!(Exprs => children Const);
 
 derive_node!(App);
 relation!(App => or Lhs(optional Exprs));

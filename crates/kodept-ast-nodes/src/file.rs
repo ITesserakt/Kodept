@@ -1,6 +1,4 @@
-use crate::function::FuncDecl;
-use crate::top_level::{EnumDecl, StructDecl};
-use crate::Either;
+use crate::consts::Const;
 use bevy_ecs::{bundle::Bundle, component::Component};
 use kodept_ast::derive_node;
 use kodept_ast::prelude::CodeHolder;
@@ -10,7 +8,6 @@ use kodept_ast::relation;
 use kodept_ast::syntax_tree::prelude::ASTBuilder;
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude as rlt;
-use kodept_rlt::prelude::TopLevelNode;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct FileDecl;
@@ -27,9 +24,7 @@ relation!(FileDecl => children ModDecl);
 derive_node!(ModDecl {
     properties = [require Name,]
 });
-relation!(ModDecl => children EnumDecl);
-relation!(ModDecl => children StructDecl);
-relation!(ModDecl => children FuncDecl);
+relation!(ModDecl => children Const);
 
 impl FromSyntax<rlt::File> for FileDecl {
     type Bundle = impl Bundle;
@@ -57,15 +52,7 @@ impl FromSyntax<rlt::Module> for ModDecl {
         ASTBuilder::new(value)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_children(rest.as_ref(), |it, spawner| match it {
-                TopLevelNode::Enum(x) => spawner.spawn::<_, EnumDecl, _>(x, source, Either::Left),
-                TopLevelNode::Struct(x) => {
-                    spawner.spawn::<_, StructDecl, _>(x, source, |x| Either::Right(Either::Left(x)))
-                }
-                TopLevelNode::BodiedFunction(x) => {
-                    spawner.spawn::<_, FuncDecl, _>(x, source, |x| Either::Right(Either::Right(x)))
-                }
-            })
+            .with_children(rest.as_ref(), source)
             .build()
     }
 }
