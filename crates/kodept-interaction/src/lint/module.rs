@@ -7,23 +7,17 @@ use kodept_ast::properties::Lexeme;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::Located;
+use kodept_diagnostic_macros::Diagnostic;
 use kodept_report::message::{Diagnostic, Label, Severity};
-use kodept_report::prelude::{IntoSpannedReportMessage, ReportMessage};
 use kodept_rlt::prelude::{File, Module};
 
 pub struct SingleModuleWithBrackets;
 
-pub struct SuspiciousStructure(Entity);
-
-impl IntoSpannedReportMessage for SuspiciousStructure {
-    type Message = ReportMessage;
-
-    fn into_message(self) -> Self::Message {
-        ReportMessage::new(
-            Severity::Warning,
-            format!("Expected {} to point at File node", self.0),
-        )
-    }
+#[derive(Diagnostic)]
+#[severity("warning")]
+#[message("Expected {entity} to point at `File` node")]
+pub struct SuspiciousStructure {
+    entity: Entity,
 }
 
 impl Lint for SingleModuleWithBrackets {
@@ -39,7 +33,7 @@ impl Lint for SingleModuleWithBrackets {
              syntax: Res<SyntaxResolver>,
              reporter: Reporter| {
                 let Ok(node) = syntax.try_get::<File>(query.0 .0) else {
-                    return fail(SuspiciousStructure(query.1));
+                    return fail(SuspiciousStructure { entity: query.1 });
                 };
 
                 if let [Module::Ordinary { lbrace, rbrace, .. }] = node.0.as_ref() {

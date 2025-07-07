@@ -1120,6 +1120,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kodept-diagnostic-macros"
+version = "0.1.0"
+dependencies = [
+ "kodept-core",
+ "kodept-report",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
 name = "kodept-frontend"
 version = "0.1.0"
 dependencies = [
@@ -1148,6 +1159,7 @@ dependencies = [
  "kodept-ast",
  "kodept-ast-nodes",
  "kodept-core",
+ "kodept-diagnostic-macros",
  "kodept-inference",
  "kodept-report",
  "kodept-rlt",

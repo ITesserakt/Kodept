@@ -23,9 +23,7 @@ use kodept_ast_nodes::file::ModDecl;
 use kodept_ast_nodes::properties::Rhs;
 use kodept_ast_nodes::term::{Ref, ReferenceContext};
 use kodept_ast_nodes::types::Ty;
-use kodept_report::message::Diagnostic;
-use kodept_report::prelude::{Label, Severity};
-use kodept_report::traits::IntoSpannedReportMessage;
+use kodept_diagnostic_macros::Diagnostic;
 use std::convert::Infallible;
 use std::iter::once;
 use tracing::debug;
@@ -36,9 +34,12 @@ pub struct ReferenceResolverPass;
 #[derive(Debug, Resource)]
 pub(crate) struct UnresolvedReferences(EntityHashSet);
 
-#[derive(Debug)]
+#[derive(Debug, Diagnostic)]
+#[severity("Error")]
+#[message("Cannot resolve reference `{ref_name}`")]
 struct ReferenceNotResolvedError {
     ref_name: Str,
+    #[primary_label("not found in scope")]
     ref_span: SourceSpan,
     resolved_scope_span: Option<SourceSpan>,
 }
@@ -58,16 +59,6 @@ impl UnresolvedReferences {
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = Entity> + '_ {
         self.0.iter().copied()
-    }
-}
-
-impl IntoSpannedReportMessage for ReferenceNotResolvedError {
-    type Message = Diagnostic;
-
-    fn into_message(self) -> Self::Message {
-        Diagnostic::new(Severity::Error)
-            .with_message(format!("Cannot resolve reference `{}`", self.ref_name))
-            .with_label(Label::primary("not found in scope", self.ref_span))
     }
 }
 

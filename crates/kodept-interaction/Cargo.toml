@@ -13,6 +13,7 @@ kodept-core = { path = "../kodept-core" }
 kodept-inference = { path = "../kodept-inference" }
 kodept-report = { path = "../kodept-report" }
 kodept-rlt = { path = "../kodept-rlt" }
+kodept-diagnostic-macros = { path = "../kodept-diagnostic-macros" }
 
 [dev-dependencies]
 rstest = "0.24.0"
