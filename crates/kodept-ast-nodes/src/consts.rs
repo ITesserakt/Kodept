@@ -13,7 +13,7 @@ use crate::{
     top_level::{EnumDecl, StructDecl},
 };
 
-#[derive(Debug, Component)]
+#[derive(Debug, PartialEq, Component)]
 pub enum Const {
     Value,
     Enum,

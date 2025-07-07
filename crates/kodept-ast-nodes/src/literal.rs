@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use crate::code_flow::IfExpr;
-use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
+use crate::expression::{App, BinExpr, Exprs, Lambda};
 use crate::term::Ref;
 use crate::types::Ty;
 use bevy_ecs::prelude::Component;
@@ -27,7 +27,6 @@ relation!(Tuple => children App);
 relation!(Tuple => children Lambda);
 relation!(Tuple => children IfExpr);
 relation!(Tuple => children BinExpr);
-relation!(Tuple => children UnExpr);
 relation!(Tuple => children Ref);
 relation!(Tuple => children Ty);
 relation!(Tuple => children Literal);

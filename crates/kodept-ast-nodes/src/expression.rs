@@ -27,33 +27,7 @@ pub struct Lambda;
 #[derive(Debug, PartialEq, Component)]
 pub enum BinExpr {
     Access,
-    Add,
-    Sub,
-    Mul,
-    Pow,
-    Div,
-    Mod,
-    Less,
-    LessEq,
-    Greater,
-    GreaterEq,
-    Eq,
-    NEq,
-    Or,
-    And,
-    Xor,
-    Disj,
-    Conj,
-    ComplexComparison,
     Assign,
-}
-
-#[derive(Debug, PartialEq, Component)]
-pub enum UnExpr {
-    Neg,
-    Not,
-    Inv,
-    Plus,
 }
 
 derive_node!(Exprs);
@@ -63,7 +37,6 @@ relation!(Exprs => children App);
 relation!(Exprs => children Lambda);
 relation!(Exprs => children IfExpr);
 relation!(Exprs => children BinExpr);
-relation!(Exprs => children UnExpr);
 relation!(Exprs => children Ref);
 relation!(Exprs => children Ty);
 relation!(Exprs => children Literal);
@@ -76,21 +49,19 @@ relation!(App => or Lhs(optional App));
 relation!(App => or Lhs(optional Lambda));
 relation!(App => or Lhs(optional IfExpr));
 relation!(App => or Lhs(optional BinExpr));
-relation!(App => or Lhs(optional UnExpr));
 relation!(App => or Lhs(optional Ref));
 relation!(App => or Lhs(optional Ty));
 relation!(App => or Lhs(optional Literal));
 relation!(App => or Lhs(optional Tuple));
-relation!(App => or Rhs(optional Exprs));
-relation!(App => or Rhs(optional App));
-relation!(App => or Rhs(optional Lambda));
-relation!(App => or Rhs(optional IfExpr));
-relation!(App => or Rhs(optional BinExpr));
-relation!(App => or Rhs(optional UnExpr));
-relation!(App => or Rhs(optional Ref));
-relation!(App => or Rhs(optional Ty));
-relation!(App => or Rhs(optional Literal));
-relation!(App => or Rhs(optional Tuple));
+relation!(App => or Rhs(children Exprs));
+relation!(App => or Rhs(children App));
+relation!(App => or Rhs(children Lambda));
+relation!(App => or Rhs(children IfExpr));
+relation!(App => or Rhs(children BinExpr));
+relation!(App => or Rhs(children Ref));
+relation!(App => or Rhs(children Ty));
+relation!(App => or Rhs(children Literal));
+relation!(App => or Rhs(children Tuple));
 
 derive_node!(Lambda);
 relation!(Lambda => children TyParam);
@@ -101,35 +72,22 @@ derive_node!(BinExpr);
 relation!(BinExpr => or Lhs(optional Exprs));
 relation!(BinExpr => or Lhs(optional App));
 relation!(BinExpr => or Lhs(optional Lambda));
-relation!(BinExpr => or Lhs(optional IfExpr));
-relation!(BinExpr => or Lhs(optional BinExpr));
-relation!(BinExpr => or Lhs(optional UnExpr));
 relation!(BinExpr => or Lhs(optional Ref));
 relation!(BinExpr => or Lhs(optional Ty));
-relation!(BinExpr => or Lhs(optional Literal));
+relation!(BinExpr => or Lhs(optional BinExpr));
 relation!(BinExpr => or Lhs(optional Tuple));
-relation!(BinExpr => or Rhs(children Exprs));
-relation!(BinExpr => or Rhs(children App));
-relation!(BinExpr => or Rhs(children Lambda));
-relation!(BinExpr => or Rhs(children IfExpr));
-relation!(BinExpr => or Rhs(children BinExpr));
-relation!(BinExpr => or Rhs(children UnExpr));
-relation!(BinExpr => or Rhs(children Ref));
-relation!(BinExpr => or Rhs(children Ty));
-relation!(BinExpr => or Rhs(children Literal));
-relation!(BinExpr => or Rhs(children Tuple));
+relation!(BinExpr => or Lhs(optional Literal));
+relation!(BinExpr => or Lhs(optional IfExpr));
 
-derive_node!(UnExpr);
-relation!(UnExpr => optional Exprs);
-relation!(UnExpr => optional App);
-relation!(UnExpr => optional Lambda);
-relation!(UnExpr => optional IfExpr);
-relation!(UnExpr => optional BinExpr);
-relation!(UnExpr => optional UnExpr);
-relation!(UnExpr => optional Ref);
-relation!(UnExpr => optional Ty);
-relation!(UnExpr => optional Literal);
-relation!(UnExpr => optional Tuple);
+relation!(BinExpr => or Rhs(optional Exprs));
+relation!(BinExpr => or Rhs(optional App));
+relation!(BinExpr => or Rhs(optional Lambda));
+relation!(BinExpr => or Rhs(optional Ref));
+relation!(BinExpr => or Rhs(optional Ty));
+relation!(BinExpr => or Rhs(optional BinExpr));
+relation!(BinExpr => or Rhs(optional Tuple));
+relation!(BinExpr => or Rhs(optional Literal));
+relation!(BinExpr => or Rhs(optional IfExpr));
 
 impl FromSyntax<ExpressionBlock> for Exprs {
     type Bundle = impl Bundle;

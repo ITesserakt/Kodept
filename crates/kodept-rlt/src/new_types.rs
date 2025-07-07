@@ -1,6 +1,6 @@
 use derive_more::{From, Into};
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::Located;
+use kodept_core::code_point::{CodePoint, Span};
+use kodept_core::structure::{Located, SpanBounds};
 
 macro_rules! make_wrappers {
     ($($name:ident,)*) => {
@@ -124,6 +124,20 @@ impl Located for BinaryOperationSymbol {
             BinaryOperationSymbol::Conjunction(x) => x.location(),
             BinaryOperationSymbol::Assign(x) => x.location(),
         }
+    }
+}
+
+impl SpanBounds for BinaryOperationSymbol {
+    #[inline]
+    fn bounds(&self) -> Span {
+        self.location().into()
+    }
+}
+
+impl SpanBounds for UnaryOperationSymbol {
+    #[inline]
+    fn bounds(&self) -> Span {
+        self.location().into()
     }
 }
 

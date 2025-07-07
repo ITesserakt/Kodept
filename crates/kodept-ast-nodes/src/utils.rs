@@ -1,7 +1,9 @@
+use std::convert::identity;
+
 use crate::block_level::InitVar;
 use crate::code_flow::IfExpr;
 use crate::consts::Const;
-use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
+use crate::expression::{App, BinExpr, Exprs, Lambda};
 use crate::literal::{Literal, Tuple};
 use crate::properties::{Lhs, Rhs};
 use crate::term::{Ref, ReferenceContext};
@@ -12,7 +14,7 @@ use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
 use kodept_ast::syntax_tree::prelude::{ASTBuilder, BundleUnion, NodeSpawner};
-use kodept_rlt::exported::{Located, SpanBounds};
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::{self as rlt};
 use kodept_rlt::prelude::{BlockLevelNode, Body, Expression, Operation, Parameter, Type};
@@ -81,12 +83,11 @@ where
     R: HasChild<InitVar, T, Arity = A>,
     R: HasChild<Exprs, T, Arity = A>,
     R: HasChild<Const, T, Arity = A>,
-    R: HasChild<BinExpr, T, Arity = A>,
-    R: HasChild<UnExpr, T, Arity = A>,
     R: HasChild<App, T, Arity = A>,
     R: HasChild<Lambda, T, Arity = A>,
     R: HasChild<Ref, T, Arity = A>,
     R: HasChild<Ty, T, Arity = A>,
+    R: HasChild<BinExpr, T, Arity = A>,
     R: HasChild<Tuple, T, Arity = A>,
     R: HasChild<Literal, T, Arity = A>,
     R: HasChild<IfExpr, T, Arity = A>,
@@ -124,7 +125,6 @@ where
     A: Arity,
     R: HasChild<Exprs, T, Arity = A>,
     R: HasChild<BinExpr, T, Arity = A>,
-    R: HasChild<UnExpr, T, Arity = A>,
     R: HasChild<App, T, Arity = A>,
     R: HasChild<Lambda, T, Arity = A>,
     R: HasChild<Ref, T, Arity = A>,
@@ -134,67 +134,106 @@ where
     R: HasChild<IfExpr, T, Arity = A>,
 {
     match node {
-        Operation::Block(x) => spawner.spawn::<_, Exprs, _>(x, source, Either::v61),
+        Operation::Block(x) => spawner.spawn::<_, Exprs, _>(x, source, Either::v71),
         Operation::Access { left, right, .. } => spawner.spawn_raw(
             ASTBuilder::new(BinExpr::Access)
                 .with_property(SourceSpan(left.bounds() + right.bounds()))
                 .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
                 .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
             node,
-            Either::v62,
+            Either::v72,
         ),
         Operation::Binary {
             left,
             operation,
             right,
         } => {
-            let value = match operation {
-                BinaryOperationSymbol::Pow(_) => BinExpr::Pow,
-                BinaryOperationSymbol::Mul(_) => BinExpr::Mul,
-                BinaryOperationSymbol::Div(_) => BinExpr::Div,
-                BinaryOperationSymbol::Rem(_) => BinExpr::Mod,
-                BinaryOperationSymbol::Add(_) => BinExpr::Add,
-                BinaryOperationSymbol::Sub(_) => BinExpr::Sub,
-                BinaryOperationSymbol::ComplexComparison(_) => BinExpr::ComplexComparison,
-                BinaryOperationSymbol::LessEq(_) => BinExpr::LessEq,
-                BinaryOperationSymbol::NEq(_) => BinExpr::NEq,
-                BinaryOperationSymbol::Eq(_) => BinExpr::Eq,
-                BinaryOperationSymbol::GreaterEq(_) => BinExpr::GreaterEq,
-                BinaryOperationSymbol::Less(_) => BinExpr::Less,
-                BinaryOperationSymbol::Greater(_) => BinExpr::Greater,
-                BinaryOperationSymbol::Or(_) => BinExpr::Or,
-                BinaryOperationSymbol::And(_) => BinExpr::And,
-                BinaryOperationSymbol::Xor(_) => BinExpr::Xor,
-                BinaryOperationSymbol::Disjunction(_) => BinExpr::Disj,
-                BinaryOperationSymbol::Conjunction(_) => BinExpr::Conj,
-                BinaryOperationSymbol::Assign(_) => BinExpr::Assign,
-            };
-            spawner.spawn_raw(
-                ASTBuilder::new(value)
+            let build_ref_to = |symbol: &BinaryOperationSymbol, ident| {
+                ASTBuilder::new(App)
+                    .with_dyn_child(
+                        symbol,
+                        source,
+                        |x, spawner: &mut NodeSpawner<_, Lhs, _>, _| {
+                            let context = ReferenceContext::global(["Core", "Traits"]);
+                            spawner.spawn_raw(
+                                ASTBuilder::new(Ref { context, ident })
+                                    .with_property(SourceSpan(x.bounds())),
+                                x,
+                                identity,
+                            )
+                        },
+                    )
+                    .with_dyn_children(
+                        [left.as_ref(), right.as_ref()],
+                        |x, spawner: &mut NodeSpawner<_, Rhs, _>| {
+                            unwrap_operation(x, spawner, source)
+                        },
+                    )
                     .with_property(SourceSpan(left.bounds() + right.bounds()))
-                    .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
-                    .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
-                node,
-                Either::v63,
-            )
+            };
+
+            let value = match operation {
+                BinaryOperationSymbol::Pow(_) => "pow".into(),
+                BinaryOperationSymbol::Mul(_) => "mul".into(),
+                BinaryOperationSymbol::Div(_) => "div".into(),
+                BinaryOperationSymbol::Rem(_) => "rem".into(),
+                BinaryOperationSymbol::Add(_) => "add".into(),
+                BinaryOperationSymbol::Sub(_) => "sub".into(),
+                BinaryOperationSymbol::ComplexComparison(_) => "spaceship".into(),
+                BinaryOperationSymbol::LessEq(_) => "leq".into(),
+                BinaryOperationSymbol::NEq(_) => "neq".into(),
+                BinaryOperationSymbol::Eq(_) => "eq".into(),
+                BinaryOperationSymbol::GreaterEq(_) => "geq".into(),
+                BinaryOperationSymbol::Less(_) => "less".into(),
+                BinaryOperationSymbol::Greater(_) => "greater".into(),
+                BinaryOperationSymbol::Or(_) => "or".into(),
+                BinaryOperationSymbol::And(_) => "and".into(),
+                BinaryOperationSymbol::Xor(_) => "xor".into(),
+                BinaryOperationSymbol::Disjunction(_) => "disj".into(),
+                BinaryOperationSymbol::Conjunction(_) => "conj".into(),
+                BinaryOperationSymbol::Assign(_) => {
+                    return spawner.spawn_raw(
+                        ASTBuilder::new(BinExpr::Assign)
+                            .with_property(SourceSpan(left.bounds() + right.bounds()))
+                            .with_dyn_child(left.as_ref(), source, unwrap_operation::<_, Lhs, _>)
+                            .with_dyn_child(right.as_ref(), source, unwrap_operation::<_, Rhs, _>),
+                        node,
+                        Either::v74,
+                    )
+                }
+            };
+            spawner.spawn_raw(build_ref_to(operation, value), node, Either::v73)
         }
         Operation::Unary { operator, expr } => {
-            let value = match operator {
-                UnaryOperationSymbol::Neg(_) => UnExpr::Neg,
-                UnaryOperationSymbol::Not(_) => UnExpr::Not,
-                UnaryOperationSymbol::Inv(_) => UnExpr::Inv,
-                UnaryOperationSymbol::Plus(_) => UnExpr::Plus,
+            let build_ref_to = |symbol: &UnaryOperationSymbol, ident| {
+                ASTBuilder::new(App)
+                    .with_dyn_child(
+                        symbol,
+                        source,
+                        |x, spawner: &mut NodeSpawner<_, Lhs, _>, _| {
+                            let context = ReferenceContext::global(["Core", "Traits"]);
+                            spawner.spawn_raw(
+                                ASTBuilder::new(Ref { context, ident })
+                                    .with_property(SourceSpan(x.bounds())),
+                                x,
+                                identity,
+                            )
+                        },
+                    )
+                    .with_dyn_child(expr.as_ref(), source, unwrap_operation::<_, Rhs, _>)
+                    .with_property(SourceSpan(expr.bounds()))
             };
-            spawner.spawn_raw(
-                ASTBuilder::new(value)
-                    .with_property(SourceSpan(operator.location() + expr.bounds()))
-                    .with_dyn_child(expr.as_ref(), source, unwrap_operation),
-                node,
-                Either::v64,
-            )
+
+            let value = match operator {
+                UnaryOperationSymbol::Neg(_) => "neg".into(),
+                UnaryOperationSymbol::Not(_) => "not".into(),
+                UnaryOperationSymbol::Inv(_) => "inv".into(),
+                UnaryOperationSymbol::Plus(_) => "pos".into(),
+            };
+            spawner.spawn_raw(build_ref_to(operator, value), node, Either::v75)
         }
-        Operation::Application(x) => spawner.spawn::<_, App, _>(x, source, Either::v65),
-        Operation::Expression(x) => Either::v66(unwrap_expression(x, spawner, source)),
+        Operation::Application(x) => spawner.spawn::<_, App, _>(x, source, Either::v76),
+        Operation::Expression(x) => Either::v77(unwrap_expression(x, spawner, source)),
     }
 }
 

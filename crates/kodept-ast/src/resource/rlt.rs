@@ -3,6 +3,7 @@ use derive_more::{Display, From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_core::Freeze;
+use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::RLT;
 use kodept_rlt::{new_types, prelude as rlt};
 use std::collections::HashMap;
@@ -37,6 +38,8 @@ pub enum SyntaxVariant<'r> {
     Else(&'r rlt::ElseExpr),
     Tuple(&'r rlt::Tuple),
     Lambda(&'r rlt::Lambda),
+    BinaryOperationSymbol(&'r BinaryOperationSymbol),
+    UnaryOperationSymbol(&'r UnaryOperationSymbol),
 }
 
 #[derive(Debug, Display, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
@@ -148,6 +151,8 @@ impl Located for SyntaxVariant<'_> {
             SyntaxVariant::Else(x) => x.location(),
             SyntaxVariant::Tuple(x) => x.location(),
             SyntaxVariant::Lambda(x) => x.location(),
+            SyntaxVariant::BinaryOperationSymbol(x) => x.location(),
+            SyntaxVariant::UnaryOperationSymbol(x) => x.location(),
         }
     }
 }

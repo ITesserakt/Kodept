@@ -1,5 +1,5 @@
 use crate::code_flow::IfExpr;
-use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
+use crate::expression::{App, BinExpr, Exprs, Lambda};
 use crate::literal::{Literal, Tuple};
 use crate::term::Ref;
 use crate::types::{ProdTy, Ty};
@@ -35,7 +35,6 @@ relation!(InitVar => optional App);
 relation!(InitVar => optional Lambda);
 relation!(InitVar => optional IfExpr);
 relation!(InitVar => optional BinExpr);
-relation!(InitVar => optional UnExpr);
 relation!(InitVar => optional Ref);
 relation!(InitVar => optional Ty);
 relation!(InitVar => optional Literal);

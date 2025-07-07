@@ -1,6 +1,6 @@
 use crate::block_level::{InitVar, VarDecl};
 use crate::consts::Const;
-use crate::expression::{App, BinExpr, Exprs, Lambda, UnExpr};
+use crate::expression::{App, BinExpr, Exprs, Lambda};
 use crate::file::{FileDecl, ModDecl};
 use crate::function::{FuncDecl};
 use crate::literal::{Literal, Tuple};
@@ -27,7 +27,6 @@ define_union!(pub enum NodeUnion[NodeUnionItem] {
     | App
     | Lambda
     | BinExpr
-    | UnExpr
     | Literal
     | Tuple
     | Ref
