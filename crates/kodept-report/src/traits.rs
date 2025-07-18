@@ -1,12 +1,13 @@
+use crate::message::{Diagnostic, ReportMessage, Severity};
+use crate::Str;
+use kodept_core::code_point::CodePoint;
 use std::any::type_name_of_val;
 use std::error::Error;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::marker::PhantomData;
-use kodept_core::code_point::CodePoint;
-use crate::message::{Diagnostic, ReportMessage, Severity};
-use crate::Str;
 
 pub trait SpannedReportMessage: Into<Diagnostic> {
+    #[deprecated]
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage;
 }
 
@@ -17,6 +18,7 @@ pub enum MessageBehaviour {
         /// Should return an explanation why does associated message cannot be reported for multiple nodes
         reason: Str,
     },
+    /// Continue execution
     Suppress,
 }
 
@@ -27,7 +29,7 @@ pub trait IntoSpannedReportMessage {
     fn behaviour(&self) -> MessageBehaviour {
         MessageBehaviour::Suppress
     }
-    
+
     #[inline]
     fn code(&self) -> u32 {
         let type_name = type_name_of_val(self);
@@ -64,9 +66,14 @@ where
 
 impl MessageBehaviour {
     pub fn fail_fast(reason: impl Into<Str>) -> Self {
-        Self::FailFast { 
+        Self::FailFast {
             reason: reason.into(),
         }
+    }
+
+    /// Makes pipeline fail without any reason
+    pub fn fail_really_fast() -> Self {
+        Self::FailFast { reason: "".into() }
     }
 }
 

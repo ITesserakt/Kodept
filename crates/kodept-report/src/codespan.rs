@@ -5,7 +5,7 @@ use codespan_reporting::term::Config;
 use derive_more::Constructor;
 
 pub mod external {
-    pub use codespan_reporting::term::{Config, DisplayStyle, termcolor::ColorChoice};
+    pub use codespan_reporting::term::{termcolor::ColorChoice, Config, DisplayStyle};
 }
 
 #[derive(Clone, Debug, Constructor)]
@@ -34,7 +34,10 @@ impl CodespanSettings {
     }
 }
 
-impl<FileId> Reportable for Report<FileId> {
+impl<FileId> Reportable for Report<FileId>
+where
+    FileId: Clone,
+{
     type FileId = FileId;
 
     fn emit<'f, F: Files<'f, FileId = Self::FileId>>(

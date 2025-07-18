@@ -4,7 +4,7 @@ use kodept_core::code_point::{CodePoint, Span};
 use std::borrow::Cow;
 use std::error::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Label {
     pub(crate) point: Span,
@@ -21,7 +21,7 @@ pub enum Severity {
     Note,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Diagnostic {
     pub(crate) message: Str,
@@ -45,19 +45,6 @@ pub struct SpannedError<E> {
     severity: Severity,
     notes: Vec<Str>,
     inner: E,
-}
-
-impl Severity {
-    pub(crate) fn into_codespan(self) -> codespan_reporting::diagnostic::Severity {
-        use codespan_reporting::diagnostic::Severity as CSeverity;
-
-        match self {
-            Severity::Bug => CSeverity::Bug,
-            Severity::Error => CSeverity::Error,
-            Severity::Warning => CSeverity::Warning,
-            Severity::Note => CSeverity::Note,
-        }
-    }
 }
 
 impl Label {

@@ -1,54 +1,28 @@
-use crate::traits::{IntoSpannedReportMessage, SpannedReportMessage};
-use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
+use crate::{
+    message::{Diagnostic, Severity},
+    traits::IntoSpannedReportMessage,
+};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Report<FileId = crate::FileId> {
-    diagnostic: Diagnostic<FileId>,
+    file_id: FileId,
+    diagnostic: Diagnostic,
+    code: String,
 }
 
 impl<FileId> Report<FileId> {
-    fn from_raw_message_with_code<T>(
-        file_id: FileId,
-        message: T,
-        code: String,
-    ) -> Diagnostic<FileId>
-    where
-        T: SpannedReportMessage,
-        FileId: Clone,
-    {
-        let raw_message = message.into();
-
-        let mut diagnostic = Diagnostic::new(raw_message.severity.into_codespan());
-        diagnostic.message = raw_message.message.to_string();
-        diagnostic.code = Some(code);
-        diagnostic.labels = raw_message
-            .labels
-            .into_iter()
-            .map(move |it| {
-                if it.primary {
-                    Label::primary(file_id.clone(), it.point.as_range()).with_message(it.message)
-                } else {
-                    Label::secondary(file_id.clone(), it.point.as_range()).with_message(it.message)
-                }
-            })
-            .collect();
-        diagnostic.notes = raw_message
-            .notes
-            .into_iter()
-            .map(|it| it.to_string())
-            .collect();
-        diagnostic
-    }
-
     #[must_use]
     pub fn from_message<T>(file_id: FileId, msg: T) -> Self
     where
         T: IntoSpannedReportMessage,
-        FileId: Clone,
     {
         let code = format!("{:0>8X}", msg.code());
-        let diagnostic = Self::from_raw_message_with_code(file_id, msg.into_message(), code);
-        Self { diagnostic }
+        let diagnostic = msg.into_message();
+        Self {
+            file_id,
+            diagnostic: diagnostic.into(),
+            code,
+        }
     }
 
     #[must_use]
@@ -56,7 +30,30 @@ impl<FileId> Report<FileId> {
         matches!(self.diagnostic.severity, Severity::Error)
     }
 
-    pub fn into_inner(self) -> Diagnostic<FileId> {
-        self.diagnostic
+    pub(crate) fn into_inner(self) -> codespan_reporting::diagnostic::Diagnostic<FileId>
+    where
+        FileId: Clone,
+    {
+        use codespan_reporting::diagnostic::{
+            Diagnostic as CDiagnostic, Label as CLabel, Severity as CSeverity,
+        };
+
+        CDiagnostic::new(match self.diagnostic.severity {
+            Severity::Bug => CSeverity::Bug,
+            Severity::Error => CSeverity::Error,
+            Severity::Warning => CSeverity::Warning,
+            Severity::Note => CSeverity::Note,
+        })
+        .with_code(self.code)
+        .with_message(self.diagnostic.message)
+        .with_labels_iter(self.diagnostic.labels.into_iter().map(|it| {
+            match it.primary {
+                true => CLabel::primary(self.file_id.clone(), it.point.as_range())
+                    .with_message(it.message),
+                false => CLabel::secondary(self.file_id.clone(), it.point.as_range())
+                    .with_message(it.message),
+            }
+        }))
+        .with_notes_iter(self.diagnostic.notes.into_iter().map(|it| it.into_owned()))
     }
 }

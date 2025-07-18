@@ -19,7 +19,7 @@ use kodept_ast_nodes::consts::Const;
 use kodept_ast_nodes::top_level::EnumConst;
 use kodept_ast_nodes::types::{NonTyParam, TyParam};
 use kodept_core::code_point::Span;
-use kodept_report::message::{Diagnostic, Label, Severity};
+use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
 use std::collections::hash_map::Entry;
