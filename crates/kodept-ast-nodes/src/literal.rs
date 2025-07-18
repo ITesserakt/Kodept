@@ -38,8 +38,8 @@ impl Literal {
     pub(crate) fn from_str(node: &rlt::Literal, value: Str) -> Result<Self, crate::Error> {
         match node {
             rlt::Literal::Binary(_) => {
-                if !value.len() > 2 {
-                    return Err(WrongLiteralLength(node.location(), value.len()));
+                if value.len() <= 2 {
+                    return Err(WrongLiteralLength(node.location(), 3));
                 }
                 let digits = &value[2..];
                 i128::from_str_radix(digits, 2)
@@ -47,8 +47,8 @@ impl Literal {
                     .map(Self::Integer)
             }
             rlt::Literal::Octal(_) => {
-                if !value.len() > 2 {
-                    return Err(WrongLiteralLength(node.location(), value.len()));
+                if value.len() <= 2 {
+                    return Err(WrongLiteralLength(node.location(), 3));
                 }
                 let digits = &value[2..];
                 i128::from_str_radix(digits, 8)
@@ -56,8 +56,8 @@ impl Literal {
                     .map(Self::Integer)
             }
             rlt::Literal::Hex(_) => {
-                if !value.len() > 2 {
-                    return Err(WrongLiteralLength(node.location(), value.len()));
+                if value.len() <= 2 {
+                    return Err(WrongLiteralLength(node.location(), 3));
                 }
                 let digits = &value[2..];
                 i128::from_str_radix(digits, 16)
@@ -82,7 +82,7 @@ impl Literal {
                     return Err(NoQuotesInLiteral(node.location()));
                 }
                 if value.len() != 3 {
-                    return Err(WrongLiteralLength(node.location(), value.len()));
+                    return Err(WrongLiteralLength(node.location(), 3));
                 }
                 Ok(Self::Char(value.as_bytes()[1]))
             }

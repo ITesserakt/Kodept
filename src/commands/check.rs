@@ -47,7 +47,8 @@ impl Command for Check {
             let rlt = self.timings_block("RLT building", || {
                 get_rlt(&self.parsing_config, &source, &reports)
             })?;
-            let mut ast = self.timings_block("AST building", || build_ast(&source, rlt));
+            let mut ast =
+                self.timings_block("AST building", || build_ast(&source, rlt, &reports))?;
 
             self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
                 install_reporting_support(ctx, {

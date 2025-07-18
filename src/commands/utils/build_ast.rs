@@ -1,13 +1,46 @@
+#[cfg(not(feature = "interning"))]
+use kodept::report::Reports;
 use kodept::source::collection::SourceView;
 use kodept_ast::syntax_tree::prelude::{SourceCode, AST};
 use kodept_ast_nodes::file::FileDecl;
+use kodept_ast_nodes::Error;
 use kodept_core::file_name::FileDescriptor;
 use kodept_core::structure::span::CodeHolder;
+#[cfg(not(feature = "interning"))]
+use kodept_frontend::Execution;
+use kodept_report::{
+    prelude::{Diagnostic, Label, Severity},
+    traits::IntoSpannedReportMessage,
+};
 use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
 
+struct Wrapper(Error);
+
+impl IntoSpannedReportMessage for Wrapper {
+    type Message = Diagnostic;
+
+    fn into_message(self) -> Self::Message {
+        let diagnostic = Diagnostic::new(Severity::Bug);
+        match self.0 {
+            Error::NoQuotesInLiteral(point) => diagnostic
+                .with_message("String or char literals must contain quotes")
+                .with_label(Label::primary("no quotes", point)),
+            Error::WrongLiteralLength(point, len) => diagnostic
+                .with_message(format!("Literal must have length at least `{}`", len))
+                .with_label(Label::primary("wrong length", point)),
+            Error::CannotParseFloat(point, e) => diagnostic
+                .with_message(format!("Cannot parse floating literal: {}", e))
+                .with_label(Label::primary("cannot parse floating literal", point)),
+            Error::CannotParseInt(point, e) => diagnostic
+                .with_message(format!("Cannot parse integer literal: {}", e))
+                .with_label(Label::primary("cannot parse integer literal", point)),
+        }
+    }
+}
+
 #[cfg(feature = "interning")]
-pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
+pub fn build_ast(source: &SourceView, rlt: RLT, reports: &Reports) -> Execution<AST> {
     let code_holder =
         kodept_interning::InterningCodeHolder::new(&**source).map(|it| Cow::Borrowed(it.0));
     let ast = AST::recursively_build::<FileDecl>(
@@ -16,8 +49,14 @@ pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
             code_holder,
             FileDescriptor::new(source.path().clone(), *source.id),
         ),
-    )
-    .expect("Cannot build AST");
+    );
+    let ast = match ast {
+        Ok(x) => x,
+        Err(e) => {
+            reports.report(*source.id, Wrapper(e));
+            return Execution::Break(());
+        }
+    };
     let metrics = kodept_interning::metrics::InterningMetrics::gather();
     let (saved_value, saved_suffix) = metrics.memory_save();
     tracing::debug!(
@@ -26,18 +65,24 @@ pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
         saved_value,
         saved_suffix
     );
-    ast
+    Execution::Continue(ast)
 }
 
 #[cfg(not(feature = "interning"))]
-pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
+pub fn build_ast(source: &SourceView, rlt: RLT, reports: &Reports) -> Execution<AST> {
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
-    AST::recursively_build::<FileDecl>(
+    let result = AST::recursively_build::<FileDecl>(
         rlt,
         SourceCode::new(
             code_holder,
             FileDescriptor::new(source.path().clone(), *source.id),
         ),
-    )
-    .expect("Cannot build AST")
+    );
+    match result {
+        Ok(x) => Execution::Continue(x),
+        Err(e) => {
+            reports.report(*source.id, Wrapper(e))?;
+            Execution::Break(())
+        }
+    }
 }
