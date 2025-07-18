@@ -17,9 +17,7 @@ use kodept_ast_nodes::expression::{Exprs, Lambda};
 use kodept_ast_nodes::file::{FileDecl, ModDecl};
 use kodept_ast_nodes::function::FuncDecl;
 use kodept_ast_nodes::top_level::{EnumDecl, StructDecl};
-use kodept_report::prelude::{
-    Diagnostic, IntoSpannedReportMessage, Label, MessageBehaviour, Severity,
-};
+use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehaviour, Severity};
 
 define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
     FileDecl | ModDecl | StructDecl | EnumDecl | FuncDecl | Lambda | Exprs | IfExpr
@@ -41,7 +39,7 @@ impl IntoSpannedReportMessage for CannotLinkError {
         Diagnostic::new(Severity::Bug)
             .with_message("Cannot create new scope or link with any other")
             .with_note("Possible out-of-tree nodes?")
-            .with_label(Label::primary("unprocessed node", self.0))
+            .with_primary_label("unprocessed node", self.0)
     }
 }
 

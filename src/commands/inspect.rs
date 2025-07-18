@@ -10,7 +10,7 @@ use kodept::source::collection::SourceView;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_core::code_point::CodePoint;
 use kodept_frontend::Execution;
-use kodept_report::message::{Diagnostic, Label, Severity};
+use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::ad_hoc_message;
 use kodept_rlt::prelude::RLT;
 use std::ops::ControlFlow;
@@ -40,7 +40,7 @@ impl Command for Inspect {
                 let message = ad_hoc_message(|| {
                     Diagnostic::new(Severity::Note)
                         .with_message("Source file parsed into a raw lexeme tree")
-                        .with_label(Label::primary("", CodePoint::single_point(0)))
+                        .with_primary_label("", CodePoint::single_point(0))
                 });
                 _ = reports.report(*source.id, message);
             }
@@ -50,7 +50,7 @@ impl Command for Inspect {
                 let message = ad_hoc_message(|| {
                     Diagnostic::new(Severity::Note)
                         .with_message("Got abstract syntax tree of source file")
-                        .with_label(Label::primary("", CodePoint::single_point(0)))
+                        .with_primary_label("", CodePoint::single_point(0))
                 });
                 _ = reports.report(*source.id, message);
             }

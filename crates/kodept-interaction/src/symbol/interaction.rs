@@ -51,21 +51,18 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
     type Message = Diagnostic;
 
     fn into_message(self) -> Self::Message {
+        let scope_name_message = match self.scope_name {
+            Some(name) => Cow::Owned(format!("in scope `{name}`")),
+            None => "in scope".into(),
+        };
         Diagnostic::new(Severity::Error)
             .with_message(format!(
                 "Element with name `{}` already defined",
                 self.bound_name
             ))
-            .with_label(Label::primary("", self.current_def))
-            .with_label(Label::secondary("previous declaration", self.previous_def))
-            .with_label(Label::secondary(
-                if let Some(name) = self.scope_name {
-                    Cow::Owned(format!("in scope `{name}`"))
-                } else {
-                    "in scope".into()
-                },
-                self.scope_start,
-            ))
+            .with_primary_label("", self.current_def)
+            .with_secondary_label("previous declaration", self.previous_def)
+            .with_secondary_label(scope_name_message, self.scope_start)
     }
 }
 

@@ -1,8 +1,8 @@
-use std::borrow::Cow;
-use std::error::Error;
+use crate::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage};
 use crate::Str;
 use kodept_core::code_point::{CodePoint, Span};
-use crate::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage};
+use std::borrow::Cow;
+use std::error::Error;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -50,14 +50,14 @@ pub struct SpannedError<E> {
 impl Severity {
     pub(crate) fn into_codespan(self) -> codespan_reporting::diagnostic::Severity {
         use codespan_reporting::diagnostic::Severity as CSeverity;
-        
+
         match self {
             Severity::Bug => CSeverity::Bug,
             Severity::Error => CSeverity::Error,
             Severity::Warning => CSeverity::Warning,
             Severity::Note => CSeverity::Note,
         }
-    } 
+    }
 }
 
 impl Label {
@@ -97,6 +97,16 @@ impl Diagnostic {
 
     pub fn with_label(mut self, label: Label) -> Self {
         self.labels.push(label);
+        self
+    }
+
+    pub fn with_primary_label(mut self, message: impl Into<Str>, at: impl Into<Span>) -> Self {
+        self.labels.push(Label::primary(message, at));
+        self
+    }
+
+    pub fn with_secondary_label(mut self, message: impl Into<Str>, at: impl Into<Span>) -> Self {
+        self.labels.push(Label::secondary(message, at));
         self
     }
 
@@ -173,7 +183,9 @@ impl SpannedReportMessage for ReportMessage {
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
         ad_hoc_message(move || {
             let mut diagnostic = Diagnostic::from(self);
-            diagnostic.labels.push(Label::secondary("while checking", location));
+            diagnostic
+                .labels
+                .push(Label::secondary("while checking", location));
             diagnostic
         })
     }
@@ -182,7 +194,8 @@ impl SpannedReportMessage for ReportMessage {
 impl SpannedReportMessage for Diagnostic {
     fn with_node_location(mut self, location: CodePoint) -> impl IntoSpannedReportMessage {
         ad_hoc_message(move || {
-            self.labels.push(Label::secondary("while checking", location));
+            self.labels
+                .push(Label::secondary("while checking", location));
             self
         })
     }
@@ -192,7 +205,9 @@ impl<E: Error> SpannedReportMessage for SpannedError<E> {
     fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
         ad_hoc_message(move || {
             let mut diagnostic = Diagnostic::from(self);
-            diagnostic.labels.push(Label::secondary("while checking", location));
+            diagnostic
+                .labels
+                .push(Label::secondary("while checking", location));
             diagnostic
         })
     }

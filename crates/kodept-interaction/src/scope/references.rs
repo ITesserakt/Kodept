@@ -26,7 +26,7 @@ use kodept_ast_nodes::properties::Rhs;
 use kodept_ast_nodes::term::{Ref, ReferenceContext};
 use kodept_ast_nodes::types::Ty;
 use kodept_report::message::Diagnostic;
-use kodept_report::prelude::{Label, ReportMessage, Severity};
+use kodept_report::prelude::{ReportMessage, Severity};
 use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
 use std::convert::Infallible;
 use std::iter::once;
@@ -69,7 +69,7 @@ impl IntoSpannedReportMessage for ReferenceNotResolvedError {
     fn into_message(self) -> Self::Message {
         Diagnostic::new(Severity::Error)
             .with_message(format!("Cannot resolve reference `{}`", self.ref_name))
-            .with_label(Label::primary("not found in scope", self.ref_span))
+            .with_primary_label("not found in scope", self.ref_span)
     }
 }
 

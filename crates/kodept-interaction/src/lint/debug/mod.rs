@@ -5,7 +5,6 @@ use crate::scope::storage::Scope;
 use bevy_ecs::prelude::{Added, IntoSystem, NameOrEntity, Populated, Query};
 use kodept_ast::properties::SourceSpan;
 use kodept_report::message::{Diagnostic, Severity};
-use kodept_report::prelude::Label;
 use std::convert::Infallible;
 
 pub struct DebugScopesLint;
@@ -26,10 +25,10 @@ impl Lint for DebugScopesLint {
                     reporter.report_ad_hoc(|| {
                         Diagnostic::new(Severity::Note)
                             .with_message(format!("Added new scope `{}`", name))
-                            .with_label(Label::primary(
+                            .with_primary_label(
                                 "scope coverage",
                                 spans.get(scope.start_from.entity()).unwrap().0,
-                            ))
+                            )
                             .with_note(format!("{:?}", scope))
                     })
                 }

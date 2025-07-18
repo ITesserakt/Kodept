@@ -7,7 +7,7 @@ use kodept_ast::properties::Lexeme;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::Located;
-use kodept_report::message::{Diagnostic, Label, Severity};
+use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::prelude::{IntoSpannedReportMessage, ReportMessage};
 use kodept_rlt::prelude::{File, Module};
 
@@ -46,8 +46,8 @@ impl Lint for SingleModuleWithBrackets {
                     reporter.report_ad_hoc(|| {
                         Diagnostic::new(Severity::Warning)
                             .with_message("Consider replacing brackets with single `=>`")
-                            .with_label(Label::primary("replace with `=>`", lbrace.location()))
-                            .with_label(Label::primary("remove", rbrace.location()))
+                            .with_primary_label("replace with `=>`", lbrace.location())
+                            .with_primary_label("remove", rbrace.location())
                     });
                 }
                 done()

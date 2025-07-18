@@ -7,13 +7,13 @@ use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::lexer::traits::ToRepresentation;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
+use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::ad_hoc_message;
 use kodept_report::FileId;
 use kodept_rlt::prelude::RLT;
 use std::borrow::Cow;
 use std::fmt::{Display, Write};
 use std::ops::ControlFlow::{Break, Continue};
-use kodept_report::message::{Diagnostic, Label, Severity};
 
 pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -> Execution<RLT> {
     let lexing_backend = config.get_lexing_backend(source.contents().len());
@@ -85,19 +85,19 @@ fn to_diagnostic<A: Display>(error: ParseError<A>) -> Diagnostic {
 
         Diagnostic::new(Severity::Error)
             .with_message(format!("Unexpected {actual}"))
-            .with_label(Label::primary("here", location.in_code))
+            .with_primary_label("here", location.in_code)
     } else if let Some(actual) = actual {
         let exp_msg = expected_to_string(expected);
 
         Diagnostic::new(Severity::Error)
             .with_message(format!("Expected {exp_msg}, got {actual}"))
-            .with_label(Label::primary("here", location.in_code))
+            .with_primary_label("here", location.in_code)
     } else {
         let exp_msg = expected_to_string(expected);
 
         Diagnostic::new(Severity::Error)
             .with_message(format!("Expected {exp_msg} after, got EOF"))
-            .with_label(Label::primary("here", location.in_code))
+            .with_primary_label("here", location.in_code)
     };
 
     hints

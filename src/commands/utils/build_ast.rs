@@ -9,7 +9,7 @@ use kodept_core::structure::span::CodeHolder;
 #[cfg(not(feature = "interning"))]
 use kodept_frontend::Execution;
 use kodept_report::{
-    prelude::{Diagnostic, Label, Severity},
+    prelude::{Diagnostic, Severity},
     traits::IntoSpannedReportMessage,
 };
 use kodept_rlt::prelude::RLT;
@@ -25,16 +25,16 @@ impl IntoSpannedReportMessage for Wrapper {
         match self.0 {
             Error::NoQuotesInLiteral(point) => diagnostic
                 .with_message("String or char literals must contain quotes")
-                .with_label(Label::primary("no quotes", point)),
+                .with_primary_label("no quotes", point),
             Error::WrongLiteralLength(point, len) => diagnostic
                 .with_message(format!("Literal must have length at least `{}`", len))
-                .with_label(Label::primary("wrong length", point)),
+                .with_primary_label("wrong length", point),
             Error::CannotParseFloat(point, e) => diagnostic
                 .with_message(format!("Cannot parse floating literal: {}", e))
-                .with_label(Label::primary("cannot parse floating literal", point)),
+                .with_primary_label("cannot parse floating literal", point),
             Error::CannotParseInt(point, e) => diagnostic
                 .with_message(format!("Cannot parse integer literal: {}", e))
-                .with_label(Label::primary("cannot parse integer literal", point)),
+                .with_primary_label("cannot parse integer literal", point),
         }
     }
 }
