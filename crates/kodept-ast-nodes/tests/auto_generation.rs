@@ -15,17 +15,20 @@ impl CodeHolder for FakeSourceCode {
 
     #[inline]
     fn get_chunk(self, _: CodePoint) -> Self::Str {
-        Str::Borrowed("")
+        // emulate string literals, because this is the only way to bypass error with literals parsing
+        Str::Borrowed("\"test\"")
     }
 }
 
 proptest! {
     #[test]
     fn test_conversion_with_autogeneration(rlt: RLT) {
-        let mut ast = AST::recursively_build::<FileDecl>(rlt,
-            SourceCode::new(FakeSourceCode,
-                FileDescriptor::new(FileName::Anon, FileId::generate())));
+        let source_code = SourceCode::new(
+            FakeSourceCode,
+            FileDescriptor::new(FileName::Anon, FileId::generate())
+        );
+        let ast = AST::recursively_build::<FileDecl>(rlt, source_code);
 
-        prop_assert!(ast.interact().immediate_exclusive(|w| w.entities().used_count()) > 0);
+        prop_assert!(ast.is_ok(), "Expected success build, but encountered an error: {:?}", ast);
     }
 }

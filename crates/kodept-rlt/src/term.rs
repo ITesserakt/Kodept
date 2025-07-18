@@ -43,7 +43,7 @@ impl<T: Located> Located for Contextual<T> {
         let length = (first + last).length;
         if is_global.is_some() {
             // Shift to the left by 2 symbols for '::'
-            CodePoint::new(length + 2, first.offset - 2)
+            CodePoint::new(length + 2, first.offset.saturating_sub(2))
         } else {
             CodePoint::new(length, first.offset)
         }

@@ -42,52 +42,65 @@ derive_node!(NonTyParam {
 
 impl FromSyntax<new_types::TypeName> for Ty {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &new_types::TypeName, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(
+        node: &new_types::TypeName,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(Ty {
+        Ok(ASTBuilder::new(Ty {
             context: ReferenceContext::empty(false),
             ident: name,
         })
         .with_property(SourceSpan(node.0.into()))
-        .build()
+        .build())
     }
 }
 
 impl FromSyntax<UntypedParameter> for NonTyParam {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &UntypedParameter, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(
+        node: &UntypedParameter,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(NonTyParam)
+        Ok(ASTBuilder::new(NonTyParam)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .build()
+            .build())
     }
 }
 
 impl FromSyntax<TypedParameter> for TyParam {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &TypedParameter, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(
+        node: &TypedParameter,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(TyParam)
+        Ok(ASTBuilder::new(TyParam)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.parameter_type, source, unwrap_type)
-            .build()
+            .with_dyn_child(&node.parameter_type, source, unwrap_type)?
+            .build())
     }
 }
 
 impl FromSyntax<Tuple> for ProdTy {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &Tuple, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(ProdTy)
+    fn from_syntax(node: &Tuple, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(ProdTy)
             .with_property(SourceSpan(node.0.left.0 + node.0.right.0))
             .with_dyn_children(node.0.inner.as_ref(), |it, spawner| {
                 unwrap_type(it, spawner, source)
-            })
-            .build()
+            })?
+            .build())
     }
 }

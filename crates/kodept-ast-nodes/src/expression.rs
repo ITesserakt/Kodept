@@ -91,50 +91,62 @@ relation!(BinExpr => or Rhs(optional IfExpr));
 
 impl FromSyntax<ExpressionBlock> for Exprs {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &ExpressionBlock, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(Exprs)
+    fn from_syntax(
+        node: &ExpressionBlock,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(Exprs)
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(node.expression.as_ref(), |it, spawner| {
                 unwrap_block_level(it, spawner, source)
-            })
-            .build()
+            })?
+            .build())
     }
 }
 
 impl FromSyntax<Application> for App {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &Application, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(App)
+    fn from_syntax(
+        node: &Application,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(App)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.expr, source, unwrap_operation::<_, Lhs, _>)
+            .with_dyn_child(&node.expr, source, unwrap_operation::<_, Lhs, _>)?
             .with_opt_dyn_children(
                 node.params.as_ref().map(|it| it.inner.as_ref()),
                 |it, spawner| unwrap_operation::<_, Rhs, _>(it, spawner, source),
-            )
-            .build()
+            )?
+            .build())
     }
 }
 
 impl FromSyntax<kodept_rlt::prelude::Lambda> for Lambda {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &kodept_rlt::prelude::Lambda, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(Lambda)
+    fn from_syntax(
+        node: &kodept_rlt::prelude::Lambda,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(Lambda)
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_child(node.expr.as_ref(), source, |it, spawner, source| {
-                spawner.spawn_raw(
+                Ok(spawner.spawn_raw(
                     ASTBuilder::new(Exprs)
                         .with_property(SourceSpan(it.bounds()))
-                        .with_dyn_child(it, source, unwrap_operation),
+                        .with_dyn_child(it, source, unwrap_operation)?,
                     it,
                     identity,
-                )
-            })
+                ))
+            })?
             .with_dyn_children(node.binds.inner.as_ref(), |it, spawner| {
                 unwrap_parameter(it, spawner, source)
-            })
-            .build()
+            })?
+            .build())
     }
 }

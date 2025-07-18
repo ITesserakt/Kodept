@@ -16,7 +16,8 @@ pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
             code_holder,
             FileDescriptor::new(source.path().clone(), *source.id),
         ),
-    );
+    )
+    .expect("Cannot build AST");
     let metrics = kodept_interning::metrics::InterningMetrics::gather();
     let (saved_value, saved_suffix) = metrics.memory_save();
     tracing::debug!(
@@ -38,4 +39,5 @@ pub fn build_ast(source: &SourceView, rlt: RLT) -> AST {
             FileDescriptor::new(source.path().clone(), *source.id),
         ),
     )
+    .expect("Cannot build AST")
 }

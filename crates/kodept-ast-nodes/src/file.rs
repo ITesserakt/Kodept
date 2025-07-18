@@ -28,19 +28,24 @@ relation!(ModDecl => children Const);
 
 impl FromSyntax<rlt::File> for FileDecl {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &rlt::File, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(FileDecl)
+    fn from_syntax(node: &rlt::File, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(FileDecl)
             .with_property(SourceSpan(node.bounds()))
-            .with_children(node.0.as_ref(), source)
-            .build()
+            .with_children(node.0.as_ref(), source)?
+            .build())
     }
 }
 
 impl FromSyntax<rlt::Module> for ModDecl {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &rlt::Module, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(
+        node: &rlt::Module,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
         let (value, name, rest) = match node {
             rlt::Module::Global { id, rest, .. } => {
                 (ModDecl::Global, source.get_chunk_located(id), rest)
@@ -49,10 +54,10 @@ impl FromSyntax<rlt::Module> for ModDecl {
                 (ModDecl::Ordinary, source.get_chunk_located(id), rest)
             }
         };
-        ASTBuilder::new(value)
+        Ok(ASTBuilder::new(value)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_children(rest.as_ref(), source)
-            .build()
+            .with_children(rest.as_ref(), source)?
+            .build())
     }
 }

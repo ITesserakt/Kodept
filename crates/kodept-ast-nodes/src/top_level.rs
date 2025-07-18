@@ -38,49 +38,54 @@ derive_node!(EnumConst {
 
 impl FromSyntax<Enum> for EnumDecl {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &Enum, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(node: &Enum, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
         let (kind, id, rest) = match node {
             Enum::Stack { id, contents, .. } => (EnumDecl::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumDecl::Heap, id, contents),
         };
         let name = source.get_chunk_located(id);
-        ASTBuilder::new(kind)
+        Ok(ASTBuilder::new(kind)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_opt_children(rest.as_ref().map(|it| it.inner.as_ref()), source)
-            .build()
+            .with_opt_children(rest.as_ref().map(|it| it.inner.as_ref()), source)?
+            .build())
     }
 }
 
 impl FromSyntax<Struct> for StructDecl {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &Struct, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(node: &Struct, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(StructDecl)
+
+        Ok(ASTBuilder::new(StructDecl)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_opt_children::<_, TyParam, _>(
                 node.parameters.as_ref().map(|it| it.inner.as_ref()),
                 source,
-            )
+            )?
             .with_opt_children::<_, FuncDecl, _>(
                 node.body.as_ref().map(|it| it.inner.as_ref()),
                 source,
-            )
-            .build()
+            )?
+            .build())
     }
 }
 
 impl FromSyntax<TypeName> for EnumConst {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &TypeName, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(node: &TypeName, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
         let name = source.get_chunk_located(node);
-        ASTBuilder::new(EnumConst)
+
+        Ok(ASTBuilder::new(EnumConst)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.0.into()))
-            .build()
+            .build())
     }
 }

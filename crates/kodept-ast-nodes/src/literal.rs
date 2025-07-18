@@ -4,8 +4,10 @@ use crate::code_flow::IfExpr;
 use crate::expression::{App, BinExpr, Exprs, Lambda};
 use crate::term::Ref;
 use crate::types::Ty;
+use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
 use bevy_ecs::prelude::Component;
 use kodept_ast::{derive_node, relation, Str};
+use kodept_rlt::exported::Located;
 use kodept_rlt::prelude as rlt;
 
 #[derive(Debug, PartialEq, Component)]
@@ -33,55 +35,61 @@ relation!(Tuple => children Literal);
 relation!(Tuple => children Tuple);
 
 impl Literal {
-    pub(crate) fn from_str(node: &rlt::Literal, value: Str) -> Self {
+    pub(crate) fn from_str(node: &rlt::Literal, value: Str) -> Result<Self, crate::Error> {
         match node {
             rlt::Literal::Binary(_) => {
+                if !value.len() > 2 {
+                    return Err(WrongLiteralLength(node.location(), value.len()));
+                }
                 let digits = &value[2..];
-                Self::Integer(i128::from_str_radix(digits, 2).unwrap())
+                i128::from_str_radix(digits, 2)
+                    .map_err(|e| CannotParseInt(node.location(), e))
+                    .map(Self::Integer)
             }
             rlt::Literal::Octal(_) => {
+                if !value.len() > 2 {
+                    return Err(WrongLiteralLength(node.location(), value.len()));
+                }
                 let digits = &value[2..];
-                Self::Integer(i128::from_str_radix(digits, 8).unwrap())
+                i128::from_str_radix(digits, 8)
+                    .map_err(|e| CannotParseInt(node.location(), e))
+                    .map(Self::Integer)
             }
             rlt::Literal::Hex(_) => {
+                if !value.len() > 2 {
+                    return Err(WrongLiteralLength(node.location(), value.len()));
+                }
                 let digits = &value[2..];
-                Self::Integer(i128::from_str_radix(digits, 16).unwrap())
+                i128::from_str_radix(digits, 16)
+                    .map_err(|e| CannotParseInt(node.location(), e))
+                    .map(Self::Integer)
             }
             rlt::Literal::Floating(_) => {
                 if value.contains('.') {
-                    Self::Floating(
-                        value
-                            .parse()
-                            .expect("Cannot have literals more that f64 can hold"),
-                    )
+                    value
+                        .parse()
+                        .map_err(|e| CannotParseFloat(node.location(), e))
+                        .map(Self::Floating)
                 } else {
-                    Self::Integer(
-                        value
-                            .parse()
-                            .expect("Cannot have literals more that i128 can hold"),
-                    )
+                    value
+                        .parse()
+                        .map_err(|e| CannotParseInt(node.location(), e))
+                        .map(Self::Integer)
                 }
             }
             rlt::Literal::Char(_) => {
-                assert!(
-                    value.starts_with('\''),
-                    "Cannot have literals that does not start with quote"
-                );
-                assert!(
-                    value.ends_with('\''),
-                    "Cannot have literals that does not end with quote"
-                );
-                Self::Char(value.as_bytes()[1])
+                if !value.starts_with('\'') || !value.ends_with('\'') {
+                    return Err(NoQuotesInLiteral(node.location()));
+                }
+                if value.len() != 3 {
+                    return Err(WrongLiteralLength(node.location(), value.len()));
+                }
+                Ok(Self::Char(value.as_bytes()[1]))
             }
             rlt::Literal::String(_) => {
-                assert!(
-                    value.starts_with('"'),
-                    "Cannot have literals that does not start with quote"
-                );
-                assert!(
-                    value.ends_with('"'),
-                    "Cannot have literals that does not end with quote"
-                );
+                if !value.starts_with('"') || !value.ends_with('"') {
+                    return Err(NoQuotesInLiteral(node.location()));
+                }
                 let quotes_removed = match value {
                     Cow::Borrowed(s) => Cow::Borrowed(&s[1..s.len() - 1]),
                     Cow::Owned(mut s) => {
@@ -90,9 +98,9 @@ impl Literal {
                         Cow::Owned(s)
                     }
                 };
-                Self::String(quotes_removed)
+                Ok(Self::String(quotes_removed))
             }
-            rlt::Literal::Tuple(_) => unreachable!(),
+            rlt::Literal::Tuple(_) => unreachable!("This method called on tuple literal"),
         }
     }
 }

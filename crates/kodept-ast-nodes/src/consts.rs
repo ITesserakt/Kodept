@@ -18,7 +18,7 @@ pub enum Const {
     Value,
     Enum,
     Struct,
-    Fn
+    Fn,
 }
 
 derive_node!(Const {
@@ -31,11 +31,12 @@ relation!(Const => optional FuncDecl);
 
 impl FromSyntax<TopLevelNode> for Const {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
     fn from_syntax(
         node: &TopLevelNode,
         source: impl kodept_ast::prelude::CodeHolder,
-    ) -> Self::Bundle {
+    ) -> Result<Self::Bundle, Self::Error> {
         let id_point = match node {
             TopLevelNode::Enum(x) => x.id().location(),
             TopLevelNode::Struct(x) => x.id.location(),
@@ -47,29 +48,35 @@ impl FromSyntax<TopLevelNode> for Const {
             TopLevelNode::Struct(_) => Const::Struct,
             TopLevelNode::BodiedFunction(_) => Const::Fn,
         };
-        ASTBuilder::new(value)
-            .with_dyn_child(node, source, |node, spawner, source| {
-                match node {
-                    TopLevelNode::Enum(x) => spawner.spawn::<_, EnumDecl, _>(x, source, Either::v31),
-                    TopLevelNode::Struct(x) => spawner.spawn::<_, StructDecl, _>(x, source, Either::v32),
-                    TopLevelNode::BodiedFunction(x) => spawner.spawn::<_, FuncDecl, _>(x, source, Either::v33),
+        Ok(ASTBuilder::new(value)
+            .with_dyn_child(node, source, |node, spawner, source| match node {
+                TopLevelNode::Enum(x) => spawner.spawn::<_, EnumDecl, _>(x, source, Either::v31),
+                TopLevelNode::Struct(x) => {
+                    spawner.spawn::<_, StructDecl, _>(x, source, Either::v32)
                 }
-            })
+                TopLevelNode::BodiedFunction(x) => {
+                    spawner.spawn::<_, FuncDecl, _>(x, source, Either::v33)
+                }
+            })?
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .build()
+            .build())
     }
 }
 
 impl FromSyntax<BodiedFunction> for Const {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &BodiedFunction, source: impl kodept_ast::prelude::CodeHolder) -> Self::Bundle {
+    fn from_syntax(
+        node: &BodiedFunction,
+        source: impl kodept_ast::prelude::CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        ASTBuilder::new(Const::Fn)
+        Ok(ASTBuilder::new(Const::Fn)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_child::<_, FuncDecl, _>(node, source)
-            .build()
+            .with_child::<_, FuncDecl, _>(node, source)?
+            .build())
     }
 }

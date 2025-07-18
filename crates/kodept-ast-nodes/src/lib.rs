@@ -3,8 +3,11 @@
 
 #![feature(impl_trait_in_assoc_type)]
 
+use std::num::{ParseFloatError, ParseIntError};
+
 use bevy_ecs::relationship::{RelatedSpawner, Relationship};
 use kodept_ast::syntax_tree::experimental::BundleUnion;
+use kodept_rlt::exported::CodePoint;
 
 pub mod block_level;
 pub mod code_flow;
@@ -19,6 +22,14 @@ pub mod term;
 pub mod top_level;
 pub mod types;
 mod utils;
+
+#[derive(Debug)]
+pub enum Error {
+    NoQuotesInLiteral(CodePoint),
+    WrongLiteralLength(CodePoint, usize),
+    CannotParseFloat(CodePoint, ParseFloatError),
+    CannotParseInt(CodePoint, ParseIntError),
+}
 
 enum Either<A, B> {
     Left(A),
@@ -150,7 +161,7 @@ impl<A, B, C, D, E, F> Either<Either<Either<A, B>, Either<C, D>>, Either<E, F>> 
     }
 }
 
-impl<A, B, C, D, E, F, G> Either<Either<Either<A, B>, Either<C, D>>, Either<Either<F, G>, E>> {
+impl<A, B, C, D, E, F, G> Either<Either<Either<A, B>, Either<C, D>>, Either<Either<E, F>, G>> {
     #[inline(always)]
     pub(crate) fn v71(value: A) -> Self {
         Either::Left(Either::Left(Either::Left(value)))
@@ -173,16 +184,16 @@ impl<A, B, C, D, E, F, G> Either<Either<Either<A, B>, Either<C, D>>, Either<Eith
 
     #[inline(always)]
     pub(crate) fn v75(value: E) -> Self {
-        Either::Right(Either::Right(value))
-    }
-
-    #[inline(always)]
-    pub(crate) fn v76(value: F) -> Self {
         Either::Right(Either::Left(Either::Left(value)))
     }
 
     #[inline(always)]
-    pub(crate) fn v77(value: G) -> Self {
+    pub(crate) fn v76(value: F) -> Self {
         Either::Right(Either::Left(Either::Right(value)))
+    }
+
+    #[inline(always)]
+    pub(crate) fn v77(value: G) -> Self {
+        Either::Right(Either::Right(value))
     }
 }

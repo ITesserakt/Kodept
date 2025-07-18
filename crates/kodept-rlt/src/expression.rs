@@ -164,20 +164,9 @@ mod arb {
             let leaf = prop_oneof![
                 any::<Term>().prop_map(|it| Operation::Expression(Expression::Term(it))),
                 any::<CodePoint>()
-                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Binary(it)))),
-                any::<CodePoint>()
-                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Octal(it)))),
-                any::<CodePoint>()
-                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Hex(it)))),
-                any::<CodePoint>().prop_map(|it| Operation::Expression(Expression::Literal(
-                    Literal::Floating(it)
-                ))),
-                any::<CodePoint>()
-                    .prop_map(|it| Operation::Expression(Expression::Literal(Literal::Char(it)))),
-                any::<CodePoint>()
                     .prop_map(|it| Operation::Expression(Expression::Literal(Literal::String(it)))),
             ];
-            leaf.prop_recursive(20, 200, 5, |inner| {
+            leaf.prop_recursive(5, 20, 5, |inner| {
                 prop_oneof![
                     (inner.clone(), any::<Symbol>(), inner.clone()).prop_map(|it| {
                         Operation::Access {

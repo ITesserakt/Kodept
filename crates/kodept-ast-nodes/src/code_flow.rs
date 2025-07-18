@@ -52,37 +52,49 @@ relation!(ElseExpr => child Exprs);
 
 impl FromSyntax<kodept_rlt::prelude::IfExpr> for IfExpr {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &kodept_rlt::prelude::IfExpr, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(IfExpr)
+    fn from_syntax(
+        node: &kodept_rlt::prelude::IfExpr,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(IfExpr)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.condition, source, unwrap_operation)
-            .with_children::<_, ElifExpr, _>(node.elif.as_ref(), source)
-            .with_opt_child::<_, ElseExpr, _>(node.el.as_ref(), source)
-            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)
-            .build()
+            .with_dyn_child(&node.condition, source, unwrap_operation)?
+            .with_children::<_, ElifExpr, _>(node.elif.as_ref(), source)?
+            .with_opt_child::<_, ElseExpr, _>(node.el.as_ref(), source)?
+            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)?
+            .build())
     }
 }
 
 impl FromSyntax<kodept_rlt::prelude::ElifExpr> for ElifExpr {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &kodept_rlt::prelude::ElifExpr, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(ElifExpr)
+    fn from_syntax(
+        node: &kodept_rlt::prelude::ElifExpr,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(ElifExpr)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.condition, source, unwrap_operation)
-            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)
-            .build()
+            .with_dyn_child(&node.condition, source, unwrap_operation)?
+            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)?
+            .build())
     }
 }
 
 impl FromSyntax<kodept_rlt::prelude::ElseExpr> for ElseExpr {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &kodept_rlt::prelude::ElseExpr, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(ElseExpr)
+    fn from_syntax(
+        node: &kodept_rlt::prelude::ElseExpr,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(ElseExpr)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.body, source, unwrap_body)
-            .build()
+            .with_dyn_child(&node.body, source, unwrap_body)?
+            .build())
     }
 }

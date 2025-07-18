@@ -16,6 +16,7 @@ pub mod prelude {
 }
 
 pub mod exported {
+    pub use kodept_core::code_point::{CodePoint, Span};
     pub use kodept_core::structure::{Located, SpanBounds};
 }
 

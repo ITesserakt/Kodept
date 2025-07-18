@@ -8,8 +8,9 @@ impl<T: BasicCodeHolder<Str = Str>> CodeHolder for T {}
 
 pub trait FromSyntax<Syntax>: Sized {
     type Bundle: Bundle;
+    type Error: Send + 'static;
 
-    fn from_syntax(node: &Syntax, source: impl CodeHolder) -> Self::Bundle;
+    fn from_syntax(node: &Syntax, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error>;
 }
 
 pub trait ASTNode: Component {}

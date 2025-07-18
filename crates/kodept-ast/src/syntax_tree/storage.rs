@@ -20,13 +20,16 @@ pub struct SourceCode<S: CodeHolder> {
 
 impl AST {
     #[allow(unsafe_code)]
-    pub fn recursively_build<Root>(start: RLT, source_code: SourceCode<impl CodeHolder>) -> Self
+    pub fn recursively_build<Root>(
+        start: RLT,
+        source_code: SourceCode<impl CodeHolder>,
+    ) -> Result<Self, Root::Error>
     where
         Root: FromSyntax<kodept_rlt::prelude::File>,
     {
         let mut world = World::new();
         let mut syntax = SyntaxResolver::empty(start);
-        let whole_part = Root::from_syntax(syntax.root(), source_code.code);
+        let whole_part = Root::from_syntax(syntax.root(), source_code.code)?;
         let id = unsafe { syntax.link(std::mem::transmute(SyntaxVariant::from(syntax.root()))) };
         world.insert_resource(syntax);
         let mut entity = world.spawn((
@@ -36,7 +39,7 @@ impl AST {
             whole_part,
         ));
         entity.insert(Lexeme(id));
-        AST { world }
+        Ok(AST { world })
     }
 
     pub fn interact(&mut self) -> Interaction<'_> {

@@ -92,10 +92,9 @@ where
         C: Bundle,
         V: BundleUnion,
     {
-        wrap(NodeBundle(
-            builder.build(),
-            unsafe { std::mem::transmute(rlt_link.into()) },
-        ))
+        wrap(NodeBundle(builder.build(), unsafe {
+            std::mem::transmute(rlt_link.into())
+        }))
     }
 
     #[allow(unsafe_code)]
@@ -105,7 +104,7 @@ where
         node: &'a T,
         source: impl CodeHolder,
         wrap: impl FnOnce(NodeBundle<U::Bundle>) -> V,
-    ) -> V
+    ) -> Result<V, U::Error>
     where
         R: HasChild<U, Tag, Arity = A>,
         U: ASTNode + FromSyntax<T>,
@@ -114,10 +113,9 @@ where
         T: 'static,
     {
         let variant = node.into();
-        wrap(NodeBundle(
-            U::from_syntax(node, source),
-            unsafe { std::mem::transmute(variant) },
-        ))
+        Ok(wrap(NodeBundle(U::from_syntax(node, source)?, unsafe {
+            std::mem::transmute(variant)
+        })))
     }
 
     pub const fn new() -> Self {
@@ -154,48 +152,47 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         }
     }
 
-    #[allow(unsafe_code)]
     pub fn with_child<'a, T, U, Tag>(
         self,
         node: &'a T,
         source: impl CodeHolder,
-    ) -> ASTBuilder<R, P, (C, ChildSpawn<T, R, U, Tag>)>
+    ) -> Result<ASTBuilder<R, P, (C, ChildSpawn<T, R, U, Tag>)>, U::Error>
     where
         R: HasChild<U, Tag>,
         U: ASTNode + FromSyntax<T>,
         &'a T: Into<SyntaxVariant<'a>>,
         T: 'static,
     {
-        let child = Self::spawner().spawn(node, source, identity);
+        let child = Self::spawner().spawn(node, source, identity)?;
         let bundle = RelationTgt::<R, U, Tag>::spawn_one(child);
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 
-    pub fn with_dyn_child<T, Tag, A, U, S>(
+    pub fn with_dyn_child<T, Tag, A, U, S, E>(
         self,
         node: T,
         source: S,
-        conversion: impl FnOnce(T, &mut NodeSpawner<R, Tag, A>, S) -> U,
-    ) -> ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>
+        conversion: impl FnOnce(T, &mut NodeSpawner<R, Tag, A>, S) -> Result<U, E>,
+    ) -> Result<ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>, E>
     where
         A: Arity,
         U: BundleUnion,
         Tag: Send + Sync + 'static,
     {
-        let child = conversion(node, &mut Self::spawner(), source);
+        let child = conversion(node, &mut Self::spawner(), source)?;
         let closure: DynSpawnFn<ContainedBy<Tag, A>> = Box::new(|spawner| {
             child.spawn_with(spawner);
         });
         let bundle = Contains::<Tag, A>::spawn(SpawnWith(closure));
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 
     #[allow(unsafe_code)]
@@ -203,7 +200,7 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         self,
         iter: impl IntoCommonIter<Item = &'a T>,
         source: impl CodeHolder,
-    ) -> ASTBuilder<R, P, (C, ChildrenSpawn<T, R, U, Tag>)>
+    ) -> Result<ASTBuilder<R, P, (C, ChildrenSpawn<T, R, U, Tag>)>, U::Error>
     where
         R: HasChild<U, Tag>,
         U: ASTNode + FromSyntax<T>,
@@ -217,32 +214,32 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         let children: ChildrenCollection<NodeBundle<U::Bundle>> = iter
             .into_iter()
             .map(|it| Self::spawner().spawn(it, source, identity))
-            .collect();
+            .collect::<Result<_, _>>()?;
         #[cfg(feature = "parallel")]
         let children: ChildrenCollection<NodeBundle<U::Bundle>> = iter
             .into_par_iter()
             .map(|it| Self::spawner().spawn(it, source, identity))
-            .collect();
+            .collect::<Result<_, _>>()?;
         let bundle = RelationTgt::<R, U, Tag>::spawn(SpawnIter(IntoIterator::into_iter(children)));
 
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 
-    #[allow(unsafe_code)]
-    pub fn with_dyn_children<'a, I, Tag, A, U>(
+    pub fn with_dyn_children<'a, I, E, Tag, A, U>(
         self,
         iter: I,
-        conversion: impl Fn(I::Item, &mut NodeSpawner<R, Tag, A>) -> U + Send + Sync,
-    ) -> ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>
+        conversion: impl Fn(I::Item, &mut NodeSpawner<R, Tag, A>) -> Result<U, E> + Send + Sync,
+    ) -> Result<ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>, E>
     where
         I: IntoCommonIter,
         A: Arity,
         Tag: Send + Sync + 'static,
         U: BundleUnion,
+        E: Send,
     {
         #[cfg(feature = "parallel")]
         use rayon::prelude::*;
@@ -251,39 +248,42 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         let bundles: ChildrenCollection<U> = iter
             .into_iter()
             .map(|it| conversion(it, &mut Self::spawner()))
-            .collect();
+            .collect::<Result<_, _>>()?;
         #[cfg(feature = "parallel")]
         let bundles: ChildrenCollection<U> = iter
             .into_par_iter()
             .map(|it| conversion(it, &mut Self::spawner()))
-            .collect();
+            .collect::<Result<_, _>>()?;
         let closure: DynSpawnFn<ContainedBy<Tag, A>> = Box::new(move |spawner| {
             for bundle in bundles {
                 bundle.spawn_with(spawner);
             }
         });
         let bundle = Contains::<Tag, A>::spawn(SpawnWith(closure));
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 
     pub fn with_opt_child<'a, T, U, Tag>(
         self,
         node: Option<&'a T>,
         source: impl CodeHolder,
-    ) -> ASTBuilder<
-        R,
-        P,
-        (
-            C,
-            SpawnRelatedBundle<
-                Relation<R, U, Tag>,
-                SpawnIter<smallvec::IntoIter<[NodeBundle<U::Bundle>; 1]>>,
-            >,
-        ),
+    ) -> Result<
+        ASTBuilder<
+            R,
+            P,
+            (
+                C,
+                SpawnRelatedBundle<
+                    Relation<R, U, Tag>,
+                    SpawnIter<smallvec::IntoIter<[NodeBundle<U::Bundle>; 1]>>,
+                >,
+            ),
+        >,
+        U::Error,
     >
     where
         R: HasChild<U, Tag>,
@@ -293,13 +293,13 @@ impl<R, P, C> ASTBuilder<R, P, C> {
     {
         let bundles: SmallVec<[_; 1]> = IntoIterator::into_iter(node)
             .map(|it| Self::spawner().spawn(it, source, identity))
-            .collect();
+            .collect::<Result<_, _>>()?;
         let bundle = RelationTgt::<R, U, Tag>::spawn(SpawnIter(IntoIterator::into_iter(bundles)));
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 
     pub fn with_opt_dyn_child<T, Tag, A, U, S>(
@@ -325,68 +325,78 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         }
     }
 
-    pub fn with_opt_dyn_children<'a, I, Tag, A, U>(
+    pub fn with_opt_dyn_children<'a, I, Tag, A, U, E>(
         self,
         iter: Option<I>,
-        conversion: impl Fn(I::Item, &mut NodeSpawner<R, Tag, A>) -> U + Send + Sync,
-    ) -> ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>
+        conversion: impl Fn(I::Item, &mut NodeSpawner<R, Tag, A>) -> Result<U, E> + Send + Sync,
+    ) -> Result<ASTBuilder<R, P, (C, DynChildrenSpawn<Tag, A>)>, E>
     where
         I: IntoCommonIter,
         A: Arity,
         U: BundleUnion,
         Tag: Send + Sync + 'static,
+        E: Send,
     {
         #[cfg(feature = "parallel")]
         use rayon::prelude::*;
 
         #[cfg(not(feature = "parallel"))]
-        let bundles: Option<ChildrenCollection<U>> = iter.map(|it| {
-            it.into_iter()
-                .map(|it| conversion(it, &mut Self::spawner()))
-                .collect()
-        });
+        let bundles: Option<ChildrenCollection<U>> = match iter {
+            Some(it) => Some(
+                it.into_iter()
+                    .map(|it| conversion(it, &mut Self::spawner()))
+                    .collect::<Result<_, _>>()?,
+            ),
+            None => None,
+        };
         #[cfg(feature = "parallel")]
-        let bundles: Option<ChildrenCollection<U>> = iter.map(|it| {
-            it.into_par_iter()
-                .map(|it| conversion(it, &mut Self::spawner()))
-                .collect()
-        });
+        let bundles: Option<ChildrenCollection<U>> = match iter {
+            Some(it) => Some(
+                it.into_par_iter()
+                    .map(|it| conversion(it, &mut Self::spawner()))
+                    .collect::<Result<_, _>>()?,
+            ),
+            None => None,
+        };
         let closure: DynSpawnFn<ContainedBy<Tag, A>> = Box::new(move |spawner| {
             for bundle in IntoIterator::into_iter(bundles).flatten() {
                 bundle.spawn_with(spawner);
             }
         });
         let bundle = Contains::<Tag, A>::spawn(SpawnWith(closure));
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 
     pub fn with_opt_children<'a, T, U, Tag>(
         self,
         iter: Option<impl IntoCommonIter<Item = &'a T>>,
         source: impl CodeHolder,
-    ) -> ASTBuilder<
-        R,
-        P,
-        (
-            C,
-            SpawnRelatedBundle<
-                Relation<R, U, Tag>,
-                SpawnIter<
-                    std::iter::Flatten<
-                        std::option::IntoIter<
-                            ChildrenCollection<
-                                NodeBundle<<U as FromSyntax<T>>::Bundle>,
-                                SMALLVEC_CAPACITY,
+    ) -> Result<
+        ASTBuilder<
+            R,
+            P,
+            (
+                C,
+                SpawnRelatedBundle<
+                    Relation<R, U, Tag>,
+                    SpawnIter<
+                        std::iter::Flatten<
+                            std::option::IntoIter<
+                                ChildrenCollection<
+                                    NodeBundle<<U as FromSyntax<T>>::Bundle>,
+                                    SMALLVEC_CAPACITY,
+                                >,
                             >,
                         >,
                     >,
                 >,
-            >,
-        ),
+            ),
+        >,
+        U::Error,
     >
     where
         R: HasChild<U, Tag>,
@@ -398,25 +408,31 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         use rayon::prelude::*;
 
         #[cfg(not(feature = "parallel"))]
-        let children: Option<ChildrenCollection<NodeBundle<U::Bundle>>> = iter.map(|it| {
-            it.into_iter()
-                .map(|it| Self::spawner().spawn(it, source, identity))
-                .collect()
-        });
+        let children: Option<ChildrenCollection<NodeBundle<U::Bundle>>> = match iter {
+            Some(it) => Some(
+                it.into_iter()
+                    .map(|it| Self::spawner().spawn(it, source, identity))
+                    .collect::<Result<_, _>>()?,
+            ),
+            None => None,
+        };
         #[cfg(feature = "parallel")]
-        let children: Option<ChildrenCollection<NodeBundle<U::Bundle>>> = iter.map(|it| {
-            it.into_par_iter()
-                .map(|it| Self::spawner().spawn(it, source, identity))
-                .collect()
-        });
+        let children: Option<ChildrenCollection<NodeBundle<U::Bundle>>> = match iter {
+            Some(it) => Some(
+                it.into_par_iter()
+                    .map(|it| Self::spawner().spawn(it, source, identity))
+                    .collect::<Result<_, _>>()?,
+            ),
+            None => None,
+        };
         let bundle =
             RelationTgt::<R, U, Tag>::spawn(SpawnIter(IntoIterator::into_iter(children).flatten()));
 
-        ASTBuilder {
+        Ok(ASTBuilder {
             root: self.root,
             properties: self.properties,
             children: (self.children, bundle),
-        }
+        })
     }
 }
 

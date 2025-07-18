@@ -42,8 +42,9 @@ relation!(InitVar => optional Tuple);
 
 impl FromSyntax<Variable> for VarDecl {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &Variable, source: impl CodeHolder) -> Self::Bundle {
+    fn from_syntax(node: &Variable, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
         let (kind, id, ty) = match node {
             Variable::Immutable {
                 id, assigned_type, ..
@@ -53,24 +54,28 @@ impl FromSyntax<Variable> for VarDecl {
             } => (VarDecl::Mutable, id, assigned_type),
         };
         let name = source.get_chunk_located(id);
-        ASTBuilder::new(kind)
+        Ok(ASTBuilder::new(kind)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
             .with_dyn_children(ty.as_ref().map(|it| &it.1), |it, spawner| {
                 unwrap_type(it, spawner, source)
-            })
-            .build()
+            })?
+            .build())
     }
 }
 
 impl FromSyntax<InitializedVariable> for InitVar {
     type Bundle = impl Bundle;
+    type Error = crate::Error;
 
-    fn from_syntax(node: &InitializedVariable, source: impl CodeHolder) -> Self::Bundle {
-        ASTBuilder::new(InitVar)
+    fn from_syntax(
+        node: &InitializedVariable,
+        source: impl CodeHolder,
+    ) -> Result<Self::Bundle, Self::Error> {
+        Ok(ASTBuilder::new(InitVar)
             .with_property(SourceSpan(node.bounds()))
-            .with_child::<_, VarDecl, _>(&node.variable, source)
-            .with_dyn_child(&node.expression, source, unwrap_operation)
-            .build()
+            .with_child::<_, VarDecl, _>(&node.variable, source)?
+            .with_dyn_child(&node.expression, source, unwrap_operation)?
+            .build())
     }
 }

@@ -1,4 +1,5 @@
 pub enum HeapProfilerGuard {
+    #[cfg(not(feature = "profiler"))]
     Empty,
     #[cfg(feature = "profiler")]
     Wrapper(implementation::HeapProfiler),

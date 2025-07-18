@@ -1,4 +1,5 @@
 use crate::prelude::ExtractSymbolsPass;
+use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
@@ -11,12 +12,13 @@ use bevy_ecs::prelude::{
     ChildOf, Commands, Entity, Has, IntoScheduleConfigs, Name, Populated, Query, SystemSet, With,
     Without,
 };
-use bevy_ecs::query::{Added, AnyOf};
+use bevy_ecs::query::{Added, AnyOf, Or};
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use bevy_ecs::resource::Resource;
 use bevy_ecs::system::{Res, ResMut};
 use kodept_ast::prelude::HierarchicalQuery;
-use kodept_ast::properties::SourceSpan;
+use kodept_ast::properties::{Lexeme, SourceSpan};
+use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::Str;
 use kodept_ast_nodes::expression::BinExpr;
 use kodept_ast_nodes::file::ModDecl;
@@ -24,8 +26,8 @@ use kodept_ast_nodes::properties::Rhs;
 use kodept_ast_nodes::term::{Ref, ReferenceContext};
 use kodept_ast_nodes::types::Ty;
 use kodept_report::message::Diagnostic;
-use kodept_report::prelude::{Label, Severity};
-use kodept_report::traits::IntoSpannedReportMessage;
+use kodept_report::prelude::{Label, ReportMessage, Severity};
+use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
 use std::convert::Infallible;
 use std::iter::once;
 use tracing::debug;
@@ -86,6 +88,7 @@ impl Interaction for ReferenceResolverPass {
         ctx.register(add_references_into_unresolved_system);
         ctx.register(debug_unresolved_amount_system);
         ctx.register(remove_resolved_references_from_unresolved_system);
+        ctx.register(debug_resolved_refs_system);
         ctx.configure_sets((ExtractSymbolsPass, ReferenceResolverPass).chain());
     }
 }
@@ -107,7 +110,7 @@ fn defer_reference_resolution_in_accesses_system(
 }
 
 fn add_references_into_unresolved_system(
-    query: Query<Entity, Added<Ref>>,
+    query: Query<Entity, Or<(Added<Ref>, Added<Ty>)>>,
     mut unresolved_refs: ResMut<UnresolvedReferences>,
 ) {
     for id in query {
@@ -124,8 +127,24 @@ fn remove_resolved_references_from_unresolved_system(
     }
 }
 
+fn debug_resolved_refs_system(
+    query: Populated<&Lexeme, Added<RefToSymbol>>,
+    reporter: Reporter,
+    points: Res<SyntaxResolver>,
+) {
+    for lexeme in query.iter() {
+        let msg = ReportMessage::new(Severity::Note, "Reference resolved")
+            .with_node_location(points.get_location(lexeme.0));
+        reporter.report(msg);
+    }
+}
+
 fn debug_unresolved_amount_system(unresolved_refs: Res<UnresolvedReferences>) {
-    debug!("Still not resolved {} references", unresolved_refs.len());
+    debug!(
+        "Still not resolved {} references: {:?}",
+        unresolved_refs.len(),
+        unresolved_refs.0
+    );
 }
 
 const CANNOT_GET_SYMBOL_TABLE_FAILURE: &'static str = "Cannot get symbol table for given scope";
