@@ -6,14 +6,18 @@ use kodept_report::report::Report;
 use kodept_report::FileId;
 use std::ops::ControlFlow::{Break, Continue};
 
-pub trait ExtractReports {
+pub struct SingleExtractMarker;
+pub struct ResultExtractMarker;
+pub struct IterExtractMarker;
+
+pub trait ExtractReports<Marker> {
     type Output;
 
     #[allow(private_bounds)]
     fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
-        FileId: CorrectFileId + Clone;
+        FileId: CorrectFileId;
 
     fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
     where
@@ -64,9 +68,32 @@ impl CorrectFileId for FileId {
     }
 }
 
-impl<T, E> ExtractReports for Result<T, E>
+impl<T> ExtractReports<SingleExtractMarker> for T
 where
-    E: IntoSpannedReportMessage,
+    T: IntoSpannedReportMessage,
+{
+    type Output = Execution<()>;
+
+    #[allow(private_bounds)]
+    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+        FileId: CorrectFileId,
+    {
+        sink.report(file_id, self)
+    }
+
+    fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+    {
+        sink.report(self)
+    }
+}
+
+impl<T, E, M> ExtractReports<(ResultExtractMarker, M)> for Result<T, E>
+where
+    E: ExtractReports<M>,
 {
     type Output = Execution<T>;
 
@@ -79,7 +106,7 @@ where
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
-                _ = sink.report(file_id, e);
+                e.extract_reports(file_id, sink);
                 Break(())
             }
         }
@@ -92,15 +119,16 @@ where
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
-                _ = sink.report(e);
+                e.extract_reports_global(sink);
                 Break(())
             }
         }
     }
 }
 
-impl<E> ExtractReports for Vec<E>
+impl<I, E> ExtractReports<IterExtractMarker> for I
 where
+    I: IntoIterator<Item = E>,
     E: IntoSpannedReportMessage,
 {
     type Output = Execution<()>;
@@ -109,29 +137,15 @@ where
     fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
-        FileId: CorrectFileId + Clone,
+        FileId: CorrectFileId,
     {
-        let mut result = Continue(());
-        for item in self {
-            result = match sink.report(file_id.clone(), item) {
-                Continue(_) => result,
-                Break(_) => Break(())
-            }
-        }
-        result
+        sink.report_many(file_id, self)
     }
 
     fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
     {
-        let mut result = Continue(());
-        for item in self {
-            result = match sink.report(item) {
-                Continue(_) => result,
-                Break(_) => Break(())
-            }
-        }
-        result
+        sink.0.report_many((), self)
     }
 }

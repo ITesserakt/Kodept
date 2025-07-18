@@ -1,4 +1,3 @@
-#[cfg(not(feature = "interning"))]
 use kodept::report::Reports;
 use kodept::source::collection::SourceView;
 use kodept_ast::syntax_tree::prelude::{SourceCode, AST};
@@ -6,7 +5,7 @@ use kodept_ast_nodes::file::FileDecl;
 use kodept_ast_nodes::Error;
 use kodept_core::file_name::FileDescriptor;
 use kodept_core::structure::span::CodeHolder;
-#[cfg(not(feature = "interning"))]
+use kodept_frontend::prelude::ExtractReports;
 use kodept_frontend::Execution;
 use kodept_report::{
     prelude::{Diagnostic, Severity},
@@ -49,14 +48,9 @@ pub fn build_ast(source: &SourceView, rlt: RLT, reports: &Reports) -> Execution<
             code_holder,
             FileDescriptor::new(source.path().clone(), *source.id),
         ),
-    );
-    let ast = match ast {
-        Ok(x) => x,
-        Err(e) => {
-            reports.report(*source.id, Wrapper(e));
-            return Execution::Break(());
-        }
-    };
+    )
+    .map_err(Wrapper)
+    .extract_reports(*source.id, reports)?;
     let metrics = kodept_interning::metrics::InterningMetrics::gather();
     let (saved_value, saved_suffix) = metrics.memory_save();
     tracing::debug!(
@@ -71,18 +65,13 @@ pub fn build_ast(source: &SourceView, rlt: RLT, reports: &Reports) -> Execution<
 #[cfg(not(feature = "interning"))]
 pub fn build_ast(source: &SourceView, rlt: RLT, reports: &Reports) -> Execution<AST> {
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
-    let result = AST::recursively_build::<FileDecl>(
+    AST::recursively_build::<FileDecl>(
         rlt,
         SourceCode::new(
             code_holder,
             FileDescriptor::new(source.path().clone(), *source.id),
         ),
-    );
-    match result {
-        Ok(x) => Execution::Continue(x),
-        Err(e) => {
-            reports.report(*source.id, Wrapper(e))?;
-            Execution::Break(())
-        }
-    }
+    )
+    .map_err(Wrapper)
+    .extract_reports(*source.id, reports)
 }

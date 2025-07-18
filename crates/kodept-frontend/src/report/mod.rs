@@ -1,15 +1,17 @@
 use crate::prelude::{Source, SourceFiles};
 use crate::report::utils::CorrectFileId;
 use crate::Execution;
-use std::mem::take;
-use std::ops::ControlFlow::{Break, Continue};
-use std::ops::Range;
-use std::sync::{Arc, Mutex};
 use kodept_report::codespan::{CodespanSettings, Reportable};
 use kodept_report::files::external::{Error, Files};
 use kodept_report::message::{ReportMessage, Severity};
 use kodept_report::report::Report;
 use kodept_report::traits::{ad_hoc_message, IntoSpannedReportMessage, MessageBehaviour};
+use std::borrow::Cow;
+use std::collections::HashSet;
+use std::mem::take;
+use std::ops::ControlFlow::{Break, Continue};
+use std::ops::Range;
+use std::sync::{Arc, Mutex};
 
 mod utils;
 
@@ -149,6 +151,64 @@ where
         F::insert(self, report);
     }
 
+    fn report_failure(&self, reason: Cow<'static, str>) {
+        match reason {
+            Cow::Borrowed("") => {
+                let message =
+                    ad_hoc_message(|| ReportMessage::new(Severity::Error, "Cannot proceed"));
+                <()>::insert(self, Report::from_message((), message));
+            }
+            otherwise => {
+                let message = ad_hoc_message(|| {
+                    ReportMessage::new(Severity::Error, "Cannot proceed").with_note(otherwise)
+                });
+                <()>::insert(self, Report::from_message((), message));
+            }
+        }
+    }
+
+    #[allow(private_bounds)]
+    pub fn report_many<F, T>(
+        &self,
+        file_id: F,
+        messages: impl IntoIterator<Item = T>,
+    ) -> Execution<()>
+    where
+        F: CorrectFileId,
+        T: IntoSpannedReportMessage,
+    {
+        let mut behaviour = None;
+        for message in messages {
+            match message.behaviour() {
+                MessageBehaviour::FailFast { reason } => match &mut behaviour {
+                    None => behaviour = Some(HashSet::from([reason])),
+                    Some(reasons) => {
+                        reasons.insert(reason);
+                    }
+                },
+                MessageBehaviour::Suppress => {}
+            }
+            F::insert(self, Report::from_message(file_id.clone(), message));
+        }
+        match behaviour {
+            Some(reasons) => {
+                let message = ad_hoc_message(move || {
+                    let mut d = ReportMessage::new(Severity::Error, "Cannot proceed");
+                    for reason in reasons {
+                        match reason {
+                            Cow::Borrowed("") => {}
+                            _ => d = d.with_note(reason),
+                        }
+                    }
+                    d
+                });
+                <()>::insert(self, Report::from_message((), message));
+                Break(())
+            }
+            None => Continue(()),
+        }
+    }
+
     #[allow(private_bounds)]
     pub fn report<F, T>(&self, file_id: F, message: T) -> Execution<()>
     where
@@ -159,11 +219,7 @@ where
         F::insert(self, Report::from_message(file_id, message));
         match behaviour {
             MessageBehaviour::FailFast { reason } => {
-                let message = ad_hoc_message(|| {
-                    ReportMessage::new(Severity::Error, "Cannot proceed".to_string())
-                        .with_note(reason)
-                });
-                <()>::insert(self, Report::from_message((), message));
+                self.report_failure(reason);
                 Break(())
             }
             MessageBehaviour::Suppress => Continue(()),
