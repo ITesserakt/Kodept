@@ -87,6 +87,12 @@ impl Located for Tuple {
     }
 }
 
+impl SpanBounds for Tuple {
+    fn bounds(&self) -> Span {
+        self.0.left.bounds() + self.0.right.bounds()
+    }
+}
+
 impl SpanBounds for Type {
     fn bounds(&self) -> Span {
         match self {

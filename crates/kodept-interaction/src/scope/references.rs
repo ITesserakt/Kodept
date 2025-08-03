@@ -26,8 +26,8 @@ use kodept_ast_nodes::properties::Rhs;
 use kodept_ast_nodes::term::{Ref, ReferenceContext};
 use kodept_ast_nodes::types::Ty;
 use kodept_report::message::Diagnostic;
-use kodept_report::prelude::{ReportMessage, Severity};
-use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
+use kodept_report::prelude::Severity;
+use kodept_report::traits::IntoSpannedReportMessage;
 use std::convert::Infallible;
 use std::iter::once;
 use tracing::debug;
@@ -133,9 +133,11 @@ fn debug_resolved_refs_system(
     points: Res<SyntaxResolver>,
 ) {
     for lexeme in query.iter() {
-        let msg = ReportMessage::new(Severity::Note, "Reference resolved")
-            .with_node_location(points.get_location(lexeme.0));
-        reporter.report(msg);
+        reporter.report_ad_hoc(|| {
+            Diagnostic::new(Severity::Note)
+                .with_message("Reference resolved")
+                .with_primary_label("resolved", points.get_span(lexeme.0))
+        });
     }
 }
 

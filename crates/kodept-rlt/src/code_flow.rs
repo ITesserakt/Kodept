@@ -63,6 +63,14 @@ impl Located for CodeFlow {
     }
 }
 
+impl SpanBounds for CodeFlow {
+    fn bounds(&self) -> Span {
+        match self {
+            CodeFlow::If(if_expr) => if_expr.bounds(),
+        }
+    }
+}
+
 impl SpanBounds for IfExpr {
     fn bounds(&self) -> Span {
         self.keyword.0

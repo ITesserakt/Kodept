@@ -3,6 +3,7 @@ use derive_more::{Display, From, TryInto};
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_core::Freeze;
+use kodept_rlt::exported::{Span, SpanBounds};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::RLT;
 use kodept_rlt::{new_types, prelude as rlt};
@@ -97,9 +98,9 @@ impl SyntaxResolver {
             .expect("Cannot get linked RLT node")
     }
 
-    pub fn get_location(&self, id: LexemeId) -> CodePoint {
+    pub fn get_span(&self, id: LexemeId) -> Span {
         if let Some(node) = self.mapping.get(&id) {
-            node.location()
+            node.bounds()
         } else {
             panic!("Cannot get linked RLT node")
         }
@@ -153,6 +154,41 @@ impl Located for SyntaxVariant<'_> {
             SyntaxVariant::Lambda(x) => x.location(),
             SyntaxVariant::BinaryOperationSymbol(x) => x.location(),
             SyntaxVariant::UnaryOperationSymbol(x) => x.location(),
+        }
+    }
+}
+
+impl SpanBounds for SyntaxVariant<'_> {
+    fn bounds(&self) -> Span {
+        match self {
+            SyntaxVariant::File(x) => x.bounds(),
+            SyntaxVariant::Module(x) => x.bounds(),
+            SyntaxVariant::TopLevel(x) => x.bounds(),
+            SyntaxVariant::Struct(x) => x.bounds(),
+            SyntaxVariant::Enum(x) => x.bounds(),
+            SyntaxVariant::Type(x) => x.bounds(),
+            SyntaxVariant::TypeName(x) => x.bounds(),
+            SyntaxVariant::TypedParameter(x) => x.bounds(),
+            SyntaxVariant::UntypedParameter(x) => x.bounds(),
+            SyntaxVariant::Variable(x) => x.bounds(),
+            SyntaxVariant::InitializedVariable(x) => x.bounds(),
+            SyntaxVariant::BodiedFunction(x) => x.bounds(),
+            SyntaxVariant::Body(x) => x.bounds(),
+            SyntaxVariant::BlockLevel(x) => x.bounds(),
+            SyntaxVariant::ExpressionBlock(x) => x.bounds(),
+            SyntaxVariant::Operation(x) => x.bounds(),
+            SyntaxVariant::Application(x) => x.bounds(),
+            SyntaxVariant::Expression(x) => x.bounds(),
+            SyntaxVariant::Term(x) => x.bounds(),
+            SyntaxVariant::Literal(x) => x.bounds(),
+            SyntaxVariant::CodeFlow(x) => x.bounds(),
+            SyntaxVariant::If(x) => x.bounds(),
+            SyntaxVariant::Elif(x) => x.bounds(),
+            SyntaxVariant::Else(x) => x.bounds(),
+            SyntaxVariant::Tuple(x) => x.bounds(),
+            SyntaxVariant::Lambda(x) => x.bounds(),
+            SyntaxVariant::BinaryOperationSymbol(x) => x.bounds(),
+            SyntaxVariant::UnaryOperationSymbol(x) => x.bounds(),
         }
     }
 }
