@@ -30,10 +30,12 @@ where
     type IntoParIter = I::Iter;
     type IntoIter = I::IntoIter;
 
+    #[inline]
     fn into_par_iter(self) -> Self::IntoParIter {
         <I as rayon::prelude::IntoParallelIterator>::into_par_iter(self)
     }
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         <I as IntoIterator>::into_iter(self)
     }
