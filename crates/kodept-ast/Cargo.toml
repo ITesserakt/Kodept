@@ -7,7 +7,7 @@ description = "Simple compiler with dependent types support in mind"
 repository = "https://github.com/ITesserakt/Kodept/"
 categories = ["compilers"]
 license = "Apache-2.0"
-rust-version = "1.80.0"
+rust-version = "1.86.0"
 
 [lints]
 workspace = true
@@ -17,6 +17,7 @@ workspace = true
 [features]
 default = []
 parallel = ["dep:rayon", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
+debug = ["bevy_ecs/track_location", "bevy_ecs/backtrace"]
 
 [dependencies]
 bevy_ecs.workspace = true
