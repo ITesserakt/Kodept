@@ -1,6 +1,9 @@
+use bevy_ecs::event::{Event, EventRegistry, Events};
 use bevy_ecs::prelude::{IntoScheduleConfigs, IntoSystem, Schedule, Schedules, World};
+use bevy_ecs::resource::Resource;
 use bevy_ecs::schedule::{InternedSystemSet, ScheduleLabel};
 use bevy_ecs::system::{RunSystemOnce, ScheduleSystem, SystemInput};
+use bevy_ecs::world::FromWorld;
 
 pub struct Interaction<'w> {
     world: &'w mut World,
@@ -14,6 +17,9 @@ impl<'w> Interaction<'w> {
     pub(crate) fn new(world: &'w mut World) -> Self {
         if !world.contains_resource::<Schedules>() {
             world.init_resource::<Schedules>();
+        }
+        if !world.contains_resource::<EventRegistry>() {
+            world.init_resource::<EventRegistry>();
         }
 
         Self {
@@ -32,7 +38,7 @@ impl<'w> Interaction<'w> {
         system: impl IntoSystem<I, O, M>,
     ) -> O
     where
-        I: SystemInput<Inner<'a> = Input>
+        I: SystemInput<Inner<'a> = Input>,
     {
         self.world
             .run_system_once_with(system, input)
@@ -43,14 +49,30 @@ impl<'w> Interaction<'w> {
         f(self.world)
     }
 
-    pub fn register<M>(&mut self, system: impl IntoScheduleConfigs<ScheduleSystem, M>) -> &mut Self {
+    pub fn register<M>(
+        &mut self,
+        system: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) -> &mut Self {
         self.schedule.add_systems(system);
         self
     }
-    
-    pub fn configure_sets<M>(&mut self, sets: impl IntoScheduleConfigs<InternedSystemSet, M>) -> &mut Self {
+
+    pub fn configure_sets<M>(
+        &mut self,
+        sets: impl IntoScheduleConfigs<InternedSystemSet, M>,
+    ) -> &mut Self {
         self.schedule.configure_sets(sets);
         self
+    }
+
+    pub fn init_resource<R: Resource + FromWorld>(&mut self) {
+        self.world.init_resource::<R>();
+    }
+
+    pub fn register_event<E: Event>(&mut self) {
+        if !self.world.contains_resource::<Events<E>>() {
+            EventRegistry::register_event::<E>(self.world);
+        }
     }
 
     /// Runs all registered systems once
