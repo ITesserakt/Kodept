@@ -1,14 +1,11 @@
-use crate::phase::{CurrentPhase, Phase};
 use crate::scope::storage::Scope;
 use crate::scope::Scoped;
-use crate::wrapper::InteractionExt;
-use crate::{done, fail, Ctx, Interaction};
+use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{
     Commands, IntoScheduleConfigs, Populated, Query, SystemSet, With, Without,
 };
 use bevy_ecs::relationship::Relationship;
-use bevy_ecs::system::ResMut;
 use kodept_ast::define_union;
 use kodept_ast::prelude::{AnyNodeRef, ChildOf, IntoEnum};
 use kodept_ast::properties::{Node, SourceSpan};
@@ -26,7 +23,7 @@ define_union!(enum ScopeUnion[ScopeUnionItem, ScopeUnionFilter] {
 #[derive(Debug, SystemSet, Clone, Hash, Eq, PartialEq)]
 pub struct ScopeBuildingPass;
 
-pub struct CannotLinkError(SourceSpan);
+struct CannotLinkError(SourceSpan);
 
 impl IntoSpannedReportMessage for CannotLinkError {
     type Message = Diagnostic;
@@ -44,11 +41,9 @@ impl IntoSpannedReportMessage for CannotLinkError {
 }
 
 impl Interaction for ScopeBuildingPass {
-    type Error = CannotLinkError;
-
-    fn install(ctx: &mut Ctx) {
+    fn install(ctx: &mut Ctx) -> impl Disposable + use<> {
         ctx.register(Self::link_scopes.in_set(ScopeBuildingPass));
-        ctx.register(Self::wrap_system(Self::system).in_set(ScopeBuildingPass));
+        ctx.register(wrap_system(Self::name(), Self::system).in_set(ScopeBuildingPass));
     }
 }
 
@@ -82,10 +77,8 @@ impl ScopeBuildingPass {
     fn system(
         unscoped: Populated<(AnyNodeRef, Option<&ChildOf>), (Without<Scoped>, With<Node>)>,
         scoped: Query<&Scoped>,
-        mut phase: ResMut<CurrentPhase>,
         mut commands: Commands,
-    ) -> crate::Result<CannotLinkError> {
-        **phase = Phase::ScopeBuilding;
+    ) -> Result<(), CannotLinkError> {
         let mut processed_any = false;
         let mut last_unprocessed = None;
 
@@ -105,11 +98,11 @@ impl ScopeBuildingPass {
 
         if let Some(last_unprocessed) = last_unprocessed {
             if !processed_any {
-                fail(CannotLinkError(last_unprocessed))?;
+                return Err(CannotLinkError(last_unprocessed));
             }
         }
 
-        done()
+        Ok(())
     }
 
     fn link_scopes(query: Query<(Option<&ChildOf>, &Scoped)>, mut commands: Commands) {

@@ -12,7 +12,6 @@ use kodept_inference::{
 };
 
 use crate::{
-    done,
     typing::{TypeInferHandler, Typed},
 };
 
@@ -33,12 +32,11 @@ pub(super) fn system(
     query: Query<(Entity, &Ty)>,
     mut handler: TypeInferHandler,
     mut commands: Commands,
-) -> crate::Result<Infallible> {
+) {
     let mut executor = DefaultExecutor::default();
 
     for (id, ty) in query.iter() {
         let infer = handler.infer_eagerly(ty, &mut executor).unwrap();
         commands.entity(id).insert(Typed(infer));
     }
-    done()
 }

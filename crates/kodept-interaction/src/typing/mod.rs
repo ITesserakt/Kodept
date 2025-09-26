@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use bevy_ecs::{
     component::Component,
     resource::Resource,
@@ -9,8 +7,9 @@ use kodept_inference::{
     assumption::AssumptionSet, constraint::Constraint, r#type::MonomorphicType,
 };
 
-use crate::{wrapper::InteractionExt, Interaction};
+use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
 
+mod function;
 mod literals;
 mod type_refs;
 
@@ -49,12 +48,10 @@ impl PartialInfer {
 }
 
 impl Interaction for TypeInferPass {
-    type Error = Infallible;
-
-    fn install(ctx: &mut crate::Ctx) {
+    fn install(ctx: &mut Ctx) -> impl Disposable + use<> {
         ctx.immediate_exclusive(|w| w.init_resource::<TVarGen>());
-        ctx.register(Self::wrap_system(literals::system));
-        ctx.register(Self::wrap_system(type_refs::system));
+        ctx.register(wrap_system(Self::name(), literals::system));
+        ctx.register(wrap_system(Self::name(), type_refs::system));
     }
 }
 

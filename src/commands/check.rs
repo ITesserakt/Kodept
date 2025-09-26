@@ -7,20 +7,18 @@ use crate::commands::Command;
 use clap::Parser;
 use kodept::report::GlobalReports;
 use kodept_ast::interaction::Interaction as Ctx;
-use kodept_ast::syntax_tree::prelude::AST;
 use kodept_frontend::Execution;
 use kodept_interaction::lint::{
     DebugScopesLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets,
 };
 use kodept_interaction::prelude::{
-    install_reporting_support, ExtractSymbolsPass, Phases, ReferenceResolverPass,
-    ScopeBuildingPass, TypeInferPass,
+    install_reporting_support, install_system_completion_introspection_support, Disposable,
+    ExtractSymbolsPass, Interaction, ReferenceResolverPass, ScopeBuildingPass,
 };
-use kodept_interaction::Interaction;
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
-use tracing::{debug, enabled, error_span, info, info_span, Level};
+use tracing::{enabled, error, error_span, info, info_span, trace, Level};
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -49,62 +47,56 @@ impl Command for Check {
             })?;
             let mut ast =
                 self.timings_block("AST building", || build_ast(&source, rlt, &reports))?;
+            let mut ctx = ast.interact();
 
-            self.interaction_block("Linting (first pass)", &mut ast, |ctx| {
-                install_reporting_support(ctx, {
-                    let reports = reports.clone();
-                    move |r| reports.insert(r)
-                });
-                self.install_lints(ctx);
+            install_reporting_support(&mut ctx, {
+                let reports = reports.clone();
+                move |r| reports.insert(r)
+            });
 
-                Phases::install(ctx);
-                ScopeBuildingPass::install(ctx);
-                ExtractSymbolsPass::install(ctx);
-                ReferenceResolverPass::install(ctx);
-                TypeInferPass::install(ctx);
-
-                for _ in 0..10 {
-                    ctx.launch();
-                    debug!("Pass completed");
+            install_system_completion_introspection_support(&mut ctx, |event| {
+                if let Some(reason) = &event.fail_reason {
+                    error!("System {}#{:?} failed: {reason}", event.name, event.id);
+                } else {
+                    trace!("System {}#{:?} completed", event.name, event.id);
                 }
             });
+
+            let mut block_disposal = self.timings_block("Symbols resolution", || {
+                let a = self.install_lints(&mut ctx);
+                let b = ScopeBuildingPass::install(&mut ctx);
+                let c = ExtractSymbolsPass::install(&mut ctx);
+                let d = ReferenceResolverPass::install(&mut ctx);
+
+                (a, b, c, d)
+            });
+            ast.interact()
+                .immediate_exclusive(|w| block_disposal.dispose(w));
         }
         Continue(())
     }
 }
 
 impl Check {
-    fn interaction_block<T>(
-        &self,
-        name: impl Into<Cow<'static, str>>,
-        ast: &mut AST,
-        f: impl FnOnce(&mut Ctx) -> T,
-    ) -> T {
-        let mut ctx = ast.interact();
-
-        self.timings_block(name, || f(&mut ctx))
-    }
-
-    fn install_lints(&self, ctx: &mut Ctx) {
-        SingleModuleWithBrackets::install(ctx);
-        RLTLinkLint::install(ctx);
-        ShowLints::install(ctx);
-        DebugScopesLint::install(ctx);
+    fn install_lints(&self, ctx: &mut Ctx) -> impl Disposable {
+        let a = SingleModuleWithBrackets::install(ctx);
+        let b = RLTLinkLint::install(ctx);
+        let c = ShowLints::install(ctx);
+        let d = DebugScopesLint::install(ctx);
 
         ctx.immediate_exclusive(|w| {
             let mut lint_query = w.query::<&mut LintDescriptor>();
 
             for mut descriptor in lint_query.iter_mut(w) {
-                let search = self
-                    .enabled_lints
-                    .iter()
-                    .find(|name| *name == descriptor.name());
+                let found = self.enabled_lints.iter().any(|it| it == descriptor.name());
 
-                if search.is_some() {
+                if found {
                     descriptor.enabled = true;
                 }
             }
         });
+
+        (a, b, c, d)
     }
 
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {

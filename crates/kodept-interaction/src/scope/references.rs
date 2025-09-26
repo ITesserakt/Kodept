@@ -1,21 +1,18 @@
 use crate::prelude::ExtractSymbolsPass;
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
-use crate::scope::Scoped;
+use crate::scope::{Scoped, Visibility};
 use crate::symbol::table::SymbolTable;
 use crate::symbol::{DeferRefResolution, RefToSymbol, SymbolDescription, SymbolKind};
-use crate::wrapper::InteractionExt;
-use crate::{done, Ctx, Interaction};
-use bevy_ecs::entity::EntityHashSet;
+use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
+use bevy_ecs::event::Event;
 use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{
     ChildOf, Commands, Entity, Has, IntoScheduleConfigs, Name, Populated, Query, SystemSet, With,
     Without,
 };
-use bevy_ecs::query::{Added, AnyOf, Or};
-use bevy_ecs::relationship::RelationshipSourceCollection;
-use bevy_ecs::resource::Resource;
-use bevy_ecs::system::{Res, ResMut};
+use bevy_ecs::query::{Added, AnyOf};
+use bevy_ecs::system::Res;
 use kodept_ast::prelude::HierarchicalQuery;
 use kodept_ast::properties::{Lexeme, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
@@ -28,39 +25,27 @@ use kodept_ast_nodes::types::Ty;
 use kodept_report::message::Diagnostic;
 use kodept_report::prelude::Severity;
 use kodept_report::traits::IntoSpannedReportMessage;
-use std::convert::Infallible;
 use std::iter::once;
-use tracing::debug;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, SystemSet)]
 pub struct ReferenceResolverPass;
 
-#[derive(Debug, Resource)]
-pub(crate) struct UnresolvedReferences(EntityHashSet);
+/// Event that happens when a corresponding symbol is found for either `Ref` or `Ty`.
+///
+/// *This event is EntityEvent and target entity is reference itself*
+#[derive(Debug, Event)]
+pub(crate) struct ResolvedEvent {
+    /// Id of a scope that contains found symbol
+    pub scope_id: Entity,
+    pub visibility: Visibility,
+    pub kind: SymbolKind,
+}
 
 #[derive(Debug)]
 struct ReferenceNotResolvedError {
     ref_name: Str,
     ref_span: SourceSpan,
     resolved_scope_span: Option<SourceSpan>,
-}
-
-impl UnresolvedReferences {
-    fn insert(&mut self, value: Entity) {
-        self.0.insert(value);
-    }
-
-    fn remove(&mut self, value: Entity) {
-        self.0.remove(value);
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = Entity> + '_ {
-        self.0.iter().copied()
-    }
 }
 
 impl IntoSpannedReportMessage for ReferenceNotResolvedError {
@@ -74,20 +59,16 @@ impl IntoSpannedReportMessage for ReferenceNotResolvedError {
 }
 
 impl Interaction for ReferenceResolverPass {
-    type Error = Infallible;
-
-    fn install(ctx: &mut Ctx) {
+    fn install(ctx: &mut Ctx) -> impl Disposable + use<> {
         let set = (
             defer_reference_resolution_in_accesses_system,
-            Self::wrap_system(system).in_set(ReferenceResolverPass),
+            wrap_system(Self::name(), system).in_set(ReferenceResolverPass),
         )
             .chain();
 
-        ctx.immediate_exclusive(|w| w.insert_resource(UnresolvedReferences(EntityHashSet::new())));
+        ctx.register_event::<ResolvedEvent>();
+        
         ctx.register(set);
-        ctx.register(add_references_into_unresolved_system);
-        ctx.register(debug_unresolved_amount_system);
-        ctx.register(remove_resolved_references_from_unresolved_system);
         ctx.register(debug_resolved_refs_system);
         ctx.configure_sets((ExtractSymbolsPass, ReferenceResolverPass).chain());
     }
@@ -109,24 +90,6 @@ fn defer_reference_resolution_in_accesses_system(
     }
 }
 
-fn add_references_into_unresolved_system(
-    query: Query<Entity, Or<(Added<Ref>, Added<Ty>)>>,
-    mut unresolved_refs: ResMut<UnresolvedReferences>,
-) {
-    for id in query {
-        unresolved_refs.insert(id);
-    }
-}
-
-fn remove_resolved_references_from_unresolved_system(
-    query: Query<Entity, Added<RefToSymbol>>,
-    mut unresolved_refs: ResMut<UnresolvedReferences>,
-) {
-    for id in query {
-        unresolved_refs.remove(id);
-    }
-}
-
 fn debug_resolved_refs_system(
     query: Populated<&Lexeme, Added<RefToSymbol>>,
     reporter: Reporter,
@@ -139,14 +102,6 @@ fn debug_resolved_refs_system(
                 .with_primary_label("resolved", points.get_span(lexeme.0))
         });
     }
-}
-
-fn debug_unresolved_amount_system(unresolved_refs: Res<UnresolvedReferences>) {
-    debug!(
-        "Still not resolved {} references: {:?}",
-        unresolved_refs.len(),
-        unresolved_refs.0
-    );
 }
 
 const CANNOT_GET_SYMBOL_TABLE_FAILURE: &'static str = "Cannot get symbol table for given scope";
@@ -249,7 +204,7 @@ fn system(
     scopes: Query<&Scope>,
     modules: Query<Has<ModDecl>>,
     mut commands: Commands,
-) -> crate::Result<Infallible> {
+) {
     for (id, reference, scoped, _) in references.iter() {
         let (context, mut symbol_description) = match reference {
             (None, None) => unreachable!("It's guaranteed to have either `ref` or `ty`"),
@@ -317,6 +272,4 @@ fn system(
             commands.entity(id).insert(ref_to_symbol);
         }
     }
-
-    done()
 }

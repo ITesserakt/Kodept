@@ -13,7 +13,6 @@ use kodept_inference::{
 };
 
 use crate::{
-    done,
     typing::{TypeInferHandler, Typed},
 };
 
@@ -63,14 +62,13 @@ pub(super) fn system(
     literals: Populated<(Entity, &Literal), Without<Typed>>,
     mut handler: TypeInferHandler,
     mut commands: Commands,
-) -> crate::Result<Infallible> {
+) {
     let mut executor = DefaultExecutor::default();
 
     for (id, literal) in literals.iter() {
         let infer = handler.infer_eagerly(literal, &mut executor).unwrap();
         commands.entity(id).insert(Typed(infer));
     }
-    done()
 }
 
 #[cfg(test)]

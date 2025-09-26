@@ -6,10 +6,11 @@ use bevy_ecs::prelude::{Entity, Query, RelationshipTarget};
 use bevy_ecs::query::{QueryEntityError, QueryFilter};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::system::SystemParam;
-use derive_more::{Display, Error};
+use derive_more::{Display, Error, From};
 use smallvec::SmallVec;
 use std::convert::Infallible;
 use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 
 type Rel<T, U, Tag> = <T as NodeRelationship<U, Tag>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
@@ -51,6 +52,56 @@ pub enum OptionChildError {
     AtLeastTwo(#[error(not(source))] usize),
 }
 
+#[derive(From)]
+pub enum HierarchicalError<T: TryFromIter> {
+    #[from(ignore)]
+    WrongContainerSize(T::Error),
+    CannotQuery(QueryEntityError),
+}
+
+impl<T: TryFromIter> Debug for HierarchicalError<T>
+where
+    T::Error: Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HierarchicalError::WrongContainerSize(x) => f
+                .debug_tuple("HierarchicalError::WrongContainerSize")
+                .field(x)
+                .finish(),
+            HierarchicalError::CannotQuery(x) => f
+                .debug_tuple("HierarchicalError::CannotQuery")
+                .field(x)
+                .finish(),
+        }
+    }
+}
+
+impl<T: TryFromIter> Display for HierarchicalError<T>
+where
+    T::Error: Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HierarchicalError::WrongContainerSize(x) => {
+                write!(f, "Wrong container size: {x}")
+            }
+            HierarchicalError::CannotQuery(x) => {
+                write!(f, "{x}")
+            }
+        }
+    }
+}
+
+impl<T: TryFromIter> std::error::Error for HierarchicalError<T> {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            HierarchicalError::WrongContainerSize(_) => None,
+            HierarchicalError::CannotQuery(x) => Some(x),
+        }
+    }
+}
+
 impl<'w, 's, T, U, Tag, Filter> HierarchicalQuery<'w, 's, T, U, Tag, Filter>
 where
     T: HasChild<U, Tag>,
@@ -81,22 +132,30 @@ where
     /// # Panics
     ///
     /// Panics if amount of found children does not conform with the arity of this relationship.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if there is no such parent with given id.
-    pub fn get_down(
+    /// Or if there is no such parent by the given [`id`]
+    pub fn get_down(&self, id: NodeId<T>) -> (&T, Container<T::Arity, (NodeId<U>, &U)>)
+    where
+        T::Arity: TryFromIter,
+        <T::Arity as TryFromIter>::Error: Debug,
+    {
+        self.try_get_down(id)
+            .expect("Cannot collect children into container")
+    }
+
+    pub fn try_get_down(
         &self,
         id: NodeId<T>,
-    ) -> Result<(&T, Container<T::Arity, (NodeId<U>, &U)>), QueryEntityError>
+    ) -> Result<(&T, Container<T::Arity, (NodeId<U>, &U)>), HierarchicalError<T::Arity>>
     where
         T::Arity: TryFromIter,
     {
         let (_, parent, children) = self.parent_query.get(id.entity())?;
-        let iter = self.children_query.iter_many(children.iter());
-        let container =
-            <T::Arity as TryFromIter>::try_from_iter(iter.map(|it| (it.0.into(), it.1)))
-                .expect("Cannot collect children into container");
+        let iter = self
+            .children_query
+            .iter_many(children.iter())
+            .map(|it| (it.0.into(), it.1));
+        let container = <T::Arity as TryFromIter>::try_from_iter(iter)
+            .map_err(HierarchicalError::WrongContainerSize)?;
         Ok((parent, container))
     }
 

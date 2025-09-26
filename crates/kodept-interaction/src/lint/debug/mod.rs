@@ -1,22 +1,20 @@
-use crate::done;
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use bevy_ecs::prelude::{Added, IntoSystem, NameOrEntity, Populated, Query};
 use kodept_ast::properties::SourceSpan;
 use kodept_report::message::{Diagnostic, Severity};
-use std::convert::Infallible;
 
 pub struct DebugScopesLint;
 
 impl Lint for DebugScopesLint {
-    type Error = Infallible;
+    type Result = ();
 
     fn descriptor() -> LintDescriptor {
         LintDescriptor::new("debug_scopes").disabled_by_default()
     }
 
-    fn lint() -> impl IntoSystem<(), crate::Result<Self::Error>, ()> {
+    fn lint() -> impl IntoSystem<(), Self::Result, ()> {
         IntoSystem::into_system(
             |scopes: Populated<(&Scope, NameOrEntity), Added<Scope>>,
              spans: Query<&SourceSpan>,
@@ -32,8 +30,6 @@ impl Lint for DebugScopesLint {
                             .with_note(format!("{:?}", scope))
                     })
                 }
-
-                done()
             },
         )
     }

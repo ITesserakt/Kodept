@@ -4,11 +4,8 @@ use crate::scope::Scoped;
 use crate::symbol::table::SymbolTable;
 use crate::symbol::SymbolKind::{self, Function, Parameter, Type, Variable};
 use crate::symbol::{SymbolData, SymbolDescription};
-use crate::wrapper::InteractionExt;
-use crate::{done, Ctx, Interaction};
-use bevy_ecs::prelude::{
-    any_match_filter, Added, Commands, Query, ResMut, Resource, SystemSet, Without,
-};
+use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
+use bevy_ecs::prelude::{any_match_filter, Added, Query, SystemSet, Without};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use kodept_ast::define_union;
@@ -27,9 +24,6 @@ use std::collections::hash_map::Entry;
 #[derive(Debug, Clone, Eq, PartialEq, Hash, SystemSet)]
 pub struct ExtractSymbolsPass;
 
-#[derive(Debug, Resource, Default, PartialEq)]
-pub(crate) struct ExtractSymbolsLock(bool);
-
 define_union!(enum SymbolUnion[SymbolUnionItem, SymbolUnionFilter] {
     Const | VarDecl | EnumConst | TyParam | NonTyParam
 });
@@ -41,10 +35,6 @@ pub struct DuplicatedSymbolError {
     scope_start: Span,
     current_def: Span,
     previous_def: Span,
-}
-
-impl ExtractSymbolsLock {
-    pub(crate) const UNLOCKED: Self = ExtractSymbolsLock(false);
 }
 
 impl IntoSpannedReportMessage for DuplicatedSymbolError {
@@ -67,27 +57,16 @@ impl IntoSpannedReportMessage for DuplicatedSymbolError {
 }
 
 impl Interaction for ExtractSymbolsPass {
-    type Error = DuplicatedSymbolError;
-
-    fn install(ctx: &mut Ctx) {
-        ctx.register(Self::disable_lock_system);
-
+    fn install(ctx: &mut Ctx) -> impl Disposable + use<> {
         ctx.register(
-            Self::wrap_system(Self::system)
+            wrap_system(Self::name(), Self::system)
                 .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>)
-                .after(Self::disable_lock_system)
                 .in_set(ExtractSymbolsPass),
         );
     }
 }
 
 impl ExtractSymbolsPass {
-    fn disable_lock_system(lock: Option<ResMut<ExtractSymbolsLock>>) {
-        if let Some(mut lock) = lock {
-            lock.0 = false;
-        }
-    }
-
     /// Symbol rules:
     /// - there is should be only one symbol of some kind per scope
     /// - `Identifier::Type` should have `Type` kind
@@ -96,10 +75,7 @@ impl ExtractSymbolsPass {
         mut symbol_tables: Query<(&mut SymbolTable, Option<&Name>, &Scope), Without<Node>>,
         spans: Query<&SourceSpan>,
         reporter: Reporter,
-        mut commands: Commands,
-    ) -> crate::Result<DuplicatedSymbolError> {
-        commands.insert_resource(ExtractSymbolsLock(true));
-
+    ) {
         for (node, scoped) in query.iter() {
             let Some(node) = node.to_enum::<SymbolUnion>() else {
                 continue;
@@ -132,7 +108,5 @@ impl ExtractSymbolsPass {
                 }
             };
         }
-
-        done()
     }
 }

@@ -1,8 +1,8 @@
 use crate::lint::{Lint, LintDescriptor};
 use crate::report::Reporter;
-use crate::{done, fail, Result};
-use bevy_ecs::prelude::{Entity, IntoSystem, Res, Single};
+use bevy_ecs::prelude::{Entity, IntoSystem, Res};
 use bevy_ecs::query::With;
+use bevy_ecs::system::Query;
 use kodept_ast::properties::Lexeme;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
@@ -27,30 +27,32 @@ impl IntoSpannedReportMessage for SuspiciousStructure {
 }
 
 impl Lint for SingleModuleWithBrackets {
-    type Error = SuspiciousStructure;
+    type Result = Result<(), SuspiciousStructure>;
 
     fn descriptor() -> LintDescriptor {
         LintDescriptor::new("single_module_with_brackets")
     }
 
-    fn lint() -> impl IntoSystem<(), Result<Self::Error>, ()> {
+    fn lint() -> impl IntoSystem<(), Self::Result, ()> {
         IntoSystem::into_system(
-            |query: Single<(&Lexeme, Entity), With<FileDecl>>,
+            |query: Query<(&Lexeme, Entity), With<FileDecl>>,
              syntax: Res<SyntaxResolver>,
              reporter: Reporter| {
-                let Ok(node) = syntax.try_get::<File>(query.0 .0) else {
-                    return fail(SuspiciousStructure(query.1));
-                };
+                query.into_iter().try_for_each(|(lexeme, entity)| {
+                    let Ok(node) = syntax.try_get::<File>(lexeme.0) else {
+                        return Err(SuspiciousStructure(entity));
+                    };
 
-                if let [Module::Ordinary { lbrace, rbrace, .. }] = node.0.as_ref() {
-                    reporter.report_ad_hoc(|| {
-                        Diagnostic::new(Severity::Warning)
-                            .with_message("Consider replacing brackets with single `=>`")
-                            .with_primary_label("replace with `=>`", lbrace.location())
-                            .with_primary_label("remove", rbrace.location())
-                    });
-                }
-                done()
+                    if let [Module::Ordinary { lbrace, rbrace, .. }] = node.0.as_ref() {
+                        reporter.report_ad_hoc(|| {
+                            Diagnostic::new(Severity::Warning)
+                                .with_message("Consider replacing brackets with single `=>`")
+                                .with_primary_label("replace with `=>`", lbrace.location())
+                                .with_primary_label("remove", rbrace.location())
+                        });
+                    }
+                    Ok(())
+                })
             },
         )
     }

@@ -1,0 +1,12 @@
+module Main =>
+
+struct A;
+struct B(a: A);
+
+struct List(head: A, tail: List);
+
+enum struct C { A, B }
+
+fun test(): (A, B, C) {
+	
+}

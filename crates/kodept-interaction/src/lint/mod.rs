@@ -1,17 +1,16 @@
-use crate::{done, Ctx, Interaction, Result};
+use crate::utils::{wrap_system, Ctx, Disposable, Interaction, Try};
+use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{
     Changed, Component, IntoScheduleConfigs, IntoSystem, Local, Populated, Query,
 };
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
-use std::convert::Infallible;
 use tracing::info;
 
 mod debug;
 mod module;
 mod rlt_linking;
 
-use crate::wrapper::InteractionExt;
 pub use debug::*;
 pub use module::SingleModuleWithBrackets;
 pub use rlt_linking::RLTLinkLint;
@@ -64,23 +63,24 @@ impl LintDescriptor {
 }
 
 pub trait Lint {
-    type Error: IntoSpannedReportMessage + 'static;
+    #[allow(private_bounds)]
+    type Result: Try<Output = (), Residual: IntoSpannedReportMessage + 'static> + 'static;
 
     fn descriptor() -> LintDescriptor;
 
-    fn lint() -> impl IntoSystem<(), Result<Self::Error>, ()>;
+    fn lint() -> impl IntoSystem<(), Self::Result, ()>;
 }
 
-impl<L: Lint> Interaction for L {
-    type Error = L::Error;
+struct LintGC(Entity);
 
+impl<L: Lint> Interaction for L {
     fn name() -> Cow<'static, str> {
         Self::descriptor().name
     }
 
-    fn install(ctx: &mut Ctx) {
+    fn install(ctx: &mut Ctx) -> impl Disposable + use<L> {
         let id = ctx.immediate_exclusive(|world| world.spawn(L::descriptor()).id());
-        let config = Self::wrap_system(L::lint()).run_if(
+        let config = wrap_system(Self::name(), L::lint()).run_if(
             move |lints: Query<&LintDescriptor>, mut has_run: Local<bool>| {
                 let Ok(lint) = lints.get(id) else {
                     return false;
@@ -103,16 +103,22 @@ impl<L: Lint> Interaction for L {
             },
         );
         ctx.register(config);
+        LintGC(id)
+    }
+}
+
+impl Disposable for LintGC {
+    fn dispose(&mut self, world: &mut bevy_ecs::world::World) {
+        world.despawn(self.0);
     }
 }
 
 pub struct ShowLints;
 
 impl Interaction for ShowLints {
-    type Error = Infallible;
-
-    fn install(ctx: &mut Ctx) {
-        ctx.register(Self::wrap_system(
+    fn install(ctx: &mut Ctx) -> impl Disposable + use<> {
+        ctx.register(wrap_system(
+            Self::name(),
             |lints: Populated<&LintDescriptor, Changed<LintDescriptor>>| {
                 let mut lint_names = String::new();
                 let mut iter = lints.iter();
@@ -130,7 +136,6 @@ impl Interaction for ShowLints {
                 }
 
                 info!("Enabled lints: [{lint_names}]");
-                done()
             },
         ));
     }
