@@ -78,7 +78,7 @@ impl Command for Check {
 }
 
 impl Check {
-    fn install_lints(&self, ctx: &mut Ctx) -> impl Disposable {
+    fn install_lints(&self, ctx: &mut Ctx) -> impl Disposable + use<> {
         let a = SingleModuleWithBrackets::install(ctx);
         let b = RLTLinkLint::install(ctx);
         let c = ShowLints::install(ctx);
