@@ -1,13 +1,13 @@
 [package]
 name = "kodept-ast"
 version = "0.7.2"
-edition = "2021"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
 repository = "https://github.com/ITesserakt/Kodept/"
 categories = ["compilers"]
 license = "Apache-2.0"
-rust-version = "1.86.0"
+edition.workspace = true
+rust-version.workspace = true
 
 [lints]
 workspace = true

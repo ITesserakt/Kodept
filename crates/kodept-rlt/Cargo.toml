@@ -1,7 +1,8 @@
 [package]
 name = "kodept-rlt"
 version = "0.2.1"
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 
 [lints]
 workspace = true
