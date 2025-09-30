@@ -34,7 +34,7 @@ rust-version = "1.88.0"
 [workspace.dependencies]
 bevy_ecs = { version = "0.16.0", default-features = false, features = ["std"] }
 itertools = "0.14.0"
-nonempty-collections = "0.3.0"
+nonempty-collections = "1.0.1"
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]

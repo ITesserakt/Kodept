@@ -1305,9 +1305,9 @@ dependencies = [
 
 [[package]]
 name = "nonempty-collections"
-version = "0.3.1"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e216d0e8cf9d54fa66e5780f6e1d5dc96d1c1b3c25aeba3b6758548bcbbd8b9d"
+checksum = "30df10377ff18add3da6c9c084d6ce703189a8d884e752e7863d9f82b90deab4"
 
 [[package]]
 name = "nonmax"
