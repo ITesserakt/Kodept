@@ -18,7 +18,7 @@ use kodept_interaction::prelude::{
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
-use tracing::{enabled, error, error_span, info, info_span, trace, Level};
+use tracing::{enabled, error, error_span, info, info_span, trace, trace_span, Level};
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -67,6 +67,12 @@ impl Command for Check {
                 let b = ScopeBuildingPass::install(&mut ctx);
                 let c = ExtractSymbolsPass::install(&mut ctx);
                 let d = ReferenceResolverPass::install(&mut ctx);
+
+                for frame in 0..10 {
+                    let _guard = trace_span!("pass", frame).entered();
+                    ctx.launch();
+                    trace!("================================================================")
+                }
 
                 (a, b, c, d)
             });

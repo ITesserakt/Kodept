@@ -5,7 +5,7 @@ use crate::scope::{Scoped, Visibility};
 use crate::symbol::table::SymbolTable;
 use crate::symbol::{DeferRefResolution, RefToSymbol, SymbolDescription, SymbolKind};
 use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
-use bevy_ecs::event::Event;
+use bevy_ecs::event::{EntityEvent};
 use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{
     ChildOf, Commands, Entity, Has, IntoScheduleConfigs, Name, Populated, Query, SystemSet, With,
@@ -33,9 +33,10 @@ pub struct ReferenceResolverPass;
 /// Event that happens when a corresponding symbol is found for either `Ref` or `Ty`.
 ///
 /// *This event is EntityEvent and target entity is reference itself*
-#[derive(Debug, Event)]
+#[derive(Debug, EntityEvent)]
 pub(crate) struct ResolvedEvent {
     /// Id of a scope that contains found symbol
+    #[event_target]
     pub scope_id: Entity,
     pub visibility: Visibility,
     pub kind: SymbolKind,
@@ -65,8 +66,6 @@ impl Interaction for ReferenceResolverPass {
             wrap_system(Self::name(), system).in_set(ReferenceResolverPass),
         )
             .chain();
-
-        ctx.register_event::<ResolvedEvent>();
         
         ctx.register(set);
         ctx.register(debug_resolved_refs_system);

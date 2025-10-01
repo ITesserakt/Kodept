@@ -1,4 +1,4 @@
-use bevy_ecs::event::{Event, EventRegistry, Events};
+use bevy_ecs::message::{Message, MessageRegistry, Messages};
 use bevy_ecs::prelude::{IntoScheduleConfigs, IntoSystem, Schedule, Schedules, World};
 use bevy_ecs::resource::Resource;
 use bevy_ecs::schedule::{InternedSystemSet, ScheduleLabel};
@@ -18,8 +18,8 @@ impl<'w> Interaction<'w> {
         if !world.contains_resource::<Schedules>() {
             world.init_resource::<Schedules>();
         }
-        if !world.contains_resource::<EventRegistry>() {
-            world.init_resource::<EventRegistry>();
+        if !world.contains_resource::<MessageRegistry>() {
+            world.init_resource::<MessageRegistry>();
         }
 
         Self {
@@ -69,9 +69,9 @@ impl<'w> Interaction<'w> {
         self.world.init_resource::<R>();
     }
 
-    pub fn register_event<E: Event>(&mut self) {
-        if !self.world.contains_resource::<Events<E>>() {
-            EventRegistry::register_event::<E>(self.world);
+    pub fn register_message<E: Message>(&mut self) {
+        if !self.world.contains_resource::<Messages<E>>() {
+            MessageRegistry::register_message::<E>(self.world);
         }
     }
 

@@ -9,18 +9,17 @@ use crate::traits::ASTNode;
 use crate::traits::CodeHolder;
 use crate::traits::FromSyntax;
 use crate::utils::IntoCommonIter;
-use bevy_ecs::bundle::{BundleEffect, DynamicBundle};
-use bevy_ecs::component::{
-    ComponentId, Components, ComponentsRegistrator, RequiredComponents, StorageType,
-};
+use bevy_ecs::bundle::DynamicBundle;
+use bevy_ecs::component::{ComponentId, Components, ComponentsRegistrator, StorageType};
 use bevy_ecs::prelude::*;
-use bevy_ecs::ptr::OwningPtr;
+use bevy_ecs::ptr::{MovingPtr, OwningPtr};
 use bevy_ecs::relationship::{RelatedSpawner, Relationship};
 use bevy_ecs::spawn::SpawnRelatedBundle;
 use bevy_ecs::spawn::{SpawnIter, SpawnOneRelated, SpawnWith};
 use smallvec::SmallVec;
 use std::convert::identity;
 use std::marker::PhantomData;
+use std::mem::MaybeUninit;
 
 const SMALLVEC_CAPACITY: usize = 1;
 #[cfg(not(feature = "parallel"))]
@@ -63,11 +62,6 @@ pub struct ASTBuilder<Root, Properties, Children> {
 
 #[derive(Debug)]
 pub struct NodeBundle<T>(T, SyntaxVariant<'static>);
-
-pub struct NodeLinkEffect<E> {
-    other_effect: E,
-    link_ptr: SyntaxVariant<'static>,
-}
 
 pub struct NodeSpawner<R, T, A> {
     _phantom: PhantomData<(R, T, A)>,
@@ -436,54 +430,52 @@ impl<R, P, C> ASTBuilder<R, P, C> {
     }
 }
 
-impl<E: BundleEffect> BundleEffect for NodeLinkEffect<E> {
-    #[allow(unsafe_code)]
-    fn apply(self, entity: &mut EntityWorldMut) {
-        self.other_effect.apply(entity);
-        let mut rlt = entity.resource_mut::<SyntaxResolver>();
-        // SAFETY: link_ptr always belongs to the tree
-        let lexeme = unsafe { rlt.link(self.link_ptr) };
-        entity.insert(Lexeme(lexeme));
+#[allow(unsafe_code)]
+impl<T: Bundle> DynamicBundle for NodeBundle<T> {
+    type Effect = ();
+
+    unsafe fn get_components(
+        ptr: MovingPtr<'_, Self>,
+        func: &mut impl FnMut(StorageType, OwningPtr<'_>),
+    ) {
+        ptr.partial_move(|it| unsafe {
+            bevy_ecs::ptr::deconstruct_moving_ptr!({
+                let NodeBundle {
+                    0: bundle,
+                    1: syntax,
+                } = it;
+            });
+            <T as DynamicBundle>::get_components(bundle, func);
+            std::mem::forget(syntax);
+        });
     }
-}
 
-impl<T: DynamicBundle> DynamicBundle for NodeBundle<T> {
-    type Effect = NodeLinkEffect<T::Effect>;
-
-    fn get_components(self, func: &mut impl FnMut(StorageType, OwningPtr<'_>)) -> Self::Effect {
-        let other_effect = self.0.get_components(func);
-
-        NodeLinkEffect {
-            other_effect,
-            link_ptr: self.1,
+    unsafe fn apply_effect(ptr: MovingPtr<'_, MaybeUninit<Self>>, entity: &mut EntityWorldMut) {
+        bevy_ecs::ptr::deconstruct_moving_ptr!({
+            let MaybeUninit::<NodeBundle> {
+                0: bundle,
+                1: link_ptr,
+            } = ptr;
+        });
+        unsafe {
+            <T as DynamicBundle>::apply_effect(bundle, entity);
         }
+
+        let link_ptr = unsafe { link_ptr.assume_init() }.read();
+        let mut rlt = entity.resource_mut::<SyntaxResolver>();
+        let lexeme_id = unsafe { rlt.link(link_ptr) };
+        entity.insert(Lexeme(lexeme_id));
     }
 }
 
-// SAFETY:
-// - `Bundle::component_ids` calls `ids` for each component type in the
-// bundle, in the exact order that `DynamicBundle::get_components` is called.
-// - `Bundle::from_components` calls `func` exactly once for each `ComponentId` returned by `Bundle::component_ids`.
-// - `Bundle::get_components` is called exactly once for each member. Relies on the above implementation to pass the correct
-//   `StorageType` into the callback.
 #[allow(unsafe_code)]
 unsafe impl<T: Bundle> Bundle for NodeBundle<T> {
-    #[inline]
     fn component_ids(components: &mut ComponentsRegistrator, ids: &mut impl FnMut(ComponentId)) {
-        T::component_ids(components, ids);
+        <T as Bundle>::component_ids(components, ids);
     }
 
-    #[inline]
     fn get_component_ids(components: &Components, ids: &mut impl FnMut(Option<ComponentId>)) {
-        T::get_component_ids(components, ids);
-    }
-
-    #[inline]
-    fn register_required_components(
-        _components: &mut ComponentsRegistrator,
-        _required_components: &mut RequiredComponents,
-    ) {
-        T::register_required_components(_components, _required_components);
+        <T as Bundle>::get_component_ids(components, ids);
     }
 }
 

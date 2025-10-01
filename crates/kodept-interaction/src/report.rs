@@ -42,8 +42,8 @@ struct Reporter_<'w> {
 struct Sink(Box<dyn Fn(Report) + Send + Sync + 'static>);
 
 #[derive(SystemParam)]
-pub(crate) struct Reporter<'w> {
-    root: Single<'w, &'static Root>,
+pub(crate) struct Reporter<'w, 's> {
+    root: Single<'w, 's, &'static Root>,
     sink: Res<'w, Sink>
 }
 
@@ -59,7 +59,7 @@ impl<'w> Reporter_<'w> {
     }
 }
 
-impl Reporter<'_> {
+impl Reporter<'_, '_> {
     pub(crate) fn report(&self, message: impl IntoSpannedReportMessage) {
         let report = Report::from_message(self.root.associated_file.id(), message);
         self.sink.0(report);

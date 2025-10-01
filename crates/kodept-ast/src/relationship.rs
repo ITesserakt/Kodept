@@ -1,7 +1,7 @@
 use crate::arity::{Arity, Optional, Singular};
 use crate::prelude::ASTNode;
 use crate::syntax_tree::children::HasChild;
-use bevy_ecs::component::{Component, ComponentId, HookContext, Immutable};
+use bevy_ecs::component::{Component, ComponentId, Immutable};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Resource;
 use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
@@ -11,6 +11,7 @@ use std::any::TypeId;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use bevy_ecs::lifecycle::HookContext;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum ArityValue {

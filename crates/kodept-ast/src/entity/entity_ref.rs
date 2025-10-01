@@ -9,8 +9,8 @@ use crate::relationship::ChildOf;
 
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]
-pub struct AnyNodeRef<'w> {
-    inner: EntityRef<'w>,
+pub struct AnyNodeRef {
+    inner: EntityRef<'static>,
 }
 
 #[derive(Copy, Clone)]
@@ -19,13 +19,13 @@ pub struct NodeRef<'w, T> {
     node: T,
 }
 
-impl<'a> AnyNodeRefItem<'a, '_> {
-    pub(crate) fn from_inner(item: EntityRef<'a>) -> Self {
+impl<'w> AnyNodeRefItem<'w, '_> {
+    pub(crate) fn from_inner(item: EntityRef<'w>) -> Self {
         Self { inner: item }
     }
     
     #[deprecated]
-    pub fn cast<T>(self) -> Option<NodeRef<'a, &'a T>>
+    pub fn cast<T>(self) -> Option<NodeRef<'w, &'w T>>
     where
         T: ASTNode,
     {
@@ -37,7 +37,7 @@ impl<'a> AnyNodeRefItem<'a, '_> {
     }
 
     #[inline(always)]
-    pub fn get<T>(self) -> Option<NodeRef<'a, &'a T>>
+    pub fn get<T>(self) -> Option<NodeRef<'w, &'w T>>
     where
         T: ASTNode,
     {
@@ -45,7 +45,7 @@ impl<'a> AnyNodeRefItem<'a, '_> {
     }
 
     #[inline(always)]
-    pub fn get_map<T, U>(self, f: impl FnOnce(&'a T) -> U) -> Option<NodeRef<'a, U>>
+    pub fn get_map<T, U>(self, f: impl FnOnce(&'w T) -> U) -> Option<NodeRef<'w, U>>
     where
         T: ASTNode,
     {

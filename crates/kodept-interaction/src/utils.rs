@@ -1,10 +1,10 @@
 use std::{any::TypeId, borrow::Cow, ops::ControlFlow};
-
+use std::fmt::{Display, Formatter};
 use bevy_ecs::{
-    event::{Event, EventReader, EventWriter},
     system::{In, IntoSystem},
     world::World,
 };
+use bevy_ecs::message::{Message, MessageReader, MessageWriter};
 use kodept_report::traits::{IntoSpannedReportMessage, MessageBehaviour};
 
 use crate::report::Reporter;
@@ -19,7 +19,7 @@ pub(crate) trait Try {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
 }
 
-impl<T, E> Try for std::result::Result<T, E> {
+impl<T, E> Try for Result<T, E> {
     type Output = T;
     type Residual = E;
 
@@ -75,20 +75,23 @@ impl<C, B> Try for ControlFlow<B, C> {
     }
 }
 
-#[derive(Debug, Event)]
+#[derive(Debug, Message)]
 pub struct SystemCompletionEvent {
     pub name: Cow<'static, str>,
     pub id: TypeId,
     pub fail_reason: Option<Cow<'static, str>>,
 }
 
+#[derive(Debug)]
+struct FailFastReason(Cow<'static, str>);
+
 pub fn install_system_completion_introspection_support(
     ctx: &mut Ctx,
     mut f: impl FnMut(&SystemCompletionEvent) + Send + Sync + 'static,
 ) {
-    ctx.register_event::<SystemCompletionEvent>();
+    ctx.register_message::<SystemCompletionEvent>();
 
-    ctx.register(move |mut reader: EventReader<SystemCompletionEvent>| {
+    ctx.register(move |mut reader: MessageReader<SystemCompletionEvent>| {
         reader.read().for_each(&mut f);
     });
 }
@@ -98,7 +101,7 @@ pub fn install_system_completion_introspection_support(
 pub(crate) fn wrap_system<S, T, M>(
     name: Cow<'static, str>,
     system: S,
-) -> impl IntoSystem<(), bevy_ecs::prelude::Result, ()>
+) -> impl IntoSystem<(), (), ()>
 where
     S: IntoSystem<(), T, M>,
     T: Try<Output = ()> + 'static,
@@ -107,7 +110,7 @@ where
     let id = system.system_type_id();
     let system = system.pipe(
         move |In(result): In<T>,
-              mut writer: EventWriter<SystemCompletionEvent>,
+              mut writer: MessageWriter<SystemCompletionEvent>,
               reporter: Reporter| match result.branch() {
             ControlFlow::Continue(()) => {
                 writer.write(SystemCompletionEvent {
@@ -115,7 +118,6 @@ where
                     id,
                     fail_reason: None,
                 });
-                Ok(())
             }
             ControlFlow::Break(error) => {
                 let behaviour = error.behaviour();
@@ -127,7 +129,6 @@ where
                             id,
                             fail_reason: Some(reason.clone()),
                         });
-                        Err(reason.into())
                     }
                     MessageBehaviour::Suppress => {
                         writer.write(SystemCompletionEvent {
@@ -135,7 +136,6 @@ where
                             id,
                             fail_reason: None,
                         });
-                        Ok(())
                     }
                 }
             }
@@ -183,3 +183,12 @@ tuple_please!(A as 0);
 tuple_please!(A as 0, B as 1);
 tuple_please!(A as 0, B as 1, C as 2);
 tuple_please!(A as 0, B as 1, C as 2, D as 3);
+
+impl Display for FailFastReason {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for FailFastReason {
+}
