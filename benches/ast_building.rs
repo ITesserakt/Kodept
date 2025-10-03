@@ -53,9 +53,14 @@ fn bench_complexity(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     for size in [1, 2, 5, 10, 50, 200, 400, 700] {
         let rlt = parsed_file(size);
+        const ID: &'static str = if cfg!(feature = "parallel") {
+            "complexity/p"
+        } else {
+            "complexity/np"
+        };
 
         group.throughput(Throughput::Elements(size as u64));
-        group.bench_function(criterion::BenchmarkId::new("complexity", size), |b| {
+        group.bench_function(criterion::BenchmarkId::new(ID, size), |b| {
             #[cfg(feature = "parallel")]
             return pool.install(|| {
                 b.iter(|| {
@@ -87,9 +92,7 @@ where
         let rlt = &*PARSED_FILE;
 
         group.bench_function(criterion::BenchmarkId::new(id, parallelism), |b| {
-            pool.install(|| {
-                b.iter(|| SyntaxTree::recursively_build(rlt, sources))
-            })
+            pool.install(|| b.iter(|| SyntaxTree::recursively_build(rlt, sources)))
         });
     }
 }
