@@ -60,7 +60,7 @@ in rec {
 	packages.x86_64-linux.kodept = craneLib.buildPackage (commonArgs // {
 		src = kodept_sources;
 		propagatedBuildInputs = [ packages.x86_64-linux.pegviz ];
-		cargoExtraArgs = "-F parallel -F nom";
+		cargoExtraArgs = "-F parallel";
 	});
 	packages.x86_64-windows.pegviz = craneLib-win.buildPackage (commonArgs-win // {
 		src = pegviz_sources;
@@ -68,7 +68,7 @@ in rec {
 	packages.x86_64-windows.kodept = craneLib-win.buildPackage (commonArgs-win // {
 		src = kodept_sources;
 		propagatedBuildInputs = [ packages.x86_64-windows.pegviz ];
-		cargoExtraArgs = "-F parallel -F nom";
+		cargoExtraArgs = "-F parallel";
 	});
 
 	inherit toolchain;

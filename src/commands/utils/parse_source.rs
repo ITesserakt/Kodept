@@ -84,8 +84,6 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
     let parsing_backend = config.get_parsing_backend();
     match parsing_backend {
         ParserImpl::Peg(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
-        #[cfg(feature = "nom")]
-        ParserImpl::Nom(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
     }
     .map_err(|e| e.into_iter().map(Wrapper))
     .extract_reports(*source.id, reports)
