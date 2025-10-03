@@ -45,66 +45,14 @@ pub enum ParserChoice {
 }
 
 #[derive(From, Debug, Copy, Clone)]
-enum LexerImpl {
+pub enum LexerImpl {
     Peg(PegLexer<false>),
     ASCII(ASCIILexer),
 }
 
 #[derive(Debug, From)]
-enum ParserImpl {
+pub enum ParserImpl {
     Peg(PegParser<false>),
-}
-
-impl LexerImpl {
-    fn type_name(&self) -> &'static str {
-        match self {
-            LexerImpl::Peg(x) => std::any::type_name_of_val(x),
-            LexerImpl::ASCII(x) => std::any::type_name_of_val(x),
-        }
-    }
-}
-
-impl TokenProducer for LexerImpl {
-    type Error<'t> = ParseErrors<&'t str>;
-
-    fn parse_string<'t>(
-        &self,
-        whole_input: &'t str,
-        position: usize,
-    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
-        match self {
-            LexerImpl::Peg(x) => TokenProducer::parse_string(x, whole_input, position)
-                .map_err(|e| e.adapt(whole_input, position)),
-            LexerImpl::ASCII(x) => TokenProducer::parse_string(x, whole_input, position)
-                .map_err(|e| e.adapt(whole_input, position)),
-        }
-    }
-}
-
-impl EagerTokensProducer for LexerImpl {
-    type Error<'t> = ParseErrors<&'t str>;
-
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
-        match self {
-            LexerImpl::Peg(x) => {
-                EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
-            }
-            LexerImpl::ASCII(x) => {
-                EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
-            }
-        }
-    }
-}
-
-impl RLTProducer for ParserImpl {
-    type Error<'t> = ParseErrors<&'static str>;
-
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
-        match self {
-            ParserImpl::Peg(x) => RLTProducer::parse_stream(x, input)
-                .map_err(|e| e.adapt(*input, 0).map(|it| it.representation())),
-        }
-    }
 }
 
 #[derive(Debug, Args, Clone)]
@@ -146,26 +94,11 @@ pub struct LoadingConfig {
     extension: Extension,
 }
 
-#[derive(Debug, Copy, Clone, From)]
-pub enum LexerImpl {
-    Peg(PegLexer<false>),
-    #[cfg(feature = "nom")]
-    Nom(kodept_parse::lexer::NomLexer),
-    Pest(PestLexer),
-}
-
-#[derive(Debug, From)]
-pub enum ParserImpl {
-    Peg(PegParser<false>),
-    #[cfg(feature = "nom")]
-    Nom(kodept_parse::parser::NomParser),
-}
-
 impl ParsingConfig {
-    pub fn get_lexing_backend(&self, source_len: usize) -> LexerImpl {
+    pub fn get_lexing_backend(&self, source: &str) -> LexerImpl {
         match (
             &self.lexer,
-            source_len,
+            source.len(),
             self.parallel && cfg!(feature = "parallel"),
             cfg!(feature = "trace"),
         ) {
@@ -173,6 +106,8 @@ impl ParsingConfig {
             (LexerChoice::Peg, _, _, true) => {
                 panic!("Cannot use peg lexer when parallelization and tracing are enabled")
             }
+            (LexerChoice::ASCII, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
+            (LexerChoice::ASCII, _, _, _) => panic!("Cannot use ascii lexer for non-ascii inputs"),
             (LexerChoice::Auto, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
             (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
             (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),
@@ -193,12 +128,6 @@ impl ParsingConfig {
             }
             (ParserChoice::Auto, _, false) => PegParser::new().into(),
             (ParserChoice::Auto, false, true) => PegParser::new().into(),
-            #[cfg(feature = "nom")]
-            (ParserChoice::Auto, true, true) => kodept_parse::parser::NomParser::new().into(),
-            #[cfg(not(feature = "nom"))]
-            (ParserChoice::Auto, true, true) => {
-                panic!("Cannot use peg parser when parallelization and tracing are enabled")
-            }
         }
     }
 }

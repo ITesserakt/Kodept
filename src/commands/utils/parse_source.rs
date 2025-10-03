@@ -66,20 +66,16 @@ impl<A: Display> IntoSpannedReportMessage for Wrapper<ParseError<A>> {
 }
 
 pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -> Execution<RLT> {
-    let lexing_backend = config.get_lexing_backend(source.contents().len());
+    let lexing_backend = config.get_lexing_backend(source.contents());
     let input = source.contents();
 
     let tokens = match lexing_backend {
         LexerImpl::Peg(x) => EagerTokenizer::new(input, x)
             .try_into_vec()
             .map_err(|e| e.adapt(input, 0)),
-        #[cfg(feature = "nom")]
-        LexerImpl::Nom(x) => kodept_parse::tokenizer::LazyTokenizer::new(input, x)
+        LexerImpl::ASCII(x) => EagerTokenizer::new(input, x)
             .try_into_vec()
-            .map_err(|e| e.adapt(input, 0)),
-        LexerImpl::Pest(x) => EagerTokenizer::new(input, x)
-            .try_into_vec()
-            .map_err(|e| e.adapt(input, 0)),
+            .map_err(|e| match e { })
     }
     .map_err(|e: ParseErrors<&str>| e.into_iter().map(Wrapper))
     .extract_reports(*source.id, reports)?;
