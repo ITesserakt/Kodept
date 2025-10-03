@@ -239,13 +239,13 @@ mod parallel {
 
     #[cfg(test)]
     mod tests {
-        use crate::lexer::PestLexer;
+        use crate::lexer::ASCIILexer;
         use crate::tokenizer::TokCtor;
 
         #[test]
         fn test_split() {
             let input = "123\n1234\n\n1";
-            let tokenizer = super::Tokenizer::new(input, PestLexer::new());
+            let tokenizer = super::Tokenizer::new(input, ASCIILexer::new());
 
             assert_eq!(tokenizer.lines, vec![(0, "123\n1234\n\n1")]);
         }

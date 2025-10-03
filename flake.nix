@@ -25,5 +25,34 @@
 		packages = outputs.packages // {
 			${system}.default = outputs.packages.${system}.kodept;
 		};
-  };
+
+		devShells.${system}.default = let
+            local_outputs = import ./default.nix {
+                inherit pkgs crane;
+                fenix = fenix.packages.${system};
+                doStaticBuild = false;
+                kodept_sources = ./.;
+                pegviz_sources = pegviz;
+                useNightly = true;
+            };
+		in pkgs.mkShellNoCC rec {
+			packages = with pkgs; [
+				xdot
+				gnuplot
+				pkgs.clangStdenv.cc
+				mold
+                local_outputs.toolchain
+			];
+
+			toolchain = pkgs.symlinkJoin {
+				name = "kodept-toolchain";
+				paths = packages;
+			};
+		
+			shellHook = ''
+				rm -f .toolchain
+				ln -s ${toolchain} .toolchain
+			'';
+		};
+	};
 }

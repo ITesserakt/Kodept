@@ -2,7 +2,7 @@ use crate::cli::utils::{DisplayStyle, Extension};
 use clap::{Args, ValueEnum};
 use derive_more::From;
 use kodept::loader::{Loader, LoadingError};
-use kodept_parse::lexer::{PegLexer, PestLexer};
+use kodept_parse::lexer::{PegLexer, ASCIILexer};
 use kodept_parse::parser::PegParser;
 use kodept_report::codespan::external::ColorChoice;
 use std::io::{stdin, Read};
@@ -33,9 +33,7 @@ pub struct ParsingConfig {
 #[derive(Debug, ValueEnum, Clone)]
 pub enum LexerChoice {
     Peg,
-    Pest,
-    #[cfg(feature = "nom")]
-    Nom,
+    ASCII,
     Auto,
 }
 
@@ -43,12 +41,73 @@ pub enum LexerChoice {
 #[derive(Debug, ValueEnum, Clone)]
 pub enum ParserChoice {
     Peg,
-    #[cfg(feature = "nom")]
-    Nom,
     Auto,
 }
 
-#[derive(Debug, Args)]
+#[derive(From, Debug, Copy, Clone)]
+enum LexerImpl {
+    Peg(PegLexer<false>),
+    ASCII(ASCIILexer),
+}
+
+#[derive(Debug, From)]
+enum ParserImpl {
+    Peg(PegParser<false>),
+}
+
+impl LexerImpl {
+    fn type_name(&self) -> &'static str {
+        match self {
+            LexerImpl::Peg(x) => std::any::type_name_of_val(x),
+            LexerImpl::ASCII(x) => std::any::type_name_of_val(x),
+        }
+    }
+}
+
+impl TokenProducer for LexerImpl {
+    type Error<'t> = ParseErrors<&'t str>;
+
+    fn parse_string<'t>(
+        &self,
+        whole_input: &'t str,
+        position: usize,
+    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
+        match self {
+            LexerImpl::Peg(x) => TokenProducer::parse_string(x, whole_input, position)
+                .map_err(|e| e.adapt(whole_input, position)),
+            LexerImpl::ASCII(x) => TokenProducer::parse_string(x, whole_input, position)
+                .map_err(|e| e.adapt(whole_input, position)),
+        }
+    }
+}
+
+impl EagerTokensProducer for LexerImpl {
+    type Error<'t> = ParseErrors<&'t str>;
+
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
+        match self {
+            LexerImpl::Peg(x) => {
+                EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
+            }
+            LexerImpl::ASCII(x) => {
+                EagerTokensProducer::parse_string(x, input).map_err(|e| e.adapt(input, 0))
+            }
+        }
+    }
+}
+
+impl RLTProducer for ParserImpl {
+    type Error<'t> = ParseErrors<&'static str>;
+
+    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+        match self {
+            ParserImpl::Peg(x) => RLTProducer::parse_stream(x, input)
+                .map_err(|e| e.adapt(*input, 0).map(|it| it.representation())),
+        }
+    }
+}
+
+#[derive(Debug, Args, Clone)]
 pub struct DiagnosticConfig {
     /// The display style to use when rendering a diagnostic
     #[arg(ignore_case = true, long = "style", default_value_t = DisplayStyle::Rich)]
@@ -104,8 +163,6 @@ pub enum ParserImpl {
 
 impl ParsingConfig {
     pub fn get_lexing_backend(&self, source_len: usize) -> LexerImpl {
-        const ONE_MB: usize = 1024 * 1024;
-
         match (
             &self.lexer,
             source_len,
@@ -116,18 +173,10 @@ impl ParsingConfig {
             (LexerChoice::Peg, _, _, true) => {
                 panic!("Cannot use peg lexer when parallelization and tracing are enabled")
             }
-            (LexerChoice::Pest, _, _, _) => PestLexer::new().into(),
-            #[cfg(feature = "nom")]
-            (LexerChoice::Nom, _, false, _) => kodept_parse::lexer::NomLexer::new().into(),
-            #[cfg(feature = "nom")]
-            (LexerChoice::Nom, _, true, _) => kodept_parse::lexer::NomLexer::new().into(),
-            (LexerChoice::Auto, ..ONE_MB, false, _) => PestLexer::new().into(),
+            (LexerChoice::Auto, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
             (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
             (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),
-            #[cfg(feature = "nom")]
-            (LexerChoice::Auto, _, true, true) => kodept_parse::lexer::NomLexer::new().into(),
-            #[cfg(not(feature = "nom"))]
-            (LexerChoice::Auto, _, true, true) => PestLexer::new().into(),
+            (LexerChoice::Auto, _, _, true) => panic!("Cannot determine lexer for non-ascii input and tracing enabled")
         }
     }
 
@@ -139,11 +188,9 @@ impl ParsingConfig {
         ) {
             (ParserChoice::Peg, _, false) => PegParser::new().into(),
             (ParserChoice::Peg, false, true) => PegParser::new().into(),
-            (ParserChoice::Peg, true, true) => {
+            (ParserChoice::Peg | ParserChoice::Auto, true, true) => {
                 panic!("Cannot use peg parser when parallelization and tracing are enabled")
             }
-            #[cfg(feature = "nom")]
-            (ParserChoice::Nom, _, _) => kodept_parse::parser::NomParser::new().into(),
             (ParserChoice::Auto, _, false) => PegParser::new().into(),
             (ParserChoice::Auto, false, true) => PegParser::new().into(),
             #[cfg(feature = "nom")]

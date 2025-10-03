@@ -1,77 +1,2404 @@
 module A {
     enum struct Bool { True, False }
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
+    struct A(foo: B, foo: B, foo: B, foo: B);
 
     struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
-            if a == 0 => b = "Hello"
-            elif a == 1 => b = "World"
-            elif a == 2 => b = "!"
-            else {
-                fun inner => ""
-                b = inner()
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
             }
-            c
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
         }
     }
 
-    struct B {
-        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
-            b(::A::a())
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
-            var b = ""
-            if a == 0 => b = "Hello"
-            elif a == 1 => b = "World"
-            elif a == 2 => b = "!"
-            else {
-                fun inner => ""
-                b = inner()
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
             }
         }
     }
-    
-    struct B {
-        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
-            b(::A::a())
+
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
-            var b = ""
-            if a == 0 => b = "Hello"
-            elif a == 1 => b = "World"
-            elif a == 2 => b = "!"
-            else {
-                fun inner => ""
-                b = inner()
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
             }
         }
     }
-    
-    struct B {
-        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
-            b(::A::a())
+
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
-            var b = ""
-            if a == 0 => b = "Hello"
-            elif a == 1 => b = "World"
-            elif a == 2 => b = "!"
-            else {
-                fun inner => ""
-                b = inner()
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
             }
         }
     }
-    
-    struct B {
-        fun b(b: B, b: A, b: A, b: _, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A) {
-            b(::A::a())
+
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
-            var b = ""
-            if a == 0 => b = "Hello"
-            elif a == 1 => b = "World"
-            elif a == 2 => b = "!"
-            else {
-                fun inner => ""
-                b = inner()
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+    }
+
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+    }
+
+    struct A {
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
+            }
+        }
+
+        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
+            val a = 0
+            var b = "" + ""
+            val a = 0
+            var b = "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + ""
+            val a = 0
+            var b = "" + "" + "" + "" + "" + ""
+            if a.foo.bar.baz.bar.foo || b ^ c || d {
+                fun foo(b) => {
+                    fun foo(b) => {
+                        fun foo(b) => {
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                            b
+                        }
+                    }
+                }
+                ()
+            } else {
+                (a, b, b, b, b, b)
             }
         }
     }

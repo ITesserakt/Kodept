@@ -4,7 +4,7 @@ use kodept_ast::syntax_tree::prelude::{SourceCode, AST};
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::span::CodeHolder;
 use kodept_parse::common::{EagerTokensProducer, RLTProducer};
-use kodept_parse::lexer::PestLexer;
+use kodept_parse::lexer::ASCIILexer;
 use kodept_parse::parser::PegParser;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_rlt::prelude as rlt;
@@ -17,7 +17,7 @@ const FILE_CONTENTS: &str = include_str!("benchmarking_file1.kd");
 const MODULES_COUNT: u64 = 10;
 
 static PARSED_FILE: LazyLock<RLT> = LazyLock::new(|| {
-    let lexer = PestLexer::new();
+    let lexer = ASCIILexer::new();
     let tokens = lexer.parse_string(FILE_CONTENTS).unwrap();
     let stream = PackedTokenStream::new(&tokens);
     let parser = PegParser::<{ kodept_parse::TRACING_OPTION }>::new();
