@@ -38,24 +38,28 @@ pub enum CodeFlow {
 }
 
 impl Located for IfExpr {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.keyword.location()
     }
 }
 
 impl Located for ElifExpr {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.keyword.location()
     }
 }
 
 impl Located for ElseExpr {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.keyword.location()
     }
 }
 
 impl Located for CodeFlow {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             CodeFlow::If(x) => x.location(),
@@ -64,6 +68,7 @@ impl Located for CodeFlow {
 }
 
 impl SpanBounds for CodeFlow {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             CodeFlow::If(if_expr) => if_expr.bounds(),
@@ -72,6 +77,7 @@ impl SpanBounds for CodeFlow {
 }
 
 impl SpanBounds for IfExpr {
+    #[inline]
     fn bounds(&self) -> Span {
         self.keyword.0
             + self.body.bounds()
@@ -81,12 +87,14 @@ impl SpanBounds for IfExpr {
 }
 
 impl SpanBounds for ElifExpr {
+    #[inline]
     fn bounds(&self) -> Span {
         self.keyword.0 + self.body.bounds()
     }
 }
 
 impl SpanBounds for ElseExpr {
+    #[inline]
     fn bounds(&self) -> Span {
         self.keyword.0 + self.body.bounds()
     }

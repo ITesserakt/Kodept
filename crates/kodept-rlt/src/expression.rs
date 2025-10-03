@@ -138,6 +138,7 @@ impl SpanBounds for Operation {
 }
 
 impl SpanBounds for Application {
+    #[inline]
     fn bounds(&self) -> Span {
         self.expr.bounds() + self.params.as_ref().map(|it| it.left.0 + it.right.0)
     }

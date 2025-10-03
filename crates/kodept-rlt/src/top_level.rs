@@ -40,12 +40,14 @@ pub enum TopLevelNode {
 }
 
 impl Located for Struct {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.keyword.location()
     }
 }
 
 impl Located for Enum {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             Enum::Stack { keyword, .. } => keyword.location(),
@@ -55,6 +57,7 @@ impl Located for Enum {
 }
 
 impl Located for TopLevelNode {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             TopLevelNode::Enum(x) => x.location(),
@@ -74,6 +77,7 @@ impl Enum {
 }
 
 impl SpanBounds for TopLevelNode {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             TopLevelNode::Enum(x) => x.bounds(),
@@ -84,6 +88,7 @@ impl SpanBounds for TopLevelNode {
 }
 
 impl SpanBounds for Enum {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             Enum::Stack {
@@ -97,6 +102,7 @@ impl SpanBounds for Enum {
 }
 
 impl SpanBounds for Struct {
+    #[inline]
     fn bounds(&self) -> Span {
         self.keyword.0 + self.body.as_ref().map(|it| it.right.0)
     }

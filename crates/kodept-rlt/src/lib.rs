@@ -30,4 +30,5 @@ mod literal;
 pub mod new_types;
 mod term;
 mod top_level;
+pub mod traversal;
 mod types;

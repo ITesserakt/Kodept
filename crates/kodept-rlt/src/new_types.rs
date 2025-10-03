@@ -19,7 +19,7 @@ macro_rules! make_wrappers {
         }
 
         impl kodept_core::structure::SpanBounds for $name {
-            #[inline]
+            #[inline(always)]
             fn bounds(&self) -> kodept_core::code_point::Span {
                 self.0.into()
             }
@@ -91,6 +91,7 @@ pub struct Enclosed<T> {
 }
 
 impl Located for UnaryOperationSymbol {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             UnaryOperationSymbol::Neg(x) => x.location(),
@@ -102,6 +103,7 @@ impl Located for UnaryOperationSymbol {
 }
 
 impl Located for BinaryOperationSymbol {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             BinaryOperationSymbol::Pow(x) => x.location(),
@@ -148,5 +150,17 @@ impl<T> From<(Symbol, Vec<T>, Symbol)> for Enclosed<Box<[T]>> {
             right: value.2,
             inner: value.1.into_boxed_slice(),
         }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Enclosed<T>
+where
+    &'a T: IntoIterator
+{
+    type Item = <&'a T as IntoIterator>::Item;
+    type IntoIter = <&'a T as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
     }
 }

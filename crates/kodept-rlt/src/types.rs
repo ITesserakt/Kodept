@@ -115,6 +115,15 @@ impl SpanBounds for UntypedParameter {
     }
 }
 
+impl SpanBounds for Parameter {
+    fn bounds(&self) -> Span {
+        match self {
+            Parameter::Typed(x) => x.bounds(),
+            Parameter::Untyped(x) => x.bounds(),
+        }
+    }
+}
+
 #[cfg(feature = "arbitrary")]
 mod arb {
     use crate::new_types::{Enclosed, Symbol, TypeName};

@@ -16,6 +16,7 @@ pub enum Literal {
 }
 
 impl Located for Literal {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             Literal::Binary(x) => x.location(),
@@ -30,6 +31,7 @@ impl Located for Literal {
 }
 
 impl SpanBounds for Literal {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             Literal::Binary(x) => Span::from(*x),

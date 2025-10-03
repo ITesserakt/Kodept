@@ -50,6 +50,7 @@ pub struct InitializedVariable {
 }
 
 impl Located for Variable {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             Variable::Immutable { id, .. } => id.location(),
@@ -59,12 +60,14 @@ impl Located for Variable {
 }
 
 impl Located for InitializedVariable {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.variable.location()
     }
 }
 
 impl Located for Body {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             Body::Block(x) => x.location(),
@@ -74,6 +77,7 @@ impl Located for Body {
 }
 
 impl Located for BlockLevelNode {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             BlockLevelNode::InitVar(x) => x.location(),
@@ -85,6 +89,7 @@ impl Located for BlockLevelNode {
 }
 
 impl SpanBounds for Body {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             Body::Block(x) => x.bounds(),
@@ -94,6 +99,7 @@ impl SpanBounds for Body {
 }
 
 impl SpanBounds for BlockLevelNode {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             BlockLevelNode::InitVar(x) => x.bounds(),
@@ -105,12 +111,14 @@ impl SpanBounds for BlockLevelNode {
 }
 
 impl SpanBounds for InitializedVariable {
+    #[inline]
     fn bounds(&self) -> Span {
         self.variable.bounds() + self.expression.bounds()
     }
 }
 
 impl SpanBounds for Variable {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             Variable::Immutable {

@@ -30,24 +30,28 @@ pub enum Function {
 }
 
 impl Located for BodiedFunction {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.keyword.location()
     }
 }
 
 impl SpanBounds for BodiedFunction {
+    #[inline]
     fn bounds(&self) -> Span {
         self.keyword.0 + self.body.bounds()
     }
 }
 
 impl Located for AbstractFunction {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.keyword.location()
     }
 }
 
 impl Located for Function {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             Function::Abstract(x) => x.location(),

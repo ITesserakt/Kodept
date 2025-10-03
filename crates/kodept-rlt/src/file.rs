@@ -45,18 +45,21 @@ impl Module {
 }
 
 impl Located for Module {
+    #[inline]
     fn location(&self) -> CodePoint {
         self.get_keyword().location()
     }
 }
 
 impl Located for File {
+    #[inline]
     fn location(&self) -> CodePoint {
         CodePoint::new(0, 0)
     }
 }
 
 impl SpanBounds for File {
+    #[inline]
     fn bounds(&self) -> Span {
         CodePoint::single_point(0)
             + self.0.first().map(|it| it.bounds())
@@ -65,6 +68,7 @@ impl SpanBounds for File {
 }
 
 impl SpanBounds for Module {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             Module::Global {

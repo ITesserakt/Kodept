@@ -23,6 +23,7 @@ pub struct Contextual<T> {
 }
 
 impl Located for Term {
+    #[inline]
     fn location(&self) -> CodePoint {
         match self {
             Term::Reference(x) => x.location(),
@@ -34,6 +35,7 @@ impl Located for Term {
 }
 
 impl<T: Located> Located for Contextual<T> {
+    #[inline]
     fn location(&self) -> CodePoint {
         let (is_global, unfolded) = self.context.unfold();
         let first = unfolded
@@ -58,6 +60,7 @@ impl<T: Located> SpanBounds for Contextual<T> {
 }
 
 impl SpanBounds for Term {
+    #[inline]
     fn bounds(&self) -> Span {
         match self {
             Term::Reference(x) => x.bounds(),
