@@ -29,22 +29,6 @@ where
     similar_asserts::assert_eq!(tokens, get_tokens());
 }
 
-mod nom {
-    use crate::make_test_impl;
-    use kodept_parse::lexer::NomLexer;
-    use kodept_parse::tokenizer::LazyTokenizer;
-
-    #[test]
-    fn test_lazy() {
-        make_test_impl::<LazyTokenizer<_>, _>(NomLexer::new());
-    }
-    // 
-    // #[test]
-    // fn test_parallel() {
-    //     make_test_impl::<ParallelTokenizer<_>, _>(NomLexer::new())
-    // }
-}
-
 mod peg {
     use crate::make_test_impl;
     use kodept_parse::lexer::PegLexer;
@@ -63,26 +47,5 @@ mod peg {
     #[test]
     fn test_parallel() {
         make_test_impl::<ParallelTokenizer<_>, _>(PegLexer::<true>::new());
-    }
-}
-
-mod pest {
-    use crate::make_test_impl;
-    use kodept_parse::lexer::PestLexer;
-    use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer};
-
-    #[test]
-    fn test_lazy() {
-        make_test_impl::<LazyTokenizer<_>, _>(PestLexer::new());
-    }
-    
-    #[test]
-    fn test_eager() {
-        make_test_impl::<EagerTokenizer<_, _>, _>(PestLexer::new());
-    }
-    
-    #[test]
-    fn test_parallel() {
-        make_test_impl::<ParallelTokenizer<_>, _>(PestLexer::new())
     }
 }

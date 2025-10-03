@@ -2,7 +2,6 @@ use crate::common::{ErrorAdapter, RLTProducer};
 use crate::error::{Original, ParseErrors};
 use crate::token_stream::{PackedTokenStream};
 
-pub type NomParser = crate::nom::Parser;
 pub type PegParser<const TRACE: bool> = crate::peg::Parser<TRACE>;
 
 pub fn parse_from_top<'t, A, E, P, O>(input: PackedTokenStream<'t>, parser: P) -> Result<O, ParseErrors<A>>

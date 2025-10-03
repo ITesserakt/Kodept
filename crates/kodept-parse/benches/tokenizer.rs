@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use kodept_parse::lexer::{ASCIILexer, PegLexer, PestLexer};
-use kodept_parse::tokenizer::{EagerTokenizer, LazyTokenizer, ParallelTokenizer, Tok, TokCtor};
+use kodept_parse::lexer::{ASCIILexer, PegLexer};
+use kodept_parse::tokenizer::{EagerTokenizer, ParallelTokenizer, Tok, TokCtor};
 
 const FILENAME: &str = "benches/benchmarking_file1.kd";
 
@@ -21,21 +21,10 @@ fn bench_impls(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("ascii", factor), &contents, |b, i| {
             b.iter(|| EagerTokenizer::new(i, ASCIILexer::new()).into_vec())
         });
-        group.bench_with_input(BenchmarkId::new("pest", factor), &contents, |b, i| {
-            b.iter(|| EagerTokenizer::new(i, PestLexer::new()).into_vec())
-        });
-        group.bench_with_input(BenchmarkId::new("lazy-pest", factor), &contents, |b, i| {
-            b.iter(|| LazyTokenizer::new(i, PestLexer::new()).into_vec())
-        });
         group.bench_with_input(
             BenchmarkId::new("parallel-peg", factor),
             &contents,
             |b, i| b.iter(|| ParallelTokenizer::new(i, PegLexer::<false>::new()).into_vec()),
-        );
-        group.bench_with_input(
-            BenchmarkId::new("parallel-pest", factor),
-            &contents,
-            |b, i| b.iter(|| ParallelTokenizer::new(i, PestLexer::new()).into_vec()),
         );
     }
 }
