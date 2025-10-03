@@ -61,7 +61,7 @@ impl<T: SyntaxNode> DynSyntaxNode for T {
     }
 }
 
-#[derive(Copy, Clone, Hash, Eq)]
+#[derive(Copy, Clone)]
 pub struct ErasedNodePtr {
     ptr: Freeze<NonNull<dyn DynSyntaxNode>>,
 }
