@@ -16,7 +16,7 @@ kodept-report = { path = "../kodept-report" }
 kodept-rlt = { path = "../kodept-rlt" }
 
 [dev-dependencies]
-rstest = "0.24.0"
+rstest = "0.26.1"
 
 [lints]
 workspace = true
