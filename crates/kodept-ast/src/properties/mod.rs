@@ -22,7 +22,7 @@ pub struct Root {
     pub associated_file: FileDescriptor,
 }
 
-#[derive(Debug, Component, Copy, Clone, From, Into, Display)]
+#[derive(Debug, Component, From, Into, Copy, Clone)]
 #[component(immutable)]
 pub struct Lexeme(pub LexemeId);
 

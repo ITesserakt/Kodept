@@ -17,13 +17,14 @@ workspace = true
 [features]
 default = []
 parallel = ["dep:rayon", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
-debug = ["bevy_ecs/track_location", "bevy_ecs/backtrace"]
+debug = ["bevy_ecs/track_location", "bevy_ecs/backtrace", "bevy_utils/debug"]
 
 [dependencies]
 bevy_ecs.workspace = true
 derive_more.workspace = true
 smallvec = "1.13.2"
 
+bevy_utils = { version = "0.17.0", optional = true }
 rayon = { version = "1.10.0", optional = true }
 
 [dependencies.kodept-core]

@@ -91,6 +91,7 @@ parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept
 trace = ["dep:gag", "kodept-parse/trace"]
 interning = ["dep:kodept-interning"]
 nom = ["kodept-parse/nom"]
+debug = ["kodept-ast/debug"]
 
 [profile.test.package.proptest]
 opt-level = 3

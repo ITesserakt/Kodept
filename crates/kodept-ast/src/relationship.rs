@@ -65,7 +65,7 @@ where
 #[derive(Debug, Component)]
 #[relationship(relationship_target = Children)]
 #[repr(transparent)]
-pub struct ChildOf(Entity);
+pub struct ChildOf(pub(crate) Entity);
 
 const ALL_CHILDREN_BUFFER_SIZE: usize = 2;
 
@@ -258,7 +258,7 @@ where
     A: Arity,
 {
     fn on_add_hook(mut world: DeferredWorld, ctx: HookContext) {
-        let forward_id = world.component_id::<Contains<T, A>>().unwrap();
+        let forward_id = world.components_queue().queue_register_component::<Contains<T, A>>();
         let metadata = RelationshipMetadata {
             forward_id,
             backward_id: ctx.component_id,

@@ -4,7 +4,7 @@ use crate::properties::Node;
 use crate::properties::NodeProperty;
 use crate::properties::{HasProperty, Lexeme, SourceSpan};
 use crate::relationship::{ContainedBy, Contains, NodeRelationship};
-use crate::resource::rlt::{LexemeId, SyntaxResolver, SyntaxVariant};
+use crate::resource::rlt::{LexemeId, SyntaxResolver};
 use crate::traits::ASTNode;
 use crate::traits::CodeHolder;
 use crate::traits::FromSyntax;
@@ -16,6 +16,7 @@ use bevy_ecs::ptr::{MovingPtr, OwningPtr};
 use bevy_ecs::relationship::{RelatedSpawner, Relationship};
 use bevy_ecs::spawn::SpawnRelatedBundle;
 use bevy_ecs::spawn::{SpawnIter, SpawnOneRelated, SpawnWith};
+use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 use smallvec::SmallVec;
 use std::convert::identity;
 use std::marker::PhantomData;
@@ -61,7 +62,7 @@ pub struct ASTBuilder<Root, Properties, Children> {
 }
 
 #[derive(Debug)]
-pub struct NodeBundle<T>(T, SyntaxVariant<'static>);
+pub struct NodeBundle<T>(T, ErasedNodePtr);
 
 pub struct NodeSpawner<R, T, A> {
     _phantom: PhantomData<(R, T, A)>,
@@ -76,7 +77,7 @@ where
     pub fn spawn_raw<'s, U, P, C, V>(
         &mut self,
         builder: ASTBuilder<U, P, C>,
-        rlt_link: impl Into<SyntaxVariant<'s>>,
+        rlt_link: &impl SyntaxNode,
         wrap: impl FnOnce(NodeBundle<DefaultBundle<U, P, C>>) -> V,
     ) -> V
     where
@@ -86,16 +87,14 @@ where
         C: Bundle,
         V: BundleUnion,
     {
-        wrap(NodeBundle(builder.build(), unsafe {
-            std::mem::transmute(rlt_link.into())
-        }))
+        wrap(NodeBundle(builder.build(), ErasedNodePtr::new(rlt_link)))
     }
 
     #[allow(unsafe_code)]
     #[inline(always)]
-    pub fn spawn<'a, T, U, V>(
+    pub fn spawn<T, U, V>(
         &mut self,
-        node: &'a T,
+        node: &T,
         source: impl CodeHolder,
         wrap: impl FnOnce(NodeBundle<U::Bundle>) -> V,
     ) -> Result<V, U::Error>
@@ -103,13 +102,12 @@ where
         R: HasChild<U, Tag, Arity = A>,
         U: ASTNode + FromSyntax<T>,
         V: BundleUnion,
-        &'a T: Into<SyntaxVariant<'a>>,
-        T: 'static,
+        T: SyntaxNode,
     {
-        let variant = node.into();
-        Ok(wrap(NodeBundle(U::from_syntax(node, source)?, unsafe {
-            std::mem::transmute(variant)
-        })))
+        Ok(wrap(NodeBundle(
+            U::from_syntax(node, source)?,
+            ErasedNodePtr::new(node),
+        )))
     }
 
     pub const fn new() -> Self {
@@ -146,16 +144,15 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         }
     }
 
-    pub fn with_child<'a, T, U, Tag>(
+    pub fn with_child<T, U, Tag>(
         self,
-        node: &'a T,
+        node: &T,
         source: impl CodeHolder,
     ) -> Result<ASTBuilder<R, P, (C, ChildSpawn<T, R, U, Tag>)>, U::Error>
     where
         R: HasChild<U, Tag>,
         U: ASTNode + FromSyntax<T>,
-        &'a T: Into<SyntaxVariant<'a>>,
-        T: 'static,
+        T: SyntaxNode,
     {
         let child = Self::spawner().spawn(node, source, identity)?;
         let bundle = RelationTgt::<R, U, Tag>::spawn_one(child);
@@ -198,8 +195,7 @@ impl<R, P, C> ASTBuilder<R, P, C> {
     where
         R: HasChild<U, Tag>,
         U: ASTNode + FromSyntax<T>,
-        &'a T: Into<SyntaxVariant<'a>>,
-        T: 'static,
+        T: SyntaxNode,
     {
         #[cfg(feature = "parallel")]
         use rayon::prelude::*;
@@ -261,9 +257,9 @@ impl<R, P, C> ASTBuilder<R, P, C> {
         })
     }
 
-    pub fn with_opt_child<'a, T, U, Tag>(
+    pub fn with_opt_child<T, U, Tag>(
         self,
-        node: Option<&'a T>,
+        node: Option<&T>,
         source: impl CodeHolder,
     ) -> Result<
         ASTBuilder<
@@ -282,8 +278,7 @@ impl<R, P, C> ASTBuilder<R, P, C> {
     where
         R: HasChild<U, Tag>,
         U: ASTNode + FromSyntax<T>,
-        &'a T: Into<SyntaxVariant<'a>>,
-        T: 'static,
+        T: SyntaxNode,
     {
         let bundles: SmallVec<[_; 1]> = IntoIterator::into_iter(node)
             .map(|it| Self::spawner().spawn(it, source, identity))
@@ -395,8 +390,7 @@ impl<R, P, C> ASTBuilder<R, P, C> {
     where
         R: HasChild<U, Tag>,
         U: ASTNode + FromSyntax<T>,
-        &'a T: Into<SyntaxVariant<'a>>,
-        T: 'static,
+        T: SyntaxNode,
     {
         #[cfg(feature = "parallel")]
         use rayon::prelude::*;
@@ -454,17 +448,15 @@ impl<T: Bundle> DynamicBundle for NodeBundle<T> {
         bevy_ecs::ptr::deconstruct_moving_ptr!({
             let MaybeUninit::<NodeBundle> {
                 0: bundle,
-                1: link_ptr,
+                1: syntax,
             } = ptr;
         });
         unsafe {
             <T as DynamicBundle>::apply_effect(bundle, entity);
         }
-
-        let link_ptr = unsafe { link_ptr.assume_init() }.read();
-        let mut rlt = entity.resource_mut::<SyntaxResolver>();
-        let lexeme_id = unsafe { rlt.link(link_ptr) };
-        entity.insert(Lexeme(lexeme_id));
+        let syntax = unsafe { syntax.assume_init() }.read();
+        let resolver = entity.resource::<SyntaxResolver>();
+        entity.insert(Lexeme(resolver.get_id_for_ptr(&syntax)));
     }
 }
 

@@ -1,11 +1,11 @@
 use crate::interaction::Interaction;
-use crate::prelude::{CodeHolder, FromSyntax};
-use crate::properties::Lexeme;
-use crate::resource::rlt::{SyntaxResolver, SyntaxVariant};
+use crate::prelude::CodeHolder;
+use crate::resource::rlt::SyntaxResolver;
+use crate::traits::FromSyntax;
 use bevy_ecs::prelude::World;
 use derive_more::Constructor;
 use kodept_core::file_name::FileDescriptor;
-use kodept_rlt::prelude::RLT;
+use kodept_rlt::prelude::{self as rlt, RLT};
 
 #[derive(Debug)]
 pub struct AST {
@@ -19,32 +19,27 @@ pub struct SourceCode<S: CodeHolder> {
 }
 
 impl AST {
-    pub fn recursively_build_in<Root>(
+    pub fn recursively_build_in<Root: FromSyntax<rlt::File>>(
         interaction: &mut Interaction,
         start: RLT,
         source_code: SourceCode<impl CodeHolder>,
-    ) -> Result<(), Root::Error>
-    where
-        Root: FromSyntax<kodept_rlt::prelude::File>,
-    {
-        let mut syntax = SyntaxResolver::empty(start);
-        let whole_part = Root::from_syntax(syntax.root(), source_code.code)?;
-        #[expect(
-            unsafe_code,
-            reason = "`syntax.root()` belongs to the syntax tree and it's safe to link it"
-        )]
-        let id = unsafe { syntax.link(std::mem::transmute(SyntaxVariant::from(syntax.root()))) };
+    ) -> Result<(), Root::Error> {
         interaction.immediate_exclusive(|w| {
+            let syntax = SyntaxResolver::build(start);
+
+            let (root, root_id) = syntax.root();
+            let whole_bundle = Root::from_syntax(root, source_code.code)?;
             w.insert_resource(syntax);
             let mut entity = w.spawn((
+                whole_bundle,
                 crate::properties::Root {
                     associated_file: source_code.descriptor,
                 },
-                whole_part,
             ));
-            entity.insert(Lexeme(id));
-        });
-        Ok(())
+            entity.insert(crate::properties::Lexeme(root_id));
+
+            Ok(())
+        })
     }
 
     pub fn recursively_build<Root>(
