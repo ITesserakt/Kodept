@@ -51,7 +51,7 @@ pub fn build_ast(source: &SourceView, rlt: RLT, reports: &Reports) -> Execution<
     )
     .map_err(Wrapper)
     .extract_reports(*source.id, reports)?;
-    let metrics = kodept_interning::metrics::InterningMetrics::gather();
+    let metrics = kodept_interning::metrics::InterningMetrics::gather::<str>();
     let (saved_value, saved_suffix) = metrics.memory_save();
     tracing::debug!(
         ?metrics,

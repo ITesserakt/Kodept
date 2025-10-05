@@ -1073,10 +1073,10 @@ dependencies = [
 
 [[package]]
 name = "kodept-interning"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
+ "foldhash",
  "kodept-core",
- "serde",
 ]
 
 [[package]]

@@ -1,6 +1,4 @@
-use crate::{GLOBAL_STRING_POOL, TOTAL_SHARES};
-use std::ops::Deref;
-use std::sync::atomic::Ordering;
+use crate::{GlobalInterner, Internable, Interner};
 
 #[derive(Debug)]
 pub struct InterningMetrics {
@@ -11,32 +9,72 @@ pub struct InterningMetrics {
 
 struct CollectProperties {
     count: usize,
-    total_size: usize,
+    total_length: usize,
 }
 
-impl<A: Deref<Target = str>> FromIterator<A> for CollectProperties {
+pub trait HasLength {
+    fn len(&self) -> usize;
+}
+
+impl<T> HasLength for Vec<T> {
+    fn len(&self) -> usize {
+        Vec::len(self)
+    }
+}
+
+impl<T: HasLength + ?Sized> HasLength for Box<T> {
+    fn len(&self) -> usize {
+        T::len(self)
+    }
+}
+
+impl<T: HasLength + ?Sized> HasLength for &T {
+    fn len(&self) -> usize {
+        T::len(*self)
+    }
+}
+
+impl HasLength for str {
+    fn len(&self) -> usize {
+        str::len(self)
+    }
+}
+
+impl<T> HasLength for [T] {
+    fn len(&self) -> usize {
+        <[T]>::len(self)
+    }
+}
+
+impl<A: HasLength> FromIterator<A> for CollectProperties {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
         let mut count = 0;
         let mut total_size = 0;
         for item in iter {
             count += 1;
-            total_size += item.deref().len();
+            total_size += item.len();
         }
 
-        Self { count, total_size }
+        Self { count, total_length: total_size }
     }
 }
 
 impl InterningMetrics {
-    pub fn gather() -> Self {
-        let total_shares = TOTAL_SHARES.load(Ordering::Acquire);
-        let lock = GLOBAL_STRING_POOL.entries();
+    pub fn gather<T: GlobalInterner + ?Sized + 'static + HasLength>() -> Self
+    {
+        Self::gather_for_interner(T::interner())
+    }
+
+    pub fn gather_for_interner<T: Internable + ?Sized + HasLength>(interner: &Interner<T>) -> Self
+    {
+        let total_shares = interner.total_shares();
+        let lock = interner.entries();
         let pooled_entries: CollectProperties = lock.iter().copied().collect();
         let coefficient = total_shares as f64 / (pooled_entries.count as f64);
 
-        let total_allocated_size_for_indexes = total_shares * size_of::<&'static str>();
+        let total_allocated_size_for_indexes = total_shares * size_of::<&'static T>();
         let total_allocated_size_for_strings =
-            pooled_entries.count * size_of::<Box<str>>() + pooled_entries.total_size;
+            pooled_entries.count * size_of::<Box<T>>() + pooled_entries.total_length;
 
         Self {
             total_shares,

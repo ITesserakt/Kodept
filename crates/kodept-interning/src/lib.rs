@@ -2,43 +2,22 @@
 
 mod implementation;
 pub mod metrics;
+mod fixed_hasher;
+#[cfg(feature = "code_holder")]
+mod code_holder;
 
-use crate::implementation::{Interned, Interner};
-use kodept_core::code_point::CodePoint;
-use kodept_core::structure::span::CodeHolder;
-use std::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(feature = "code_holder")]
+pub use code_holder::InterningCodeHolder;
+pub use implementation::{Interned, Internable, Interner};
+
+pub trait GlobalInterner: Internable {
+    fn interner() -> &'static Interner<Self>;
+}
 
 static GLOBAL_STRING_POOL: Interner<str> = Interner::new();
-static TOTAL_SHARES: AtomicUsize = AtomicUsize::new(0);
 
-#[derive(Copy, Clone)]
-pub struct InterningCodeHolder<C> {
-    inner: C,
-}
-
-impl<C> InterningCodeHolder<C>
-where
-    C: CodeHolder,
-    C::Str: AsRef<str>,
-{
-    pub const fn new(inner: C) -> Self {
-        Self {
-            inner,
-        }
-    }
-}
-
-impl<C> CodeHolder for InterningCodeHolder<C>
-where
-    C: CodeHolder,
-    C::Str: AsRef<str>,
-{
-    type Str = Interned<str>;
-
-    fn get_chunk(self, at: CodePoint) -> Self::Str {
-        let chunk = self.inner.get_chunk(at);
-
-        TOTAL_SHARES.fetch_add(1, Ordering::AcqRel);
-        GLOBAL_STRING_POOL.intern(chunk.as_ref())
+impl GlobalInterner for str {
+    fn interner() -> &'static Interner<Self> {
+        &GLOBAL_STRING_POOL
     }
 }

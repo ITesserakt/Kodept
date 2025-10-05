@@ -6,13 +6,27 @@
 //! speed up code by shrinking the stack size of large types,
 //! and make comparisons for any type as fast as integers.
 
-use crate::TOTAL_SHARES;
+use crate::fixed_hasher::FixedHasher;
 use core::{fmt::Debug, hash::Hash, ops::Deref};
-use std::collections::HashSet;
-use std::sync::atomic::Ordering;
-use std::sync::{OnceLock, PoisonError, RwLock, RwLockReadGuard};
+use std::sync::RwLockReadGuard;
+use std::{borrow::ToOwned, boxed::Box};
+use std::{
+    collections::HashSet,
+    sync::{PoisonError, RwLock},
+};
 
-pub struct Interned<T: ?Sized + 'static = str>(pub &'static T);
+/// An interned value. Will stay valid until the end of the program and will not drop.
+///
+/// For details on interning, see [the module level docs](self).
+///
+/// # Comparisons
+///
+/// Interned values use reference equality, meaning they implement [`Eq`]
+/// and [`Hash`] regardless of whether `T` implements these traits.
+/// Two interned values are only guaranteed to compare equal if they were interned using
+/// the same [`Interner`] instance.
+// NOTE: This type must NEVER implement Borrow since it does not obey that trait's invariants.
+pub struct Interned<T: ?Sized + 'static>(pub &'static T);
 
 impl<T: ?Sized> Deref for Interned<T> {
     type Target = T;
@@ -24,10 +38,11 @@ impl<T: ?Sized> Deref for Interned<T> {
 
 impl<T: ?Sized> Clone for Interned<T> {
     fn clone(&self) -> Self {
-        TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
-        Self(self.0)
+        *self
     }
 }
+
+impl<T: ?Sized> Copy for Interned<T> {}
 
 // Two Interned<T> should only be equal if they are clones from the same instance.
 // Therefore, we only use the pointer to determine equality.
@@ -54,14 +69,14 @@ impl<T: ?Sized + Debug> Debug for Interned<T> {
 
 impl<T> From<&Interned<T>> for Interned<T> {
     fn from(value: &Interned<T>) -> Self {
-        value.clone()
+        *value
     }
 }
 
 /// A trait for internable values.
 ///
 /// This is used by [`Interner<T>`] to create static references for values that are interned.
-pub(crate) trait Internable: Hash + Eq {
+pub trait Internable: Hash + Eq {
     /// Creates a static reference to `self`, possibly leaking memory.
     fn leak(&self) -> &'static Self;
 
@@ -95,12 +110,20 @@ impl Internable for str {
 /// The implementation ensures that two equal values return two equal [`Interned<T>`] values.
 ///
 /// To use an [`Interner<T>`], `T` must implement [`Internable`].
-pub(crate) struct Interner<T: ?Sized + 'static>(OnceLock<RwLock<HashSet<&'static T>>>);
+pub struct Interner<T: ?Sized + 'static> {
+    set: RwLock<HashSet<&'static T, FixedHasher>>,
+    #[cfg(feature = "metrics")]
+    total_shares: std::sync::atomic::AtomicUsize,
+}
 
 impl<T: ?Sized> Interner<T> {
     /// Creates a new empty interner
-    pub(crate) const fn new() -> Self {
-        Self(OnceLock::new())
+    pub const fn new() -> Self {
+        Self {
+            set: RwLock::new(HashSet::with_hasher(FixedHasher)),
+            #[cfg(feature = "metrics")]
+            total_shares: std::sync::atomic::AtomicUsize::new(0),
+        }
     }
 }
 
@@ -110,31 +133,43 @@ impl<T: Internable + ?Sized> Interner<T> {
     /// If it is called the first time for `value`, it will possibly leak the value and return an
     /// [`Interned<T>`] using the obtained static reference. Subsequent calls for the same `value`
     /// will return [`Interned<T>`] using the same static reference.
-    pub(crate) fn intern(&self, value: &T) -> Interned<T> {
-        let lock = self.0.get_or_init(Default::default);
+    pub fn intern(&self, value: &T) -> Interned<T> {
+        #[cfg(feature = "metrics")]
+        self.total_shares.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        
         {
-            let set = lock.read().unwrap_or_else(PoisonError::into_inner);
-            if let Some(value) = set.get(value) {
-                TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
+            let lock = self.set.read().unwrap_or_else(PoisonError::into_inner);
+
+            if let Some(value) = lock.get(value) {
                 return Interned(*value);
             }
         }
         {
-            let mut set = lock.write().unwrap_or_else(PoisonError::into_inner);
-            if let Some(value) = set.get(value) {
-                TOTAL_SHARES.fetch_add(1, Ordering::Relaxed);
+            let mut lock = self.set.write().unwrap_or_else(PoisonError::into_inner);
+
+            if let Some(value) = lock.get(value) {
                 Interned(*value)
             } else {
                 let leaked = value.leak();
-                set.insert(leaked);
+                lock.insert(leaked);
                 Interned(leaked)
             }
         }
     }
 
-    pub(crate) fn entries(&self) -> RwLockReadGuard<'_, HashSet<&'static T>> {
-        let lock = self.0.get_or_init(Default::default);
-        lock.read().unwrap_or_else(PoisonError::into_inner)
+    pub(crate) fn entries(&self) -> RwLockReadGuard<'_, HashSet<&'static T, FixedHasher>> {
+        self.set.read().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    #[cfg(feature = "metrics")]
+    pub(crate) fn total_shares(&self) -> usize {
+        self.total_shares.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    #[cfg(not(feature = "metrics"))]
+    #[inline(always)]
+    pub(crate) fn total_shares(&self) -> usize {
+        0
     }
 }
 
@@ -144,18 +179,12 @@ impl<T: ?Sized> Default for Interner<T> {
     }
 }
 
-impl<T: ?Sized> Drop for Interned<T> {
-    fn drop(&mut self) {
-        TOTAL_SHARES.fetch_sub(1, Ordering::Relaxed);
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use core::hash::{Hash, Hasher};
-    use std::collections::hash_map::DefaultHasher;
-
     use super::{Internable, Interned, Interner};
+    use crate::fixed_hasher::FixedHasher;
+    use core::hash::{BuildHasher, Hash, Hasher};
+    use std::{boxed::Box, string::ToString};
 
     #[test]
     fn zero_sized_type() {
@@ -234,17 +263,14 @@ mod tests {
     #[test]
     fn same_interned_instance() {
         let a = Interned("A");
-        let b = a.clone();
+        let b = a;
 
         assert_eq!(a, b);
 
-        let mut hasher = DefaultHasher::default();
-        a.hash(&mut hasher);
-        let hash_a = hasher.finish();
+        let hasher = FixedHasher;
 
-        let mut hasher = DefaultHasher::default();
-        b.hash(&mut hasher);
-        let hash_b = hasher.finish();
+        let hash_a = hasher.hash_one(a);
+        let hash_b = hasher.hash_one(b);
 
         assert_eq!(hash_a, hash_b);
     }

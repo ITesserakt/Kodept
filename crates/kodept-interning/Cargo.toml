@@ -1,6 +1,6 @@
 [package]
 name = "kodept-interning"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -8,8 +8,9 @@ rust-version.workspace = true
 workspace = true
 
 [features]
-serde = ["dep:serde", "kodept-core/serde"]
+metrics = []
+code_holder = ["dep:kodept-core"]
 
 [dependencies]
-serde = { version = "1", optional = true, features = ["derive"] }
-kodept-core = { path = "../kodept-core", version = "0.4" }
+foldhash = "0.2.0"
+kodept-core = { path = "../kodept-core", version = "0.4" , optional = true }
