@@ -8,6 +8,7 @@ use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast_nodes::term::Ref;
 use kodept_inference::r#type::PolymorphicType;
 use std::hash::Hash;
+use bevy_ecs::entity::EntityHashSet;
 
 #[derive(Debug, Component)]
 pub(crate) struct RefToSymbol {
@@ -15,6 +16,14 @@ pub(crate) struct RefToSymbol {
     pub visibility: Visibility,
     pub scope_id: Entity,
 }
+
+#[derive(Debug, Component)]
+#[relationship(relationship_target = Usages)]
+pub struct Declaration(pub Entity);
+
+#[derive(Debug, Component)]
+#[relationship_target(relationship = Declaration)]
+pub struct Usages(EntityHashSet);
 
 #[derive(Debug, Component, Copy, Clone)]
 pub(crate) struct DeferRefResolution;

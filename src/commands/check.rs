@@ -11,10 +11,7 @@ use kodept_frontend::Execution;
 use kodept_interaction::lint::{
     DebugScopesLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets,
 };
-use kodept_interaction::prelude::{
-    install_reporting_support, install_system_completion_introspection_support, Disposable,
-    ExtractSymbolsPass, Interaction, ReferenceResolverPass, ScopeBuildingPass,
-};
+use kodept_interaction::prelude::{install_reporting_support, install_system_completion_introspection_support, Disposable, ExtractSymbolsPass, Interaction, ReferenceResolverPass, ScopeBuildingPass, TypeInferPass};
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
@@ -67,6 +64,7 @@ impl Command for Check {
                 let b = ScopeBuildingPass::install(&mut ctx);
                 let c = ExtractSymbolsPass::install(&mut ctx);
                 let d = ReferenceResolverPass::install(&mut ctx);
+                let e = TypeInferPass::install(&mut ctx);
 
                 for frame in 0..10 {
                     let _guard = trace_span!("pass", frame).entered();
@@ -74,7 +72,7 @@ impl Command for Check {
                     trace!("================================================================")
                 }
 
-                (a, b, c, d)
+                (a, b, c, (d, e))
             });
             ast.interact()
                 .immediate_exclusive(|w| block_disposal.dispose(w));

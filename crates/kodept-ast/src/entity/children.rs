@@ -12,6 +12,8 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
+pub type ChildrenBetween<'a, T, U, Tag = ()> = &'a Target<Rel<T, U, Tag>>;
+
 type Rel<T, U, Tag> = <T as NodeRelationship<U, Tag>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
 type Container<A, T> = <A as TryFromIter>::Container<T>;

@@ -22,7 +22,7 @@ pub mod prelude {
     pub use super::node_id::{Erase, NodeId};
     pub use super::relationship::{ChildOf, Children};
     pub use super::traits::{ASTNode, CodeHolder, FromSyntax};
-    pub use crate::entity::children::HierarchicalQuery;
+    pub use crate::entity::children::{HierarchicalQuery, ChildrenBetween};
     pub use crate::entity::properties::PropertyQuery;
 }
 

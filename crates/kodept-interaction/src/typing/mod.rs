@@ -1,29 +1,21 @@
+use crate::report::Reporter;
+use crate::utils::{Ctx, Disposable, Interaction, wrap_system};
+use bevy_ecs::prelude::{Add, On, Query};
 use bevy_ecs::{
     component::Component,
     resource::Resource,
     system::{ResMut, StaticSystemParam, SystemParam},
 };
+use kodept_ast::properties::SourceSpan;
 use kodept_inference::r#type::MonomorphicType;
-
-use crate::utils::{Ctx, Disposable, Interaction, wrap_system};
+use kodept_report::prelude::{Diagnostic, Severity};
 
 mod function;
 mod literals;
 mod type_refs;
+mod refs;
 
 pub struct TypeInferPass;
-
-#[derive(Debug, Resource, Default)]
-struct TVarGen(usize);
-
-#[derive(SystemParam)]
-struct TypeInferHandler<'w, 's, Q = ()>
-where
-    Q: SystemParam + 'static,
-{
-    tvar_id_gen: ResMut<'w, TVarGen>,
-    additional_queries: StaticSystemParam<'w, 's, Q>,
-}
 
 #[derive(Debug, Component)]
 #[component(immutable)]
@@ -31,9 +23,27 @@ struct Typed(MonomorphicType);
 
 impl Interaction for TypeInferPass {
     fn install(ctx: &mut Ctx) -> impl Disposable + use<> {
-        ctx.immediate_exclusive(|w| w.init_resource::<TVarGen>());
         ctx.register(wrap_system(Self::name(), literals::system));
-        ctx.register(wrap_system(Self::name(), type_refs::system));
+        ctx.register(wrap_system(Self::name(), type_refs::ty_system));
+        ctx.register(wrap_system(Self::name(), type_refs::prod_ty_system));
+        ctx.register(wrap_system(Self::name(), refs::system));
+
+        ctx.immediate_exclusive(|w| {
+            w.add_observer(
+                |type_added: On<Add, Typed>,
+                 query: Query<(&SourceSpan, &Typed)>,
+                 reporter: Reporter| {
+                    let Ok((span, ty)) = query.get(type_added.entity) else {
+                        unreachable!();
+                    };
+                    reporter.report_ad_hoc(|| {
+                        Diagnostic::new(Severity::Note)
+                            .with_message("Type resolved")
+                            .with_primary_label(format!("{}", ty.0), span.0)
+                    })
+                },
+            );
+        });
     }
 }
 

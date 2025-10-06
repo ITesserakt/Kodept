@@ -68,7 +68,7 @@ impl Interaction for ReferenceResolverPass {
             .chain();
         
         ctx.register(set);
-        ctx.register(debug_resolved_refs_system);
+        // ctx.register(debug_resolved_refs_system);
         ctx.configure_sets((ExtractSymbolsPass, ReferenceResolverPass).chain());
     }
 }

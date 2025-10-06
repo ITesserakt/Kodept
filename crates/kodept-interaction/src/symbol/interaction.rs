@@ -1,11 +1,13 @@
 use crate::report::Reporter;
-use crate::scope::storage::Scope;
 use crate::scope::Scoped;
-use crate::symbol::table::SymbolTable;
+use crate::scope::storage::Scope;
 use crate::symbol::SymbolKind::{self, Function, Parameter, Type, Variable};
-use crate::symbol::{SymbolData, SymbolDescription};
-use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
-use bevy_ecs::prelude::{any_match_filter, Added, Query, SystemSet, Without};
+use crate::symbol::table::SymbolTable;
+use crate::symbol::{Declaration, RefToSymbol, SymbolData, SymbolDescription};
+use crate::utils::{Ctx, Disposable, Interaction, wrap_system};
+use bevy_ecs::prelude::{
+    Added, AnyOf, Commands, Insert, On, Query, SystemSet, Without, any_match_filter,
+};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use kodept_ast::define_union;
@@ -13,8 +15,9 @@ use kodept_ast::prelude::AnyNodeRef;
 use kodept_ast::properties::{Name, Node, SourceSpan};
 use kodept_ast_nodes::block_level::VarDecl;
 use kodept_ast_nodes::consts::Const;
+use kodept_ast_nodes::term::Ref;
 use kodept_ast_nodes::top_level::EnumConst;
-use kodept_ast_nodes::types::{NonTyParam, TyParam};
+use kodept_ast_nodes::types::{NonTyParam, Ty, TyParam};
 use kodept_core::code_point::Span;
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
@@ -63,10 +66,39 @@ impl Interaction for ExtractSymbolsPass {
                 .run_if(any_match_filter::<(SymbolUnionFilter, Added<Scoped>)>)
                 .in_set(ExtractSymbolsPass),
         );
+        ctx.immediate_exclusive(|w| {
+            w.add_observer(Self::sustain_declaration_links);
+        });
     }
 }
 
 impl ExtractSymbolsPass {
+    fn sustain_declaration_links(
+        target: On<Insert, RefToSymbol>,
+        refs: Query<(&RefToSymbol, AnyOf<(&Ref, &Ty)>)>,
+        scopes: Query<&SymbolTable>,
+        mut commands: Commands,
+    ) {
+        let Ok((ref_to_symbol, (as_ref, as_ty))) = refs.get(target.entity) else {
+            return;
+        };
+        let name = as_ref
+            .map(|it| &it.ident)
+            .or(as_ty.map(|it| &it.ident))
+            .cloned()
+            .unwrap();
+        let description = SymbolDescription::new(Name::new(name), ref_to_symbol.kind);
+        let Ok(table) = scopes.get(ref_to_symbol.scope_id) else {
+            return;
+        };
+        let Some(data) = table.get(&description) else {
+            return;
+        };
+        commands
+            .entity(target.entity)
+            .insert(Declaration(data.bound_node.entity()));
+    }
+
     /// Symbol rules:
     /// - there is should be only one symbol of some kind per scope
     /// - `Identifier::Type` should have `Type` kind
