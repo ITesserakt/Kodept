@@ -26,7 +26,7 @@ where
     Filter: QueryFilter + 'static,
 {
     parent_query: Query<'w, 's, (Entity, &'static T, &'static Target<Rel<T, U, Tag>>), Filter>,
-    children_query: Query<'w, 's, (Entity, &'static U, &'static Rel<T, U, Tag>), Filter>,
+    children_query: Query<'w, 's, (Entity, &'static U, &'static Rel<T, U, Tag>)>,
 }
 
 pub trait TryFromIter {
@@ -122,6 +122,20 @@ where
                         child.1,
                     )
                 })
+        })
+    }
+
+    pub fn iter_by_layers(
+        &self,
+    ) -> impl Iterator<Item = (NodeId<T>, &T, impl Iterator<Item = (NodeId<U>, &U)>)> {
+        self.parent_query.iter().map(|parent| {
+            (
+                NodeId::from(parent.0),
+                parent.1,
+                self.children_query
+                    .iter_many(parent.2.iter())
+                    .map(move |child| (NodeId::from(child.0), child.1)),
+            )
         })
     }
 
