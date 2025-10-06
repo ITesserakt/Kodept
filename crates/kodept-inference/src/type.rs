@@ -2,26 +2,15 @@ use crate::substitution::Substitutions;
 use crate::traits::{FreeTypeVars, Substitutable};
 use crate::utils::JoinedDisplay;
 use derive_more::From;
-use kodept_interning::{GlobalInterner, Interned, Interner};
+use kodept_interning::{GlobalInterner, InternInto, Interned, Interner};
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU8;
 use std::ops::BitAnd;
 
-pub trait InternInto {
-    fn intern_into(self) -> Interned<MonomorphicType>;
-}
-
-impl<'a> InternInto for &'a MonomorphicType {
-    #[inline(always)]
+impl<'a> InternInto<MonomorphicType> for &'a MonomorphicType {
     fn intern_into(self) -> Interned<MonomorphicType> {
         self.intern()
-    }
-}
-
-impl<T: Into<MonomorphicType>> InternInto for T {
-    fn intern_into(self) -> Interned<MonomorphicType> {
-        self.into().intern()
     }
 }
 
@@ -220,12 +209,15 @@ mod ctors {
     }
 
     impl MonomorphicType {
-        pub fn fun1(input: impl InternInto, output: impl InternInto) -> MonomorphicType {
+        pub fn fun1(
+            input: impl InternInto<MonomorphicType>,
+            output: impl InternInto<MonomorphicType>,
+        ) -> MonomorphicType {
             MonomorphicType::Fn(input.intern_into(), output.intern_into())
         }
 
-        pub fn fun<T: InternInto>(
-            head: impl InternInto,
+        pub fn fun<T: InternInto<MonomorphicType>>(
+            head: impl InternInto<MonomorphicType>,
             tail: impl IntoIterator<Item = T, IntoIter: DoubleEndedIterator<Item = T>>,
             output: MonomorphicType,
         ) -> MonomorphicType {
@@ -237,7 +229,7 @@ mod ctors {
         }
 
         pub fn tuple(
-            items: impl IntoIterator<Item: InternInto>,
+            items: impl IntoIterator<Item: InternInto<MonomorphicType>>,
         ) -> MonomorphicType {
             MonomorphicType::Tuple(items.into_iter().map(|it| it.intern_into()).collect())
         }
@@ -249,7 +241,7 @@ mod ctors {
         pub fn constant() -> Self {
             MonomorphicType::Constant(TConstant::new())
         }
-        
+
         pub fn primitive(value: PrimitiveType) -> Self {
             Self::Primitive(value.intern_owned())
         }

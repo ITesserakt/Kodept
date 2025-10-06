@@ -23,6 +23,16 @@ pub trait GlobalInterner: Internable {
     }
 }
 
+pub trait InternInto<T> {
+    fn intern_into(self) -> Interned<T>;
+}
+
+impl<T: GlobalInterner, U: Into<T>> InternInto<T> for U {
+    fn intern_into(self) -> Interned<T> {
+        self.into().intern()
+    }
+}
+
 static GLOBAL_STRING_POOL: Interner<str> = Interner::new();
 
 impl GlobalInterner for str {
