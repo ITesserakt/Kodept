@@ -14,6 +14,7 @@ use std::{
     collections::HashSet,
     sync::{PoisonError, RwLock},
 };
+use std::fmt::Display;
 
 /// An interned value. Will stay valid until the end of the program and will not drop.
 ///
@@ -67,6 +68,12 @@ impl<T: ?Sized + Debug> Debug for Interned<T> {
     }
 }
 
+impl<T: ?Sized + Display> Display for Interned<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl<T> From<&Interned<T>> for Interned<T> {
     fn from(value: &Interned<T>) -> Self {
         *value
@@ -79,6 +86,13 @@ impl<T> From<&Interned<T>> for Interned<T> {
 pub trait Internable: Hash + Eq {
     /// Creates a static reference to `self`, possibly leaking memory.
     fn leak(&self) -> &'static Self;
+
+    fn leak_owned(self) -> &'static Self
+    where
+        Self: Sized,
+    {
+        Self::leak(&self)
+    }
 
     /// Returns `true` if the two references point to the same value.
     fn ref_eq(&self, other: &Self) -> bool;
@@ -136,7 +150,7 @@ impl<T: Internable + ?Sized> Interner<T> {
     pub fn intern(&self, value: &T) -> Interned<T> {
         #[cfg(feature = "metrics")]
         self.total_shares.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        
+
         {
             let lock = self.set.read().unwrap_or_else(PoisonError::into_inner);
 
@@ -151,6 +165,33 @@ impl<T: Internable + ?Sized> Interner<T> {
                 Interned(*value)
             } else {
                 let leaked = value.leak();
+                lock.insert(leaked);
+                Interned(leaked)
+            }
+        }
+    }
+
+    pub fn intern_owned(&self, value: T) -> Interned<T>
+    where
+        T: Sized
+    {
+        #[cfg(feature = "metrics")]
+        self.total_shares.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        {
+            let lock = self.set.read().unwrap_or_else(PoisonError::into_inner);
+
+            if let Some(value) = lock.get(&value) {
+                return Interned(*value);
+            }
+        }
+        {
+            let mut lock = self.set.write().unwrap_or_else(PoisonError::into_inner);
+
+            if let Some(value) = lock.get(&value) {
+                Interned(*value)
+            } else {
+                let leaked = value.leak_owned();
                 lock.insert(leaked);
                 Interned(leaked)
             }

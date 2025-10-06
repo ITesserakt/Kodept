@@ -1,18 +1,14 @@
-use std::borrow::Cow;
-use std::collections::HashSet;
-use std::fmt::Debug;
-use std::hash::Hash;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use Constraint::{ExplicitInstance, ImplicitInstance};
-use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
-
-use crate::constraint::Constraint::Eq;
+use crate::constraint::Constraint::{Eq, ExplicitInstance, ImplicitInstance};
 use crate::constraint::{Constraint, EqConstraint};
-use crate::process::{Infer, Suspend};
+use crate::substitution::Substitutions;
 use crate::r#type::MonomorphicType::Fn;
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
-use crate::substitution::Substitutions;
+use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
+use kodept_interning::{GlobalInterner, Interned};
+use std::collections::HashSet;
+use std::hash::Hash;
+use std::marker::PhantomData;
+use std::ops::Deref;
 
 pub(crate) trait Substitutable {
     type Output;
@@ -28,79 +24,47 @@ pub(crate) trait ActiveTVars {
     fn active_vars(self) -> HashSet<TVar>;
 }
 
-pub trait EnvironmentProvider<Key: Hash + std::cmp::Eq> {
-    type Error;
-
-    #[deprecated]
-    fn get(&self, key: &Key) -> Option<Cow<'_, PolymorphicType>>
-    where
-        Self::Error: Debug,
-    {
-        self.maybe_get(key).unwrap()
-    }
-
-    fn maybe_get(&self, key: &Key) -> Result<Option<Cow<'_, PolymorphicType>>, Self::Error>;
-}
-
-pub trait TypeInfer<Expr>: Sized {
-    type Error;
-    type Output;
-
-    fn apply<'a>(&mut self, expr: Expr) -> Infer<'a, Expr, Self>
-    where
-        Expr: 'a;
-
-    fn suspend(expr: Expr) -> Suspend<Expr, Self> {
-        Infer::suspend(expr)
-    }
-
-    fn infer<'a>(expr: Expr) -> Infer<'a, Expr, Self> {
-        Self::suspend(expr).pure()
-    }
-
-    fn infer_eagerly<'a, E>(
-        &mut self,
-        expr: Expr,
-        executor: impl Executor<'a, Expr, Self, Error = E>,
-    ) -> Result<Self::Output, E>
-    where
-        Expr: 'a,
-    {
-        executor.fold(self, Self::infer(expr))
-    }
-}
-
-pub trait Executor<'a, E, T: TypeInfer<E>> {
-    type Error;
-
-    fn fold(self, state: &mut T, value: Infer<'a, E, T>) -> Result<T::Output, Self::Error>
-    where
-        E: 'a;
-}
-
 // -------------------------------------------------------------------------------------------------
 
 impl Substitutable for TVar {
     type Output = HashSet<TVar>;
 
     fn substitute(&self, subst: &Substitutions) -> Self::Output {
-        subst.get(self).unwrap_or(&Var(*self)).free_types()
+        subst
+            .get(self)
+            .unwrap_or(Var(*self).intern_owned())
+            .free_types()
     }
 }
 
 impl Substitutable for MonomorphicType {
+    type Output = Interned<MonomorphicType>;
+
+    fn substitute(&self, subst: &Substitutions) -> Self::Output {
+        match self {
+            Primitive(_) | Constant(_) => self.intern(),
+            Var(x) => subst.get(x).unwrap_or(self.intern()),
+            Fn(input, output) => {
+                Fn(input.substitute(subst), output.substitute(subst)).intern_owned()
+            }
+            Tuple(inner) => Tuple(ChangeOutputType::wrap(inner).substitute(subst)).intern_owned(),
+            Pointer(inner) => Pointer(inner.substitute(subst)).intern_owned(),
+        }
+    }
+}
+
+impl Substitutable for Interned<MonomorphicType> {
     type Output = Self;
 
-    fn substitute(&self, subst: &Substitutions) -> MonomorphicType {
-        match self {
-            Primitive(_) | Constant(_) => self.clone(),
-            Var(x) => subst.get(x).unwrap_or(self).clone(),
-            Fn(input, output) => Fn(
-                Arc::new(input.substitute(subst)),
-                Arc::new(output.substitute(subst)),
-            ),
-            Tuple(inner) => Tuple(ChangeOutputType::wrap(inner).substitute(subst)),
-            Pointer(inner) => Pointer(Arc::new(inner.substitute(subst))),
+    fn substitute(&self, subst: &Substitutions) -> Self::Output {
+        match self.0 {
+            Primitive(_) | Constant(_) => *self,
+            Var(x) => subst.get(x).unwrap_or(*self),
+            Fn(input, output) => {
+                Fn(input.substitute(subst), output.substitute(subst)).intern_owned()
+            }
+            Tuple(inner) => Tuple(ChangeOutputType::wrap(inner).substitute(subst)).intern_owned(),
+            Pointer(inner) => Pointer(inner.substitute(subst)).intern_owned(),
         }
     }
 }
@@ -161,8 +125,6 @@ impl<T: Substitutable> Substitutable for [T] {
 
 impl<I, T> ChangeOutputType<I, T> {
     pub fn wrap(slice: &[T]) -> ChangeOutputType<I, &[T]> {
-        // SAFETY: slice is safe to transmute into `ChangeOutputType` because
-        // the latter is `transparent`
         ChangeOutputType(PhantomData, slice)
     }
 }
@@ -220,7 +182,19 @@ impl FreeTypeVars for &PolymorphicType {
     }
 }
 
-impl<T: FreeTypeVars, I: IntoIterator<Item = T>> FreeTypeVars for I {
+impl<T> FreeTypeVars for &[T]
+where
+    T: Deref,
+    for<'a> &'a T::Target: FreeTypeVars,
+{
+    fn free_types(self) -> HashSet<TVar> {
+        self.into_iter().fold(HashSet::new(), |acc, next| {
+            &acc | &next.deref().free_types()
+        })
+    }
+}
+
+impl FreeTypeVars for &HashSet<TVar> {
     fn free_types(self) -> HashSet<TVar> {
         self.into_iter()
             .fold(HashSet::new(), |acc, next| &acc | &next.free_types())
@@ -232,7 +206,7 @@ impl<T: FreeTypeVars, I: IntoIterator<Item = T>> FreeTypeVars for I {
 impl ActiveTVars for &Constraint {
     fn active_vars(self) -> HashSet<TVar> {
         match self {
-            Eq(EqConstraint { t1, t2 }) => [t1.clone(), t2.clone()].free_types(),
+            Eq(EqConstraint { t1, t2 }) => [*t1, *t2].free_types(),
             ExplicitInstance { t, s } => &t.free_types() | &s.free_types(),
             ImplicitInstance { t1, ctx, t2 } => {
                 let set = &ctx.free_types() & &t2.free_types();

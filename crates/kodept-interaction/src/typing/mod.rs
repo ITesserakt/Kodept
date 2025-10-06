@@ -3,11 +3,9 @@ use bevy_ecs::{
     resource::Resource,
     system::{ResMut, StaticSystemParam, SystemParam},
 };
-use kodept_inference::{
-    assumption::AssumptionSet, constraint::Constraint, r#type::MonomorphicType,
-};
+use kodept_inference::r#type::MonomorphicType;
 
-use crate::utils::{wrap_system, Ctx, Disposable, Interaction};
+use crate::utils::{Ctx, Disposable, Interaction, wrap_system};
 
 mod function;
 mod literals;
@@ -30,22 +28,6 @@ where
 #[derive(Debug, Component)]
 #[component(immutable)]
 struct Typed(MonomorphicType);
-
-struct PartialInfer {
-    assumptions: AssumptionSet,
-    constraints: Vec<Constraint>,
-    immediate_type: MonomorphicType,
-}
-
-impl PartialInfer {
-    fn from_ty(ty: impl Into<MonomorphicType>) -> Self {
-        Self {
-            assumptions: AssumptionSet::default(),
-            constraints: Vec::new(),
-            immediate_type: ty.into(),
-        }
-    }
-}
 
 impl Interaction for TypeInferPass {
     fn install(ctx: &mut Ctx) -> impl Disposable + use<> {

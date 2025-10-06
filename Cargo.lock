@@ -1046,13 +1046,12 @@ dependencies = [
 
 [[package]]
 name = "kodept-inference"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "derive_more",
- "itertools 0.14.0",
- "nonempty-collections",
+ "kodept-interning",
  "proptest",
- "proptest-derive 0.5.1",
+ "proptest-derive",
  "tracing",
 ]
 
@@ -1124,7 +1123,7 @@ dependencies = [
  "derive_more",
  "kodept-core",
  "proptest",
- "proptest-derive 0.6.0",
+ "proptest-derive",
  "serde",
 ]
 
@@ -1444,17 +1443,6 @@ dependencies = [
  "rusty-fork",
  "tempfile",
  "unarray",
-]
-
-[[package]]
-name = "proptest-derive"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ee1c9ac207483d5e7db4940700de86a9aae46ef90c48b57f99fe7edb8345e49"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

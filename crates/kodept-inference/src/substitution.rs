@@ -1,29 +1,21 @@
+use crate::r#type::{MonomorphicType, TVar};
+use crate::utils::JoinedDisplay;
+use kodept_interning::{GlobalInterner, Interned};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use std::mem::take;
 use std::ops::Add;
 
-use itertools::Itertools;
-
-use crate::r#type::{MonomorphicType, TVar};
-
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Substitutions(HashMap<TVar, MonomorphicType>);
+pub struct Substitutions(HashMap<TVar, Interned<MonomorphicType>>);
 
 impl Substitutions {
-    #[must_use]
-    pub fn compose(&self, other: &Substitutions) -> Self {
-        let mut copy = self.clone();
-        copy.merge(other.clone());
-        copy
-    }
-
-    pub fn merge(&mut self, other: Substitutions) {
+    pub fn merge(&mut self, other: &Substitutions) {
         let a: HashSet<_> = other
             .0
             .iter()
-            .map(|(key, ty)| (*key, ty & &*self))
+            .map(|(key, ty)| (*key, *ty & &*self))
             .collect();
         let b: HashSet<_> = take(&mut self.0)
             .into_iter()
@@ -39,13 +31,13 @@ impl Substitutions {
     }
 
     #[must_use]
-    pub fn single(from: TVar, to: MonomorphicType) -> Substitutions {
-        Substitutions(HashMap::from([(from, to)]))
+    pub fn single(from: TVar, to: &MonomorphicType) -> Substitutions {
+        Substitutions(HashMap::from([(from, to.intern())]))
     }
 
     #[must_use]
-    pub fn get(&self, key: &TVar) -> Option<&MonomorphicType> {
-        self.0.get(key)
+    pub fn get(&self, key: &TVar) -> Option<Interned<MonomorphicType>> {
+        self.0.get(key).cloned()
     }
 
     pub fn remove(&mut self, key: &TVar) {
@@ -53,16 +45,14 @@ impl Substitutions {
     }
 
     #[cfg(test)]
-    pub(crate) fn into_inner(self) -> HashMap<TVar, MonomorphicType> {
+    pub(crate) fn into_inner(self) -> HashMap<TVar, Interned<MonomorphicType>> {
         self.0
     }
 }
 
-impl<M: Into<MonomorphicType>> FromIterator<(TVar, M)> for Substitutions {
-    fn from_iter<T: IntoIterator<Item = (TVar, M)>>(iter: T) -> Self {
-        Self(HashMap::from_iter(
-            iter.into_iter().map(|(a, b)| (a, b.into())),
-        ))
+impl FromIterator<(TVar, MonomorphicType)> for Substitutions {
+    fn from_iter<T: IntoIterator<Item = (TVar, MonomorphicType)>>(iter: T) -> Self {
+        Self(iter.into_iter().map(|it| (it.0, it.1.intern_owned())).collect())
     }
 }
 
@@ -70,7 +60,9 @@ impl Add for &Substitutions {
     type Output = Substitutions;
 
     fn add(self, rhs: Self) -> Self::Output {
-        self.compose(rhs)
+        let mut copy = self.clone();
+        copy.merge(rhs);
+        copy
     }
 }
 
@@ -78,7 +70,7 @@ impl Add for Substitutions {
     type Output = Substitutions;
 
     fn add(mut self, rhs: Self) -> Self::Output {
-        self.merge(rhs);
+        self.merge(&rhs);
         self
     }
 }
@@ -87,7 +79,7 @@ impl Add<&Substitutions> for Substitutions {
     type Output = Substitutions;
 
     fn add(mut self, rhs: &Substitutions) -> Self::Output {
-        self.merge(rhs.clone());
+        self.merge(rhs);
         self
     }
 }
@@ -96,7 +88,9 @@ impl Add<Substitutions> for &Substitutions {
     type Output = Substitutions;
 
     fn add(self, rhs: Substitutions) -> Self::Output {
-        self.compose(&rhs)
+        let mut copy = self.clone();
+        copy.merge(&rhs);
+        copy
     }
 }
 
@@ -105,10 +99,8 @@ impl Display for Substitutions {
         write!(
             f,
             "[{}]",
-            self.0
-                .iter()
-                .map(|it| format!("{} := {}", it.0, it.1))
-                .join(", ")
+            JoinedDisplay::enumerate(self.0.iter().map(|it| format!("{} := {}", it.0, it.1)))
+                .join()
         )
     }
 }

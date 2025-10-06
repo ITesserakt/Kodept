@@ -1,6 +1,6 @@
 [package]
 name = "kodept-inference"
-version = "0.2.6"
+version = "0.2.7"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
 repository = "https://github.com/ITesserakt/Kodept/"
@@ -16,10 +16,10 @@ workspace = true
 
 [dependencies]
 derive_more.workspace = true
-itertools.workspace = true
-nonempty-collections.workspace = true
 tracing.workspace = true
 
+kodept-interning = { version = "0.1", path = "../kodept-interning" }
+
 [dev-dependencies]
-proptest = "1.6.0"
-proptest-derive = "0.5.1"
+proptest = "1.8.0"
+proptest-derive = "0.6.0"

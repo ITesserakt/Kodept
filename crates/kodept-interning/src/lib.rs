@@ -12,6 +12,15 @@ pub use implementation::{Interned, Internable, Interner};
 
 pub trait GlobalInterner: Internable {
     fn interner() -> &'static Interner<Self>;
+    
+    fn intern(&self) -> Interned<Self> {
+        Self::interner().intern(self)
+    }
+    
+    fn intern_owned(self) -> Interned<Self> where 
+        Self:Sized {
+        Self::interner().intern(&self)
+    }
 }
 
 static GLOBAL_STRING_POOL: Interner<str> = Interner::new();

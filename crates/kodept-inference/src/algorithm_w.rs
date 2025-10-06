@@ -8,15 +8,12 @@ use tracing::debug;
 
 use crate::algorithm_u::AlgorithmUError;
 use crate::algorithm_w::AlgorithmWError::UnknownVar;
-use crate::assumption::{AssumptionSet, TypeTableOps};
 use crate::constraint::{eq_cst, explicit_cst, implicit_cst, Constraint, ConstraintsSolverError};
-use crate::language::{Language, Literal, Special, Var};
 use crate::process::{Infer, PartialInfer};
 use crate::r#type::PrimitiveType::Boolean;
 use crate::r#type::{fun1, unit_type, MonomorphicType, PolymorphicType, PrimitiveType, TVar};
 use crate::substitution::Substitutions;
 use crate::traits::{EnvironmentProvider, Substitutable, TypeInfer};
-use crate::{language, InferState};
 
 #[derive(Debug, Error, From)]
 pub enum AlgorithmWError {

@@ -1,48 +1,12 @@
-use std::{convert::Infallible, num::NonZeroU8};
-
+use crate::typing::Typed;
 use bevy_ecs::{
     entity::Entity,
     query::Without,
     system::{Commands, Populated},
 };
 use kodept_ast_nodes::literal::Literal;
-use kodept_inference::{
-    prelude::{DefaultExecutor, Infer},
-    r#type::{MonomorphicType, PrimitiveType},
-    traits::TypeInfer,
-};
-
-use crate::{
-    typing::{TypeInferHandler, Typed},
-};
-
-impl<'b> TypeInfer<&'b Literal> for TypeInferHandler<'_, '_> {
-    type Error = Infallible;
-    type Output = MonomorphicType;
-
-    fn apply<'a>(&mut self, expr: &'a Literal) -> Infer<'a, &'b Literal, Self>
-    where
-        &'b Literal: 'a,
-    {
-        let result = match expr {
-            Literal::Integer(value) => {
-                if value.is_negative() {
-                    PrimitiveType::I(bit_length(*value).saturating_add(1)).into()
-                } else {
-                    PrimitiveType::U(bit_length(*value)).into()
-                }
-            }
-            Literal::Floating(_) => {
-                // FIXME: add check if value is greater that f24
-                PrimitiveType::f24().into()
-            }
-            Literal::Char(_) => PrimitiveType::u8().into(),
-            Literal::String(value) => PrimitiveType::StaticString(value.len() as u64).into(),
-        };
-
-        Infer::done(result)
-    }
-}
+use kodept_inference::r#type::{MonomorphicType, PrimitiveType};
+use std::num::NonZeroU8;
 
 #[allow(unsafe_code)]
 const fn bit_length(value: i128) -> NonZeroU8 {
@@ -60,14 +24,27 @@ const fn bit_length(value: i128) -> NonZeroU8 {
 
 pub(super) fn system(
     literals: Populated<(Entity, &Literal), Without<Typed>>,
-    mut handler: TypeInferHandler,
     mut commands: Commands,
 ) {
-    let mut executor = DefaultExecutor::default();
-
     for (id, literal) in literals.iter() {
-        let infer = handler.infer_eagerly(literal, &mut executor).unwrap();
-        commands.entity(id).insert(Typed(infer));
+        let ty = match literal {
+            Literal::Integer(value) => {
+                if value.is_negative() {
+                    PrimitiveType::I(bit_length(*value).saturating_add(1))
+                } else {
+                    PrimitiveType::U(bit_length(*value))
+                }
+            }
+            Literal::Floating(_) => {
+                // FIXME: add check if value is greater that f24
+                PrimitiveType::f24()
+            }
+            Literal::Char(_) => PrimitiveType::u8(),
+            Literal::String(value) => PrimitiveType::StaticString(value.len() as u64),
+        };
+        commands
+            .entity(id)
+            .insert(Typed(MonomorphicType::primitive(ty)));
     }
 }
 
