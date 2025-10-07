@@ -113,6 +113,7 @@ opt-level = 3
 lto = "fat"
 panic = 'unwind'
 strip = true
+codegen-units = 1
 
 [profile.light]
 inherits = "release"
