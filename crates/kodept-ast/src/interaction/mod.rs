@@ -1,9 +1,12 @@
 use bevy_ecs::message::{Message, MessageRegistry, Messages};
-use bevy_ecs::prelude::{IntoScheduleConfigs, IntoSystem, Schedule, Schedules, World};
+use bevy_ecs::prelude::{Bundle, Entity, Event, IntoScheduleConfigs, IntoSystem, Schedule, Schedules, World};
 use bevy_ecs::resource::Resource;
 use bevy_ecs::schedule::{InternedSystemSet, ScheduleLabel};
-use bevy_ecs::system::{RunSystemOnce, ScheduleSystem, SystemInput};
+use bevy_ecs::system::{IntoObserverSystem, RunSystemOnce, ScheduleSystem, SystemInput};
 use bevy_ecs::world::FromWorld;
+
+#[derive(Debug)]
+pub struct ObserverEntity(pub Entity);
 
 pub struct Interaction<'w> {
     world: &'w mut World,
@@ -55,6 +58,14 @@ impl<'w> Interaction<'w> {
     ) -> &mut Self {
         self.schedule.add_systems(system);
         self
+    }
+
+    pub fn register_observer<E: Event, B: Bundle, M>(
+        &mut self,
+        observer_system: impl IntoObserverSystem<E, B, M, ()>
+    ) -> ObserverEntity {
+        let entity = self.world.add_observer(observer_system);
+        ObserverEntity(entity.id())
     }
 
     pub fn configure_sets<M>(
