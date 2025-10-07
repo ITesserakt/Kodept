@@ -2,10 +2,7 @@ pub(crate) mod interaction;
 pub(crate) mod table;
 
 use crate::scope::Visibility;
-use crate::symbol::table::SymbolTable;
 use bevy_ecs::prelude::{Component, Entity, Name};
-use kodept_ast::prelude::{Erase, NodeId};
-use kodept_ast_nodes::term::Ref;
 use kodept_inference::r#type::PolymorphicType;
 use std::hash::Hash;
 use bevy_ecs::entity::EntityHashSet;
@@ -19,11 +16,11 @@ pub(crate) struct RefToSymbol {
 
 #[derive(Debug, Component)]
 #[relationship(relationship_target = Usages)]
-pub struct Declaration(pub Entity);
+pub(crate) struct Declaration(pub Entity);
 
 #[derive(Debug, Component)]
 #[relationship_target(relationship = Declaration)]
-pub struct Usages(EntityHashSet);
+pub(crate) struct Usages(EntityHashSet);
 
 #[derive(Debug, Component, Copy, Clone)]
 pub(crate) struct DeferRefResolution;
@@ -39,7 +36,7 @@ pub(crate) enum SymbolKind {
 
 #[derive(Debug)]
 pub(crate) struct SymbolData {
-    pub bound_node: NodeId,
+    pub bound_node: Entity,
     ty: Option<PolymorphicType>,
 }
 
@@ -51,9 +48,9 @@ pub(crate) struct SymbolDescription {
 }
 
 impl SymbolData {
-    pub(crate) fn new(bound_node: impl Erase) -> Self {
+    pub(crate) fn new(bound_node: Entity) -> Self {
         Self {
-            bound_node: bound_node.erase(),
+            bound_node,
             ty: None,
         }
     }
@@ -83,16 +80,6 @@ impl RefToSymbol {
             scope_id,
             visibility: description.visibility,
         }
-    }
-
-    pub(crate) fn resolve<'a>(
-        &self,
-        reference: &Ref,
-        table: &'a SymbolTable,
-    ) -> (SymbolDescription, &'a SymbolData) {
-        let description = SymbolDescription::new(Name::new(reference.ident.clone()), self.kind);
-        let symbol = table.get(&description).unwrap();
-        (description, symbol)
     }
 }
 

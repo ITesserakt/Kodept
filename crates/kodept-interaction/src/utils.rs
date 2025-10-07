@@ -5,6 +5,7 @@ use bevy_ecs::{
     world::World,
 };
 use bevy_ecs::message::{Message, MessageReader, MessageWriter};
+use kodept_ast::interaction::ObserverEntity;
 use kodept_report::traits::{IntoSpannedReportMessage, MessageBehaviour};
 
 use crate::report::Reporter;
@@ -191,4 +192,18 @@ impl Display for FailFastReason {
 }
 
 impl std::error::Error for FailFastReason {
+}
+
+impl<T: Disposable, const N: usize> Disposable for [T; N] {
+    fn dispose(&mut self, world: &mut World) {
+        for item in self {
+            item.dispose(world);
+        }
+    }
+}
+
+impl Disposable for ObserverEntity {
+    fn dispose(&mut self, world: &mut World) {
+        world.despawn(self.0);
+    }
 }

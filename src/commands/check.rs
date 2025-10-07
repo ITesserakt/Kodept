@@ -8,9 +8,7 @@ use clap::Parser;
 use kodept::report::GlobalReports;
 use kodept_ast::interaction::Interaction as Ctx;
 use kodept_frontend::Execution;
-use kodept_interaction::lint::{
-    DebugScopesLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets,
-};
+use kodept_interaction::lint::{DebugScopesLint, DebugTypingLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets};
 use kodept_interaction::prelude::{install_reporting_support, install_system_completion_introspection_support, Disposable, ExtractSymbolsPass, Interaction, ReferenceResolverPass, ScopeBuildingPass, TypeInferPass};
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
@@ -87,6 +85,7 @@ impl Check {
         let b = RLTLinkLint::install(ctx);
         let c = ShowLints::install(ctx);
         let d = DebugScopesLint::install(ctx);
+        let e = DebugTypingLint::install(ctx);
 
         ctx.immediate_exclusive(|w| {
             let mut lint_query = w.query::<&mut LintDescriptor>();
@@ -100,7 +99,7 @@ impl Check {
             }
         });
 
-        (a, b, c, d)
+        (a, b, c, (d, e))
     }
 
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {
