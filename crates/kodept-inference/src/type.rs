@@ -92,21 +92,21 @@ mod interning {
     static GLOBAL_MONOMORPHIC_TYPES_POOL: Interner<MonomorphicType> = Interner::new();
 
     struct PrimitiveTypes {
-        signed: [PrimitiveType; 255],
-        unsigned: [PrimitiveType; 255],
+        signed: [PrimitiveType; u8::MAX as usize - 1],
+        unsigned: [PrimitiveType; u8::MAX as usize - 1],
     }
 
     static PRIMITIVES: PrimitiveTypes = {
-        let mut signed = [PrimitiveType::Boolean; 255];
-        let mut unsigned = [PrimitiveType::Boolean; 255];
+        let mut signed = [PrimitiveType::Boolean; u8::MAX as usize - 1];
+        let mut unsigned = [PrimitiveType::Boolean; u8::MAX as usize - 1];
         let mut i = NonZeroU8::MIN;
-        while i.get() < 255 {
-            signed[i.get() as usize] = PrimitiveType::I(i);
+        while i.get() < u8::MAX {
+            signed[i.get() as usize - 1] = PrimitiveType::I(i);
             i = i.saturating_add(1)
         }
         i = NonZeroU8::MIN;
-        while i.get() < 255 {
-            unsigned[i.get() as usize] = PrimitiveType::U(i);
+        while i.get() < u8::MAX {
+            unsigned[i.get() as usize - 1] = PrimitiveType::U(i);
             i = i.saturating_add(1)
         }
 
