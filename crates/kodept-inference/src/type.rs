@@ -7,6 +7,7 @@ use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU8;
 use std::ops::BitAnd;
+use linked_hash_set::LinkedHashSet;
 
 impl<'a> InternInto<MonomorphicType> for &'a MonomorphicType {
     fn intern_into(self) -> Interned<MonomorphicType> {
@@ -54,7 +55,12 @@ pub enum PrimitiveType {
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-pub struct TVar(usize);
+pub struct TVar {
+    #[cfg(not(test))]
+    index: usize,
+    #[cfg(test)]
+    pub index: usize,
+}
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -118,8 +124,8 @@ mod interning {
             match self {
                 PrimitiveType::Unit => &PrimitiveType::Unit,
                 PrimitiveType::Boolean => &PrimitiveType::Boolean,
-                PrimitiveType::I(n) => &PRIMITIVES.signed[n.get() as usize],
-                PrimitiveType::U(n) => &PRIMITIVES.unsigned[n.get() as usize],
+                PrimitiveType::I(n) => &PRIMITIVES.signed[n.get() as usize - 1],
+                PrimitiveType::U(n) => &PRIMITIVES.unsigned[n.get() as usize - 1],
                 PrimitiveType::F24 => &PrimitiveType::F24,
                 PrimitiveType::StaticString(_) => boxy_leak(self),
                 PrimitiveType::StaticArray(..) => boxy_leak(self),
@@ -180,11 +186,11 @@ mod ctors {
             Self::Boolean
         }
 
-        pub fn i8() -> Self {
+        pub const fn i8() -> Self {
             Self::I(NonZeroU8::new(8).unwrap())
         }
 
-        pub fn u8() -> Self {
+        pub const fn u8() -> Self {
             Self::U(NonZeroU8::new(8).unwrap())
         }
 
@@ -254,7 +260,7 @@ mod ctors {
         #[inline]
         pub fn new() -> TVar {
             let id = GENERATOR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            TVar(id)
+            TVar { index: id }
         }
 
         #[inline]
@@ -434,7 +440,7 @@ impl BitAnd<&Substitutions> for Interned<MonomorphicType> {
 
 impl Display for TVar {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "τ{}", self.0)
+        write!(f, "τ{}", self.index)
     }
 }
 
@@ -460,16 +466,60 @@ impl Display for MonomorphicType {
     }
 }
 
+struct Bound<T>(T);
+
+impl Display for Bound<TVar> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            expand_to_string(self.0.index, crate::LOWER_ALPHABET)
+        )
+    }
+}
+
+impl Display for Bound<&MonomorphicType> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            MonomorphicType::Var(x) => write!(f, "{}", Bound(*x)),
+            MonomorphicType::Fn(input, output) => match input.0 {
+                MonomorphicType::Fn(_, _) => {
+                    write!(f, "({}) -> {}", Bound(input.0), Bound(output.0))
+                }
+                _ => write!(f, "{} -> {}", Bound(input.0), Bound(output.0)),
+            },
+            MonomorphicType::Tuple(vec) => write!(
+                f,
+                "({})",
+                JoinedDisplay::enumerate(vec.iter().map(|it| Bound(it.0))).join()
+            ),
+            MonomorphicType::Pointer(t) => write!(f, "*{}", Bound(t.0)),
+            _ => write!(f, "{}", self.0),
+        }
+    }
+}
+
 impl Display for PolymorphicType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.bindings.is_empty() {
             return write!(f, "{}", self.binding_type);
         }
+        // quickly normalize type
+        let mut binding_type = self.binding_type.0.clone();
+        let mut set = LinkedHashSet::new();
+        binding_type.extract_vars(&mut set);
+        let vars_count = set.len();
+        set.into_iter()
+            .rev()
+            .zip(0usize..)
+            .for_each(|(old, new)| binding_type.rename(old, TVar { index: new }));
+
+        // replace all TVars with it's bound counterpart
         write!(
             f,
             "∀{} => {}",
-            JoinedDisplay::enumerate(&self.bindings),
-            self.binding_type
+            JoinedDisplay::enumerate((0..vars_count).map(|it| Bound(TVar { index: it }))).join(),
+            Bound(&binding_type)
         )
     }
 }

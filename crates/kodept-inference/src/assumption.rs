@@ -1,9 +1,11 @@
 use crate::assumption::RawAssumptionSet::Map;
 use crate::r#type::MonomorphicType;
+use crate::utils::JoinedDisplay;
 use RawAssumptionSet::{Empty, Single};
 use kodept_interning::Interned;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 
 pub trait TypeTable<Name>: Sized {
@@ -85,5 +87,88 @@ where
 
     fn single(key: Name, value: Self::Item<'_>) -> Self {
         Self(Single(key, value.into_owned()))
+    }
+}
+
+impl<Name> AssumptionSet<Name> {
+    pub fn resolve_take(&mut self, key: Name) -> Cow<'_, [Interned<MonomorphicType>]>
+    where
+        Name: Eq + Hash,
+    {
+        match &mut self.0 {
+            Empty => Cow::Borrowed(&[]),
+            Single(k, v) if k == &key => {
+                let result = std::mem::replace(v, vec![]);
+                self.0 = Empty;
+                Cow::Owned(result)
+            }
+            Single(_, _) => Cow::Borrowed(&[]),
+            Map(x) => match x.remove(&key) {
+                Some(v) => Cow::Owned(v),
+                None => Cow::Borrowed(&[]),
+            },
+        }
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = (Name, Vec<Interned<MonomorphicType>>)> {
+        enum Either<A, B> {
+            Left(A),
+            Right(B),
+        }
+
+        impl<T, A, B> Iterator for Either<A, B>
+        where
+            A: Iterator<Item = T>,
+            B: Iterator<Item = T>,
+        {
+            type Item = T;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                match self {
+                    Either::Left(x) => x.next(),
+                    Either::Right(x) => x.next(),
+                }
+            }
+        }
+
+        match self.0 {
+            Empty => Either::Left(Either::Left(std::iter::empty())),
+            Single(k, v) => Either::Left(Either::Right(std::iter::once((k, v)))),
+            Map(map) => Either::Right(map.into_iter()),
+        }
+    }
+}
+
+impl<Name: Display> Display for AssumptionSet<Name> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            Empty => write!(f, "[]"),
+            Single(k, v) => write!(f, "[{k} :: [{}]]", JoinedDisplay::enumerate(v)),
+            Map(map) => {
+                write!(f, "[")?;
+                for (key, value) in map {
+                    write!(f, "{key} :: [{}]", JoinedDisplay::enumerate(value))?;
+                }
+                write!(f, "]")?;
+                Ok(())
+            }
+        }
+    }
+}
+
+impl<Name: Debug> Debug for AssumptionSet<Name> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            Empty => write!(f, "[]"),
+            Single(k, v) => write!(f, "[{k:?} :: [{}]]", JoinedDisplay::enumerate(v)),
+            Map(map) => {
+                write!(f, "[")?;
+                for (key, value) in map {
+                    write!(f, "{key:?} :: [{}]", JoinedDisplay::enumerate(value))?;
+                }
+                write!(f, "]")?;
+                Ok(())
+            }
+        }
     }
 }

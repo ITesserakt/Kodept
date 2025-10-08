@@ -12,7 +12,7 @@ use crate::traits::{ActiveTVars, FreeTypeVars, Substitutable};
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
 use crate::utils::JoinedDisplay;
 use Constraint::{ExplicitInstance, ImplicitInstance};
-use kodept_interning::{GlobalInterner, Interned};
+use kodept_interning::{InternInto, Interned};
 
 #[derive(Debug, Error, From)]
 pub enum ConstraintsSolverError {
@@ -154,28 +154,28 @@ impl Debug for Constraint {
     }
 }
 
-pub fn eq_cst(t1: &MonomorphicType, t2: &MonomorphicType) -> Constraint {
+pub fn eq_cst(t1: impl InternInto<MonomorphicType>, t2: impl InternInto<MonomorphicType>) -> Constraint {
     Eq(EqConstraint {
-        t1: t1.intern(),
-        t2: t2.intern(),
+        t1: t1.intern_into(),
+        t2: t2.intern_into(),
     })
 }
 
 pub fn implicit_cst(
-    t1: &MonomorphicType,
+    t1: impl InternInto<MonomorphicType>,
     ctx: impl Into<HashSet<TVar>>,
-    t2: &MonomorphicType,
+    t2: impl InternInto<MonomorphicType>,
 ) -> Constraint {
     ImplicitInstance {
-        t1: t1.intern(),
+        t1: t1.intern_into(),
         ctx: ctx.into(),
-        t2: t2.intern(),
+        t2: t2.intern_into(),
     }
 }
 
-pub fn explicit_cst(t: &MonomorphicType, s: impl Into<PolymorphicType>) -> Constraint {
+pub fn explicit_cst(t: impl InternInto<MonomorphicType>, s: impl Into<PolymorphicType>) -> Constraint {
     ExplicitInstance {
-        t: t.intern(),
+        t: t.intern_into(),
         s: s.into(),
     }
 }
