@@ -1054,7 +1054,6 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "smallvec",
- "tracing",
 ]
 
 [[package]]

@@ -17,7 +17,6 @@ workspace = true
 [dependencies]
 derive_more.workspace = true
 linked-hash-map = "0.5.6"
-tracing.workspace = true
 smallvec = "1.15.1"
 
 kodept-interning = { version = "0.1", path = "../kodept-interning" }
