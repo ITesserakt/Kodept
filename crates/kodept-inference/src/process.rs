@@ -1,235 +1,442 @@
-use crate::assumption::AssumptionSet;
-use crate::constraint::Constraint;
-use crate::r#type::MonomorphicType;
-use crate::traits::{Executor, TypeInfer};
-use std::fmt::{Debug, Formatter};
-use std::marker::PhantomData;
+use crate::assumption::{AssumptionSet, TypeTable};
+use crate::constraint::{Constraint, ConstraintsSolverError, explicit_cst};
+use crate::substitution::Substitutions;
+use crate::traits::Substitutable;
+use crate::r#type::{MonomorphicType, PolymorphicType};
+use derive_more::{Display, Error, From};
+use kodept_interning::{InternInto, Interned};
+use smallvec::SmallVec;
+use std::borrow::Cow;
+use std::fmt::Debug;
+use std::hash::Hash;
 
-#[derive(Debug, PartialEq)]
-pub(crate) struct PartialInfer(pub AssumptionSet, pub Vec<Constraint>, pub MonomorphicType);
+const CONSTRAINTS_SIZE: usize = 4;
 
-pub struct Suspend<E, T: TypeInfer<E>>(E, PhantomData<T>);
-
-pub enum Continuation<'a, E, T: TypeInfer<E>> {
-    Empty,
-    Custom(Box<ContFn<'a, E, T>>),
-    Static(Box<Infer<'a, E, T>>),
-}
-
-type ContFn<'a, E, T> =
-    dyn 'a + for<'b> FnOnce(&'b mut T, <T as TypeInfer<E>>::Output) -> Infer<'a, E, T>;
-
-#[must_use]
-#[derive(Debug)]
-pub enum Infer<'a, E, T: TypeInfer<E>> {
-    Done {
-        value: T::Output,
-    },
-    Failed {
-        state: T,
-        expr: E,
-        error: T::Error,
-    },
-    Suspended {
-        expr: E,
-        continuation: Continuation<'a, E, T>,
-    },
+#[derive(Debug, Display, Error, From)]
+pub enum InferError<Name, E> {
+    #[from(ignore)]
+    External(E),
+    FailedConstraints(ConstraintsSolverError),
+    #[from(ignore)]
+    UnknownName(#[error(not(source))] Name),
 }
 
 #[derive(Debug)]
-pub struct DefaultExecutor<'a, E, T: TypeInfer<E>> {
-    stack: Vec<Continuation<'a, E, T>>,
+pub struct PartialInfer<Name> {
+    pub assumptions: AssumptionSet<Name>,
+    pub constraints: SmallVec<[Constraint; CONSTRAINTS_SIZE]>,
+    pub current_type: Interned<MonomorphicType>,
 }
 
-impl<'a, E, T: TypeInfer<E>> Default for DefaultExecutor<'_, E, T> {
-    fn default() -> Self {
-        Self { stack: vec![] }
+impl<Name> PartialInfer<Name>
+where
+    Name: Hash + Eq,
+{
+    pub fn new(current_type: impl InternInto<MonomorphicType>) -> Self {
+        Self {
+            assumptions: AssumptionSet::empty(),
+            constraints: SmallVec::new(),
+            current_type: current_type.intern_into(),
+        }
+    }
+
+    pub fn with_assumption(mut self, key: Name, value: impl InternInto<MonomorphicType>) -> Self {
+        self.assumptions
+            .push(key, Cow::Borrowed(&[value.intern_into()]));
+        self
+    }
+
+    pub fn with_constraint(mut self, constraint: Constraint) -> Self {
+        self.constraints.push(constraint);
+        self
+    }
+
+    pub fn with_constraints(mut self, iter: impl IntoIterator<Item = Constraint>) -> Self {
+        self.constraints.extend(iter);
+        self
+    }
+
+    pub fn with_assumptions(mut self, set: AssumptionSet<Name>) -> Self {
+        self.assumptions.merge(set);
+        self
+    }
+
+    pub fn resolve<E>(
+        mut self,
+        mut external_symbols_callback: impl FnMut(&Name) -> Result<Option<PolymorphicType>, E>,
+    ) -> Result<(Substitutions, Interned<MonomorphicType>), Vec<InferError<Name, E>>>
+    where
+        Name: Debug,
+    {
+        let mut errors = vec![];
+
+        for (key, set) in self.assumptions.into_iter() {
+            match external_symbols_callback(&key) {
+                Ok(None) => errors.push(InferError::UnknownName(key)),
+                Ok(Some(s)) => self
+                    .constraints
+                    .extend(set.into_iter().map(|it| explicit_cst(it.0, s.clone()))),
+                Err(e) => errors.push(InferError::External(e)),
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
+        let substitutions = Constraint::solve(self.constraints.into_vec())
+            .map_err(|it| vec![InferError::FailedConstraints(it)])?;
+        let resulting_type = self.current_type.substitute(&substitutions);
+        Ok((substitutions, resulting_type))
     }
 }
 
-impl<'a, E, T: TypeInfer<E>> Executor<'a, E, T> for &mut DefaultExecutor<'a, E, T> {
-    type Error = T::Error;
+pub trait Infer<Item, Name> {
+    type Error;
 
-    fn fold(self, state: &mut T, mut current: Infer<'a, E, T>) -> Result<T::Output, Self::Error>
-    where
-        E: 'a,
-    {
-        self.stack.clear();
+    fn partial_infer<'a>(
+        &'a mut self,
+        value: &'a Item,
+    ) -> impl Future<Output = Result<PartialInfer<Name>, Self::Error>>;
+}
 
-        loop {
-            match current {
-                Infer::Done { value } => match self.stack.pop() {
-                    None => {
-                        if cfg!(debug_assertions) {
-                            assert!(self.stack.is_empty());
-                            self.stack.clear();
-                        }
-                        return Ok(value);
-                    }
-                    Some(cont) => {
-                        current = cont.call(state, value);
-                    }
-                },
-                Infer::Failed { error, .. } => return Err(error),
-                Infer::Suspended { expr, continuation } => {
-                    self.stack.push(continuation);
-                    current = state.apply(expr);
-                }
+#[cfg(test)]
+mod tests {
+    use crate::assumption::TypeTable;
+    use crate::constraint::{eq_cst, implicit_cst};
+    use crate::process::{Infer, InferError, PartialInfer};
+    use crate::r#type::{MonomorphicType, PrimitiveType, TVar};
+    use kodept_interning::{GlobalInterner, Interned};
+    use std::collections::HashSet;
+    use std::convert::Infallible;
+    use std::num::NonZeroU8;
+    use std::ops::Deref;
+    use std::pin::{Pin, pin};
+    use std::task::{Context, Poll, Waker};
+
+    type Name = &'static str;
+    type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
+
+    #[derive(Debug, Default)]
+    struct AlgorithmW {
+        monomorphic_set: HashSet<TVar>,
+    }
+
+    struct Var(Name);
+    struct Lambda {
+        bind: Var,
+        expr: Language,
+    }
+    struct App {
+        func: Language,
+        arg: Language,
+    }
+
+    struct Let {
+        binder: Language,
+        bind: Var,
+        usage: Language,
+    }
+
+    enum Language {
+        Var(Var),
+        Lambda(Box<Lambda>),
+        App(Box<App>),
+        Let(Box<Let>),
+    }
+
+    impl Infer<Var, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        async fn partial_infer(&mut self, item: &Var) -> Result<PartialInfer<Name>, Self::Error> {
+            let ty = TVar::new();
+            Ok(PartialInfer::new(ty).with_assumption(item.0, ty))
+        }
+    }
+
+    impl Infer<Lambda, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        async fn partial_infer(
+            &mut self,
+            Lambda { bind, expr }: &Lambda,
+        ) -> Result<PartialInfer<Name>, Self::Error> {
+            let tv = TVar::new();
+            self.monomorphic_set.insert(tv);
+            let PartialInfer {
+                assumptions: mut as1,
+                constraints: cs1,
+                current_type: t1,
+            } = self.partial_infer(expr).await?;
+
+            let tys = as1.resolve_take(bind.0);
+            let eq_cs = tys.iter().cloned().map(|it| eq_cst(tv, it.0));
+
+            Ok(PartialInfer::new(MonomorphicType::fun1(tv, t1.0))
+                .with_constraints(eq_cs)
+                .with_constraints(cs1)
+                .with_assumptions(as1))
+        }
+    }
+
+    impl Infer<App, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        async fn partial_infer(
+            &mut self,
+            App { func, arg }: &App,
+        ) -> Result<PartialInfer<Name>, Self::Error> {
+            let PartialInfer {
+                assumptions: as1,
+                constraints: cs1,
+                current_type: t1,
+            } = self.partial_infer(arg).await?;
+            let PartialInfer {
+                assumptions: as2,
+                constraints: cs2,
+                current_type: t2,
+            } = self.partial_infer(func).await?;
+            let tv = TVar::new();
+
+            Ok(PartialInfer::new(tv)
+                .with_assumptions(as1)
+                .with_assumptions(as2)
+                .with_constraints(cs1)
+                .with_constraints(cs2)
+                .with_constraint(eq_cst(t2.0, MonomorphicType::fun1(t1.0, tv))))
+        }
+    }
+
+    impl Infer<Let, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        async fn partial_infer(
+            &mut self,
+            Let {
+                binder,
+                bind,
+                usage,
+            }: &Let,
+        ) -> Result<PartialInfer<Name>, Self::Error> {
+            let PartialInfer {
+                assumptions: mut as1,
+                constraints: cs1,
+                current_type: t1,
+            } = self.partial_infer(binder).await?;
+            let PartialInfer {
+                assumptions: as2,
+                constraints: cs2,
+                current_type: t2,
+            } = self.partial_infer(usage).await?;
+
+            as1.merge(as2);
+
+            let tys = as1.resolve_take(bind.0);
+            let im_cs = tys
+                .iter()
+                .cloned()
+                .map(|it| implicit_cst(it.0, self.monomorphic_set.clone(), t1.0));
+
+            Ok(PartialInfer::new(t2.0)
+                .with_constraints(im_cs)
+                .with_constraints(cs1)
+                .with_constraints(cs2)
+                .with_assumptions(as1))
+        }
+    }
+
+    impl Infer<Language, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        #[allow(refining_impl_trait)]
+        fn partial_infer<'a>(
+            &'a mut self,
+            value: &'a Language,
+        ) -> BoxedFuture<'a, Result<PartialInfer<Name>, Self::Error>> {
+            match value {
+                Language::Var(x) => Box::pin(self.partial_infer(x)),
+                Language::Lambda(x) => Box::pin(self.partial_infer(x.deref())),
+                Language::App(x) => Box::pin(self.partial_infer(x.deref())),
+                Language::Let(x) => Box::pin(self.partial_infer(x.deref())),
             }
         }
     }
-}
 
-impl<E, T: TypeInfer<E>> Debug for Continuation<'_, E, T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Continuation::Empty => write!(f, "<empty>"),
-            Continuation::Custom(_) => write!(f, "<closure>"),
-            Continuation::Static(_) => write!(f, "<static>"),
+    // Look ma! We have haskell at home!
+    fn var(name: &'static str) -> Language {
+        Language::Var(Var(name))
+    }
+
+    fn let_(bind: &'static str, binder: Language, usage: Language) -> Language {
+        Language::Let(Box::new(Let {
+            binder,
+            bind: Var(bind),
+            usage,
+        }))
+    }
+
+    fn app(func: Language, arg: Language) -> Language {
+        Language::App(Box::new(App { func, arg }))
+    }
+
+    fn lambda(bind: &'static str, expr: Language) -> Language {
+        Language::Lambda(Box::new(Lambda {
+            bind: Var(bind),
+            expr,
+        }))
+    }
+
+    fn run_blocking<T>(fut: impl Future<Output = T>) -> T {
+        let mut ctx = Context::from_waker(Waker::noop());
+        let mut fut = pin!(fut);
+        loop {
+            match fut.as_mut().poll(&mut ctx) {
+                Poll::Ready(x) => return x,
+                Poll::Pending => continue,
+            }
         }
     }
-}
 
-impl<'a, E, T: TypeInfer<E>> Continuation<'a, E, T> {
-    pub fn custom(f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Infer<'a, E, T>) -> Self {
-        Self::Custom(Box::new(f))
-    }
-
-    pub fn known(value: Infer<'a, E, T>) -> Self {
-        Self::Static(Box::new(value))
-    }
-
-    pub fn call(self, state: &mut T, value: T::Output) -> Infer<'a, E, T> {
-        match self {
-            Continuation::Empty => Infer::Done { value },
-            Continuation::Custom(f) => f(state, value),
-            Continuation::Static(x) => *x,
-        }
-    }
-}
-
-impl<'a, E, T: TypeInfer<E>> Infer<'a, E, T> {
-    pub fn suspend(input: E) -> Suspend<E, T> {
-        Suspend(input, PhantomData)
-    }
-
-    pub fn done(output: T::Output) -> Self {
-        Self::Done { value: output }
-    }
-
-    pub fn zip_with(
-        self,
-        other: Self,
-        f: impl 'a + FnOnce(T::Output, T::Output) -> T::Output,
-    ) -> Self
-    where
-        E: 'a,
-        T: 'a,
-        T::Output: 'a,
-    {
-        match self {
-            Infer::Done { value: a } => match other {
-                Infer::Done { value: b } => Infer::Done { value: f(a, b) },
-                e @ Infer::Failed { .. } => e,
-                Infer::Suspended { expr, continuation } => {
-                    T::suspend(expr).and_then(move |state, b| continuation.call(state, f(a, b)))
+    macro_rules! assert_type_matches {
+        ($a:expr, $b:pat $(if $cond:expr)?) => {
+            match $a {
+                $b $(if $cond)? => {},
+                _ => {
+                    dbg!($a);
+                    assert!(false, "Expected a different type")
                 }
-            },
-            e @ Infer::Failed { .. } => e,
-            Infer::Suspended { expr, continuation } => T::suspend(expr)
-                .and_then(move |state, a| continuation.call(state, a).zip_with(other, f)),
-        }
-    }
-}
-
-impl<E, T: TypeInfer<E>> Suspend<E, T> {
-    pub fn map<'a>(
-        self,
-        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> T::Output,
-    ) -> Infer<'a, E, T> {
-        Infer::Suspended {
-            expr: self.0,
-            continuation: Continuation::custom(move |s, p| Infer::Done { value: f(s, p) }),
-        }
+            }
+        };
     }
 
-    pub fn and_then<'a>(
-        self,
-        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Infer<'a, E, T>,
-    ) -> Infer<'a, E, T> {
-        Infer::Suspended {
-            expr: self.0,
-            continuation: Continuation::custom(f),
-        }
+    #[test]
+    fn test_identity_fn() {
+        let mut solver = AlgorithmW::default();
+        // \x. x
+        let expr = lambda("x", var("x"));
+        let partial = run_blocking(solver.partial_infer(&expr)).unwrap();
+        let (_, t) = partial.resolve::<Infallible>(|_| Ok(None)).unwrap();
+
+        assert_type_matches!(t.0, MonomorphicType::Fn(
+            Interned(MonomorphicType::Var(TVar { index: a })),
+            Interned(MonomorphicType::Var(TVar { index: b })),
+        ) if a == b);
     }
 
-    pub fn try_map<'a>(
-        self,
-        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Result<T::Output, T::Error>,
-    ) -> Infer<'a, E, T>
-    where
-        T: Clone,
-        E: Copy + 'a,
-    {
-        Infer::Suspended {
-            expr: self.0,
-            continuation: Continuation::custom(move |s: &mut T, p| {
-                let copy = s.clone();
-                match f(s, p) {
-                    Ok(x) => Infer::Done { value: x },
-                    Err(e) => Infer::Failed {
-                        state: copy,
-                        expr: self.0,
-                        error: e,
-                    },
+    #[test]
+    fn test_external_names() {
+        const I32: PrimitiveType = PrimitiveType::custom(true, NonZeroU8::new(32).unwrap());
+
+        // \n. let x = succ(n) in succ(x)
+        let expr = lambda(
+            "n",
+            let_("x", app(var("succ"), var("n")), app(var("succ"), var("x"))),
+        );
+        let mut solver = AlgorithmW::default();
+        let partial = run_blocking(solver.partial_infer(&expr)).unwrap();
+        let (_, t) = partial
+            .resolve::<Infallible>(|name| {
+                if name == &"succ" {
+                    Ok(Some(
+                        MonomorphicType::fun1(
+                            MonomorphicType::primitive(I32),
+                            MonomorphicType::primitive(I32),
+                        )
+                        .generalize(&HashSet::new()),
+                    ))
+                } else {
+                    Ok(None)
                 }
-            }),
-        }
+            })
+            .unwrap();
+
+        const THIRTY_TWO: NonZeroU8 = NonZeroU8::new(32).unwrap();
+        assert_type_matches!(
+            t.0,
+            MonomorphicType::Fn(
+                Interned(MonomorphicType::Primitive(Interned(PrimitiveType::I(
+                    THIRTY_TWO
+                )))),
+                Interned(MonomorphicType::Primitive(Interned(PrimitiveType::I(
+                    THIRTY_TWO
+                ))))
+            )
+        );
     }
 
-    pub fn try_and_then<'a>(
-        self,
-        f: impl 'a + for<'b> FnOnce(&'b mut T, T::Output) -> Result<Infer<'a, E, T>, T::Error>,
-    ) -> Infer<'a, E, T>
-    where
-        T: Clone,
-        E: Copy + 'a,
-    {
-        Infer::Suspended {
-            expr: self.0,
-            continuation: Continuation::custom(move |s: &mut T, p| {
-                let copy = s.clone();
-                f(s, p).unwrap_or_else(|error| Infer::Failed {
-                    expr: self.0,
-                    state: copy,
-                    error,
-                })
-            }),
-        }
+    #[test]
+    fn test_tuples() {
+        // \z. let x = dup(z) in (\y. dup(y))(x)
+        let expr = lambda(
+            "z",
+            let_(
+                "x",
+                app(var("dup"), var("z")),
+                app(lambda("y", app(var("dup"), var("x"))), var("x")),
+            ),
+        );
+
+        let mut solver = AlgorithmW::default();
+        let partial = run_blocking(solver.partial_infer(&expr)).unwrap();
+
+        let t = TVar::new();
+        let dup_t =
+            MonomorphicType::fun1(t, MonomorphicType::tuple([t, t])).generalize(&HashSet::new());
+        let (_, t_result) = partial
+            .resolve::<Infallible>(|name| {
+                if name != &"dup" {
+                    return Ok(None);
+                }
+                Ok(Some(dup_t.clone()))
+            })
+            .unwrap();
+
+        assert_type_matches!(
+            t_result.0,
+            MonomorphicType::Fn(
+                Interned(MonomorphicType::Var(a)),
+                Interned(MonomorphicType::Tuple(ts))
+            ) if ts.as_ref() == [MonomorphicType::tuple([*a, *a]).intern(), MonomorphicType::tuple([*a, *a]).intern()]
+        );
     }
 
-    #[inline]
-    pub fn pure<'a>(self) -> Infer<'a, E, T> {
-        Infer::Suspended {
-            expr: self.0,
-            continuation: Continuation::Empty,
-        }
-    }
-}
+    #[test]
+    fn test_church_encoding() {
+        //zero = \f. \x. x                   :: a -> b -> b
+        //one  = \f. \x. f x                 :: (a -> b) -> a -> b
+        //plus = \m. \n. \f. \x. m f (n f x) :: (a -> b -> c) -> (a -> d -> b) -> a -> d -> c
 
-impl PartialInfer {
-    pub(crate) fn new<T>(
-        assumptions: AssumptionSet,
-        constraints: impl IntoIterator<Item = T>,
-        ty: impl Into<MonomorphicType>,
-    ) -> Self
-    where
-        T: IntoIterator<Item = Constraint>,
-    {
-        Self(
-            assumptions,
-            constraints.into_iter().flatten().collect(),
-            ty.into(),
-        )
+        let zero = lambda("f", lambda("x", var("x")));
+        let one = lambda("f", lambda("x", app(var("f"), var("x"))));
+        let plus = lambda(
+            "m",
+            lambda(
+                "n",
+                lambda(
+                    "f",
+                    lambda(
+                        "x",
+                        app(
+                            app(var("m"), var("f")),
+                            app(app(var("n"), var("f")), var("x")),
+                        ),
+                    ),
+                ),
+            ),
+        );
+
+        fn solve(
+            expr: &Language,
+        ) -> Result<&'static MonomorphicType, Vec<InferError<Name, Infallible>>> {
+            let mut solver = AlgorithmW::default();
+            let partial = run_blocking(solver.partial_infer(expr)).unwrap();
+            partial.resolve::<Infallible>(|_| Ok(None)).map(|it| it.1.0)
+        }
+
+        let zt = solve(&zero).unwrap().generalize(&HashSet::new());
+        let ot = solve(&one).unwrap().generalize(&HashSet::new());
+        let pt = solve(&plus).unwrap().generalize(&HashSet::new());
+
+        println!("{zt}\n{ot}\n{pt}");
     }
 }

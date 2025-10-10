@@ -3,18 +3,13 @@
 //! Also provides some structures, allowing to model those types.
 
 pub mod algorithm_u;
-// pub mod algorithm_w;
 pub mod assumption;
 pub mod constraint;
 // mod process;
 pub mod substitution;
 pub mod traits;
 pub mod r#type;
-mod process_async;
-// pub mod prelude {
-//     pub use super::process::{Continuation, DefaultExecutor, Infer, Suspend};
-//     pub use super::traits::TypeInfer;
-// }
+pub mod process;
 
 #[allow(unreachable_pub)]
 mod utils {
