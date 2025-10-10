@@ -3,11 +3,12 @@ use crate::traits::{FreeTypeVars, Substitutable};
 use crate::utils::JoinedDisplay;
 use derive_more::From;
 use kodept_interning::{GlobalInterner, InternInto, Interned, Interner};
+use linked_hash_map::LinkedHashMap;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{BuildHasher, Hash, RandomState};
 use std::num::NonZeroU8;
 use std::ops::BitAnd;
-use linked_hash_set::LinkedHashSet;
 
 impl<'a> InternInto<MonomorphicType> for &'a MonomorphicType {
     fn intern_into(self) -> Interned<MonomorphicType> {
@@ -501,14 +502,39 @@ impl Display for Bound<&MonomorphicType> {
 
 impl Display for PolymorphicType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        struct LinkedHashSet<T, S = RandomState>(LinkedHashMap<T, (), S>);
+
+        impl<T, S> Extend<T> for LinkedHashSet<T, S>
+        where
+            T: Hash + Eq,
+            S: BuildHasher,
+        {
+            fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+                self.0.extend(iter.into_iter().map(|it| (it, ())))
+            }
+        }
+
+        impl<T, S> IntoIterator for LinkedHashSet<T, S>
+        where
+            T: Hash + Eq,
+            S: BuildHasher,
+        {
+            type Item = T;
+            type IntoIter = std::iter::Map<linked_hash_map::IntoIter<T, ()>, fn((T, ())) -> T>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                self.0.into_iter().map(|it| it.0)
+            }
+        }
+
         if self.bindings.is_empty() {
             return write!(f, "{}", self.binding_type);
         }
         // quickly normalize type
         let mut binding_type = self.binding_type.0.clone();
-        let mut set = LinkedHashSet::new();
+        let mut set = LinkedHashSet(LinkedHashMap::new());
         binding_type.extract_vars(&mut set);
-        let vars_count = set.len();
+        let vars_count = set.0.len();
         set.into_iter()
             .rev()
             .zip(0usize..)
