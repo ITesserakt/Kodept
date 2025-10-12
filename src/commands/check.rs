@@ -53,7 +53,7 @@ impl Command for Check {
                 if let Some(reason) = &event.fail_reason {
                     error!("System {}#{:?} failed: {reason}", event.name, event.id);
                 } else {
-                    trace!("System {}#{:?} completed", event.name, event.id);
+                    trace!("{}#{:?}", event.name, event.id);
                 }
             });
 
@@ -64,6 +64,7 @@ impl Command for Check {
                 let d = ReferenceResolverPass::install(&mut ctx);
                 let e = TypeInferPass::install(&mut ctx);
 
+                // How many frames do we actually need?
                 for frame in 0..10 {
                     let _guard = trace_span!("pass", frame).entered();
                     ctx.launch();

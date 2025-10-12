@@ -1,4 +1,4 @@
-use crate::lint::{Lint, LintDescriptor};
+use crate::lint::{IntoReadonlySystem, Lint, LintDescriptor};
 use crate::report::Reporter;
 use crate::scope::storage::Scope;
 use crate::typing::Typed;
@@ -17,7 +17,7 @@ impl Lint for DebugScopesLint {
             .run_on_each_pass()
     }
 
-    fn lint() -> impl IntoSystem<(), Self::Result, ()> {
+    fn lint() -> impl IntoReadonlySystem<Self::Result> {
         IntoSystem::into_system(
             |scopes: Populated<(&Scope, NameOrEntity), Added<Scope>>,
              spans: Query<&SourceSpan>,
@@ -49,7 +49,7 @@ impl Lint for DebugTypingLint {
             .run_on_each_pass()
     }
 
-    fn lint() -> impl IntoSystem<(), Self::Result, ()> {
+    fn lint() -> impl IntoReadonlySystem<Self::Result> {
         IntoSystem::into_system(
             |query: Populated<(&SourceSpan, &Typed), Added<Typed>>, reporter: Reporter| {
                 for (span, ty) in query {

@@ -1,4 +1,4 @@
-use crate::lint::{Lint, LintDescriptor};
+use crate::lint::{IntoReadonlySystem, Lint, LintDescriptor};
 use crate::report::Reporter;
 use bevy_ecs::prelude::{Entity, IntoSystem, Query, Res};
 use kodept_ast::properties::{Lexeme, Node};
@@ -11,10 +11,14 @@ impl Lint for RLTLinkLint {
     type Result = ();
 
     fn descriptor() -> LintDescriptor {
-        LintDescriptor::new("RLT_linking").run_on_each_pass()
+        let descriptor = LintDescriptor::new("RLT_linking").run_on_each_pass();
+        #[cfg(not(debug_assertions))]
+        return descriptor.disabled_by_default();
+        #[cfg(debug_assertions)]
+        return descriptor;
     }
 
-    fn lint() -> impl IntoSystem<(), Self::Result, ()> {
+    fn lint() -> impl IntoReadonlySystem<Self::Result> {
         IntoSystem::into_system(Self::check_system)
     }
 }
@@ -25,7 +29,7 @@ impl RLTLinkLint {
         syntax: Res<SyntaxResolver>,
         reporter: Reporter,
     ) {
-        nodes.iter().for_each(|(entity, kind, lexeme)| {
+        nodes.par_iter().for_each(|(entity, kind, lexeme)| {
             if lexeme.is_some_and(|it| syntax.try_get_unknown(it.0).is_some()) {
                 return;
             }

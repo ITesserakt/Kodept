@@ -1,7 +1,7 @@
-use crate::utils::{wrap_system, Ctx, Disposable, Interaction, Try};
+use crate::utils::{Ctx, Disposable, Interaction, Try, wrap_system};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{
-    Changed, Component, IntoScheduleConfigs, IntoSystem, Local, Populated, Query,
+    Changed, Component, IntoScheduleConfigs, IntoSystem, Local, Populated, Query, ReadOnlySystem
 };
 use kodept_report::traits::IntoSpannedReportMessage;
 use std::borrow::Cow;
@@ -11,10 +11,10 @@ mod debug;
 mod module;
 mod rlt_linking;
 
+use RunMode::{EachPass, Once, OnceRepeatable};
 pub use debug::*;
 pub use module::SingleModuleWithBrackets;
 pub use rlt_linking::RLTLinkLint;
-use RunMode::{EachPass, Once, OnceRepeatable};
 
 #[derive(Debug, Copy, Clone)]
 #[non_exhaustive]
@@ -62,13 +62,28 @@ impl LintDescriptor {
     }
 }
 
-pub trait Lint {
+trait IntoReadonlySystem<Out, M = ()>:
+    IntoSystem<(), Out, M, System: ReadOnlySystem<Out = Out, In = ()>>
+{
+    #[inline(always)]
+    fn into_readonly_system(self) -> impl IntoReadonlySystem<Out> {
+        IntoSystem::into_system(self)
+    }
+}
+
+impl<Out, M, T: IntoSystem<(), Out, M, System: ReadOnlySystem<Out = Out, In = ()>>>
+    IntoReadonlySystem<Out, M> for T
+{
+}
+
+/// Describes a set of readonly systems with associated [`LintDescriptor`]
+trait Lint {
     #[allow(private_bounds)]
     type Result: Try<Output = (), Residual: IntoSpannedReportMessage + 'static> + 'static;
 
     fn descriptor() -> LintDescriptor;
 
-    fn lint() -> impl IntoSystem<(), Self::Result, ()>;
+    fn lint() -> impl IntoReadonlySystem<Self::Result>;
 }
 
 struct LintGC(Entity);
@@ -138,5 +153,34 @@ impl Interaction for ShowLints {
                 info!("Enabled lints: [{lint_names}]");
             },
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_ecs::prelude::*;
+    use crate::lint::{IntoReadonlySystem, Lint, LintDescriptor};
+
+    struct Example;
+    #[derive(Resource)]
+    struct _ResourceExample;
+
+    impl Lint for Example {
+        type Result = ();
+
+        fn descriptor() -> LintDescriptor {
+            LintDescriptor::new("example")
+        }
+
+        fn lint() -> impl IntoReadonlySystem<Self::Result> {
+            IntoReadonlySystem::into_readonly_system(|
+                // world: &mut World,
+                // mutable_query: Query<&mut Name>
+                // mutable_resource: ResMut<_ResourceExample>,
+                _local: Local<bool>
+            | {
+
+            })
+        }
     }
 }

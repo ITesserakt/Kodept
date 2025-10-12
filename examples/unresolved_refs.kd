@@ -1,0 +1,7 @@
+module Test =>
+
+fun foo => 1
+
+fun main {
+	println("Hello, World!")
+}

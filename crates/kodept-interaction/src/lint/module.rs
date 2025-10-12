@@ -1,4 +1,4 @@
-use crate::lint::{Lint, LintDescriptor};
+use crate::lint::{IntoReadonlySystem, Lint, LintDescriptor};
 use crate::report::Reporter;
 use bevy_ecs::prelude::{Entity, IntoSystem, Res};
 use bevy_ecs::query::With;
@@ -13,7 +13,7 @@ use kodept_rlt::prelude::{File, Module};
 
 pub struct SingleModuleWithBrackets;
 
-pub struct SuspiciousStructure(Entity);
+pub(super) struct SuspiciousStructure(Entity);
 
 impl IntoSpannedReportMessage for SuspiciousStructure {
     type Message = ReportMessage;
@@ -33,7 +33,7 @@ impl Lint for SingleModuleWithBrackets {
         LintDescriptor::new("single_module_with_brackets")
     }
 
-    fn lint() -> impl IntoSystem<(), Self::Result, ()> {
+    fn lint() -> impl IntoReadonlySystem<Self::Result> {
         IntoSystem::into_system(
             |query: Query<(&Lexeme, Entity), With<FileDecl>>,
              syntax: Res<SyntaxResolver>,
