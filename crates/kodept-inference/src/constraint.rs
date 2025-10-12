@@ -140,7 +140,7 @@ impl Display for Constraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Eq(x) => write!(f, "{x}"),
-            ExplicitInstance { t, s } => write!(f, "{t} ≼ ({s})"),
+            ExplicitInstance { t, s } => write!(f, "{t} ≼ {s}"),
             ImplicitInstance { t1, ctx, t2 } => {
                 write!(f, "{t1} ≤{{{}}} {t2}", JoinedDisplay::enumerate(ctx))
             }

@@ -91,13 +91,19 @@ where
     }
 }
 
+pub type InferResult<Name, Error> = Result<PartialInfer<Name>, Error>;
+
+pub trait InferFuture<Name, Error>: Future<Output = InferResult<Name, Error>> + Send {}
+
+impl<Name, Error, T: Future<Output = InferResult<Name, Error>> + Send> InferFuture<Name, Error>
+    for T
+{
+}
+
 pub trait Infer<Item, Name> {
     type Error;
 
-    fn partial_infer<'a>(
-        &'a mut self,
-        value: &'a Item,
-    ) -> impl Future<Output = Result<PartialInfer<Name>, Self::Error>>;
+    fn partial_infer(value: Item) -> impl InferFuture<Name, Self::Error>;
 }
 
 #[cfg(test)]
@@ -115,16 +121,19 @@ mod tests {
     use std::task::{Context, Poll, Waker};
 
     type Name = &'static str;
-    type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + 'a>>;
+    type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + 'a + Send + Sync>>;
 
-    #[derive(Debug, Default)]
-    struct AlgorithmW {
-        monomorphic_set: HashSet<TVar>,
+    struct AlgorithmW;
+
+    struct InLambda<T> {
+        binds: HashSet<TVar>,
+        value: Box<T>,
     }
 
     struct Var(Name);
     struct Lambda {
         bind: Var,
+        bind_ty_stub: TVar,
         expr: Language,
     }
     struct App {
@@ -140,124 +149,124 @@ mod tests {
 
     enum Language {
         Var(Var),
-        Lambda(Box<Lambda>),
-        App(Box<App>),
-        Let(Box<Let>),
+        Lambda(InLambda<Lambda>),
+        App(InLambda<App>),
+        Let(InLambda<Let>),
     }
 
-    impl Infer<Var, Name> for AlgorithmW {
+    impl<'a> Infer<&'a Var, Name> for AlgorithmW {
         type Error = Infallible;
 
-        async fn partial_infer(&mut self, item: &Var) -> Result<PartialInfer<Name>, Self::Error> {
+        async fn partial_infer(item: &'a Var) -> Result<PartialInfer<Name>, Self::Error> {
             let ty = TVar::new();
             Ok(PartialInfer::new(ty).with_assumption(item.0, ty))
         }
     }
 
-    impl Infer<Lambda, Name> for AlgorithmW {
+    impl<'a> Infer<&'a Lambda, Name> for AlgorithmW {
         type Error = Infallible;
 
-        async fn partial_infer(
-            &mut self,
-            Lambda { bind, expr }: &Lambda,
-        ) -> Result<PartialInfer<Name>, Self::Error> {
-            let tv = TVar::new();
-            self.monomorphic_set.insert(tv);
-            let PartialInfer {
-                assumptions: mut as1,
-                constraints: cs1,
-                current_type: t1,
-            } = self.partial_infer(expr).await?;
-
-            let tys = as1.resolve_take(bind.0);
-            let eq_cs = tys.iter().cloned().map(|it| eq_cst(tv, it.0));
-
-            Ok(PartialInfer::new(MonomorphicType::fun1(tv, t1.0))
-                .with_constraints(eq_cs)
-                .with_constraints(cs1)
-                .with_assumptions(as1))
-        }
-    }
-
-    impl Infer<App, Name> for AlgorithmW {
-        type Error = Infallible;
-
-        async fn partial_infer(
-            &mut self,
-            App { func, arg }: &App,
-        ) -> Result<PartialInfer<Name>, Self::Error> {
-            let PartialInfer {
-                assumptions: as1,
-                constraints: cs1,
-                current_type: t1,
-            } = self.partial_infer(arg).await?;
-            let PartialInfer {
-                assumptions: as2,
-                constraints: cs2,
-                current_type: t2,
-            } = self.partial_infer(func).await?;
-            let tv = TVar::new();
-
-            Ok(PartialInfer::new(tv)
-                .with_assumptions(as1)
-                .with_assumptions(as2)
-                .with_constraints(cs1)
-                .with_constraints(cs2)
-                .with_constraint(eq_cst(t2.0, MonomorphicType::fun1(t1.0, tv))))
-        }
-    }
-
-    impl Infer<Let, Name> for AlgorithmW {
-        type Error = Infallible;
-
-        async fn partial_infer(
-            &mut self,
-            Let {
-                binder,
+        fn partial_infer(
+            Lambda {
                 bind,
-                usage,
-            }: &Let,
-        ) -> Result<PartialInfer<Name>, Self::Error> {
-            let PartialInfer {
-                assumptions: mut as1,
-                constraints: cs1,
-                current_type: t1,
-            } = self.partial_infer(binder).await?;
-            let PartialInfer {
-                assumptions: as2,
-                constraints: cs2,
-                current_type: t2,
-            } = self.partial_infer(usage).await?;
+                bind_ty_stub: tv,
+                expr,
+            }: &'a Lambda,
+        ) -> impl Future<Output = Result<PartialInfer<Name>, Self::Error>> {
+            async move {
+                let PartialInfer {
+                    assumptions: mut as1,
+                    constraints: cs1,
+                    current_type: t1,
+                } = Self::partial_infer(expr).await?;
 
-            as1.merge(as2);
+                let tys = as1.resolve_take(bind.0);
+                let eq_cs = tys.iter().cloned().map(|it| eq_cst(*tv, it.0));
 
-            let tys = as1.resolve_take(bind.0);
-            let im_cs = tys
-                .iter()
-                .cloned()
-                .map(|it| implicit_cst(it.0, self.monomorphic_set.clone(), t1.0));
-
-            Ok(PartialInfer::new(t2.0)
-                .with_constraints(im_cs)
-                .with_constraints(cs1)
-                .with_constraints(cs2)
-                .with_assumptions(as1))
+                Ok(PartialInfer::new(MonomorphicType::fun1(*tv, t1.0))
+                    .with_constraints(eq_cs)
+                    .with_constraints(cs1)
+                    .with_assumptions(as1))
+            }
         }
     }
 
-    impl Infer<Language, Name> for AlgorithmW {
+    impl<'a> Infer<&'a App, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        fn partial_infer(
+            App { func, arg }: &'a App,
+        ) -> impl Future<Output = Result<PartialInfer<Name>, Self::Error>> {
+            async move {
+                let PartialInfer {
+                    assumptions: as1,
+                    constraints: cs1,
+                    current_type: t1,
+                } = Self::partial_infer(arg).await?;
+                let PartialInfer {
+                    assumptions: as2,
+                    constraints: cs2,
+                    current_type: t2,
+                } = Self::partial_infer(func).await?;
+                let tv = TVar::new();
+
+                Ok(PartialInfer::new(tv)
+                    .with_assumptions(as1)
+                    .with_assumptions(as2)
+                    .with_constraints(cs1)
+                    .with_constraints(cs2)
+                    .with_constraint(eq_cst(t2.0, MonomorphicType::fun1(t1.0, tv))))
+            }
+        }
+    }
+
+    impl<'a> Infer<&'a InLambda<Let>, Name> for AlgorithmW {
+        type Error = Infallible;
+
+        fn partial_infer(
+            InLambda { binds, value }: &'a InLambda<Let>,
+        ) -> impl Future<Output = Result<PartialInfer<Name>, Self::Error>> {
+            async move {
+                let PartialInfer {
+                    assumptions: mut as1,
+                    constraints: cs1,
+                    current_type: t1,
+                } = Self::partial_infer(&value.binder).await?;
+                let PartialInfer {
+                    assumptions: as2,
+                    constraints: cs2,
+                    current_type: t2,
+                } = Self::partial_infer(&value.usage).await?;
+
+                as1.merge(as2);
+
+                let tys = as1.resolve_take(value.bind.0);
+                let im_cs = tys
+                    .iter()
+                    .cloned()
+                    .map(|it| implicit_cst(it.0, binds.clone(), t1.0));
+
+                Ok(PartialInfer::new(t2.0)
+                    .with_constraints(im_cs)
+                    .with_constraints(cs1)
+                    .with_constraints(cs2)
+                    .with_assumptions(as1))
+            }
+        }
+    }
+
+    impl<'a> Infer<&'a Language, Name> for AlgorithmW {
         type Error = Infallible;
 
         #[allow(refining_impl_trait)]
-        fn partial_infer<'a>(
-            &'a mut self,
+        fn partial_infer(
             value: &'a Language,
         ) -> BoxedFuture<'a, Result<PartialInfer<Name>, Self::Error>> {
             match value {
-                Language::Var(x) => Box::pin(self.partial_infer(x)),
-                Language::Lambda(x) => Box::pin(self.partial_infer(x.deref())),
-                Language::App(x) => Box::pin(self.partial_infer(x.deref())),
-                Language::Let(x) => Box::pin(self.partial_infer(x.deref())),
+                Language::Var(x) => Box::pin(Self::partial_infer(x)),
+                Language::Lambda(x) => Box::pin(Self::partial_infer(x.value.deref())),
+                Language::App(x) => Box::pin(Self::partial_infer(x.value.deref())),
+                Language::Let(x) => Box::pin(Self::partial_infer(x)),
             }
         }
     }
@@ -268,22 +277,59 @@ mod tests {
     }
 
     fn let_(bind: &'static str, binder: Language, usage: Language) -> Language {
-        Language::Let(Box::new(Let {
-            binder,
-            bind: Var(bind),
-            usage,
-        }))
+        Language::Let(InLambda {
+            binds: HashSet::new(),
+            value: Box::new(Let {
+                binder,
+                bind: Var(bind),
+                usage,
+            }),
+        })
     }
 
     fn app(func: Language, arg: Language) -> Language {
-        Language::App(Box::new(App { func, arg }))
+        Language::App(InLambda {
+            binds: HashSet::new(),
+            value: Box::new(App { arg, func }),
+        })
     }
 
     fn lambda(bind: &'static str, expr: Language) -> Language {
-        Language::Lambda(Box::new(Lambda {
-            bind: Var(bind),
-            expr,
-        }))
+        Language::Lambda(InLambda {
+            binds: Default::default(),
+            value: Box::new(Lambda {
+                bind: Var(bind),
+                bind_ty_stub: TVar::new(),
+                expr,
+            }),
+        })
+    }
+
+    // populate `InLambda::set` members
+    fn correct_expr(mut expr: Language) -> Language {
+        // propagate `bind_ty_stub` from lambdas to children
+        fn step(expr: &mut Language, previous: &HashSet<TVar>) {
+            match expr {
+                Language::Var(_) => {}
+                Language::Lambda(x) => {
+                    x.binds.extend(previous);
+                    x.binds.insert(x.value.bind_ty_stub);
+                    step(&mut x.value.expr, &x.binds);
+                }
+                Language::App(x) => {
+                    x.binds.extend(previous);
+                    step(&mut x.value.func, &x.binds);
+                    step(&mut x.value.arg, &x.binds);
+                }
+                Language::Let(x) => {
+                    x.binds.extend(previous);
+                    step(&mut x.value.usage, &x.binds);
+                    step(&mut x.value.binder, &x.binds);
+                }
+            }
+        }
+        step(&mut expr, &HashSet::new());
+        expr
     }
 
     fn run_blocking<T>(fut: impl Future<Output = T>) -> T {
@@ -303,7 +349,7 @@ mod tests {
                 $b $(if $cond)? => {},
                 _ => {
                     dbg!($a);
-                    assert!(false, "Expected a different type")
+                    assert!(false, "Expected a different type, got: {}", $a)
                 }
             }
         };
@@ -311,10 +357,9 @@ mod tests {
 
     #[test]
     fn test_identity_fn() {
-        let mut solver = AlgorithmW::default();
         // \x. x
-        let expr = lambda("x", var("x"));
-        let partial = run_blocking(solver.partial_infer(&expr)).unwrap();
+        let expr = correct_expr(lambda("x", var("x")));
+        let partial = run_blocking(AlgorithmW::partial_infer(&expr)).unwrap();
         let (_, t) = partial.resolve::<Infallible>(|_| Ok(None)).unwrap();
 
         assert_type_matches!(t.0, MonomorphicType::Fn(
@@ -328,12 +373,11 @@ mod tests {
         const I32: PrimitiveType = PrimitiveType::custom(true, NonZeroU8::new(32).unwrap());
 
         // \n. let x = succ(n) in succ(x)
-        let expr = lambda(
+        let expr = correct_expr(lambda(
             "n",
             let_("x", app(var("succ"), var("n")), app(var("succ"), var("x"))),
-        );
-        let mut solver = AlgorithmW::default();
-        let partial = run_blocking(solver.partial_infer(&expr)).unwrap();
+        ));
+        let partial = run_blocking(AlgorithmW::partial_infer(&expr)).unwrap();
         let (_, t) = partial
             .resolve::<Infallible>(|name| {
                 if name == &"succ" {
@@ -367,17 +411,16 @@ mod tests {
     #[test]
     fn test_tuples() {
         // \z. let x = dup(z) in (\y. dup(y))(x)
-        let expr = lambda(
+        let expr = correct_expr(lambda(
             "z",
             let_(
                 "x",
                 app(var("dup"), var("z")),
                 app(lambda("y", app(var("dup"), var("x"))), var("x")),
             ),
-        );
+        ));
 
-        let mut solver = AlgorithmW::default();
-        let partial = run_blocking(solver.partial_infer(&expr)).unwrap();
+        let partial = run_blocking(AlgorithmW::partial_infer(&expr)).unwrap();
 
         let t = TVar::new();
         let dup_t =
@@ -406,9 +449,9 @@ mod tests {
         //one  = \f. \x. f x                 :: (a -> b) -> a -> b
         //plus = \m. \n. \f. \x. m f (n f x) :: (a -> b -> c) -> (a -> d -> b) -> a -> d -> c
 
-        let zero = lambda("f", lambda("x", var("x")));
-        let one = lambda("f", lambda("x", app(var("f"), var("x"))));
-        let plus = lambda(
+        let zero = correct_expr(lambda("f", lambda("x", var("x"))));
+        let one = correct_expr(lambda("f", lambda("x", app(var("f"), var("x")))));
+        let plus = correct_expr(lambda(
             "m",
             lambda(
                 "n",
@@ -423,13 +466,12 @@ mod tests {
                     ),
                 ),
             ),
-        );
+        ));
 
         fn solve(
             expr: &Language,
         ) -> Result<&'static MonomorphicType, Vec<InferError<Name, Infallible>>> {
-            let mut solver = AlgorithmW::default();
-            let partial = run_blocking(solver.partial_infer(expr)).unwrap();
+            let partial = run_blocking(AlgorithmW::partial_infer(expr)).unwrap();
             partial.resolve::<Infallible>(|_| Ok(None)).map(|it| it.1.0)
         }
 
@@ -438,5 +480,40 @@ mod tests {
         let pt = solve(&plus).unwrap().generalize(&HashSet::new());
 
         println!("{zt}\n{ot}\n{pt}");
+    }
+
+    #[test]
+    fn test_let_specialization() {
+        // let id = \y. y in tuple (id one) (id true)
+        let expr = correct_expr(let_(
+            "id",
+            lambda("y", var("y")),
+            app(
+                app(var("tuple"), app(var("id"), var("one"))),
+                app(var("id"), var("true")),
+            ),
+        ));
+        let partial = run_blocking(AlgorithmW::partial_infer(&expr)).unwrap();
+
+        let [t1, t2] = TVar::new_many();
+        let tuple_t = MonomorphicType::fun(t1, [t2], MonomorphicType::tuple([t1, t2]))
+            .generalize(&HashSet::new());
+        let true_t = MonomorphicType::primitive(PrimitiveType::Boolean).generalize(&HashSet::new());
+        let one_t = MonomorphicType::primitive(PrimitiveType::i8()).generalize(&HashSet::new());
+
+        let (_, t) = partial
+            .resolve::<Infallible>(|&name| match name {
+                "tuple" => Ok(Some(tuple_t.clone())),
+                "true" => Ok(Some(true_t.clone())),
+                "one" => Ok(Some(one_t.clone())),
+                _ => Ok(None),
+            })
+            .unwrap();
+
+        assert_type_matches!(t.0, MonomorphicType::Tuple(ts)
+        if ts.as_ref() == [
+            MonomorphicType::primitive(PrimitiveType::i8()).intern(),
+            MonomorphicType::primitive(PrimitiveType::Boolean).intern()
+        ]);
     }
 }

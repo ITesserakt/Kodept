@@ -145,12 +145,15 @@ impl<Name: Display> Display for AssumptionSet<Name> {
             Empty => write!(f, "[]"),
             Single(k, v) => write!(f, "[{k} :: [{}]]", JoinedDisplay::enumerate(v)),
             Map(map) => {
-                write!(f, "[")?;
-                for (key, value) in map {
-                    write!(f, "{key} :: [{}]", JoinedDisplay::enumerate(value))?;
-                }
-                write!(f, "]")?;
-                Ok(())
+                write!(
+                    f,
+                    "[{}]",
+                    JoinedDisplay::enumerate(map.iter().map(|(key, value)| format!(
+                        "{key} :: [{}]",
+                        JoinedDisplay::enumerate(value)
+                    )))
+                    .join()
+                )
             }
         }
     }
@@ -162,12 +165,15 @@ impl<Name: Debug> Debug for AssumptionSet<Name> {
             Empty => write!(f, "[]"),
             Single(k, v) => write!(f, "[{k:?} :: [{}]]", JoinedDisplay::enumerate(v)),
             Map(map) => {
-                write!(f, "[")?;
-                for (key, value) in map {
-                    write!(f, "{key:?} :: [{}]", JoinedDisplay::enumerate(value))?;
-                }
-                write!(f, "]")?;
-                Ok(())
+                write!(
+                    f,
+                    "[{}]",
+                    JoinedDisplay::enumerate(map.iter().map(|(key, value)| format!(
+                        "{key:?} :: [{}]",
+                        JoinedDisplay::enumerate(value)
+                    )))
+                        .join()
+                )
             }
         }
     }
