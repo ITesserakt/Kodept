@@ -66,6 +66,7 @@ impl AlgorithmU {
             (Fn(i1, o1), Fn(i2, o2)) => Self::unify_vec(&[*i1, *o1], &[*i2, *o2]),
             (Tuple(t1), Tuple(t2)) => Self::unify_vec(&t1, &t2),
             (Pointer(t1), Pointer(t2)) => t1.unify(t2),
+            (StaticArray(n1, t1), StaticArray(n2, t2)) if n1 == n2 => t1.unify(t2),
             _ => Err(UnificationFail(lhs.intern(), rhs.intern())),
         }
     }
@@ -196,11 +197,10 @@ mod tests {
     fn test_multiple_substitutions() {
         let var1 = TVar::new();
         let var2 = TVar::new();
-        let u8 = MonomorphicType::from(PrimitiveType::u8().intern());
         let constant = MonomorphicType::constant();
 
         let a = MonomorphicType::fun(
-            &MonomorphicType::fun1(&Var(var1), &u8),
+            &MonomorphicType::fun1(&Var(var1), PrimitiveType::u8()),
             [&Var(var1)],
             MonomorphicType::UNIT,
         );
@@ -211,7 +211,7 @@ mod tests {
             s.into_inner(),
             HashMap::from([
                 (var1, constant.intern()),
-                (var2, MonomorphicType::fun1(&constant, &u8).intern())
+                (var2, MonomorphicType::fun1(&constant, PrimitiveType::u8()).intern())
             ])
         )
     }

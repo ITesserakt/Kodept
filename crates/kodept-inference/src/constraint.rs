@@ -188,7 +188,6 @@ mod tests {
     use crate::r#type::MonomorphicType::Var;
     use crate::r#type::PrimitiveType::Boolean;
     use crate::r#type::{MonomorphicType, TVar};
-    use kodept_interning::GlobalInterner;
 
     #[test]
     fn test_1() {
@@ -196,7 +195,7 @@ mod tests {
         let cs = vec![
             eq_cst(
                 &Var(t2),
-                &MonomorphicType::fun1(&Boolean.intern().into(), &Var(t3)),
+                &MonomorphicType::fun1(Boolean, &Var(t3)),
             ),
             implicit_cst(&Var(t4), [t5], &Var(t3)),
             implicit_cst(&Var(t2), [t5], &Var(t1)),
@@ -210,15 +209,15 @@ mod tests {
                 (t4, Var(t3)),
                 (
                     t1,
-                    MonomorphicType::fun1(&Boolean.intern().into(), &Var(t3))
+                    MonomorphicType::fun1(Boolean, &Var(t3))
                 ),
                 (
                     t5,
-                    MonomorphicType::fun1(&Boolean.intern().into(), &Var(t3))
+                    MonomorphicType::fun1(Boolean, &Var(t3))
                 ),
                 (
                     t2,
-                    MonomorphicType::fun1(&Boolean.intern().into(), &Var(t3))
+                    MonomorphicType::fun1(Boolean, &Var(t3))
                 )
             ])
         )

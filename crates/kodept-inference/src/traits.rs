@@ -3,7 +3,7 @@ use crate::constraint::{Constraint, EqConstraint};
 use crate::substitution::Substitutions;
 use crate::r#type::MonomorphicType::Fn;
 use crate::r#type::{MonomorphicType, PolymorphicType, TVar};
-use MonomorphicType::{Constant, Pointer, Primitive, Tuple, Var};
+use MonomorphicType::{Constant, Pointer, Primitive, StaticArray, Tuple, Var};
 use kodept_interning::{GlobalInterner, Interned};
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -49,6 +49,7 @@ impl Substitutable for MonomorphicType {
             }
             Tuple(inner) => Tuple(ChangeOutputType::wrap(inner).substitute(subst)).intern_owned(),
             Pointer(inner) => Pointer(inner.substitute(subst)).intern_owned(),
+            StaticArray(n, inner) => StaticArray(*n, inner.substitute(subst)).intern_owned(),
         }
     }
 }
@@ -65,6 +66,7 @@ impl Substitutable for Interned<MonomorphicType> {
             }
             Tuple(inner) => Tuple(ChangeOutputType::wrap(inner).substitute(subst)).intern_owned(),
             Pointer(inner) => Pointer(inner.substitute(subst)).intern_owned(),
+            StaticArray(n, inner) => StaticArray(*n, inner.substitute(subst)).intern_owned(),
         }
     }
 }
@@ -168,6 +170,7 @@ impl FreeTypeVars for &MonomorphicType {
             Fn(input, output) => &input.free_types() | &output.free_types(),
             Tuple(vec) => vec.free_types(),
             Pointer(x) => x.free_types(),
+            StaticArray(_, x) => x.free_types(),
         }
     }
 }

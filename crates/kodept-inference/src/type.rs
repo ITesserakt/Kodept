@@ -50,8 +50,6 @@ pub enum PrimitiveType {
     F24,
     /// String with some value that is known at compile time
     StaticString(u64),
-    /// Array of some type which size is known at compile time
-    StaticArray(u64, Interned<PrimitiveType>),
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
@@ -69,6 +67,7 @@ pub struct TConstant(usize);
 
 #[derive(PartialEq, Eq, Hash, Clone, From)]
 pub enum MonomorphicType {
+    #[from(ignore)]
     Primitive(Interned<PrimitiveType>),
     Var(TVar),
     #[from(ignore)]
@@ -77,6 +76,9 @@ pub enum MonomorphicType {
     Tuple(Box<[Interned<MonomorphicType>]>),
     #[from(ignore)]
     Pointer(Interned<MonomorphicType>),
+    #[from(ignore)]
+    /// Array of some type which size is known at compile time
+    StaticArray(u64, Interned<MonomorphicType>),
     Constant(TConstant),
 }
 
@@ -129,7 +131,6 @@ mod interning {
                 PrimitiveType::U(n) => &PRIMITIVES.unsigned[n.get() as usize - 1],
                 PrimitiveType::F24 => &PrimitiveType::F24,
                 PrimitiveType::StaticString(_) => boxy_leak(self),
-                PrimitiveType::StaticArray(..) => boxy_leak(self),
             }
         }
 
@@ -209,10 +210,6 @@ mod ctors {
         pub const fn string(size: u64) -> Self {
             Self::StaticString(size)
         }
-
-        pub fn array(count: u64, inner_type: &Self) -> Self {
-            Self::StaticArray(count, inner_type.intern())
-        }
     }
 
     impl MonomorphicType {
@@ -254,6 +251,20 @@ mod ctors {
         }
 
         pub const UNIT: Self = Self::Primitive(Interned(&PrimitiveType::Unit));
+
+        pub fn array(count: u64, inner_type: impl InternInto<MonomorphicType>) -> Self {
+            Self::StaticArray(count, inner_type.intern_into())
+        }
+        
+        pub fn pointer(inner_type: impl InternInto<MonomorphicType>) -> Self {
+            Self::Pointer(inner_type.intern_into())
+        }
+    }
+    
+    impl From<PrimitiveType> for MonomorphicType {
+        fn from(value: PrimitiveType) -> Self {
+            Self::Primitive(value.intern_owned())
+        }
     }
 
     static GENERATOR: AtomicUsize = AtomicUsize::new(0);
@@ -287,7 +298,6 @@ impl Display for PrimitiveType {
             PrimitiveType::U(size) => write!(f, "u{size}"),
             PrimitiveType::F24 => write!(f, "f24"),
             PrimitiveType::StaticString(size) => write!(f, "s{size}"),
-            PrimitiveType::StaticArray(count, ty) => write!(f, "{ty}[{count}]"),
         }
     }
 }
@@ -301,8 +311,9 @@ impl Debug for PrimitiveType {
 impl MonomorphicType {
     fn rename(&mut self, old: TVar, new: TVar) {
         match self {
-            MonomorphicType::Var(id) if id == &old => *id = new,
-            MonomorphicType::Fn(input, output) => {
+            Self::Var(id) if id == &old => *id = new,
+            Self::Var(_) => {}
+            Self::Fn(input, output) => {
                 let mut new_input = input.0.clone();
                 let mut new_output = output.0.clone();
                 new_input.rename(old, new);
@@ -310,19 +321,26 @@ impl MonomorphicType {
                 *input = new_input.intern_owned();
                 *output = new_output.intern_owned();
             }
-            MonomorphicType::Pointer(x) => {
+            Self::Pointer(x) => {
                 let mut new_ptr = x.0.clone();
                 new_ptr.rename(old, new);
                 *x = new_ptr.intern_owned();
             }
-            MonomorphicType::Tuple(vec) if !vec.is_empty() => {
+            Self::Tuple(vec) if !vec.is_empty() => {
                 for item in vec {
                     let mut new_item = item.0.clone();
                     new_item.rename(old, new);
                     *item = new_item.intern_owned();
                 }
             }
-            _ => {}
+            Self::Tuple(_) => {}
+            Self::StaticArray(_, x) => {
+                let mut new_x = x.0.clone();
+                new_x.rename(old, new);
+                *x = new_x.intern_owned();
+            }
+            Self::Constant(_) => {}
+            Self::Primitive(_) => {}
         }
     }
 
@@ -334,15 +352,16 @@ impl MonomorphicType {
 
         while let Some(current) = stack.pop() {
             match current {
-                MonomorphicType::Primitive(_) => {}
-                MonomorphicType::Var(x) => buf.extend(Some(*x)),
-                MonomorphicType::Fn(input, output) => {
+                Self::Primitive(_) => {}
+                Self::Var(x) => buf.extend(Some(*x)),
+                Self::Fn(input, output) => {
                     stack.push(input);
                     stack.push(output);
                 }
-                MonomorphicType::Tuple(vec) => stack.extend(vec.iter().map(|it| it.0)),
-                MonomorphicType::Pointer(x) => stack.push(x),
-                MonomorphicType::Constant(_) => {}
+                Self::Tuple(vec) => stack.extend(vec.iter().map(|it| it.0)),
+                Self::Pointer(x) => stack.push(x),
+                Self::Constant(_) => {}
+                Self::StaticArray(_, inner) => stack.push(inner)
             }
         }
     }
@@ -454,15 +473,16 @@ impl Display for TConstant {
 impl Display for MonomorphicType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            MonomorphicType::Primitive(p) => write!(f, "{p}"),
-            MonomorphicType::Var(v) => write!(f, "{v}"),
-            MonomorphicType::Fn(input, output) => match input.0 {
-                MonomorphicType::Fn(_, _) => write!(f, "({input}) -> {output}"),
+            Self::Primitive(p) => write!(f, "{p}"),
+            Self::Var(v) => write!(f, "{v}"),
+            Self::Fn(input, output) => match input.0 {
+                Self::Fn(_, _) => write!(f, "({input}) -> {output}"),
                 _ => write!(f, "{input} -> {output}"),
             },
-            MonomorphicType::Tuple(vec) => write!(f, "({})", JoinedDisplay::enumerate(vec)),
-            MonomorphicType::Pointer(t) => write!(f, "*{t}"),
-            MonomorphicType::Constant(id) => write!(f, "{id}"),
+            Self::Tuple(vec) => write!(f, "({})", JoinedDisplay::enumerate(vec)),
+            Self::Pointer(t) => write!(f, "*{t}"),
+            Self::Constant(id) => write!(f, "{id}"),
+            Self::StaticArray(count, ty) => write!(f, "{{{ty}}}[{count}]"),
         }
     }
 }
@@ -495,7 +515,8 @@ impl Display for Bound<&MonomorphicType> {
                 JoinedDisplay::enumerate(vec.iter().map(|it| Bound(it.0))).join()
             ),
             MonomorphicType::Pointer(t) => write!(f, "*{}", Bound(t.0)),
-            _ => write!(f, "{}", self.0),
+            MonomorphicType::StaticArray(n, t) => write!(f, "{{{}}}[{}]", Bound(t.0), n),
+            MonomorphicType::Constant(_) | MonomorphicType::Primitive(_) => write!(f, "{}", self.0),
         }
     }
 }

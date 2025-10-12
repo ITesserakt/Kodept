@@ -516,4 +516,93 @@ mod tests {
             MonomorphicType::primitive(PrimitiveType::Boolean).intern()
         ]);
     }
+
+    #[test]
+    fn test_recursion() {
+        // let length = \xs. succ (length (tail xs)) in length
+        let expr = correct_expr(let_(
+            "length",
+            lambda(
+                "xs",
+                app(var("succ"), app(var("length"), app(var("tail"), var("xs")))),
+            ),
+            var("length"),
+        ));
+        let partial = run_blocking(AlgorithmW::partial_infer(&expr)).unwrap();
+
+        let [t1] = TVar::new_many();
+        let tail_t =
+            MonomorphicType::fun1(MonomorphicType::pointer(t1), MonomorphicType::pointer(t1))
+                .generalize(&HashSet::new());
+        let succ_t = MonomorphicType::fun1(PrimitiveType::u8(), PrimitiveType::u8())
+            .generalize(&HashSet::new());
+
+        let (_, t) = partial
+            .resolve::<Infallible>(|&name| match name {
+                "tail" => Ok(Some(tail_t.clone())),
+                "succ" => Ok(Some(succ_t.clone())),
+                _ => Ok(None),
+            })
+            .unwrap();
+
+        const EIGHT: NonZeroU8 = NonZeroU8::new(8).unwrap();
+        assert_type_matches!(
+            t.0,
+            MonomorphicType::Fn(
+                Interned(MonomorphicType::Pointer(Interned(MonomorphicType::Var(_)))),
+                Interned(MonomorphicType::Primitive(Interned(PrimitiveType::U(
+                    EIGHT
+                ))))
+            )
+        );
+    }
+
+    #[test]
+    fn test_mutual_recursion() {
+        // let is_odd = \x. not (is_even (pred x))
+        // in
+        //   let is_even = \y. not (is_odd (pred y))
+        //   in
+        //     tuple is_odd is_even
+
+        let expr = correct_expr(let_(
+            "is_odd",
+            lambda(
+                "x",
+                app(var("not"), app(var("is_even"), app(var("pred"), var("x")))),
+            ),
+            let_(
+                "is_even",
+                lambda(
+                    "y",
+                    app(var("not"), app(var("is_odd"), app(var("pred"), var("y")))),
+                ),
+                app(app(var("tuple"), var("is_odd")), var("is_even")),
+            ),
+        ));
+        let partial = run_blocking(AlgorithmW::partial_infer(&expr)).unwrap();
+
+        let not_t = MonomorphicType::fun1(PrimitiveType::Boolean, PrimitiveType::Boolean)
+            .generalize(&HashSet::new());
+        let [t1, t2] = TVar::new_many();
+        let tuple_t = MonomorphicType::fun(t1, [t2], MonomorphicType::tuple([t1, t2]))
+            .generalize(&HashSet::new());
+        let pred_t = MonomorphicType::fun1(PrimitiveType::u8(), PrimitiveType::u8())
+            .generalize(&HashSet::new());
+
+        let errors = partial
+            .resolve::<Infallible>(|&name| match name {
+                "not" => Ok(Some(not_t.clone())),
+                "tuple" => Ok(Some(tuple_t.clone())),
+                "pred" => Ok(Some(pred_t.clone())),
+                _ => Ok(None),
+            })
+            .unwrap_err();
+
+        // despite being literally in `expr`, `is_even` is not properly defined still
+        assert!(matches!(
+            errors.as_slice(),
+            [InferError::UnknownName("is_even")]
+        ))
+    }
 }
