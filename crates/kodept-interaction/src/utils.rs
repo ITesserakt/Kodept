@@ -1,14 +1,14 @@
-use std::{any::TypeId, borrow::Cow, ops::ControlFlow};
-use std::fmt::{Display, Formatter};
+use crate::report::Reporter;
+use bevy_ecs::message::{Message, MessageReader};
+use bevy_ecs::prelude::Commands;
 use bevy_ecs::{
     system::{In, IntoSystem},
     world::World,
 };
-use bevy_ecs::message::{Message, MessageReader, MessageWriter};
 use kodept_ast::interaction::ObserverEntity;
 use kodept_report::traits::{IntoSpannedReportMessage, MessageBehaviour};
-
-use crate::report::Reporter;
+use std::fmt::{Display, Formatter};
+use std::{any::TypeId, borrow::Cow, ops::ControlFlow};
 
 pub(crate) type Ctx<'w> = kodept_ast::interaction::Interaction<'w>;
 
@@ -106,15 +106,13 @@ pub(crate) fn wrap_system<S, T, M>(
 where
     S: IntoSystem<(), T, M>,
     T: Try<Output = ()> + 'static,
-    T::Residual: IntoSpannedReportMessage + 'static
+    T::Residual: IntoSpannedReportMessage + 'static,
 {
     let id = system.system_type_id();
     let system = system.pipe(
-        move |In(result): In<T>,
-              mut writer: MessageWriter<SystemCompletionEvent>,
-              reporter: Reporter| match result.branch() {
+        move |In(result): In<T>, reporter: Reporter, mut commands: Commands| match result.branch() {
             ControlFlow::Continue(()) => {
-                writer.write(SystemCompletionEvent {
+                commands.write_message(SystemCompletionEvent {
                     name: name.clone(),
                     id,
                     fail_reason: None,
@@ -125,14 +123,14 @@ where
                 reporter.report(error);
                 match behaviour {
                     MessageBehaviour::FailFast { reason } => {
-                        writer.write(SystemCompletionEvent {
+                        commands.write_message(SystemCompletionEvent {
                             name: name.clone(),
                             id,
                             fail_reason: Some(reason.clone()),
                         });
                     }
                     MessageBehaviour::Suppress => {
-                        writer.write(SystemCompletionEvent {
+                        commands.write_message(SystemCompletionEvent {
                             name: name.clone(),
                             id,
                             fail_reason: None,
@@ -191,8 +189,7 @@ impl Display for FailFastReason {
     }
 }
 
-impl std::error::Error for FailFastReason {
-}
+impl std::error::Error for FailFastReason {}
 
 impl<T: Disposable, const N: usize> Disposable for [T; N] {
     fn dispose(&mut self, world: &mut World) {
