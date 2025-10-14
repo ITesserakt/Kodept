@@ -1,26 +1,38 @@
+use std::ops::ControlFlow;
+use std::ops::ControlFlow::{Break, Continue};
+use crate::Either;
+use crate::engine::reporter::Reporter;
 use crate::prelude::{GlobalReports, Source};
 use crate::report::{Global, Reports};
-use crate::Execution;
+use kodept_report::FileId;
 use kodept_report::prelude::{IntoSpannedReportMessage, Reportable};
 use kodept_report::report::Report;
-use kodept_report::FileId;
-use std::ops::ControlFlow::{Break, Continue};
 
 pub struct SingleExtractMarker;
 pub struct ResultExtractMarker;
 pub struct IterExtractMarker;
+pub struct EitherExtractMarker;
 
 pub trait ExtractReports<Marker> {
     type Output;
 
     #[allow(private_bounds)]
-    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    fn extract_reports_local<FileId, Impl>(
+        self,
+        file_id: FileId,
+        sink: &Reports<Impl>,
+    ) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
         FileId: CorrectFileId;
 
     fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
     where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>;
+
+    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
+    where
+        Impl: Send + Sync + 'static,
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>;
 }
 
@@ -72,22 +84,34 @@ impl<T> ExtractReports<SingleExtractMarker> for T
 where
     T: IntoSpannedReportMessage,
 {
-    type Output = Execution<()>;
+    type Output = ();
 
     #[allow(private_bounds)]
-    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    fn extract_reports_local<FileId, Impl>(
+        self,
+        file_id: FileId,
+        sink: &Reports<Impl>,
+    ) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
         FileId: CorrectFileId,
     {
-        sink.report(file_id, self)
+        sink.report(file_id, self);
     }
 
     fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
     {
-        sink.report(self)
+        sink.report(self);
+    }
+
+    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
+    where
+        Impl: Send + Sync + 'static,
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>
+    {
+        sink.report(self);
     }
 }
 
@@ -95,10 +119,14 @@ impl<T, E, M> ExtractReports<(ResultExtractMarker, M)> for Result<T, E>
 where
     E: ExtractReports<M>,
 {
-    type Output = Execution<T>;
+    type Output = ControlFlow<(), T>;
 
     #[allow(private_bounds)]
-    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    fn extract_reports_local<FileId, Impl>(
+        self,
+        file_id: FileId,
+        sink: &Reports<Impl>,
+    ) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
         FileId: CorrectFileId,
@@ -106,7 +134,7 @@ where
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
-                e.extract_reports(file_id, sink);
+                e.extract_reports_local(file_id, sink);
                 Break(())
             }
         }
@@ -124,6 +152,20 @@ where
             }
         }
     }
+
+    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
+    where
+        Impl: Send + Sync + 'static,
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>
+    {
+        match self {
+            Ok(x) => Continue(x),
+            Err(e) => {
+                e.extract_reports(sink);
+                Break(())
+            }
+        }
+    }
 }
 
 impl<I, E> ExtractReports<IterExtractMarker> for I
@@ -131,21 +173,79 @@ where
     I: IntoIterator<Item = E>,
     E: IntoSpannedReportMessage,
 {
-    type Output = Execution<()>;
+    type Output = ();
 
     #[allow(private_bounds)]
-    fn extract_reports<FileId, Impl>(self, file_id: FileId, sink: &Reports<Impl>) -> Self::Output
+    fn extract_reports_local<FileId, Impl>(
+        self,
+        file_id: FileId,
+        sink: &Reports<Impl>,
+    ) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
         FileId: CorrectFileId,
     {
-        sink.report_many(file_id, self)
+        sink.report_many(file_id, self);
     }
 
     fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
     where
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
     {
-        sink.0.report_many((), self)
+        sink.0.report_many((), self);
+    }
+
+    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
+    where
+        Impl: Send + Sync + 'static,
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>
+    {
+        // TODO: return using `try_for_each`
+        self.into_iter().for_each(|x| x.extract_reports(sink))
+    }
+}
+
+impl<A, B, M1, M2, Output> ExtractReports<(EitherExtractMarker, M1, M2)> for Either<A, B>
+where
+    A: ExtractReports<M1, Output = Output>,
+    B: ExtractReports<M2, Output = Output>,
+{
+    type Output = Output;
+
+    #[allow(private_bounds)]
+    fn extract_reports_local<FileId, Impl>(
+        self,
+        file_id: FileId,
+        sink: &Reports<Impl>,
+    ) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+        FileId: CorrectFileId,
+    {
+        match self {
+            Either::Left(left) => left.extract_reports_local(file_id, sink),
+            Either::Right(right) => right.extract_reports_local(file_id, sink),
+        }
+    }
+
+    fn extract_reports_global<Impl>(self, sink: &GlobalReports<Impl>) -> Self::Output
+    where
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
+    {
+        match self {
+            Either::Left(left) => left.extract_reports_global(sink),
+            Either::Right(right) => right.extract_reports_global(sink),
+        }
+    }
+
+    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
+    where
+        Impl: Send + Sync + 'static,
+        Impl: for<'a> Source<Ref<'a>: AsRef<str>>
+    {
+        match self {
+            Either::Left(left) => left.extract_reports(sink),
+            Either::Right(right) => right.extract_reports(sink),
+        }
     }
 }

@@ -1,8 +1,9 @@
-use crate::cli::make_reports;
+use crate::cli::init_reports;
 use crate::cli::primary::Kodept;
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
 use tracing::Level;
+use kodept_frontend::engine::Engine;
 
 mod cli;
 mod commands;
@@ -26,15 +27,12 @@ fn init_thread_pool(_parallelism: usize) {
 fn main() {
     let _guard = HeapProfilerGuard::install();
     let cli_options = Kodept::parse();
-
+    let mut engine = Engine::new();
+    
     init_tracing(cli_options.logging.level());
     init_thread_pool(cli_options.jobs);
-    let reports = make_reports(cli_options.diagnostic_config);
-
-    let result = cli_options
-        .subcommands
-        .exec(reports, cli_options.output_config);
-    if result.is_break() {
-        eprintln!("Compilation finished with errors");
-    }
+    init_reports(cli_options.diagnostic_config, &mut engine);
+        
+    cli_options.subcommands.build(&mut engine, cli_options.output_config);
+    engine.run();
 }

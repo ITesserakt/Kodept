@@ -977,6 +977,7 @@ dependencies = [
 name = "kodept"
 version = "0.2.3"
 dependencies = [
+ "bevy_ecs",
  "clap",
  "criterion",
  "ctrlc",
@@ -987,11 +988,11 @@ dependencies = [
  "kodept-ast-nodes",
  "kodept-core",
  "kodept-frontend",
- "kodept-interaction",
  "kodept-interning",
  "kodept-parse",
  "kodept-report",
  "kodept-rlt",
+ "kodept-systems",
  "memmap2",
  "rayon",
  "serde_json",
@@ -1037,10 +1038,12 @@ dependencies = [
 
 [[package]]
 name = "kodept-frontend"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
+ "bevy_ecs",
  "kodept-core",
  "kodept-report",
+ "tracing",
  "yoke",
 ]
 
@@ -1054,21 +1057,6 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "smallvec",
-]
-
-[[package]]
-name = "kodept-interaction"
-version = "0.1.2"
-dependencies = [
- "bevy_ecs",
- "kodept-ast",
- "kodept-ast-nodes",
- "kodept-core",
- "kodept-inference",
- "kodept-report",
- "kodept-rlt",
- "rstest",
- "tracing",
 ]
 
 [[package]]
@@ -1126,6 +1114,13 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "serde",
+]
+
+[[package]]
+name = "kodept-systems"
+version = "0.1.2"
+dependencies = [
+ "bevy_ecs",
 ]
 
 [[package]]

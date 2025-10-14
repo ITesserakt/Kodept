@@ -23,7 +23,7 @@ members = [
     , "crates/kodept-ast-nodes"
     , "crates/kodept-rlt"
     , "crates/kodept-frontend"
-    , "crates/kodept-interaction"]
+    , "crates/kodept-systems"]
 
 [workspace.package]
 edition = "2024"
@@ -56,6 +56,7 @@ rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
 [dependencies]
+bevy_ecs.workspace = true
 clap = { version = "4.5", features = ["derive", "env"] }
 derive_more.workspace = true
 memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
@@ -73,7 +74,7 @@ kodept-ast = { path = "crates/kodept-ast" }
 kodept-ast-nodes = { path = "crates/kodept-ast-nodes" }
 kodept-core = { path = "crates/kodept-core" }
 kodept-frontend = { path = "crates/kodept-frontend" }
-kodept-interaction = { path = "crates/kodept-interaction" }
+kodept-systems = { path = "crates/kodept-systems" }
 kodept-parse = { path = "crates/kodept-parse" }
 kodept-report = { path = "crates/kodept-report" }
 kodept-rlt = { path = "crates/kodept-rlt", features = ["serde"] }
@@ -88,7 +89,7 @@ criterion = "0.7.0"
 default = []
 profiler = ["dep:dhat", "dep:ctrlc"]
 interning = ["dep:kodept-interning", "kodept-interning/code_holder", "kodept-interning/metrics"]
-parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept-ast-nodes/parallel", "kodept-interaction/parallel"]
+parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept-ast-nodes/parallel"]
 trace = ["dep:gag", "kodept-parse/trace"]
 debug = ["kodept-ast/debug"]
 

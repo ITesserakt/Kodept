@@ -6,14 +6,11 @@ use crate::commands::utils::parse_source::get_rlt;
 use crate::commands::Command;
 use clap::Parser;
 use kodept::report::GlobalReports;
-use kodept_ast::interaction::Interaction as Ctx;
 use kodept_frontend::Execution;
-use kodept_interaction::lint::{DebugScopesLint, DebugTypingLint, LintDescriptor, RLTLinkLint, ShowLints, SingleModuleWithBrackets};
-use kodept_interaction::prelude::{install_reporting_support, install_system_completion_introspection_support, Disposable, ExtractSymbolsPass, Interaction, ReferenceResolverPass, ScopeBuildingPass, TypeInferPass};
 use std::borrow::Cow;
 use std::ops::ControlFlow::Continue;
 use std::time::{Duration, Instant};
-use tracing::{enabled, error, error_span, info, info_span, trace, trace_span, Level};
+use tracing::{enabled, error_span, info, info_span, trace, trace_span, Level};
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -44,25 +41,25 @@ impl Command for Check {
                 self.timings_block("AST building", || build_ast(&source, rlt, &reports))?;
             let mut ctx = ast.interact();
 
-            install_reporting_support(&mut ctx, {
-                let reports = reports.clone();
-                move |r| reports.insert(r)
-            });
+            // install_reporting_support(&mut ctx, {
+            //     let reports = reports.clone();
+            //     move |r| reports.insert(r)
+            // });
 
-            install_system_completion_introspection_support(&mut ctx, |event| {
-                if let Some(reason) = &event.fail_reason {
-                    error!("System {}#{:?} failed: {reason}", event.name, event.id);
-                } else {
-                    trace!("{}#{:?}", event.name, event.id);
-                }
-            });
+            // install_system_completion_introspection_support(&mut ctx, |event| {
+            //     if let Some(reason) = &event.fail_reason {
+            //         error!("System {}#{:?} failed: {reason}", event.name, event.id);
+            //     } else {
+            //         trace!("{}#{:?}", event.name, event.id);
+            //     }
+            // });
 
             let mut block_disposal = self.timings_block("Symbols resolution", || {
-                let a = self.install_lints(&mut ctx);
-                let b = ScopeBuildingPass::install(&mut ctx);
-                let c = ExtractSymbolsPass::install(&mut ctx);
-                let d = ReferenceResolverPass::install(&mut ctx);
-                let e = TypeInferPass::install(&mut ctx);
+                // let a = self.install_lints(&mut ctx);
+                // let b = ScopeBuildingPass::install(&mut ctx);
+                // let c = ExtractSymbolsPass::install(&mut ctx);
+                // let d = ReferenceResolverPass::install(&mut ctx);
+                // let e = TypeInferPass::install(&mut ctx);
 
                 // How many frames do we actually need?
                 for frame in 0..10 {
@@ -71,37 +68,37 @@ impl Command for Check {
                     trace!("================================================================")
                 }
 
-                (a, b, c, (d, e))
+                // (a, b, c, (d, e))
             });
-            ast.interact()
-                .immediate_exclusive(|w| block_disposal.dispose(w));
+            // ast.interact()
+            //     .immediate_exclusive(|w| block_disposal.dispose(w));
         }
         Continue(())
     }
 }
 
 impl Check {
-    fn install_lints(&self, ctx: &mut Ctx) -> impl Disposable + use<> {
-        let a = SingleModuleWithBrackets::install(ctx);
-        let b = RLTLinkLint::install(ctx);
-        let c = ShowLints::install(ctx);
-        let d = DebugScopesLint::install(ctx);
-        let e = DebugTypingLint::install(ctx);
-
-        ctx.immediate_exclusive(|w| {
-            let mut lint_query = w.query::<&mut LintDescriptor>();
-
-            for mut descriptor in lint_query.iter_mut(w) {
-                let found = self.enabled_lints.iter().any(|it| it == descriptor.name());
-
-                if found {
-                    descriptor.enabled = true;
-                }
-            }
-        });
-
-        (a, b, c, (d, e))
-    }
+    // fn install_lints(&self, ctx: &mut Ctx) -> impl Disposable + use<> {
+    //     let a = SingleModuleWithBrackets::install(ctx);
+    //     let b = RLTLinkLint::install(ctx);
+    //     let c = ShowLints::install(ctx);
+    //     let d = DebugScopesLint::install(ctx);
+    //     let e = DebugTypingLint::install(ctx);
+    //
+    //     ctx.immediate_exclusive(|w| {
+    //         let mut lint_query = w.query::<&mut LintDescriptor>();
+    //
+    //         for mut descriptor in lint_query.iter_mut(w) {
+    //             let found = self.enabled_lints.iter().any(|it| it == descriptor.name());
+    //
+    //             if found {
+    //                 descriptor.enabled = true;
+    //             }
+    //         }
+    //     });
+    //
+    //     (a, b, c, (d, e))
+    // }
 
     fn timings_block<'a, T>(&self, name: impl Into<Cow<'a, str>>, f: impl FnOnce() -> T) -> T {
         let span = info_span!("timings-block");

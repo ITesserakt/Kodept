@@ -1,15 +1,22 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::primary::OutputConfig;
+use crate::commands::inspect::export_ast::ExportAstPhase;
+use crate::commands::inspect::export_rlt::ExportRltPhase;
 use crate::commands::utils::build_ast::build_ast;
 use crate::commands::utils::load_source::get_all_sources;
 use crate::commands::utils::parse_source::get_rlt;
-use crate::commands::Command;
+use crate::commands::{Command, CommandV2};
+use crate::phases::build_ast::BuildAstPhase;
+use crate::phases::each_sub_engine::EachSubEnginePhase;
+use crate::phases::load_all_sources::LoadAllSourcesPhase;
+use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
 use kodept::report::GlobalReports;
 use kodept::source::collection::SourceView;
 use kodept_ast::syntax_tree::prelude::AST;
 use kodept_core::code_point::CodePoint;
 use kodept_frontend::Execution;
+use kodept_frontend::engine::Engine;
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::ad_hoc_message;
 use kodept_rlt::prelude::RLT;
@@ -29,6 +36,36 @@ pub struct Inspect {
     parsing_config: ParsingConfig,
     #[command(flatten, next_help_heading = "Loading options")]
     loading_config: LoadingConfig,
+}
+
+impl CommandV2 for Inspect {
+    fn build(self, engine: &mut Engine, config: OutputConfig) {
+        engine
+            .install(LoadAllSourcesPhase {
+                config: self.loading_config,
+            })
+            .install(EachSubEnginePhase::new(move |engine| {
+                if !self.export_rlt && !self.export_rlt {
+                    return;
+                }
+
+                let mut sources = engine.install(ParseSourcePhase {
+                    config: self.parsing_config.clone(),
+                });
+
+                if self.export_rlt {
+                    sources.install(ExportRltPhase {
+                        config: config.clone(),
+                    });
+                }
+
+                if self.export_ast {
+                    sources.install(BuildAstPhase).install(ExportAstPhase {
+                        config: config.clone(),
+                    });
+                }
+            }));
+    }
 }
 
 impl Command for Inspect {
@@ -56,6 +93,83 @@ impl Command for Inspect {
             }
         }
         Continue(())
+    }
+}
+
+mod export_rlt {
+    use crate::cli::primary::OutputConfig;
+    use bevy_ecs::prelude::*;
+    use bevy_ecs::system::InMut;
+    use derive_more::{Display, Error, From};
+    use kodept::source::collection::{SourceView, SystemExt};
+    use kodept_ast::resource::rlt::SyntaxResolver;
+    use kodept_frontend::define_phase;
+    use kodept_frontend::engine::{Engine};
+
+    define_phase!(
+        pub phase ExportRltPhase[ExportRltPhaseLabel] {
+            pub config: OutputConfig
+        }
+        fn build (self, engine: &mut Engine) {
+            engine.add_systems(
+                system
+                    .with_input(self.config)
+                    .report_errors()
+                    .in_set(ExportRltPhaseLabel),
+            );
+        }
+    );
+
+    #[derive(Debug, Error, From, Display)]
+    enum Error {
+        #[display("Could not open file to output RLT: {_0}")]
+        IO(std::io::Error),
+        #[display("Could not serialize RLT into json: {_0}")]
+        Serde(serde_json::Error),
+    }
+
+    fn system(
+        InMut(config): InMut<OutputConfig>,
+        source: Res<SourceView>,
+        syntax: Res<SyntaxResolver>,
+    ) -> Result<(), Error> {
+        let output_file = config.open_file_for_source(source.path(), "rlt.json")?;
+        serde_json::to_writer_pretty(output_file, syntax.root().0)?;
+
+        Ok(())
+    }
+}
+
+mod export_ast {
+    use crate::cli::primary::OutputConfig;
+    use bevy_ecs::prelude::*;
+    use kodept::source::collection::{SourceView, SystemExt};
+    use kodept_ast::syntax_tree::prelude::AST;
+    use kodept_frontend::define_phase;
+    use kodept_frontend::engine::Engine;
+
+    define_phase!(
+        pub phase ExportAstPhase[ExportAstPhaseLabel] {
+            pub config: OutputConfig
+        }
+
+        fn build(self, engine: &mut Engine) {
+            engine.add_systems(system
+                .with_input(self.config)
+                .report_errors()
+                .in_set(ExportAstPhaseLabel)
+            )
+        }
+    );
+
+    fn system(
+        InMut(config): InMut<OutputConfig>,
+        source: Res<SourceView>,
+        world: &World,
+    ) -> Result<(), std::io::Error> {
+        let mut output_file = config.open_file_for_source(source.path(), "puml")?;
+        AST::export_dot_in(world, &mut output_file)?;
+        Ok(())
     }
 }
 

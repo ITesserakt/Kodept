@@ -1,6 +1,6 @@
 [package]
 name = "kodept-frontend"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -8,6 +8,8 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+bevy_ecs.workspace = true
 kodept-core = { path = "../kodept-core" }
 kodept-report = { path = "../kodept-report" }
+tracing.workspace = true
 yoke = "0.8.0"

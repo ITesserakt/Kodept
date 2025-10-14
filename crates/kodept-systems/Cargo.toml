@@ -1,0 +1,15 @@
+[package]
+name = "kodept-systems"
+version = "0.1.2"
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bevy_ecs.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+#parallel = ["bevy_ecs/multi_threaded", "kodept-ast-nodes/parallel", "kodept-ast/parallel"]

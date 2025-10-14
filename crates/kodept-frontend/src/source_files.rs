@@ -6,13 +6,19 @@ use kodept_report::{FileDescriptor, FileId};
 use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
+use bevy_ecs::prelude::{Component, Resource};
 use yoke::Yoke;
 use kodept_report::files::external::{Error, Files};
 
-#[derive(Debug)]
+#[derive(Debug, Component, Resource)]
 pub struct SourceView<Impl: 'static> {
     pub id: Freeze<FileId>,
     source: Yoke<&'static ReadSource<Impl>, Arc<SourceFiles<Impl>>>,
+}
+
+#[derive(Debug, Resource)]
+pub struct CollectedSources<Impl> {
+    pub inner: Arc<SourceFiles<Impl>>
 }
 
 #[derive(Debug, Default)]

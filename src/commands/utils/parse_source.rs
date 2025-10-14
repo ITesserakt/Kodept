@@ -78,7 +78,7 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
             .map_err(|e| match e { })
     }
     .map_err(|e: ParseErrors<&str>| e.into_iter().map(Wrapper))
-    .extract_reports(*source.id, reports)?;
+    .extract_reports_local(*source.id, reports)?;
     let stream = PackedTokenStream::new(&tokens);
 
     let parsing_backend = config.get_parsing_backend();
@@ -86,7 +86,7 @@ pub fn get_rlt(config: &ParsingConfig, source: &SourceView, reports: &Reports) -
         ParserImpl::Peg(x) => x.parse_stream(&stream).map_err(|e| e.adapt(stream, 0)),
     }
     .map_err(|e| e.into_iter().map(Wrapper))
-    .extract_reports(*source.id, reports)
+    .extract_reports_local(*source.id, reports)
 }
 
 fn expected_to_string(mut expected: Vec<Cow<'static, str>>) -> Cow<'static, str> {
