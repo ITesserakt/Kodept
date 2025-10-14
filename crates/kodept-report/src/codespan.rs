@@ -75,7 +75,7 @@ impl Settings for &CodespanSettings<StandardStream> {
     }
 }
 
-impl<S> Settings for &mut CodespanSettings<S>
+impl<S> Settings for CodespanSettings<S>
 where
     S: WriteColor,
 {
