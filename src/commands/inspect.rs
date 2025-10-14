@@ -62,7 +62,7 @@ mod export_rlt {
     use kodept::source::collection::{Reporter, SourceView, SystemExt};
     use kodept_ast::resource::rlt::SyntaxResolver;
     use kodept_frontend::define_phase;
-    use kodept_frontend::engine::Engine;
+    use kodept_frontend::engine::{PhaseEngine};
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
 
@@ -70,12 +70,11 @@ mod export_rlt {
         pub phase ExportRltPhase[ExportRltPhaseLabel] {
             pub config: OutputConfig
         }
-        fn build (self, engine: &mut Engine) {
+        fn build (self, engine: &mut PhaseEngine<Self>) {
             engine.add_systems(
                 system
                     .with_input(self.config)
-                    .report_errors()
-                    .in_set(ExportRltPhaseLabel),
+                    .report_errors(),
             );
         }
     );
@@ -115,7 +114,7 @@ mod export_ast {
     use kodept::source::collection::{Reporter, SourceView, SystemExt};
     use kodept_ast::syntax_tree::prelude::AST;
     use kodept_frontend::define_phase;
-    use kodept_frontend::engine::Engine;
+    use kodept_frontend::engine::{PhaseEngine};
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
 
@@ -124,11 +123,10 @@ mod export_ast {
             pub config: OutputConfig
         }
 
-        fn build(self, engine: &mut Engine) {
+        fn build(self, engine: &mut PhaseEngine<Self>) {
             engine.add_systems(system
                 .with_input(self.config)
                 .report_errors()
-                .in_set(ExportAstPhaseLabel)
             )
         }
     );

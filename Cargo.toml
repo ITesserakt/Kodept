@@ -33,6 +33,7 @@ rust-version = "1.88.0"
 
 [workspace.dependencies]
 bevy_ecs = { version = "0.17.2", default-features = false }
+bevy_tasks = { version = "0.17.2", default-features = false, features = ["async_executor"] }
 itertools = "0.14.0"
 nonempty-collections = "1.0.1"
 tracing = "0.1.40"
@@ -89,7 +90,13 @@ criterion = "0.7.0"
 default = []
 profiler = ["dep:dhat", "dep:ctrlc"]
 interning = ["dep:kodept-interning", "kodept-interning/code_holder", "kodept-interning/metrics"]
-parallel = ["dep:rayon", "kodept-parse/parallel", "kodept-ast/parallel", "kodept-ast-nodes/parallel"]
+parallel = [
+    "dep:rayon"
+    , "kodept-parse/parallel"
+    , "kodept-ast/parallel"
+    , "kodept-ast-nodes/parallel"
+    , "kodept-frontend/parallel"
+]
 trace = ["dep:gag", "kodept-parse/trace"]
 debug = ["kodept-ast/debug"]
 

@@ -1041,6 +1041,7 @@ name = "kodept-frontend"
 version = "0.2.0"
 dependencies = [
  "bevy_ecs",
+ "bevy_tasks",
  "kodept-core",
  "kodept-report",
  "tracing",

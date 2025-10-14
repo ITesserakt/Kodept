@@ -9,7 +9,11 @@ workspace = true
 
 [dependencies]
 bevy_ecs.workspace = true
+bevy_tasks.workspace = true
 kodept-core = { path = "../kodept-core" }
 kodept-report = { path = "../kodept-report" }
 tracing.workspace = true
 yoke = "0.8.0"
+
+[features]
+parallel = ["bevy_ecs/multi_threaded"]

@@ -2,7 +2,6 @@ mod check;
 mod inspect;
 mod utils;
 
-use std::ops::ControlFlow::Break;
 use crate::cli::primary::OutputConfig;
 use crate::commands::check::Check;
 use crate::commands::inspect::Inspect;
