@@ -16,8 +16,8 @@ pub struct Kodept {
     pub subcommands: Commands,
 
     /// Controls how many parallel threads will be created for operations
-    #[arg(short = 'p', long, hide = cfg!(not(feature = "parallel")), default_value_t = 0)]
-    pub parallelism: usize,
+    #[arg(short = 'j', long, hide = cfg!(not(feature = "parallel")), default_value_t = 0)]
+    pub jobs: usize,
     #[command(flatten, next_help_heading = "Output options")]
     pub output_config: OutputConfig,
     #[command(flatten, next_help_heading = "Diagnostics options")]
@@ -26,7 +26,7 @@ pub struct Kodept {
     pub logging: LoggingOptions,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 pub struct OutputConfig {
     /// Write all output to the specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]

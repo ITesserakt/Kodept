@@ -7,6 +7,7 @@ use tracing::Level;
 mod cli;
 mod commands;
 mod profiler;
+mod phases;
 
 fn init_tracing(level: Level) {
     tracing_subscriber::fmt().with_max_level(level).init();
@@ -27,7 +28,7 @@ fn main() {
     let cli_options = Kodept::parse();
 
     init_tracing(cli_options.logging.level());
-    init_thread_pool(cli_options.parallelism);
+    init_thread_pool(cli_options.jobs);
     let reports = make_reports(cli_options.diagnostic_config);
 
     let result = cli_options
