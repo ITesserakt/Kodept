@@ -4,7 +4,7 @@ pub mod load_all_sources {
     use kodept::loader::{Loader, LoadingError};
     use kodept::source::{SourcesLoadingError, load_each_source};
     use kodept_frontend::Either;
-    use kodept_frontend::engine::{Engine, Phase, SubEngine};
+    use kodept_frontend::engine::{reporter, Engine, Phase, SubEngine};
     use kodept_frontend::prelude::CollectedSources;
     use std::sync::Arc;
     use kodept::source::collection::SystemExt;
@@ -31,6 +31,7 @@ pub mod load_all_sources {
 
     fn system(
         InMut(config): InMut<LoadingConfig>,
+        reporting_settings: Res<reporter::Settings>,
         mut commands: Commands,
     ) -> Result<(), Either<LoadingError, SourcesLoadingError>> {
         let loader = Loader::try_from(&*config).map_err(Either::Left)?;
@@ -40,7 +41,12 @@ pub mod load_all_sources {
 
         commands.insert_resource(CollectedSources { inner: sources });
 
-        commands.spawn_batch(views.into_iter().map(|it| (it, SubEngine::new())));
+        let settings = reporting_settings.clone();
+        commands.spawn_batch(views.into_iter().map(move |it| {
+            let mut sub_engine = SubEngine::new();
+            sub_engine.insert_resource(settings.clone());
+            (it, sub_engine)
+        }));
 
         Ok(())
     }

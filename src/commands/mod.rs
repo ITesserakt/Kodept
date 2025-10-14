@@ -2,6 +2,7 @@ mod check;
 mod inspect;
 mod utils;
 
+use std::ops::ControlFlow::Break;
 use crate::cli::primary::OutputConfig;
 use crate::commands::check::Check;
 use crate::commands::inspect::Inspect;
@@ -35,13 +36,6 @@ impl Commands {
         match self {
             Commands::Inspect(x) => x.build(engine, config),
             Commands::Check(_) => {}
-        }
-    }
-
-    pub fn exec(self, reports: GlobalReports, config: OutputConfig) -> Execution<()> {
-        match self {
-            Commands::Inspect(x) => x.exec(reports, config),
-            Commands::Check(x) => x.exec(reports, config),
         }
     }
 }

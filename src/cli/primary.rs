@@ -3,7 +3,7 @@ use crate::commands::Commands;
 use clap::{Args, Parser};
 use kodept_core::file_name::FileName;
 use std::ffi::OsStr;
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all};
 use std::io::ErrorKind;
 use std::path::PathBuf;
 use tracing::Level;
@@ -71,15 +71,15 @@ impl OutputConfig {
         }
     }
 
-    pub fn open_file_for_source<Q: AsRef<OsStr> + ?Sized>(
+    pub fn get_path_for_source<Q: AsRef<OsStr> + ?Sized>(
         &self,
         source: &FileName,
         extension: &Q,
-    ) -> std::io::Result<File> {
+    ) -> std::io::Result<PathBuf> {
         self.create_missing_folders()?;
         let new_path = source.build_file_path().with_extension(extension.as_ref());
         let name = new_path.file_name().unwrap();
-        File::create(self.output.join(name))
+        Ok(self.output.join(name))
     }
 }
 

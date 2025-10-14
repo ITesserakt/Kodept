@@ -1,5 +1,4 @@
 use crate::cli::configs::DiagnosticConfig;
-use kodept::report::GlobalReports;
 use kodept_frontend::engine::Engine;
 use kodept_frontend::engine::reporter::Settings;
 use kodept_report::codespan::CodespanSettings;

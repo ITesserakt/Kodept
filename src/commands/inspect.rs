@@ -2,27 +2,13 @@ use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use crate::cli::primary::OutputConfig;
 use crate::commands::inspect::export_ast::ExportAstPhase;
 use crate::commands::inspect::export_rlt::ExportRltPhase;
-use crate::commands::utils::build_ast::build_ast;
-use crate::commands::utils::load_source::get_all_sources;
-use crate::commands::utils::parse_source::get_rlt;
-use crate::commands::{Command, CommandV2};
+use crate::commands::{CommandV2};
 use crate::phases::build_ast::BuildAstPhase;
 use crate::phases::each_sub_engine::EachSubEnginePhase;
 use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
-use kodept::report::GlobalReports;
-use kodept::source::collection::SourceView;
-use kodept_ast::syntax_tree::prelude::AST;
-use kodept_core::code_point::CodePoint;
-use kodept_frontend::Execution;
 use kodept_frontend::engine::Engine;
-use kodept_report::message::{Diagnostic, Severity};
-use kodept_report::traits::ad_hoc_message;
-use kodept_rlt::prelude::RLT;
-use std::ops::ControlFlow;
-use std::ops::ControlFlow::{Break, Continue};
-use tracing::error;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
@@ -68,43 +54,17 @@ impl CommandV2 for Inspect {
     }
 }
 
-impl Command for Inspect {
-    fn exec(self, reports: GlobalReports, config: OutputConfig) -> ControlFlow<(), ()> {
-        let (sources, reports) = get_all_sources(&self.loading_config, reports)?;
-        for source in sources.collect() {
-            let rlt = get_rlt(&self.parsing_config, &source, &reports)?;
-            if self.export_rlt && export_rlt(&source, &config, &rlt).is_continue() {
-                let message = ad_hoc_message(|| {
-                    Diagnostic::new(Severity::Note)
-                        .with_message("Source file parsed into a raw lexeme tree")
-                        .with_primary_label("", CodePoint::single_point(0))
-                });
-                _ = reports.report(*source.id, message);
-            }
-
-            let mut ast = build_ast(&source, rlt, &reports)?;
-            if self.export_ast && export_ast(&source, &config, &mut ast).is_continue() {
-                let message = ad_hoc_message(|| {
-                    Diagnostic::new(Severity::Note)
-                        .with_message("Got abstract syntax tree of source file")
-                        .with_primary_label("", CodePoint::single_point(0))
-                });
-                _ = reports.report(*source.id, message);
-            }
-        }
-        Continue(())
-    }
-}
-
 mod export_rlt {
     use crate::cli::primary::OutputConfig;
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::InMut;
     use derive_more::{Display, Error, From};
-    use kodept::source::collection::{SourceView, SystemExt};
+    use kodept::source::collection::{Reporter, SourceView, SystemExt};
     use kodept_ast::resource::rlt::SyntaxResolver;
     use kodept_frontend::define_phase;
-    use kodept_frontend::engine::{Engine};
+    use kodept_frontend::engine::Engine;
+    use kodept_report::prelude::{Diagnostic, Severity};
+    use std::fs::File;
 
     define_phase!(
         pub phase ExportRltPhase[ExportRltPhaseLabel] {
@@ -132,9 +92,18 @@ mod export_rlt {
         InMut(config): InMut<OutputConfig>,
         source: Res<SourceView>,
         syntax: Res<SyntaxResolver>,
+        mut reporter: Reporter,
     ) -> Result<(), Error> {
-        let output_file = config.open_file_for_source(source.path(), "rlt.json")?;
-        serde_json::to_writer_pretty(output_file, syntax.root().0)?;
+        let output_filepath = config.get_path_for_source(source.path(), "rlt.json")?;
+        let output_file = File::create(&output_filepath)?;
+        serde_json::to_writer(output_file, syntax.root().0)?;
+
+        reporter.report_ad_hoc(|| {
+            Diagnostic::new(Severity::Note).with_message(format!(
+                "Successfully exported RLT to {}",
+                output_filepath.display()
+            ))
+        });
 
         Ok(())
     }
@@ -143,10 +112,12 @@ mod export_rlt {
 mod export_ast {
     use crate::cli::primary::OutputConfig;
     use bevy_ecs::prelude::*;
-    use kodept::source::collection::{SourceView, SystemExt};
+    use kodept::source::collection::{Reporter, SourceView, SystemExt};
     use kodept_ast::syntax_tree::prelude::AST;
     use kodept_frontend::define_phase;
     use kodept_frontend::engine::Engine;
+    use kodept_report::prelude::{Diagnostic, Severity};
+    use std::fs::File;
 
     define_phase!(
         pub phase ExportAstPhase[ExportAstPhaseLabel] {
@@ -165,40 +136,21 @@ mod export_ast {
     fn system(
         InMut(config): InMut<OutputConfig>,
         source: Res<SourceView>,
+        mut reporter: Reporter,
         world: &World,
     ) -> Result<(), std::io::Error> {
-        let mut output_file = config.open_file_for_source(source.path(), "puml")?;
-        AST::export_dot_in(world, &mut output_file)?;
+        let output_filepath = config.get_path_for_source(source.path(), "puml")?;
+        let mut output_file = File::create(&output_filepath)?;
+        AST::export_dot_in(world, &mut output_file).expect("Some components did not registered still")?;
+
+        reporter.report_ad_hoc(|| {
+            Diagnostic::new(Severity::Note).with_message(format!(
+                "Successfully exported AST to {}",
+                output_filepath.display()
+            ))
+        });
+
         Ok(())
     }
 }
 
-fn export_rlt(source: &SourceView, config: &OutputConfig, rlt: &RLT) -> Execution<()> {
-    let output_file = match config.open_file_for_source(source.path(), "rlt.json") {
-        Ok(x) => x,
-        Err(e) => {
-            error!("Could not open file to output RLT: {e}");
-            return Break(());
-        }
-    };
-    if let Err(e) = serde_json::to_writer_pretty(output_file, &rlt) {
-        error!("Could not serialize RLT into json: {e}");
-        return Break(());
-    }
-    Continue(())
-}
-
-fn export_ast(source: &SourceView, config: &OutputConfig, ast: &mut AST) -> Execution<()> {
-    let mut output_file = match config.open_file_for_source(source.path(), "puml") {
-        Ok(x) => x,
-        Err(e) => {
-            error!("Could not open file to output RLT: {e}");
-            return Break(());
-        }
-    };
-    if let Err(e) = ast.export_dot(&mut output_file) {
-        error!("Could not export AST into .dot: {e}");
-        return Break(());
-    }
-    Continue(())
-}

@@ -54,7 +54,7 @@ pub mod reporter {
     use bevy_ecs::system::{SystemBuffer, SystemMeta, SystemParam};
     use kodept_report::prelude::*;
     use std::marker::PhantomData;
-    use tracing::error;
+    use tracing::{error, trace};
 
     enum GenericReport {
         Single(Report),
@@ -89,9 +89,10 @@ pub mod reporter {
 
                 match &mut *settings {
                     Settings::Disabled => self.0.clear(),
-                    Settings::Eager(_) => {
+                    Settings::Eager(_) if !self.0.is_empty() => {
                         unreachable!("All reports should have been reported already")
                     }
+                    Settings::Eager(_) => {}
                     Settings::Lazy(settings) => {
                         for report in self.0.drain(..) {
                             let emit_result = match report {
@@ -113,7 +114,7 @@ pub mod reporter {
         }
     }
 
-    #[derive(Debug, Resource, Default)]
+    #[derive(Debug, Resource, Default, Clone)]
     pub enum Settings {
         #[default]
         Disabled,
@@ -139,6 +140,8 @@ pub mod reporter {
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
     {
         pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
+            trace!(behaviour = ?message.behaviour(), "Reported new message");
+
             match (
                 self.settings.as_ref(),
                 self.single_source.as_ref(),
@@ -290,9 +293,7 @@ impl Engine {
 
 impl SubEngine {
     pub fn new() -> Self {
-        Self {
-            inner: Engine::new(),
-        }
+        Self { inner: Engine::new() }
     }
 }
 
