@@ -43,13 +43,12 @@ similar-asserts = "1.7.0"
 [[bench]]
 name = "tokenizer"
 harness = false
-required-features = ["parallel", "nom"]
+required-features = ["parallel"]
 
 [[bench]]
 name = "parser"
 harness = false
-required-features = ["nom"]
 
 [[test]]
 name = "tokenizer"
-required-features = ["parallel", "nom"]
+required-features = ["parallel"]
