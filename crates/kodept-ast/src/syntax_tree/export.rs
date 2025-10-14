@@ -2,20 +2,33 @@ use crate::arity::{Optional, Plural, Singular};
 use crate::prelude::AnyNodeRefItem;
 use crate::properties::{Name, Node, Root};
 use crate::relationship::{ArityValue, Contains, NodeRelationships};
-use bevy_ecs::prelude::{
-    Entity, EntityRef, InMut, IntoSystem, Query, ReadOnlySystem, Res, Single, SystemInput, With,
-    World,
-};
+use bevy_ecs::prelude::{Entity, EntityRef, In, Query, With, World};
 use std::io::Write;
 
 impl super::storage::AST {
-    pub fn export_dot_in<W: Write + 'static>(world: &World, writer: &mut W) -> std::io::Result<()> {
-        run_readonly_system_with(world, extract_system, writer)
+    pub fn export_dot_in<W: Write>(world: &World, writer: W) -> Option<std::io::Result<()>> {
+        let relationships = world.resource();
+
+        let mut nodes_query_state = world.try_query_filtered::<EntityRef, With<Node>>()?;
+        let nodes_query = nodes_query_state.query(world);
+
+        let mut root_query_state = world.try_query_filtered::<Entity, With<Root>>()?;
+        let root_query = root_query_state.single(world).unwrap();
+
+        Some(extract_system(
+            In(writer),
+            relationships,
+            nodes_query,
+            root_query,
+        ))
     }
 
-    pub fn export_dot<W: Write + 'static>(&mut self, writer: &mut W) -> std::io::Result<()> {
+    pub fn export_dot<W: Write>(&mut self, writer: W) -> std::io::Result<()> {
         self.interact().immediate_exclusive(|w| {
-            Self::export_dot_in(w, writer)
+            w.register_component::<Root>();
+            w.register_component::<Node>();
+            w.register_resource::<NodeRelationships>();
+            Self::export_dot_in(w, writer).unwrap()
         })
     }
 }
@@ -34,27 +47,15 @@ fn label<W: Write>(buffer: &mut W, node: AnyNodeRefItem) -> std::io::Result<()> 
     Ok(())
 }
 
-fn run_readonly_system_with<M, In, Out>(
-    world: &World,
-    system: impl IntoSystem<In, Out, M, System: ReadOnlySystem<In = In, Out = Out>>,
-    input: In::Inner<'_>,
-) -> Out
-where
-    In: SystemInput,
-{
-    let mut system = IntoSystem::into_system(system);
-    system.run_readonly(input, world).unwrap()
-}
-
 fn extract_system<W: Write>(
-    InMut(buffer): InMut<W>,
-    relationships: Res<NodeRelationships>,
+    In(mut buffer): In<W>,
+    relationships: &NodeRelationships,
     nodes: Query<EntityRef, With<Node>>,
-    root: Single<Entity, With<Root>>,
+    root: Entity,
 ) -> std::io::Result<()> {
     writeln!(buffer, "@startuml")?;
 
-    let mut stack = vec![(None, *root)];
+    let mut stack = vec![(None, root)];
 
     while let Some((edge, current)) = stack.pop() {
         let Ok(this) = nodes.get(current) else {
@@ -87,7 +88,7 @@ fn extract_system<W: Write>(
             }
         }
 
-        label(buffer, AnyNodeRefItem::from_inner(this))?;
+        label(&mut buffer, AnyNodeRefItem::from_inner(this))?;
         let Some((parent_id, meta)) = edge else {
             continue;
         };
