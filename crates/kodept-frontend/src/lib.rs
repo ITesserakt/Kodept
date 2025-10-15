@@ -8,7 +8,7 @@ pub mod engine;
 
 pub mod prelude {
     pub use super::read_code_source::{ReadSource, Source, TryReadCode};
-    pub use super::report::{ExtractReports, Global, GlobalReports, Reports};
+    pub use super::report::{ExtractReports, Global};
     pub use super::source_files::{SourceFiles, SourceView, CollectedSources};
     pub use super::traits::{Compiler, Interpreter};
 }
