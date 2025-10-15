@@ -6,7 +6,16 @@ use std::ffi::OsStr;
 use std::fs::{create_dir_all};
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::sync::LazyLock;
+use bevy_ecs::prelude::Resource;
 use tracing::Level;
+
+static DEFAULT_JOBS: LazyLock<usize> = LazyLock::new(|| {
+    #[cfg(feature = "parallel")]
+    return std::thread::available_parallelism().unwrap().get();
+    #[cfg(not(feature = "parallel"))]
+    0
+});
 
 #[derive(Parser, Debug)]
 #[command(version, author)]
@@ -16,7 +25,7 @@ pub struct Kodept {
     pub subcommands: Commands,
 
     /// Controls how many parallel threads will be created for operations
-    #[arg(short = 'j', long, hide = cfg!(not(feature = "parallel")), default_value_t = 0)]
+    #[arg(short = 'j', long, hide = cfg!(not(feature = "parallel")), default_value_t = *DEFAULT_JOBS)]
     pub jobs: usize,
     #[command(flatten, next_help_heading = "Output options")]
     pub output_config: OutputConfig,
@@ -26,7 +35,7 @@ pub struct Kodept {
     pub logging: LoggingOptions,
 }
 
-#[derive(Debug, Args, Clone)]
+#[derive(Debug, Args, Resource, Clone)]
 pub struct OutputConfig {
     /// Write all output to the specified path
     #[arg(short = 'o', long = "out", default_value = "./build", global = true)]

@@ -8,7 +8,7 @@ pub mod configs;
 pub mod primary;
 pub mod utils;
 
-pub fn init_reports(value: DiagnosticConfig, engine: &mut Engine) {
+pub fn init_reports(value: DiagnosticConfig) -> impl FnOnce(&mut Engine) {
     let mut config = Config {
         display_style: value.style.into(),
         tab_width: value.tab_width,
@@ -24,5 +24,7 @@ pub fn init_reports(value: DiagnosticConfig, engine: &mut Engine) {
         (false, false) => Settings::Lazy(CodespanSettings::stderr(config, value.color)),
     };
 
-    engine.insert_resource(settings);
+    move |engine| {
+        engine.insert_resource(settings);
+    }
 }

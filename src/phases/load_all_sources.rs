@@ -7,6 +7,7 @@ use kodept_frontend::engine::{reporter, Phase, PhaseEngine, SubEngine};
 use kodept_frontend::prelude::CollectedSources;
 use std::sync::Arc;
 use kodept::source::collection::SystemExt;
+use crate::cli::primary::OutputConfig;
 
 #[derive(Debug, SystemSet, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct LoadAllSourcesPhaseSystems;
@@ -29,7 +30,11 @@ impl Phase for LoadAllSourcesPhase {
 
 fn system(
     InMut(config): InMut<LoadingConfig>,
+    // TODO: Remove this
+    // {
     reporting_settings: Res<reporter::Settings>,
+    output_config: Res<OutputConfig>,
+    // }
     mut commands: Commands,
 ) -> Result<(), Either<LoadingError, SourcesLoadingError>> {
     let loader = Loader::try_from(&*config).map_err(Either::Left)?;
@@ -40,9 +45,11 @@ fn system(
     commands.insert_resource(CollectedSources { inner: sources });
 
     let settings = reporting_settings.clone();
+    let output_config = output_config.clone();
     commands.spawn_batch(views.into_iter().map(move |it| {
         let mut sub_engine = SubEngine::new();
         sub_engine.insert_resource(settings.clone());
+        sub_engine.insert_resource(output_config.clone());
         (it, sub_engine)
     }));
 

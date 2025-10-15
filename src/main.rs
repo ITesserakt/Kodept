@@ -2,23 +2,32 @@ use crate::cli::init_reports;
 use crate::cli::primary::Kodept;
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
+use kodept_frontend::engine::{Engine, Plugin};
 use tracing::Level;
-use kodept_frontend::engine::Engine;
 
 mod cli;
 mod commands;
-mod profiler;
 mod phases;
+mod profiler;
 
-fn init_tracing(level: Level) {
-    tracing_subscriber::fmt().with_max_level(level).init();
+fn init_tracing(level: Level) -> impl FnOnce(&mut Engine) {
+    move |_| tracing_subscriber::fmt().with_max_level(level).init()
 }
 
-fn init_thread_pool(_parallelism: usize) {
-    #[cfg(feature = "parallel")]
-    {
+fn init_thread_pool(parallelism: usize) -> impl FnOnce(&mut Engine) {
+    move |engine| {
+        engine.add_plugin(kodept_frontend::engine::utils::TaskPoolPlugin {
+            task_pool_options: kodept_frontend::engine::utils::TaskPoolOptions {
+                max_total_threads: parallelism / 2,
+                min_total_threads: 1,
+                ..Default::default()
+            }
+        });
+        // TODO: combine bevy's thread pool with rayon's one
+        //       Maybe `Forte`? (https://github.com/NthTensor/Forte)
+        #[cfg(feature = "parallel")]
         rayon::ThreadPoolBuilder::new()
-            .num_threads(_parallelism)
+            .num_threads(parallelism / 2)
             .build_global()
             .expect("Cannot initialize rayon thread pool");
     }
@@ -29,13 +38,12 @@ fn main() {
     let cli_options = Kodept::parse();
     let mut engine = Engine::new();
 
-    #[cfg(feature = "parallel")]
-    engine.add_plugin(kodept_frontend::engine::utils::TaskPoolPlugin::default());
+    engine.insert_resource(cli_options.output_config);
 
-    init_tracing(cli_options.logging.level());
-    init_thread_pool(cli_options.jobs);
-    init_reports(cli_options.diagnostic_config, &mut engine);
+    engine.add_plugin(init_tracing(cli_options.logging.level()));
+    engine.add_plugin(init_thread_pool(cli_options.jobs));
+    engine.add_plugin(init_reports(cli_options.diagnostic_config));
+    engine.add_plugin(cli_options.subcommands);
 
-    cli_options.subcommands.build(&mut engine, cli_options.output_config);
     engine.run();
 }

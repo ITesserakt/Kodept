@@ -7,7 +7,7 @@ use crate::commands::check::Check;
 use crate::commands::inspect::Inspect;
 use clap::Subcommand;
 use kodept::report::GlobalReports;
-use kodept_frontend::engine::Engine;
+use kodept_frontend::engine::{Engine, Plugin};
 use kodept_frontend::Execution;
 
 #[derive(Subcommand, Debug)]
@@ -22,19 +22,19 @@ pub enum Commands {
     // Execute(Execute),
 }
 
+impl Plugin for Commands {
+    fn build(self, engine: &mut Engine) {
+        match self {
+            Commands::Inspect(x) => x.build(engine),
+            Commands::Check(_) => {}
+        }
+    }
+}
+
 trait CommandV2 {
     fn build(self, engine: &mut Engine, config: OutputConfig);
 }
 
 trait Command {
     fn exec(self, reports: GlobalReports, config: OutputConfig) -> Execution<()>;
-}
-
-impl Commands {
-    pub fn build(self, engine: &mut Engine, config: OutputConfig) {
-        match self {
-            Commands::Inspect(x) => x.build(engine, config),
-            Commands::Check(_) => {}
-        }
-    }
 }

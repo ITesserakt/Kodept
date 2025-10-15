@@ -32,6 +32,15 @@ pub trait Plugin {
     fn build(self, engine: &mut Engine);
 }
 
+impl<F> Plugin for F
+where 
+    F: FnOnce(&mut Engine),
+{
+    fn build(self, engine: &mut Engine) {
+        self(engine)
+    }
+}
+
 pub struct Chaining<'a, P> {
     engine: &'a mut Engine,
     _phantom: PhantomData<fn() -> P>,

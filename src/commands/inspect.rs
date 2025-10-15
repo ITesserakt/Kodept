@@ -1,14 +1,12 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
-use crate::cli::primary::OutputConfig;
 use crate::commands::inspect::export_ast::ExportAstPhase;
 use crate::commands::inspect::export_rlt::ExportRltPhase;
-use crate::commands::{CommandV2};
 use crate::phases::build_ast::BuildAstPhase;
 use crate::phases::each_sub_engine::EachSubEnginePhase;
 use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
-use kodept_frontend::engine::Engine;
+use kodept_frontend::engine::{Engine, Plugin};
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
@@ -24,8 +22,8 @@ pub struct Inspect {
     loading_config: LoadingConfig,
 }
 
-impl CommandV2 for Inspect {
-    fn build(self, engine: &mut Engine, config: OutputConfig) {
+impl Plugin for Inspect {
+    fn build(self, engine: &mut Engine) {
         engine
             .install(LoadAllSourcesPhase {
                 config: self.loading_config,
@@ -40,15 +38,11 @@ impl CommandV2 for Inspect {
                 });
 
                 if self.export_rlt {
-                    sources.install(ExportRltPhase {
-                        config: config.clone(),
-                    });
+                    sources.install(ExportRltPhase);
                 }
 
                 if self.export_ast {
-                    sources.install(BuildAstPhase).install(ExportAstPhase {
-                        config: config.clone(),
-                    });
+                    sources.install(BuildAstPhase).install(ExportAstPhase);
                 }
             }));
     }
@@ -57,7 +51,6 @@ impl CommandV2 for Inspect {
 mod export_rlt {
     use crate::cli::primary::OutputConfig;
     use bevy_ecs::prelude::*;
-    use bevy_ecs::system::InMut;
     use derive_more::{Display, Error, From};
     use kodept::source::collection::{Reporter, SourceView, SystemExt};
     use kodept_ast::resource::rlt::SyntaxResolver;
@@ -67,14 +60,11 @@ mod export_rlt {
     use std::fs::File;
 
     define_phase!(
-        pub phase ExportRltPhase[ExportRltPhaseLabel] {
-            pub config: OutputConfig
-        }
+        pub phase ExportRltPhase[ExportRltPhaseLabel];
+
         fn build (self, engine: &mut PhaseEngine<Self>) {
             engine.add_systems(
-                system
-                    .with_input(self.config)
-                    .report_errors(),
+                system.report_errors(),
             );
         }
     );
@@ -88,7 +78,7 @@ mod export_rlt {
     }
 
     fn system(
-        InMut(config): InMut<OutputConfig>,
+        config: Res<OutputConfig>,
         source: Res<SourceView>,
         syntax: Res<SyntaxResolver>,
         mut reporter: Reporter,
@@ -119,20 +109,17 @@ mod export_ast {
     use std::fs::File;
 
     define_phase!(
-        pub phase ExportAstPhase[ExportAstPhaseLabel] {
-            pub config: OutputConfig
-        }
+        pub phase ExportAstPhase[ExportAstPhaseLabel];
 
         fn build(self, engine: &mut PhaseEngine<Self>) {
-            engine.add_systems(system
-                .with_input(self.config)
-                .report_errors()
+            engine.add_systems(
+                system.report_errors()
             )
         }
     );
 
     fn system(
-        InMut(config): InMut<OutputConfig>,
+        config: Res<OutputConfig>,
         source: Res<SourceView>,
         mut reporter: Reporter,
         world: &World,
