@@ -2,7 +2,7 @@ use crate::cli::init_reports;
 use crate::cli::primary::Kodept;
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
-use kodept_frontend::engine::{Engine, Plugin};
+use kodept_frontend::engine::Engine;
 use tracing::Level;
 
 mod cli;
@@ -16,12 +16,13 @@ fn init_tracing(level: Level) -> impl FnOnce(&mut Engine) {
 
 fn init_thread_pool(parallelism: usize) -> impl FnOnce(&mut Engine) {
     move |engine| {
+        let max_total_threads = (parallelism / 2).max(1);
         engine.add_plugin(kodept_frontend::engine::utils::TaskPoolPlugin {
             task_pool_options: kodept_frontend::engine::utils::TaskPoolOptions {
-                max_total_threads: parallelism / 2,
+                max_total_threads,
                 min_total_threads: 1,
                 ..Default::default()
-            }
+            },
         });
         // TODO: combine bevy's thread pool with rayon's one
         //       Maybe `Forte`? (https://github.com/NthTensor/Forte)
