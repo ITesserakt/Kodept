@@ -8,14 +8,19 @@ pub mod utils {
     use kodept_frontend::prelude::ExtractReports;
     use crate::source::collection::Reporter;
 
-    pub trait SystemExt<Out, SystemMarker, ExtractMarker> {
+    pub trait ReportSystemEx<Out, SystemMarker, ExtractMarker> {
         fn report_errors(self) -> impl IntoSystem<(), (), ()>;
     }
 
+    pub trait InstrumentSystemExt<SystemMarker>
+    {
+        fn instrument(self) -> impl IntoSystem<(), (), ()>;
+    }
+
     impl<SystemMarker, ExtractMarker, Out, T: IntoSystem<(), Out, SystemMarker>>
-    SystemExt<Out, SystemMarker, ExtractMarker> for T
+    ReportSystemEx<Out, SystemMarker, ExtractMarker> for T
     where
-        Out: Try<Output = (), Residual: ExtractReports<ExtractMarker>> + 'static,
+        Out: Try<Output = (), Residual: ExtractReports<ExtractMarker, Output = ()>> + 'static,
     {
         fn report_errors(self) -> impl IntoSystem<(), (), ()>
         {

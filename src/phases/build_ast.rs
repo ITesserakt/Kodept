@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use derive_more::From;
 use kodept::source::collection::SourceView;
-use kodept::utils::SystemExt;
+use kodept::utils::ReportSystemEx;
 use kodept_ast::prelude::FromSyntax;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::Error;

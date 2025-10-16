@@ -58,7 +58,7 @@ mod export_rlt {
     use kodept_frontend::engine::{PhaseEngine};
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
-    use kodept::utils::SystemExt;
+    use kodept::utils::ReportSystemEx;
 
     define_phase!(
         pub phase ExportRltPhase[ExportRltPhaseLabel];
@@ -108,7 +108,7 @@ mod export_ast {
     use kodept_frontend::engine::{PhaseEngine};
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
-    use kodept::utils::SystemExt;
+    use kodept::utils::ReportSystemEx;
 
     define_phase!(
         pub phase ExportAstPhase[ExportAstPhaseLabel];

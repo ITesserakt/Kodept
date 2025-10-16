@@ -12,7 +12,7 @@ use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
 use kodept_report::prelude::*;
 use std::borrow::Cow;
 use std::fmt::Display;
-use kodept::utils::SystemExt;
+use kodept::utils::ReportSystemEx;
 
 #[derive(Debug, SystemSet, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct ParseSourcePhaseLabel;

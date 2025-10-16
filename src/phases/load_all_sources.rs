@@ -6,7 +6,7 @@ use kodept_frontend::Either;
 use kodept_frontend::engine::{reporter, Phase, PhaseEngine, SubEngine};
 use kodept_frontend::prelude::CollectedSources;
 use std::sync::Arc;
-use kodept::utils::SystemExt;
+use kodept::utils::ReportSystemEx;
 use crate::cli::primary::OutputConfig;
 
 #[derive(Debug, SystemSet, Clone, Copy, PartialEq, Eq, Hash, Default)]

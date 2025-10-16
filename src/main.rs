@@ -11,7 +11,9 @@ mod phases;
 mod profiler;
 
 fn init_tracing(level: Level) -> impl FnOnce(&mut Engine) {
-    move |_| tracing_subscriber::fmt().with_max_level(level).init()
+    move |_| tracing_subscriber::fmt()
+        .with_thread_names(true)
+        .with_max_level(level).init()
 }
 
 fn init_thread_pool(parallelism: usize) -> impl FnOnce(&mut Engine) {
