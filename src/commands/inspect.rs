@@ -52,12 +52,13 @@ mod export_rlt {
     use crate::cli::primary::OutputConfig;
     use bevy_ecs::prelude::*;
     use derive_more::{Display, Error, From};
-    use kodept::source::collection::{Reporter, SourceView, SystemExt};
+    use kodept::source::collection::{Reporter, SourceView};
     use kodept_ast::resource::rlt::SyntaxResolver;
     use kodept_frontend::define_phase;
     use kodept_frontend::engine::{PhaseEngine};
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
+    use kodept::utils::SystemExt;
 
     define_phase!(
         pub phase ExportRltPhase[ExportRltPhaseLabel];
@@ -101,12 +102,13 @@ mod export_rlt {
 mod export_ast {
     use crate::cli::primary::OutputConfig;
     use bevy_ecs::prelude::*;
-    use kodept::source::collection::{Reporter, SourceView, SystemExt};
+    use kodept::source::collection::{Reporter, SourceView};
     use kodept_ast::syntax_tree::prelude::AST;
     use kodept_frontend::define_phase;
     use kodept_frontend::engine::{PhaseEngine};
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
+    use kodept::utils::SystemExt;
 
     define_phase!(
         pub phase ExportAstPhase[ExportAstPhaseLabel];
