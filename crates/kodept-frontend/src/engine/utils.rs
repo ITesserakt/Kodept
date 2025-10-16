@@ -1,11 +1,11 @@
 mod task_pool {
     //! Belongs to bevy 0.17.2: https://github.com/bevyengine/bevy/blob/release-0.17.2/crates/bevy_app/src/task_pool_plugin.rs
 
+    use crate::engine::{Engine, Plugin};
+    use bevy_tasks::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool, TaskPoolBuilder};
     use std::fmt::Debug;
     use std::sync::Arc;
-    use bevy_tasks::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool, TaskPoolBuilder};
     use tracing::trace;
-    use crate::engine::{Engine, Plugin};
 
     /// Setup of default task pools: [`AsyncComputeTaskPool`], [`ComputeTaskPool`], [`IoTaskPool`].
     #[derive(Default)]
@@ -236,4 +236,75 @@ mod task_pool {
     }
 }
 
+pub(super) mod instrument {
+    use bevy_ecs::prelude::{If, IntoScheduleConfigs, Res, ResMut, Resource};
+    use bevy_ecs::schedule::ScheduleConfigs;
+    use bevy_ecs::system::ScheduleSystem;
+    use std::collections::HashMap;
+    use std::sync::atomic::AtomicU16;
+    use std::time::{Duration, Instant};
+    use tracing::{Level, trace, debug, info, warn, error};
+
+    #[derive(Debug, Resource, Default)]
+    pub struct Timings {
+        starts: HashMap<u16, Instant>,
+    }
+
+    #[derive(Debug, Resource)]
+    pub struct TimingsOptions {
+        log_level: Level,
+    }
+
+    impl Default for TimingsOptions {
+        fn default() -> Self {
+            Self {
+                log_level: Level::DEBUG,
+            }
+        }
+    }
+
+    fn pick_appropriate_suffix(dur: Duration) -> (f64, &'static str) {
+        if dur < Duration::from_millis(1) {
+            (dur.as_secs_f64() * 1e6, "μs")
+        } else if dur < Duration::from_secs(1) {
+            (dur.as_secs_f64() * 1000.0, "ms")
+        } else if dur < Duration::from_secs(60) {
+            (dur.as_secs_f64(), "s")
+        } else if dur < Duration::from_secs(3600) {
+            (dur.as_secs_f64() / 60.0, "min")
+        } else {
+            (dur.as_secs_f64() / 3600.0, "h")
+        }
+    }
+
+    pub(crate) fn instrument<M>(
+        config: impl IntoScheduleConfigs<ScheduleSystem, M>,
+        name: &'static str,
+    ) -> ScheduleConfigs<ScheduleSystem> {
+        static GENERATOR: AtomicU16 = AtomicU16::new(0);
+        let id = GENERATOR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let before = move |mut timings: If<ResMut<Timings>>| {
+            timings.starts.insert(id, Instant::now());
+        };
+        let after = move |timings: If<Res<Timings>>, options: Option<Res<TimingsOptions>>| {
+            if let Some(instant) = timings.starts.get(&id) {
+                let (duration, suffix) = pick_appropriate_suffix(instant.elapsed());
+                match options
+                    .as_ref()
+                    .map_or(TimingsOptions::default().log_level, |it| it.log_level)
+                {
+                    Level::TRACE => trace!("{name} finished after {duration:.3}{suffix}"),
+                    Level::DEBUG => debug!("{name} finished after {duration:.3}{suffix}"),
+                    Level::INFO => info!("{name} finished after {duration:.3}{suffix}"),
+                    Level::WARN => warn!("{name} finished after {duration:.3}{suffix}"),
+                    Level::ERROR => error!("{name} finished after {duration:.3}{suffix}"),
+                }
+            }
+        };
+
+        (before, config, after).chain_ignore_deferred()
+    }
+}
+
+pub use instrument::{Timings, TimingsOptions};
 pub use task_pool::{TaskPoolOptions, TaskPoolPlugin, TaskPoolThreadAssignmentPolicy};

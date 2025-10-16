@@ -1,13 +1,13 @@
 use crate::cli::configs::LoadingConfig;
+use crate::cli::primary::OutputConfig;
 use bevy_ecs::prelude::*;
 use kodept::loader::{Loader, LoadingError};
 use kodept::source::{SourcesLoadingError, load_each_source};
+use kodept::utils::ReportSystemEx;
 use kodept_frontend::Either;
-use kodept_frontend::engine::{reporter, Phase, PhaseEngine, SubEngine};
+use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine, reporter};
 use kodept_frontend::prelude::CollectedSources;
 use std::sync::Arc;
-use kodept::utils::ReportSystemEx;
-use crate::cli::primary::OutputConfig;
 
 #[derive(Debug, SystemSet, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct LoadAllSourcesPhaseSystems;
@@ -20,11 +20,7 @@ impl Phase for LoadAllSourcesPhase {
     type Set = LoadAllSourcesPhaseSystems;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(
-            system
-                .with_input(self.config)
-                .report_errors(),
-        );
+        engine.add_systems(system.with_input(self.config).report_errors());
     }
 }
 

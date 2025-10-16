@@ -5,6 +5,7 @@ use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
 use kodept_frontend::engine::{Engine, Plugin};
+use kodept_frontend::engine::utils::Timings;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -23,11 +24,19 @@ pub struct Check {
 
 impl Plugin for Check {
     fn build(self, engine: &mut Engine) {
+        if self.timings {
+            engine.init_resource::<Timings>();
+        }
+
         engine
             .install(LoadAllSourcesPhase {
                 config: self.loading_config,
             })
             .install(EachSubEnginePhase::new(move |engine| {
+                if self.timings {
+                    engine.init_resource::<Timings>();
+                }
+
                 engine
                     .install(ParseSourcePhase {
                         config: self.parsing_config.clone(),

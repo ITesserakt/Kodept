@@ -26,18 +26,13 @@ where
     type Set = EachSubEnginePhaseSystems<F>;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(
-            system
-                .with_input(self.0)
-                .in_set(EachSubEnginePhaseSystems::<F>::default()),
-        )
+        engine.instrumented = false;
+        engine.add_systems(system.with_input(self.0))
     }
 }
 
-fn system<F>(
-    InMut(configuration): InMut<F>,
-    mut sub_engines: Query<(&SourceView, &mut SubEngine)>,
-) where
+fn system<F>(InMut(configuration): InMut<F>, mut sub_engines: Query<(&SourceView, &mut SubEngine)>)
+where
     F: Fn(&mut Engine) + Send + Sync + 'static,
 {
     sub_engines.par_iter_mut().for_each(|(source, mut engine)| {

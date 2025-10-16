@@ -1,6 +1,7 @@
 use crate::cli::configs::{LexerImpl, ParserImpl, ParsingConfig};
 use bevy_ecs::prelude::*;
-use kodept::source::collection::{SourceView};
+use kodept::source::collection::SourceView;
+use kodept::utils::ReportSystemEx;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_frontend::Either;
 use kodept_frontend::engine::{Phase, PhaseEngine};
@@ -12,7 +13,6 @@ use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
 use kodept_report::prelude::*;
 use std::borrow::Cow;
 use std::fmt::Display;
-use kodept::utils::ReportSystemEx;
 
 #[derive(Debug, SystemSet, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct ParseSourcePhaseLabel;

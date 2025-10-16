@@ -33,7 +33,7 @@ pub trait Plugin {
 }
 
 impl<F> Plugin for F
-where 
+where
     F: FnOnce(&mut Engine),
 {
     fn build(self, engine: &mut Engine) {
@@ -63,6 +63,7 @@ impl<P> Chaining<'_, P> {
 
 pub struct PhaseEngine<'a, P> {
     engine: &'a mut Engine,
+    pub instrumented: bool,
     _phantom: PhantomData<fn() -> P>,
 }
 
@@ -72,6 +73,12 @@ where
 {
     pub fn add_systems<M>(&mut self, config: impl IntoScheduleConfigs<ScheduleSystem, M>) {
         let label = P::Set::default();
+        let config = if self.instrumented {
+            let name = std::any::type_name::<P>();
+            utils::instrument::instrument(config, name)
+        } else {
+            config.into_configs()
+        };
         self.engine
             .add_systems(config.in_set(label.into_system_set()))
     }
@@ -104,6 +111,7 @@ impl Engine {
     pub fn install<P: Phase>(&mut self, phase: P) -> Chaining<'_, P> {
         phase.build(&mut PhaseEngine {
             engine: self,
+            instrumented: true,
             _phantom: PhantomData,
         });
         Chaining {
