@@ -1,12 +1,13 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
+use crate::commands::inject_common_resources;
 use crate::phases::build_ast::BuildAstPhase;
 use crate::phases::each_sub_engine::EachSubEnginePhase;
+use crate::phases::finish_phase::FinishPhase;
 use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
-use kodept_frontend::engine::{Engine, Plugin};
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
-use crate::commands::inject_common_resources;
+use kodept_frontend::engine::{Engine, Plugin};
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -35,16 +36,12 @@ impl Plugin for Check {
             })
             .install(InjectResourcesPhase::new(inject_common_resources))
             .install(EachSubEnginePhase::new(move |engine| {
-                if self.timings {
-                    engine.init_resource::<Timings>();
-                }
-
                 engine
                     .install(ParseSourcePhase {
                         config: self.parsing_config.clone(),
                     })
                     .install(BuildAstPhase);
-            }));
+            }))
+            .install(FinishPhase);
     }
 }
-

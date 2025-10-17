@@ -1,14 +1,15 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
+use crate::commands::inject_common_resources;
 use crate::commands::inspect::export_ast::ExportAstPhase;
 use crate::commands::inspect::export_rlt::ExportRltPhase;
 use crate::phases::build_ast::BuildAstPhase;
 use crate::phases::each_sub_engine::EachSubEnginePhase;
+use crate::phases::finish_phase::FinishPhase;
 use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Engine, Plugin};
-use crate::commands::inject_common_resources;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
@@ -54,7 +55,8 @@ impl Plugin for Inspect {
                 if self.export_ast {
                     sources.install(BuildAstPhase).install(ExportAstPhase);
                 }
-            }));
+            }))
+            .install(FinishPhase);
     }
 }
 
