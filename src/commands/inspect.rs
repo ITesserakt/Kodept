@@ -77,7 +77,7 @@ mod export_rlt {
 
         fn build (self, engine: &mut PhaseEngine<Self>) {
             engine.add_systems(
-                system.report_errors(),
+                system.extract_reports(),
             );
         }
     );
@@ -127,7 +127,7 @@ mod export_ast {
 
         fn build(self, engine: &mut PhaseEngine<Self>) {
             engine.add_systems(
-                system.report_errors()
+                system.extract_reports()
             )
         }
     );

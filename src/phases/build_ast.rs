@@ -17,7 +17,7 @@ define_phase!(
 
     fn build (self, engine: &mut PhaseEngine<Self>) {
         engine.add_systems(
-            system.report_errors()
+            system.extract_reports()
         );
     }
 );

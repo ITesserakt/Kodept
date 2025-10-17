@@ -9,7 +9,7 @@ pub mod utils {
     use std::ops::ControlFlow;
 
     pub trait ReportSystemEx<Out, SystemMarker, ExtractMarker> {
-        fn report_errors(self) -> impl IntoSystem<(), (), ()>;
+        fn extract_reports(self) -> impl IntoSystem<(), (), ()>;
     }
 
     impl<SystemMarker, ExtractMarker, Out, T: IntoSystem<(), Out, SystemMarker>>
@@ -18,7 +18,7 @@ pub mod utils {
         Out: Try<Output = ()> + 'static,
         Out::Residual: ExtractReports<ExtractMarker, Output: Try<Output = ()>>,
     {
-        fn report_errors(self) -> impl IntoSystem<(), (), ()> {
+        fn extract_reports(self) -> impl IntoSystem<(), (), ()> {
             IntoSystem::into_system(self.pipe(|In(output): In<Out>, mut reporter: Reporter| {
                 match output.branch() {
                     ControlFlow::Continue(_) => {}

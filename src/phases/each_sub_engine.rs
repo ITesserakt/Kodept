@@ -44,7 +44,7 @@ where
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
         engine.instrumented = false;
-        engine.add_systems(system.with_input(self.0).report_errors())
+        engine.add_systems(system.with_input(self.0).extract_reports())
     }
 }
 

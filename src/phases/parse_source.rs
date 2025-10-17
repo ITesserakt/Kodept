@@ -25,7 +25,7 @@ impl Phase for ParseSourcePhase {
     type Set = ParseSourcePhaseLabel;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.with_input(self.config).report_errors())
+        engine.add_systems(system.with_input(self.config).extract_reports())
     }
 }
 

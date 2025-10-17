@@ -43,7 +43,7 @@ define_phase!(
     fn build(self, engine: &mut PhaseEngine<Self>) {
         engine.instrumented = false;
         engine.insert_resource(TotalTime(Instant::now()));
-        engine.add_systems(system.report_errors())
+        engine.add_systems(system.extract_reports())
     }
 );
 
