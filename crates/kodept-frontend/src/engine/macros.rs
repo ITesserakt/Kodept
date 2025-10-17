@@ -5,9 +5,9 @@ macro_rules! define_phase {
         fn build($self:ident, $engine:ident: $engine_ty:ty) $build:block
     ) => {
         #[derive(Debug, bevy_ecs::prelude::SystemSet, Clone, Copy, PartialEq, Eq, Hash, Default)]
-        pub struct $label;
+        $vis struct $label;
 
-        pub struct $name {
+        $vis struct $name {
             $(
             $field_vis $field: $ty
             )*
@@ -26,8 +26,8 @@ macro_rules! define_phase {
         fn build($self:ident, $engine:ident: $engine_ty:ty) $build:block
     ) => {
         #[derive(Debug, bevy_ecs::prelude::SystemSet, Clone, Copy, PartialEq, Eq, Hash, Default)]
-        pub struct $label;
-        pub struct $name;
+        $vis struct $label;
+        $vis struct $name;
 
         impl $crate::engine::Phase for $name {
             type Set = $label;
