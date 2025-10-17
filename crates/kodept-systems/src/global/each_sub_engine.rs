@@ -4,6 +4,9 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
+use bevy_ecs::error::error;
+use bevy_ecs::system::command::insert_resource;
+use tracing::error_span;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehaviour, Severity};
 use crate::source::collection::SourceView;
 use crate::utils::ReportSystemEx;
@@ -54,6 +57,9 @@ where
 {
     let any_stopped = AtomicBool::new(false);
     sub_engines.par_iter_mut().for_each(|(source, mut engine)| {
+        let file_name = source.path();
+        let span = error_span!("sub_engine", source = %file_name);
+        let _guard = span.enter();
         // Update source
         engine.insert_resource(source.clone());
         // Configure engine

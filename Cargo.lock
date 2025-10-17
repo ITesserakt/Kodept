@@ -1085,6 +1085,7 @@ dependencies = [
  "memmap2",
  "serde_json",
  "tempfile",
+ "tracing",
  "yoke",
 ]
 
