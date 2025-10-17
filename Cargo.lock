@@ -508,7 +508,7 @@ dependencies = [
  "ciborium",
  "clap",
  "criterion-plot",
- "itertools 0.13.0",
+ "itertools",
  "num-traits",
  "oorandom",
  "plotters",
@@ -527,7 +527,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b1bcc0dc7dfae599d84ad0b1a55f80cde8af3725da8313b528da95ef783e338"
 dependencies = [
  "cast",
- "itertools 0.13.0",
+ "itertools",
 ]
 
 [[package]]
@@ -926,15 +926,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "itertools"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -956,7 +947,6 @@ version = "0.2.3"
 dependencies = [
  "clap",
  "criterion",
- "derive_more",
  "dhat",
  "kodept-frontend",
  "kodept-interning",
@@ -1054,8 +1044,6 @@ name = "kodept-qbe"
 version = "0.1.0"
 dependencies = [
  "derive_more",
- "itertools 0.14.0",
- "nonempty-collections",
  "sealed",
  "similar-asserts",
  "smallvec",
@@ -1169,12 +1157,6 @@ name = "mintex"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c505b3e17ed6b70a7ed2e67fbb2c560ee327353556120d6e72f5232b6880d536"
-
-[[package]]
-name = "nonempty-collections"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30df10377ff18add3da6c9c084d6ce703189a8d884e752e7863d9f82b90deab4"
 
 [[package]]
 name = "nonmax"

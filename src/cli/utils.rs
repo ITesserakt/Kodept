@@ -1,10 +1,10 @@
 use clap::ValueEnum;
-use derive_more::Display;
 use std::convert::Infallible;
 use std::ffi::OsString;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Display, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 pub enum DisplayStyle {
     /// Adds code preview
     Rich,
@@ -18,6 +18,16 @@ pub enum DisplayStyle {
 pub enum Extension {
     Any,
     Specified(OsString),
+}
+
+impl Display for DisplayStyle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DisplayStyle::Rich => write!(f, "rich"),
+            DisplayStyle::Medium => write!(f, "medium"),
+            DisplayStyle::Short => write!(f, "short"),
+        }
+    }
 }
 
 impl FromStr for Extension {
