@@ -1,7 +1,8 @@
 use crate::Either;
 use crate::engine::reporter::Reporter;
 use crate::prelude::Source;
-use kodept_report::prelude::{IntoSpannedReportMessage};
+use kodept_core::try_port::Try;
+use kodept_report::prelude::IntoSpannedReportMessage;
 use std::ops::ControlFlow;
 use std::ops::ControlFlow::{Break, Continue};
 
@@ -55,20 +56,25 @@ where
     }
 }
 
-impl<I, E> ExtractReports<IterExtractMarker> for I
+impl<I, E, M> ExtractReports<(IterExtractMarker, M)> for I
 where
     I: IntoIterator<Item = E>,
-    E: IntoSpannedReportMessage,
+    E: ExtractReports<M, Output: Try<Output = ()>>,
 {
-    type Output = ();
+    type Output = ControlFlow<<E::Output as Try>::Residual, ()>;
 
     fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
     where
         Impl: Send + Sync + 'static,
         Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
     {
-        // TODO: return using `try_for_each`
-        self.into_iter().for_each(|x| x.extract_reports(sink))
+        let mut error = Continue(());
+        for item in self {
+            if let Break(e) = item.extract_reports(sink).branch() {
+                error = Break(e);
+            }
+        }
+        error
     }
 }
 

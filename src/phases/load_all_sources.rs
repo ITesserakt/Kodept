@@ -1,11 +1,10 @@
 use crate::cli::configs::LoadingConfig;
-use crate::cli::primary::OutputConfig;
 use bevy_ecs::prelude::*;
 use kodept::loader::{Loader, LoadingError};
 use kodept::source::{SourcesLoadingError, load_each_source};
 use kodept::utils::ReportSystemEx;
 use kodept_frontend::Either;
-use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine, reporter};
+use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine};
 use kodept_frontend::prelude::CollectedSources;
 use std::sync::Arc;
 
@@ -26,11 +25,6 @@ impl Phase for LoadAllSourcesPhase {
 
 fn system(
     InMut(config): InMut<LoadingConfig>,
-    // TODO: Remove this
-    // {
-    reporting_settings: Res<reporter::Settings>,
-    output_config: Res<OutputConfig>,
-    // }
     mut commands: Commands,
 ) -> Result<(), Either<LoadingError, SourcesLoadingError>> {
     let loader = Loader::try_from(&*config).map_err(Either::Left)?;
@@ -39,15 +33,7 @@ fn system(
     let views = sources.collect();
 
     commands.insert_resource(CollectedSources { inner: sources });
-
-    let settings = reporting_settings.clone();
-    let output_config = output_config.clone();
-    commands.spawn_batch(views.into_iter().map(move |it| {
-        let mut sub_engine = SubEngine::new();
-        sub_engine.insert_resource(settings.clone());
-        sub_engine.insert_resource(output_config.clone());
-        (it, sub_engine)
-    }));
+    commands.spawn_batch(views.into_iter().map(move |it| (it, SubEngine::new())));
 
     Ok(())
 }

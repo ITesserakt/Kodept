@@ -243,7 +243,7 @@ pub(super) mod instrument {
     use std::collections::HashMap;
     use std::sync::atomic::AtomicU16;
     use std::time::{Duration, Instant};
-    use tracing::{Level, trace, debug, info, warn, error};
+    use tracing::{Level, debug, error, info, trace, warn};
 
     #[derive(Debug, Resource, Default)]
     pub struct Timings {
@@ -306,5 +306,93 @@ pub(super) mod instrument {
     }
 }
 
+mod inject_resources {
+    use crate::engine::{Phase, PhaseEngine, SubEngine};
+    use bevy_ecs::prelude::*;
+    use std::fmt::Debug;
+    use std::hash::{Hash, Hasher};
+    use std::marker::PhantomData;
+    use tracing::error;
+
+    #[derive(SystemSet)]
+    pub struct InjectResourcesPhaseLabel<F>(PhantomData<fn() -> F>);
+
+    pub struct InjectResourcesPhase<'a, F>(F, PhantomData<fn() -> &'a ()>);
+
+    impl<'a, F> InjectResourcesPhase<'a, F> {
+        pub fn new<M>(
+            inject_system: impl IntoSystem<InMut<'a, SubEngine>, (), M, System = F>,
+        ) -> Self {
+            InjectResourcesPhase(IntoSystem::into_system(inject_system), PhantomData)
+        }
+    }
+
+    impl<'a, F> Phase for InjectResourcesPhase<'a, F>
+    where
+        F: 'static,
+        F: ReadOnlySystem<In = InMut<'a, SubEngine>, Out = ()>,
+    {
+        type Set = InjectResourcesPhaseLabel<F>;
+
+        fn build(mut self, engine: &mut PhaseEngine<Self>) {
+            engine.instrumented = false;
+            self.0.initialize(&mut engine.engine_world);
+            engine.add_systems(system.with_input(self.0));
+        }
+    }
+
+    fn system<'a, F>(InMut(inject_system): InMut<F>, world: &mut World)
+    where
+        F: ReadOnlySystem<In = InMut<'a, SubEngine>, Out = ()>,
+    {
+        let mut sub_engines_query_state = world.query_filtered::<Entity, With<SubEngine>>();
+        let sub_engines_entities: Vec<_> =
+            sub_engines_query_state.query(world).into_iter().collect();
+
+        for entity in sub_engines_entities {
+            let mut sub_engine = world.entity_mut(entity).take::<SubEngine>().unwrap();
+            if let Err(e) = inject_system.run_readonly(&mut sub_engine, world) {
+                error!("Cannot run inject system: {e}");
+            }
+            world.entity_mut(entity).insert(sub_engine);
+        }
+    }
+
+    impl<F> Debug for InjectResourcesPhaseLabel<F> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("InjectResourcesPhaseLabel").finish()
+        }
+    }
+
+    impl<F> Clone for InjectResourcesPhaseLabel<F> {
+        fn clone(&self) -> Self {
+            Self(PhantomData)
+        }
+    }
+
+    impl<F> Copy for InjectResourcesPhaseLabel<F> {}
+
+    impl<F> PartialEq for InjectResourcesPhaseLabel<F> {
+        fn eq(&self, _: &Self) -> bool {
+            true
+        }
+    }
+
+    impl<F> Eq for InjectResourcesPhaseLabel<F> {}
+
+    impl<F> Hash for InjectResourcesPhaseLabel<F> {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            self.0.hash(state);
+        }
+    }
+
+    impl<F> Default for InjectResourcesPhaseLabel<F> {
+        fn default() -> Self {
+            Self(PhantomData)
+        }
+    }
+}
+
+pub use inject_resources::{InjectResourcesPhase, InjectResourcesPhaseLabel};
 pub use instrument::{Timings, TimingsOptions};
 pub use task_pool::{TaskPoolOptions, TaskPoolPlugin, TaskPoolThreadAssignmentPolicy};

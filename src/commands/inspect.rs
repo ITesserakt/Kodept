@@ -6,10 +6,15 @@ use crate::phases::each_sub_engine::EachSubEnginePhase;
 use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
+use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Engine, Plugin};
+use crate::commands::inject_common_resources;
 
 #[derive(Parser, Debug, Clone)]
 pub struct Inspect {
+    /// Measure duration of different stages
+    #[arg(short = 't', long, action)]
+    timings: bool,
     /// Export raw lexeme tree in .json format into a file
     #[arg(short = 'r', long, action)]
     export_rlt: bool,
@@ -24,10 +29,15 @@ pub struct Inspect {
 
 impl Plugin for Inspect {
     fn build(self, engine: &mut Engine) {
+        if self.timings {
+            engine.init_resource::<Timings>();
+        }
+
         engine
             .install(LoadAllSourcesPhase {
                 config: self.loading_config,
             })
+            .install(InjectResourcesPhase::new(inject_common_resources))
             .install(EachSubEnginePhase::new(move |engine| {
                 if !self.export_rlt && !self.export_rlt {
                     return;
@@ -53,12 +63,12 @@ mod export_rlt {
     use bevy_ecs::prelude::*;
     use derive_more::{Display, Error, From};
     use kodept::source::collection::{Reporter, SourceView};
+    use kodept::utils::ReportSystemEx;
     use kodept_ast::resource::rlt::SyntaxResolver;
     use kodept_frontend::define_phase;
-    use kodept_frontend::engine::{PhaseEngine};
+    use kodept_frontend::engine::PhaseEngine;
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
-    use kodept::utils::ReportSystemEx;
 
     define_phase!(
         pub phase ExportRltPhase[ExportRltPhaseLabel];
@@ -103,12 +113,12 @@ mod export_ast {
     use crate::cli::primary::OutputConfig;
     use bevy_ecs::prelude::*;
     use kodept::source::collection::{Reporter, SourceView};
+    use kodept::utils::ReportSystemEx;
     use kodept_ast::syntax_tree::prelude::AST;
     use kodept_frontend::define_phase;
-    use kodept_frontend::engine::{PhaseEngine};
+    use kodept_frontend::engine::PhaseEngine;
     use kodept_report::prelude::{Diagnostic, Severity};
     use std::fs::File;
-    use kodept::utils::ReportSystemEx;
 
     define_phase!(
         pub phase ExportAstPhase[ExportAstPhaseLabel];
@@ -128,7 +138,8 @@ mod export_ast {
     ) -> Result<(), std::io::Error> {
         let output_filepath = config.get_path_for_source(source.path(), "puml")?;
         let mut output_file = File::create(&output_filepath)?;
-        AST::export_dot_in(world, &mut output_file).expect("Some components did not registered still")?;
+        AST::export_dot_in(world, &mut output_file)
+            .expect("Some components did not registered still")?;
 
         reporter.report_ad_hoc(|| {
             Diagnostic::new(Severity::Note).with_message(format!(
@@ -140,4 +151,3 @@ mod export_ast {
         Ok(())
     }
 }
-
