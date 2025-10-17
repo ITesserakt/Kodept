@@ -1,12 +1,10 @@
 use crate::cli::utils::{DisplayStyle, Extension};
 use clap::{Args, ValueEnum};
-use derive_more::From;
-use kodept::loader::{Loader, LoadingError};
-use kodept_parse::lexer::{PegLexer, ASCIILexer};
-use kodept_parse::parser::PegParser;
 use kodept_report::codespan::external::ColorChoice;
 use std::io::{stdin, Read};
 use std::path::PathBuf;
+use kodept_systems::configs::{LexerImpl, ParserImpl};
+use kodept_systems::loader::{Loader, LoadingError};
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {
@@ -42,17 +40,6 @@ pub enum LexerChoice {
 pub enum ParserChoice {
     Peg,
     Auto,
-}
-
-#[derive(From, Debug, Copy, Clone)]
-pub enum LexerImpl {
-    Peg(PegLexer<false>),
-    ASCII(ASCIILexer),
-}
-
-#[derive(Debug, From)]
-pub enum ParserImpl {
-    Peg(PegParser<false>),
 }
 
 #[derive(Debug, Args, Clone)]
@@ -100,17 +87,17 @@ impl ParsingConfig {
             &self.lexer,
             source.len(),
             self.parallel && cfg!(feature = "parallel"),
-            cfg!(feature = "trace"),
+            false,
         ) {
-            (LexerChoice::Peg, _, _, false) => PegLexer::<false>::new().into(),
+            (LexerChoice::Peg, _, _, false) => LexerImpl::peg(),
             (LexerChoice::Peg, _, _, true) => {
                 panic!("Cannot use peg lexer when parallelization and tracing are enabled")
             }
-            (LexerChoice::ASCII, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
+            (LexerChoice::ASCII, _, _, _) if source.is_ascii() => LexerImpl::ascii(),
             (LexerChoice::ASCII, _, _, _) => panic!("Cannot use ascii lexer for non-ascii inputs"),
-            (LexerChoice::Auto, _, _, _) if source.is_ascii() => ASCIILexer::new().into(),
-            (LexerChoice::Auto, _, false, true) => PegLexer::<false>::new().into(),
-            (LexerChoice::Auto, _, _, false) => PegLexer::<false>::new().into(),
+            (LexerChoice::Auto, _, _, _) if source.is_ascii() => LexerImpl::ascii(),
+            (LexerChoice::Auto, _, false, true) => LexerImpl::peg(),
+            (LexerChoice::Auto, _, _, false) => LexerImpl::peg(),
             (LexerChoice::Auto, _, _, true) => panic!("Cannot determine lexer for non-ascii input and tracing enabled")
         }
     }
@@ -119,15 +106,15 @@ impl ParsingConfig {
         match (
             &self.parser,
             self.parallel && cfg!(feature = "parallel"),
-            cfg!(feature = "trace"),
+            false,
         ) {
-            (ParserChoice::Peg, _, false) => PegParser::new().into(),
-            (ParserChoice::Peg, false, true) => PegParser::new().into(),
+            (ParserChoice::Peg, _, false) => ParserImpl::peg(),
+            (ParserChoice::Peg, false, true) => ParserImpl::peg(),
             (ParserChoice::Peg | ParserChoice::Auto, true, true) => {
                 panic!("Cannot use peg parser when parallelization and tracing are enabled")
             }
-            (ParserChoice::Auto, _, false) => PegParser::new().into(),
-            (ParserChoice::Auto, false, true) => PegParser::new().into(),
+            (ParserChoice::Auto, _, false) => ParserImpl::peg(),
+            (ParserChoice::Auto, false, true) => ParserImpl::peg(),
         }
     }
 }

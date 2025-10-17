@@ -517,7 +517,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         _ i:traced(<file_grammar()>) _ ![_] { RLT(i) }
 }}
 
-#[derive(Constructor, Debug)]
+#[derive(Constructor, Debug, Copy, Clone)]
 pub struct Parser<const TRACE: bool = false>;
 
 impl RLTProducer for Parser<TRACING_OPTION> {

@@ -1,14 +1,12 @@
+use std::env::current_dir;
 use derive_more::{Display, Error, From};
 use kodept_core::file_name::FileName;
 use memmap2::{Mmap, MmapOptions};
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
-
-#[derive(Debug, Error, From, Display)]
-pub enum CodeSourceError {
-    IO(std::io::Error),
-}
+use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
+use crate::source::loaded::SourceImpl;
 
 #[derive(Debug)]
 pub enum CodeSource {
@@ -82,5 +80,43 @@ impl Read for CodeSource {
             CodeSource::File { file, .. } => file.read(buf),
             CodeSource::MappedFile { map, .. } => map.read(buf),
         }
+    }
+}
+
+#[derive(Debug, Error, Display, From)]
+pub enum CodeSourceError {
+    IO(std::io::Error),
+    UTF8Str(std::str::Utf8Error),
+    UTF8String(std::string::FromUtf8Error),
+}
+
+fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
+    core::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
+}
+
+impl TryReadCode<CodeSource> for SourceImpl {
+    type Error = CodeSourceError;
+
+    fn try_read(value: CodeSource) -> Result<ReadSource<Self>, Self::Error> {
+        let path = value.path().get_relative_path(&current_dir()?);
+        let (value, starts) = match value {
+            CodeSource::Memory { contents, .. } => {
+                let starts = line_starts(contents.get_ref()).collect();
+                (SourceImpl::explicit(contents.into_inner()), starts)
+            }
+            CodeSource::File { mut file, .. } => {
+                let mut buf = Vec::with_capacity(1024);
+                file.read_to_end(&mut buf)?;
+                let buf = String::from_utf8(buf)?;
+                let starts = line_starts(&buf).collect();
+                (SourceImpl::explicit(buf), starts)
+            }
+            CodeSource::MappedFile { map, .. } => {
+                let value = SourceImpl::implicit(map.into_inner())?;
+                let starts = line_starts(value.as_ref()).collect();
+                (value, starts)
+            }
+        };
+        Ok(ReadSource::new(value, path, starts))
     }
 }

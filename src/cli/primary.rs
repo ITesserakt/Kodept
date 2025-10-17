@@ -1,13 +1,8 @@
 use crate::cli::configs::DiagnosticConfig;
 use crate::commands::Commands;
 use clap::{Args, Parser};
-use kodept_core::file_name::FileName;
-use std::ffi::OsStr;
-use std::fs::{create_dir_all};
-use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use bevy_ecs::prelude::Resource;
 use tracing::Level;
 
 static DEFAULT_JOBS: LazyLock<usize> = LazyLock::new(|| {
@@ -27,18 +22,16 @@ pub struct Kodept {
     /// Controls how many parallel threads will be created for operations
     #[arg(short = 'j', long, hide = cfg!(not(feature = "parallel")), default_value_t = *DEFAULT_JOBS)]
     pub jobs: usize,
-    #[command(flatten, next_help_heading = "Output options")]
-    pub output_config: OutputConfig,
     #[command(flatten, next_help_heading = "Diagnostics options")]
     pub diagnostic_config: DiagnosticConfig,
     #[command(flatten, next_help_heading = "Logging options")]
     pub logging: LoggingOptions,
 }
 
-#[derive(Debug, Args, Resource, Clone)]
+#[derive(Debug, Args)]
 pub struct OutputConfig {
     /// Write all output to the specified path
-    #[arg(short = 'o', long = "out", default_value = "./build", global = true)]
+    #[arg(short = 'o', long = "out", default_value = "./build")]
     pub output: PathBuf,
 }
 
@@ -68,27 +61,6 @@ impl LoggingOptions {
             .then_some(Level::DEBUG)
             .or(self.verbose.then_some(Level::TRACE))
             .unwrap_or(self.severity)
-    }
-}
-
-impl OutputConfig {
-    pub fn create_missing_folders(&self) -> std::io::Result<()> {
-        match create_dir_all(&self.output) {
-            Ok(_) => Ok(()),
-            Err(e) if e.kind() == ErrorKind::AlreadyExists => Ok(()),
-            Err(e) => Err(e),
-        }
-    }
-
-    pub fn get_path_for_source<Q: AsRef<OsStr> + ?Sized>(
-        &self,
-        source: &FileName,
-        extension: &Q,
-    ) -> std::io::Result<PathBuf> {
-        self.create_missing_folders()?;
-        let new_path = source.build_file_path().with_extension(extension.as_ref());
-        let name = new_path.file_name().unwrap();
-        Ok(self.output.join(name))
     }
 }
 

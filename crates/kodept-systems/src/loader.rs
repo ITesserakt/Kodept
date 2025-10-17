@@ -6,7 +6,6 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use tracing::debug;
 
 #[derive(Debug)]
 pub enum Loader {
@@ -143,7 +142,6 @@ impl Loader {
         let size = file.seek(SeekFrom::End(0))?;
         file.rewind()?;
         if size > MAP_FILESIZE {
-            debug!("Using mmap to load file {}", path.display());
             Ok(CodeSource::mmap(path, file, Some(size))?)
         } else {
             Ok(CodeSource::file(path, file))

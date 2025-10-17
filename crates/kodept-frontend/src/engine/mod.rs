@@ -158,6 +158,13 @@ impl SubEngine {
             inner: Engine::new(),
         }
     }
+
+    pub fn resource<T>(&self) -> &T
+    where
+        T: Resource,
+    {
+        self.engine_world.resource()
+    }
 }
 
 impl Deref for SubEngine {

@@ -1,17 +1,15 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
-use crate::commands::inject_common_resources;
-use crate::commands::inspect::export_ast::ExportAstPhase;
-use crate::commands::inspect::export_rlt::ExportRltPhase;
-use crate::phases::build_ast::BuildAstPhase;
-use crate::phases::each_sub_engine::EachSubEnginePhase;
-use crate::phases::finish_phase::FinishPhase;
-use crate::phases::load_all_sources::LoadAllSourcesPhase;
-use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
-use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
+use kodept_frontend::engine::utils::{Timings};
 use kodept_frontend::engine::{Engine, Plugin};
+use kodept_systems::configs::OutputDirectory;
+use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
+use kodept_systems::per_file::inject_common_resources_phase;
+use kodept_systems::per_file::prelude::{BuildAstPhase, ExportAstPhase, ExportRltPhase, ParseSourcePhase};
+use kodept_systems::source::collection::SourceView;
+use crate::cli::primary::OutputConfig;
 
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug)]
 pub struct Inspect {
     /// Measure duration of different stages
     #[arg(short = 't', long, action)]
@@ -26,6 +24,8 @@ pub struct Inspect {
     parsing_config: ParsingConfig,
     #[command(flatten, next_help_heading = "Loading options")]
     loading_config: LoadingConfig,
+    #[command(flatten, next_help_heading = "Output options")]
+    pub output_config: OutputConfig,
 }
 
 impl Plugin for Inspect {
@@ -38,15 +38,19 @@ impl Plugin for Inspect {
             .install(LoadAllSourcesPhase {
                 config: self.loading_config,
             })
-            .install(InjectResourcesPhase::new(inject_common_resources))
+            .install(inject_common_resources_phase())
             .install(EachSubEnginePhase::new(move |engine| {
                 if !self.export_rlt && !self.export_rlt {
                     return;
                 }
 
-                let mut sources = engine.install(ParseSourcePhase {
-                    config: self.parsing_config.clone(),
-                });
+                engine.insert_resource(OutputDirectory::new(&self.output_config.output));
+                engine.insert_resource(self.parsing_config.get_parsing_backend());
+                let source = engine.resource::<SourceView>();
+                let lexing_backend = self.parsing_config.get_lexing_backend(source.contents());
+                engine.insert_resource(lexing_backend);
+
+                let mut sources = engine.install(ParseSourcePhase);
 
                 if self.export_rlt {
                     sources.install(ExportRltPhase);
@@ -57,99 +61,5 @@ impl Plugin for Inspect {
                 }
             }))
             .install(FinishPhase);
-    }
-}
-
-mod export_rlt {
-    use crate::cli::primary::OutputConfig;
-    use bevy_ecs::prelude::*;
-    use derive_more::{Display, Error, From};
-    use kodept::source::collection::{Reporter, SourceView};
-    use kodept::utils::ReportSystemEx;
-    use kodept_ast::resource::rlt::SyntaxResolver;
-    use kodept_frontend::define_phase;
-    use kodept_frontend::engine::PhaseEngine;
-    use kodept_report::prelude::{Diagnostic, Severity};
-    use std::fs::File;
-
-    define_phase!(
-        pub phase ExportRltPhase[ExportRltPhaseLabel];
-
-        fn build (self, engine: &mut PhaseEngine<Self>) {
-            engine.add_systems(
-                system.extract_reports(),
-            );
-        }
-    );
-
-    #[derive(Debug, Error, From, Display)]
-    enum Error {
-        #[display("Could not open file to output RLT: {_0}")]
-        IO(std::io::Error),
-        #[display("Could not serialize RLT into json: {_0}")]
-        Serde(serde_json::Error),
-    }
-
-    fn system(
-        config: Res<OutputConfig>,
-        source: Res<SourceView>,
-        syntax: Res<SyntaxResolver>,
-        mut reporter: Reporter,
-    ) -> Result<(), Error> {
-        let output_filepath = config.get_path_for_source(source.path(), "rlt.json")?;
-        let output_file = File::create(&output_filepath)?;
-        serde_json::to_writer(output_file, syntax.root().0)?;
-
-        reporter.report_ad_hoc(|| {
-            Diagnostic::new(Severity::Note).with_message(format!(
-                "Successfully exported RLT to {}",
-                output_filepath.display()
-            ))
-        });
-
-        Ok(())
-    }
-}
-
-mod export_ast {
-    use crate::cli::primary::OutputConfig;
-    use bevy_ecs::prelude::*;
-    use kodept::source::collection::{Reporter, SourceView};
-    use kodept::utils::ReportSystemEx;
-    use kodept_ast::syntax_tree::prelude::AST;
-    use kodept_frontend::define_phase;
-    use kodept_frontend::engine::PhaseEngine;
-    use kodept_report::prelude::{Diagnostic, Severity};
-    use std::fs::File;
-
-    define_phase!(
-        pub phase ExportAstPhase[ExportAstPhaseLabel];
-
-        fn build(self, engine: &mut PhaseEngine<Self>) {
-            engine.add_systems(
-                system.extract_reports()
-            )
-        }
-    );
-
-    fn system(
-        config: Res<OutputConfig>,
-        source: Res<SourceView>,
-        mut reporter: Reporter,
-        world: &World,
-    ) -> Result<(), std::io::Error> {
-        let output_filepath = config.get_path_for_source(source.path(), "puml")?;
-        let mut output_file = File::create(&output_filepath)?;
-        AST::export_dot_in(world, &mut output_file)
-            .expect("Some components did not registered still")?;
-
-        reporter.report_ad_hoc(|| {
-            Diagnostic::new(Severity::Note).with_message(format!(
-                "Successfully exported AST to {}",
-                output_filepath.display()
-            ))
-        });
-
-        Ok(())
     }
 }

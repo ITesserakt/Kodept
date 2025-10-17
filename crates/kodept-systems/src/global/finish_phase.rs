@@ -1,9 +1,9 @@
 use bevy_ecs::prelude::*;
-use kodept::utils::ReportSystemEx;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
 use std::time::{Duration, Instant};
+use crate::utils::ReportSystemEx;
 
 struct TotalTimeReport(Duration);
 

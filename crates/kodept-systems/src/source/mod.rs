@@ -1,7 +1,7 @@
+use derive_more::{Display, Error, From};
 use crate::loader::{Loader, LoadingError};
 use crate::source::collection::Sources;
-use crate::source::loaded::CodeSourceError;
-use derive_more::{Display, Error, From};
+use crate::source::unloaded::CodeSourceError;
 
 pub mod collection;
 pub mod loaded;

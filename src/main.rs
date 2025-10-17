@@ -8,7 +8,6 @@ use tracing::Level;
 
 mod cli;
 mod commands;
-mod phases;
 mod profiler;
 
 fn init_tracing(level: Level) -> impl FnOnce(&mut Engine) {
@@ -44,8 +43,6 @@ fn main() -> ExitCode {
     let _guard = HeapProfilerGuard::install();
     let cli_options = Kodept::parse();
     let mut engine = Engine::new();
-
-    engine.insert_resource(cli_options.output_config);
 
     engine.add_plugin(init_tracing(cli_options.logging.level()));
     engine.add_plugin(init_thread_pool(cli_options.jobs));

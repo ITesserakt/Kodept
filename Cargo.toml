@@ -57,48 +57,31 @@ rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
 [dependencies]
-bevy_ecs.workspace = true
 clap = { version = "4.5", features = ["derive", "env"] }
 derive_more.workspace = true
-memmap2 = { version = "0.9.5", features = ["stable_deref_trait"] }
-serde_json = "1"
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt", "ansi"] }
-yoke = "0.8.0"
 
-ctrlc = { version = "3.4.4", optional = true }
 dhat = { version = "0.3", optional = true }
-gag = { version = "1.0.0", optional = true }
 rayon = { version = "1.10.0", optional = true }
 
-kodept-ast = { path = "crates/kodept-ast" }
-kodept-ast-nodes = { path = "crates/kodept-ast-nodes" }
-kodept-core = { path = "crates/kodept-core" }
 kodept-frontend = { path = "crates/kodept-frontend" }
 kodept-systems = { path = "crates/kodept-systems" }
-kodept-parse = { path = "crates/kodept-parse" }
 kodept-report = { path = "crates/kodept-report" }
-kodept-rlt = { path = "crates/kodept-rlt", features = ["serde"] }
 
 kodept-interning = { path = "crates/kodept-interning", optional = true }
 
 [dev-dependencies]
-tempfile = "3.7.0"
 criterion = "0.7.0"
 
 [features]
 default = []
-profiler = ["dep:dhat", "dep:ctrlc"]
+profiler = ["dep:dhat"]
 interning = ["dep:kodept-interning", "kodept-interning/code_holder", "kodept-interning/metrics"]
 parallel = [
     "dep:rayon"
-    , "kodept-parse/parallel"
-    , "kodept-ast/parallel"
-    , "kodept-ast-nodes/parallel"
     , "kodept-frontend/parallel"
 ]
-trace = ["dep:gag", "kodept-parse/trace"]
-debug = ["kodept-ast/debug"]
 
 [profile.test.package.proptest]
 opt-level = 3

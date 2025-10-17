@@ -1,7 +1,5 @@
 use bevy_ecs::prelude::*;
 use derive_more::From;
-use kodept::source::collection::SourceView;
-use kodept::utils::{ReportSystemEx};
 use kodept_ast::prelude::FromSyntax;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::Error;
@@ -11,6 +9,8 @@ use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
 use std::borrow::Cow;
+use crate::source::collection::SourceView;
+use crate::utils::ReportSystemEx;
 
 define_phase!(
     pub phase BuildAstPhase[BuildAstPhaseLabel];

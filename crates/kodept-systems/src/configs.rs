@@ -1,0 +1,92 @@
+use bevy_ecs::prelude::Resource;
+use derive_more::From;
+use kodept_core::file_name::FileName;
+use kodept_parse::common::ErrorAdapter;
+use kodept_parse::error::ParseErrors;
+use kodept_parse::lexer::{ASCIILexer, PegLexer};
+use kodept_parse::parser::PegParser;
+use kodept_parse::token_match::PackedTokenMatch;
+use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
+use std::ffi::OsStr;
+use std::fs::create_dir_all;
+use std::io::ErrorKind;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, Resource)]
+pub struct OutputDirectory {
+    path: PathBuf,
+}
+
+#[derive(From, Debug, Resource)]
+pub enum LexerImpl {
+    Peg(PegLexer<false>),
+    ASCII(ASCIILexer),
+}
+
+#[derive(Debug, From, Resource)]
+pub enum ParserImpl {
+    Peg(PegParser<false>),
+}
+
+impl LexerImpl {
+    pub fn lex(&self, input: &str) -> Result<Vec<PackedTokenMatch>, ParseErrors<String>> {
+        match self {
+            LexerImpl::Peg(x) => EagerTokenizer::new(input, *x)
+                .try_into_vec()
+                .map_err(|e| e.adapt(input, 0)),
+            LexerImpl::ASCII(x) => EagerTokenizer::new(input, *x)
+                .try_into_vec()
+                .map_err(|e| match e {}),
+        }
+    }
+
+    pub fn peg() -> Self {
+        Self::Peg(PegLexer::new())
+    }
+
+    pub fn ascii() -> Self {
+        Self::ASCII(ASCIILexer::new())
+    }
+}
+
+impl ParserImpl {
+    pub fn peg() -> Self {
+        Self::Peg(PegParser::new())
+    }
+}
+
+impl Deref for ParserImpl {
+    type Target = PegParser<false>;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            ParserImpl::Peg(x) => x,
+        }
+    }
+}
+
+impl OutputDirectory {
+    pub fn new(path: impl AsRef<Path>) -> Self {
+        Self { path: path.as_ref().to_path_buf() }
+    }
+
+    pub fn create_missing_folders(&self) -> std::io::Result<()> {
+        match create_dir_all(&self.path) {
+            Ok(_) => Ok(()),
+            Err(e) if e.kind() == ErrorKind::AlreadyExists => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn get_path_for_source<Q: AsRef<OsStr> + ?Sized>(
+        &self,
+        source: &FileName,
+        extension: &Q,
+    ) -> std::io::Result<PathBuf> {
+        self.create_missing_folders()?;
+        let new_path = source.build_file_path().with_extension(extension.as_ref());
+        let name = new_path.file_name().unwrap();
+        Ok(self.path.join(name))
+    }
+}

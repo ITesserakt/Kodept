@@ -8,6 +8,7 @@ rust-version.workspace = true
 workspace = true
 
 [features]
+default = ["serde"]
 serde = ["dep:serde", "kodept-core/serde"]
 arbitrary = ["kodept-core/arbitrary", "dep:proptest", "dep:proptest-derive"]
 

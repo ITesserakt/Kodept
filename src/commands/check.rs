@@ -1,13 +1,11 @@
 use crate::cli::configs::{LoadingConfig, ParsingConfig};
-use crate::commands::inject_common_resources;
-use crate::phases::build_ast::BuildAstPhase;
-use crate::phases::each_sub_engine::EachSubEnginePhase;
-use crate::phases::finish_phase::FinishPhase;
-use crate::phases::load_all_sources::LoadAllSourcesPhase;
-use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
-use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
+use kodept_frontend::engine::utils::Timings;
 use kodept_frontend::engine::{Engine, Plugin};
+use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
+use kodept_systems::per_file::inject_common_resources_phase;
+use kodept_systems::per_file::prelude::{BuildAstPhase, ParseSourcePhase};
+use kodept_systems::source::collection::SourceView;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -34,13 +32,14 @@ impl Plugin for Check {
             .install(LoadAllSourcesPhase {
                 config: self.loading_config,
             })
-            .install(InjectResourcesPhase::new(inject_common_resources))
+            .install(inject_common_resources_phase())
             .install(EachSubEnginePhase::new(move |engine| {
-                engine
-                    .install(ParseSourcePhase {
-                        config: self.parsing_config.clone(),
-                    })
-                    .install(BuildAstPhase);
+                engine.insert_resource(self.parsing_config.get_parsing_backend());
+                let source = engine.resource::<SourceView>();
+                let lexing_backend = self.parsing_config.get_lexing_backend(source.contents());
+                engine.insert_resource(lexing_backend);
+
+                engine.install(ParseSourcePhase).install(BuildAstPhase);
             }))
             .install(FinishPhase);
     }
