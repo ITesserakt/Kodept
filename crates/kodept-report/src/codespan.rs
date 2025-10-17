@@ -105,24 +105,6 @@ where
     }
 }
 
-impl<R> Reportable for Vec<R>
-where
-    R: Reportable,
-{
-    type FileId = R::FileId;
-
-    fn emit<'f, F: Files<'f, FileId = Self::FileId>>(
-        self,
-        settings: &mut impl Settings,
-        source: &'f F,
-    ) -> Result<(), Error> {
-        for item in self {
-            item.emit(settings, source)?;
-        }
-        Ok(())
-    }
-}
-
 impl Settings for &CodespanSettings<StandardStream> {
     fn unpack(&mut self) -> (&Config, impl WriteColor) {
         let lock = self.stream.lock();
