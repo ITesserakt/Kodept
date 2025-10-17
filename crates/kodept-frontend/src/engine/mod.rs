@@ -91,9 +91,7 @@ impl Engine {
         let mut schedules = Schedules::new();
         let startup = schedules.entry(Startup);
 
-        #[cfg(feature = "parallel")]
-        startup.set_executor_kind(ExecutorKind::MultiThreaded);
-        #[cfg(not(feature = "parallel"))]
+        // execution deadlocks if `ExecutorKind` is MultiThreaded...
         startup.set_executor_kind(ExecutorKind::SingleThreaded);
 
         world.insert_resource(schedules);

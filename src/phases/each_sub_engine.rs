@@ -12,11 +12,11 @@ struct CannotProceed;
 
 impl IntoSpannedReportMessage for CannotProceed {
     type Message = Diagnostic;
-    
+
     fn behaviour(&self) -> MessageBehaviour {
         MessageBehaviour::fail_fast("Cannot process input files")
     }
-    
+
     fn into_message(self) -> Self::Message {
         Diagnostic::new(Severity::Error).with_message("Cannot proceed")
     }
