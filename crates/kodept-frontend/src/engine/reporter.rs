@@ -5,8 +5,9 @@ use kodept_report::prelude::*;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
-use tracing::{error, trace};
+use tracing::{debug, error, trace};
 
+#[derive(Debug)]
 enum GenericReport {
     Single(Report),
     Global(Report<()>),
@@ -169,7 +170,7 @@ where
             (Settings::Disabled, _, _) => {}
         }
         if let MessageBehaviour::FailFast { reason } = behaviour {
-            trace!("Force stopping due to fail: {reason}");
+            debug!("Force stopping due to fail: {reason}");
             self.buffer.should_stop = true;
         }
     }

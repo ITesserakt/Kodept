@@ -5,7 +5,8 @@ use crate::phases::load_all_sources::LoadAllSourcesPhase;
 use crate::phases::parse_source::ParseSourcePhase;
 use clap::Parser;
 use kodept_frontend::engine::{Engine, Plugin};
-use kodept_frontend::engine::utils::Timings;
+use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
+use crate::commands::inject_common_resources;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -32,6 +33,7 @@ impl Plugin for Check {
             .install(LoadAllSourcesPhase {
                 config: self.loading_config,
             })
+            .install(InjectResourcesPhase::new(inject_common_resources))
             .install(EachSubEnginePhase::new(move |engine| {
                 if self.timings {
                     engine.init_resource::<Timings>();

@@ -17,7 +17,7 @@ workspace = true
 [features]
 default = []
 parallel = ["dep:rayon", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
-debug = ["bevy_ecs/track_location", "bevy_ecs/backtrace", "bevy_utils/debug"]
+debug = ["bevy_utils/debug"]
 
 [dependencies]
 bevy_ecs.workspace = true
