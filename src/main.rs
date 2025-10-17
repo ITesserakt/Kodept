@@ -3,6 +3,7 @@ use crate::cli::primary::Kodept;
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
 use kodept_frontend::engine::Engine;
+use std::process::ExitCode;
 use tracing::Level;
 
 mod cli;
@@ -11,9 +12,12 @@ mod phases;
 mod profiler;
 
 fn init_tracing(level: Level) -> impl FnOnce(&mut Engine) {
-    move |_| tracing_subscriber::fmt()
-        .with_thread_names(true)
-        .with_max_level(level).init()
+    move |_| {
+        tracing_subscriber::fmt()
+            .with_thread_names(true)
+            .with_max_level(level)
+            .init()
+    }
 }
 
 fn init_thread_pool(parallelism: usize) -> impl FnOnce(&mut Engine) {
@@ -36,7 +40,7 @@ fn init_thread_pool(parallelism: usize) -> impl FnOnce(&mut Engine) {
     }
 }
 
-fn main() {
+fn main() -> ExitCode {
     let _guard = HeapProfilerGuard::install();
     let cli_options = Kodept::parse();
     let mut engine = Engine::new();
@@ -48,5 +52,8 @@ fn main() {
     engine.add_plugin(init_reports(cli_options.diagnostic_config));
     engine.add_plugin(cli_options.subcommands);
 
-    engine.run();
+    match engine.run() {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(_) => ExitCode::FAILURE,
+    }
 }

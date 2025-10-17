@@ -2,6 +2,8 @@ use crate::prelude::{CollectedSources, Global, Source, SourceView};
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::{SystemBuffer, SystemMeta, SystemParam};
 use kodept_report::prelude::*;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 use tracing::{error, trace};
 
@@ -10,11 +12,28 @@ enum GenericReport {
     Global(Report<()>),
 }
 
-struct Reports<Impl>(Vec<GenericReport>, PhantomData<fn() -> Impl>);
+impl GenericReport {
+    fn is_error(&self) -> bool {
+        match self {
+            GenericReport::Single(x) => x.is_error(),
+            GenericReport::Global(x) => x.is_error(),
+        }
+    }
+}
+
+struct Reports<Impl> {
+    deferred_reports: Vec<GenericReport>,
+    should_stop: bool,
+    _phantom: PhantomData<fn() -> Impl>,
+}
 
 impl<Impl> Default for Reports<Impl> {
     fn default() -> Self {
-        Self(vec![], PhantomData)
+        Self {
+            deferred_reports: vec![],
+            should_stop: false,
+            _phantom: PhantomData,
+        }
     }
 }
 
@@ -35,15 +54,19 @@ where
                             .map(|it| it.all_files())
                     })
             };
+            let mut any_error = false;
 
             match &mut *settings {
-                Settings::Disabled => self.0.clear(),
-                Settings::Eager(_) if !self.0.is_empty() => {
+                Settings::Disabled => {
+                    self.deferred_reports.clear();
+                }
+                Settings::Eager(_) if !self.deferred_reports.is_empty() => {
                     unreachable!("All reports should have been reported already")
                 }
                 Settings::Eager(_) => {}
                 Settings::Lazy(settings) => {
-                    for report in self.0.drain(..) {
+                    for report in self.deferred_reports.drain(..) {
+                        any_error |= report.is_error();
                         let emit_result = match report {
                             GenericReport::Single(x) => x.emit(
                                 settings,
@@ -59,7 +82,28 @@ where
                     }
                 }
             }
+            if any_error || self.should_stop {
+                self.should_stop = false;
+                StopEngine::stop()
+            }
         })
+    }
+}
+
+#[derive(Debug)]
+pub struct StopEngine;
+
+impl StopEngine {
+    fn stop() -> ! {
+        std::panic::resume_unwind(Box::new(StopEngine))
+    }
+}
+
+impl Error for StopEngine {}
+
+impl Display for StopEngine {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Compilation failed")
     }
 }
 
@@ -89,7 +133,8 @@ where
     Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
 {
     pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
-        trace!(behaviour = ?message.behaviour(), "Reported new message");
+        let behaviour = message.behaviour();
+        trace!(?behaviour, "Reported new message");
 
         match (
             self.settings.as_ref(),
@@ -111,17 +156,21 @@ where
             }
             (Settings::Lazy(_), Some(source), _) => {
                 self.buffer
-                    .0
+                    .deferred_reports
                     .push(GenericReport::Single(Report::from_message(
                         *source.id, message,
                     )));
             }
             (Settings::Lazy(_), None, _) => {
                 self.buffer
-                    .0
+                    .deferred_reports
                     .push(GenericReport::Global(Report::from_message((), message)));
             }
             (Settings::Disabled, _, _) => {}
+        }
+        if let MessageBehaviour::FailFast { reason } = behaviour {
+            trace!("Force stopping due to fail: {reason}");
+            self.buffer.should_stop = true;
         }
     }
 

@@ -1,9 +1,10 @@
-use crate::engine::reporter::Settings;
+use crate::engine::reporter::{Settings, StopEngine};
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
 use bevy_ecs::system::ScheduleSystem;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use std::panic::AssertUnwindSafe;
 
 pub mod macros;
 pub mod reporter;
@@ -120,8 +121,17 @@ impl Engine {
         }
     }
 
-    pub fn run(&mut self) {
-        self.engine_world.run_schedule(Startup);
+    pub fn run(&mut self) -> Result<(), StopEngine> {
+        let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+            self.engine_world.run_schedule(Startup);
+        }));
+        if let Err(error) = result {
+            match error.downcast::<StopEngine>() {
+                Ok(stop) => return Err(*stop),
+                Err(e) => std::panic::resume_unwind(e),
+            }
+        }
+        Ok(())
     }
 
     fn with_schedule(&mut self, label: impl ScheduleLabel, callback: impl FnOnce(&mut Schedule)) {
