@@ -1,6 +1,6 @@
 use crate::cli::utils::{DisplayStyle, Extension};
 use clap::{Args, ValueEnum};
-use kodept_report::codespan::external::ColorChoice;
+use kodept_report::codespan::external::{ColorChoice, Config};
 use std::io::{stdin, Read};
 use std::path::PathBuf;
 use kodept_systems::configs::{LexerImpl, ParserImpl};
@@ -116,6 +116,21 @@ impl ParsingConfig {
             (ParserChoice::Auto, _, false) => ParserImpl::peg(),
             (ParserChoice::Auto, false, true) => ParserImpl::peg(),
         }
+    }
+}
+
+impl From<DiagnosticConfig> for Config {
+    fn from(value: DiagnosticConfig) -> Self {
+        let mut this = Self {
+            display_style: value.style.into(),
+            tab_width: value.tab_width,
+            ..Default::default()
+        };
+        if value.show_full_context_lines {
+            this.start_context_lines = usize::MAX;
+            this.end_context_lines = usize::MAX;
+        }
+        this
     }
 }
 

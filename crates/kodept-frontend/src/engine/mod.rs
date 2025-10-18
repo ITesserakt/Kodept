@@ -1,4 +1,4 @@
-use crate::engine::reporter::{Settings, StopEngine};
+use crate::engine::reporter::StopEngine;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
 use bevy_ecs::system::ScheduleSystem;
@@ -95,7 +95,6 @@ impl Engine {
         startup.set_executor_kind(ExecutorKind::SingleThreaded);
 
         world.insert_resource(schedules);
-        world.init_resource::<Settings>();
 
         Self {
             engine_world: world,
@@ -104,6 +103,13 @@ impl Engine {
 
     pub fn add_plugin(&mut self, plugin: impl Plugin) -> &mut Self {
         plugin.build(self);
+        self
+    }
+
+    pub fn add_plugin_if(&mut self, condition: bool, plugin: impl Plugin) -> &mut Self {
+        if condition {
+            self.add_plugin(plugin);
+        }
         self
     }
 

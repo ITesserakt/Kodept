@@ -46,7 +46,8 @@ where
     Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
 {
     fn apply(&mut self, _: &SystemMeta, world: &mut World) {
-        world.resource_scope(|world, mut settings| {
+        let mut any_error = false;
+        world.try_resource_scope(|world, mut settings| {
             let all_files = {
                 world
                     .get_resource::<CollectedSources<Impl>>()
@@ -57,12 +58,8 @@ where
                             .map(|it| it.all_files())
                     })
             };
-            let mut any_error = false;
 
             match &mut *settings {
-                Settings::Disabled => {
-                    self.deferred_reports.clear();
-                }
                 Settings::Eager(_) if !self.deferred_reports.is_empty() => {
                     unreachable!("All reports should have been reported already")
                 }
@@ -85,11 +82,11 @@ where
                     }
                 }
             }
-            if any_error || self.should_stop {
-                self.should_stop = false;
-                StopEngine::stop()
-            }
-        })
+        });
+        if any_error || self.should_stop {
+            self.should_stop = false;
+            StopEngine::stop()
+        }
     }
 }
 
@@ -110,10 +107,8 @@ impl Display for StopEngine {
     }
 }
 
-#[derive(Debug, Resource, Default, Clone)]
+#[derive(Debug, Resource, Clone)]
 pub enum Settings {
-    #[default]
-    Disabled,
     Eager(CodespanSettings),
     Lazy(CodespanSettings),
 }
@@ -126,7 +121,7 @@ where
 {
     single_source: Option<Res<'w, SourceView<Impl>>>,
     all_sources: Option<Res<'w, CollectedSources<Impl>>>,
-    settings: Res<'w, Settings>,
+    settings: Option<Res<'w, Settings>>,
     buffer: Deferred<'s, Reports<Impl>>,
 }
 
@@ -140,36 +135,36 @@ where
         trace!(?behaviour, "Reported new message");
 
         match (
-            self.settings.as_ref(),
+            self.settings.as_deref(),
             self.single_source.as_ref(),
             self.all_sources.is_some(),
         ) {
             // TODO: add a way to force report to be global or not
-            (Settings::Eager(settings), Some(source), _) => {
+            (Some(Settings::Eager(settings)), Some(source), _) => {
                 let report = Report::from_message(*source.id, message);
                 if let Err(e) = report.emit(&mut (settings as &_), source.all_files()) {
                     error!("Cannot emit report: {e}");
                 }
             }
-            (Settings::Eager(settings), None, _) => {
+            (Some(Settings::Eager(settings)), None, _) => {
                 let report = Report::from_message((), message);
                 if let Err(e) = report.emit(&mut (settings as &_), &Global) {
                     error!("Cannot emit report: {e}");
                 }
             }
-            (Settings::Lazy(_), Some(source), _) => {
+            (Some(Settings::Lazy(_)), Some(source), _) => {
                 self.buffer
                     .deferred_reports
                     .push(GenericReport::Single(Report::from_message(
                         *source.id, message,
                     )));
             }
-            (Settings::Lazy(_), None, _) => {
+            (Some(Settings::Lazy(_)), None, _) => {
                 self.buffer
                     .deferred_reports
                     .push(GenericReport::Global(Report::from_message((), message)));
             }
-            (Settings::Disabled, _, _) => {}
+            (None, _, _) => {}
         }
         if let MessageBehaviour::FailFast { reason } = behaviour {
             debug!("Force stopping due to fail: {reason}");
