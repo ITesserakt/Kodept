@@ -26,6 +26,7 @@ where
 {
     type Output = ();
 
+    #[inline]
     fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
     where
         Impl: Send + Sync + 'static,
@@ -41,6 +42,7 @@ where
 {
     type Output = ControlFlow<(), T>;
 
+    #[inline]
     fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
     where
         Impl: Send + Sync + 'static,
@@ -63,6 +65,7 @@ where
 {
     type Output = ControlFlow<<E::Output as Try>::Residual, ()>;
 
+    #[inline]
     fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
     where
         Impl: Send + Sync + 'static,
@@ -85,6 +88,7 @@ where
 {
     type Output = Output;
 
+    #[inline]
     fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
     where
         Impl: Send + Sync + 'static,

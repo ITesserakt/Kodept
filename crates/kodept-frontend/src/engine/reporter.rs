@@ -14,6 +14,7 @@ enum GenericReport {
 }
 
 impl GenericReport {
+    #[inline]
     fn is_error(&self) -> bool {
         match self {
             GenericReport::Single(x) => x.is_error(),
@@ -29,6 +30,7 @@ struct Reports<Impl> {
 }
 
 impl<Impl> Default for Reports<Impl> {
+    #[inline]
     fn default() -> Self {
         Self {
             deferred_reports: vec![],
@@ -175,6 +177,7 @@ where
         }
     }
 
+    #[inline]
     pub fn report_ad_hoc<T>(&mut self, message: impl FnOnce() -> T)
     where
         T: SpannedReportMessage,
