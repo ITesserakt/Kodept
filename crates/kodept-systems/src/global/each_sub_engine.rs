@@ -4,8 +4,6 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
-use bevy_ecs::error::error;
-use bevy_ecs::system::command::insert_resource;
 use tracing::error_span;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehaviour, Severity};
 use crate::source::collection::SourceView;
