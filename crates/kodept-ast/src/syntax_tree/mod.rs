@@ -5,7 +5,7 @@ mod storage;
 
 pub mod prelude {
     pub use super::builder_v2::{ASTBuilder, BundleUnion, NodeSpawner};
-    pub use super::storage::{AST, SourceCode};
+    pub use super::storage::AST;
 }
 
 #[deprecated]

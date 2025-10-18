@@ -22,15 +22,6 @@ impl super::storage::AST {
             root_query,
         ))
     }
-
-    pub fn export_dot<W: Write>(&mut self, writer: W) -> std::io::Result<()> {
-        self.interact().immediate_exclusive(|w| {
-            w.register_component::<Root>();
-            w.register_component::<Node>();
-            w.register_resource::<NodeRelationships>();
-            Self::export_dot_in(w, writer).unwrap()
-        })
-    }
 }
 
 fn label<W: Write>(buffer: &mut W, node: AnyNodeRefItem) -> std::io::Result<()> {
