@@ -1,8 +1,7 @@
-use kodept_ast::syntax_tree::prelude::{SourceCode, AST};
+use kodept_ast::prelude::FromSyntax;
 use kodept_ast::Str;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::code_point::CodePoint;
-use kodept_core::file_name::{FileDescriptor, FileId, FileName};
 use kodept_core::structure::CodeHolder;
 use kodept_rlt::prelude::RLT;
 use proptest::{prop_assert, proptest};
@@ -23,12 +22,8 @@ impl CodeHolder for FakeSourceCode {
 proptest! {
     #[test]
     fn test_conversion_with_autogeneration(rlt: RLT) {
-        let source_code = SourceCode::new(
-            FakeSourceCode,
-            FileDescriptor::new(FileName::Anon, FileId::generate())
-        );
-        let ast = AST::recursively_build::<FileDecl>(rlt, source_code);
+        let result = FileDecl::from_syntax(&rlt.0, FakeSourceCode).map(|_| ());
 
-        prop_assert!(ast.is_ok(), "Expected success build, but encountered an error: {:?}", ast);
+        prop_assert!(result.is_ok(), "Expected success build, but encountered an error: {:?}", result);
     }
 }
