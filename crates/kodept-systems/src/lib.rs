@@ -1,4 +1,4 @@
-// pub mod lint;
+// pub mod lint_;
 // mod normalize;
 // mod report;
 // mod scope;
@@ -11,6 +11,7 @@ pub mod loader;
 pub mod per_file;
 pub mod source;
 pub mod utils;
+pub mod lint;
 // pub mod prelude {
 //     pub use super::report::install_reporting_support;
 //     pub use super::scope::builder::ScopeBuildingPass;

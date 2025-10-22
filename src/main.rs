@@ -4,6 +4,7 @@ use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
 use kodept_frontend::engine::Engine;
 use std::process::ExitCode;
+use kodept_systems::lint::DefaultLintsPlugin;
 
 mod cli;
 mod commands;
@@ -33,7 +34,8 @@ fn main() -> ExitCode {
                 ..Default::default()
             },
         )
-        .add_plugin(cli_options.subcommands);
+        .add_plugin(cli_options.subcommands)
+        .add_plugin(DefaultLintsPlugin);
 
     match engine.run() {
         Ok(_) => ExitCode::SUCCESS,

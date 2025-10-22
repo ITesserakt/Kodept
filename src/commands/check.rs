@@ -4,7 +4,7 @@ use kodept_frontend::engine::utils::Timings;
 use kodept_frontend::engine::{Engine, Plugin};
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::per_file::inject_common_resources_phase;
-use kodept_systems::per_file::prelude::{BuildAstPhase, ParseSourcePhase};
+use kodept_systems::per_file::prelude::{AstPassesPhase, BuildAstPhase, ParseSourcePhase};
 use kodept_systems::source::collection::SourceView;
 
 #[derive(Debug, Parser)]
@@ -39,7 +39,10 @@ impl Plugin for Check {
                 let lexing_backend = self.parsing_config.get_lexing_backend(source.contents());
                 engine.insert_resource(lexing_backend);
 
-                engine.install(ParseSourcePhase).install(BuildAstPhase);
+                engine
+                    .install(ParseSourcePhase)
+                    .install(BuildAstPhase)
+                    .install(AstPassesPhase);
             }))
             .install(FinishPhase);
     }

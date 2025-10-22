@@ -81,7 +81,7 @@ where
             config.into_configs()
         };
         self.engine
-            .add_systems(config.in_set(label.into_system_set()))
+            .add_systems(Startup, config.in_set(label.into_system_set()))
     }
 }
 
@@ -143,10 +143,24 @@ impl Engine {
         callback(schedules.entry(label))
     }
 
-    fn add_systems<M>(&mut self, config: impl IntoScheduleConfigs<ScheduleSystem, M>) {
-        self.with_schedule(Startup, |schedule| {
+    pub fn add_systems<M>(
+        &mut self,
+        schedule_label: impl ScheduleLabel,
+        config: impl IntoScheduleConfigs<ScheduleSystem, M>,
+    ) {
+        self.with_schedule(schedule_label, |schedule| {
             schedule.add_systems(config);
         })
+    }
+    
+    pub fn set_schedule_executor_kind(&mut self, schedule_label: impl ScheduleLabel, kind: ExecutorKind) {
+        self.with_schedule(schedule_label, |schedule| {
+            schedule.set_executor_kind(kind);
+        })
+    }
+
+    pub fn spawn_entity(&mut self, bundle: impl Bundle) -> EntityWorldMut<'_> {
+        self.engine_world.spawn(bundle)
     }
 
     pub fn insert_resource(&mut self, value: impl Resource) {

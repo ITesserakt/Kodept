@@ -19,11 +19,11 @@ pub use rlt_linking::RLTLinkLint;
 #[derive(Debug, Copy, Clone)]
 #[non_exhaustive]
 pub enum RunMode {
-    /// Runs lint only once
+    /// Runs lint_ only once
     Once,
-    /// Runs lint once per enable
+    /// Runs lint_ once per enable
     OnceRepeatable,
-    /// Runs lint on each pass
+    /// Runs lint_ on each pass
     EachPass,
 }
 
@@ -102,7 +102,7 @@ impl<L: Lint> Interaction for L {
                 };
 
                 match (lint.enabled, lint.run_mode, *has_run) {
-                    // Reset has_run if lint is disabled
+                    // Reset has_run if lint_ is disabled
                     (false, OnceRepeatable, true) => {
                         *has_run = false;
                         false
