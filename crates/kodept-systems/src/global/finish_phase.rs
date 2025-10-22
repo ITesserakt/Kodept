@@ -1,9 +1,9 @@
+use crate::utils::{ForwardReport, ReportSystemEx, forward};
 use bevy_ecs::prelude::*;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
 use std::time::{Duration, Instant};
-use crate::utils::{ForwardReport, ReportSystemEx};
 
 struct TotalTimeReport(Duration);
 
@@ -48,5 +48,5 @@ define_phase!(
 );
 
 fn system(total_time: Res<TotalTime>) -> ForwardReport<TotalTimeReport> {
-    ForwardReport(TotalTimeReport(total_time.0.elapsed()))
+    forward(TotalTimeReport(total_time.0.elapsed()))
 }

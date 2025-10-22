@@ -27,15 +27,12 @@ where
     }
 }
 
-#[derive(Debug)]
-pub struct ForwardReport<T>(pub T);
+pub type ForwardReport<T> = Result<(), T>;
 
-impl<T: IntoSpannedReportMessage> Try for ForwardReport<T> {
-    type Output = ();
-    type Residual = T;
-
-    #[inline(always)]
-    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
-        ControlFlow::Break(self.0)
-    }
-} 
+#[inline(always)]
+pub fn forward<T>(report: T) -> ForwardReport<T>
+where
+    T: IntoSpannedReportMessage,
+{
+    Err(report)
+}
