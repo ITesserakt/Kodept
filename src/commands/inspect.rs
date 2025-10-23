@@ -40,7 +40,7 @@ impl Plugin for Inspect {
             })
             .install(inject_common_resources_phase())
             .install(EachSubEnginePhase::new(move |engine| {
-                if !self.export_rlt && !self.export_rlt {
+                if !self.export_rlt && !self.export_ast {
                     return;
                 }
 

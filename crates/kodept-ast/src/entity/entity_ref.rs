@@ -19,10 +19,6 @@ pub struct NodeRef<'w, T> {
 }
 
 impl<'w> AnyNodeRefItem<'w, '_> {
-    pub(crate) fn from_inner(item: EntityRef<'w>) -> Self {
-        Self { inner: item }
-    }
-    
     #[deprecated]
     pub fn cast<T>(self) -> Option<NodeRef<'w, &'w T>>
     where

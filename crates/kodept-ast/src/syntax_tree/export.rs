@@ -1,9 +1,10 @@
 use crate::arity::{Optional, Plural, Singular};
-use crate::prelude::AnyNodeRefItem;
-use crate::properties::{Name, Node, Root};
+use crate::properties::{Name, Node, Root, SourceSpan};
 use crate::relationship::{ArityValue, Contains, NodeRelationships};
 use bevy_ecs::prelude::{Entity, EntityRef, In, Query, With, World};
+use std::convert::identity;
 use std::io::Write;
+use bevy_ecs::component::ComponentId;
 
 impl super::storage::AST {
     pub fn export_dot_in<W: Write>(world: &World, writer: W) -> Option<std::io::Result<()>> {
@@ -20,19 +21,38 @@ impl super::storage::AST {
             relationships,
             nodes_query,
             root_query,
+            world,
         ))
     }
 }
 
-fn label<W: Write>(buffer: &mut W, node: AnyNodeRefItem) -> std::io::Result<()> {
-    writeln!(buffer, "object \"{}\" {{", node.id().to_bits())?;
-    writeln!(buffer, "\tkind = {}", node.kind())?;
-    writeln!(buffer, "\tspan = {}", node.span())?;
+fn label<W: Write>(buffer: &mut W, node: EntityRef, world: &World, introspected_components: &[ComponentId]) -> std::io::Result<()> {
+    let (id, kind, span, name) = node.components::<(Entity, &Node, &SourceSpan, Option<&Name>)>();
+    let all_components = world.inspect_entity(id).unwrap();
+
+    writeln!(buffer, "object \"{}\" {{", id.to_bits())?;
+    writeln!(buffer, "\tkind = {}", kind)?;
+    writeln!(buffer, "\tspan = {}", span)?;
     writeln!(buffer, "\tindex = {}", node.id().index())?;
     writeln!(buffer, "\tgeneration = {}", node.id().generation())?;
-    if let Some(name) = node.property::<Name>() {
+    if let Some(name) = name {
         writeln!(buffer, "\tname = {}", name)?;
     }
+    write!(buffer, "\tother components = [\n")?;
+    let mut first = true;
+    for info in all_components {
+        if introspected_components.contains(&info.id()) || &*info.name() == kind.kind {
+            continue;
+        }
+        let ptr = node.get_by_id(info.id()).unwrap().as_ptr();
+        if first {
+            write!(buffer, "\t\t\\t{} = {ptr:?}", info.name())?;
+            first = false;
+        } else {
+            write!(buffer, ",\n\t\t\\t{} = {ptr:?}", info.name())?;
+        }
+    }
+    writeln!(buffer, "\n\t]")?;
     writeln!(buffer, "}}")?;
 
     Ok(())
@@ -43,10 +63,20 @@ fn extract_system<W: Write>(
     relationships: &NodeRelationships,
     nodes: Query<EntityRef, With<Node>>,
     root: Entity,
+    world: &World,
 ) -> std::io::Result<()> {
     writeln!(buffer, "@startuml")?;
 
     let mut stack = vec![(None, root)];
+
+    let introspected_components = [
+        world.component_id::<Node>(),
+        world.component_id::<SourceSpan>(),
+        world.component_id::<Name>(),
+    ]
+        .into_iter()
+        .filter_map(identity)
+        .collect::<Vec<_>>();
 
     while let Some((edge, current)) = stack.pop() {
         let Ok(this) = nodes.get(current) else {
@@ -79,7 +109,7 @@ fn extract_system<W: Write>(
             }
         }
 
-        label(&mut buffer, AnyNodeRefItem::from_inner(this))?;
+        label(&mut buffer, this, world, &introspected_components)?;
         let Some((parent_id, meta)) = edge else {
             continue;
         };

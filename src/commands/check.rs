@@ -2,10 +2,12 @@ use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use clap::Parser;
 use kodept_frontend::engine::utils::Timings;
 use kodept_frontend::engine::{Engine, Plugin};
+use kodept_systems::configs::OutputDirectory;
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::per_file::inject_common_resources_phase;
 use kodept_systems::per_file::prelude::{AstPassesPhase, BuildAstPhase, ParseSourcePhase};
 use kodept_systems::source::collection::SourceView;
+use crate::cli::primary::OutputConfig;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -20,6 +22,8 @@ pub struct Check {
     loading_config: LoadingConfig,
     #[command(flatten, next_help_heading = "Parsing options")]
     parsing_config: ParsingConfig,
+    #[command(flatten, next_help_heading = "Output options")]
+    pub output_config: OutputConfig,
 }
 
 impl Plugin for Check {
@@ -34,6 +38,7 @@ impl Plugin for Check {
             })
             .install(inject_common_resources_phase())
             .install(EachSubEnginePhase::new(move |engine| {
+                engine.insert_resource(OutputDirectory::new(&self.output_config.output));
                 engine.insert_resource(self.parsing_config.get_parsing_backend());
                 let source = engine.resource::<SourceView>();
                 let lexing_backend = self.parsing_config.get_lexing_backend(source.contents());
