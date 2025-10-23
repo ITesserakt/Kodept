@@ -27,7 +27,7 @@ impl<FileId> Report<FileId> {
 
     #[must_use]
     pub const fn is_error(&self) -> bool {
-        matches!(self.diagnostic.severity, Severity::Error)
+        matches!(self.diagnostic.severity, Severity::Error | Severity::Bug)
     }
 
     pub(crate) fn into_inner(self) -> codespan_reporting::diagnostic::Diagnostic<FileId>

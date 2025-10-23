@@ -142,12 +142,14 @@ where
             // TODO: add a way to force report to be global or not
             (Some(Settings::Eager(settings)), Some(source), _) => {
                 let report = Report::from_message(*source.id, message);
+                self.buffer.should_stop |= report.is_error();
                 if let Err(e) = report.emit(&mut (settings as &_), source.all_files()) {
                     error!("Cannot emit report: {e}");
                 }
             }
             (Some(Settings::Eager(settings)), None, _) => {
                 let report = Report::from_message((), message);
+                self.buffer.should_stop |= report.is_error();
                 if let Err(e) = report.emit(&mut (settings as &_), &Global) {
                     error!("Cannot emit report: {e}");
                 }
@@ -164,7 +166,10 @@ where
                     .deferred_reports
                     .push(GenericReport::Global(Report::from_message((), message)));
             }
-            (None, _, _) => {}
+            (None, _, _) => {
+                // TODO: know whether report is erroneous slightly ahead
+                self.buffer.should_stop |= Report::from_message((), message).is_error();
+            }
         }
         if let MessageBehaviour::FailFast { reason } = behaviour {
             debug!("Force stopping due to fail: {reason}");
