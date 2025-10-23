@@ -3,10 +3,9 @@ use crate::prelude::ASTNode;
 use crate::syntax_tree::children::HasChild;
 use bevy_ecs::component::{Component, ComponentId, Immutable};
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::Resource;
+use bevy_ecs::prelude::{ChildOf, Resource};
 use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
 use bevy_ecs::world::DeferredWorld;
-use smallvec::SmallVec;
 use std::any::TypeId;
 use std::collections::HashSet;
 use std::marker::PhantomData;
@@ -60,19 +59,6 @@ where
     nodes: A::Collection,
     _phantom: PhantomData<(T, A)>,
 }
-
-/// Describes a parent entity for some node for any tag or arity
-#[derive(Debug, Component)]
-#[relationship(relationship_target = Children)]
-#[repr(transparent)]
-pub struct ChildOf(pub(crate) Entity);
-
-const ALL_CHILDREN_BUFFER_SIZE: usize = 2;
-
-/// Describes all child nodes for any tag or arity
-#[derive(Debug, Component)]
-#[relationship_target(relationship = ChildOf)]
-pub struct Children(SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]>);
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
 pub struct RelationshipMetadata {
@@ -186,32 +172,6 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         self.nodes.iter()
-    }
-}
-
-impl Deref for ChildOf {
-    type Target = Entity;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ChildOf {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<'a> IntoIterator for &'a Children {
-    type Item = Entity;
-    type IntoIter =
-        <SmallVec<[Entity; ALL_CHILDREN_BUFFER_SIZE]> as RelationshipSourceCollection>::SourceIter<
-            'a,
-        >;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
     }
 }
 

@@ -1,11 +1,10 @@
 use crate::prelude::{ASTNode, IntoEnum, NodeId};
 use crate::properties::{Node, NodeProperty, RequireProperty, SourceSpan};
-use bevy_ecs::prelude::EntityRef;
+use bevy_ecs::prelude::{ChildOf, EntityRef};
 use bevy_ecs::query::QueryData;
 use std::convert::identity;
 use std::ops::Deref;
 use bevy_ecs::relationship::Relationship;
-use crate::relationship::ChildOf;
 
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]

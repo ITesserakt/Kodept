@@ -2,11 +2,21 @@ use crate::source::collection::Reporter;
 use bevy_ecs::prelude::*;
 use kodept_core::try_port::Try;
 use kodept_frontend::prelude::ExtractReports;
-use std::ops::ControlFlow;
 use kodept_report::prelude::IntoSpannedReportMessage;
+use std::ops::ControlFlow;
+use tracing::trace;
 
 pub trait ReportSystemEx<Out, SystemMarker, ExtractMarker> {
     fn extract_reports(self) -> impl IntoSystem<(), (), ()>;
+}
+
+pub trait LogSystemEx<In, Out, SystemMarker>
+where
+    In: SystemInput,
+{
+    fn trace_completion(self) -> impl IntoSystem<In, Out, ()>;
+
+    fn trace_completion_with_name(self, name: &'static str) -> impl IntoSystem<In, Out, ()>;
 }
 
 impl<SystemMarker, ExtractMarker, Out, T: IntoSystem<(), Out, SystemMarker>>
@@ -15,6 +25,7 @@ where
     Out: Try<Output = ()> + 'static,
     Out::Residual: ExtractReports<ExtractMarker>,
 {
+    #[track_caller]
     fn extract_reports(self) -> impl IntoSystem<(), (), ()> {
         IntoSystem::into_system(self.pipe(|In(output): In<Out>, mut reporter: Reporter| {
             match output.branch() {
@@ -24,6 +35,34 @@ where
                 }
             }
         }))
+    }
+}
+
+impl<In, Out, SystemMarker, T> LogSystemEx<In, Out, SystemMarker> for T
+where
+    T: IntoSystem<In, Out, SystemMarker>,
+    In: SystemInput,
+{
+    #[track_caller]
+    fn trace_completion(self) -> impl IntoSystem<In, Out, ()> {
+        let id = self.system_type_id();
+        let system = IntoSystem::into_system(self);
+        let name = system.name();
+        let system = system.map(move |out| {
+            trace!(system_id=?id, "System `{name}` completed");
+            out
+        });
+        IntoSystem::into_system(system)
+    }
+
+    #[track_caller]
+    fn trace_completion_with_name(self, name: &'static str) -> impl IntoSystem<In, Out, ()> {
+        let id = self.system_type_id();
+        let system = self.map(move |out| {
+            trace!(system_id=?id, "System `{name}` completed");
+            out
+        });
+        IntoSystem::into_system(system)
     }
 }
 

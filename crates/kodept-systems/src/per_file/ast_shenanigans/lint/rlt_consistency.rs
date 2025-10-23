@@ -1,4 +1,4 @@
-use crate::lint::{IntoReadonlySystem, Lint, LintDescriptor};
+use super::{IntoReadonlySystem, Lint, LintDescriptor};
 use crate::source::collection::Reporter;
 use bevy_ecs::prelude::*;
 use kodept_ast::properties::{Lexeme, Node};

@@ -53,7 +53,7 @@ impl Plugin for ThreadPoolPlugin {
         //       Maybe `Forte`? (https://github.com/NthTensor/Forte)
         #[cfg(feature = "parallel")]
         rayon::ThreadPoolBuilder::new()
-            .num_threads(parallelism / 2)
+            .num_threads(self.total_threads / 2)
             .build_global()
             .expect("Cannot initialize rayon thread pool");
     }

@@ -1,15 +1,16 @@
 mod rlt_consistency;
 
-use crate::lint::rlt_consistency::RLTConsistencyLint;
+use crate::per_file::ast_shenanigans::lint::rlt_consistency::RLTConsistencyLint;
 use bevy_ecs::prelude::{
-    Component, IntoScheduleConfigs, IntoSystem, Local, Query, ReadOnlySystem, SystemInput,
+    Component, IntoScheduleConfigs, IntoSystem, Local, Query, ReadOnlySystem, Schedule,
+    SystemInput, World,
 };
-use bevy_ecs::schedule::ScheduleLabel;
-use kodept_frontend::engine::{Engine, Plugin};
+use bevy_ecs::schedule::{ScheduleConfigs, ScheduleLabel};
+use bevy_ecs::system::ScheduleSystem;
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 
-pub trait IntoReadonlySystem<In, Out, Marker>
+pub(super) trait IntoReadonlySystem<In, Out, Marker>
 where
     Self: IntoSystem<In, Out, Marker, System: ReadOnlySystem<In = In, Out = Out>>,
     In: SystemInput,
@@ -24,13 +25,13 @@ where
 }
 
 #[derive(Debug, Copy, Clone)]
-pub enum RunMode {
+enum RunMode {
     Once,
     Unlimited,
 }
 
 #[derive(Component)]
-pub struct LintDescriptor {
+pub(super) struct LintDescriptor {
     pub enabled: bool,
     run_mode: RunMode,
     name: Cow<'static, str>,
@@ -47,7 +48,7 @@ impl Debug for LintDescriptor {
 }
 
 impl LintDescriptor {
-    pub const fn new(name: &'static str) -> LintDescriptor {
+    const fn new(name: &'static str) -> LintDescriptor {
         LintDescriptor {
             enabled: true,
             name: Cow::Borrowed(name),
@@ -55,14 +56,14 @@ impl LintDescriptor {
         }
     }
 
-    pub fn disabled_by_default(self) -> LintDescriptor {
+    fn disabled_by_default(self) -> LintDescriptor {
         Self {
             enabled: false,
             ..self
         }
     }
 
-    pub const fn name(&self) -> &str {
+    const fn name(&self) -> &str {
         match &self.name {
             Cow::Borrowed(x) => x,
             Cow::Owned(x) => x.as_str(),
@@ -71,20 +72,30 @@ impl LintDescriptor {
 }
 
 #[derive(Debug, ScheduleLabel, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Linting;
+pub(super) struct Linting;
 
-pub trait Lint {
+impl Linting {
+    pub(super) fn configure(world: &mut World, schedule: &mut Schedule) {
+        #[cfg(feature = "parallel")]
+        schedule.set_executor_kind(bevy_ecs::schedule::ExecutorKind::MultiThreaded);
+
+        let config = world.install_lint::<RLTConsistencyLint>();
+        schedule.add_systems(config);
+    }
+}
+
+pub(super) trait Lint {
     fn descriptor() -> LintDescriptor;
     fn lint() -> impl IntoReadonlySystem<(), (), ()>;
 }
 
-pub trait LintExt {
-    fn install_lint<L: Lint>(&mut self);
+trait LintExt {
+    fn install_lint<L: Lint>(&mut self) -> ScheduleConfigs<ScheduleSystem>;
 }
 
-impl LintExt for Engine {
-    fn install_lint<L: Lint>(&mut self) {
-        let id = self.spawn_entity(L::descriptor()).id();
+impl LintExt for World {
+    fn install_lint<L: Lint>(&mut self) -> ScheduleConfigs<ScheduleSystem> {
+        let id = self.spawn(L::descriptor()).id();
         let config = L::lint().run_if(
             move |lints: Query<&LintDescriptor>, mut has_run: Local<bool>| {
                 let Ok(lint) = lints.get(id) else {
@@ -102,16 +113,6 @@ impl LintExt for Engine {
                 }
             },
         );
-        self.add_systems(Linting, config);
-    }
-}
-
-pub struct DefaultLintsPlugin;
-
-impl Plugin for DefaultLintsPlugin {
-    fn build(self, engine: &mut Engine) {
-        #[cfg(feature = "parallel")]
-        engine.set_schedule_executor_kind(Linting, bevy_ecs::schedule::ExecutorKind::MultiThreaded);
-        engine.install_lint::<RLTConsistencyLint>();
+        config
     }
 }
