@@ -8,7 +8,7 @@ use bevy_ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use std::num::NonZeroUsize;
-use tracing::error_span;
+use tracing::{error_span, trace};
 
 #[derive(Debug, Copy, Clone)]
 enum PassRepeatingMode {
@@ -39,9 +39,11 @@ impl PassRepeatingMode {
         match self {
             PassRepeatingMode::Fixed(n) => {
                 for i in 0..n.get() {
-                    error_span!("", frame = i);
+                    let _guard = error_span!("", frame = i).entered();
                     world.run_schedule(Linting);
                     world.run_schedule(schedule);
+                    world.flush();
+                    trace!("{:=^64}", "End Of Frame");
                 }
             }
         }
@@ -53,7 +55,7 @@ define_phase!(
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
         let mut order = PassesOrder::default();
-        order.register_fixed(SymbolResolution, const { NonZeroUsize::new(4).unwrap() });
+        order.register_fixed(SymbolResolution, const { NonZeroUsize::new(10).unwrap() });
         engine.insert_resource(order);
 
         engine.add_systems(system);

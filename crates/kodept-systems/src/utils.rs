@@ -1,11 +1,11 @@
-use std::fmt::Debug;
 use crate::source::collection::Reporter;
 use bevy_ecs::prelude::*;
 use kodept_core::try_port::Try;
 use kodept_frontend::prelude::ExtractReports;
 use kodept_report::prelude::IntoSpannedReportMessage;
+use std::fmt::Debug;
 use std::ops::ControlFlow;
-use tracing::{span, trace, trace_span};
+use tracing::trace;
 
 pub trait ReportSystemEx<In, Out, SystemMarker, ExtractMarker>
 where
