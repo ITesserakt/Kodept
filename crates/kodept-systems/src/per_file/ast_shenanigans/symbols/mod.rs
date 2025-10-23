@@ -1,4 +1,4 @@
-use crate::utils::ReportSystemEx;
+use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::QuerySingleError;
 use bevy_ecs::relationship::Relationship;
@@ -16,7 +16,7 @@ use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehavi
 pub(super) struct SymbolResolution;
 
 impl SymbolResolution {
-    pub(super) fn configure(_: &mut World, schedule: &mut Schedule) {
+    pub(super) fn configure(world: &mut World, schedule: &mut Schedule) {
         #[cfg(feature = "parallel")]
         schedule.set_executor_kind(bevy_ecs::schedule::ExecutorKind::MultiThreaded);
 
@@ -24,28 +24,36 @@ impl SymbolResolution {
             .add_systems(
                 (
                     (
-                        spawn_scope::<FileDecl>,
-                        spawn_scope::<ModDecl>,
-                        spawn_scope::<StructDecl>,
-                        spawn_scope::<EnumDecl>,
-                        spawn_scope::<FuncDecl>,
-                        spawn_scope::<Lambda>,
-                        spawn_scope::<Exprs>,
-                        spawn_scope::<IfExpr>,
+                        spawn_scope::<FileDecl>.trace_completion(),
+                        spawn_scope::<ModDecl>.trace_completion(),
+                        spawn_scope::<StructDecl>.trace_completion(),
+                        spawn_scope::<EnumDecl>.trace_completion(),
+                        spawn_scope::<FuncDecl>.trace_completion(),
+                        spawn_scope::<Lambda>.trace_completion(),
+                        spawn_scope::<Exprs>.trace_completion(),
+                        spawn_scope::<IfExpr>.trace_completion(),
                     ),
-                    propagate_scopes.extract_reports(),
+                    propagate_scopes.trace_completion().extract_reports(),
                 )
                     .chain(),
             )
-            .add_systems(
-                (link_scopes, ensure_one_root_scope.extract_reports())
-                    .run_if(not(any_match_filter::<(With<Node>, Without<InScope>)>).and(run_once))
-                    .chain(),
-            );
+            .add_systems(emit_event::<ScopesBuilt>.run_if(condition_changed_to(
+                false,
+                any_match_filter::<(With<Node>, Without<InScope>)>,
+            )));
+
+        world.add_observer(link_scopes.trace_completion());
+        world.add_observer(ensure_one_root_scope.trace_completion().extract_reports());
     }
 }
 
+#[derive(Debug, Event, Default)]
+struct ScopesBuilt;
+#[derive(Debug, Event, Default)]
+struct ScopesLinked;
+#[derive(Debug)]
 struct CannotLinkError(SourceSpan, &'static str);
+#[derive(Debug)]
 struct MultipleRootScopes(Vec<(SourceSpan, &'static str)>);
 
 #[derive(Debug, Component)]
@@ -62,6 +70,14 @@ struct InScope(Entity);
 #[relationship_target(relationship = InScope)]
 /// Attaches to the scope entity and describes a set of ast nodes that belongs to this scope
 struct Scoping(Vec<Entity>);
+
+#[derive(Debug)]
+/// Separates all symbols into different kinds
+enum SymbolKind {}
+
+fn emit_event<T: for<'a> Event<Trigger<'a>: Default> + Default>(mut commands: Commands) {
+    commands.trigger(T::default())
+}
 
 fn spawn_scope<T: ASTNode>(
     query: Populated<(Entity, Option<&Name>), (Without<InScope>, With<T>)>,
@@ -109,6 +125,7 @@ fn propagate_scopes(
 }
 
 fn link_scopes(
+    _: On<ScopesBuilt>,
     query: Populated<(Option<&ChildOf>, &InScope)>,
     scopes: Query<&Children, With<Scope>>,
     mut commands: Commands,
@@ -125,9 +142,11 @@ fn link_scopes(
             commands.entity(parent_scope.0).add_child(scope.0);
         }
     }
+    commands.trigger(ScopesLinked);
 }
 
 fn ensure_one_root_scope(
+    _: On<ScopesLinked>,
     query: Query<&Scope, Without<ChildOf>>,
     nodes: Query<(&SourceSpan, &Node)>,
 ) -> Result<(), MultipleRootScopes> {
