@@ -171,11 +171,11 @@ source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a
 dependencies = [
  "arrayvec",
  "bevy_ecs_macros",
- "bevy_platform 0.18.0-dev",
+ "bevy_platform",
  "bevy_ptr",
  "bevy_reflect",
  "bevy_tasks",
- "bevy_utils 0.18.0-dev",
+ "bevy_utils",
  "bitflags",
  "bumpalo",
  "concurrent-queue",
@@ -215,25 +215,6 @@ dependencies = [
 
 [[package]]
 name = "bevy_platform"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10cf8cda162688c95250e74cffaa1c3a04597f105d4ca35554106f107308ea57"
-dependencies = [
- "critical-section",
- "foldhash",
- "futures-channel",
- "hashbrown",
- "js-sys",
- "portable-atomic",
- "portable-atomic-util",
- "serde",
- "spin",
- "wasm-bindgen",
- "wasm-bindgen-futures",
-]
-
-[[package]]
-name = "bevy_platform"
 version = "0.18.0-dev"
 source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
@@ -261,10 +242,10 @@ version = "0.18.0-dev"
 source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
  "assert_type_match",
- "bevy_platform 0.18.0-dev",
+ "bevy_platform",
  "bevy_ptr",
  "bevy_reflect_derive",
- "bevy_utils 0.18.0-dev",
+ "bevy_utils",
  "derive_more",
  "disqualified",
  "downcast-rs",
@@ -302,7 +283,7 @@ dependencies = [
  "async-executor",
  "async-task",
  "atomic-waker",
- "bevy_platform 0.18.0-dev",
+ "bevy_platform",
  "concurrent-queue",
  "crossbeam-queue",
  "derive_more",
@@ -313,21 +294,10 @@ dependencies = [
 
 [[package]]
 name = "bevy_utils"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "080254083c74d5f6eb0649d7cd6181bda277e8fe3c509ec68990a5d56ec23f24"
-dependencies = [
- "bevy_platform 0.17.2",
- "disqualified",
- "thread_local",
-]
-
-[[package]]
-name = "bevy_utils"
 version = "0.18.0-dev"
 source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
- "bevy_platform 0.18.0-dev",
+ "bevy_platform",
  "disqualified",
  "thread_local",
 ]
@@ -982,7 +952,7 @@ name = "kodept-ast"
 version = "0.7.3"
 dependencies = [
  "bevy_ecs",
- "bevy_utils 0.17.2",
+ "bevy_utils",
  "derive_more",
  "kodept-core",
  "kodept-rlt",
