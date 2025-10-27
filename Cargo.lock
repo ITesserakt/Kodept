@@ -166,17 +166,16 @@ dependencies = [
 
 [[package]]
 name = "bevy_ecs"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69d929d32190cfcde6efd2df493601c4dbc18a691fd9775a544c951c3c112e1a"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
  "arrayvec",
  "bevy_ecs_macros",
- "bevy_platform",
+ "bevy_platform 0.18.0-dev",
  "bevy_ptr",
  "bevy_reflect",
- "bevy_tasks",
- "bevy_utils",
+ "bevy_tasks 0.18.0-dev",
+ "bevy_utils 0.18.0-dev",
  "bitflags",
  "bumpalo",
  "concurrent-queue",
@@ -194,9 +193,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_ecs_macros"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6eeddfb80a2e000663e87be9229c26b4da92bddbc06c8776bc0d1f4a7f679079"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
  "bevy_macro_utils",
  "proc-macro2",
@@ -206,11 +204,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_macro_utils"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17dbc3f8948da58b3c17767d20fd3cd35fe4721ed19a9a3204a6f1d6c9951bdd"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
- "parking_lot",
  "proc-macro2",
  "quote",
  "syn",
@@ -237,22 +233,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_platform"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
+dependencies = [
+ "critical-section",
+ "foldhash",
+ "futures-channel",
+ "hashbrown",
+ "js-sys",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde",
+ "spin",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
 name = "bevy_ptr"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28ab4074e7b781bab84e9b0a41ede245d673d1f75646ce0db27643aedcfb3a85"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 
 [[package]]
 name = "bevy_reflect"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "333df3f5947b7e62728eb5c0b51d679716b16c7c5283118fed4563f13230954e"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
  "assert_type_match",
- "bevy_platform",
+ "bevy_platform 0.18.0-dev",
  "bevy_ptr",
  "bevy_reflect_derive",
- "bevy_utils",
+ "bevy_utils 0.18.0-dev",
  "derive_more",
  "disqualified",
  "downcast-rs",
@@ -270,9 +282,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_reflect_derive"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0205dce9c5a4d8d041b263bcfd96e9d9d6f3d49416e12db347ab5778b3071fe1"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
 dependencies = [
  "bevy_macro_utils",
  "indexmap",
@@ -292,7 +303,24 @@ dependencies = [
  "async-executor",
  "async-task",
  "atomic-waker",
- "bevy_platform",
+ "bevy_platform 0.17.2",
+ "crossbeam-queue",
+ "derive_more",
+ "futures-lite",
+ "heapless",
+ "pin-project",
+]
+
+[[package]]
+name = "bevy_tasks"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
+dependencies = [
+ "async-channel",
+ "async-executor",
+ "async-task",
+ "atomic-waker",
+ "bevy_platform 0.18.0-dev",
  "concurrent-queue",
  "crossbeam-queue",
  "derive_more",
@@ -307,7 +335,17 @@ version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "080254083c74d5f6eb0649d7cd6181bda277e8fe3c509ec68990a5d56ec23f24"
 dependencies = [
- "bevy_platform",
+ "bevy_platform 0.17.2",
+ "disqualified",
+ "thread_local",
+]
+
+[[package]]
+name = "bevy_utils"
+version = "0.18.0-dev"
+source = "git+https://github.com/bevyengine/bevy#40767f4226e10bb685f318cace8bf0a91291b7ea"
+dependencies = [
+ "bevy_platform 0.18.0-dev",
  "disqualified",
  "thread_local",
 ]
@@ -962,7 +1000,7 @@ name = "kodept-ast"
 version = "0.7.3"
 dependencies = [
  "bevy_ecs",
- "bevy_utils",
+ "bevy_utils 0.17.2",
  "derive_more",
  "kodept-core",
  "kodept-rlt",
@@ -996,7 +1034,7 @@ name = "kodept-frontend"
 version = "0.2.0"
 dependencies = [
  "bevy_ecs",
- "bevy_tasks",
+ "bevy_tasks 0.17.2",
  "kodept-core",
  "kodept-report",
  "tracing",
