@@ -33,7 +33,7 @@ rust-version = "1.88.0"
 
 [workspace.dependencies]
 bevy_ecs = { version = "0.18.0-dev", git = "https://github.com/bevyengine/bevy", default-features = false }
-bevy_tasks = { version = "0.17.2", default-features = false, features = ["async_executor"] }
+bevy_tasks = { version = "0.18.0-dev", git = "https://github.com/bevyengine/bevy", default-features = false, features = ["async_executor"] }
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]

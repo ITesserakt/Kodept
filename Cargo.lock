@@ -174,7 +174,7 @@ dependencies = [
  "bevy_platform 0.18.0-dev",
  "bevy_ptr",
  "bevy_reflect",
- "bevy_tasks 0.18.0-dev",
+ "bevy_tasks",
  "bevy_utils 0.18.0-dev",
  "bitflags",
  "bumpalo",
@@ -291,24 +291,6 @@ dependencies = [
  "quote",
  "syn",
  "uuid",
-]
-
-[[package]]
-name = "bevy_tasks"
-version = "0.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18839182775f30d26f0f84d9de85d25361bb593c99517a80b64ede6cbaf41adc"
-dependencies = [
- "async-channel",
- "async-executor",
- "async-task",
- "atomic-waker",
- "bevy_platform 0.17.2",
- "crossbeam-queue",
- "derive_more",
- "futures-lite",
- "heapless",
- "pin-project",
 ]
 
 [[package]]
@@ -1034,7 +1016,7 @@ name = "kodept-frontend"
 version = "0.2.0"
 dependencies = [
  "bevy_ecs",
- "bevy_tasks 0.17.2",
+ "bevy_tasks",
  "kodept-core",
  "kodept-report",
  "tracing",
