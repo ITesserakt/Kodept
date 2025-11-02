@@ -118,9 +118,6 @@ struct ScopesLinkedEvent;
 struct ResolveRefAtMessage {
     ref_id: Entity,
     scope_id: Entity,
-    // use u32 here to save space for `bool` field
-    // it would be very difficult to have `context index` to be more than 2^32
-    preserve_order: bool,
 }
 #[derive(Debug, Message)]
 struct SpawnSymbolMessage {
@@ -155,9 +152,6 @@ struct UnresolvedReference {
 struct Scope {
     starts_from: Entity,
 }
-
-#[derive(Debug, Resource)]
-struct AllNamedScopes {}
 
 #[derive(Debug)]
 struct ScopeSpawnParams {

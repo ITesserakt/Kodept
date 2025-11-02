@@ -69,7 +69,6 @@ pub(super) fn start_resolution<T: ASTNode + AsView>(
         Some(ResolveRefAtMessage {
             ref_id: id,
             scope_id: scope_id.0,
-            preserve_order: false,
         })
     };
 
@@ -105,7 +104,6 @@ pub(super) fn process_resolve_messages(
             commands.write_message(ResolveRefAtMessage {
                 ref_id,
                 scope_id: parent.0,
-                preserve_order: false,
             });
             continue;
         } else {
