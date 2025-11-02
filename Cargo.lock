@@ -946,7 +946,6 @@ name = "kodept"
 version = "0.2.3"
 dependencies = [
  "clap",
- "criterion",
  "dhat",
  "kodept-frontend",
  "kodept-interning",
@@ -975,10 +974,13 @@ name = "kodept-ast-nodes"
 version = "0.2.6"
 dependencies = [
  "bevy_ecs",
+ "criterion",
  "kodept-ast",
  "kodept-core",
  "kodept-rlt",
  "proptest",
+ "rayon",
+ "serde_json",
 ]
 
 [[package]]
