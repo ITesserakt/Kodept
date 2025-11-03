@@ -1,10 +1,11 @@
 use crate::arity::{Optional, Plural, Singular};
 use crate::properties::{Name, Node, Root, SourceSpan};
 use crate::relationship::{ArityValue, Contains, NodeRelationships};
+use crate::resource::reflection::DebugRegistry;
+use bevy_ecs::component::{ComponentId, ComponentInfo};
 use bevy_ecs::prelude::{Entity, EntityRef, In, Query, With, World};
 use std::convert::identity;
 use std::io::Write;
-use bevy_ecs::component::ComponentId;
 
 impl super::storage::AST {
     pub fn export_dot_in<W: Write>(world: &World, writer: W) -> Option<std::io::Result<()>> {
@@ -26,9 +27,35 @@ impl super::storage::AST {
     }
 }
 
-fn label<W: Write>(buffer: &mut W, node: EntityRef, world: &World, introspected_components: &[ComponentId]) -> std::io::Result<()> {
+#[allow(unsafe_code)]
+fn write_single_component(
+    buffer: &mut impl Write,
+    info: &ComponentInfo,
+    node: &EntityRef,
+    registry: Option<&DebugRegistry>,
+) -> std::io::Result<()> {
+    let ptr = node.get_by_id(info.id()).unwrap();
+    let Some(type_id) = info.type_id() else {
+        return write!(buffer, "\t\t\\t{} = <external component>", info.name());
+    };
+
+    let dyn_debug = match registry {
+        Some(registry) => unsafe { registry.debug_dynamic(ptr, type_id) },
+        None => unsafe { DebugRegistry::debug_dynamic_global(ptr, type_id) },
+    };
+
+    write!(buffer, "\t\t\\t{} = {:?}", info.name(), dyn_debug)
+}
+
+fn label<W: Write>(
+    buffer: &mut W,
+    node: EntityRef,
+    world: &World,
+    introspected_components: &[ComponentId],
+) -> std::io::Result<()> {
     let (id, kind, span, name) = node.components::<(Entity, &Node, &SourceSpan, Option<&Name>)>();
     let all_components = world.inspect_entity(id).unwrap();
+    let registry = world.get_resource::<DebugRegistry>();
 
     writeln!(buffer, "object \"{}\" {{", id.to_bits())?;
     writeln!(buffer, "\tkind = {}", kind)?;
@@ -44,13 +71,12 @@ fn label<W: Write>(buffer: &mut W, node: EntityRef, world: &World, introspected_
         if introspected_components.contains(&info.id()) || &*info.name() == kind.kind {
             continue;
         }
-        let ptr = node.get_by_id(info.id()).unwrap().as_ptr();
         if first {
-            write!(buffer, "\t\t\\t{} = {ptr:?}", info.name())?;
-            first = false;
+           first = false;
         } else {
-            write!(buffer, ",\n\t\t\\t{} = {ptr:?}", info.name())?;
+            write!(buffer, ",\n")?;
         }
+        write_single_component(buffer, info, &node, registry)?
     }
     writeln!(buffer, "\n\t]")?;
     writeln!(buffer, "}}")?;
@@ -74,9 +100,9 @@ fn extract_system<W: Write>(
         world.component_id::<SourceSpan>(),
         world.component_id::<Name>(),
     ]
-        .into_iter()
-        .filter_map(identity)
-        .collect::<Vec<_>>();
+    .into_iter()
+    .filter_map(identity)
+    .collect::<Vec<_>>();
 
     while let Some((edge, current)) = stack.pop() {
         let Ok(this) = nodes.get(current) else {

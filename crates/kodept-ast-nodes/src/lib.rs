@@ -6,6 +6,7 @@
 use std::num::{ParseFloatError, ParseIntError};
 
 use bevy_ecs::relationship::{RelatedSpawner, Relationship};
+use kodept_ast::resource::reflection::DebugRegistry;
 use kodept_ast::syntax_tree::experimental::BundleUnion;
 use kodept_rlt::exported::CodePoint;
 
@@ -34,6 +35,33 @@ pub enum Error {
 enum Either<A, B> {
     Left(A),
     Right(B),
+}
+
+pub fn register_reflection_info(registry: &mut DebugRegistry) {
+    registry.register::<file::FileDecl>();
+    registry.register::<file::ModDecl>();
+    registry.register::<term::Ref>();
+    registry.register::<term::ReferenceContext>();
+    registry.register::<types::Ty>();
+    registry.register::<types::NonTyParam>();
+    registry.register::<types::TyParam>();
+    registry.register::<types::ProdTy>();
+    registry.register::<literal::Literal>();
+    registry.register::<literal::Tuple>();
+    registry.register::<expression::BinExpr>();
+    registry.register::<expression::Exprs>();
+    registry.register::<expression::Lambda>();
+    registry.register::<expression::App>();
+    registry.register::<block_level::VarDecl>();
+    registry.register::<block_level::InitVar>();
+    registry.register::<code_flow::IfExpr>();
+    registry.register::<code_flow::ElseExpr>();
+    registry.register::<code_flow::ElifExpr>();
+    registry.register::<consts::Const>();
+    registry.register::<function::FuncDecl>();
+    registry.register::<top_level::EnumConst>();
+    registry.register::<top_level::EnumDecl>();
+    registry.register::<top_level::StructDecl>();
 }
 
 impl<A, B> BundleUnion for Either<A, B>

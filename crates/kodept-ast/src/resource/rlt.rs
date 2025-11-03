@@ -5,11 +5,11 @@ use kodept_rlt::exported::Span;
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use kodept_rlt::traversal::{ErasedNodeBorrow, ErasedNodePtr, SyntaxNode};
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomPinned;
 use std::pin::Pin;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct LexemeId(Option<ErasedNodePtr>);
 
 #[derive(Debug)]
@@ -41,13 +41,14 @@ impl SyntaxResolver {
             }),
         };
 
-        Self {
-            ..this
-        }
+        Self { ..this }
     }
 
     pub fn root(&self) -> (&rlt::File, LexemeId) {
-        (&self.tree.inner.0, LexemeId(Some(ErasedNodePtr::new(&self.tree.inner.0))))
+        (
+            &self.tree.inner.0,
+            LexemeId(Some(ErasedNodePtr::new(&self.tree.inner.0))),
+        )
     }
 
     #[allow(unsafe_code)]
@@ -80,6 +81,16 @@ impl SyntaxResolver {
         match self.try_get_unknown(id) {
             Some(x) => x.try_cast().ok_or(LookupError::WrongType),
             None => Err(LookupError::NotFound),
+        }
+    }
+}
+
+impl Debug for LexemeId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.0.is_none() {
+            f.debug_struct("LexemeId").finish()
+        } else {
+            f.debug_struct("LexemeId").finish_non_exhaustive()
         }
     }
 }
