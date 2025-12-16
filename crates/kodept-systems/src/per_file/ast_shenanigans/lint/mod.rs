@@ -1,14 +1,18 @@
 mod rlt_consistency;
+mod single_module;
 
 use crate::per_file::ast_shenanigans::lint::rlt_consistency::RLTConsistencyLint;
 use bevy_ecs::prelude::{
-    Component, IntoScheduleConfigs, IntoSystem, Local, Query, ReadOnlySystem, Schedule,
+    Component, IntoScheduleConfigs, IntoSystem, Local, Populated, Query, ReadOnlySystem, Schedule,
     SystemInput, World,
 };
+use bevy_ecs::query::Changed;
 use bevy_ecs::schedule::{ScheduleConfigs, ScheduleLabel};
 use bevy_ecs::system::ScheduleSystem;
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
+use tracing::info;
+use crate::per_file::ast_shenanigans::lint::single_module::SingleModuleWithBracketsLint;
 
 pub(super) trait IntoReadonlySystem<In, Out, Marker>
 where
@@ -79,9 +83,31 @@ impl Linting {
         #[cfg(feature = "parallel")]
         schedule.set_executor_kind(bevy_ecs::schedule::ExecutorKind::MultiThreaded);
 
-        let config = world.install_lint::<RLTConsistencyLint>();
-        schedule.add_systems(config);
+        schedule.add_systems((
+            world.install_lint::<RLTConsistencyLint>(),
+            world.install_lint::<SingleModuleWithBracketsLint>(),
+            show_enabled_lints,
+        ));
     }
+}
+
+fn show_enabled_lints(lints: Populated<&LintDescriptor, Changed<LintDescriptor>>) {
+    let mut lint_names = String::new();
+    let mut iter = lints.iter();
+
+    if let Some(first) = iter.next() {
+        if first.enabled {
+            lint_names.push_str(first.name());
+        }
+    }
+    for lint in iter {
+        if lint.enabled {
+            lint_names.push_str(", ");
+            lint_names.push_str(lint.name())
+        }
+    }
+
+    info!("Enabled lints: [{lint_names}]");
 }
 
 pub(super) trait Lint {

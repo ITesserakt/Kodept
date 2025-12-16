@@ -1,4 +1,4 @@
-use crate::arity::{Arity, Optional, Singular};
+use crate::arity::{Arity, Optional, Plural, Singular};
 use crate::prelude::ASTNode;
 use crate::syntax_tree::children::HasChild;
 use bevy_ecs::component::{Component, ComponentId, Immutable};
@@ -13,11 +13,34 @@ use std::ops::{Deref, DerefMut};
 use bevy_ecs::lifecycle::HookContext;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
+// Describes the multiplicity of a relationship between AST node entities.
+///
+/// - `Singular`: exactly one related node (one-to-one).
+/// - `Optional`: zero or one related node (zero-or-one).
+/// - `Plural`: zero or more related nodes (zero-to-many).
+///
+/// This enum is used at runtime to register and query relationship metadata.
 pub enum ArityValue {
     Singular,
     Optional,
     Plural,
 }
+
+/// Type alias for a single child relationship collection.
+///
+/// Equivalent to `Contains<Tag, Singular>`. Use when a node is expected to
+/// contain exactly one child associated with `Tag`.
+pub type Node<Tag = ()> = Contains<Tag, Singular>;
+/// Type alias for a plural child relationship collection.
+///
+/// Equivalent to `Contains<Tag, Plural>`. Use when a node may contain
+/// multiple children associated with `Tag`.
+pub type Nodes<Tag = ()> = Contains<Tag, Plural>;
+/// Type alias for an optional child relationship collection.
+///
+/// Equivalent to `Contains<Tag, Optional>`. Use when a node may contain
+/// zero or one child associated with `Tag`.
+pub type MaybeNode<Tag = ()> = Contains<Tag, Optional>;
 
 /// Describes the entity that acts like a parent node for this entity
 ///
@@ -25,8 +48,8 @@ pub enum ArityValue {
 /// and can be modified directly to change the target
 ///
 /// Type Parameters:
-/// * [T] - Associated with this relationship tag
-/// * [A] - Degree of relationship
+/// * [T] - relationship tag type (associates this relationship to a semantic tag).
+/// * [A] - arity marker (determines singular/optional/plural relationship).
 #[derive(Debug, Component)]
 #[relationship(relationship_target = Contains<T, A>)]
 #[component(on_add = ContainedBy::<T, A>::on_add_hook)]
@@ -61,11 +84,21 @@ where
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
+/// Metadata describing a relationship between AST nodes.
+///
+/// This struct stores runtime information required to register, identify and
+/// query relationships between node entities. It is created when relationship
+/// components are added and stored in the `NodeRelationships` resource.
 pub struct RelationshipMetadata {
+    /// Component id of the forward relationship component.
     forward_id: ComponentId,
+    /// Component id of the backward relationship component.
     backward_id: ComponentId,
+    /// Arity value describing multiplicity of the relationship.
     arity: ArityValue,
+    /// TypeId of the tag associated with this relationship.
     tag_id: TypeId,
+    /// Static string name of the tag type.
     tag_name: &'static str,
 }
 
@@ -237,10 +270,8 @@ where
             }
         }
 
-        // TODO: slow code ahead
-        let (fetcher, mut commands) = world.entities_and_commands();
-        let this = fetcher.get(ctx.entity).unwrap().get::<Self>().unwrap();
-        commands.entity(this.parent).add_one_related::<ChildOf>(ctx.entity);
+        let this_parent = world.entity(ctx.entity).get::<Self>().unwrap().parent;
+        world.commands().entity(this_parent).add_one_related::<ChildOf>(ctx.entity);
     }
 
     fn on_remove_hook(mut world: DeferredWorld, ctx: HookContext) {

@@ -69,9 +69,6 @@ kodept-report = { path = "crates/kodept-report" }
 
 kodept-interning = { path = "crates/kodept-interning", optional = true }
 
-[dev-dependencies]
-criterion = "0.7.0"
-
 [features]
 default = []
 profiler = ["dep:dhat"]
@@ -115,7 +112,3 @@ debug = true
 panic = 'unwind'
 # kodept-parse produces *a lot* of debug info
 split-debuginfo = "packed"
-
-[[bench]]
-name = "ast_building"
-harness = false
