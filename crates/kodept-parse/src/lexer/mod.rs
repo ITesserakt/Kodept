@@ -4,7 +4,7 @@ pub mod enums;
 pub mod traits;
 mod bare_metal;
 
-pub type PegLexer<const TRACE: bool> = crate::peg::Lexer<TRACE>;
+pub type PegLexer<const TRACE: bool = { cfg!(feature = "trace") }> = crate::peg::Lexer<TRACE>;
 pub type ASCIILexer = bare_metal::Lexer;
 
 #[cfg(test)]
