@@ -462,12 +462,12 @@ impl<T: Bundle> DynamicBundle for NodeBundle<T> {
 
 #[allow(unsafe_code)]
 unsafe impl<T: Bundle> Bundle for NodeBundle<T> {
-    fn component_ids(components: &mut ComponentsRegistrator, ids: &mut impl FnMut(ComponentId)) {
-        <T as Bundle>::component_ids(components, ids);
+    fn component_ids(components: &mut ComponentsRegistrator) -> impl Iterator<Item=ComponentId> + use<T> {
+         <T as Bundle>::component_ids(components)
     }
 
-    fn get_component_ids(components: &Components, ids: &mut impl FnMut(Option<ComponentId>)) {
-        <T as Bundle>::get_component_ids(components, ids);
+    fn get_component_ids(components: &Components) -> impl Iterator<Item=Option<ComponentId>> {
+        <T as Bundle>::get_component_ids(components)
     }
 }
 
