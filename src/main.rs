@@ -29,13 +29,9 @@ fn main() -> ExitCode {
         .add_plugin_if(
             !cli_options.diagnostic_config.disable,
             ReportsPlugin {
-                colored: cli_options.diagnostic_config.color,
-                eager: cli_options.diagnostic_config.eager,
-                config: cli_options.diagnostic_config.into(),
-                ..Default::default()
+                config: cli_options.diagnostic_config,
             },
-        )
-        .add_plugin(cli_options.subcommands);
+        );
 
     match engine.run() {
         Ok(_) => ExitCode::SUCCESS,

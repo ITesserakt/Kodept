@@ -4,6 +4,9 @@ version = "0.1.3"
 edition.workspace = true
 rust-version.workspace = true
 
+[lib]
+crate-type = ["dylib"]
+
 [dependencies]
 bevy_ecs.workspace = true
 derive_more.workspace = true

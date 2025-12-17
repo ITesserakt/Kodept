@@ -1,21 +1,22 @@
 { pkgs ? import <nixpkgs> {} }: let
-  fenix = import (fetchTarball "https://github.com/nix-community/fenix/archive/monthly.tar.gz") { };
+	toolchain = pkgs.rust.packages.stable;
 in pkgs.mkShellNoCC rec {
 	packages = with pkgs; [
+		toolchain.cargo
+		toolchain.rustc
+		toolchain.rustfmt
+		toolchain.clippy
+		
 		gnuplot
 		pkgs.clangStdenv.cc
-		mold
-		fenix.latest.toolchain
 		graphviz
 	];
 
-	toolchain = pkgs.symlinkJoin {
-		name = "kodept-toolchain";
-		paths = packages;
+	RUST_SRC_PATH = toolchain.rustPlatform.rustLibSrc;
+	RUST_TOOLCHAIN_PATH = pkgs.symlinkJoin {
+    name = "kodept-toolchain";
+    paths = packages;
 	};
 
-	shellHook = ''
-		rm -f .toolchain
-		ln -s ${toolchain} .toolchain
-	'';
+	# shellHook = use-mold.moldHook pkgs.mold;
 }
