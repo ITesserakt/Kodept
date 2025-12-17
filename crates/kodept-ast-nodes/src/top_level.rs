@@ -1,13 +1,16 @@
 use crate::function::FuncDecl;
 use crate::types::TyParam;
-use bevy_ecs::prelude::{Bundle, Component};
-use kodept_ast::prelude::{CodeHolder, FromSyntax};
+use bevy_ecs::prelude::Component;
+use bevy_ecs::relationship::Relationship;
+use kodept_ast::experimental::{AstBuilder, FromSyntax, SpawnContext};
+use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, SourceSpan};
-use kodept_ast::syntax_tree::prelude::ASTBuilder;
+use kodept_ast::syntax_tree::experimental::SpawnedIn;
 use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types::TypeName;
 use kodept_rlt::prelude::{Enum, Struct};
+use std::convert::Infallible;
 
 #[derive(Debug, PartialEq, Component)]
 pub enum EnumDecl {
@@ -37,55 +40,68 @@ derive_node!(EnumConst {
 });
 
 impl FromSyntax<Enum> for EnumDecl {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(node: &Enum, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
+    fn from_syntax<R: Relationship>(
+        node: &Enum,
+        spawner: SpawnContext<R>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
         let (kind, id, rest) = match node {
             Enum::Stack { id, contents, .. } => (EnumDecl::Stack, id, contents),
             Enum::Heap { id, contents, .. } => (EnumDecl::Heap, id, contents),
         };
         let name = source.get_chunk_located(id);
-        Ok(ASTBuilder::new(kind)
+        let mut builder = AstBuilder::new(kind)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_opt_children(rest.as_ref().map(|it| it.inner.as_ref()), source)?
-            .build())
+            .spawn_in(spawner);
+        if let Some(rest) = rest {
+            builder.with_children::<_, EnumConst, _>(rest.inner.as_ref(), source)?;
+        }
+        Ok(builder.finish())
     }
 }
 
 impl FromSyntax<Struct> for StructDecl {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(node: &Struct, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
+    fn from_syntax<R: Relationship>(
+        node: &Struct,
+        spawner: SpawnContext<R>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-
-        Ok(ASTBuilder::new(StructDecl)
+        let mut builder = AstBuilder::new(StructDecl)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_opt_children::<_, TyParam, _>(
-                node.parameters.as_ref().map(|it| it.inner.as_ref()),
-                source,
-            )?
-            .with_opt_children::<_, FuncDecl, _>(
-                node.body.as_ref().map(|it| it.inner.as_ref()),
-                source,
-            )?
-            .build())
+            .spawn_in(spawner);
+
+        if let Some(params) = &node.parameters {
+            builder.with_children::<_, TyParam, _>(params.inner.as_ref(), source)?;
+        }
+        if let Some(body) = &node.body {
+            builder.with_children::<_, FuncDecl, _>(body.inner.as_ref(), source)?;
+        }
+
+        Ok(builder.finish())
     }
 }
 
 impl FromSyntax<TypeName> for EnumConst {
-    type Bundle = impl Bundle;
-    type Error = crate::Error;
+    type Error = Infallible;
 
-    fn from_syntax(node: &TypeName, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
+    fn from_syntax<R: Relationship>(
+        node: &TypeName,
+        spawner: SpawnContext<R>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(node);
 
-        Ok(ASTBuilder::new(EnumConst)
+        Ok(AstBuilder::new(EnumConst)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.0.into()))
-            .build())
+            .spawn_in(spawner)
+            .finish())
     }
 }

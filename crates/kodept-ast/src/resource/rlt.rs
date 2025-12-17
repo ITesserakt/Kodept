@@ -30,6 +30,9 @@ pub enum LookupError {
 
 impl LexemeId {
     pub(crate) const PLACEHOLDER: LexemeId = LexemeId(None);
+    pub(crate) fn from(value: ErasedNodePtr) -> Self {
+        Self(Some(value))
+    }
 }
 
 impl SyntaxResolver {
@@ -55,10 +58,6 @@ impl SyntaxResolver {
     fn borrow_ptr(&self, node: &ErasedNodePtr) -> ErasedNodeBorrow<'_> {
         // SAFETY: lifetime of elements is tied to `self` and RLT is pinned
         unsafe { node.borrow() }
-    }
-
-    pub(crate) fn get_id_for_ptr(&self, ptr: &ErasedNodePtr) -> LexemeId {
-        LexemeId(Some(*ptr))
     }
 
     pub fn get_span(&self, id: LexemeId) -> Span {

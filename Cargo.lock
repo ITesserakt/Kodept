@@ -1050,7 +1050,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "criterion",
  "derive_more",
@@ -1062,16 +1062,6 @@ dependencies = [
  "rayon",
  "rstest",
  "similar-asserts",
-]
-
-[[package]]
-name = "kodept-qbe"
-version = "0.1.0"
-dependencies = [
- "derive_more",
- "sealed",
- "similar-asserts",
- "smallvec",
 ]
 
 [[package]]
@@ -1656,17 +1646,6 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
-
-[[package]]
-name = "sealed"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22f968c5ea23d555e670b449c1c5e7b2fc399fdaec1d304a17cd48e288abc107"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "semver"

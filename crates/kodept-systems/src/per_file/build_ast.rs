@@ -1,6 +1,5 @@
 use bevy_ecs::prelude::*;
 use derive_more::From;
-use kodept_ast::prelude::FromSyntax;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::Error;
 use kodept_ast_nodes::file::FileDecl;
@@ -23,20 +22,12 @@ define_phase!(
 fn system(
     source: Res<SourceView>,
     syntax: Res<SyntaxResolver>,
-    mut commands: Commands,
+    commands: Commands,
 ) -> Result<(), Wrapper> {
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
-    let (root, root_id) = syntax.root();
-    let whole_bundle = FileDecl::from_syntax(root, code_holder)?;
-
-    let mut entity = commands.spawn((
-        whole_bundle,
-        kodept_ast::properties::Root {
-            associated_file: source.describe(),
-        },
-    ));
-    entity.insert(kodept_ast::properties::Lexeme(root_id));
+    let (root, _) = syntax.root();
+    FileDecl::from_syntax(root, code_holder, commands)?;
 
     Ok(())
 }
