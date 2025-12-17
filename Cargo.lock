@@ -1083,7 +1083,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-ast"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "bevy_ecs",
  "bevy_utils",
