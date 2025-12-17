@@ -7,8 +7,10 @@ use crate::{
     traits::{ASTNode, CodeHolder, Dispatch, FromSyntax},
     utils::IntoCommonIter,
 };
-use bevy_ecs::prelude::ChildOf;
-use bevy_ecs::{bundle::Bundle, entity::Entity, relationship::Relationship, system::Commands};
+#[cfg(feature = "parallel")]
+use bevy_ecs::prelude::ParallelCommands;
+use bevy_ecs::prelude::{ChildOf, Commands, World};
+use bevy_ecs::{bundle::Bundle, entity::Entity, relationship::Relationship};
 use derive_more::{Deref, DerefMut};
 use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 use std::marker::PhantomData;
@@ -93,18 +95,91 @@ trait Context<U> {
         U: ASTNode;
 }
 
+pub trait Buffer {
+    type Ref<'a>
+    where
+        Self: 'a;
+
+    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity;
+    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle);
+}
+
+impl<'w, 's> Buffer for Commands<'w, 's> {
+    type Ref<'a>
+        = &'a mut Commands<'w, 's>
+    where
+        Self: 'a;
+
+    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity {
+        this.spawn(bundle).id()
+    }
+
+    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle) {
+        this.entity(entity).insert(bundle);
+    }
+}
+
+impl Buffer for World {
+    type Ref<'a> = &'a mut World;
+
+    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity {
+        this.spawn(bundle).id()
+    }
+
+    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle) {
+        this.entity_mut(entity).insert(bundle);
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<'w, 's> Buffer for ParallelCommands<'w, 's> {
+    type Ref<'a>
+        = &'a ParallelCommands<'w, 's>
+    where
+        Self: 'a;
+
+    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity {
+        this.command_scope(move |mut commands| commands.spawn(bundle).id())
+    }
+
+    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle) {
+        this.command_scope(move |mut commands| {
+            commands.entity(entity).insert(bundle);
+        })
+    }
+}
+
 #[derive(Debug, Deref, DerefMut)]
 pub struct AstBuilder<State> {
     state: State,
 }
 
-pub enum SpawnContext<'w, 's, R> {
-    Empty(Commands<'w, 's>),
+pub enum GenericSpawnContext<R, B: Buffer> {
+    Empty(B),
     Related {
-        commands: Commands<'w, 's>,
+        buffer: B,
         related_id: Entity,
         _phantom: PhantomData<R>,
     },
+}
+
+pub type SpawnContext<'w, 's, R> = GenericSpawnContext<R, Commands<'w, 's>>;
+
+impl<R, B: Buffer> GenericSpawnContext<R, B> {
+    fn cast_relationship<Next: Relationship>(self) -> GenericSpawnContext<Next, B> {
+        match self {
+            GenericSpawnContext::Empty(x) => GenericSpawnContext::Empty(x),
+            GenericSpawnContext::Related {
+                buffer,
+                related_id,
+                _phantom,
+            } => GenericSpawnContext::Related {
+                buffer,
+                related_id,
+                _phantom: PhantomData,
+            },
+        }
+    }
 }
 
 impl<'w, 's, R> SpawnContext<'w, 's, R> {
@@ -112,27 +187,12 @@ impl<'w, 's, R> SpawnContext<'w, 's, R> {
         match self {
             SpawnContext::Empty(c) => SpawnContext::Empty(c.reborrow()),
             SpawnContext::Related {
-                commands,
+                buffer: commands,
                 related_id,
                 ..
             } => SpawnContext::Related {
-                commands: commands.reborrow(),
+                buffer: commands.reborrow(),
                 related_id: *related_id,
-                _phantom: PhantomData,
-            },
-        }
-    }
-
-    fn cast_relationship<Next: Relationship>(self) -> SpawnContext<'w, 's, Next> {
-        match self {
-            SpawnContext::Empty(c) => SpawnContext::Empty(c),
-            SpawnContext::Related {
-                commands,
-                related_id,
-                ..
-            } => SpawnContext::Related {
-                commands,
-                related_id,
                 _phantom: PhantomData,
             },
         }
@@ -148,20 +208,20 @@ impl<'w, 's, R> SpawnContext<'w, 's, R> {
                 let entity = c.spawn(bundle);
                 let related_id = entity.id();
                 SpawnContext::Related {
-                    commands: c,
+                    buffer: c,
                     related_id,
                     _phantom: PhantomData,
                 }
             }
             SpawnContext::Related {
-                mut commands,
+                buffer: mut commands,
                 related_id,
                 ..
             } => {
                 let entity = commands.spawn((R::from(related_id), bundle));
                 let related_id = entity.id();
                 SpawnContext::Related {
-                    commands,
+                    buffer: commands,
                     related_id,
                     _phantom: PhantomData,
                 }
@@ -172,7 +232,10 @@ impl<'w, 's, R> SpawnContext<'w, 's, R> {
     fn link_with_lexeme(&mut self, spawned: impl Erase<Entity>, node: &impl SyntaxNode) {
         let ptr = ErasedNodePtr::new(node);
         match self {
-            SpawnContext::Empty(commands) | SpawnContext::Related { commands, .. } => {
+            SpawnContext::Empty(commands)
+            | SpawnContext::Related {
+                buffer: commands, ..
+            } => {
                 commands
                     .entity(spawned.erase())
                     .insert(Lexeme(LexemeId::from(ptr)));
@@ -343,7 +406,7 @@ impl<R, P> AstBuilder<PropsState<R, P>> {
     }
 }
 
-impl<R, Rel> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
+impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
     fn with_child<T, U, Tag>(
         &mut self,
         node: &T,
