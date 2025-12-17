@@ -1,9 +1,8 @@
 extern crate core;
 
-use bevy_ecs::prelude::World;
+use bevy_ecs::prelude::{Mut, World};
 use criterion::measurement::Measurement;
 use criterion::{criterion_group, BatchSize, Bencher, Criterion, Throughput};
-use kodept_ast::prelude::FromSyntax;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::code_point::CodePoint;
@@ -37,12 +36,10 @@ fn bench_fns<M: Measurement>(size: u64) -> impl FnMut(&mut Bencher<M>) {
                 )
             },
             |(mut world, code)| {
-                let syntax = world.resource::<SyntaxResolver>();
-                let bundle = FileDecl::from_syntax(syntax.root().0, code).unwrap();
-                // It's important to apply the bundle to a world
-                // Because bundle is generally lazy
-                // and only initializes whole hierarchy when applied
-                world.spawn(bundle);
+                world.resource_scope(|w, syntax: Mut<SyntaxResolver>| {
+                    let commands = w.commands();
+                    FileDecl::from_syntax(syntax.root().0, code, commands).unwrap();
+                });
             },
             BatchSize::SmallInput,
         )

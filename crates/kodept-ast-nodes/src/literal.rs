@@ -1,14 +1,21 @@
-use std::borrow::Cow;
-
 use crate::code_flow::IfExpr;
 use crate::expression::{App, BinExpr, Exprs, Lambda};
 use crate::term::Ref;
 use crate::types::Ty;
+use crate::Dispatcher;
 use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
+use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
+use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext};
+use kodept_ast::prelude::CodeHolder;
+use kodept_ast::properties::SourceSpan;
+use kodept_ast::syntax_tree::children::HasChild;
+use kodept_ast::syntax_tree::experimental::SpawnedIn;
 use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::exported::Located;
+use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude as rlt;
+use std::borrow::Cow;
 
 #[derive(Debug, PartialEq, Component)]
 pub enum Literal {
@@ -101,6 +108,37 @@ impl Literal {
                 Ok(Self::String(quotes_removed))
             }
             rlt::Literal::Tuple(_) => unreachable!("This method called on tuple literal"),
+        }
+    }
+}
+
+impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, rlt::Literal>
+where
+    R: HasChild<Tuple, T, Arity = A>,
+    R: HasChild<Literal, T, Arity = A>,
+{
+    type Node = rlt::Literal;
+    type Error = crate::Error;
+
+    fn dispatch(
+        self,
+        spawner: DispatchContext<R, T, A>,
+        source: impl CodeHolder,
+    ) -> Result<Entity, Self::Error> {
+        match self.0 {
+            rlt::Literal::Tuple(x) => Ok(AstBuilder::new(Tuple)
+                .with_property(SourceSpan(x.left.0 + x.right.0))
+                .spawn_in((spawner, self.0))
+                .with_dispatches::<Dispatcher<_>, _, _>(x.inner.as_ref(), source)?
+                .finish_any()),
+            _ => {
+                let text = source.get_chunk_located(self.0);
+                let value = Literal::from_str(self.0, text)?;
+                Ok(AstBuilder::new(value)
+                    .with_property(SourceSpan(self.0.bounds()))
+                    .spawn_in((spawner, self.0))
+                    .finish_any())
+            }
         }
     }
 }

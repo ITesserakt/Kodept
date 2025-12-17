@@ -17,10 +17,15 @@ pub mod prelude {
     pub use super::entity::entity_ref::{AnyNodeRef, AnyNodeRefItem, NodeRef};
     pub use super::entity::traits::{FromEnum, IntoEnum};
     pub use super::node_id::{Erase, NodeId};
-    pub use super::traits::{ASTNode, CodeHolder, FromSyntax};
+    pub use super::traits::{ASTNode, CodeHolder};
     pub use crate::entity::children::{HierarchicalQuery, ChildrenBetween};
     pub use crate::entity::properties::PropertyQuery;
     pub use crate::relationship::{Node, Nodes, MaybeNode};
+}
+
+pub mod experimental {
+    pub use super::syntax_tree::experimental::{AstBuilder, SpawnContext, DispatchContext};
+    pub use super::traits::{FromSyntax, Dispatch, SplitRef};
 }
 
 #[deprecated]

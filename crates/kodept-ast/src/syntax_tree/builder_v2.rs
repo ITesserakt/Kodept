@@ -484,7 +484,6 @@ where
     P: Bundle + ContainsProperty<SourceSpan>,
     C: Bundle,
 {
-    #[allow(unsafe_code)]
     pub fn build(self) -> DefaultBundle<R, P, C> {
         (
             self.root,
