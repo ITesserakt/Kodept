@@ -8,26 +8,30 @@ use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
 use std::borrow::Cow;
+use kodept_ast::properties::Root;
 use crate::source::collection::SourceView;
-use crate::utils::ReportSystemEx;
+use crate::utils::{LogSystemEx, ReportSystemEx};
 
 define_phase!(
     pub phase BuildAstPhase[BuildAstPhaseLabel];
 
     fn build (self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports());
+        engine.add_systems(system.extract_reports().trace_completion());
     }
 );
 
 fn system(
     source: Res<SourceView>,
     syntax: Res<SyntaxResolver>,
-    commands: Commands,
+    mut commands: Commands,
 ) -> Result<(), Wrapper> {
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
     let (root, _) = syntax.root();
-    FileDecl::from_syntax(root, code_holder, commands)?;
+    let file_id = FileDecl::from_syntax(root, code_holder, commands.reborrow())?;
+    commands.entity(file_id.entity()).insert(Root {
+        associated_file: source.describe()
+    });
 
     Ok(())
 }

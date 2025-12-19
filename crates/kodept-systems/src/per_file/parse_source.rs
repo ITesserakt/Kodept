@@ -1,6 +1,6 @@
 use crate::configs::{Lexer, Parser};
 use crate::source::collection::SourceView;
-use crate::utils::ReportSystemEx;
+use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_frontend::engine::{Phase, PhaseEngine};
@@ -24,7 +24,7 @@ impl Phase for ParseSourcePhase {
     type Set = ParseSourcePhaseLabel;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports())
+        engine.add_systems(system.extract_reports().trace_completion())
     }
 }
 

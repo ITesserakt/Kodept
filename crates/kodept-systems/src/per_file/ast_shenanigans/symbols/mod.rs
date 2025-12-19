@@ -125,9 +125,9 @@ struct SpawnSymbolMessage {
     kind: SymbolKind,
 }
 #[derive(Debug)]
-struct CannotLinkError(SourceSpan, &'static str);
+struct CannotLinkError(SourceSpan, String);
 #[derive(Debug)]
-struct MultipleRootScopes(Vec<(SourceSpan, &'static str)>);
+struct MultipleRootScopes(Vec<(SourceSpan, String)>);
 #[derive(Debug)]
 enum SymbolErrors {
     NameNotFound(SourceSpan),
