@@ -1,10 +1,11 @@
 use crate::engine::reporter::StopEngine;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
-use bevy_ecs::system::ScheduleSystem;
+use bevy_ecs::system::{IntoObserverSystem, ScheduleSystem};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::panic::AssertUnwindSafe;
+use crate::engine::function_impls::InlineFunctionPhase;
 
 pub mod macros;
 pub mod reporter;
@@ -33,12 +34,30 @@ pub trait Plugin {
     fn build(self, engine: &mut Engine);
 }
 
-impl<F> Plugin for F
-where
-    F: FnOnce(&mut Engine),
-{
-    fn build(self, engine: &mut Engine) {
-        self(engine)
+mod function_impls {
+    use bevy_ecs::prelude::SystemSet;
+    use crate::engine::{Engine, Phase, PhaseEngine, Plugin};
+
+    #[derive(Debug, SystemSet, Copy, Clone, PartialEq, Hash, Default, Eq)]
+    pub struct SingletonSet;
+
+    pub enum InlineFunctionPhase {}
+
+    impl Phase for InlineFunctionPhase {
+        type Set = SingletonSet;
+
+        fn build(self, _: &mut PhaseEngine<Self>) {
+            match self {  }
+        }
+    }
+
+    impl<F> Plugin for F
+    where
+        F: FnOnce(&mut Engine),
+    {
+        fn build(self, engine: &mut Engine) {
+            self(engine)
+        }
     }
 }
 
@@ -125,6 +144,14 @@ impl Engine {
         }
     }
 
+    pub fn install_inline_phase(&mut self, build: impl FnOnce(&mut PhaseEngine<InlineFunctionPhase>)) {
+        build(&mut PhaseEngine {
+            engine: self,
+            instrumented: true,
+            _phantom: PhantomData
+        });
+    }
+
     pub fn run(&mut self) -> Result<(), StopEngine> {
         let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
             self.engine_world.run_schedule(Startup);
@@ -152,8 +179,19 @@ impl Engine {
             schedule.add_systems(config);
         })
     }
-    
-    pub fn set_schedule_executor_kind(&mut self, schedule_label: impl ScheduleLabel, kind: ExecutorKind) {
+
+    pub fn add_observer<E: Event, B: Bundle, M>(
+        &mut self,
+        system: impl IntoObserverSystem<E, B, M>,
+    ) {
+        self.engine_world.add_observer(system);
+    }
+
+    pub fn set_schedule_executor_kind(
+        &mut self,
+        schedule_label: impl ScheduleLabel,
+        kind: ExecutorKind,
+    ) {
         self.with_schedule(schedule_label, |schedule| {
             schedule.set_executor_kind(kind);
         })
@@ -219,7 +257,9 @@ impl<P> DerefMut for PhaseEngine<'_, P> {
 mod tests {
     use crate::define_phase;
     use crate::engine::{Engine, PhaseEngine};
-    use bevy_ecs::prelude::{ResMut, Resource};
+    use bevy_ecs::prelude::{Res, ResMut, Resource};
+    use bevy_ecs::schedule::IntoScheduleConfigs;
+    use std::hash::Hash;
 
     #[derive(Debug, Resource)]
     struct Counter(usize);
@@ -228,98 +268,92 @@ mod tests {
         counter.0 += 1;
     }
 
+    fn check_counter(value: usize) -> impl FnMut(Res<Counter>) {
+        move |cnt: Res<Counter>| assert_eq!(cnt.0, value)
+    }
+
     define_phase!(
-        phase A[ALabel];
+        phase A[ALabel] { counter: usize }
         fn build(self, engine: &mut PhaseEngine<Self>) {
-            engine.add_systems(inc_counter);
+            engine.add_systems((check_counter(self.counter), inc_counter, check_counter(self.counter + 1)).chain());
         }
     );
 
     define_phase!(
-        phase B[BLabel];
+        phase B[BLabel] { counter: usize }
         fn build(self, engine: &mut PhaseEngine<Self>) {
-            engine.add_systems(inc_counter);
+            engine.add_systems((check_counter(self.counter), inc_counter, check_counter(self.counter + 1)).chain());
         }
     );
 
     #[inline]
-    fn test(configuration: impl FnOnce(&mut Engine), expected_counter_value: usize) {
+    fn test(configuration: impl FnOnce(&mut Engine)) {
         let mut engine = Engine::new();
 
         engine.insert_resource(Counter(0));
 
         configuration(&mut engine);
-        engine.run();
-
-        assert_eq!(
-            engine.engine_world.resource::<Counter>().0,
-            expected_counter_value
-        );
+        engine.run().unwrap();
     }
 
     #[test]
     fn test_one_phase() {
-        test(
-            |e| {
-                e.install(A);
-            },
-            1,
-        )
+        test(|e| {
+            e.install(A { counter: 0 });
+        })
     }
 
     #[test]
     fn test_two_parallel_phases() {
-        test(
-            |e| {
-                e.install(A);
-                e.install(B);
-            },
-            2,
-        )
+        test(|e| {
+            e.install(A { counter: 1 });
+            e.install(B { counter: 0 });
+        })
     }
 
     #[test]
     fn test_two_consecutive_phases() {
-        test(
-            |e| {
-                e.install(A).install(B);
-            },
-            2,
-        )
+        test(|e| {
+            e.install(A { counter: 0 }).install(B { counter: 1 });
+        })
     }
 
     #[test]
     fn test_two_same_parallel_phases() {
-        test(
-            |e| {
-                e.install(A);
-                e.install(A);
-            },
-            2,
-        )
+        test(|e| {
+            e.install(A { counter: 1 });
+            e.install(A { counter: 0 });
+        })
     }
 
     #[test]
-    #[ignore]
-    // Reason: system set `ALabel` has been told to run before itself
+    #[should_panic = "system set `ALabel` has been told to run before itself"]
     fn test_two_same_consecutive_phases() {
-        test(
-            |e| {
-                e.install(A).install(A);
-            },
-            2,
-        )
+        test(|e| {
+            e.install(A { counter: 0 }).install(A { counter: 0 });
+        })
     }
 
     #[test]
-    #[ignore]
-    // Reason: system set `ALabel` must run before itself
+    #[should_panic = "system set `ALabel` must run before itself"]
     fn test_phases_chaining() {
-        test(
-            |e| {
-                e.install(A).install(B).install(A);
-            },
-            3,
-        )
+        test(|e| {
+            e.install(A { counter: 0 })
+                .install(B { counter: 0 })
+                .install(A { counter: 0 });
+        })
+    }
+
+    #[test]
+    fn test_inline_phases() {
+        test(|e| {
+            e.install_inline_phase(|e| {
+                e.add_systems((inc_counter, check_counter(2)).chain());
+            });
+
+            e.install_inline_phase(|e| {
+                e.install(B { counter: 0 });
+            })
+        })
     }
 }
