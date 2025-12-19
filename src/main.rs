@@ -1,14 +1,13 @@
 use crate::cli::primary::Kodept;
-use crate::plugins::{LogPlugin, ReportsPlugin, ThreadPoolPlugin};
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
 use kodept_frontend::engine::Engine;
 use kodept_systems::global::prelude::RegisterReflectionPlugin;
 use std::process::ExitCode;
+use kodept_cli::prelude::{LogPlugin, ReportsPlugin, ThreadPoolPlugin};
 
 mod cli;
 mod commands;
-mod plugins;
 mod profiler;
 
 fn main() -> ExitCode {

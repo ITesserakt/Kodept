@@ -1,9 +1,8 @@
-use kodept_cli::prelude::{LoggingLevel, ColorChoice, DiagnosticConfig, DisplayStyle};
-use kodept_frontend::engine::reporter;
-use kodept_frontend::engine::{Engine, Plugin};
+use tracing::Level;
+use kodept_frontend::engine::{reporter, Engine, Plugin};
 use kodept_report::codespan::external::Config;
 use kodept_report::prelude::CodespanSettings;
-use tracing::Level;
+use crate::prelude::{LoggingLevel, DiagnosticConfig, DisplayStyle, ColorChoice};
 
 #[derive(Debug)]
 pub struct LogPlugin {
@@ -85,7 +84,7 @@ impl Plugin for ReportsPlugin {
             config.start_context_lines = usize::MAX;
             config.end_context_lines = usize::MAX;
         }
-        
+
         let settings = CodespanSettings::stderr(
             config,
             match self.config.color {
