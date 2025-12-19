@@ -1,7 +1,7 @@
 use bevy_ecs::entity::Entity;
 use bevy_ecs::query::{QueryEntityError, With};
 use bevy_ecs::system::{Query, SystemParam};
-
+use bevy_utils::prelude::DebugName;
 use crate::node_id::Erase;
 use crate::prelude::{ASTNode, NodeRef};
 use crate::properties::{HasProperty, Name, Node, NodeProperty, RequireProperty, SourceSpan};
@@ -14,11 +14,11 @@ impl<'a, T> NodeRef<'a, &'a T> {
         self.property()
     }
 
-    pub fn kind(&self) -> &'static str
+    pub fn kind(&self) -> &DebugName
     where
         T: ASTNode,
     {
-        self.property::<Node>().kind
+        &self.property::<Node>().kind
     }
 
     pub fn span(&self) -> SourceSpan
