@@ -31,6 +31,16 @@ impl<'a> Debug for DynDebug<'a> {
     }
 }
 
+impl<'a> DynDebug<'a> {
+    pub fn is_known(&self) -> bool {
+        self.debug_fn.is_some()
+    }
+
+    pub fn into_inner(self) -> Ptr<'a> {
+        self.value
+    }
+}
+
 impl DebugRegistry {
     pub fn empty() -> Self {
         Self {
