@@ -252,7 +252,7 @@ fn on_control_event(
             writeln!(file, "\tgraph [ rankdir = \"TD\", pad = 0.1 ]")?;
             writeln!(
                 file,
-                "\tnode [ style=filled, shape=rect, pencolor=\"#00000044\", color=\"#0044ff22\",  fontname=\"Helvetica,Arial,sans-serif\", shape=plaintext ]"
+                "\tnode [ style=filled, shape=rect, pencolor=\"#00000044\", color=\"#00000000\",  fontname=\"Helvetica,Arial,sans-serif\", shape=plaintext ]"
             )?;
 
             *buffer = Some(BufWriter::new(file));
