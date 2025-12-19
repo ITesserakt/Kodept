@@ -1,27 +1,27 @@
 #[cfg(feature = "graphviz")]
 mod graphviz;
 mod phase;
+mod plugins;
 
 use crate::phase::ExportAstPhase;
-use bevy_ecs::prelude::{Entity, Event};
+use crate::plugins::Plugins;
+use bevy_ecs::prelude::{Entity, Event, InMut, Res};
 use clap::Parser;
 use kodept_ast::relationship::RelationshipMetadata;
 use kodept_cli::prelude::{
-    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, LogPlugin, LoggingLevel, OutputConfig,
-    ParserChoice, ParsingConfig, ReportsPlugin,
+    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, OutputConfig,
+    ParserChoice, ParsingConfig,
 };
 use kodept_frontend::engine::reporter::StopEngine;
-use kodept_frontend::engine::utils::Timings;
-use kodept_frontend::engine::Engine;
+use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
+use kodept_frontend::engine::{Engine, SubEngine};
 use kodept_systems::configs::{Lexer, OutputDirectory};
-use kodept_systems::global::prelude::{
-    EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase, RegisterReflectionPlugin,
-};
+use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
-use kodept_systems::per_file::inject_common_resources_phase;
 use kodept_systems::per_file::prelude::{BuildAstPhase, ParseSourcePhase};
 use kodept_systems::source::collection::SourceView;
 use std::io::{stdin, Read};
+use kodept_ast::resource::reflection::DebugRegistry;
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -84,18 +84,7 @@ fn main() -> Result<(), StopEngine> {
     let cli_args = Cli::parse();
     let mut engine = Engine::new();
 
-    engine
-        .add_plugin(RegisterReflectionPlugin)
-        .add_plugin(LogPlugin {
-            level: LoggingLevel::Debug,
-            display_thread_names: false,
-        })
-        .add_plugin_if(
-            !cli_args.diagnostic_config.disable,
-            ReportsPlugin {
-                config: cli_args.diagnostic_config,
-            },
-        );
+    engine.add_plugin(Plugins { config: &cli_args });
 
     if cli_args.timings {
         engine.init_resource::<Timings>();
@@ -105,7 +94,22 @@ fn main() -> Result<(), StopEngine> {
         .install(LoadAllSourcesPhase {
             config: Convert(cli_args.loading_config),
         })
-        .install(inject_common_resources_phase())
+        .install(InjectResourcesPhase::new(|
+            InMut(engine): InMut<SubEngine>,
+            timings: Option<Res<Timings>>,
+            report_settings: Option<Res<kodept_frontend::engine::reporter::Settings>>,
+            debug_registry: Option<Res<DebugRegistry>>
+        | {
+            if timings.is_some() {
+                engine.init_resource::<Timings>();
+            }
+            if let Some(settings) = report_settings {
+                engine.insert_resource(settings.as_ref().clone());
+            }
+            if let Some(registry) = debug_registry {
+                engine.insert_resource(registry.as_ref().clone());
+            }
+        }))
         .install(EachSubEnginePhase::new(move |engine| {
             engine.insert_resource(OutputDirectory::new(&cli_args.output_config.output));
 

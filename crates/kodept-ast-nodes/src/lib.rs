@@ -1,7 +1,6 @@
 //! This crate contains actual AST nodes used in Kodept with appropriate
 //! conversion implementation from RLT nodes.
 
-use kodept_ast::resource::reflection::DebugRegistry;
 use kodept_ast::experimental::SplitRef;
 use kodept_rlt::exported::CodePoint;
 use std::convert::Infallible;
@@ -27,7 +26,8 @@ pub enum Error {
     CannotParseInt(CodePoint, ParseIntError),
 }
 
-pub fn register_reflection_info(registry: &mut DebugRegistry) {
+#[cfg(feature = "reflection")]
+pub fn register_reflection_info(registry: &mut kodept_ast::resource::reflection::DebugRegistry) {
     registry.register::<file::FileDecl>();
     registry.register::<file::ModDecl>();
     registry.register::<term::Ref>();

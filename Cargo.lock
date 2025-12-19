@@ -1012,6 +1012,7 @@ dependencies = [
  "bevy_utils",
  "clap",
  "kodept-ast",
+ "kodept-ast-nodes",
  "kodept-cli",
  "kodept-frontend",
  "kodept-systems",

@@ -65,11 +65,11 @@ impl Plugin for ThreadPoolPlugin {
     }
 }
 
-pub struct ReportsPlugin {
-    pub config: DiagnosticConfig
+pub struct ReportsPlugin<'a> {
+    pub config: &'a DiagnosticConfig
 }
 
-impl Plugin for ReportsPlugin {
+impl Plugin for ReportsPlugin<'_> {
     fn build(self, engine: &mut Engine) {
         let mut config = Config {
             display_style: match self.config.style {

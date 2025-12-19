@@ -23,6 +23,7 @@ rayon = "1.11.0"
 [features]
 defalt = []
 parallel = ["kodept-ast/parallel", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
+reflection = ["kodept-ast/reflection"]
 
 [[bench]]
 name = "ast_building"

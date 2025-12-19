@@ -2,7 +2,6 @@ use crate::cli::primary::Kodept;
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
 use kodept_frontend::engine::Engine;
-use kodept_systems::global::prelude::RegisterReflectionPlugin;
 use std::process::ExitCode;
 use kodept_cli::prelude::{LogPlugin, ReportsPlugin, ThreadPoolPlugin};
 
@@ -16,7 +15,6 @@ fn main() -> ExitCode {
     let mut engine = Engine::new();
 
     engine
-        .add_plugin(RegisterReflectionPlugin)
         .add_plugin(LogPlugin {
             level: cli_options.logging.level(),
             ..Default::default()
@@ -28,7 +26,7 @@ fn main() -> ExitCode {
         .add_plugin_if(
             !cli_options.diagnostic_config.disable,
             ReportsPlugin {
-                config: cli_options.diagnostic_config,
+                config: &cli_options.diagnostic_config,
             },
         );
 

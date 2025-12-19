@@ -1,9 +1,6 @@
 //! Provides structures and abstractions for managing AST (abstract syntax tree).
 //! Features ECS as an implementation.
 
-use bevy_ecs::prelude::{ChildOf, Children};
-use crate::resource::reflection::DebugRegistry;
-
 pub mod arity;
 mod entity;
 pub mod macros;
@@ -25,7 +22,10 @@ pub mod prelude {
     pub use crate::entity::properties::PropertyQuery;
 }
 
-pub fn register_reflection_info(registry: &mut DebugRegistry) {
+#[cfg(feature = "reflection")]
+pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegistry) {
+    use bevy_ecs::prelude::{ChildOf, Children};
+    
     registry.register::<properties::Lexeme>();
     registry.register::<properties::Node>();
     registry.register::<properties::SourceSpan>();
