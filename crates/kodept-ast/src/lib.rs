@@ -9,7 +9,7 @@ mod entity;
 pub mod macros;
 mod node_id;
 pub mod properties;
-mod relationship;
+pub mod relationship;
 pub mod resource;
 pub mod syntax_tree;
 mod traits;
@@ -23,7 +23,6 @@ pub mod prelude {
     pub use super::traits::{ASTNode, CodeHolder};
     pub use crate::entity::children::{HierarchicalQuery, ChildrenBetween};
     pub use crate::entity::properties::PropertyQuery;
-    pub use crate::relationship::{Node, Nodes, MaybeNode};
 }
 
 pub fn register_reflection_info(registry: &mut DebugRegistry) {

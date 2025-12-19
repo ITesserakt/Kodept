@@ -23,7 +23,11 @@ pub trait SplitRef<'a, T>: Sized {
     fn split(self) -> (Self, &'a T);
 }
 
-pub trait Dispatch<'a, Root, Tag, Arity>: SplitRef<'a, Self::Node> {
+pub trait Dispatch<'a, Root, Tag, Arity>: SplitRef<'a, Self::Node>
+where
+    Tag: Send + Sync + 'static,
+    Arity: crate::arity::Arity
+{
     type Node;
     type Error: Send + 'static;
 

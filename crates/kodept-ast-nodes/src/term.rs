@@ -64,6 +64,8 @@ impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Term>
 where
     R: HasChild<Ref, T, Arity = A>,
     R: HasChild<Ty, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
 {
     type Node = Term;
     type Error = Infallible;

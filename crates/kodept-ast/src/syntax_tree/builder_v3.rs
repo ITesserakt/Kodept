@@ -14,6 +14,7 @@ use bevy_ecs::{bundle::Bundle, entity::Entity, relationship::Relationship};
 use derive_more::{Deref, DerefMut};
 use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 use std::marker::PhantomData;
+use bevy_utils::prelude::DebugName;
 
 pub struct PropsState<R, P> {
     root: R,
@@ -66,7 +67,10 @@ pub trait SpawnedIn<Root>: Sized {
         &mut self,
         node: &T,
         f: impl FnOnce(&T, DispatchContext<Root, Tag, Arity>) -> Result<Entity, E>,
-    ) -> Result<&mut Self, E>;
+    ) -> Result<&mut Self, E>
+    where
+        Tag: Send + Sync + 'static,
+        Arity: crate::arity::Arity;
 
     fn with_dispatches<'a, T, Tag, Arity>(
         &mut self,
@@ -257,13 +261,21 @@ impl<'w, 's> SpawnContext<'w, 's, ()> {
     }
 }
 
-pub struct DispatchContext<'w, 's, Root, Tag, Arity> {
-    inner: SpawnContext<'w, 's, ChildOf>,
+pub struct DispatchContext<'w, 's, Root, Tag, Arity>
+where
+    Tag: Send + Sync + 'static,
+    Arity: crate::arity::Arity,
+{
+    inner: SpawnContext<'w, 's, crate::relationship::ContainedBy<Tag, Arity>>,
     _phantom: PhantomData<(Root, Tag, Arity)>,
 }
 
-impl<'w, 's, Root, Tag, Arity> DispatchContext<'w, 's, Root, Tag, Arity> {
-    fn new(value: SpawnContext<'w, 's, ChildOf>) -> Self {
+impl<'w, 's, Root, Tag, Arity> DispatchContext<'w, 's, Root, Tag, Arity>
+where
+    Tag: Send + Sync + 'static,
+    Arity: crate::arity::Arity,
+{
+    fn new(value: SpawnContext<'w, 's, crate::relationship::ContainedBy<Tag, Arity>>) -> Self {
         Self {
             inner: value,
             _phantom: PhantomData,
@@ -342,6 +354,8 @@ impl<'w, 's, R, T, A, U, Node: SyntaxNode> Context<U> for (DispatchContext<'w, '
 where
     R: HasChild<U, T, Arity = A>,
     U: ASTNode,
+    T: Send + Sync + 'static,
+    A: crate::arity::Arity,
 {
     #[inline]
     fn spawn_builder<P, I>(
@@ -351,7 +365,10 @@ where
     where
         P: Bundle + Contains<SourceSpan, I>,
     {
-        let spawner = self.0.inner.spawn::<ChildOf>(builder.state.into_bundle());
+        let spawner = self
+            .0
+            .inner
+            .spawn::<<R as NodeRelationship<U, T>>::Relationship>(builder.state.into_bundle());
         let mut builder = AstBuilder {
             state: ChildState {
                 spawner,
@@ -374,7 +391,7 @@ impl<R, P> PropsState<R, P> {
         (
             self.root,
             Node {
-                kind: std::any::type_name::<R>(),
+                kind: DebugName::type_name::<R>(),
             },
             Lexeme(LexemeId::PLACEHOLDER),
             self.properties,
@@ -479,7 +496,11 @@ impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
         &mut self,
         node: &T,
         f: impl FnOnce(&T, DispatchContext<R, Tag, Arity>) -> Result<Entity, E>,
-    ) -> Result<&mut Self, E> {
+    ) -> Result<&mut Self, E>
+    where
+        Tag: Send + Sync + 'static,
+        Arity: crate::arity::Arity,
+    {
         let spawner = &mut self.spawner;
         let entity = f(
             node,

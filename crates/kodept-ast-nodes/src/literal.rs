@@ -116,6 +116,8 @@ impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, rlt::Literal>
 where
     R: HasChild<Tuple, T, Arity = A>,
     R: HasChild<Literal, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
 {
     type Node = rlt::Literal;
     type Error = crate::Error;

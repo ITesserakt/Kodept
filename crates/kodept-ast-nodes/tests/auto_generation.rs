@@ -1,4 +1,4 @@
-use kodept_ast::prelude::FromSyntax;
+use bevy_ecs::prelude::World;
 use kodept_ast::Str;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::code_point::CodePoint;
@@ -22,7 +22,8 @@ impl CodeHolder for FakeSourceCode {
 proptest! {
     #[test]
     fn test_conversion_with_autogeneration(rlt: RLT) {
-        let result = FileDecl::from_syntax(&rlt.0, FakeSourceCode).map(|_| ());
+        let mut world = World::new();
+        let result = FileDecl::from_syntax(&rlt.0, FakeSourceCode, world.commands());
 
         prop_assert!(result.is_ok(), "Expected success build, but encountered an error: {:?}", result);
     }

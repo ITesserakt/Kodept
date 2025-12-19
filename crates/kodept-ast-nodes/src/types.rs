@@ -119,6 +119,8 @@ impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, kodept_rlt::prelude::
 where
     R: HasChild<Ty, T, Arity = A>,
     R: HasChild<ProdTy, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
 {
     type Node = kodept_rlt::prelude::Type;
     type Error = Infallible;
@@ -154,7 +156,9 @@ where
 impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Parameter>
 where
     R: HasChild<TyParam, T, Arity = A>,
-    R: HasChild<NonTyParam, T, Arity = A>
+    R: HasChild<NonTyParam, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
 {
     type Node = Parameter;
     type Error = Infallible;
