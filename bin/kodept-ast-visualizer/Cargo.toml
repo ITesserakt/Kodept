@@ -6,14 +6,17 @@ rust-version.workspace = true
 
 [dependencies]
 bevy_ecs.workspace = true
+bevy_utils = { version = "0.17", default-features = false, features = ["debug"] }
 clap = { version = "4.5", features = ["derive", "env"] }
-graphviz-rust = "0.9.6"
 
 kodept-ast = { path = "../../crates/kodept-ast", version = "0.7" }
 kodept-cli = { path = "../../crates/kodept-cli", version = "0.1" }
 kodept-frontend = { path = "../../crates/kodept-frontend", version = "0.2" }
-kodept-report = { path = "../../crates/kodept-report", version = "0.2" }
 kodept-systems = { path = "../../crates/kodept-systems", version = "0.1" }
 
 [lints]
 workspace = true
+
+[features]
+default = ["graphviz"]
+graphviz = []

@@ -1,40 +1,35 @@
-use kodept_systems::utils::ReportSystemEx;
-use std::fs::File;
-use bevy_ecs::prelude::*;
-use kodept_ast::syntax_tree::prelude::AST;
+use bevy_ecs::prelude::Commands;
+use crate::ExportControlEvent;
+use kodept_ast::syntax_tree::prelude::{AllNodesQuery, NodeSlot};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_report::prelude::{Diagnostic, Severity};
-use kodept_systems::configs::OutputDirectory;
-use kodept_systems::source::collection::{Reporter, SourceView};
+use kodept_systems::utils::LogSystemEx;
 
 define_phase!(
     pub phase ExportAstPhase[ExportAstPhaseLabel];
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(
-            system.extract_reports()
-        )
+        engine.add_systems(system.trace_completion())
     }
 );
 
-fn system(
-    config: Res<OutputDirectory>,
-    source: Res<SourceView>,
-    mut reporter: Reporter,
-    world: &World,
-) -> Result<(), std::io::Error> {
-    let output_filepath = config.get_path_for_source(source.path(), "puml")?;
-    let mut output_file = File::create(&output_filepath)?;
-    AST::export_dot_in(world, &mut output_file)
-        .expect("Some components did not registered still")?;
+fn system(all_nodes: AllNodesQuery, mut commands: Commands) {
+    commands.trigger(ExportControlEvent::Start);
 
-    reporter.report_ad_hoc(|| {
-        Diagnostic::new(Severity::Note).with_message(format!(
-            "Successfully exported AST to {}",
-            output_filepath.display()
-        ))
-    });
+    for slot in all_nodes.iter() {
+        match slot {
+            NodeSlot::Root(x) => commands.trigger(ExportControlEvent::Root(x.id())),
+            NodeSlot::Inner {
+                parent_id,
+                edge_metadata,
+                node_ref,
+            } => commands.trigger(ExportControlEvent::Inner {
+                parent_id,
+                metadata: edge_metadata,
+                this_id: node_ref.id(),
+            }),
+        }
+    }
 
-    Ok(())
+    commands.trigger(ExportControlEvent::Finish);
 }
