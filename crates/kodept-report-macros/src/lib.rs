@@ -15,10 +15,10 @@ mod diagnostic;
 /// # Examples
 ///
 /// ```rust
-/// use kodept_diagnostic_macros::Diagnostic;
+/// use kodept_diagnostic_macros::Report;
 /// use kodept_core::code_point::Span;
 ///
-/// #[derive(Diagnostic)]
+/// #[derive(Report)]
 /// struct DuplicatedSymbolError {
 ///     #[primary_label("symbol already defined")]
 ///     current_def: Span,
@@ -28,7 +28,7 @@ mod diagnostic;
 /// }
 /// ```
 #[proc_macro_derive(
-    Diagnostic,
+    Report,
     attributes(
         primary_label,
         secondary_label,
@@ -55,7 +55,8 @@ mod tests {
     #[test]
     fn test_diagnostic_derive() {
         let input = quote! {
-            #[derive(Diagnostic)]
+            #[derive(Report)]
+            #[severity("error")]
             #[fail_fast("Test")]
             #[message("Hello, {}", self.who)]
             struct TestError {

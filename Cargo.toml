@@ -11,22 +11,7 @@ license = "Apache-2.0"
 
 [workspace]
 resolver = "3"
-members = [
-    "."
-    , "crates/kodept-core"
-    , "crates/kodept-parse"
-    , "crates/kodept-inference"
-    , "crates/kodept-ast"
-    , "crates/kodept-report"
-    # , "crates/kodept-ir"
-    , "crates/kodept-interning"
-    , "crates/kodept-ast-nodes"
-    , "crates/kodept-rlt"
-    , "crates/kodept-frontend"
-    , "crates/kodept-systems"
-    , "bin/kodept-ast-visualizer"
-    , "crates/kodept-cli"
-    , "crates/kodept-diagnostic-macros"]
+members = [".", "crates/kodept-core", "crates/kodept-parse", "crates/kodept-inference", "crates/kodept-ast", "crates/kodept-report", "crates/kodept-interning", "crates/kodept-ast-nodes", "crates/kodept-rlt", "crates/kodept-frontend", "crates/kodept-systems", "bin/kodept-ast-visualizer", "crates/kodept-cli", "crates/kodept-report-macros"]
 
 [workspace.package]
 edition = "2024"

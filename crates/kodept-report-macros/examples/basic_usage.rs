@@ -4,11 +4,11 @@
 use std::borrow::Cow;
 
 use kodept_core::code_point::{CodePoint, Span};
-use kodept_diagnostic_macros::Diagnostic;
+use kodept_diagnostic_macros::Report;
 use kodept_report::{FileId, report::Report};
 
 // Simple diagnostic with primary and secondary labels
-#[derive(Diagnostic, Debug)]
+#[derive(Report, Debug)]
 #[severity("Error")]
 struct DuplicatedSymbolError {
     #[primary_label("symbol already defined")]
@@ -20,7 +20,7 @@ struct DuplicatedSymbolError {
 }
 
 // Diagnostic with multiple notes and labels
-#[derive(Diagnostic, Debug)]
+#[derive(Report, Debug)]
 #[severity("Error")]
 struct UnresolvedReferenceError {
     #[primary_label("cannot resolve reference")]
@@ -34,7 +34,7 @@ struct UnresolvedReferenceError {
 }
 
 // Diagnostic with custom message fields
-#[derive(Diagnostic, Debug)]
+#[derive(Report, Debug)]
 #[severity("Error")]
 #[code(1234)]
 struct TypeMismatchError {
@@ -48,7 +48,7 @@ struct TypeMismatchError {
 }
 
 // Diagnostic with optional fields
-#[derive(Diagnostic, Debug)]
+#[derive(Report, Debug)]
 #[severity("Error")]
 #[message("{message}")]
 struct InvalidSyntaxError {
