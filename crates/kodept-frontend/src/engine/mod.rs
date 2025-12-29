@@ -1,4 +1,4 @@
-use crate::engine::reporter::StopEngine;
+use crate::engine::reporter::CompilationFailed;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
 use bevy_ecs::system::{IntoObserverSystem, ScheduleSystem};
@@ -152,12 +152,12 @@ impl Engine {
         });
     }
 
-    pub fn run(&mut self) -> Result<(), StopEngine> {
+    pub fn run(&mut self) -> Result<(), CompilationFailed> {
         let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
             self.engine_world.run_schedule(Startup);
         }));
         if let Err(error) = result {
-            match error.downcast::<StopEngine>() {
+            match error.downcast::<CompilationFailed>() {
                 Ok(stop) => return Err(*stop),
                 Err(e) => std::panic::resume_unwind(e),
             }

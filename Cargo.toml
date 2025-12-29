@@ -112,3 +112,4 @@ debug = true
 panic = 'unwind'
 # kodept-parse produces *a lot* of debug info
 split-debuginfo = "packed"
+rpath = true

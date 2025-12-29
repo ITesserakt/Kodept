@@ -12,7 +12,7 @@ use kodept_cli::prelude::{
     DiagnosticConfig, Extension, LexerChoice, LoadingConfig, OutputConfig,
     ParserChoice, ParsingConfig,
 };
-use kodept_frontend::engine::reporter::StopEngine;
+use kodept_frontend::engine::reporter::CompilationFailed;
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Engine, SubEngine};
 use kodept_systems::configs::{Lexer, OutputDirectory};
@@ -80,7 +80,7 @@ impl TryFrom<&Convert> for Loader {
     }
 }
 
-fn main() -> Result<(), StopEngine> {
+fn main() -> Result<(), CompilationFailed> {
     let cli_args = Cli::parse();
     let mut engine = Engine::new();
 
