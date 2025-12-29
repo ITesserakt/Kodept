@@ -47,7 +47,10 @@ pub(super) fn propagate_scopes(
     if let Some((span, kind)) = last_unprocessed
         && !any_processed
     {
-        Err(CannotLinkError(*span, kind.as_string()))
+        Err(CannotLinkError {
+            node_location: *span,
+            node_kind: kind.as_string()
+        })
     } else {
         Ok(())
     }

@@ -16,7 +16,6 @@ workspace = true
 
 [dependencies]
 codespan-reporting = "0.12.0"
-derive_more.workspace = true
 
 serde = { version = "1", features = ["derive"], optional = true }
 

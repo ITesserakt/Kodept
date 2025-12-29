@@ -5,23 +5,15 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::error_span;
-use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehaviour, Severity};
+use kodept_report_macros::Report;
 use crate::source::collection::SourceView;
 use crate::utils::ReportSystemEx;
 
+#[derive(Debug, Report)]
+#[severity("error")]
+#[message("Cannot proceed")]
+#[fail_fast("Cannot process input files")]
 struct CannotProceed;
-
-impl IntoSpannedReportMessage for CannotProceed {
-    type Message = Diagnostic;
-
-    fn behaviour(&self) -> MessageBehaviour {
-        MessageBehaviour::fail_fast("Cannot process input files")
-    }
-
-    fn into_message(self) -> Self::Message {
-        Diagnostic::new(Severity::Error).with_message("Cannot proceed")
-    }
-}
 
 #[derive(SystemSet)]
 pub struct EachSubEnginePhaseLabel<F>(PhantomData<fn() -> F>);

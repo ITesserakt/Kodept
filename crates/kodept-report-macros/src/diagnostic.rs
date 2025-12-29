@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
-    Attribute, Data, DeriveInput, Error, Expr, ExprLit, Field, Fields, Ident, Lit, LitInt, LitStr,
-    Meta, Token, parse::Parse, punctuated::Punctuated, spanned::Spanned,
+    parse::Parse, punctuated::Punctuated, spanned::Spanned, Attribute, Data, DeriveInput, Error, Expr, ExprLit, Field, Fields, Ident,
+    Lit, LitInt, LitStr, Meta, Token,
 };
 
 #[derive(Debug)]
@@ -55,24 +55,9 @@ pub fn derive_diagnostic(input: DeriveInput) -> Result<TokenStream, Error> {
         DiagnosticSeverity::Error => quote! { kodept_report::message::Severity::Error },
         DiagnosticSeverity::Bug => quote! { kodept_report::message::Severity::Bug },
     };
-    let message = if let Some(FormatArgs {
-        format,
-        args: format_args,
-    }) = config.message_format
-    {
-        let fields = config.fields.iter().map(|it| {
-            let name = &it.name;
-            quote! {
-                #[allow(unused_variables)]
-                let #name = &self.#name;
-            }
-        });
-        quote! {
-            diagnostic = {
-                #(#fields)*;
-                diagnostic.with_message(format!(#format, #(#format_args)*))
-            };
-        }
+    let message = if let Some(message_args) = config.message_format {
+        let args = quote_format_args(&message_args);
+        quote! { diagnostic = diagnostic.with_message(#args); }
     } else {
         quote! {}
     };
@@ -171,12 +156,7 @@ fn parse_diagnostic_config(input: &DeriveInput) -> Result<DiagnosticConfig, Erro
                     "Diagnostic derive macro only supports named fields",
                 ));
             }
-            Fields::Unit => {
-                return Err(Error::new(
-                    input.span(),
-                    "Diagnostic derive macro requires at least one field",
-                ));
-            }
+            Fields::Unit => {}
         },
         Data::Enum(_) => {
             return Err(Error::new(
@@ -292,6 +272,6 @@ fn quote_format_args(FormatArgs { format, args }: &FormatArgs) -> TokenStream {
     if args.is_empty() {
         quote! { #format }
     } else {
-        quote! { format!(#format, #(#args)*) }
+        quote! { format!(#format, #(#args, )*) }
     }
 }

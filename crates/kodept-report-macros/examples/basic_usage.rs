@@ -4,8 +4,8 @@
 use std::borrow::Cow;
 
 use kodept_core::code_point::{CodePoint, Span};
-use kodept_diagnostic_macros::Report;
 use kodept_report::{FileId, report::Report};
+use kodept_report_macros::Report;
 
 // Simple diagnostic with primary and secondary labels
 #[derive(Report, Debug)]

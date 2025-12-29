@@ -1092,7 +1092,6 @@ name = "kodept-report"
 version = "0.2.2"
 dependencies = [
  "codespan-reporting",
- "derive_more",
  "kodept-core",
  "serde",
 ]
@@ -1132,6 +1131,7 @@ dependencies = [
  "kodept-frontend",
  "kodept-parse",
  "kodept-report",
+ "kodept-report-macros",
  "kodept-rlt",
  "memmap2",
  "serde_json",
