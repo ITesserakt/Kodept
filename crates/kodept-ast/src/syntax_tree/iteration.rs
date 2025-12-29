@@ -116,6 +116,7 @@ impl<'a> Debug for NodeSlot<'a> {
 
 #[cfg(test)]
 mod tests {
+    use bevy_utils::prelude::DebugName;
     use crate::arity::{Plural, Singular};
     use crate::properties::{Node, Root};
     use crate::relationship::Contains;
@@ -125,7 +126,7 @@ mod tests {
     use kodept_core::file_name::{FileDescriptor, FileId, FileName};
 
     #[derive(Debug, Component, PartialEq)]
-    #[require(Node { kind: std::any::type_name::<Self>() })]
+    #[require(Node { kind: DebugName::type_name::<Self>() })]
     struct A(usize);
 
     #[test]
