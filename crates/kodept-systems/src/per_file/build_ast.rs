@@ -1,6 +1,5 @@
 use bevy_ecs::prelude::*;
 use derive_more::From;
-use kodept_ast::prelude::FromSyntax;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::Error;
 use kodept_ast_nodes::file::FileDecl;
@@ -9,14 +8,15 @@ use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
 use std::borrow::Cow;
+use kodept_ast::properties::Root;
 use crate::source::collection::SourceView;
-use crate::utils::ReportSystemEx;
+use crate::utils::{LogSystemEx, ReportSystemEx};
 
 define_phase!(
     pub phase BuildAstPhase[BuildAstPhaseLabel];
 
     fn build (self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports());
+        engine.add_systems(system.extract_reports().trace_completion());
     }
 );
 
@@ -27,16 +27,11 @@ fn system(
 ) -> Result<(), Wrapper> {
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
-    let (root, root_id) = syntax.root();
-    let whole_bundle = FileDecl::from_syntax(root, code_holder)?;
-
-    let mut entity = commands.spawn((
-        whole_bundle,
-        kodept_ast::properties::Root {
-            associated_file: source.describe(),
-        },
-    ));
-    entity.insert(kodept_ast::properties::Lexeme(root_id));
+    let (root, _) = syntax.root();
+    let file_id = FileDecl::from_syntax(root, code_holder, commands.reborrow())?;
+    commands.entity(file_id.entity()).insert(Root {
+        associated_file: source.describe()
+    });
 
     Ok(())
 }

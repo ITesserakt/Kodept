@@ -1,13 +1,18 @@
 use crate::term::ReferenceContext;
-use crate::utils::unwrap_type;
-use bevy_ecs::prelude::{Bundle, Component};
-use kodept_ast::prelude::{CodeHolder, FromSyntax};
+use crate::Dispatcher;
+use bevy_ecs::entity::Entity;
+use bevy_ecs::prelude::Component;
+use bevy_ecs::relationship::Relationship;
+use kodept_ast::experimental::{AstBuilder, Dispatch, FromSyntax, SpawnContext};
+use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, SourceSpan};
-use kodept_ast::syntax_tree::prelude::ASTBuilder;
+use kodept_ast::syntax_tree::children::HasChild;
+use kodept_ast::syntax_tree::experimental::{DispatchContext, SpawnedIn};
 use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types;
-use kodept_rlt::prelude::{Tuple, TypedParameter, UntypedParameter};
+use kodept_rlt::prelude::{Parameter, Tuple, TypedParameter, UntypedParameter};
+use std::convert::Infallible;
 
 #[derive(Debug, PartialEq, Component)]
 pub struct Ty {
@@ -41,66 +46,127 @@ derive_node!(NonTyParam {
 });
 
 impl FromSyntax<new_types::TypeName> for Ty {
-    type Bundle = impl Bundle;
-    type Error = crate::Error;
+    type Error = Infallible;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &new_types::TypeName,
+        spawner: SpawnContext<R>,
         source: impl CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
+    ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(node);
-        Ok(ASTBuilder::new(Ty {
+        Ok(AstBuilder::new(Ty {
             context: ReferenceContext::empty(false),
             ident: name,
         })
         .with_property(SourceSpan(node.0.into()))
-        .build())
+        .spawn_in(spawner)
+        .finish())
     }
 }
 
 impl FromSyntax<UntypedParameter> for NonTyParam {
-    type Bundle = impl Bundle;
-    type Error = crate::Error;
+    type Error = Infallible;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &UntypedParameter,
+        spawner: SpawnContext<R>,
         source: impl CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
+    ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        Ok(ASTBuilder::new(NonTyParam)
+        Ok(AstBuilder::new(NonTyParam)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .build())
+            .spawn_in(spawner)
+            .finish())
     }
 }
 
 impl FromSyntax<TypedParameter> for TyParam {
-    type Bundle = impl Bundle;
-    type Error = crate::Error;
+    type Error = Infallible;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &TypedParameter,
+        spawner: SpawnContext<R>,
         source: impl CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
+    ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        Ok(ASTBuilder::new(TyParam)
+        Ok(AstBuilder::new(TyParam)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.parameter_type, source, unwrap_type)?
-            .build())
+            .spawn_in(spawner)
+            .with_dispatch::<Dispatcher<_>, _, _>(&node.parameter_type, source)?
+            .finish())
     }
 }
 
 impl FromSyntax<Tuple> for ProdTy {
-    type Bundle = impl Bundle;
-    type Error = crate::Error;
+    type Error = Infallible;
 
-    fn from_syntax(node: &Tuple, source: impl CodeHolder) -> Result<Self::Bundle, Self::Error> {
-        Ok(ASTBuilder::new(ProdTy)
+    fn from_syntax<R: Relationship>(
+        node: &Tuple,
+        spawner: SpawnContext<R>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
+        Ok(AstBuilder::new(ProdTy)
             .with_property(SourceSpan(node.0.left.0 + node.0.right.0))
-            .with_dyn_children(node.0.inner.as_ref(), |it, spawner| {
-                unwrap_type(it, spawner, source)
-            })?
-            .build())
+            .spawn_in(spawner)
+            .with_dispatches::<Dispatcher<_>, _, _>(node.0.inner.as_ref(), source)?
+            .finish())
+    }
+}
+
+impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, kodept_rlt::prelude::Type>
+where
+    R: HasChild<Ty, T, Arity = A>,
+    R: HasChild<ProdTy, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
+{
+    type Node = kodept_rlt::prelude::Type;
+    type Error = Infallible;
+
+    fn dispatch(
+        self,
+        mut spawner: DispatchContext<R, T, A>,
+        source: impl CodeHolder,
+    ) -> Result<Entity, Self::Error> {
+        match self.0 {
+            kodept_rlt::prelude::Type::ContextualReference(context, ident) => {
+                let (is_global, context_items) = context.unfold();
+                let ident = source.get_chunk_located(ident);
+                let context_items = context_items
+                    .into_iter()
+                    .map(|it| source.get_chunk_located(it));
+                let context = if is_global.is_some() {
+                    ReferenceContext::global(context_items)
+                } else {
+                    ReferenceContext::local(context_items)
+                };
+                Ok(AstBuilder::new(Ty { context, ident })
+                    .with_property(SourceSpan(self.0.bounds()))
+                    .spawn_in((spawner, self.0))
+                    .finish_any())
+            }
+            kodept_rlt::prelude::Type::Reference(x) => spawner.forward::<_, Ty>(x, source),
+            kodept_rlt::prelude::Type::Tuple(x) => spawner.forward::<_, ProdTy>(x, source),
+        }
+    }
+}
+
+impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Parameter>
+where
+    R: HasChild<TyParam, T, Arity = A>,
+    R: HasChild<NonTyParam, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
+{
+    type Node = Parameter;
+    type Error = Infallible;
+
+    fn dispatch(self, mut spawner: DispatchContext<R, T, A>, source: impl CodeHolder) -> Result<Entity, Self::Error> {
+        match self.0 {
+            Parameter::Typed(x) => spawner.forward::<_, TyParam>(x, source),
+            Parameter::Untyped(x) => spawner.forward::<_, NonTyParam>(x, source),
+        }
     }
 }

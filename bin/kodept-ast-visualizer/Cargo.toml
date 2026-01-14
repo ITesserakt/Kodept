@@ -1,0 +1,23 @@
+[package]
+name = "kodept-ast-visualizer"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bevy_ecs.workspace = true
+bevy_utils = { version = "0.17", default-features = false, features = ["debug"] }
+clap = { version = "4.5", features = ["derive", "env"] }
+
+kodept-ast = { path = "../../crates/kodept-ast", version = "0.7", features = ["reflection"] }
+kodept-ast-nodes = { path = "../../crates/kodept-ast-nodes", version = "0.2", features = ["reflection"] }
+kodept-cli = { path = "../../crates/kodept-cli", version = "0.1" }
+kodept-frontend = { path = "../../crates/kodept-frontend", version = "0.2" }
+kodept-systems = { path = "../../crates/kodept-systems", version = "0.1" }
+
+[lints]
+workspace = true
+
+[features]
+default = ["graphviz"]
+graphviz = []

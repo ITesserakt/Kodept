@@ -1,13 +1,12 @@
 use crate::cli::primary::Kodept;
-use crate::plugins::{LogPlugin, ReportsPlugin, ThreadPoolPlugin};
 use crate::profiler::HeapProfilerGuard;
 use clap::Parser;
 use kodept_frontend::engine::Engine;
 use std::process::ExitCode;
+use kodept_cli::prelude::{LogPlugin, ReportsPlugin, ThreadPoolPlugin};
 
 mod cli;
 mod commands;
-mod plugins;
 mod profiler;
 
 fn main() -> ExitCode {
@@ -27,13 +26,9 @@ fn main() -> ExitCode {
         .add_plugin_if(
             !cli_options.diagnostic_config.disable,
             ReportsPlugin {
-                colored: cli_options.diagnostic_config.color,
-                eager: cli_options.diagnostic_config.eager,
-                config: cli_options.diagnostic_config.into(),
-                ..Default::default()
+                config: &cli_options.diagnostic_config,
             },
-        )
-        .add_plugin(cli_options.subcommands);
+        );
 
     match engine.run() {
         Ok(_) => ExitCode::SUCCESS,

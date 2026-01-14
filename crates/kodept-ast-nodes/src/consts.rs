@@ -1,13 +1,16 @@
 use bevy_ecs::name::Name;
-use bevy_ecs::{bundle::Bundle, component::Component};
+use bevy_ecs::relationship::Relationship;
+use bevy_ecs::component::Component;
+use kodept_ast::experimental::{AstBuilder, FromSyntax, SpawnContext};
+use kodept_ast::prelude::{CodeHolder, NodeId};
+use kodept_ast::syntax_tree::experimental::SpawnedIn;
 use kodept_ast::{
-    derive_node, prelude::FromSyntax, properties::SourceSpan, relation,
-    syntax_tree::prelude::ASTBuilder,
+    derive_node, properties::SourceSpan, relation
+    ,
 };
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::prelude::{BodiedFunction, TopLevelNode};
 
-use crate::Either;
 use crate::{
     function::FuncDecl,
     top_level::{EnumDecl, StructDecl},
@@ -30,13 +33,13 @@ relation!(Const => optional EnumDecl);
 relation!(Const => optional FuncDecl);
 
 impl FromSyntax<TopLevelNode> for Const {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &TopLevelNode,
-        source: impl kodept_ast::prelude::CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
+        spawner: SpawnContext<R>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
         let id_point = match node {
             TopLevelNode::Enum(x) => x.id().location(),
             TopLevelNode::Struct(x) => x.id.location(),
@@ -48,35 +51,36 @@ impl FromSyntax<TopLevelNode> for Const {
             TopLevelNode::Struct(_) => Const::Struct,
             TopLevelNode::BodiedFunction(_) => Const::Fn,
         };
-        Ok(ASTBuilder::new(value)
-            .with_dyn_child(node, source, |node, spawner, source| match node {
-                TopLevelNode::Enum(x) => spawner.spawn::<_, EnumDecl, _>(x, source, Either::v31),
-                TopLevelNode::Struct(x) => {
-                    spawner.spawn::<_, StructDecl, _>(x, source, Either::v32)
-                }
-                TopLevelNode::BodiedFunction(x) => {
-                    spawner.spawn::<_, FuncDecl, _>(x, source, Either::v33)
-                }
-            })?
+        let mut builder = AstBuilder::new(value)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .build())
+            .spawn_in(spawner);
+        match node {
+            TopLevelNode::Enum(x) => Ok(builder.with_child::<_, EnumDecl, _>(x, source)?.finish()),
+            TopLevelNode::Struct(x) => {
+                Ok(builder.with_child::<_, StructDecl, _>(x, source)?.finish())
+            }
+            TopLevelNode::BodiedFunction(x) => {
+                Ok(builder.with_child::<_, FuncDecl, _>(x, source)?.finish())
+            }
+        }
     }
 }
 
 impl FromSyntax<BodiedFunction> for Const {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &BodiedFunction,
-        source: impl kodept_ast::prelude::CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
+        spawner: SpawnContext<R>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
-        Ok(ASTBuilder::new(Const::Fn)
+        AstBuilder::new(Const::Fn)
             .with_property(Name::new(name))
             .with_property(SourceSpan(node.bounds()))
-            .with_child::<_, FuncDecl, _>(node, source)?
-            .build())
+            .spawn_in(spawner)
+            .with_child::<_, FuncDecl, _>(node, source)
+            .map(|it| it.finish())
     }
 }

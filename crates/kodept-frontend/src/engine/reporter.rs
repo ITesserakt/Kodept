@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::system::{SystemBuffer, SystemMeta, SystemParam};
 use kodept_report::prelude::*;
 use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 use tracing::{debug, error, trace};
 
@@ -85,23 +85,28 @@ where
         });
         if any_error || self.should_stop {
             self.should_stop = false;
-            StopEngine::stop()
+            CompilationFailed::stop()
         }
     }
 }
 
-#[derive(Debug)]
-pub struct StopEngine;
+pub struct CompilationFailed;
 
-impl StopEngine {
+impl CompilationFailed {
     fn stop() -> ! {
-        std::panic::resume_unwind(Box::new(StopEngine))
+        std::panic::resume_unwind(Box::new(CompilationFailed))
     }
 }
 
-impl Error for StopEngine {}
+impl Error for CompilationFailed {}
 
-impl Display for StopEngine {
+impl Debug for CompilationFailed {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Compilation failed")
+    }
+}
+
+impl Display for CompilationFailed {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Compilation failed")
     }

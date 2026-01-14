@@ -36,7 +36,7 @@ pub(super) fn propagate_scopes(
     let mut last_unprocessed = None;
     for (id, parent, span, node) in query {
         let Some(scope) = parent.and_then(|it| scopes.get(it.get()).ok()) else {
-            last_unprocessed = Some((span, node.kind));
+            last_unprocessed = Some((span, &node.kind));
             continue;
         };
         // parent was scoped already
@@ -47,7 +47,10 @@ pub(super) fn propagate_scopes(
     if let Some((span, kind)) = last_unprocessed
         && !any_processed
     {
-        Err(CannotLinkError(*span, kind))
+        Err(CannotLinkError {
+            node_location: *span,
+            node_kind: kind.as_string()
+        })
     } else {
         Ok(())
     }
@@ -87,7 +90,7 @@ pub(super) fn ensure_one_root_scope(
         query
             .iter()
             .filter_map(|it| nodes.get(it.starts_from).ok())
-            .map(|it| (*it.0, it.1.kind))
+            .map(|it| (*it.0, it.1.kind.as_string()))
             .collect(),
     ))
 }
@@ -98,7 +101,7 @@ mod tests {
     use crate::per_file::ast_shenanigans::symbols::scopes::spawn_scope;
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::RunSystemOnce;
-    use kodept_ast::prelude::Nodes;
+    use kodept_ast::relationship::Nodes;
     use kodept_ast_nodes::file::{FileDecl, ModDecl};
 
     #[test]

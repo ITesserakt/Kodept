@@ -4,6 +4,9 @@ version = "0.1.3"
 edition.workspace = true
 rust-version.workspace = true
 
+[lib]
+crate-type = ["dylib", "rlib"]
+
 [dependencies]
 bevy_ecs.workspace = true
 derive_more.workspace = true
@@ -19,6 +22,7 @@ kodept-core = { path = "../kodept-core", version = "0.4" }
 kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
 kodept-parse = { path = "../kodept-parse", version = "0.4" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
+kodept-report-macros = { path = "../kodept-report-macros", version = "0.1" }
 kodept-rlt = { path = "../kodept-rlt", version = "0.2" }
 
 [dev-dependencies]

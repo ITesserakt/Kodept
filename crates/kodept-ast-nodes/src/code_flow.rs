@@ -3,11 +3,13 @@ use crate::literal::{Literal, Tuple};
 use crate::properties::Condition;
 use crate::term::Ref;
 use crate::types::Ty;
-use crate::utils::{unwrap_body, unwrap_operation};
-use bevy_ecs::prelude::{Bundle, Component};
-use kodept_ast::prelude::{CodeHolder, FromSyntax};
+use crate::Dispatcher;
+use bevy_ecs::prelude::Component;
+use bevy_ecs::relationship::Relationship;
+use kodept_ast::experimental::{AstBuilder, FromSyntax, SpawnContext};
+use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::SourceSpan;
-use kodept_ast::syntax_tree::prelude::ASTBuilder;
+use kodept_ast::syntax_tree::experimental::SpawnedIn;
 use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 
@@ -51,50 +53,56 @@ derive_node!(ElseExpr);
 relation!(ElseExpr => child Exprs);
 
 impl FromSyntax<kodept_rlt::prelude::IfExpr> for IfExpr {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &kodept_rlt::prelude::IfExpr,
+        spawner: SpawnContext<R>,
         source: impl CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
-        Ok(ASTBuilder::new(IfExpr)
+    ) -> Result<NodeId<Self>, Self::Error> {
+        let mut builder = AstBuilder::new(IfExpr)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.condition, source, unwrap_operation)?
-            .with_children::<_, ElifExpr, _>(node.elif.as_ref(), source)?
-            .with_opt_child::<_, ElseExpr, _>(node.el.as_ref(), source)?
-            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)?
-            .build())
+            .spawn_in(spawner);
+        builder.with_dispatch::<Dispatcher<_>, Condition, _>(&node.condition, source)?;
+        builder.with_children::<_, ElifExpr, _>(node.elif.as_ref(), source)?;
+        if let Some(el) = &node.el {
+            builder.with_child::<_, ElseExpr, _>(el, source)?;
+        }
+        builder.with_dispatch::<Dispatcher<_>, (), _>(&node.body, source)?;
+
+        Ok(builder.finish())
     }
 }
 
 impl FromSyntax<kodept_rlt::prelude::ElifExpr> for ElifExpr {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &kodept_rlt::prelude::ElifExpr,
+        spawner: SpawnContext<R>,
         source: impl CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
-        Ok(ASTBuilder::new(ElifExpr)
+    ) -> Result<NodeId<Self>, Self::Error> {
+        Ok(AstBuilder::new(ElifExpr)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.condition, source, unwrap_operation)?
-            .with_dyn_child(&node.body, source, unwrap_body::<_, (), _>)?
-            .build())
+            .spawn_in(spawner)
+            .with_dispatch::<Dispatcher<_>, Condition, _>(&node.condition, source)?
+            .with_dispatch::<Dispatcher<_>, (), _>(&node.body, source)?
+            .finish())
     }
 }
 
 impl FromSyntax<kodept_rlt::prelude::ElseExpr> for ElseExpr {
-    type Bundle = impl Bundle;
     type Error = crate::Error;
 
-    fn from_syntax(
+    fn from_syntax<R: Relationship>(
         node: &kodept_rlt::prelude::ElseExpr,
+        spawner: SpawnContext<R>,
         source: impl CodeHolder,
-    ) -> Result<Self::Bundle, Self::Error> {
-        Ok(ASTBuilder::new(ElseExpr)
+    ) -> Result<NodeId<Self>, Self::Error> {
+        Ok(AstBuilder::new(ElseExpr)
             .with_property(SourceSpan(node.bounds()))
-            .with_dyn_child(&node.body, source, unwrap_body)?
-            .build())
+            .spawn_in(spawner)
+            .with_dispatch::<Dispatcher<_>, _, _>(&node.body, source)?
+            .finish())
     }
 }

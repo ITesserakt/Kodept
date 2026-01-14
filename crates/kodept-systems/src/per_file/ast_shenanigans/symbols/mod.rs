@@ -23,6 +23,7 @@ use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehavi
 use resolution::*;
 use scopes::*;
 use std::borrow::Cow;
+use kodept_report_macros::Report;
 use tables::*;
 
 #[derive(Debug, Copy, Clone, ScheduleLabel, PartialEq, Eq, Hash)]
@@ -124,10 +125,21 @@ struct SpawnSymbolMessage {
     entity: Entity,
     kind: SymbolKind,
 }
+
+#[derive(Debug, Report)]
+#[severity("bug")]
+#[message("Cannot create new scope or link with any other")]
+#[note("Possible out-of-tree nodes?")]
+#[fail_fast("Scoping failed")]
+struct CannotLinkError {
+    #[primary_label("unprocessed node: {}", self.node_kind)]
+    node_location: SourceSpan,
+    node_kind: String,
+}
+
 #[derive(Debug)]
-struct CannotLinkError(SourceSpan, &'static str);
-#[derive(Debug)]
-struct MultipleRootScopes(Vec<(SourceSpan, &'static str)>);
+struct MultipleRootScopes(Vec<(SourceSpan, String)>);
+
 #[derive(Debug)]
 enum SymbolErrors {
     NameNotFound(SourceSpan),
@@ -140,9 +152,13 @@ enum SymbolErrors {
         previous_symbol_span: SourceSpan,
     },
 }
-#[derive(Debug)]
+
+#[derive(Debug, Report)]
+#[severity("error")]
+#[message("Cannot resolve reference `{}`", self.reference_name)]
 struct UnresolvedReference {
     reference_name: Name,
+    #[primary_label("not found in scope")]
     reference_span: SourceSpan,
 }
 
@@ -238,21 +254,6 @@ impl Equivalent<SymbolDescriptor> for SymbolDescriptorView<'_> {
     }
 }
 
-impl IntoSpannedReportMessage for CannotLinkError {
-    type Message = Diagnostic;
-
-    fn behaviour(&self) -> MessageBehaviour {
-        MessageBehaviour::fail_fast("Scoping failed")
-    }
-
-    fn into_message(self) -> Self::Message {
-        Diagnostic::new(Severity::Bug)
-            .with_message("Cannot create new scope or link with any other")
-            .with_note("Possible out-of-tree nodes?")
-            .with_primary_label(format!("unprocessed node: {}", self.1), self.0)
-    }
-}
-
 impl IntoSpannedReportMessage for MultipleRootScopes {
     type Message = Diagnostic;
 
@@ -300,19 +301,6 @@ impl IntoSpannedReportMessage for SymbolErrors {
                     .with_secondary_label(scope_name_message, scope_span)
             }
         }
-    }
-}
-
-impl IntoSpannedReportMessage for UnresolvedReference {
-    type Message = Diagnostic;
-
-    fn into_message(self) -> Self::Message {
-        Diagnostic::new(Severity::Error)
-            .with_message(format!(
-                "Cannot resolve reference `{}`",
-                self.reference_name
-            ))
-            .with_primary_label("not found in scope", self.reference_span)
     }
 }
 

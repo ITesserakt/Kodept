@@ -1,13 +1,13 @@
-use crate::cli::configs::{LoadingConfig, ParsingConfig};
 use clap::Parser;
+use kodept_cli::prelude::{LexerChoice, LoadingConfig, OutputConfig, ParserChoice, ParsingConfig};
 use kodept_frontend::engine::utils::Timings;
 use kodept_frontend::engine::{Engine, Plugin};
-use kodept_systems::configs::OutputDirectory;
+use kodept_systems::configs::{Lexer, OutputDirectory, Parser as ParserImpl};
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::per_file::inject_common_resources_phase;
 use kodept_systems::per_file::prelude::{AstPassesPhase, BuildAstPhase, ParseSourcePhase};
 use kodept_systems::source::collection::SourceView;
-use crate::cli::primary::OutputConfig;
+use crate::commands::Convert;
 
 #[derive(Debug, Parser)]
 pub struct Check {
@@ -34,15 +34,26 @@ impl Plugin for Check {
 
         engine
             .install(LoadAllSourcesPhase {
-                config: self.loading_config,
+                config: Convert(self.loading_config),
             })
             .install(inject_common_resources_phase())
             .install(EachSubEnginePhase::new(move |engine| {
                 engine.insert_resource(OutputDirectory::new(&self.output_config.output));
-                engine.insert_resource(self.parsing_config.get_parsing_backend());
+
                 let source = engine.resource::<SourceView>();
-                let lexing_backend = self.parsing_config.get_lexing_backend(source.contents());
-                engine.insert_resource(lexing_backend);
+                let lexer = match self.parsing_config.lexer {
+                    LexerChoice::Auto if source.contents().is_ascii() => Lexer::Ascii,
+                    LexerChoice::Auto => Lexer::Peg,
+                    LexerChoice::Peg => Lexer::Peg,
+                    LexerChoice::ASCII if source.contents().is_ascii() => Lexer::Ascii,
+                    LexerChoice::ASCII => panic!("Cannot use ascii lexer on non-ascii input"),
+                };
+                engine.insert_resource(lexer);
+
+                engine.insert_resource(match self.parsing_config.parser {
+                    ParserChoice::Peg => ParserImpl::Peg,
+                    ParserChoice::Auto => ParserImpl::Peg,
+                });
 
                 engine
                     .install(ParseSourcePhase)

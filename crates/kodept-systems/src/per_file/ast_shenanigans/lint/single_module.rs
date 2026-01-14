@@ -6,11 +6,17 @@ use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::Located;
 use kodept_report::message::Diagnostic;
-use kodept_report::prelude::{IntoSpannedReportMessage, Severity};
+use kodept_report::prelude::{Severity};
+use kodept_report_macros::Report;
 
 pub(super) struct SingleModuleWithBracketsLint;
 
-struct SuspiciousStructure(Entity);
+#[derive(Debug, Report)]
+#[severity("bug")]
+#[message("Expected {} to point at File node", self.root_id)]
+struct SuspiciousStructure {
+    root_id: Entity,
+}
 
 impl Lint for SingleModuleWithBracketsLint {
     fn descriptor() -> LintDescriptor {
@@ -29,7 +35,7 @@ fn system(
 ) {
     query.iter().for_each(|(id, lexeme)| {
         let Ok(node) = syntax.try_get::<kodept_rlt::prelude::File>(lexeme.0) else {
-            reporter.report(SuspiciousStructure(id));
+            reporter.report(SuspiciousStructure { root_id: id });
             return;
         };
 
@@ -42,13 +48,4 @@ fn system(
             });
         }
     })
-}
-
-impl IntoSpannedReportMessage for SuspiciousStructure {
-    type Message = Diagnostic;
-
-    fn into_message(self) -> Self::Message {
-        Diagnostic::new(Severity::Bug)
-            .with_message(format!("Expected {} to point at File node", self.0))
-    }
 }

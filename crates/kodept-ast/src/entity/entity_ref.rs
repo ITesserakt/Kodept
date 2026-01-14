@@ -5,6 +5,7 @@ use bevy_ecs::query::QueryData;
 use std::convert::identity;
 use std::ops::Deref;
 use bevy_ecs::relationship::Relationship;
+use bevy_utils::prelude::DebugName;
 
 #[derive(QueryData, Copy, Clone)]
 #[query_data(derive(Copy, Clone))]
@@ -52,8 +53,8 @@ impl<'w> AnyNodeRefItem<'w, '_> {
     }
 
     #[inline(always)]
-    pub fn kind(&self) -> &'static str {
-        self.inner.get::<Node>().unwrap().kind
+    pub fn kind(&self) -> &DebugName {
+        &self.inner.get::<Node>().unwrap().kind
     }
     
     pub fn span(&self) -> SourceSpan {

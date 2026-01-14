@@ -1,23 +1,16 @@
-use crate::utils::{ForwardReport, ReportSystemEx, forward};
+use crate::utils::{forward, ForwardReport, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
+use kodept_report_macros::Report;
 use std::time::{Duration, Instant};
 
-struct TotalTimeReport(Duration);
-
-impl IntoSpannedReportMessage for TotalTimeReport {
-    type Message = Diagnostic;
-
-    fn into_message(self) -> Self::Message {
-        let (duration, suffix) = pick_appropriate_suffix(self.0);
-
-        Diagnostic::new(Severity::Note).with_message(format!(
-            "Successfully completed in {:.3}{}",
-            duration, suffix
-        ))
-    }
+#[derive(Debug, Report)]
+#[severity("note")]
+#[message("Successfully completed in {:.3}{}", self.elapsed_value, self.elapsed_suffix)]
+struct TotalTimeReport {
+    elapsed_value: f64,
+    elapsed_suffix: &'static str,
 }
 
 fn pick_appropriate_suffix(dur: Duration) -> (f64, &'static str) {
@@ -48,5 +41,9 @@ define_phase!(
 );
 
 fn system(total_time: Res<TotalTime>) -> ForwardReport<TotalTimeReport> {
-    forward(TotalTimeReport(total_time.0.elapsed()))
+    let (duration, suffix) = pick_appropriate_suffix(total_time.0.elapsed());
+    forward(TotalTimeReport {
+        elapsed_value: duration,
+        elapsed_suffix: suffix,
+    })
 }

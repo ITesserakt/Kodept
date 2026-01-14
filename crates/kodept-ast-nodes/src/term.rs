@@ -1,6 +1,17 @@
+use crate::types::Ty;
+use crate::Dispatcher;
+use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
+use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext};
+use kodept_ast::prelude::CodeHolder;
+use kodept_ast::properties::SourceSpan;
+use kodept_ast::syntax_tree::children::HasChild;
+use kodept_ast::syntax_tree::experimental::SpawnedIn;
 use kodept_ast::{derive_node, Str};
+use kodept_rlt::exported::SpanBounds;
+use kodept_rlt::prelude::Term;
 use std::borrow::Cow;
+use std::convert::Infallible;
 
 #[derive(Debug, PartialEq, Eq, Default, PartialOrd, Ord, Clone)]
 pub struct ReferenceContext {
@@ -46,5 +57,85 @@ impl ReferenceContext {
     /// Means that this context has no items in it and it is global
     pub const fn is_empty_global_context(&self) -> bool {
         self.global && self.items.is_empty()
+    }
+}
+
+impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Term>
+where
+    R: HasChild<Ref, T, Arity = A>,
+    R: HasChild<Ty, T, Arity = A>,
+    T: Send + Sync + 'static,
+    A: kodept_ast::arity::Arity
+{
+    type Node = Term;
+    type Error = Infallible;
+
+    fn dispatch(
+        self,
+        spawner: DispatchContext<R, T, A>,
+        source: impl CodeHolder,
+    ) -> Result<Entity, Self::Error> {
+        match self.0 {
+            Term::Reference(x) => {
+                let ident = source.get_chunk_located(x);
+                let value = Ref {
+                    context: ReferenceContext::empty(false),
+                    ident,
+                };
+                Ok(AstBuilder::new(value)
+                    .with_property(SourceSpan(x.bounds()))
+                    .spawn_in((spawner, x))
+                    .finish_any())
+            }
+            Term::ContextualReference(x) => {
+                let ident = source.get_chunk_located(&x.inner);
+                let (is_global, items) = x.context.unfold();
+                let context = if is_global.is_some() {
+                    ReferenceContext::global(
+                        items.into_iter().map(|it| source.get_chunk_located(it)),
+                    )
+                } else {
+                    ReferenceContext::local(
+                        items.into_iter().map(|it| source.get_chunk_located(it)),
+                    )
+                };
+                let value = Ref { context, ident };
+
+                Ok(AstBuilder::new(value)
+                    .with_property(SourceSpan(x.bounds()))
+                    .spawn_in((spawner, self.0))
+                    .finish_any())
+            }
+            Term::Constant(x) => {
+                let ident = source.get_chunk_located(x);
+                let value = Ty {
+                    context: ReferenceContext::empty(false),
+                    ident,
+                };
+                Ok(AstBuilder::new(value)
+                    .with_property(SourceSpan(x.bounds()))
+                    .spawn_in((spawner, x))
+                    .finish_any())
+            }
+            Term::ContextualConstant(x) => {
+                let ident = source.get_chunk_located(&x.inner);
+                let (is_global, items) = x.context.unfold();
+                let context = if is_global.is_some() {
+                    ReferenceContext::global(
+                        items.into_iter().map(|it| source.get_chunk_located(it)),
+                    )
+                } else {
+                    ReferenceContext::local(
+                        items.into_iter().map(|it| source.get_chunk_located(it)),
+                    )
+                };
+                let value = Ty { context, ident };
+
+                Ok(AstBuilder::new(value)
+                    .with_property(SourceSpan(x.bounds()))
+                    .spawn_in((spawner, self.0))
+                    .finish_any())
+            }
+        }
     }
 }

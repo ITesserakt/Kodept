@@ -1,14 +1,16 @@
-use crate::configs::{LexerImpl, ParserImpl};
+use crate::configs::{Lexer, Parser};
 use crate::source::collection::SourceView;
-use crate::utils::ReportSystemEx;
+use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_frontend::Either;
 use kodept_frontend::engine::{Phase, PhaseEngine};
+use kodept_frontend::Either;
 use kodept_parse::common::{ErrorAdapter, RLTProducer};
-use kodept_parse::error::{ParseError, ParseErrors};
-use kodept_parse::lexer::PackedToken;
+use kodept_parse::error::ParseError;
+use kodept_parse::lexer::{ASCIILexer, PackedToken, PegLexer};
+use kodept_parse::parser::PegParser;
 use kodept_parse::token_stream::PackedTokenStream;
+use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
 use kodept_report::prelude::*;
 use std::borrow::Cow;
 use std::fmt::Display;
@@ -22,14 +24,14 @@ impl Phase for ParseSourcePhase {
     type Set = ParseSourcePhaseLabel;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports())
+        engine.add_systems(system.extract_reports().trace_completion())
     }
 }
 
 fn system(
     source: Res<SourceView>,
-    lexer: Res<LexerImpl>,
-    parser: Res<ParserImpl>,
+    lexer: Res<Lexer>,
+    parser: Res<Parser>,
     mut commands: Commands,
 ) -> Result<
     (),
@@ -40,17 +42,32 @@ fn system(
 > {
     let input = source.contents();
 
-    let tokens = lexer
-        .lex(input)
-        .map_err(|e: ParseErrors<String>| e.into_iter().map(Wrapper))
-        .map_err(Either::Left)?;
+    let tokens = match &*lexer {
+        Lexer::Peg => EagerTokenizer::new(input, PegLexer::<false>::new())
+            .try_into_vec()
+            .map_err(|e| e.adapt(input, 0))
+            .map_err(|e| e.into_iter().map(Wrapper))
+            .map_err(Either::Left)?,
+        Lexer::PegWithTracing => EagerTokenizer::new(input, PegLexer::<true>::new())
+            .try_into_vec()
+            .map_err(|e| e.adapt(input, 0))
+            .map_err(|e| e.into_iter().map(Wrapper))
+            .map_err(Either::Left)?,
+        Lexer::Ascii => match EagerTokenizer::new(input, ASCIILexer::new()).try_into_vec() {
+            Ok(x) => x,
+            Err(e) => match e {},
+        },
+    };
+
     let stream = PackedTokenStream::new(&tokens);
 
-    let rlt = parser
-        .parse_stream(&stream)
-        .map_err(|e| e.adapt(stream, 0))
-        .map_err(|e| e.into_iter().map(Wrapper))
-        .map_err(Either::Right)?;
+    let rlt = match &*parser {
+        Parser::Peg => PegParser::new()
+            .parse_stream(&stream)
+            .map_err(|e| e.adapt(stream, 0))
+            .map_err(|e| e.into_iter().map(Wrapper))
+            .map_err(Either::Right)?,
+    };
 
     commands.insert_resource(SyntaxResolver::build(rlt));
 

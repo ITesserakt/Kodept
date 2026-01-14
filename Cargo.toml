@@ -11,19 +11,7 @@ license = "Apache-2.0"
 
 [workspace]
 resolver = "3"
-members = [
-    "."
-    , "crates/kodept-core"
-    , "crates/kodept-parse"
-    , "crates/kodept-inference"
-    , "crates/kodept-ast"
-    , "crates/kodept-report"
-    , "crates/kodept-ir"
-    , "crates/kodept-interning"
-    , "crates/kodept-ast-nodes"
-    , "crates/kodept-rlt"
-    , "crates/kodept-frontend"
-    , "crates/kodept-systems"]
+members = [".", "crates/kodept-core", "crates/kodept-parse", "crates/kodept-inference", "crates/kodept-ast", "crates/kodept-report", "crates/kodept-interning", "crates/kodept-ast-nodes", "crates/kodept-rlt", "crates/kodept-frontend", "crates/kodept-systems", "bin/kodept-ast-visualizer", "crates/kodept-cli", "crates/kodept-report-macros"]
 
 [workspace.package]
 edition = "2024"
@@ -56,16 +44,14 @@ rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
 [dependencies]
-clap = { version = "4.5", features = ["derive", "env"] }
-tracing.workspace = true
-tracing-subscriber = { version = "0.3.17", default-features = false, features = ["fmt", "ansi"] }
+clap = { version = "4.5", features = ["env", "derive"] }
 
 dhat = { version = "0.3", optional = true }
 rayon = { version = "1.10.0", optional = true }
 
+kodept-cli = { path = "crates/kodept-cli" }
 kodept-frontend = { path = "crates/kodept-frontend" }
 kodept-systems = { path = "crates/kodept-systems" }
-kodept-report = { path = "crates/kodept-report" }
 
 kodept-interning = { path = "crates/kodept-interning", optional = true }
 
@@ -112,3 +98,4 @@ debug = true
 panic = 'unwind'
 # kodept-parse produces *a lot* of debug info
 split-debuginfo = "packed"
+rpath = true

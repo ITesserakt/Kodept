@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display, Formatter};
 use crate::prelude::ASTNode;
 use crate::resource::rlt::LexemeId;
 use bevy_ecs::prelude::Component;
@@ -6,13 +7,14 @@ use kodept_core::code_point::Span;
 use kodept_core::file_name::FileDescriptor;
 
 pub use bevy_ecs::name::Name;
+use bevy_utils::prelude::DebugName;
 
 pub trait NodeProperty: Component {}
 
-#[derive(Debug, Component, Display)]
+#[derive(Component, Display)]
 #[component(immutable)]
 pub struct Node {
-    pub kind: &'static str,
+    pub kind: DebugName,
 }
 
 #[derive(Debug, Component)]
@@ -26,7 +28,7 @@ pub struct Root {
 #[component(immutable)]
 pub struct Lexeme(pub LexemeId);
 
-#[derive(Debug, Component, Copy, Clone, From, Into, Display)]
+#[derive(Component, Copy, Clone, From, Into, Display)]
 #[component(immutable)]
 pub struct SourceSpan(pub Span);
 
@@ -45,3 +47,15 @@ impl<T: ASTNode> RequireProperty<Lexeme> for T {}
 impl<T: ASTNode> RequireProperty<SourceSpan> for T {}
 
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {}
+
+impl Debug for Node {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        <Self as Display>::fmt(self, f)
+    }
+}
+
+impl Debug for SourceSpan {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        <Self as Display>::fmt(self, f)
+    }
+}

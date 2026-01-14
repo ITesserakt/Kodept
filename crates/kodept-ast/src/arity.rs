@@ -19,14 +19,17 @@ pub struct Option(Entity);
 
 /// Describes that parent must have a single child of that type
 /// One-to-one relationship
+#[derive(Debug)]
 pub struct Singular;
 
 /// Describes that parent may not have any child of that type
 /// Zero or one-to-one relationship
+#[derive(Debug)]
 pub struct Optional;
 
 /// Describes that parent may have multiple children of that type
 /// Many-to-one relationship
+#[derive(Debug)]
 pub struct Plural;
 
 impl Sealed for Singular {}
