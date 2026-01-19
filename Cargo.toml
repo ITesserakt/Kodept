@@ -43,14 +43,6 @@ clippy.perf = "warn"
 rust.unsafe_code = "deny"
 rust.unreachable_pub = "warn"
 
-[[bin]]
-name = "kodept-ast-visualizer"
-path = "bin/kodept-ast-visualizer"
-
-[[bin]]
-name = "kodept-check"
-path = "bin/kodept-check"
-
 [profile.test.package.proptest]
 opt-level = 3
 
@@ -73,6 +65,7 @@ lto = "fat"
 panic = 'unwind'
 strip = true
 codegen-units = 1
+rpath = true
 
 [profile.light]
 inherits = "release"
