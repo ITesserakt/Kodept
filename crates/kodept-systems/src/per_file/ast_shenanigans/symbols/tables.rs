@@ -35,7 +35,7 @@ pub(super) fn populate_symbol_table(
 
         let descriptor = SymbolDescriptor {
             kind: spawned_symbol.kind,
-            name: name.clone()
+            name: name.clone(),
         };
         match table.symbols.entry(descriptor) {
             Entry::Occupied(mut entry) if entry.get().bound_to == spawned_symbol.entity => {

@@ -1,6 +1,6 @@
 use crate::common::{EagerTokensProducer, TokenProducer};
-use crate::lexer::bare_metal::Error::{NotANumber, UnclosedChar, UnclosedString, Unknown};
 use crate::lexer::PackedToken;
+use crate::lexer::bare_metal::Error::{NotANumber, UnclosedChar, UnclosedString, Unknown};
 use crate::token_match::PackedTokenMatch;
 use kodept_core::code_point::CodePoint;
 use std::cell::Cell;
@@ -277,7 +277,9 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 }
             }
             [b'_', b'A'..=b'Z', rest @ ..] | [b'A'..=b'Z', rest @ ..] => {
-                let not_letter = rest.iter().position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
+                let not_letter = rest
+                    .iter()
+                    .position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
                 self.push(PackedToken::Type);
                 match not_letter {
                     Some(pos) => Ok(&rest[pos..]),
@@ -285,7 +287,9 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 }
             }
             [b'_', b'a'..=b'z', rest @ ..] | [b'a'..=b'z', rest @ ..] => {
-                let not_letter = rest.iter().position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
+                let not_letter = rest
+                    .iter()
+                    .position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
                 self.push(PackedToken::Identifier);
                 match not_letter {
                     Some(pos) => Ok(&rest[pos..]),
@@ -305,11 +309,21 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 self.push(PackedToken::Octal);
                 Ok(rest)
             }
-            [b'0', b'x' | b'X', b'0'..=b'9' | b'A'..=b'F' | b'a'..=b'f', rest @ ..] => {
+            [
+                b'0',
+                b'x' | b'X',
+                b'0'..=b'9' | b'A'..=b'F' | b'a'..=b'f',
+                rest @ ..,
+            ] => {
                 self.push(PackedToken::Hex);
                 Ok(rest)
             }
-            [b'0', system @ (b'b' | b'B' | b'c' | b'C' | b'x' | b'X'), first, rest @ ..] => {
+            [
+                b'0',
+                system @ (b'b' | b'B' | b'c' | b'C' | b'x' | b'X'),
+                first,
+                rest @ ..,
+            ] => {
                 #[inline(always)]
                 fn digit_matches(system: &u8, digit: u8) -> bool {
                     match system {

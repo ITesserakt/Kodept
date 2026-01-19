@@ -1,24 +1,26 @@
 //! This crate contains a wrapper around string interner.
 
-mod implementation;
-pub mod metrics;
-mod fixed_hasher;
 #[cfg(feature = "code_holder")]
 mod code_holder;
+mod fixed_hasher;
+mod implementation;
+pub mod metrics;
 
 #[cfg(feature = "code_holder")]
 pub use code_holder::InterningCodeHolder;
-pub use implementation::{Interned, Internable, Interner};
+pub use implementation::{Internable, Interned, Interner};
 
 pub trait GlobalInterner: Internable {
     fn interner() -> &'static Interner<Self>;
-    
+
     fn intern(&self) -> Interned<Self> {
         Self::interner().intern(self)
     }
-    
-    fn intern_owned(self) -> Interned<Self> where 
-        Self:Sized {
+
+    fn intern_owned(self) -> Interned<Self>
+    where
+        Self: Sized,
+    {
         Self::interner().intern(&self)
     }
 }

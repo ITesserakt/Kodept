@@ -211,7 +211,10 @@ mod tests {
             s.into_inner(),
             HashMap::from([
                 (var1, constant.intern()),
-                (var2, MonomorphicType::fun1(&constant, PrimitiveType::u8()).intern())
+                (
+                    var2,
+                    MonomorphicType::fun1(&constant, PrimitiveType::u8()).intern()
+                )
             ])
         )
     }

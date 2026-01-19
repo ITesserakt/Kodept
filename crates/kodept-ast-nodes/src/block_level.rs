@@ -92,7 +92,7 @@ impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Body>
 where
     R: HasChild<Exprs, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = Body;
     type Error = crate::Error;
@@ -127,7 +127,7 @@ where
     R: HasChild<Literal, T, Arity = A>,
     R: HasChild<IfExpr, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = BlockLevelNode;
     type Error = crate::Error;

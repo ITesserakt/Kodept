@@ -1,5 +1,5 @@
-use crate::graphviz::helpers::{cell, row, sanitize, table, DebugAsDisplay};
 use crate::ExportControlEvent;
+use crate::graphviz::helpers::{DebugAsDisplay, cell, row, sanitize, table};
 use bevy_ecs::component::Components;
 use bevy_ecs::prelude::{EntityRef, Local, Name, On, Query, Res, Resource, With};
 use bevy_utils::prelude::ShortName;
@@ -7,8 +7,8 @@ use clap::Args;
 use kodept_ast::properties::{Node, SourceSpan};
 use kodept_ast::relationship::RelationshipMetadata;
 use kodept_ast::resource::reflection::DebugRegistry;
-use kodept_frontend::engine::{Engine, Plugin};
 use kodept_frontend::Either;
+use kodept_frontend::engine::{Engine, Plugin};
 use kodept_systems::configs::OutputDirectory;
 use kodept_systems::source::collection::SourceView;
 use kodept_systems::utils::ReportSystemEx;
@@ -183,7 +183,7 @@ fn draw_node(
                         let path = node.kind.shortname();
                         Either::Right(path)
                     }
-                    _ => Either::Left(DebugAsDisplay(repr))
+                    _ => Either::Left(DebugAsDisplay(repr)),
                 };
 
                 row(buffer, |buffer| {

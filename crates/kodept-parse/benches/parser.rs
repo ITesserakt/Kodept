@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 
 use kodept_parse::common::RLTProducer;
 use kodept_parse::lexer::PegLexer;
-use kodept_parse::parser::{PegParser};
+use kodept_parse::parser::PegParser;
 use kodept_parse::token_match::PackedTokenMatch;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};

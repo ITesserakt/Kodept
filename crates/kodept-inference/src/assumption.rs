@@ -172,7 +172,7 @@ impl<Name: Debug> Debug for AssumptionSet<Name> {
                         "{key:?} :: [{}]",
                         JoinedDisplay::enumerate(value)
                     )))
-                        .join()
+                    .join()
                 )
             }
         }

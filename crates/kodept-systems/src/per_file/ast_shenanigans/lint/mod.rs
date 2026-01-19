@@ -2,6 +2,7 @@ mod rlt_consistency;
 mod single_module;
 
 use crate::per_file::ast_shenanigans::lint::rlt_consistency::RLTConsistencyLint;
+use crate::per_file::ast_shenanigans::lint::single_module::SingleModuleWithBracketsLint;
 use bevy_ecs::prelude::{
     Component, IntoScheduleConfigs, IntoSystem, Local, Populated, Query, ReadOnlySystem, Schedule,
     SystemInput, World,
@@ -12,7 +13,6 @@ use bevy_ecs::system::ScheduleSystem;
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use tracing::info;
-use crate::per_file::ast_shenanigans::lint::single_module::SingleModuleWithBracketsLint;
 
 pub(super) trait IntoReadonlySystem<In, Out, Marker>
 where

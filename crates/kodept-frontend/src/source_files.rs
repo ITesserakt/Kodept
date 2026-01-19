@@ -1,14 +1,14 @@
 use crate::prelude::{Source, TryReadCode};
 use crate::read_code_source::ReadSource;
-use kodept_core::file_name::FileName;
+use bevy_ecs::prelude::{Component, Resource};
 use kodept_core::Freeze;
+use kodept_core::file_name::FileName;
+use kodept_report::files::external::{Error, Files};
 use kodept_report::{FileDescriptor, FileId};
 use std::collections::HashMap;
 use std::ops::{Deref, Range};
 use std::sync::Arc;
-use bevy_ecs::prelude::{Component, Resource};
 use yoke::Yoke;
-use kodept_report::files::external::{Error, Files};
 
 #[derive(Debug, Component, Resource)]
 pub struct SourceView<Impl: 'static> {
@@ -18,7 +18,7 @@ pub struct SourceView<Impl: 'static> {
 
 #[derive(Debug, Resource)]
 pub struct CollectedSources<Impl> {
-    pub inner: Arc<SourceFiles<Impl>>
+    pub inner: Arc<SourceFiles<Impl>>,
 }
 
 #[derive(Debug, Default)]

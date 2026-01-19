@@ -178,7 +178,7 @@ impl<T> RelationshipSourceCollection for NodeId<T> {
         self.entity.shrink_to_fit()
     }
 
-    fn extend_from_iter(&mut self, entities: impl IntoIterator<Item=Entity>) {
+    fn extend_from_iter(&mut self, entities: impl IntoIterator<Item = Entity>) {
         self.entity.extend_from_iter(entities);
     }
 }

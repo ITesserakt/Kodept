@@ -1,5 +1,5 @@
-use crate::message::{Diagnostic, ReportMessage, Severity};
 use crate::Str;
+use crate::message::{Diagnostic, ReportMessage, Severity};
 use kodept_core::code_point::CodePoint;
 use std::any::type_name_of_val;
 use std::error::Error;

@@ -1,10 +1,10 @@
+use derive_more::From;
+use kodept_frontend::prelude::{ReadSource, Source};
+use memmap2::Mmap;
 use std::borrow::Cow;
 use std::ops::Range;
-use std::str::{from_utf8, Utf8Error};
-use derive_more::From;
-use memmap2::Mmap;
+use std::str::{Utf8Error, from_utf8};
 use yoke::Yoke;
-use kodept_frontend::prelude::{ReadSource, Source};
 
 #[derive(Debug, From)]
 pub struct SourceImpl(ReadImpl);
@@ -23,9 +23,8 @@ impl SourceImpl {
     }
 
     pub fn implicit(mmap: Mmap) -> Result<Self, Utf8Error> {
-        let yoke = Yoke::try_attach_to_cart(Box::new(mmap), |it| {
-            Ok(Cow::Borrowed(from_utf8(it)?))
-        })?;
+        let yoke =
+            Yoke::try_attach_to_cart(Box::new(mmap), |it| Ok(Cow::Borrowed(from_utf8(it)?)))?;
 
         Ok(Self(ReadImpl::Implicit(yoke)))
     }

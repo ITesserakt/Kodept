@@ -157,7 +157,7 @@ mod eager {
 
 #[cfg(feature = "parallel")]
 mod parallel {
-    use super::{eager, Tok, TokCtor};
+    use super::{Tok, TokCtor, eager};
     use crate::common::{EagerTokensProducer, ErrorAdapter};
     use crate::error::{Original, ParseErrors};
     use crate::token_match::PackedTokenMatch;

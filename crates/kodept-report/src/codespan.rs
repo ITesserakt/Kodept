@@ -1,12 +1,12 @@
-use std::io::Write;
-use std::sync::Arc;
 use crate::files::external::{Error, Files};
 use crate::report::Report;
-use codespan_reporting::term::termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 use codespan_reporting::term::Config;
+use codespan_reporting::term::termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
+use std::io::Write;
+use std::sync::Arc;
 
 pub mod external {
-    pub use codespan_reporting::term::{termcolor::ColorChoice, Config, DisplayStyle};
+    pub use codespan_reporting::term::{Config, DisplayStyle, termcolor::ColorChoice};
 }
 
 #[derive(Debug, Clone)]
@@ -40,7 +40,10 @@ impl<S> CodespanSettings<S> {
 
 impl CodespanSettings {
     pub fn stderr(config: Config, color: ColorChoice) -> Self {
-        Self::new(config, ClonableStandardStream(Arc::new(StandardStream::stderr(color))))
+        Self::new(
+            config,
+            ClonableStandardStream(Arc::new(StandardStream::stderr(color))),
+        )
     }
 }
 

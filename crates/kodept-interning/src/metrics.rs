@@ -17,13 +17,14 @@ impl InterningMetrics {
 
         let interned_items = interner.entries();
         let total_shares = interner.total_shares();
-        let shared_memory = total_shares * (size_of::<&T>() + {
-            // assume that approximate size of each shared item is equal
-            interned_items
-                .iter()
-                .next()
-                .map_or(0, |&it| size_of_val(it))
-        });
+        let shared_memory = total_shares
+            * (size_of::<&T>() + {
+                // assume that approximate size of each shared item is equal
+                interned_items
+                    .iter()
+                    .next()
+                    .map_or(0, |&it| size_of_val(it))
+            });
         let mut interned_memory = 0;
         for &item in interned_items.iter() {
             // approximate size of itself + overhead per entry + overhead per ref

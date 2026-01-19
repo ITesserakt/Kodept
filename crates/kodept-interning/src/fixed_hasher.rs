@@ -1,5 +1,5 @@
-use std::hash::BuildHasher;
 use foldhash::fast::{FixedState, FoldHasher};
+use std::hash::BuildHasher;
 
 // Some random bytes taken from random.org :)
 const FIXED_STATE: FixedState = FixedState::with_seed(0xdacb82e18c642297);

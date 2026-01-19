@@ -1,13 +1,13 @@
+use crate::source::collection::SourceView;
+use crate::utils::ReportSystemEx;
 use bevy_ecs::prelude::*;
 use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine};
+use kodept_report_macros::Report;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::error_span;
-use kodept_report_macros::Report;
-use crate::source::collection::SourceView;
-use crate::utils::ReportSystemEx;
 
 #[derive(Debug, Report)]
 #[severity("error")]
@@ -41,7 +41,10 @@ where
     }
 }
 
-fn system<F>(InMut(configuration): InMut<F>, mut sub_engines: Query<(&SourceView, &mut SubEngine)>) -> Result<(), CannotProceed>
+fn system<F>(
+    InMut(configuration): InMut<F>,
+    mut sub_engines: Query<(&SourceView, &mut SubEngine)>,
+) -> Result<(), CannotProceed>
 where
     F: Fn(&mut SubEngine) + Send + Sync + 'static,
 {

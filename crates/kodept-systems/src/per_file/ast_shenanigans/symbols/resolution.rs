@@ -42,9 +42,7 @@ impl AsView for Ty {
     }
 }
 
-pub(super) fn mark_refs_as_deferred(
-    query: HierarchicalQuery<BinExpr, Ref, Rhs>,
-) {
+pub(super) fn mark_refs_as_deferred(query: HierarchicalQuery<BinExpr, Ref, Rhs>) {
     for (_, _, parent, _) in query.iter() {
         if matches!(parent, BinExpr::Access) {
             todo!("Reference resolution in access expressions is not implemented yet");

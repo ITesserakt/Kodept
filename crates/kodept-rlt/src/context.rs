@@ -53,7 +53,7 @@ mod arb {
     use crate::new_types::{Symbol, TypeName};
     use crate::prelude::Context;
     use kodept_core::code_point::CodePoint;
-    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Just, Strategy};
+    use proptest::prelude::{Arbitrary, BoxedStrategy, Just, Strategy, any};
     use proptest::prop_oneof;
 
     impl Arbitrary for Context {

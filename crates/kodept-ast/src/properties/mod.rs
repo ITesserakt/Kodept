@@ -1,10 +1,10 @@
-use std::fmt::{Debug, Display, Formatter};
 use crate::prelude::ASTNode;
 use crate::resource::rlt::LexemeId;
 use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
 use kodept_core::file_name::FileDescriptor;
+use std::fmt::{Debug, Display, Formatter};
 
 pub use bevy_ecs::name::Name;
 use bevy_utils::prelude::DebugName;

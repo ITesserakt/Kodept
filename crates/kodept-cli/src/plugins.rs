@@ -1,8 +1,8 @@
-use tracing::Level;
-use kodept_frontend::engine::{reporter, Engine, Plugin};
+use crate::prelude::{ColorChoice, DiagnosticConfig, DisplayStyle, LoggingLevel};
+use kodept_frontend::engine::{Engine, Plugin, reporter};
 use kodept_report::codespan::external::Config;
 use kodept_report::prelude::CodespanSettings;
-use crate::prelude::{LoggingLevel, DiagnosticConfig, DisplayStyle, ColorChoice};
+use tracing::Level;
 
 #[derive(Debug)]
 pub struct LogPlugin {
@@ -66,7 +66,7 @@ impl Plugin for ThreadPoolPlugin {
 }
 
 pub struct ReportsPlugin<'a> {
-    pub config: &'a DiagnosticConfig
+    pub config: &'a DiagnosticConfig,
 }
 
 impl Plugin for ReportsPlugin<'_> {

@@ -8,13 +8,13 @@
 
 use crate::fixed_hasher::FixedHasher;
 use core::{fmt::Debug, hash::Hash, ops::Deref};
+use std::fmt::Display;
 use std::sync::RwLockReadGuard;
 use std::{borrow::ToOwned, boxed::Box};
 use std::{
     collections::HashSet,
     sync::{PoisonError, RwLock},
 };
-use std::fmt::Display;
 
 /// An interned value. Will stay valid until the end of the program and will not drop.
 ///
@@ -149,7 +149,8 @@ impl<T: Internable + ?Sized> Interner<T> {
     /// will return [`Interned<T>`] using the same static reference.
     pub fn intern(&self, value: &T) -> Interned<T> {
         #[cfg(feature = "metrics")]
-        self.total_shares.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.total_shares
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         {
             let lock = self.set.read().unwrap_or_else(PoisonError::into_inner);
@@ -173,10 +174,11 @@ impl<T: Internable + ?Sized> Interner<T> {
 
     pub fn intern_owned(&self, value: T) -> Interned<T>
     where
-        T: Sized
+        T: Sized,
     {
         #[cfg(feature = "metrics")]
-        self.total_shares.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.total_shares
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         {
             let lock = self.set.read().unwrap_or_else(PoisonError::into_inner);

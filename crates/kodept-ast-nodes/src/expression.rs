@@ -165,7 +165,7 @@ where
     R: HasChild<Literal, T, Arity = A>,
     R: HasChild<IfExpr, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = Operation;
     type Error = crate::Error;
@@ -271,7 +271,7 @@ where
     R: HasChild<Literal, T, Arity = A>,
     R: HasChild<IfExpr, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = Expression;
     type Error = crate::Error;

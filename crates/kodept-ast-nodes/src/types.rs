@@ -120,7 +120,7 @@ where
     R: HasChild<Ty, T, Arity = A>,
     R: HasChild<ProdTy, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = kodept_rlt::prelude::Type;
     type Error = Infallible;
@@ -158,12 +158,16 @@ where
     R: HasChild<TyParam, T, Arity = A>,
     R: HasChild<NonTyParam, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = Parameter;
     type Error = Infallible;
 
-    fn dispatch(self, mut spawner: DispatchContext<R, T, A>, source: impl CodeHolder) -> Result<Entity, Self::Error> {
+    fn dispatch(
+        self,
+        mut spawner: DispatchContext<R, T, A>,
+        source: impl CodeHolder,
+    ) -> Result<Entity, Self::Error> {
         match self.0 {
             Parameter::Typed(x) => spawner.forward::<_, TyParam>(x, source),
             Parameter::Untyped(x) => spawner.forward::<_, NonTyParam>(x, source),

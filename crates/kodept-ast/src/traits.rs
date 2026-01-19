@@ -1,6 +1,6 @@
+use crate::Str;
 use crate::node_id::NodeId;
 pub(crate) use crate::syntax_tree::experimental::{DispatchContext, SpawnContext};
-use crate::Str;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
@@ -26,7 +26,7 @@ pub trait SplitRef<'a, T>: Sized {
 pub trait Dispatch<'a, Root, Tag, Arity>: SplitRef<'a, Self::Node>
 where
     Tag: Send + Sync + 'static,
-    Arity: crate::arity::Arity
+    Arity: crate::arity::Arity,
 {
     type Node;
     type Error: Send + 'static;

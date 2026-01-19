@@ -1,12 +1,12 @@
-use std::env::current_dir;
+use crate::source::loaded::SourceImpl;
 use derive_more::{Display, Error, From};
 use kodept_core::file_name::FileName;
+use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
 use memmap2::{Mmap, MmapOptions};
+use std::env::current_dir;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
-use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
-use crate::source::loaded::SourceImpl;
 
 #[derive(Debug)]
 pub enum CodeSource {

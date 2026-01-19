@@ -49,7 +49,7 @@ pub(super) fn propagate_scopes(
     {
         Err(CannotLinkError {
             node_location: *span,
-            node_kind: kind.as_string()
+            node_kind: kind.as_string(),
         })
     } else {
         Ok(())
@@ -97,8 +97,8 @@ pub(super) fn ensure_one_root_scope(
 
 #[cfg(test)]
 mod tests {
-    use crate::per_file::ast_shenanigans::symbols::{ScopeSpawnParams, Scoping};
     use crate::per_file::ast_shenanigans::symbols::scopes::spawn_scope;
+    use crate::per_file::ast_shenanigans::symbols::{ScopeSpawnParams, Scoping};
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::RunSystemOnce;
     use kodept_ast::relationship::Nodes;

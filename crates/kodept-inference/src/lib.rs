@@ -6,10 +6,10 @@ pub mod algorithm_u;
 pub mod assumption;
 pub mod constraint;
 // mod process;
+pub mod process;
 pub mod substitution;
 pub mod traits;
 pub mod r#type;
-pub mod process;
 
 #[allow(unreachable_pub)]
 mod utils {
@@ -24,7 +24,7 @@ mod utils {
 
         pub fn join(self) -> String
         where
-            T: Iterator<Item: Display>
+            T: Iterator<Item: Display>,
         {
             use std::fmt::Write;
 
@@ -44,7 +44,7 @@ mod utils {
 
     impl<'a, 'b, T> Display for JoinedDisplay<'a, &'b T>
     where
-        &'b T: IntoIterator<Item: Display>
+        &'b T: IntoIterator<Item: Display>,
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             let mut first = true;

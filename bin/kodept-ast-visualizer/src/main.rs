@@ -8,9 +8,10 @@ use crate::plugins::Plugins;
 use bevy_ecs::prelude::{Entity, Event, InMut, Res};
 use clap::Parser;
 use kodept_ast::relationship::RelationshipMetadata;
+use kodept_ast::resource::reflection::DebugRegistry;
 use kodept_cli::prelude::{
-    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, OutputConfig,
-    ParserChoice, ParsingConfig,
+    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, OutputConfig, ParserChoice,
+    ParsingConfig,
 };
 use kodept_frontend::engine::reporter::CompilationFailed;
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
@@ -20,8 +21,7 @@ use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSo
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::prelude::{BuildAstPhase, ParseSourcePhase};
 use kodept_systems::source::collection::SourceView;
-use std::io::{stdin, Read};
-use kodept_ast::resource::reflection::DebugRegistry;
+use std::io::{Read, stdin};
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -94,22 +94,22 @@ fn main() -> Result<(), CompilationFailed> {
         .install(LoadAllSourcesPhase {
             config: Convert(cli_args.loading_config),
         })
-        .install(InjectResourcesPhase::new(|
-            InMut(engine): InMut<SubEngine>,
-            timings: Option<Res<Timings>>,
-            report_settings: Option<Res<kodept_frontend::engine::reporter::Settings>>,
-            debug_registry: Option<Res<DebugRegistry>>
-        | {
-            if timings.is_some() {
-                engine.init_resource::<Timings>();
-            }
-            if let Some(settings) = report_settings {
-                engine.insert_resource(settings.as_ref().clone());
-            }
-            if let Some(registry) = debug_registry {
-                engine.insert_resource(registry.as_ref().clone());
-            }
-        }))
+        .install(InjectResourcesPhase::new(
+            |InMut(engine): InMut<SubEngine>,
+             timings: Option<Res<Timings>>,
+             report_settings: Option<Res<kodept_frontend::engine::reporter::Settings>>,
+             debug_registry: Option<Res<DebugRegistry>>| {
+                if timings.is_some() {
+                    engine.init_resource::<Timings>();
+                }
+                if let Some(settings) = report_settings {
+                    engine.insert_resource(settings.as_ref().clone());
+                }
+                if let Some(registry) = debug_registry {
+                    engine.insert_resource(registry.as_ref().clone());
+                }
+            },
+        ))
         .install(EachSubEnginePhase::new(move |engine| {
             engine.insert_resource(OutputDirectory::new(&cli_args.output_config.output));
 

@@ -52,7 +52,11 @@ impl Substitutions {
 
 impl FromIterator<(TVar, MonomorphicType)> for Substitutions {
     fn from_iter<T: IntoIterator<Item = (TVar, MonomorphicType)>>(iter: T) -> Self {
-        Self(iter.into_iter().map(|it| (it.0, it.1.intern_owned())).collect())
+        Self(
+            iter.into_iter()
+                .map(|it| (it.0, it.1.intern_owned()))
+                .collect(),
+        )
     }
 }
 

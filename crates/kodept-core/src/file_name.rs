@@ -1,3 +1,4 @@
+use derive_more::Constructor;
 use std::borrow::Cow;
 use std::fmt::Formatter;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -5,7 +6,6 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering::SeqCst;
 use std::time::Instant;
-use derive_more::Constructor;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FileId(u16);
@@ -47,7 +47,7 @@ impl FileDescriptor {
     pub fn name(&self) -> &FileName {
         &self.name
     }
-    
+
     pub fn id(&self) -> FileId {
         self.id
     }

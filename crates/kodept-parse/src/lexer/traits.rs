@@ -152,8 +152,8 @@ impl PackedToken {
 mod tests {
     use enum_iterator::all;
 
-    use crate::lexer::traits::ToRepresentation;
     use crate::lexer::PackedToken;
+    use crate::lexer::traits::ToRepresentation;
     use rstest::rstest;
 
     #[rstest]

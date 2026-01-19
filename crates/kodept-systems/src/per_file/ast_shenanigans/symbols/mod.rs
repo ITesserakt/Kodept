@@ -20,10 +20,10 @@ use kodept_ast_nodes::term::Ref;
 use kodept_ast_nodes::top_level::{EnumConst, EnumDecl, StructDecl};
 use kodept_ast_nodes::types::{NonTyParam, Ty, TyParam};
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, MessageBehaviour, Severity};
+use kodept_report_macros::Report;
 use resolution::*;
 use scopes::*;
 use std::borrow::Cow;
-use kodept_report_macros::Report;
 use tables::*;
 
 #[derive(Debug, Copy, Clone, ScheduleLabel, PartialEq, Eq, Hash)]

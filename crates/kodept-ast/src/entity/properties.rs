@@ -1,10 +1,10 @@
+use crate::node_id::Erase;
+use crate::prelude::{ASTNode, NodeRef};
+use crate::properties::{HasProperty, Name, Node, NodeProperty, RequireProperty, SourceSpan};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::query::{QueryEntityError, With};
 use bevy_ecs::system::{Query, SystemParam};
 use bevy_utils::prelude::DebugName;
-use crate::node_id::Erase;
-use crate::prelude::{ASTNode, NodeRef};
-use crate::properties::{HasProperty, Name, Node, NodeProperty, RequireProperty, SourceSpan};
 
 impl<'a, T> NodeRef<'a, &'a T> {
     pub fn name(&self) -> &Name

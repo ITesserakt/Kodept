@@ -155,7 +155,7 @@ impl<T> From<(Symbol, Vec<T>, Symbol)> for Enclosed<Box<[T]>> {
 
 impl<'a, T> IntoIterator for &'a Enclosed<T>
 where
-    &'a T: IntoIterator
+    &'a T: IntoIterator,
 {
     type Item = <&'a T as IntoIterator>::Item;
     type IntoIter = <&'a T as IntoIterator>::IntoIter;

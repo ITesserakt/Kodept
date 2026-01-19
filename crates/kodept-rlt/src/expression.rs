@@ -155,7 +155,7 @@ mod arb {
     use crate::types::Parameter;
     use kodept_core::code_point::CodePoint;
     use proptest::collection::vec;
-    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+    use proptest::prelude::{Arbitrary, BoxedStrategy, Strategy, any};
     use proptest::prop_oneof;
 
     impl Arbitrary for Operation {

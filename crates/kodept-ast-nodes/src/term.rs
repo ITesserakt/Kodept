@@ -65,7 +65,7 @@ where
     R: HasChild<Ref, T, Arity = A>,
     R: HasChild<Ty, T, Arity = A>,
     T: Send + Sync + 'static,
-    A: kodept_ast::arity::Arity
+    A: kodept_ast::arity::Arity,
 {
     type Node = Term;
     type Error = Infallible;

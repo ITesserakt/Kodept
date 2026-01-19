@@ -18,14 +18,14 @@ pub mod prelude {
     pub use super::entity::traits::{FromEnum, IntoEnum};
     pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, CodeHolder};
-    pub use crate::entity::children::{HierarchicalQuery, ChildrenBetween};
+    pub use crate::entity::children::{ChildrenBetween, HierarchicalQuery};
     pub use crate::entity::properties::PropertyQuery;
 }
 
 #[cfg(feature = "reflection")]
 pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegistry) {
     use bevy_ecs::prelude::{ChildOf, Children};
-    
+
     registry.register::<properties::Lexeme>();
     registry.register::<properties::Node>();
     registry.register::<properties::SourceSpan>();
@@ -36,8 +36,8 @@ pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegist
 }
 
 pub mod experimental {
-    pub use super::syntax_tree::experimental::{AstBuilder, SpawnContext, DispatchContext};
-    pub use super::traits::{FromSyntax, Dispatch, SplitRef};
+    pub use super::syntax_tree::experimental::{AstBuilder, DispatchContext, SpawnContext};
+    pub use super::traits::{Dispatch, FromSyntax, SplitRef};
 }
 
 #[deprecated]

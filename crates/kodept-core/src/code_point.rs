@@ -103,7 +103,7 @@ impl Add for CodePoint {
 
 impl Add<Span> for CodePoint {
     type Output = Span;
-    
+
     #[inline(always)]
     fn add(self, rhs: Span) -> Self::Output {
         Span::from(self) + rhs

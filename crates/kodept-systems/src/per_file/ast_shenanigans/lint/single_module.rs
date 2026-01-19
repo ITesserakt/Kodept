@@ -6,7 +6,7 @@ use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::file::FileDecl;
 use kodept_core::structure::Located;
 use kodept_report::message::Diagnostic;
-use kodept_report::prelude::{Severity};
+use kodept_report::prelude::Severity;
 use kodept_report_macros::Report;
 
 pub(super) struct SingleModuleWithBracketsLint;

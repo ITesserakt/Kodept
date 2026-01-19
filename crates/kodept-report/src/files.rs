@@ -1,3 +1,3 @@
 pub mod external {
-    pub use codespan_reporting::files::{Files, Error, Location};
+    pub use codespan_reporting::files::{Error, Files, Location};
 }

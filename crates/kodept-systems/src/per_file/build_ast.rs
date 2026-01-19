@@ -1,5 +1,8 @@
+use crate::source::collection::SourceView;
+use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use derive_more::From;
+use kodept_ast::properties::Root;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast_nodes::Error;
 use kodept_ast_nodes::file::FileDecl;
@@ -8,9 +11,6 @@ use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
 use std::borrow::Cow;
-use kodept_ast::properties::Root;
-use crate::source::collection::SourceView;
-use crate::utils::{LogSystemEx, ReportSystemEx};
 
 define_phase!(
     pub phase BuildAstPhase[BuildAstPhaseLabel];
@@ -30,7 +30,7 @@ fn system(
     let (root, _) = syntax.root();
     let file_id = FileDecl::from_syntax(root, code_holder, commands.reborrow())?;
     commands.entity(file_id.entity()).insert(Root {
-        associated_file: source.describe()
+        associated_file: source.describe(),
     });
 
     Ok(())

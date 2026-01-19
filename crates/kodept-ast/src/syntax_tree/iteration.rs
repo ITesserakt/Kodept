@@ -116,13 +116,13 @@ impl<'a> Debug for NodeSlot<'a> {
 
 #[cfg(test)]
 mod tests {
-    use bevy_utils::prelude::DebugName;
     use crate::arity::{Plural, Singular};
     use crate::properties::{Node, Root};
     use crate::relationship::Contains;
     use crate::syntax_tree::iteration::{AllNodesQuery, NodeSlot};
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::RunSystemOnce;
+    use bevy_utils::prelude::DebugName;
     use kodept_core::file_name::{FileDescriptor, FileId, FileName};
 
     #[derive(Debug, Component, PartialEq)]

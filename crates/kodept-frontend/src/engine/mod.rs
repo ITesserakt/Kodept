@@ -1,3 +1,4 @@
+use crate::engine::function_impls::InlineFunctionPhase;
 use crate::engine::reporter::CompilationFailed;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
@@ -5,7 +6,6 @@ use bevy_ecs::system::{IntoObserverSystem, ScheduleSystem};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::panic::AssertUnwindSafe;
-use crate::engine::function_impls::InlineFunctionPhase;
 
 pub mod macros;
 pub mod reporter;
@@ -35,8 +35,8 @@ pub trait Plugin {
 }
 
 mod function_impls {
-    use bevy_ecs::prelude::SystemSet;
     use crate::engine::{Engine, Phase, PhaseEngine, Plugin};
+    use bevy_ecs::prelude::SystemSet;
 
     #[derive(Debug, SystemSet, Copy, Clone, PartialEq, Hash, Default, Eq)]
     pub struct SingletonSet;
@@ -47,7 +47,7 @@ mod function_impls {
         type Set = SingletonSet;
 
         fn build(self, _: &mut PhaseEngine<Self>) {
-            match self {  }
+            match self {}
         }
     }
 
@@ -144,11 +144,14 @@ impl Engine {
         }
     }
 
-    pub fn install_inline_phase(&mut self, build: impl FnOnce(&mut PhaseEngine<InlineFunctionPhase>)) {
+    pub fn install_inline_phase(
+        &mut self,
+        build: impl FnOnce(&mut PhaseEngine<InlineFunctionPhase>),
+    ) {
         build(&mut PhaseEngine {
             engine: self,
             instrumented: true,
-            _phantom: PhantomData
+            _phantom: PhantomData,
         });
     }
 

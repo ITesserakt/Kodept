@@ -461,10 +461,7 @@ mod impls {
     });
 
     unsafe impl<T: Traversal> Traversal for prelude::Contextual<T> {
-        fn traverse(
-            &self,
-            callback: &mut impl FnMut(ErasedNodePtr),
-        ) {
+        fn traverse(&self, callback: &mut impl FnMut(ErasedNodePtr)) {
             self.inner.traverse(callback);
         }
     }
@@ -615,10 +612,7 @@ mod impls {
 
     unsafe impl<T: Traversal> Traversal for new_types::Enclosed<T> {
         #[inline]
-        fn traverse(
-            &self,
-            callback: &mut impl FnMut(ErasedNodePtr),
-        ) {
+        fn traverse(&self, callback: &mut impl FnMut(ErasedNodePtr)) {
             // do not call callback because Enclosed<T> is not a node
 
             self.left.traverse(callback);
@@ -629,10 +623,7 @@ mod impls {
 
     unsafe impl<T: Traversal + ?Sized> Traversal for Box<T> {
         #[inline]
-        fn traverse(
-            &self,
-            callback: &mut impl FnMut(ErasedNodePtr),
-        ) {
+        fn traverse(&self, callback: &mut impl FnMut(ErasedNodePtr)) {
             // do not call callback because Box<T> is not a node
             self.as_ref().traverse(callback);
         }
@@ -640,10 +631,7 @@ mod impls {
 
     unsafe impl<T: Traversal> Traversal for [T] {
         #[inline]
-        fn traverse(
-            &self,
-            callback: &mut impl FnMut(ErasedNodePtr),
-        ) {
+        fn traverse(&self, callback: &mut impl FnMut(ErasedNodePtr)) {
             // do not call callback because Box<T> is not a node
             for item in self {
                 item.traverse(callback);
@@ -653,10 +641,7 @@ mod impls {
 
     unsafe impl<T: Traversal> Traversal for Option<T> {
         #[inline]
-        fn traverse(
-            &self,
-            callback: &mut impl FnMut(ErasedNodePtr),
-        ) {
+        fn traverse(&self, callback: &mut impl FnMut(ErasedNodePtr)) {
             // do not call callback because Option<T> is not a node
             if let Some(item) = self {
                 item.traverse(callback);
@@ -666,10 +651,7 @@ mod impls {
 
     unsafe impl<T1: Traversal, T2: Traversal> Traversal for (T1, T2) {
         #[inline]
-        fn traverse(
-            &self,
-            callback: &mut impl FnMut(ErasedNodePtr),
-        ) {
+        fn traverse(&self, callback: &mut impl FnMut(ErasedNodePtr)) {
             // do not call callback because (T1, T2) is not a node
             self.0.traverse(callback);
             self.1.traverse(callback);

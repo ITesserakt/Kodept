@@ -141,9 +141,11 @@ impl SpanBounds for Variable {
 mod arb {
     use crate::block_level::{Body, InitializedVariable};
     use crate::new_types::{Enclosed, Identifier, Keyword, Symbol};
-    use crate::prelude::{BlockLevelNode, BodiedFunction, ExpressionBlock, Operation, Parameter, Type};
+    use crate::prelude::{
+        BlockLevelNode, BodiedFunction, ExpressionBlock, Operation, Parameter, Type,
+    };
     use proptest::collection::vec;
-    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+    use proptest::prelude::{Arbitrary, BoxedStrategy, Strategy, any};
     use proptest::prop_oneof;
 
     impl Arbitrary for BlockLevelNode {

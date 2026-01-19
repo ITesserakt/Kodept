@@ -154,7 +154,10 @@ impl Debug for Constraint {
     }
 }
 
-pub fn eq_cst(t1: impl InternInto<MonomorphicType>, t2: impl InternInto<MonomorphicType>) -> Constraint {
+pub fn eq_cst(
+    t1: impl InternInto<MonomorphicType>,
+    t2: impl InternInto<MonomorphicType>,
+) -> Constraint {
     Eq(EqConstraint {
         t1: t1.intern_into(),
         t2: t2.intern_into(),
@@ -173,7 +176,10 @@ pub fn implicit_cst(
     }
 }
 
-pub fn explicit_cst(t: impl InternInto<MonomorphicType>, s: impl Into<PolymorphicType>) -> Constraint {
+pub fn explicit_cst(
+    t: impl InternInto<MonomorphicType>,
+    s: impl Into<PolymorphicType>,
+) -> Constraint {
     ExplicitInstance {
         t: t.intern_into(),
         s: s.into(),
@@ -193,10 +199,7 @@ mod tests {
     fn test_1() {
         let [t1, t2, t3, t4, t5] = [1, 2, 3, 4, 5].map(|_| TVar::new());
         let cs = vec![
-            eq_cst(
-                &Var(t2),
-                &MonomorphicType::fun1(Boolean, &Var(t3)),
-            ),
+            eq_cst(&Var(t2), &MonomorphicType::fun1(Boolean, &Var(t3))),
             implicit_cst(&Var(t4), [t5], &Var(t3)),
             implicit_cst(&Var(t2), [t5], &Var(t1)),
             eq_cst(&Var(t5), &Var(t1)),
@@ -207,18 +210,9 @@ mod tests {
             result,
             Substitutions::from_iter([
                 (t4, Var(t3)),
-                (
-                    t1,
-                    MonomorphicType::fun1(Boolean, &Var(t3))
-                ),
-                (
-                    t5,
-                    MonomorphicType::fun1(Boolean, &Var(t3))
-                ),
-                (
-                    t2,
-                    MonomorphicType::fun1(Boolean, &Var(t3))
-                )
+                (t1, MonomorphicType::fun1(Boolean, &Var(t3))),
+                (t5, MonomorphicType::fun1(Boolean, &Var(t3))),
+                (t2, MonomorphicType::fun1(Boolean, &Var(t3)))
             ])
         )
     }

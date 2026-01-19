@@ -129,7 +129,7 @@ mod arb {
     use crate::new_types::{Enclosed, Symbol, TypeName};
     use crate::types::{Tuple, Type};
     use proptest::collection::vec;
-    use proptest::prelude::{any, Arbitrary, BoxedStrategy, Strategy};
+    use proptest::prelude::{Arbitrary, BoxedStrategy, Strategy, any};
 
     impl Arbitrary for Type {
         type Parameters = ();

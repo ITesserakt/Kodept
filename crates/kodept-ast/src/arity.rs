@@ -88,11 +88,7 @@ impl RelationshipSourceCollection for Option {
     }
 
     fn len(&self) -> usize {
-        if self.0 == Entity::PLACEHOLDER {
-            0
-        } else {
-            1
-        }
+        if self.0 == Entity::PLACEHOLDER { 0 } else { 1 }
     }
 
     fn clear(&mut self) {
@@ -114,7 +110,7 @@ impl RelationshipSourceCollection for Option {
 
 impl MapEntities for Option {
     fn map_entities<E: EntityMapper>(&mut self, entity_mapper: &mut E) {
-        self.into_inner().map_entities(entity_mapper) 
+        self.into_inner().map_entities(entity_mapper)
     }
 }
 

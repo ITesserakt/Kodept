@@ -1,3 +1,4 @@
+use crate::TRACING_OPTION;
 use crate::common::{RLTProducer, VerboseEnclosed};
 use crate::lexer::PackedToken;
 use crate::lexer::PackedToken::*;
@@ -5,7 +6,6 @@ use crate::peg::compatibility::Position;
 use crate::peg::macros::tok;
 use crate::token_match::PackedTokenMatch;
 use crate::token_stream::PackedTokenStream;
-use crate::TRACING_OPTION;
 use derive_more::Constructor;
 use kodept_rlt::new_types::BinaryOperationSymbol;
 use kodept_rlt::new_types::UnaryOperationSymbol;

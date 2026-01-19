@@ -3,6 +3,7 @@ use crate::prelude::ASTNode;
 use crate::syntax_tree::children::HasChild;
 use bevy_ecs::component::{Component, ComponentId, Immutable};
 use bevy_ecs::entity::Entity;
+use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::prelude::{ChildOf, Resource};
 use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
 use bevy_ecs::world::DeferredWorld;
@@ -10,7 +11,6 @@ use std::any::TypeId;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use bevy_ecs::lifecycle::HookContext;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 // Describes the multiplicity of a relationship between AST node entities.
@@ -251,7 +251,9 @@ where
     A: Arity,
 {
     fn on_add_hook(mut world: DeferredWorld, ctx: HookContext) {
-        let forward_id = world.components_queue().queue_register_component::<Contains<T, A>>();
+        let forward_id = world
+            .components_queue()
+            .queue_register_component::<Contains<T, A>>();
         let metadata = RelationshipMetadata {
             forward_id,
             backward_id: ctx.component_id,
@@ -260,18 +262,24 @@ where
             tag_name: std::any::type_name::<T>(),
         };
 
-        if !world.get_resource::<NodeRelationships>().is_some_and(|it| it.0.contains(&metadata)) {
+        if !world
+            .get_resource::<NodeRelationships>()
+            .is_some_and(|it| it.0.contains(&metadata))
+        {
             if let Some(mut relationships) = world.get_resource_mut::<NodeRelationships>() {
                 relationships.0.insert(metadata);
             } else {
-                world.commands().insert_resource(NodeRelationships(HashSet::from([
-                    metadata
-                ])));
+                world
+                    .commands()
+                    .insert_resource(NodeRelationships(HashSet::from([metadata])));
             }
         }
 
         let this_parent = world.entity(ctx.entity).get::<Self>().unwrap().parent;
-        world.commands().entity(this_parent).add_one_related::<ChildOf>(ctx.entity);
+        world
+            .commands()
+            .entity(this_parent)
+            .add_one_related::<ChildOf>(ctx.entity);
     }
 
     fn on_remove_hook(mut world: DeferredWorld, ctx: HookContext) {

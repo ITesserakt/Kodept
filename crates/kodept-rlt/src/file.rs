@@ -90,7 +90,7 @@ mod arb {
     use crate::new_types::{Keyword, Symbol, TypeName};
     use crate::prelude::TopLevelNode;
     use proptest::collection::vec;
-    use proptest::prelude::{any, Strategy};
+    use proptest::prelude::{Strategy, any};
     use proptest::prop_oneof;
 
     pub(super) fn gen_modules() -> impl Strategy<Value = Box<[Module]>> {

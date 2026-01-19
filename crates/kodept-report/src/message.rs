@@ -1,5 +1,5 @@
-use crate::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage};
 use crate::Str;
+use crate::traits::{IntoSpannedReportMessage, SpannedReportMessage, ad_hoc_message};
 use kodept_core::code_point::{CodePoint, Span};
 use std::borrow::Cow;
 use std::error::Error;

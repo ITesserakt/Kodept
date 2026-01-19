@@ -31,7 +31,7 @@ macro_rules! relation {
         impl $crate::syntax_tree::children::HasChild<$child, ()> for $self {
             type Arity = $crate::arity!($child_arity);
         }
-    }
+    };
 }
 
 #[macro_export]

@@ -11,10 +11,10 @@ use crate::{
 use bevy_ecs::prelude::ParallelCommands;
 use bevy_ecs::prelude::{ChildOf, Commands, World};
 use bevy_ecs::{bundle::Bundle, entity::Entity, relationship::Relationship};
+use bevy_utils::prelude::DebugName;
 use derive_more::{Deref, DerefMut};
 use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 use std::marker::PhantomData;
-use bevy_utils::prelude::DebugName;
 
 pub struct PropsState<R, P> {
     root: R,

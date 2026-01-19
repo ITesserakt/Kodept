@@ -2,20 +2,22 @@
 
 use std::borrow::Cow;
 
-pub mod message;
-pub mod traits;
-pub mod report;
 pub mod codespan;
 pub mod crash;
 pub mod files;
+pub mod message;
+pub mod report;
+pub mod traits;
 
 type Str = Cow<'static, str>;
 
-pub use kodept_core::file_name::{FileId, FileDescriptor};
+pub use kodept_core::file_name::{FileDescriptor, FileId};
 
 pub mod prelude {
-    pub use super::message::{ReportMessage, Severity, Diagnostic, Label, SpannedError};
-    pub use super::traits::{ad_hoc_message, IntoSpannedReportMessage, SpannedReportMessage, MessageBehaviour};
+    pub use super::codespan::{CodespanSettings, Reportable, Settings};
+    pub use super::message::{Diagnostic, Label, ReportMessage, Severity, SpannedError};
     pub use super::report::Report;
-    pub use super::codespan::{Reportable, CodespanSettings, Settings};
+    pub use super::traits::{
+        IntoSpannedReportMessage, MessageBehaviour, SpannedReportMessage, ad_hoc_message,
+    };
 }

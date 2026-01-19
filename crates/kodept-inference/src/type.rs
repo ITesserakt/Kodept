@@ -255,12 +255,12 @@ mod ctors {
         pub fn array(count: u64, inner_type: impl InternInto<MonomorphicType>) -> Self {
             Self::StaticArray(count, inner_type.intern_into())
         }
-        
+
         pub fn pointer(inner_type: impl InternInto<MonomorphicType>) -> Self {
             Self::Pointer(inner_type.intern_into())
         }
     }
-    
+
     impl From<PrimitiveType> for MonomorphicType {
         fn from(value: PrimitiveType) -> Self {
             Self::Primitive(value.intern_owned())
@@ -361,7 +361,7 @@ impl MonomorphicType {
                 Self::Tuple(vec) => stack.extend(vec.iter().map(|it| it.0)),
                 Self::Pointer(x) => stack.push(x),
                 Self::Constant(_) => {}
-                Self::StaticArray(_, inner) => stack.push(inner)
+                Self::StaticArray(_, inner) => stack.push(inner),
             }
         }
     }

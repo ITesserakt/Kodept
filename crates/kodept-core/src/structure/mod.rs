@@ -77,4 +77,3 @@ pub trait Located {
 pub trait SpanBounds {
     fn bounds(&self) -> Span;
 }
-

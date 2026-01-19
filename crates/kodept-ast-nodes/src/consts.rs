@@ -1,13 +1,10 @@
+use bevy_ecs::component::Component;
 use bevy_ecs::name::Name;
 use bevy_ecs::relationship::Relationship;
-use bevy_ecs::component::Component;
 use kodept_ast::experimental::{AstBuilder, FromSyntax, SpawnContext};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::syntax_tree::experimental::SpawnedIn;
-use kodept_ast::{
-    derive_node, properties::SourceSpan, relation
-    ,
-};
+use kodept_ast::{derive_node, properties::SourceSpan, relation};
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::prelude::{BodiedFunction, TopLevelNode};
 

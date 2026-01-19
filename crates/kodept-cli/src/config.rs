@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-use clap::Args;
 use crate::utils::{ColorChoice, DisplayStyle, Extension, LexerChoice, ParserChoice};
+use clap::Args;
+use std::path::PathBuf;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {

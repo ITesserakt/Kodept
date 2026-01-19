@@ -43,7 +43,7 @@ macro_rules! define_filter {
     ($vis:vis, = $($variant:ident)+) => {};
     ($vis:vis, $this_filter:ident = $($variant:ident)+) => {
         type $this_filter = (
-            bevy_ecs::prelude::With<$crate::properties::Node>, 
+            bevy_ecs::prelude::With<$crate::properties::Node>,
             bevy_ecs::prelude::Or<($(
                 bevy_ecs::prelude::With<$variant>,
             )+)>
