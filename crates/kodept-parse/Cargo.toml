@@ -31,9 +31,11 @@ rayon = { version = "1.10.0", optional = true }
 
 [dependencies.kodept-core]
 path = "../kodept-core"
+version = "0.4"
 
 [dependencies.kodept-rlt]
 path = "../kodept-rlt"
+version = "0.2"
 
 [dev-dependencies]
 rstest = "0.26.1"

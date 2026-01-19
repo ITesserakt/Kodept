@@ -21,6 +21,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 
 [dependencies.kodept-core]
 path = "../kodept-core"
+version = "0.4"
 
 [features]
 serde = ["dep:serde", "kodept-core/serde"]

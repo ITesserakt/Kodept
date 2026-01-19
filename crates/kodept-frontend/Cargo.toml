@@ -10,8 +10,8 @@ workspace = true
 [dependencies]
 bevy_ecs.workspace = true
 bevy_tasks.workspace = true
-kodept-core = { path = "../kodept-core" }
-kodept-report = { path = "../kodept-report" }
+kodept-core = { path = "../kodept-core", version = "0.4" }
+kodept-report = { path = "../kodept-report", version = "0.2" }
 tracing.workspace = true
 yoke = "0.8.0"
 
