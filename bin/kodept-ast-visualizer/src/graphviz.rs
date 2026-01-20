@@ -15,6 +15,7 @@ use kodept_systems::utils::ReportSystemEx;
 use std::any::TypeId;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::process::id;
 
 pub(crate) struct GraphvizPlugin;
 
@@ -134,17 +135,15 @@ fn draw_node(
     ];
 
     let all_components = entity.archetype().components();
-    let components_value = entity.get_by_id(all_components);
 
     // SAFETY: `components_value` enumerates values in the same order as `all_components`.
     //         That means type id must equal to the original type.
     #[allow(unsafe_code)]
-    let components_debug_repr = components_value
+    let components_debug_repr = all_components
         .into_iter()
-        .flatten()
-        .zip(all_components)
-        .filter(|(_, id)| config.verbose || non_verbose_components.contains(&Some(**id)))
-        .filter_map(|(value, &id)| Some((value, components.get_info(id)?)))
+        .filter(|id| config.verbose || non_verbose_components.contains(&Some(**id)))
+        .map(|id| (entity.get_by_id(*id), id))
+        .filter_map(|(value, &id)| Some((value.ok()?, components.get_info(id)?)))
         .filter_map(|(value, info)| {
             let type_id = info.type_id()?;
             let debug_repr = match debug_registry {
