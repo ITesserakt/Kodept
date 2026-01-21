@@ -3,7 +3,7 @@ use crate::source::collection::Reporter;
 use bevy_ecs::prelude::*;
 use kodept_ast::properties::Lexeme;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast_nodes::file::FileDecl;
+use kodept_ast_nodes::v2::file::FileDecl;
 use kodept_core::structure::Located;
 use kodept_report::message::Diagnostic;
 use kodept_report::prelude::Severity;

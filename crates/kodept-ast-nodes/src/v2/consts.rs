@@ -8,10 +8,8 @@ use kodept_ast::{derive_node, properties::SourceSpan, relation};
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::prelude::{BodiedFunction, TopLevelNode};
 
-use crate::{
-    function::FuncDecl,
-    top_level::{EnumDecl, StructDecl},
-};
+use crate::v2::function::FuncDecl;
+use crate::v2::top_level::{EnumDecl, StructDecl};
 
 #[derive(Debug, PartialEq, Component)]
 pub enum Const {

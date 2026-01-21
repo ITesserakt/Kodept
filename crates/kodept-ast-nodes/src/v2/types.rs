@@ -1,5 +1,5 @@
-use crate::term::ReferenceContext;
-use crate::Dispatcher;
+use crate::v2::term::ReferenceContext;
+use crate::v2::Dispatcher;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;

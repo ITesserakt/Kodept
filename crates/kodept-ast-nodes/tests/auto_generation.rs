@@ -2,7 +2,7 @@ use bevy_ecs::prelude::World;
 use kodept_ast::prelude::NodeId;
 use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
 use kodept_ast::Str;
-use kodept_ast_nodes::file::FileDecl;
+use kodept_ast_nodes::v2::file::FileDecl;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::CodeHolder;
 use kodept_rlt::prelude::RLT;

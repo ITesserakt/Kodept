@@ -2,10 +2,10 @@ use super::*;
 use bevy_ecs::prelude::*;
 use kodept_ast::Str;
 use kodept_ast::prelude::HierarchicalQuery;
-use kodept_ast_nodes::expression::BinExpr;
-use kodept_ast_nodes::properties::Rhs;
-use kodept_ast_nodes::term::{Ref, ReferenceContext};
-use kodept_ast_nodes::types::Ty;
+use kodept_ast_nodes::v2::expression::BinExpr;
+use kodept_ast_nodes::v2::properties::Rhs;
+use kodept_ast_nodes::v2::term::Ref;
+use kodept_ast_nodes::v2::term::ReferenceContext;
 
 #[derive(Debug, Clone)]
 struct RefView<'a> {

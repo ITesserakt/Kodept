@@ -1,5 +1,5 @@
-use crate::function::FuncDecl;
-use crate::types::TyParam;
+use crate::v2::function::FuncDecl;
+use crate::v2::types::TyParam;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
 use kodept_ast::experimental::{AstBuilder, FromSyntax};

@@ -1,6 +1,6 @@
-use crate::expression::Exprs;
-use crate::types::{NonTyParam, ProdTy, Ty, TyParam};
-use crate::Dispatcher;
+use crate::v2::expression::Exprs;
+use crate::v2::types::{NonTyParam, ProdTy, Ty, TyParam};
+use crate::v2::Dispatcher;
 use bevy_ecs::prelude::{Component, Name};
 use bevy_ecs::relationship::Relationship;
 use kodept_ast::experimental::{AstBuilder, FromSyntax};

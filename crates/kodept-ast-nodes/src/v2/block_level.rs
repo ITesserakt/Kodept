@@ -1,10 +1,10 @@
-use crate::code_flow::IfExpr;
-use crate::consts::Const;
-use crate::expression::{App, BinExpr, Exprs, Lambda};
-use crate::literal::{Literal, Tuple};
-use crate::term::Ref;
-use crate::types::{ProdTy, Ty};
-use crate::Dispatcher;
+use crate::v2::code_flow::IfExpr;
+use crate::v2::consts::Const;
+use crate::v2::expression::{App, BinExpr, Exprs, Lambda};
+use crate::v2::literal::{Literal, Tuple};
+use crate::v2::term::Ref;
+use crate::v2::types::{ProdTy, Ty};
+use crate::v2::Dispatcher;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
 use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, FromSyntax};

@@ -23,7 +23,7 @@ pub enum Enum {
         id: TypeName,
         contents: Option<Enclosed<Box<[TypeName]>>>,
     },
-    #[proptest(skip)]
+    #[cfg_attr(feature = "arbitrary", proptest(skip))]
     Heap {
         keyword: Keyword,
         id: TypeName,

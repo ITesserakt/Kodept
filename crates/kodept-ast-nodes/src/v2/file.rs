@@ -1,4 +1,4 @@
-use crate::consts::Const;
+use crate::v2::consts::Const;
 use bevy_ecs::component::Component;
 use bevy_ecs::relationship::Relationship;
 use kodept_ast::derive_node;

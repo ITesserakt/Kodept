@@ -1,4 +1,4 @@
-use crate::term::ReferenceContext;
+use crate::v2::term::ReferenceContext;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::prelude::{Entity, Name};
 use bigdecimal::BigDecimal;

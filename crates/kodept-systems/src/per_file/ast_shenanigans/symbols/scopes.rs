@@ -102,7 +102,7 @@ mod tests {
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::RunSystemOnce;
     use kodept_ast::relationship::Nodes;
-    use kodept_ast_nodes::file::{FileDecl, ModDecl};
+    use kodept_ast_nodes::v2::file::{FileDecl, ModDecl};
 
     #[test]
     fn test_scopes_spawn() {
