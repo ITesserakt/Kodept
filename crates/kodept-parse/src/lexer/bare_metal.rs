@@ -301,23 +301,6 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 self.push(PackedToken::TypeGap);
                 Ok(rest)
             }
-            [b'0', b'b' | b'B', b'0'..b'2', rest @ ..] => {
-                self.push(PackedToken::Binary);
-                Ok(rest)
-            }
-            [b'0', b'c' | b'C', b'0'..b'8', rest @ ..] => {
-                self.push(PackedToken::Octal);
-                Ok(rest)
-            }
-            [
-                b'0',
-                b'x' | b'X',
-                b'0'..=b'9' | b'A'..=b'F' | b'a'..=b'f',
-                rest @ ..,
-            ] => {
-                self.push(PackedToken::Hex);
-                Ok(rest)
-            }
             [
                 b'0',
                 system @ (b'b' | b'B' | b'c' | b'C' | b'x' | b'X'),
