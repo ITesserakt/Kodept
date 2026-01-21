@@ -1,13 +1,11 @@
 //! This crate contains actual AST nodes used in Kodept with appropriate
 //! conversion implementation from RLT nodes.
 
-use crate::module::{Resolved, Unresolved};
 use bigdecimal::ParseBigDecimalError;
 use kodept_ast::experimental::SplitRef;
 use kodept_rlt::exported::CodePoint;
 use num_bigint::ParseBigIntError;
 use std::convert::Infallible;
-use std::num::{ParseFloatError, ParseIntError};
 
 pub mod block_level;
 pub mod code_flow;
@@ -16,21 +14,17 @@ pub mod expression;
 pub mod file;
 pub mod function;
 pub mod literal;
-pub mod module;
 pub mod properties;
 pub mod term;
 pub mod top_level;
 pub mod types;
+pub mod v3;
 
 pub mod v2 {
     pub use super::{
         block_level, code_flow, consts, expression, file, function, literal, properties, term,
         top_level, types,
     };
-}
-
-pub mod v3 {
-    pub use super::module;
 }
 
 #[derive(Debug)]
@@ -69,29 +63,7 @@ pub fn register_reflection_info(registry: &mut kodept_ast::resource::reflection:
     registry.register::<top_level::EnumDecl>();
     registry.register::<top_level::StructDecl>();
 
-    registry.register::<module::UserType>();
-    registry.register::<module::UserType>();
-    registry.register::<module::TypeCtor<Resolved>>();
-    registry.register::<module::TypeCtor<Unresolved>>();
-    registry.register::<module::PrimType>();
-    registry.register::<module::Module>();
-    registry.register::<module::UserFunction<Option<Unresolved>>>();
-    registry.register::<module::UserFunction<Resolved>>();
-    registry.register::<module::ForeignFunction<Unresolved>>();
-    registry.register::<module::ForeignFunction<Resolved>>();
-    registry.register::<module::AnonFunction<Option<Unresolved>>>();
-    registry.register::<module::AnonFunction<Resolved>>();
-    registry.register::<module::Variable<Option<Unresolved>>>();
-    registry.register::<module::Variable<Resolved>>();
-    registry.register::<module::Block>();
-    registry.register::<module::Value<Unresolved>>();
-    registry.register::<module::Value<Resolved>>();
-    registry.register::<module::Literal>();
-    registry.register::<module::Tuple>();
-    registry.register::<module::Call>();
-    registry.register::<module::If>();
-    registry.register::<module::Branch>();
-    registry.register::<module::Otherwise>();
+    v3::register_reflection_info(registry);
 }
 
 impl From<Infallible> for Error {

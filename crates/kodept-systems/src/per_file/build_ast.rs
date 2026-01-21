@@ -9,7 +9,7 @@ use kodept_ast::relationship::ContainedBy;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
 use kodept_ast_nodes::Error;
-use kodept_ast_nodes::module::{Module, Modules};
+use kodept_ast_nodes::v3::{Module, Modules};
 use kodept_core::structure::CodeHolder;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;

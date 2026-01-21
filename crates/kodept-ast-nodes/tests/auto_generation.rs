@@ -34,7 +34,7 @@ proptest! {
     fn test_conversion_with_autogeneration_v2(rlt: RLT) {
         let mut world = World::new();
         for module in rlt.0.0 {
-            let result: Result<NodeId<kodept_ast_nodes::v3::module::Module>, _> = GenericSpawnContext::top_level(&module, world.commands(), FakeSourceCode);
+            let result: Result<NodeId<kodept_ast_nodes::v3::Module>, _> = GenericSpawnContext::top_level(&module, world.commands(), FakeSourceCode);
             prop_assert!(result.is_ok(), "Expected success build, but encountered an error: {:?}", result);
         }
     }
