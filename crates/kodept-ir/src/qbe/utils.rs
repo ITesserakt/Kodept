@@ -27,41 +27,15 @@ macro_rules! nev {
     }
 }
 
-pub struct JoinedDisplay<'a, T>(T, &'a str);
+pub(crate) struct JoinedDisplay<'a, T>(T, &'a str);
 
-pub trait JoinExt: Sized {
+pub(crate) trait JoinExt: Sized {
     fn join(self, separator: &str) -> JoinedDisplay<'_, Self>;
 }
 
 impl<T: Sized> JoinExt for T {
     fn join(self, separator: &str) -> JoinedDisplay<'_, Self> {
         JoinedDisplay(self, separator)
-    }
-}
-
-impl<'a, T> JoinedDisplay<'a, T> {
-    pub const fn enumerate(iter: T) -> Self {
-        Self(iter, ", ")
-    }
-
-    pub fn to_string(self) -> String
-    where
-        T: Iterator<Item: Display>,
-    {
-        use std::fmt::Write;
-
-        let mut result = String::new();
-        let mut first = true;
-        for item in self.0 {
-            if first {
-                first = false;
-                _ = write!(result, "{item}");
-            } else {
-                _ = write!(result, "{}{item}", self.1)
-            }
-        }
-
-        result
     }
 }
 

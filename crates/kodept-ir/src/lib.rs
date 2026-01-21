@@ -1,7 +1,4 @@
 //! This crate contains different structures to model
 //! compiler backend interface.
 
-#![allow(dead_code, unreachable_pub)]
-
-mod khir;
-mod qbe;
+pub mod qbe;
