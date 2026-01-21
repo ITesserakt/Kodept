@@ -1,6 +1,5 @@
 use crate::qbe::defs::aggregate::TypeDef;
 use derive_more::{Display, From};
-use sealed::sealed;
 
 #[derive(Display, Debug, Eq, PartialEq, Copy, Clone)]
 #[display("w")]
@@ -79,13 +78,16 @@ pub enum ABIType<'a> {
     Symbol(&'a TypeDef),
 }
 
-#[sealed]
-pub trait ValueType {}
+pub trait ValueType: sealed::Sealed {}
+
+mod sealed {
+    pub trait Sealed {}
+}
 
 macro_rules! impl_value_type {
     ($t:ty) => {
-        #[sealed::sealed]
         impl ValueType for $t {}
+        impl sealed::Sealed for $t {}
     };
     ($($t:ty$(,)?)*) => {
         $(impl_value_type!($t);)*

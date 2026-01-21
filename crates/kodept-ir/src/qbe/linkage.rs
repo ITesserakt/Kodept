@@ -1,9 +1,8 @@
-use crate::qbe::typedefs::Array;
-use derive_more::Display;
-use itertools::Itertools;
-use std::fmt::Display;
-
 use super::typedefs::Name;
+use crate::qbe::typedefs::Array;
+use crate::qbe::utils::JoinExt;
+use derive_more::Display;
+use std::fmt::Display;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Linkage {
@@ -74,7 +73,7 @@ impl Display for Linkage {
         if has_previous && !self.sections.is_empty() {
             write!(f, " ")?;
         }
-        write!(f, "{}", self.sections.iter().join(" "))?;
+        write!(f, "{}", (&self.sections).join(" "))?;
         Ok(())
     }
 }

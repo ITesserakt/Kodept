@@ -3,5 +3,5 @@
 
 #![allow(dead_code, unreachable_pub)]
 
-mod kir;
+mod khir;
 mod qbe;

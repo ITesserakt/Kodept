@@ -1,8 +1,7 @@
+use crate::qbe::types::ExtendedType;
+use crate::qbe::utils::{JoinExt, NEVec};
 use derive_more::{Constructor, Display};
 use std::fmt::{Display, Formatter};
-use itertools::Itertools;
-use nonempty_collections::NEVec;
-use crate::qbe::types::ExtendedType;
 
 pub type Align = u16;
 
@@ -39,7 +38,7 @@ impl TypeDef {
         match self {
             TypeDef::Regular { name, .. } => name,
             TypeDef::Union { name, .. } => name,
-            TypeDef::Opaque { name, .. } => name
+            TypeDef::Opaque { name, .. } => name,
         }
     }
 }
@@ -101,6 +100,6 @@ impl Display for Field {
 
 impl Display for Layout {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.iter().join(", "))
+        write!(f, "{}", (&self.0).join(", "))
     }
 }

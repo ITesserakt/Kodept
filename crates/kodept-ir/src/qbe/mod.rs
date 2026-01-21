@@ -4,6 +4,7 @@ pub mod defs;
 pub mod linkage;
 pub mod module;
 pub mod types;
+mod utils;
 
 pub mod typedefs {
     use smallvec::SmallVec;
@@ -14,7 +15,9 @@ pub mod typedefs {
 
 #[cfg(test)]
 mod tests {
-    use nonempty_collections::nev;
+    use super::control::instruction::Argument;
+    use super::types::Long;
+    use crate::nev;
     use crate::qbe::constants::{Constant, Value};
     use crate::qbe::control::block::{Block, Jump};
     use crate::qbe::control::instruction::{add, call};
@@ -24,20 +27,19 @@ mod tests {
     use crate::qbe::module::Module;
     use crate::qbe::types::{Byte, Word};
 
-    use super::control::instruction::Argument;
-    use super::types::Long;
-
     fn build_hello_world() -> Module<'static> {
         let fn_add = Function::new(
             Linkage::private(),
             "add".to_string(),
-            nev![Block::new("start")
-                .with_instr(add::smtm(
-                    Value::local("c"),
-                    Word,
-                    [Value::local("a"), Value::local("b")]
-                ))
-                .with_jump(Jump::Return(Value::local("c")))],
+            nev![
+                Block::new("start")
+                    .with_instr(add::smtm(
+                        Value::local("c"),
+                        Word,
+                        [Value::local("a"), Value::local("b")]
+                    ))
+                    .with_jump(Jump::Return(Value::local("c")))
+            ],
         )
         .with_return_type(Word)
         .with_param(Parameter::regular(Word, "a"))
@@ -46,22 +48,24 @@ mod tests {
         let fn_main = Function::new(
             Linkage::public(),
             "main".to_string(),
-            nev![Block::new("start")
-                .with_instr(call::assignment(
-                    Value::local("r"),
-                    Word,
-                    Value::global("add"),
-                    [Argument::regular(Word, 1), Argument::regular(Word, 1)]
-                ))
-                .with_instr(call::stmt(
-                    Value::global("printf"),
-                    [
-                        Argument::regular(Long, Value::global("fmt")),
-                        Argument::Variadic,
-                        Argument::regular(Word, Value::local("r"))
-                    ]
-                ))
-                .with_jump(Jump::ret(0))],
+            nev![
+                Block::new("start")
+                    .with_instr(call::assignment(
+                        Value::local("r"),
+                        Word,
+                        Value::global("add"),
+                        [Argument::regular(Word, 1), Argument::regular(Word, 1)]
+                    ))
+                    .with_instr(call::stmt(
+                        Value::global("printf"),
+                        [
+                            Argument::regular(Long, Value::global("fmt")),
+                            Argument::Variadic,
+                            Argument::regular(Word, Value::local("r"))
+                        ]
+                    ))
+                    .with_jump(Jump::ret(0))
+            ],
         )
         .with_return_type(Word);
 

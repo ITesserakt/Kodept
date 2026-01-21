@@ -1,17 +1,22 @@
-[package]
-name = "kodept"
-version = "0.2.3"
-edition.workspace = true
-rust-version.workspace = true
-authors = ["Владимир Никитин <potyras85@mail.ru>"]
-description = "Simple compiler with dependent types support in mind"
-repository = "https://github.com/ITesserakt/Kodept/"
-categories = ["compilers"]
-license = "Apache-2.0"
-
 [workspace]
 resolver = "3"
-members = [".", "crates/kodept-core", "crates/kodept-parse", "crates/kodept-inference", "crates/kodept-ast", "crates/kodept-report", "crates/kodept-interning", "crates/kodept-ast-nodes", "crates/kodept-rlt", "crates/kodept-frontend", "crates/kodept-systems", "bin/kodept-ast-visualizer", "crates/kodept-cli", "crates/kodept-report-macros", "bin/kodept-check"]
+members = [
+    "crates/kodept-core"
+    , "crates/kodept-parse"
+    , "crates/kodept-inference"
+    , "crates/kodept-ast"
+    , "crates/kodept-report"
+    , "crates/kodept-interning"
+    , "crates/kodept-ast-nodes"
+    , "crates/kodept-rlt"
+    , "crates/kodept-frontend"
+    , "crates/kodept-systems"
+    , "crates/kodept-cli"
+    , "crates/kodept-report-macros"
+    , "crates/kodept-ir"
+    , "bin/kodept-ast-visualizer"
+    , "bin/kodept-check"
+]
 
 [workspace.package]
 edition = "2024"

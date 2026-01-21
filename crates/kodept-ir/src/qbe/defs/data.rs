@@ -2,9 +2,8 @@ use crate::qbe::constants::Constant;
 use crate::qbe::defs::aggregate::Align;
 use crate::qbe::linkage::Linkage;
 use crate::qbe::types::ExtendedType;
+use crate::qbe::utils::{JoinExt, NEVec};
 use derive_more::Constructor;
-use itertools::Itertools;
-use nonempty_collections::NEVec;
 use std::fmt::{Display, Formatter};
 use std::num::NonZeroU64;
 
@@ -56,7 +55,7 @@ impl Display for DataChunk {
         match self {
             DataChunk::Zeros(count) => write!(f, "z {count}"),
             DataChunk::Filled { ty, items } => {
-                write!(f, "{ty} {}", items.into_iter().join(" "))
+                write!(f, "{ty} {}", items.join(" "))
             }
         }
     }
@@ -72,7 +71,7 @@ impl Display for DataDef {
             write!(f, " align {align}")?;
         }
         write!(f, " {{ ")?;
-        write!(f, "{}", self.chunks.iter().join(", "))?;
+        write!(f, "{}", (&self.chunks).join(", "))?;
         write!(f, " }}")?;
         Ok(())
     }

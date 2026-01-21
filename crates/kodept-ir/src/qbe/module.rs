@@ -1,7 +1,7 @@
 use crate::qbe::defs::aggregate::TypeDef;
 use crate::qbe::defs::data::DataDef;
 use crate::qbe::defs::funcs::Function;
-use itertools::Itertools;
+use crate::qbe::utils::JoinExt;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, PartialEq)]
@@ -14,13 +14,13 @@ pub struct Module<'a> {
 impl Display for Module<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if !self.fns.is_empty() {
-            writeln!(f, "{}", self.fns.iter().join("\n"))?;
+            writeln!(f, "{}", (&self.fns).join("\n"))?;
         }
         if !self.data.is_empty() {
-            writeln!(f, "{}", self.data.iter().join("\n"))?;
+            writeln!(f, "{}", (&self.data).join("\n"))?;
         }
         if !self.types.is_empty() {
-            writeln!(f, "{}", self.types.iter().join("\n"))?;
+            writeln!(f, "{}", (&self.types).join("\n"))?;
         }
         Ok(())
     }

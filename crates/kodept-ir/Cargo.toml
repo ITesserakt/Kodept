@@ -1,12 +1,11 @@
 [package]
-name = "kodept-qbe"
+name = "kodept-ir"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
 derive_more.workspace = true
-sealed = "0.6.0"
 smallvec = "1.15.1"
 
 [dev-dependencies]

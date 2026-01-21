@@ -5,10 +5,9 @@ use crate::qbe::control::instruction::macros::{def_instruction, def_instructions
 use crate::qbe::types::{
     ABIType, BasicType, Double, IntegerType, Long, Single, SizeType, ValueType, Void,
 };
-use derive_more::derive::From;
+use crate::qbe::utils::JoinExt;
 use derive_more::Display;
-use itertools::Itertools;
-use sealed::sealed;
+use derive_more::derive::From;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, PartialEq)]
@@ -17,11 +16,14 @@ pub enum Count {
     N(usize),
 }
 
-#[sealed]
-pub trait Instruction {
+pub trait Instruction: sealed::Sealed {
     const NAME: &'static str;
     const PARAM_COUNT: Count;
     type VType: ValueType;
+}
+
+mod sealed {
+    pub trait Sealed {}
 }
 
 #[derive(Display, Debug, PartialEq)]
@@ -88,7 +90,7 @@ mod macros {
             #[allow(non_camel_case_types)]
             pub struct $name(Instr<$t, backing!($count)>);
 
-            #[sealed]
+            impl sealed::Sealed for $name {}
             impl Instruction for $name {
                 const NAME: &'static str = stringify!($name);
                 #[allow(unsafe_code)]
@@ -103,7 +105,7 @@ mod macros {
                         "{}{} {}",
                         self.0.lvalue,
                         Self::NAME,
-                        self.0.params.as_ref().iter().join(", ")
+                        (&self.0.params).join(", ")
                     )
                 }
             }
@@ -213,7 +215,7 @@ impl<'a> Argument<'a> {
     }
 }
 
-#[sealed]
+impl sealed::Sealed for call<'_> {}
 impl<'a> Instruction for call<'a> {
     const NAME: &'static str = "call";
     const PARAM_COUNT: Count = Count::Unspecified;
@@ -227,7 +229,7 @@ impl Display for call<'_> {
             "{}call {}({})",
             self.lvalue,
             self.fn_name,
-            self.args.iter().join(", ")
+            (&self.args).join(", ")
         )
     }
 }
@@ -272,7 +274,7 @@ pub struct Branch {
     value: Value,
 }
 
-#[sealed]
+impl sealed::Sealed for phi {}
 impl Instruction for phi {
     const NAME: &'static str = "phi";
     const PARAM_COUNT: Count = Count::Unspecified;
@@ -281,11 +283,6 @@ impl Instruction for phi {
 
 impl Display for phi {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}phi ({})",
-            self.lvalue,
-            self.branches.iter().join(", ")
-        )
+        write!(f, "{}phi ({})", self.lvalue, (&self.branches).join(", "))
     }
 }

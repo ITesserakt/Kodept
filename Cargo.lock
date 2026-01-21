@@ -936,10 +936,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kodept"
-version = "0.2.3"
-
-[[package]]
 name = "kodept-ast"
 version = "0.7.4"
 dependencies = [
@@ -1041,6 +1037,15 @@ version = "0.1.1"
 dependencies = [
  "foldhash",
  "kodept-core",
+]
+
+[[package]]
+name = "kodept-ir"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "similar-asserts",
+ "smallvec",
 ]
 
 [[package]]

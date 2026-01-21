@@ -1,24 +1,20 @@
-use std::fmt::{Display, Formatter};
-use std::vec;
-use derive_more::Display;
-use itertools::Itertools;
-use nonempty_collections::NEVec;
 use crate::qbe::control::block::Block;
 use crate::qbe::linkage::Linkage;
 use crate::qbe::typedefs::Name;
 use crate::qbe::types::ABIType;
+use crate::qbe::utils::{JoinExt, NEVec};
+use derive_more::Display;
+use std::fmt::{Display, Formatter};
+use std::vec;
 
 #[derive(Display, Debug, Eq, PartialEq)]
 pub enum Parameter<'a> {
     #[display("{ty} %{name}")]
-    Regular {
-        ty: ABIType<'a>,
-        name: Name
-    },
+    Regular { ty: ABIType<'a>, name: Name },
     #[display("env %{_0}")]
     Environment(Name),
     #[display("...")]
-    Variadic
+    Variadic,
 }
 
 #[derive(Debug, PartialEq)]
@@ -27,14 +23,14 @@ pub struct Function<'a> {
     return_ty: Option<ABIType<'a>>,
     name: Name,
     params: Vec<Parameter<'a>>,
-    blocks: NEVec<Block<'a>>
+    blocks: NEVec<Block<'a>>,
 }
 
 impl<'a> Parameter<'a> {
     pub fn regular(ty: impl Into<ABIType<'a>>, name: impl Into<Name>) -> Self {
-        Self::Regular { 
+        Self::Regular {
             ty: ty.into(),
-            name: name.into()
+            name: name.into(),
         }
     }
 
@@ -52,8 +48,8 @@ impl Display for Function<'_> {
         if let Some(return_ty) = &self.return_ty {
             write!(f, "{return_ty} ")?;
         }
-        writeln!(f, "${}({}) {{", self.name, self.params.iter().join(", "))?;
-        writeln!(f, "{}", self.blocks.iter().into_iter().join("\n"))?;
+        writeln!(f, "${}({}) {{", self.name, (&self.params).join(", "))?;
+        writeln!(f, "{}", (&self.blocks).join("\n"))?;
         write!(f, "}}")?;
         Ok(())
     }

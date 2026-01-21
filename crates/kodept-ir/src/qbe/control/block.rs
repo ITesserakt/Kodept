@@ -1,7 +1,7 @@
 use crate::qbe::constants::Value;
-use crate::qbe::control::instruction::{phi, AnyInst};
+use crate::qbe::control::instruction::{AnyInst, phi};
+use crate::qbe::utils::JoinExt;
 use derive_more::Display;
-use itertools::Itertools;
 use std::fmt::{Display, Formatter};
 use std::vec;
 
@@ -37,10 +37,10 @@ impl Display for Block<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "@{}", self.label)?;
         if !self.phi.is_empty() {
-            writeln!(f, "\t{}", self.phi.iter().join("\n\t"))?;
+            writeln!(f, "\t{}", (&self.phi).join("\n\t"))?;
         }
         if !self.instr.is_empty() {
-            writeln!(f, "\t{}", self.instr.iter().join("\n\t"))?;
+            writeln!(f, "\t{}", (&self.instr).join("\n\t"))?;
         }
         if let Some(jump) = &self.jump {
             write!(f, "\t{}", jump)?;
