@@ -48,6 +48,14 @@ impl<T: ASTNode> RequireProperty<SourceSpan> for T {}
 
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {}
 
+impl Node {
+    pub fn of<T>() -> Self {
+        Self {
+            kind: DebugName::type_name::<T>(),
+        }
+    }
+}
+
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         <Self as Display>::fmt(self, f)

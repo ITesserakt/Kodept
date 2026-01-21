@@ -1,6 +1,6 @@
 [package]
 name = "kodept-ast-nodes"
-version = "0.2.6"
+version = "0.3.0"
 edition = "2021"
 rust-version.workspace = true
 
@@ -9,16 +9,20 @@ workspace = true
 
 [dependencies]
 bevy_ecs.workspace = true
+bigdecimal = "0.4"
+num-bigint = "0.4"
+
 kodept-ast = { path = "../kodept-ast" }
 kodept-rlt = { path = "../kodept-rlt" }
 
 [dev-dependencies]
 criterion = "0.7.0"
-kodept-core = { version = "0.4", path = "../kodept-core" }
-kodept-rlt = { version = "0.2", features = ["arbitrary"], path = "../kodept-rlt" }
 proptest = "1.6.0"
 serde_json = "1.0.145"
 rayon = "1.11.0"
+
+kodept-core = { version = "0.4", path = "../kodept-core" }
+kodept-rlt = { version = "0.2", features = ["arbitrary", "serde"], path = "../kodept-rlt" }
 
 [features]
 defalt = []

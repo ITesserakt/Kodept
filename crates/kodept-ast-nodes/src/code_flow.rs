@@ -6,10 +6,10 @@ use crate::types::Ty;
 use crate::Dispatcher;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, FromSyntax, SpawnContext};
+use kodept_ast::experimental::{AstBuilder, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::SourceSpan;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
 use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 
@@ -55,9 +55,9 @@ relation!(ElseExpr => child Exprs);
 impl FromSyntax<kodept_rlt::prelude::IfExpr> for IfExpr {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &kodept_rlt::prelude::IfExpr,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let mut builder = AstBuilder::new(IfExpr)
@@ -77,9 +77,9 @@ impl FromSyntax<kodept_rlt::prelude::IfExpr> for IfExpr {
 impl FromSyntax<kodept_rlt::prelude::ElifExpr> for ElifExpr {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &kodept_rlt::prelude::ElifExpr,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         Ok(AstBuilder::new(ElifExpr)
@@ -94,9 +94,9 @@ impl FromSyntax<kodept_rlt::prelude::ElifExpr> for ElifExpr {
 impl FromSyntax<kodept_rlt::prelude::ElseExpr> for ElseExpr {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &kodept_rlt::prelude::ElseExpr,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         Ok(AstBuilder::new(ElseExpr)

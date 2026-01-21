@@ -9,6 +9,7 @@ pub mod prelude {
 #[deprecated]
 pub mod experimental {
     pub use super::builder_v3::{
-        AstBuilder, DispatchContext, Here, SpawnContext, SpawnedIn, There,
+        AstBuilder, Buffer, DispatchContext, GenericSpawnContext, Here, SpawnContext, SpawnedIn,
+        There,
     };
 }

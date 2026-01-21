@@ -16,7 +16,7 @@ tracing.workspace = true
 yoke = "0.8.0"
 
 kodept-ast = { path = "../kodept-ast", version = "0.7", features = ["debug"] }
-kodept-ast-nodes = { path = "../kodept-ast-nodes", version = "0.2" }
+kodept-ast-nodes = { path = "../kodept-ast-nodes", version = "0.3" }
 kodept-core = { path = "../kodept-core", version = "0.4" }
 kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
 kodept-parse = { path = "../kodept-parse", version = "0.4" }

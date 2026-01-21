@@ -21,12 +21,14 @@ pub struct PropsState<R, P> {
     properties: P,
 }
 
-pub(crate) struct ChildState<'w, 's, R, Inner = ()> {
-    spawner: SpawnContext<'w, 's, Inner>,
+pub(crate) struct ChildState<R, B: Buffer, Inner = ()> {
+    spawner: GenericSpawnContext<Inner, B>,
     _phantom: PhantomData<R>,
 }
 
 pub trait SpawnedIn<Root>: Sized {
+    type Buffer: Buffer;
+
     fn with_child<T, U, Tag>(
         &mut self,
         node: &T,
@@ -66,7 +68,10 @@ pub trait SpawnedIn<Root>: Sized {
     fn with_dispatch_fn<'a, T: SyntaxNode, Tag, Arity, E>(
         &mut self,
         node: &T,
-        f: impl FnOnce(&T, DispatchContext<Root, Tag, Arity>) -> Result<Entity, E>,
+        f: impl FnOnce(
+            &T,
+            DispatchContext<<Self::Buffer as Buffer>::Reborrowed<'_>, Root, Tag, Arity>,
+        ) -> Result<Entity, E>,
     ) -> Result<&mut Self, E>
     where
         Tag: Send + Sync + 'static,
@@ -100,56 +105,135 @@ trait Context<U> {
 }
 
 pub trait Buffer {
-    type Ref<'a>
+    type Reborrowed<'a>: Buffer
     where
         Self: 'a;
 
-    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity;
-    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle);
+    fn reborrow(&mut self) -> Self::Reborrowed<'_>;
+
+    fn spawn(self, bundle: impl Bundle) -> (Entity, Self);
+    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self;
+}
+
+pub trait RefBuffer: Buffer {
+    fn reborrow_ref(&self) -> Self::Reborrowed<'_>;
 }
 
 impl<'w, 's> Buffer for Commands<'w, 's> {
-    type Ref<'a>
-        = &'a mut Commands<'w, 's>
+    type Reborrowed<'a>
+        = Commands<'w, 'a>
     where
         Self: 'a;
 
-    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity {
-        this.spawn(bundle).id()
+    #[inline]
+    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
+        Commands::reborrow(self)
     }
 
-    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle) {
-        this.entity(entity).insert(bundle);
+    #[inline]
+    fn spawn(mut self, bundle: impl Bundle) -> (Entity, Self) {
+        let id = Commands::spawn(&mut self, bundle).id();
+        (id, self)
+    }
+
+    #[inline]
+    fn insert(mut self, entity: Entity, bundle: impl Bundle) -> Self {
+        Commands::entity(&mut self, entity).insert(bundle);
+        self
     }
 }
 
-impl Buffer for World {
-    type Ref<'a> = &'a mut World;
+impl<'a> Buffer for &'a mut World {
+    type Reborrowed<'b>
+        = &'b mut World
+    where
+        'a: 'b;
 
-    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity {
-        this.spawn(bundle).id()
+    #[inline]
+    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
+        self as &mut World
     }
 
-    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle) {
-        this.entity_mut(entity).insert(bundle);
+    #[inline]
+    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
+        let id = World::spawn(self, bundle).id();
+        (id, self)
+    }
+
+    #[inline]
+    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
+        World::entity_mut(self, entity).insert(bundle);
+        self
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<'w, 's, 'a> Buffer for &'a ParallelCommands<'w, 's> {
+    type Reborrowed<'b>
+        = &'b ParallelCommands<'w, 's>
+    where
+        'a: 'b;
+
+    #[inline]
+    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
+        self as &ParallelCommands
+    }
+
+    #[inline]
+    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
+        let id = self.command_scope(|mut c| Commands::spawn(&mut c, bundle).id());
+        (id, self)
+    }
+
+    #[inline]
+    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
+        self.command_scope(|mut c| {
+            c.entity(entity).insert(bundle);
+        });
+        self
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<'a, 'w, 's> RefBuffer for &'a ParallelCommands<'w, 's> {
+    #[inline]
+    fn reborrow_ref(&self) -> Self::Reborrowed<'_> {
+        self as &ParallelCommands
     }
 }
 
 #[cfg(feature = "parallel")]
 impl<'w, 's> Buffer for ParallelCommands<'w, 's> {
-    type Ref<'a>
-        = &'a ParallelCommands<'w, 's>
+    type Reborrowed<'a>
+        = &'a ParallelCommands<'w, 'a>
     where
         Self: 'a;
 
-    fn spawn(this: Self::Ref<'_>, bundle: impl Bundle) -> Entity {
-        this.command_scope(move |mut commands| commands.spawn(bundle).id())
+    #[inline]
+    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
+        self as &ParallelCommands
     }
 
-    fn insert(this: Self::Ref<'_>, entity: Entity, bundle: impl Bundle) {
-        this.command_scope(move |mut commands| {
-            commands.entity(entity).insert(bundle);
-        })
+    #[inline]
+    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
+        let id = self.command_scope(|mut c| Commands::spawn(&mut c, bundle).id());
+        (id, self)
+    }
+
+    #[inline]
+    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
+        self.command_scope(|mut c| {
+            c.entity(entity).insert(bundle);
+        });
+        self
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<'w, 's> RefBuffer for ParallelCommands<'w, 's> {
+    #[inline]
+    fn reborrow_ref(&self) -> Self::Reborrowed<'_> {
+        self
     }
 }
 
@@ -170,31 +254,61 @@ pub enum GenericSpawnContext<R, B: Buffer> {
 pub type SpawnContext<'w, 's, R> = GenericSpawnContext<R, Commands<'w, 's>>;
 
 impl<R, B: Buffer> GenericSpawnContext<R, B> {
-    fn cast_relationship<Next: Relationship>(self) -> GenericSpawnContext<Next, B> {
+    #[inline]
+    fn cast_relationship<Next: Relationship, O>(
+        self,
+        f: impl FnOnce(GenericSpawnContext<Next, B>) -> O,
+    ) -> O {
         match self {
-            GenericSpawnContext::Empty(x) => GenericSpawnContext::Empty(x),
+            GenericSpawnContext::Empty(x) => f(GenericSpawnContext::Empty(x)),
             GenericSpawnContext::Related {
                 buffer,
                 related_id,
                 _phantom,
-            } => GenericSpawnContext::Related {
+            } => f(GenericSpawnContext::Related {
                 buffer,
                 related_id,
                 _phantom: PhantomData,
-            },
+            }),
         }
     }
-}
 
-impl<'w, 's, R> SpawnContext<'w, 's, R> {
-    pub fn reborrow<'a>(&'a mut self) -> SpawnContext<'w, 'a, R> {
+    #[inline]
+    pub(crate) fn spawn<Next>(self, bundle: impl Bundle) -> GenericSpawnContext<Next, B>
+    where
+        R: Relationship,
+    {
         match self {
-            SpawnContext::Empty(c) => SpawnContext::Empty(c.reborrow()),
-            SpawnContext::Related {
+            GenericSpawnContext::Empty(buffer) => {
+                let (related_id, c) = buffer.spawn(bundle);
+                GenericSpawnContext::Related {
+                    buffer: c,
+                    related_id,
+                    _phantom: PhantomData,
+                }
+            }
+            GenericSpawnContext::Related {
+                buffer, related_id, ..
+            } => {
+                let (related_id, buffer) = buffer.spawn((R::from(related_id), bundle));
+                GenericSpawnContext::Related {
+                    buffer,
+                    related_id,
+                    _phantom: PhantomData,
+                }
+            }
+        }
+    }
+
+    #[inline]
+    pub fn reborrow(&mut self) -> GenericSpawnContext<R, B::Reborrowed<'_>> {
+        match self {
+            GenericSpawnContext::Empty(c) => GenericSpawnContext::Empty(c.reborrow()),
+            GenericSpawnContext::Related {
                 buffer: commands,
                 related_id,
                 ..
-            } => SpawnContext::Related {
+            } => GenericSpawnContext::Related {
                 buffer: commands.reborrow(),
                 related_id: *related_id,
                 _phantom: PhantomData,
@@ -203,92 +317,64 @@ impl<'w, 's, R> SpawnContext<'w, 's, R> {
     }
 
     #[inline]
-    pub(crate) fn spawn<Next>(self, bundle: impl Bundle) -> SpawnContext<'w, 's, Next>
-    where
-        R: Relationship,
-    {
-        match self {
-            SpawnContext::Empty(mut c) => {
-                let entity = c.spawn(bundle);
-                let related_id = entity.id();
-                SpawnContext::Related {
-                    buffer: c,
-                    related_id,
-                    _phantom: PhantomData,
-                }
-            }
-            SpawnContext::Related {
-                buffer: mut commands,
-                related_id,
-                ..
-            } => {
-                let entity = commands.spawn((R::from(related_id), bundle));
-                let related_id = entity.id();
-                SpawnContext::Related {
-                    buffer: commands,
-                    related_id,
-                    _phantom: PhantomData,
-                }
-            }
-        }
-    }
-
     fn link_with_lexeme(&mut self, spawned: impl Erase<Entity>, node: &impl SyntaxNode) {
         let ptr = ErasedNodePtr::new(node);
         match self {
-            SpawnContext::Empty(commands)
-            | SpawnContext::Related {
-                buffer: commands, ..
-            } => {
-                commands
-                    .entity(spawned.erase())
-                    .insert(Lexeme(LexemeId::from(ptr)));
+            GenericSpawnContext::Empty(buffer) | GenericSpawnContext::Related { buffer, .. } => {
+                let buffer = buffer.reborrow();
+                buffer.insert(spawned.erase(), Lexeme(LexemeId::from(ptr)));
             }
         }
     }
 }
 
-impl<'w, 's> SpawnContext<'w, 's, ()> {
-    pub fn top_level<T: SyntaxNode, R: FromSyntax<T>>(
+impl<B: Buffer> GenericSpawnContext<(), B> {
+    #[inline]
+    pub fn top_level<T: SyntaxNode, U: FromSyntax<T>>(
         node: &T,
-        commands: Commands,
+        buffer: B,
         source: impl CodeHolder,
-    ) -> Result<NodeId<R>, R::Error> {
-        let mut spawner = SpawnContext::<ChildOf>::Empty(commands);
-        let id = R::from_syntax(node, spawner.reborrow(), source)?;
+    ) -> Result<NodeId<U>, U::Error> {
+        let mut spawner = GenericSpawnContext::<ChildOf, _>::Empty(buffer);
+        let id = U::from_syntax(node, spawner.reborrow(), source)?;
         spawner.link_with_lexeme(id, node);
         Ok(id)
     }
 }
 
-pub struct DispatchContext<'w, 's, Root, Tag, Arity>
+pub struct DispatchContext<B, Root, Tag, Arity>
 where
     Tag: Send + Sync + 'static,
     Arity: crate::arity::Arity,
+    B: Buffer,
 {
-    inner: SpawnContext<'w, 's, crate::relationship::ContainedBy<Tag, Arity>>,
+    inner: GenericSpawnContext<crate::relationship::ContainedBy<Tag, Arity>, B>,
     _phantom: PhantomData<(Root, Tag, Arity)>,
 }
 
-impl<'w, 's, Root, Tag, Arity> DispatchContext<'w, 's, Root, Tag, Arity>
+impl<B, Root, Tag, Arity> DispatchContext<B, Root, Tag, Arity>
 where
     Tag: Send + Sync + 'static,
     Arity: crate::arity::Arity,
+    B: Buffer,
 {
-    fn new(value: SpawnContext<'w, 's, crate::relationship::ContainedBy<Tag, Arity>>) -> Self {
+    #[inline]
+    fn new(value: GenericSpawnContext<crate::relationship::ContainedBy<Tag, Arity>, B>) -> Self {
         Self {
             inner: value,
             _phantom: PhantomData,
         }
     }
 
-    pub fn reborrow<'a>(&'a mut self) -> DispatchContext<'w, 'a, Root, Tag, Arity> {
+    #[inline]
+    pub fn reborrow(&mut self) -> DispatchContext<B::Reborrowed<'_>, Root, Tag, Arity> {
         DispatchContext {
             inner: self.inner.reborrow(),
             _phantom: PhantomData,
         }
     }
 
+    #[inline]
     pub fn forward<T, U>(&mut self, node: &T, source: impl CodeHolder) -> Result<Entity, U::Error>
     where
         Root: HasChild<U, Tag, Arity = Arity>,
@@ -297,6 +383,7 @@ where
         U::from_syntax(node, self.inner.reborrow(), source).map(|it| it.entity())
     }
 
+    #[inline]
     pub fn dispatch<'a, T>(
         &mut self,
         node: impl Into<T>,
@@ -310,6 +397,7 @@ where
 }
 
 impl AstBuilder<()> {
+    #[inline]
     pub fn new<Root>(root: Root) -> AstBuilder<PropsState<Root, ()>> {
         AstBuilder {
             state: PropsState {
@@ -330,7 +418,7 @@ impl<Head, Tail, FromTail, TailIndex> Contains<FromTail, There<TailIndex>> for (
 {
 }
 
-impl<'w, 's, Rel: Relationship, Root> Context<Root> for SpawnContext<'w, 's, Rel> {
+impl<B: Buffer, Rel: Relationship, Root> Context<Root> for GenericSpawnContext<Rel, B> {
     #[inline]
     fn spawn_builder<P, I>(
         self,
@@ -350,12 +438,13 @@ impl<'w, 's, Rel: Relationship, Root> Context<Root> for SpawnContext<'w, 's, Rel
     }
 }
 
-impl<'w, 's, R, T, A, U, Node: SyntaxNode> Context<U> for (DispatchContext<'w, 's, R, T, A>, &Node)
+impl<B, R, T, A, U, Node: SyntaxNode> Context<U> for (DispatchContext<B, R, T, A>, &Node)
 where
     R: HasChild<U, T, Arity = A>,
     U: ASTNode,
     T: Send + Sync + 'static,
     A: crate::arity::Arity,
+    B: Buffer,
 {
     #[inline]
     fn spawn_builder<P, I>(
@@ -383,6 +472,7 @@ where
 }
 
 impl<R, P> PropsState<R, P> {
+    #[inline]
     fn into_bundle(self) -> impl Bundle
     where
         R: ASTNode,
@@ -400,6 +490,7 @@ impl<R, P> PropsState<R, P> {
 }
 
 impl<R, P> AstBuilder<PropsState<R, P>> {
+    #[inline]
     pub fn with_property<Prop>(self, property: Prop) -> AstBuilder<PropsState<R, (P, Prop)>>
     where
         Prop: NodeProperty,
@@ -413,6 +504,7 @@ impl<R, P> AstBuilder<PropsState<R, P>> {
         }
     }
 
+    #[inline]
     #[allow(private_bounds)]
     pub fn spawn_in<I>(self, spawner: impl Context<R>) -> AstBuilder<impl SpawnedIn<R>>
     where
@@ -423,7 +515,14 @@ impl<R, P> AstBuilder<PropsState<R, P>> {
     }
 }
 
-impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
+impl<R, B, Rel> SpawnedIn<R> for ChildState<R, B, Rel>
+where
+    Rel: Relationship,
+    B: Buffer,
+{
+    type Buffer = B;
+
+    #[inline]
     fn with_child<T, U, Tag>(
         &mut self,
         node: &T,
@@ -435,17 +534,17 @@ impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
         T: SyntaxNode,
     {
         let spawner = &mut self.spawner;
-        let id = U::from_syntax(
-            node,
-            spawner
-                .reborrow()
-                .cast_relationship::<<R as NodeRelationship<U, Tag>>::Relationship>(),
-            source,
-        )?;
+
+        let id = spawner.reborrow().cast_relationship(|spawner| {
+            U::from_syntax::<_, <R as NodeRelationship<U, Tag>>::Relationship>(
+                node, spawner, source,
+            )
+        })?;
         spawner.link_with_lexeme(id, node);
         Ok(self)
     }
 
+    #[inline]
     fn with_children<'i, T, U, Tag>(
         &mut self,
         nodes: impl IntoCommonIter<Item = &'i T>,
@@ -458,19 +557,18 @@ impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
     {
         let spawner = &mut self.spawner;
         for node in nodes.into_iter() {
-            let id = U::from_syntax(
-                node,
-                spawner
-                    .reborrow()
-                    .cast_relationship::<<R as NodeRelationship<U, Tag>>::Relationship>(),
-                source,
-            )?;
+            let id = spawner.reborrow().cast_relationship(|spawner| {
+                U::from_syntax::<_, <R as NodeRelationship<U, Tag>>::Relationship>(
+                    node, spawner, source,
+                )
+            })?;
             spawner.link_with_lexeme(id, node);
         }
 
         Ok(self)
     }
 
+    #[inline]
     fn with_dispatch<'a, T, Tag, Arity>(
         &mut self,
         node: impl Into<T>,
@@ -483,33 +581,33 @@ impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
     {
         let spawner = &mut self.spawner;
         let (dispatcher, node) = node.into().split();
-        let entity = dispatcher.dispatch(
-            DispatchContext::new(spawner.reborrow().cast_relationship()),
-            source,
-        )?;
+        let entity = spawner.reborrow().cast_relationship(|spawner| {
+            dispatcher.dispatch(DispatchContext::new(spawner), source)
+        })?;
         spawner.link_with_lexeme(entity, node);
 
         Ok(self)
     }
 
+    #[inline]
     fn with_dispatch_fn<'a, T: SyntaxNode, Tag, Arity, E>(
         &mut self,
         node: &T,
-        f: impl FnOnce(&T, DispatchContext<R, Tag, Arity>) -> Result<Entity, E>,
+        f: impl FnOnce(&T, DispatchContext<B::Reborrowed<'_>, R, Tag, Arity>) -> Result<Entity, E>,
     ) -> Result<&mut Self, E>
     where
         Tag: Send + Sync + 'static,
         Arity: crate::arity::Arity,
     {
         let spawner = &mut self.spawner;
-        let entity = f(
-            node,
-            DispatchContext::new(spawner.reborrow().cast_relationship()),
-        )?;
+        let entity = spawner
+            .reborrow()
+            .cast_relationship(|spawner| f(node, DispatchContext::new(spawner)))?;
         spawner.link_with_lexeme(entity, node);
         Ok(self)
     }
 
+    #[inline]
     fn with_dispatches<'a, T, Tag, Arity>(
         &mut self,
         nodes: impl IntoCommonIter<Item: Into<T>>,
@@ -523,20 +621,20 @@ impl<R, Rel: Relationship> SpawnedIn<R> for ChildState<'_, '_, R, Rel> {
         let spawner = &mut self.spawner;
         for node in nodes.into_iter() {
             let (dispatcher, node) = node.into().split();
-            let entity = dispatcher.dispatch(
-                DispatchContext::new(spawner.reborrow().cast_relationship()),
-                source,
-            )?;
+            let entity = spawner.reborrow().cast_relationship(|spawner| {
+                dispatcher.dispatch(DispatchContext::new(spawner), source)
+            })?;
             spawner.link_with_lexeme(entity, node);
         }
 
         Ok(self)
     }
 
+    #[inline]
     fn finish(&self) -> NodeId<R> {
         match self.spawner {
-            SpawnContext::Related { related_id, .. } => NodeId::from(related_id),
-            SpawnContext::Empty(_) => unreachable!(),
+            GenericSpawnContext::Related { related_id, .. } => NodeId::from(related_id),
+            GenericSpawnContext::Empty(_) => unreachable!(),
         }
     }
 }

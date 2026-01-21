@@ -2,10 +2,10 @@ use crate::function::FuncDecl;
 use crate::types::TyParam;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, FromSyntax, SpawnContext};
+use kodept_ast::experimental::{AstBuilder, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, SourceSpan};
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
 use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types::TypeName;
@@ -42,9 +42,9 @@ derive_node!(EnumConst {
 impl FromSyntax<Enum> for EnumDecl {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &Enum,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let (kind, id, rest) = match node {
@@ -66,9 +66,9 @@ impl FromSyntax<Enum> for EnumDecl {
 impl FromSyntax<Struct> for StructDecl {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &Struct,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
@@ -91,9 +91,9 @@ impl FromSyntax<Struct> for StructDecl {
 impl FromSyntax<TypeName> for EnumConst {
     type Error = Infallible;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &TypeName,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(node);

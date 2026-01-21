@@ -3,11 +3,13 @@ use crate::Dispatcher;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, Dispatch, FromSyntax, SpawnContext};
+use kodept_ast::experimental::{AstBuilder, Dispatch, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::{DispatchContext, SpawnedIn};
+use kodept_ast::syntax_tree::experimental::{
+    Buffer, DispatchContext, GenericSpawnContext, SpawnedIn,
+};
 use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types;
@@ -48,9 +50,9 @@ derive_node!(NonTyParam {
 impl FromSyntax<new_types::TypeName> for Ty {
     type Error = Infallible;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &new_types::TypeName,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(node);
@@ -67,9 +69,9 @@ impl FromSyntax<new_types::TypeName> for Ty {
 impl FromSyntax<UntypedParameter> for NonTyParam {
     type Error = Infallible;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &UntypedParameter,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
@@ -84,9 +86,9 @@ impl FromSyntax<UntypedParameter> for NonTyParam {
 impl FromSyntax<TypedParameter> for TyParam {
     type Error = Infallible;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &TypedParameter,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
@@ -102,9 +104,9 @@ impl FromSyntax<TypedParameter> for TyParam {
 impl FromSyntax<Tuple> for ProdTy {
     type Error = Infallible;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &Tuple,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         Ok(AstBuilder::new(ProdTy)
@@ -125,9 +127,9 @@ where
     type Node = kodept_rlt::prelude::Type;
     type Error = Infallible;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        mut spawner: DispatchContext<R, T, A>,
+        mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
         match self.0 {
@@ -163,9 +165,9 @@ where
     type Node = Parameter;
     type Error = Infallible;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        mut spawner: DispatchContext<R, T, A>,
+        mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
         match self.0 {

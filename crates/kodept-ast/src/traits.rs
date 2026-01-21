@@ -1,6 +1,7 @@
 use crate::Str;
 use crate::node_id::NodeId;
-pub(crate) use crate::syntax_tree::experimental::{DispatchContext, SpawnContext};
+pub(crate) use crate::syntax_tree::experimental::DispatchContext;
+use crate::syntax_tree::experimental::{Buffer, GenericSpawnContext};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
@@ -12,9 +13,9 @@ impl<T: BasicCodeHolder<Str = Str>> CodeHolder for T {}
 pub trait FromSyntax<Syntax>: Sized {
     type Error: Send + 'static;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &Syntax,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error>;
 }
@@ -31,9 +32,9 @@ where
     type Node;
     type Error: Send + 'static;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        spawner: DispatchContext<Root, Tag, Arity>,
+        spawner: DispatchContext<B, Root, Tag, Arity>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error>;
 }

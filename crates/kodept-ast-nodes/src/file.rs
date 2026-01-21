@@ -1,14 +1,13 @@
 use crate::consts::Const;
 use bevy_ecs::component::Component;
 use bevy_ecs::relationship::Relationship;
-use bevy_ecs::system::Commands;
 use kodept_ast::derive_node;
+use kodept_ast::experimental::AstBuilder;
 use kodept_ast::experimental::FromSyntax;
-use kodept_ast::experimental::{AstBuilder, SpawnContext};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::relation;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude as rlt;
 
@@ -33,18 +32,18 @@ impl FileDecl {
     pub fn from_syntax(
         node: &rlt::File,
         source: impl CodeHolder,
-        commands: Commands,
+        commands: impl Buffer,
     ) -> Result<NodeId<Self>, crate::Error> {
-        SpawnContext::top_level(node, commands, source)
+        GenericSpawnContext::top_level(node, commands, source)
     }
 }
 
 impl FromSyntax<rlt::File> for FileDecl {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &rlt::File,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         AstBuilder::new(FileDecl)
@@ -58,9 +57,9 @@ impl FromSyntax<rlt::File> for FileDecl {
 impl FromSyntax<rlt::Module> for ModDecl {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &rlt::Module,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let (value, name, rest) = match node {

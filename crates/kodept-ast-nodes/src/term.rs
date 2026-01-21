@@ -6,7 +6,7 @@ use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext};
 use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, SpawnedIn};
 use kodept_ast::{derive_node, Str};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude::Term;
@@ -70,9 +70,9 @@ where
     type Node = Term;
     type Error = Infallible;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        spawner: DispatchContext<R, T, A>,
+        spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
         match self.0 {
@@ -89,16 +89,7 @@ where
             }
             Term::ContextualReference(x) => {
                 let ident = source.get_chunk_located(&x.inner);
-                let (is_global, items) = x.context.unfold();
-                let context = if is_global.is_some() {
-                    ReferenceContext::global(
-                        items.into_iter().map(|it| source.get_chunk_located(it)),
-                    )
-                } else {
-                    ReferenceContext::local(
-                        items.into_iter().map(|it| source.get_chunk_located(it)),
-                    )
-                };
+                let context = (&x.context, source).into();
                 let value = Ref { context, ident };
 
                 Ok(AstBuilder::new(value)
@@ -119,16 +110,7 @@ where
             }
             Term::ContextualConstant(x) => {
                 let ident = source.get_chunk_located(&x.inner);
-                let (is_global, items) = x.context.unfold();
-                let context = if is_global.is_some() {
-                    ReferenceContext::global(
-                        items.into_iter().map(|it| source.get_chunk_located(it)),
-                    )
-                } else {
-                    ReferenceContext::local(
-                        items.into_iter().map(|it| source.get_chunk_located(it)),
-                    )
-                };
+                let context = (&x.context, source).into();
                 let value = Ty { context, ident };
 
                 Ok(AstBuilder::new(value)

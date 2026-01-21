@@ -10,11 +10,12 @@ use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext};
 use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, SpawnedIn};
 use kodept_ast::{derive_node, relation, Str};
 use kodept_rlt::exported::Located;
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude as rlt;
+use num_bigint::ParseBigIntError;
 use std::borrow::Cow;
 
 #[derive(Debug, PartialEq, Component)]
@@ -50,7 +51,7 @@ impl Literal {
                 }
                 let digits = &value[2..];
                 i128::from_str_radix(digits, 2)
-                    .map_err(|e| CannotParseInt(node.location(), e))
+                    .map_err(|e| CannotParseInt(node.location(), todo!()))
                     .map(Self::Integer)
             }
             rlt::Literal::Octal(_) => {
@@ -59,7 +60,7 @@ impl Literal {
                 }
                 let digits = &value[2..];
                 i128::from_str_radix(digits, 8)
-                    .map_err(|e| CannotParseInt(node.location(), e))
+                    .map_err(|e| CannotParseInt(node.location(), todo!()))
                     .map(Self::Integer)
             }
             rlt::Literal::Hex(_) => {
@@ -68,19 +69,19 @@ impl Literal {
                 }
                 let digits = &value[2..];
                 i128::from_str_radix(digits, 16)
-                    .map_err(|e| CannotParseInt(node.location(), e))
+                    .map_err(|e| CannotParseInt(node.location(), todo!()))
                     .map(Self::Integer)
             }
             rlt::Literal::Floating(_) => {
                 if value.contains('.') {
                     value
                         .parse()
-                        .map_err(|e| CannotParseFloat(node.location(), e))
+                        .map_err(|e| CannotParseFloat(node.location(), todo!()))
                         .map(Self::Floating)
                 } else {
                     value
                         .parse()
-                        .map_err(|e| CannotParseInt(node.location(), e))
+                        .map_err(|e| CannotParseInt(node.location(), todo!()))
                         .map(Self::Integer)
                 }
             }
@@ -122,9 +123,9 @@ where
     type Node = rlt::Literal;
     type Error = crate::Error;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        spawner: DispatchContext<R, T, A>,
+        spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
         match self.0 {

@@ -7,11 +7,11 @@ use crate::types::{ProdTy, Ty};
 use crate::Dispatcher;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, FromSyntax, SpawnContext};
+use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, SourceSpan};
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
 use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude::{BlockLevelNode, Body, InitializedVariable, Variable};
@@ -46,9 +46,9 @@ relation!(InitVar => optional Tuple);
 impl FromSyntax<Variable> for VarDecl {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &Variable,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let (kind, id, ty) = match node {
@@ -74,9 +74,9 @@ impl FromSyntax<Variable> for VarDecl {
 impl FromSyntax<InitializedVariable> for InitVar {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &InitializedVariable,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         Ok(AstBuilder::new(InitVar)
@@ -97,9 +97,9 @@ where
     type Node = Body;
     type Error = crate::Error;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        mut spawner: DispatchContext<R, T, A>,
+        mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<bevy_ecs::entity::Entity, Self::Error> {
         match self.0 {
@@ -132,9 +132,9 @@ where
     type Node = BlockLevelNode;
     type Error = crate::Error;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        mut spawner: DispatchContext<R, T, A>,
+        mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<bevy_ecs::entity::Entity, Self::Error> {
         match self.0 {

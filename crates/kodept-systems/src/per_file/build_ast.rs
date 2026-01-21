@@ -2,10 +2,14 @@ use crate::source::collection::SourceView;
 use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use derive_more::From;
+use kodept_ast::arity::Plural;
+use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Root;
+use kodept_ast::relationship::ContainedBy;
 use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
 use kodept_ast_nodes::Error;
-use kodept_ast_nodes::file::FileDecl;
+use kodept_ast_nodes::module::{Module, Modules};
 use kodept_core::structure::CodeHolder;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
@@ -28,10 +32,22 @@ fn system(
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
     let (root, _) = syntax.root();
-    let file_id = FileDecl::from_syntax(root, code_holder, commands.reborrow())?;
-    commands.entity(file_id.entity()).insert(Root {
-        associated_file: source.describe(),
-    });
+    let root_id = commands
+        .spawn((
+            Root {
+                associated_file: source.describe(),
+            },
+            Modules,
+        ))
+        .id();
+
+    for module in &root.0 {
+        let module_id: NodeId<Module> =
+            GenericSpawnContext::top_level(module, commands.reborrow(), code_holder)?;
+        commands
+            .entity(root_id)
+            .add_one_related::<ContainedBy<(), Plural>>(module_id.entity());
+    }
 
     Ok(())
 }
@@ -57,6 +73,9 @@ impl IntoSpannedReportMessage for Wrapper {
             Error::CannotParseInt(point, e) => diagnostic
                 .with_message(format!("Cannot parse integer literal: {}", e))
                 .with_primary_label("cannot parse integer literal", point),
+            Error::Unsupported(span) => diagnostic
+                .with_message("Syntax is unsupported")
+                .with_primary_label("unsupported", span),
         }
     }
 }

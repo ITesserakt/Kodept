@@ -9,11 +9,11 @@ use crate::Dispatcher;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, FromSyntax, SpawnContext};
+use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
 use kodept_ast::{derive_node, relation};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
@@ -97,9 +97,9 @@ relation!(BinExpr => or Rhs(optional IfExpr));
 impl FromSyntax<ExpressionBlock> for Exprs {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &ExpressionBlock,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         Ok(AstBuilder::new(Exprs)
@@ -113,9 +113,9 @@ impl FromSyntax<ExpressionBlock> for Exprs {
 impl FromSyntax<Application> for App {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &Application,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let mut builder = AstBuilder::new(App)
@@ -133,9 +133,9 @@ impl FromSyntax<Application> for App {
 impl FromSyntax<kodept_rlt::prelude::Lambda> for Lambda {
     type Error = crate::Error;
 
-    fn from_syntax<R: Relationship>(
+    fn from_syntax<B: Buffer, R: Relationship>(
         node: &kodept_rlt::prelude::Lambda,
-        spawner: SpawnContext<R>,
+        spawner: GenericSpawnContext<R, B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let mut builder = AstBuilder::new(Lambda)
@@ -170,9 +170,9 @@ where
     type Node = Operation;
     type Error = crate::Error;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        mut spawner: DispatchContext<R, T, A>,
+        mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
         match self.0 {
@@ -195,7 +195,7 @@ where
                 Ok(AstBuilder::new(App)
                     .with_property(SourceSpan(self.0.bounds()))
                     .spawn_in((spawner, self.0))
-                    .with_dispatch_fn(operator, |it, spawner: DispatchContext<_, Lhs, _>| {
+                    .with_dispatch_fn(operator, |it, spawner: DispatchContext<_, _, Lhs, _>| {
                         Ok::<_, Infallible>(
                             AstBuilder::new(Ref { context, ident })
                                 .with_property(SourceSpan(it.bounds()))
@@ -244,7 +244,7 @@ where
                 Ok(AstBuilder::new(App)
                     .with_property(SourceSpan(self.0.bounds()))
                     .spawn_in((spawner, self.0))
-                    .with_dispatch_fn(operation, |it, spawner: DispatchContext<_, Lhs, _>| {
+                    .with_dispatch_fn(operation, |it, spawner: DispatchContext<_, _, Lhs, _>| {
                         Ok::<_, Infallible>(
                             AstBuilder::new(Ref { context, ident })
                                 .with_property(SourceSpan(it.bounds()))
@@ -276,9 +276,9 @@ where
     type Node = Expression;
     type Error = crate::Error;
 
-    fn dispatch(
+    fn dispatch<B: Buffer>(
         self,
-        mut spawner: DispatchContext<R, T, A>,
+        mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
         match self.0 {
