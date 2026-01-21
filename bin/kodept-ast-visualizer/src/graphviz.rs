@@ -15,7 +15,6 @@ use kodept_systems::utils::ReportSystemEx;
 use std::any::TypeId;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::process::id;
 
 pub(crate) struct GraphvizPlugin;
 
@@ -30,6 +29,8 @@ pub(crate) struct Config {
     /// Do not trim type path at component names
     #[arg(short = 'l', long, action, default_value_t = false)]
     long_type_paths: bool,
+    #[arg(short, long, default_value_t = 50)]
+    max_length: usize,
 }
 
 impl Plugin for GraphvizPlugin {
@@ -47,13 +48,13 @@ mod helpers {
 
     impl<T: Debug> Display for DebugAsDisplay<T> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            T::fmt(&self.0, f)
+            write!(f, "{:?}", self.0)
         }
     }
 
     impl<T: Debug> Debug for DebugAsDisplay<T> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            T::fmt(&self.0, f)
+            write!(f, "{:?}", self.0)
         }
     }
 
@@ -102,7 +103,7 @@ mod helpers {
         write!(writer, "</td>")
     }
 
-    pub(super) fn sanitize(value: impl Display) -> String {
+    pub(super) fn sanitize(value: impl Display, max_len: usize) -> String {
         let mut result = format!("{value}");
         let mut tail = result.as_str();
         let mut offset = 0;
@@ -116,6 +117,11 @@ mod helpers {
             result.replace_range(offset + brace_pos..=offset + brace_pos, replacement);
             offset += brace_pos + replacement.len();
             tail = &result[offset..];
+        }
+
+        if result.len() > max_len {
+            result.truncate(max_len);
+            result.push_str("...");
         }
         result
     }
@@ -171,8 +177,8 @@ fn draw_node(
                     continue;
                 }
                 let name = match config.long_type_paths {
-                    true => sanitize(name),
-                    false => sanitize(name.shortname()),
+                    true => sanitize(name, config.max_length),
+                    false => sanitize(name.shortname(), config.max_length),
                 };
                 let is_known = repr.is_known();
                 let repr = match (config.long_type_paths, type_id == TypeId::of::<Node>()) {
@@ -180,9 +186,9 @@ fn draw_node(
                         #[allow(unsafe_code)]
                         let node = unsafe { repr.into_inner().deref::<Node>() };
                         let path = node.kind.shortname();
-                        Either::Right(path)
+                        sanitize(path, config.max_length)
                     }
-                    _ => Either::Left(DebugAsDisplay(repr)),
+                    _ => sanitize(DebugAsDisplay(repr), config.max_length),
                 };
 
                 row(buffer, |buffer| {
