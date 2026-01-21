@@ -316,6 +316,22 @@ impl<R, B: Buffer> GenericSpawnContext<R, B> {
         }
     }
 
+    pub fn reborrow_ref(&self) -> GenericSpawnContext<R, B::Reborrowed<'_>>
+    where
+        B: RefBuffer,
+    {
+        match self {
+            GenericSpawnContext::Empty(c) => GenericSpawnContext::Empty(c.reborrow_ref()),
+            GenericSpawnContext::Related {
+                buffer, related_id, ..
+            } => GenericSpawnContext::Related {
+                buffer: buffer.reborrow_ref(),
+                related_id: *related_id,
+                _phantom: PhantomData,
+            },
+        }
+    }
+
     #[inline]
     fn link_with_lexeme(&mut self, spawned: impl Erase<Entity>, node: &impl SyntaxNode) {
         let ptr = ErasedNodePtr::new(node);
