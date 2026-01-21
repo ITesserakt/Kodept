@@ -21,7 +21,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -43,211 +43,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-
-        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
-            val a = 0
-            var b = "" + ""
-            val a = 0
-            var b = "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
-                fun foo(b) => {
-                    fun foo(b) => {
-                        fun foo(b) => {
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                        }
-                    }
-                }
-                ()
-            } else {
-                (a, b, b, b, b, b)
-            }
-        }
-
-        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
-            val a = 0
-            var b = "" + ""
-            val a = 0
-            var b = "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
-                fun foo(b) => {
-                    fun foo(b) => {
-                        fun foo(b) => {
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                        }
-                    }
-                }
-                ()
-            } else {
-                (a, b, b, b, b, b)
-            }
-        }
-
-        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
-            val a = 0
-            var b = "" + ""
-            val a = 0
-            var b = "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
-                fun foo(b) => {
-                    fun foo(b) => {
-                        fun foo(b) => {
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                        }
-                    }
-                }
-                ()
-            } else {
-                (a, b, b, b, b, b)
-            }
-        }
-
-        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
-            val a = 0
-            var b = "" + ""
-            val a = 0
-            var b = "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
-                fun foo(b) => {
-                    fun foo(b) => {
-                        fun foo(b) => {
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                        }
-                    }
-                }
-                ()
-            } else {
-                (a, b, b, b, b, b)
-            }
-        }
-
-        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
-            val a = 0
-            var b = "" + ""
-            val a = 0
-            var b = "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
-                fun foo(b) => {
-                    fun foo(b) => {
-                        fun foo(b) => {
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                        }
-                    }
-                }
-                ()
-            } else {
-                (a, b, b, b, b, b)
-            }
-        }
-
-        fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
-            val a = 0
-            var b = "" + ""
-            val a = 0
-            var b = "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + ""
-            val a = 0
-            var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
-                fun foo(b) => {
-                    fun foo(b) => {
-                        fun foo(b) => {
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                            b
-                        }
-                    }
-                }
-                ()
-            } else {
-                (a, b, b, b, b, b)
-            }
-        }
-
+        
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -259,7 +55,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -293,7 +89,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -327,7 +123,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -349,9 +145,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-    }
 
-    struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -363,7 +157,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -397,7 +191,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -431,7 +225,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -465,7 +259,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -499,7 +293,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -533,7 +327,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -567,7 +361,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -601,7 +395,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -635,7 +429,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -669,7 +463,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -691,9 +485,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-    }
 
-    struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -705,7 +497,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -739,7 +531,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -773,7 +565,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -807,7 +599,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -841,7 +633,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -875,7 +667,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -909,7 +701,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -943,7 +735,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -977,7 +769,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1011,7 +803,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1033,9 +825,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-    }
 
-    struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -1047,7 +837,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1081,7 +871,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1115,7 +905,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1149,7 +939,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1183,7 +973,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1217,7 +1007,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1251,7 +1041,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1285,7 +1075,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1319,7 +1109,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1353,7 +1143,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1375,9 +1165,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-    }
 
-    struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -1389,7 +1177,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1423,7 +1211,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1457,7 +1245,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1491,7 +1279,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1525,7 +1313,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1559,7 +1347,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1593,7 +1381,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1627,7 +1415,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1661,7 +1449,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1695,7 +1483,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1717,9 +1505,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-    }
 
-    struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -1731,7 +1517,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1765,7 +1551,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1799,7 +1585,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1833,7 +1619,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1867,7 +1653,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1901,7 +1687,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1935,7 +1721,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -1969,7 +1755,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2003,7 +1789,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2037,7 +1823,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2059,9 +1845,7 @@ module A {
                 (a, b, b, b, b, b)
             }
         }
-    }
 
-    struct A {
         fun a(b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, b: A, c: B): B {
             val a = 0
             var b = "" + ""
@@ -2073,7 +1857,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2107,7 +1891,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2141,7 +1925,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2175,7 +1959,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2209,7 +1993,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2243,7 +2027,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2277,7 +2061,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2311,7 +2095,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2345,7 +2129,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {
@@ -2379,7 +2163,7 @@ module A {
             var b = "" + "" + "" + "" + ""
             val a = 0
             var b = "" + "" + "" + "" + "" + ""
-            if a.foo.bar.baz.bar.foo || b ^ c || d {
+            if A::foo(B::bar(C::baz(B::bar(A::foo(a))))) || b ^ c || d {
                 fun foo(b) => {
                     fun foo(b) => {
                         fun foo(b) => {

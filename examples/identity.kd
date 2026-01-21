@@ -1,0 +1,6 @@
+module Foo =>
+
+fun identity(x) {
+	val y = x
+	y
+}

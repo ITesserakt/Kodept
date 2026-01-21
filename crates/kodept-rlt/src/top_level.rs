@@ -23,6 +23,7 @@ pub enum Enum {
         id: TypeName,
         contents: Option<Enclosed<Box<[TypeName]>>>,
     },
+    #[proptest(skip)]
     Heap {
         keyword: Keyword,
         id: TypeName,

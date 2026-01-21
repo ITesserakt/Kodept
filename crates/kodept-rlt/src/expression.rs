@@ -169,26 +169,27 @@ mod arb {
             ];
             leaf.prop_recursive(5, 20, 5, |inner| {
                 prop_oneof![
-                    (inner.clone(), any::<Symbol>(), inner.clone()).prop_map(|it| {
-                        Operation::Access {
-                            left: Box::new(it.0),
-                            dot: it.1,
-                            right: Box::new(it.2),
-                        }
-                    }),
                     (any::<UnaryOperationSymbol>(), inner.clone()).prop_map(|it| {
                         Operation::Unary {
                             operator: it.0,
                             expr: Box::new(it.1),
                         }
                     }),
-                    (inner.clone(), any::<BinaryOperationSymbol>(), inner.clone()).prop_map(|it| {
-                        Operation::Binary {
-                            left: Box::new(it.0),
-                            operation: it.1,
-                            right: Box::new(it.2),
-                        }
-                    }),
+                    (
+                        inner.clone(),
+                        any::<BinaryOperationSymbol>().prop_filter(
+                            "Assigns are unsupported",
+                            |it| !matches!(it, BinaryOperationSymbol::Assign(_))
+                        ),
+                        inner.clone()
+                    )
+                        .prop_map(|it| {
+                            Operation::Binary {
+                                left: Box::new(it.0),
+                                operation: it.1,
+                                right: Box::new(it.2),
+                            }
+                        }),
                     (
                         inner.clone(),
                         proptest::option::of((

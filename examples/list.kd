@@ -1,0 +1,5 @@
+module List =>
+
+struct Opaque;
+struct NonEmptylist(head: Opaque, tail: NonEmptyList)
+

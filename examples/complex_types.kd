@@ -6,7 +6,11 @@ struct B(a: A);
 struct List(head: A, tail: List);
 
 enum struct C { A, B }
+struct D(
+	foo: (A, B),
+	bar: C
+);
 
 fun test(): (A, B, C) {
-	
+
 }

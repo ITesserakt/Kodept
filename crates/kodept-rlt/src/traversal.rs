@@ -151,6 +151,7 @@ mod sealed {
 
 mod impls {
     use super::*;
+    use crate::file::RLT;
     use crate::{new_types, prelude};
 
     macro_rules! impls {
@@ -170,6 +171,13 @@ mod impls {
             }
             impl Sealed for $t {}
         };
+    }
+
+    impl RLT {
+        pub fn traverse<'a>(&'a self, mut callback: impl FnMut(ErasedNodeBorrow<'a>)) {
+            self.0
+                .traverse(&mut |ptr| callback(unsafe { ptr.borrow() }))
+        }
     }
 
     impls!(for prelude::File {
