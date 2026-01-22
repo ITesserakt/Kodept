@@ -32,6 +32,7 @@ pub(super) fn register_reflection_info(
     registry.register::<Variable<Option<Unresolved>>>();
     registry.register::<Variable<Resolved>>();
     registry.register::<Block>();
+    registry.register::<Block<true>>();
     registry.register::<Value<Unresolved>>();
     registry.register::<Value<Resolved>>();
     registry.register::<Literal>();

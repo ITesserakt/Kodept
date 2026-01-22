@@ -126,7 +126,7 @@ impl Located for ErasedNodeBorrow<'_> {
 impl PartialEq for ErasedNodePtr {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self.ptr.as_ptr(), other.ptr.as_ptr())
+        std::ptr::addr_eq(self.ptr.as_ptr(), other.ptr.as_ptr())
     }
 }
 

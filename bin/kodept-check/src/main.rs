@@ -10,7 +10,9 @@ use kodept_systems::configs::Lexer;
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::inject_common_resources_phase;
-use kodept_systems::per_file::prelude::{AstPassesPhase, BuildAstPhase, ParseSourcePhase};
+use kodept_systems::per_file::prelude::{
+    AstNormalizationPhase, AstPassesPhase, BuildAstPhase, ParseSourcePhase,
+};
 use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
 
@@ -88,6 +90,7 @@ fn main() -> Result<(), CompilationFailed> {
             engine
                 .install(ParseSourcePhase)
                 .install(BuildAstPhase)
+                .install(AstNormalizationPhase)
                 .install(AstPassesPhase);
         }))
         .install(FinishPhase);

@@ -37,6 +37,7 @@ impl IsDeclaration for PrimType {}
 impl<T: TypeRef<false>> ASTNode for UserFunction<T> {}
 impl<T: TypeRef<false>> IsDeclaration for UserFunction<T> {}
 impl<T: TypeRef<false>> IsStatement for UserFunction<T> {}
+impl<T: TypeRef<false>> IsStatement<true> for UserFunction<T> {}
 impl<T: TypeRef<false>> RequireProperty<Name> for UserFunction<T> {}
 impl<U: TypeRef<false>> HasChild<Block, ()> for UserFunction<U> {
     type Arity = Singular;
@@ -55,15 +56,18 @@ impl<T: TypeRef<false>> HasChild<Block, ()> for AnonFunction<T> {
 
 impl<T: TypeRef<false>> ASTNode for Variable<T> {}
 impl<T: TypeRef<false>> IsStatement for Variable<T> {}
+impl<T: TypeRef<false>> IsStatement<true> for Variable<T> {}
 impl<T: TypeRef<false>> RequireProperty<Name> for Variable<T> {}
 impl<T: IsExpression, U: TypeRef<false>> HasChild<T, Expression> for Variable<U> {
     type Arity = Singular;
 }
 
-impl ASTNode for Block {}
-impl IsStatement for Block {}
-impl IsExpression for Block {}
-impl<T: IsStatement> HasChild<T, Statement> for Block {
+impl<const NORMALIZED: bool> ASTNode for Block<NORMALIZED> {}
+impl<const NORMALIZED: bool> IsStatement<NORMALIZED> for Block<NORMALIZED> {}
+impl<const NORMALIZED: bool> IsExpression for Block<NORMALIZED> {}
+impl<T: IsStatement<NORMALIZED>, const NORMALIZED: bool> HasChild<T, Statement>
+    for Block<NORMALIZED>
+{
     type Arity = Plural;
 }
 
@@ -84,6 +88,7 @@ impl<T: IsExpression> HasChild<T, Expression> for Tuple {
 
 impl ASTNode for Call {}
 impl IsStatement for Call {}
+impl IsStatement<true> for Call {}
 impl IsExpression for Call {}
 impl<T: IsExpression> HasChild<T, Lhs> for Call {
     type Arity = Singular;
@@ -94,6 +99,7 @@ impl<T: IsExpression> HasChild<T, Rhs> for Call {
 
 impl ASTNode for If {}
 impl IsStatement for If {}
+impl IsStatement<true> for If {}
 impl IsExpression for If {}
 impl HasChild<Branch, ()> for If {
     type Arity = Plural;
@@ -117,6 +123,7 @@ impl<T: IsStatement> HasChild<T, Statement> for Otherwise {
 
 impl ASTNode for Link {}
 impl IsStatement for Link {}
+impl IsStatement<true> for Link {}
 impl<T: IsExpression> HasChild<T, Expression> for Link {
     type Arity = Singular;
 }

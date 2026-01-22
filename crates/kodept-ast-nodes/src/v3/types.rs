@@ -79,7 +79,7 @@ pub struct Variable<T> {
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct Block;
+pub struct Block<const NORMALIZED: bool = false>;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]

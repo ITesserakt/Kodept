@@ -3,6 +3,7 @@ use bevy_ecs::entity::{EntityMapper, MapEntities};
 use bevy_ecs::prelude::Entity;
 use bevy_ecs::relationship::RelationshipSourceCollection;
 use private::Sealed;
+use smallvec::SmallVec;
 
 mod private {
     pub trait Sealed {}
@@ -44,7 +45,7 @@ impl Arity for Optional {
 }
 impl Sealed for Plural {}
 impl Arity for Plural {
-    type Collection = Vec<Entity>;
+    type Collection = SmallVec<[Entity; 2]>;
     const VALUE: ArityValue = ArityValue::Plural;
 }
 

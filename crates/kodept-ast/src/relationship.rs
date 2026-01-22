@@ -42,6 +42,8 @@ pub type Nodes<Tag = ()> = Contains<Tag, Plural>;
 /// zero or one child associated with `Tag`.
 pub type MaybeNode<Tag = ()> = Contains<Tag, Optional>;
 
+pub type RelBetween<R, U, Tag = ()> = <R as NodeRelationship<U, Tag>>::Relationship;
+
 /// Describes the entity that acts like a parent node for this entity
 ///
 /// This is the source of truth for the relationship,
@@ -189,6 +191,7 @@ where
     T: Send + Sync + 'static,
     A::Collection: AsRef<C>,
     A: Arity,
+    C: ?Sized,
 {
     fn as_ref(&self) -> &C {
         self.nodes.as_ref()

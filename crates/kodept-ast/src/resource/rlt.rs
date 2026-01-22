@@ -30,7 +30,7 @@ pub enum LookupError {
 
 impl LexemeId {
     pub(crate) const PLACEHOLDER: LexemeId = LexemeId(None);
-    pub(crate) fn from(value: ErasedNodePtr) -> Self {
+    pub(crate) const fn from(value: ErasedNodePtr) -> Self {
         Self(Some(value))
     }
 }
@@ -89,7 +89,9 @@ impl Debug for LexemeId {
         if self.0.is_none() {
             f.debug_struct("LexemeId").finish()
         } else {
-            f.debug_struct("LexemeId").finish_non_exhaustive()
+            f.debug_struct("LexemeId")
+                .field("ptr", &self.0)
+                .finish_non_exhaustive()
         }
     }
 }
