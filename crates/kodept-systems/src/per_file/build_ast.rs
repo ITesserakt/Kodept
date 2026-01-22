@@ -59,23 +59,30 @@ impl IntoSpannedReportMessage for Wrapper {
     type Message = Diagnostic;
 
     fn into_message(self) -> Self::Message {
-        let diagnostic = Diagnostic::new(Severity::Bug);
         match self.0 {
-            Error::NoQuotesInLiteral(point) => diagnostic
+            Error::NoQuotesInLiteral(point) => Diagnostic::new(Severity::Bug)
                 .with_message("String or char literals must contain quotes")
                 .with_primary_label("no quotes", point),
-            Error::WrongLiteralLength(point, len) => diagnostic
+            Error::WrongLiteralLength(point, len) => Diagnostic::new(Severity::Bug)
                 .with_message(format!("Literal must have length at least `{}`", len))
                 .with_primary_label("wrong length", point),
-            Error::CannotParseFloat(point, e) => diagnostic
+            Error::CannotParseFloat(point, e) => Diagnostic::new(Severity::Bug)
                 .with_message(format!("Cannot parse floating literal: {}", e))
                 .with_primary_label("cannot parse floating literal", point),
-            Error::CannotParseInt(point, e) => diagnostic
+            Error::CannotParseInt(point, e) => Diagnostic::new(Severity::Bug)
                 .with_message(format!("Cannot parse integer literal: {}", e))
                 .with_primary_label("cannot parse integer literal", point),
-            Error::Unsupported(span) => diagnostic
+            Error::Unsupported(span) => Diagnostic::new(Severity::Bug)
                 .with_message("Syntax is unsupported")
                 .with_primary_label("unsupported", span),
+            Error::UnexpectedStatement(span) => Diagnostic::new(Severity::Error)
+                .with_message("Statement in this position is unexpected")
+                .with_primary_label("expected expression", span)
+                .with_note("Try wrapping this statement in block"),
+            Error::UnexpectedExpression(span) => Diagnostic::new(Severity::Error)
+                .with_message("Expression in this position is unexpected")
+                .with_primary_label("expected statement", span)
+                .with_note("Try calling or linking this expression"),
         }
     }
 }
