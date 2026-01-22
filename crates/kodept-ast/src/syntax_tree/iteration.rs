@@ -19,13 +19,13 @@ pub enum NodeSlot<'a> {
 pub struct AllNodesQuery<'w, 's> {
     root: Single<'w, 's, Entity, With<Root>>,
     nodes: Query<'w, 's, EntityRef<'static>, With<Node>>,
-    relationships: Res<'w, NodeRelationships>,
+    relationships: Option<Res<'w, NodeRelationships>>,
 }
 
 pub struct AllNodesQueryIter<'a, 'w, 's> {
     stack: Vec<(Option<(Entity, RelationshipMetadata)>, Entity)>,
     nodes: &'a Query<'w, 's, EntityRef<'static>, With<Node>>,
-    relationships: &'a NodeRelationships,
+    relationships: Option<&'a NodeRelationships>,
 }
 
 impl<'w, 's> AllNodesQuery<'w, 's> {
@@ -33,7 +33,7 @@ impl<'w, 's> AllNodesQuery<'w, 's> {
         AllNodesQueryIter {
             stack: vec![(None, *self.root)],
             nodes: &self.nodes,
-            relationships: self.relationships.as_ref(),
+            relationships: self.relationships.as_deref(),
         }
     }
 }
@@ -48,8 +48,9 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let (edge, current) = self.stack.pop()?;
         let current_ref = self.nodes.get(current).ok()?;
+        let relationships = self.relationships?;
 
-        for meta in self.relationships.into_iter() {
+        for meta in relationships.into_iter() {
             let relationship_component_id = meta.forward_component_id();
             let Ok(relationship_component) = current_ref.get_by_id(relationship_component_id)
             else {
