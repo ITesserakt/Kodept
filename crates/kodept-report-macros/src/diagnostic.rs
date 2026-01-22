@@ -10,7 +10,6 @@ enum FieldVariant {
     PrimaryLabel(Option<FormatArgs>),
     SecondaryLabel(Option<FormatArgs>),
     None,
-    Note,
 }
 
 #[derive(Debug)]
@@ -40,6 +39,7 @@ struct DiagnosticConfig {
     error_code: Option<u32>,
     fail_fast_reason: Option<FormatArgs>,
     message_format: Option<FormatArgs>,
+    notes: Vec<FormatArgs>,
     fields: Vec<DiagnosticField>,
 }
 
@@ -61,6 +61,10 @@ pub fn derive_diagnostic(input: DeriveInput) -> Result<TokenStream, Error> {
     } else {
         quote! {}
     };
+    let notes = config.notes.into_iter().map(|args| {
+        let args = quote_format_args(&args);
+        quote! { diagnostic = diagnostic.with_note(#args); }
+    });
 
     let field_decorations = config.fields.into_iter().map(|field| {
         let field_name = &field.name;
@@ -76,9 +80,6 @@ pub fn derive_diagnostic(input: DeriveInput) -> Result<TokenStream, Error> {
                 quote! {
                     diagnostic = diagnostic.with_label(kodept_report::message::Label::secondary(#string, self.#field_name));
                 }
-            },
-            FieldVariant::Note => quote! {
-                diagnostic = diagnostic.with_note(format!("{}", self.#field_name));
             },
             FieldVariant::None => quote! {  }
         }
@@ -114,6 +115,7 @@ pub fn derive_diagnostic(input: DeriveInput) -> Result<TokenStream, Error> {
 
                 #(#field_decorations)*
                 #message
+                #(#notes)*
 
                 diagnostic
             }
@@ -137,6 +139,10 @@ fn parse_diagnostic_config(input: &DeriveInput) -> Result<DiagnosticConfig, Erro
             config.fail_fast_reason = Some(attr.parse_args()?);
         } else if attr.path().is_ident("message") {
             config.message_format = Some(attr.parse_args()?);
+        } else if attr.path().is_ident("note") {
+            config.notes.push(attr.parse_args()?);
+        } else {
+            return Err(Error::new(attr.span(), "Unknown attribute"));
         };
     }
     if !severity_set {
@@ -215,7 +221,10 @@ fn parse_diagnostic_field(field: &Field) -> Result<DiagnosticField, Error> {
             } else if next.path().is_ident("secondary_label") {
                 acc = FieldVariant::SecondaryLabel(parse_label_attr(next)?);
             } else if next.path().is_ident("note") {
-                acc = FieldVariant::Note;
+                return Err(Error::new_spanned(
+                    next,
+                    "`note` should not appear as field attribute",
+                ));
             } else if next.path().is_ident("message") {
                 return Err(Error::new_spanned(
                     next,

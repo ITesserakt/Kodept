@@ -10,24 +10,23 @@ use kodept_report_macros::Report;
 // Simple diagnostic with primary and secondary labels
 #[derive(Report, Debug)]
 #[severity("Error")]
+#[note("Remove or rename previous symbol")]
 struct DuplicatedSymbolError {
     #[primary_label("symbol already defined")]
     current_def: Span,
     #[secondary_label("previous declaration")]
     previous_def: Span,
-    #[note]
-    bound_name: String,
 }
 
 // Diagnostic with multiple notes and labels
 #[derive(Report, Debug)]
 #[severity("Error")]
+#[note("Unresolved reference: {}", self.ref_name)]
+#[note("{}", self.suggestion)]
 struct UnresolvedReferenceError {
     #[primary_label("cannot resolve reference")]
     ref_span: Span,
-    #[note]
     ref_name: String,
-    #[note]
     suggestion: String,
     #[secondary_label("available symbols")]
     scope_span: Span,
@@ -51,13 +50,13 @@ struct TypeMismatchError {
 #[derive(Report, Debug)]
 #[severity("Error")]
 #[message("{message}")]
+#[note("{}", self.hint_text)]
 struct InvalidSyntaxError {
     #[primary_label("syntax error")]
     error_span: Span,
     message: String,
     #[secondary_label("hint")]
     hint_span: Span,
-    #[note]
     hint_text: Cow<'static, str>,
 }
 
@@ -69,7 +68,6 @@ fn main() {
     let duplicated_error = DuplicatedSymbolError {
         current_def: span1,
         previous_def: span2,
-        bound_name: "my_function".to_string(),
     };
 
     let unresolved_error = UnresolvedReferenceError {
