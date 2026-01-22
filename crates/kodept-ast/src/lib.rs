@@ -13,13 +13,9 @@ mod traits;
 mod utils;
 
 pub mod prelude {
-    pub use super::entity::children::TryFromIter;
-    pub use super::entity::entity_ref::{AnyNodeRef, AnyNodeRefItem, NodeRef};
-    pub use super::entity::traits::{FromEnum, IntoEnum};
     pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, CodeHolder};
-    pub use crate::entity::children::{ChildrenBetween, HierarchicalQuery};
-    pub use crate::entity::properties::PropertyQuery;
+    pub use crate::entity::children::{ChildrenBetween, HierarchicalQuery, TryFromIter};
 }
 
 #[cfg(feature = "reflection")]

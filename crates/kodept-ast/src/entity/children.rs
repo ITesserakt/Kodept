@@ -224,7 +224,7 @@ impl TryFromIter for Optional {
 }
 
 impl TryFromIter for Plural {
-    type Container<T> = SmallVec<[T; 8]>;
+    type Container<T> = SmallVec<[T; 2]>;
 
     type Error = Infallible;
 
