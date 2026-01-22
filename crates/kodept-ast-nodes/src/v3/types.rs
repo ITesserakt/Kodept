@@ -2,11 +2,13 @@ use crate::v2::term::ReferenceContext;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::prelude::{Entity, Name};
 use bigdecimal::BigDecimal;
+use kodept_ast::properties::Node;
 use kodept_ast::Str;
 use num_bigint::BigInt;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
+#[require(Node::of::<Self>())]
 pub struct Module;
 
 #[derive(Debug, PartialEq)]
@@ -29,20 +31,24 @@ pub enum Param<T> {
 }
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct TypeCtor<T> {
     pub name: CtorName,
     pub params: Vec<Param<T>>,
 }
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct UserType;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
+#[require(Node::of::<Self>())]
 pub struct PrimType;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
+#[require(Node::of::<Self>())]
 pub struct UserFunction<T> {
     pub params: Vec<Param<T>>,
     pub return_type: T,
@@ -50,12 +56,14 @@ pub struct UserFunction<T> {
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
+#[require(Node::of::<Self>())]
 pub struct ForeignFunction<T> {
     pub params: Vec<T>,
     pub return_type: T,
 }
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct AnonFunction<T> {
     pub params: Vec<Param<T>>,
     pub return_type: T,
@@ -63,20 +71,24 @@ pub struct AnonFunction<T> {
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
+#[require(Node::of::<Self>())]
 pub struct Variable<T> {
     pub mutable: bool,
     pub annotation: T,
 }
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Block;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Value<T> {
     pub inner: T,
 }
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub enum Literal {
     Integer(BigInt),
     Floating(BigDecimal),
@@ -85,21 +97,27 @@ pub enum Literal {
 }
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Tuple;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Call;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct If;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Branch;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Otherwise;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
 pub struct Link;
 
 pub(super) trait NameRef: Send + Sync + 'static {}
