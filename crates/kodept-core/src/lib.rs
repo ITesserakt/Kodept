@@ -28,7 +28,7 @@ impl<T> Deref for Freeze<T> {
 }
 
 impl<T> Freeze<T> {
-    pub fn new(value: T) -> Self {
+    pub const fn new(value: T) -> Self {
         Self(value)
     }
 }

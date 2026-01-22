@@ -73,7 +73,7 @@ impl ErasedNodePtr {
     }
 
     #[inline(always)]
-    pub fn new<T>(value: &T) -> Self
+    pub const fn new<T>(value: &T) -> Self
     where
         T: SyntaxNode,
     {
