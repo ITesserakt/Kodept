@@ -6,6 +6,7 @@ use crate::v3::types::{
     AnonFunction, Block, Branch, Call, ForeignFunction, If, Literal, Module, NameRef, Otherwise,
     PrimType, Tuple, TypeCtor, TypeRef, UserFunction, UserType, Value, Variable,
 };
+use crate::v3::Link;
 use bevy_ecs::prelude::Name;
 use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
@@ -111,5 +112,11 @@ impl<T: IsStatement> HasChild<T, Statement> for Branch {
 
 impl ASTNode for Otherwise {}
 impl<T: IsStatement> HasChild<T, Statement> for Otherwise {
+    type Arity = Singular;
+}
+
+impl ASTNode for Link {}
+impl IsStatement for Link {}
+impl<T: IsExpression> HasChild<T, Expression> for Link {
     type Arity = Singular;
 }

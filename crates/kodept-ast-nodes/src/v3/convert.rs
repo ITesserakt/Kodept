@@ -4,7 +4,7 @@ use crate::v3::tags::*;
 use crate::v3::types::*;
 use bevy_ecs::prelude::Name;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, FromSyntax};
+use kodept_ast::experimental::{AstBuilder, Dispatch, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
@@ -194,22 +194,66 @@ impl FromSyntax<BodiedFunction> for UserFunction<Option<Unresolved>> {
         .spawn_in(spawner);
 
         match &*node.body {
-            Body::Simplified { expression, .. } => {
-                builder.with_dispatch_fn(expression, |node, spawner| {
-                    Ok::<_, crate::Error>(
-                        AstBuilder::new(Block)
-                            .with_property(SourceSpan(node.bounds()))
-                            .spawn_in((spawner, node))
-                            .with_dispatch::<Dispatcher<_>, _, _>(node, source)?
-                            .finish_any(),
-                    )
+            Body::Simplified {
+                expression: BlockLevelNode::Function(node),
+                ..
+            } => {
+                return Err(crate::Error::UnexpectedStatement(node.bounds()));
+            }
+            Body::Simplified {
+                expression: BlockLevelNode::InitVar(node),
+                ..
+            } => {
+                return Err(crate::Error::UnexpectedStatement(node.bounds()));
+            }
+            Body::Simplified {
+                expression: BlockLevelNode::Block(node),
+                ..
+            } => {
+                builder.with_dispatch_fn(node, |node, spawner| {
+                    let mut builder = AstBuilder::new(Block)
+                        .with_property(SourceSpan(node.bounds()))
+                        .spawn_in((spawner, node));
+
+                    builder.with_dispatch_fn(node, |node, spawner| {
+                        Ok::<_, crate::Error>(
+                            AstBuilder::new(Link)
+                                .with_property(SourceSpan(node.bounds()))
+                                .spawn_in((spawner, node))
+                                .with_child::<_, Block, _>(node, source)?
+                                .finish_any(),
+                        )
+                    })?;
+
+                    Ok::<_, crate::Error>(builder.finish_any())
+                })?;
+            }
+            Body::Simplified {
+                expression: BlockLevelNode::Operation(node),
+                ..
+            } => {
+                builder.with_dispatch_fn(node, |node, spawner| {
+                    let mut builder = AstBuilder::new(Block)
+                        .with_property(SourceSpan(node.bounds()))
+                        .spawn_in((spawner, node));
+
+                    builder.with_dispatch_fn(node, |node, spawner| {
+                        Ok::<_, crate::Error>(
+                            AstBuilder::new(Link)
+                                .with_property(SourceSpan(node.bounds()))
+                                .spawn_in((spawner, node))
+                                .with_dispatch::<Dispatcher<_>, _, _>(node, source)?
+                                .finish_any(),
+                        )
+                    })?;
+
+                    Ok::<_, crate::Error>(builder.finish_any())
                 })?;
             }
             Body::Block(list) => {
                 builder.with_child::<_, Block, _>(list, source)?;
             }
         };
-
         Ok(builder.finish())
     }
 }

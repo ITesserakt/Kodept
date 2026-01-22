@@ -99,6 +99,9 @@ pub struct Branch;
 #[derive(Debug, PartialEq, Component)]
 pub struct Otherwise;
 
+#[derive(Debug, PartialEq, Component)]
+pub struct Link;
+
 pub(super) trait NameRef: Send + Sync + 'static {}
 pub(super) trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
 

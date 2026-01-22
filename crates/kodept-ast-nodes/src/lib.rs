@@ -17,6 +17,8 @@ pub enum Error {
     CannotParseFloat(CodePoint, ParseBigDecimalError),
     CannotParseInt(CodePoint, ParseBigIntError),
     Unsupported(kodept_rlt::exported::Span),
+    UnexpectedStatement(kodept_rlt::exported::Span),
+    UnexpectedExpression(kodept_rlt::exported::Span),
 }
 
 #[cfg(feature = "reflection")]

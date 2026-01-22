@@ -19,7 +19,6 @@ pub(super) fn register_reflection_info(
     registry: &mut kodept_ast::resource::reflection::DebugRegistry,
 ) {
     registry.register::<UserType>();
-    registry.register::<UserType>();
     registry.register::<TypeCtor<Resolved>>();
     registry.register::<TypeCtor<Unresolved>>();
     registry.register::<PrimType>();
@@ -41,4 +40,5 @@ pub(super) fn register_reflection_info(
     registry.register::<If>();
     registry.register::<Branch>();
     registry.register::<Otherwise>();
+    registry.register::<Link>();
 }
