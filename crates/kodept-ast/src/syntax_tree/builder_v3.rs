@@ -129,7 +129,79 @@ pub trait Buffer {
 }
 
 pub trait RefBuffer: Buffer {
-    fn reborrow_ref(&self) -> Self::Reborrowed<'_>;
+    fn borrow(&self) -> Self::Reborrowed<'_>;
+}
+
+impl<R: RefBuffer> Buffer for &R {
+    type Reborrowed<'a>
+        = Self
+    where
+        Self: 'a;
+
+    #[inline]
+    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
+        self as &R
+    }
+
+    #[inline]
+    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
+        let buffer = self.borrow();
+        let (entity, _) = buffer.spawn(bundle);
+        (entity, self)
+    }
+
+    #[inline]
+    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
+        let buffer = self.borrow();
+        let _ = buffer.insert(entity, bundle);
+        self
+    }
+
+    #[inline]
+    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
+        let buffer = self.borrow();
+        let _ = buffer.clone_specific::<B>(from, to);
+        self
+    }
+}
+
+impl<R: RefBuffer> RefBuffer for &R {
+    fn borrow(&self) -> Self::Reborrowed<'_> {
+        self
+    }
+}
+
+impl<R: Buffer> Buffer for &mut R {
+    type Reborrowed<'a>
+        = &'a mut R
+    where
+        Self: 'a;
+
+    #[inline]
+    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
+        self
+    }
+
+    #[inline]
+    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
+        let buffer = self.reborrow();
+        let (entity, _) = buffer.spawn(bundle);
+        (entity, self)
+    }
+
+    #[inline]
+    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
+        let buffer = self.reborrow();
+        let _ = buffer.insert(entity, bundle);
+        self
+    }
+
+    #[inline]
+    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
+        let buffer = self.reborrow();
+        let _ = buffer.clone_specific::<B>(from, to);
+        self
+    }
 }
 
 impl<'w, 's> Buffer for Commands<'w, 's> {
@@ -155,6 +227,7 @@ impl<'w, 's> Buffer for Commands<'w, 's> {
         self
     }
 
+    #[inline]
     fn clone_specific<B: Bundle>(mut self, from: Entity, to: Entity) -> Self {
         self.entity(from).clone_with_opt_in(to, |builder| {
             builder.allow_if_new::<B>();
@@ -163,11 +236,8 @@ impl<'w, 's> Buffer for Commands<'w, 's> {
     }
 }
 
-impl<'a> Buffer for &'a mut World {
-    type Reborrowed<'b>
-        = &'b mut World
-    where
-        'a: 'b;
+impl Buffer for World {
+    type Reborrowed<'b> = &'b mut World;
 
     #[inline]
     fn reborrow(&mut self) -> Self::Reborrowed<'_> {
@@ -175,68 +245,23 @@ impl<'a> Buffer for &'a mut World {
     }
 
     #[inline]
-    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
-        let id = World::spawn(self, bundle).id();
+    fn spawn(mut self, bundle: impl Bundle) -> (Entity, Self) {
+        let id = World::spawn(&mut self, bundle).id();
         (id, self)
     }
 
     #[inline]
-    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
-        World::entity_mut(self, entity).insert(bundle);
+    fn insert(mut self, entity: Entity, bundle: impl Bundle) -> Self {
+        World::entity_mut(&mut self, entity).insert(bundle);
         self
     }
 
     #[inline]
-    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
+    fn clone_specific<B: Bundle>(mut self, from: Entity, to: Entity) -> Self {
         self.entity_mut(from).clone_with_opt_in(to, |builder| {
             builder.allow_if_new::<B>();
         });
         self
-    }
-}
-
-#[cfg(feature = "parallel")]
-impl<'w, 's, 'a> Buffer for &'a ParallelCommands<'w, 's> {
-    type Reborrowed<'b>
-        = &'b ParallelCommands<'w, 's>
-    where
-        'a: 'b;
-
-    #[inline]
-    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
-        self as &ParallelCommands
-    }
-
-    #[inline]
-    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
-        let id = self.command_scope(|mut c| Commands::spawn(&mut c, bundle).id());
-        (id, self)
-    }
-
-    #[inline]
-    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
-        self.command_scope(|mut c| {
-            c.entity(entity).insert(bundle);
-        });
-        self
-    }
-
-    #[inline]
-    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
-        self.command_scope(|mut c| {
-            c.entity(from).clone_with_opt_in(to, |builder| {
-                builder.allow_if_new::<B>();
-            });
-        });
-        self
-    }
-}
-
-#[cfg(feature = "parallel")]
-impl<'a, 'w, 's> RefBuffer for &'a ParallelCommands<'w, 's> {
-    #[inline]
-    fn reborrow_ref(&self) -> Self::Reborrowed<'_> {
-        self as &ParallelCommands
     }
 }
 
@@ -276,7 +301,7 @@ impl<'w, 's> Buffer for ParallelCommands<'w, 's> {
 #[cfg(feature = "parallel")]
 impl<'w, 's> RefBuffer for ParallelCommands<'w, 's> {
     #[inline]
-    fn reborrow_ref(&self) -> Self::Reborrowed<'_> {
+    fn borrow(&self) -> Self::Reborrowed<'_> {
         self
     }
 }
@@ -369,11 +394,11 @@ impl<R, B: Buffer> GenericSpawnContext<R, B> {
         B: RefBuffer,
     {
         match self {
-            GenericSpawnContext::Empty(c) => GenericSpawnContext::Empty(c.reborrow_ref()),
+            GenericSpawnContext::Empty(c) => GenericSpawnContext::Empty(c.borrow()),
             GenericSpawnContext::Related {
                 buffer, related_id, ..
             } => GenericSpawnContext::Related {
-                buffer: buffer.reborrow_ref(),
+                buffer: buffer.borrow(),
                 related_id: *related_id,
                 _phantom: PhantomData,
             },

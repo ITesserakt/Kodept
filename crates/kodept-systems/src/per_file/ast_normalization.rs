@@ -7,7 +7,7 @@ use bevy_ecs::system::SystemParam;
 use kodept_ast::arity::{Plural, Singular};
 use kodept_ast::experimental::{AstBuilder, DispatchContext};
 use kodept_ast::properties::{Lexeme, Node, SourceSpan};
-use kodept_ast::relationship::{ContainedBy, Contains, Nodes, RelBetween};
+use kodept_ast::relationship::{ContainedBy, Nodes, RelBetween};
 use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
 use kodept_ast::syntax_tree::experimental::SpawnedIn;
 use kodept_ast_nodes::v3::{
@@ -18,7 +18,7 @@ use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report_macros::Report;
-use tracing::{error, span};
+use tracing::error;
 
 define_phase! {
     pub phase AstNormalizationPhase[AstNormalizationPhaseLabel];
