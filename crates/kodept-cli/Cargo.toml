@@ -12,9 +12,11 @@ tracing-subscriber = "0.3"
 kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 
+rayon = { version = "1.11", optional = true }
+
 [lints]
 workspace = true
 
 [features]
 default = []
-parallel = []
+parallel = ["dep:rayon"]
