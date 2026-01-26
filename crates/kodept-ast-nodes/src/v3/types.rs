@@ -1,10 +1,12 @@
-use crate::v2::term::ReferenceContext;
 use bevy_ecs::prelude::Component;
 use bevy_ecs::prelude::{Entity, Name};
 use bigdecimal::BigDecimal;
+use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::Node;
 use kodept_ast::Str;
+use kodept_rlt::prelude::Context;
 use num_bigint::BigInt;
+use std::borrow::Cow;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
@@ -124,11 +126,14 @@ pub(super) trait NameRef: Send + Sync + 'static {}
 pub(super) trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
 
 #[derive(Debug, PartialEq)]
+pub struct Path {
+    pub is_global: bool,
+    pub segments: Cow<'static, [Str]>,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Unresolved {
-    Named {
-        context: ReferenceContext,
-        ident: Str,
-    },
+    Named { context: Path, ident: Str },
     Tuple(Vec<Unresolved>),
 }
 
@@ -142,3 +147,25 @@ impl TypeRef<true> for Unresolved {}
 impl<const REQUIRED: bool> TypeRef<REQUIRED> for Resolved {}
 
 impl TypeRef<false> for Option<Unresolved> {}
+
+impl Path {
+    pub const fn empty(is_global: bool) -> Self {
+        Self {
+            is_global,
+            segments: Cow::Borrowed(&[]),
+        }
+    }
+}
+
+impl<T: CodeHolder> From<(&Context, T)> for Path {
+    fn from((value, source): (&Context, T)) -> Self {
+        let (is_global, items) = value.unfold();
+        Path {
+            is_global: is_global.is_some(),
+            segments: items
+                .into_iter()
+                .map(|it| source.get_chunk_located(it))
+                .collect(),
+        }
+    }
+}

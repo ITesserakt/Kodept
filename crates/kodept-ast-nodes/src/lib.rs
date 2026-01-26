@@ -6,9 +6,8 @@ use kodept_rlt::exported::CodePoint;
 use num_bigint::ParseBigIntError;
 use std::convert::Infallible;
 
-#[deprecated]
-pub mod v2;
-pub mod v3;
+mod v3;
+pub use v3::*;
 
 #[derive(Debug)]
 pub enum Error {
@@ -23,7 +22,6 @@ pub enum Error {
 
 #[cfg(feature = "reflection")]
 pub fn register_reflection_info(registry: &mut kodept_ast::resource::reflection::DebugRegistry) {
-    v2::register_reflection_info(registry);
     v3::register_reflection_info(registry);
 }
 

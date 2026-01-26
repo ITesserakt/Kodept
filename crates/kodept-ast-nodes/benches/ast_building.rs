@@ -6,7 +6,7 @@ use criterion::{criterion_group, BatchSize, Bencher, Criterion, Throughput};
 use kodept_ast::prelude::NodeId;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
-use kodept_ast_nodes::v3::Module;
+use kodept_ast_nodes::Module;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
 use kodept_rlt::prelude::{File, RLT};

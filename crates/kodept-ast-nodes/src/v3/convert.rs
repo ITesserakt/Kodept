@@ -1,10 +1,9 @@
-use crate::v2::term::ReferenceContext;
 use crate::v3::dispatch::Dispatcher;
 use crate::v3::tags::*;
 use crate::v3::types::*;
 use bevy_ecs::prelude::Name;
 use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, Dispatch, FromSyntax};
+use kodept_ast::experimental::{AstBuilder, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
@@ -20,7 +19,7 @@ fn type_to_unresolved_type(value: &Type, source: impl CodeHolder) -> Unresolved 
             ident: source.get_chunk_located(ident),
         },
         Type::Reference(ident) => Unresolved::Named {
-            context: ReferenceContext::empty(false),
+            context: Path::empty(false),
             ident: source.get_chunk_located(ident),
         },
         Type::Tuple(items) => Unresolved::Tuple(
@@ -31,17 +30,6 @@ fn type_to_unresolved_type(value: &Type, source: impl CodeHolder) -> Unresolved 
                 .map(|it| type_to_unresolved_type(it, source))
                 .collect(),
         ),
-    }
-}
-
-impl<T: CodeHolder> From<(&Context, T)> for ReferenceContext {
-    fn from((value, source): (&Context, T)) -> Self {
-        let (is_global, items) = value.unfold();
-        if is_global.is_some() {
-            ReferenceContext::global(items.into_iter().map(|it| source.get_chunk_located(it)))
-        } else {
-            ReferenceContext::local(items.into_iter().map(|it| source.get_chunk_located(it)))
-        }
     }
 }
 

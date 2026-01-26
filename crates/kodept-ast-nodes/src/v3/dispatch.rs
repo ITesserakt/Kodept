@@ -1,4 +1,3 @@
-use crate::v2::term::ReferenceContext;
 use crate::v3::tags::*;
 use crate::v3::types::*;
 use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
@@ -10,6 +9,7 @@ use kodept_ast::prelude::CodeHolder;
 use kodept_ast::properties::SourceSpan;
 use kodept_ast::syntax_tree::children::HasChild;
 use kodept_ast::syntax_tree::experimental::{Buffer, SpawnedIn};
+use kodept_ast::Str;
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::Literal::{Binary, Hex, Octal};
@@ -129,12 +129,16 @@ where
         mut spawner: DispatchContext<B, R, T, A>,
         source: impl CodeHolder,
     ) -> Result<Entity, Self::Error> {
+        const CORE_PATH: Path = Path {
+            is_global: true,
+            segments: Cow::Borrowed(&[Str::Borrowed("Core"), Str::Borrowed("Traits")]),
+        };
+
         match self.0 {
             Operation::Block(node) => spawner.forward::<_, Block>(node, source),
             Operation::Expression(node) => spawner.dispatch::<Dispatcher<_>>(node, source),
             Operation::Application(node) => spawner.forward::<_, Call>(node, source),
             Operation::Unary { operator, expr } => {
-                let context = ReferenceContext::global(["Core", "Traits"]);
                 let ident = match operator {
                     UnaryOperationSymbol::Neg(_) => "neg".into(),
                     UnaryOperationSymbol::Not(_) => "not".into(),
@@ -148,7 +152,10 @@ where
 
                 builder.with_dispatch_fn::<_, Lhs, _, Infallible>(operator, |node, spawner| {
                     Ok(AstBuilder::new(Value {
-                        inner: Unresolved::Named { context, ident },
+                        inner: Unresolved::Named {
+                            context: CORE_PATH,
+                            ident,
+                        },
                     })
                     .with_property(SourceSpan(node.bounds()))
                     .spawn_in((spawner, node))
@@ -163,7 +170,6 @@ where
                 operation,
                 right,
             } => {
-                let context = ReferenceContext::global(["Core", "Traits"]);
                 let ident = match operation {
                     BinaryOperationSymbol::Pow(_) => "pow".into(),
                     BinaryOperationSymbol::Mul(_) => "mul".into(),
@@ -194,7 +200,10 @@ where
 
                 builder.with_dispatch_fn::<_, Lhs, _, Infallible>(operation, |node, spawner| {
                     Ok(AstBuilder::new(Value {
-                        inner: Unresolved::Named { context, ident },
+                        inner: Unresolved::Named {
+                            context: CORE_PATH,
+                            ident,
+                        },
                     })
                     .with_property(SourceSpan(node.bounds()))
                     .spawn_in((spawner, node))
@@ -340,7 +349,7 @@ where
             Term::Reference(x) => Value {
                 inner: Unresolved::Named {
                     ident: source.get_chunk_located(x),
-                    context: ReferenceContext::empty(false),
+                    context: Path::empty(false),
                 },
             },
             Term::ContextualReference(x) => Value {
@@ -352,7 +361,7 @@ where
             Term::Constant(x) => Value {
                 inner: Unresolved::Named {
                     ident: source.get_chunk_located(x),
-                    context: ReferenceContext::empty(false),
+                    context: Path::empty(false),
                 },
             },
             Term::ContextualConstant(x) => Value {

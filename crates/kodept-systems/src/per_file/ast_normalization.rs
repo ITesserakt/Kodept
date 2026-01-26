@@ -10,7 +10,7 @@ use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::relationship::{ContainedBy, Nodes, RelBetween};
 use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
 use kodept_ast::syntax_tree::experimental::SpawnedIn;
-use kodept_ast_nodes::v3::{
+use kodept_ast_nodes::{
     AnonFunction, Block, Expression, Link, Literal, Statement, Tuple, Unresolved, UserFunction,
     Value, Variable,
 };
