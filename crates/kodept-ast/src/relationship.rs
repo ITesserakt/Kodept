@@ -1,6 +1,5 @@
 use crate::arity::{Arity, Optional, Plural, Singular};
-use crate::prelude::ASTNode;
-use crate::syntax_tree::children::HasChild;
+use crate::syntax_tree::children::Family;
 use bevy_ecs::component::{Component, ComponentId, Immutable};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::lifecycle::HookContext;
@@ -41,8 +40,6 @@ pub type Nodes<Tag = ()> = Contains<Tag, Plural>;
 /// Equivalent to `Contains<Tag, Optional>`. Use when a node may contain
 /// zero or one child associated with `Tag`.
 pub type MaybeNode<Tag = ()> = Contains<Tag, Optional>;
-
-pub type RelBetween<R, U, Tag = ()> = <R as NodeRelationship<U, Tag>>::Relationship;
 
 /// Describes the entity that acts like a parent node for this entity
 ///
@@ -107,7 +104,7 @@ pub struct RelationshipMetadata {
 #[derive(Debug, Resource, Default)]
 pub(crate) struct NodeRelationships(HashSet<RelationshipMetadata>);
 
-pub trait NodeRelationship<Child, Tag> {
+pub trait NodeRelationship<Tag, Arity> {
     type Relationship: Relationship<Mutability = Immutable>;
 }
 
@@ -142,10 +139,9 @@ impl<'a> IntoIterator for &'a NodeRelationships {
     }
 }
 
-impl<T, U, Tag> NodeRelationship<U, Tag> for T
+impl<T, Tag> NodeRelationship<Tag, T::Arity> for T
 where
-    T: HasChild<U, Tag> + ASTNode,
-    U: ASTNode,
+    T: Family<Tag>,
     Tag: 'static + Send + Sync,
 {
     type Relationship = ContainedBy<Tag, T::Arity>;

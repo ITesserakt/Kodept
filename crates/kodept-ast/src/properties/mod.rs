@@ -8,6 +8,7 @@ use std::fmt::{Debug, Display, Formatter};
 
 pub use bevy_ecs::name::Name;
 use bevy_utils::prelude::DebugName;
+use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 
 pub trait NodeProperty: Component {}
 
@@ -53,6 +54,13 @@ impl Node {
         Self {
             kind: DebugName::type_name::<T>(),
         }
+    }
+}
+
+impl Lexeme {
+    #[inline]
+    pub fn new(value: &impl SyntaxNode) -> Self {
+        Self(LexemeId::from(ErasedNodePtr::new(value)))
     }
 }
 

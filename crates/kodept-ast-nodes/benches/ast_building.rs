@@ -3,7 +3,7 @@ extern crate core;
 use bevy_ecs::prelude::World;
 use criterion::measurement::Measurement;
 use criterion::{criterion_group, BatchSize, Bencher, Criterion, Throughput};
-use kodept_ast::prelude::NodeId;
+use kodept_ast::experimental::FromSyntax;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
 use kodept_ast_nodes::Module;
@@ -41,9 +41,10 @@ fn bench_fns<M: Measurement>(size: u64) -> impl FnMut(&mut Bencher<M>) {
                 let syntax = world.remove_resource::<SyntaxResolver>().unwrap();
 
                 for module in &syntax.root().0 .0 {
-                    let _: NodeId<Module> =
-                        GenericSpawnContext::top_level(module, world.commands(), code).unwrap();
+                    Module::from_syntax(module, GenericSpawnContext::new(&mut world), code)
+                        .unwrap();
                 }
+                world.flush();
             },
             BatchSize::LargeInput,
         )

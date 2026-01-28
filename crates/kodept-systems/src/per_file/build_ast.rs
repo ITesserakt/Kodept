@@ -3,6 +3,7 @@ use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use derive_more::From;
 use kodept_ast::arity::Plural;
+use kodept_ast::experimental::FromSyntax;
 use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Root;
 use kodept_ast::relationship::ContainedBy;
@@ -43,7 +44,7 @@ fn system(
 
     for module in &root.0 {
         let module_id: NodeId<Module> =
-            GenericSpawnContext::top_level(module, commands.reborrow(), code_holder)?;
+            Module::from_syntax(module, GenericSpawnContext::new(&mut commands), code_holder)?;
         commands
             .entity(root_id)
             .add_one_related::<ContainedBy<(), Plural>>(module_id.entity());

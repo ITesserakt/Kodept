@@ -11,23 +11,26 @@ use bevy_ecs::prelude::Name;
 use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
 use kodept_ast::properties::{HasProperty, RequireProperty};
-use kodept_ast::syntax_tree::children::HasChild;
+use kodept_ast::syntax_tree::children::{Family, HasChild};
 
 impl ASTNode for Module {}
 impl RequireProperty<Name> for Module {}
-impl<T: IsDeclaration> HasChild<T, Declaration> for Module {
+impl Family<Declaration> for Module {
     type Arity = Plural;
 }
+impl<T: IsDeclaration> HasChild<T, Declaration> for Module {}
 
 impl ASTNode for UserType {}
 impl IsDeclaration for UserType {}
 impl HasProperty<Name> for UserType {}
-impl<T: TypeRef<true>> HasChild<TypeCtor<T>, ()> for UserType {
+impl Family for UserType {
     type Arity = Plural;
 }
-impl<T: TypeRef<false>> HasChild<UserFunction<T>, Declaration> for UserType {
+impl Family<Declaration> for UserType {
     type Arity = Plural;
 }
+impl<T: TypeRef<true>> HasChild<TypeCtor<T>, ()> for UserType {}
+impl<T: TypeRef<false>> HasChild<UserFunction<T>, Declaration> for UserType {}
 
 impl<T: TypeRef<true>> ASTNode for TypeCtor<T> {}
 
@@ -39,9 +42,10 @@ impl<T: TypeRef<false>> IsDeclaration for UserFunction<T> {}
 impl<T: TypeRef<false>> IsStatement for UserFunction<T> {}
 impl<T: TypeRef<false>> IsStatement<true> for UserFunction<T> {}
 impl<T: TypeRef<false>> RequireProperty<Name> for UserFunction<T> {}
-impl<U: TypeRef<false>> HasChild<Block, ()> for UserFunction<U> {
+impl<U: TypeRef<false>> Family for UserFunction<U> {
     type Arity = Singular;
 }
+impl<U: TypeRef<false>> HasChild<Block, ()> for UserFunction<U> {}
 
 impl<T: TypeRef<true>> ASTNode for ForeignFunction<T> {}
 impl<T: TypeRef<true>> IsDeclaration for ForeignFunction<T> {}
@@ -50,25 +54,29 @@ impl<T: TypeRef<true>> RequireProperty<Name> for ForeignFunction<T> {}
 impl<T: TypeRef<false>> ASTNode for AnonFunction<T> {}
 impl<T: TypeRef<false>> IsExpression for AnonFunction<T> {}
 impl<T: TypeRef<false>> IsStatement for AnonFunction<T> {}
-impl<T: TypeRef<false>> HasChild<Block, ()> for AnonFunction<T> {
+impl<T: TypeRef<false>> Family for AnonFunction<T> {
     type Arity = Singular;
 }
+impl<T: TypeRef<false>> HasChild<Block, ()> for AnonFunction<T> {}
 
 impl<T: TypeRef<false>> ASTNode for Variable<T> {}
 impl<T: TypeRef<false>> IsStatement for Variable<T> {}
 impl<T: TypeRef<false>> IsStatement<true> for Variable<T> {}
 impl<T: TypeRef<false>> RequireProperty<Name> for Variable<T> {}
-impl<T: IsExpression, U: TypeRef<false>> HasChild<T, Expression> for Variable<U> {
+impl<T: TypeRef<false>> Family<Expression> for Variable<T> {
     type Arity = Singular;
 }
+impl<T: IsExpression, U: TypeRef<false>> HasChild<T, Expression> for Variable<U> {}
 
 impl<const NORMALIZED: bool> ASTNode for Block<NORMALIZED> {}
 impl<const NORMALIZED: bool> IsStatement<NORMALIZED> for Block<NORMALIZED> {}
 impl<const NORMALIZED: bool> IsExpression for Block<NORMALIZED> {}
+impl<const NORMALIZED: bool> Family<Statement> for Block<NORMALIZED> {
+    type Arity = Plural;
+}
 impl<T: IsStatement<NORMALIZED>, const NORMALIZED: bool> HasChild<T, Statement>
     for Block<NORMALIZED>
 {
-    type Arity = Plural;
 }
 
 impl<T: NameRef> ASTNode for Value<T> {}
@@ -82,48 +90,57 @@ impl IsStatement for Literal {}
 impl ASTNode for Tuple {}
 impl IsExpression for Tuple {}
 impl IsStatement for Tuple {}
-impl<T: IsExpression> HasChild<T, Expression> for Tuple {
+impl Family<Expression> for Tuple {
     type Arity = Plural;
 }
+impl<T: IsExpression> HasChild<T, Expression> for Tuple {}
 
 impl ASTNode for Call {}
 impl IsStatement for Call {}
 impl IsStatement<true> for Call {}
 impl IsExpression for Call {}
-impl<T: IsExpression> HasChild<T, Lhs> for Call {
+impl Family<Lhs> for Call {
     type Arity = Singular;
 }
-impl<T: IsExpression> HasChild<T, Rhs> for Call {
+impl Family<Rhs> for Call {
     type Arity = Plural;
 }
+impl<T: IsExpression> HasChild<T, Lhs> for Call {}
+impl<T: IsExpression> HasChild<T, Rhs> for Call {}
 
 impl ASTNode for If {}
 impl IsStatement for If {}
 impl IsStatement<true> for If {}
 impl IsExpression for If {}
-impl HasChild<Branch, ()> for If {
+impl Family for If {
     type Arity = Plural;
 }
-impl HasChild<Otherwise, ()> for If {
+impl Family<super::tags::Else> for If {
     type Arity = Optional;
 }
+impl HasChild<Branch, ()> for If {}
+impl HasChild<Otherwise, super::tags::Else> for If {}
 
 impl ASTNode for Branch {}
-impl<T: IsExpression> HasChild<T, Condition> for Branch {
+impl Family<Condition> for Branch {
     type Arity = Singular;
 }
-impl<T: IsStatement> HasChild<T, Statement> for Branch {
+impl Family<Statement> for Branch {
     type Arity = Singular;
 }
+impl<T: IsExpression> HasChild<T, Condition> for Branch {}
+impl<T: IsStatement> HasChild<T, Statement> for Branch {}
 
 impl ASTNode for Otherwise {}
-impl<T: IsStatement> HasChild<T, Statement> for Otherwise {
+impl Family<Statement> for Otherwise {
     type Arity = Singular;
 }
+impl<T: IsStatement> HasChild<T, Statement> for Otherwise {}
 
 impl ASTNode for Link {}
 impl IsStatement for Link {}
 impl IsStatement<true> for Link {}
-impl<T: IsExpression> HasChild<T, Expression> for Link {
+impl Family<Expression> for Link {
     type Arity = Singular;
 }
+impl<T: IsExpression> HasChild<T, Expression> for Link {}

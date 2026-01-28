@@ -1,3 +1,5 @@
+use crate::properties::SourceSpan;
+use crate::syntax_tree::buffer::{Buffer, RefBuffer};
 use crate::{
     node_id::{Erase, NodeId},
     properties::{HasProperty, Lexeme, Node, NodeProperty},
@@ -7,24 +9,31 @@ use crate::{
     traits::{ASTNode, CodeHolder, Dispatch, FromSyntax},
     utils::IntoCommonIter,
 };
-#[cfg(feature = "parallel")]
-use bevy_ecs::prelude::ParallelCommands;
-use bevy_ecs::prelude::{ChildOf, Commands, World};
+use bevy_ecs::prelude::{ChildOf, Command, Commands, Component, World};
 use bevy_ecs::{bundle::Bundle, entity::Entity, relationship::Relationship};
 use bevy_utils::prelude::DebugName;
-use derive_more::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut, Display, Error};
 use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
+use std::any::TypeId;
+use std::backtrace::Backtrace;
 use std::marker::PhantomData;
+use std::panic::Location;
 
 pub struct PropsState<R, P, C> {
     root: R,
     properties: P,
     clones: PhantomData<C>,
 }
-
-pub(crate) struct ChildState<R, B: Buffer, Inner = ()> {
+pub struct ChildState<R, B: Buffer, Inner = ()> {
     spawner: GenericSpawnContext<Inner, B>,
     _phantom: PhantomData<R>,
+}
+
+pub trait Constructed {
+    type Root: ASTNode;
+    type Clones: Bundle;
+
+    fn into_bundle(self) -> impl Bundle;
 }
 
 pub trait SpawnedIn<Root>: Sized {
@@ -106,203 +115,38 @@ pub trait SpawnedIn<Root>: Sized {
 }
 
 trait Context<U> {
-    fn spawn_builder<P, C>(
+    fn spawn_builder<C: Constructed<Root = U>>(
         self,
-        builder: AstBuilder<PropsState<U, P, C>>,
+        builder: AstBuilder<C>,
     ) -> AstBuilder<impl SpawnedIn<U>>
     where
-        P: Bundle,
-        C: Bundle,
         U: ASTNode;
 }
 
-pub trait Buffer {
-    type Reborrowed<'a>: Buffer
-    where
-        Self: 'a;
-
-    fn reborrow(&mut self) -> Self::Reborrowed<'_>;
-
-    fn spawn(self, bundle: impl Bundle) -> (Entity, Self);
-    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self;
-    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self;
+struct CloneSpecificCommand<Clones> {
+    from: Entity,
+    to: Entity,
+    _phantom: PhantomData<Clones>,
 }
 
-pub trait RefBuffer: Buffer {
-    fn borrow(&self) -> Self::Reborrowed<'_>;
-}
-
-impl<R: RefBuffer> Buffer for &R {
-    type Reborrowed<'a>
-        = Self
-    where
-        Self: 'a;
-
-    #[inline]
-    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
-        self as &R
-    }
-
-    #[inline]
-    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
-        let buffer = self.borrow();
-        let (entity, _) = buffer.spawn(bundle);
-        (entity, self)
-    }
-
-    #[inline]
-    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
-        let buffer = self.borrow();
-        let _ = buffer.insert(entity, bundle);
-        self
-    }
-
-    #[inline]
-    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
-        let buffer = self.borrow();
-        let _ = buffer.clone_specific::<B>(from, to);
-        self
-    }
-}
-
-impl<R: RefBuffer> RefBuffer for &R {
-    fn borrow(&self) -> Self::Reborrowed<'_> {
-        self
-    }
-}
-
-impl<R: Buffer> Buffer for &mut R {
-    type Reborrowed<'a>
-        = &'a mut R
-    where
-        Self: 'a;
-
-    #[inline]
-    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
-        self
-    }
-
-    #[inline]
-    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
-        let buffer = self.reborrow();
-        let (entity, _) = buffer.spawn(bundle);
-        (entity, self)
-    }
-
-    #[inline]
-    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
-        let buffer = self.reborrow();
-        let _ = buffer.insert(entity, bundle);
-        self
-    }
-
-    #[inline]
-    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
-        let buffer = self.reborrow();
-        let _ = buffer.clone_specific::<B>(from, to);
-        self
-    }
-}
-
-impl<'w, 's> Buffer for Commands<'w, 's> {
-    type Reborrowed<'a>
-        = Commands<'w, 'a>
-    where
-        Self: 'a;
-
-    #[inline]
-    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
-        Commands::reborrow(self)
-    }
-
-    #[inline]
-    fn spawn(mut self, bundle: impl Bundle) -> (Entity, Self) {
-        let id = Commands::spawn(&mut self, bundle).id();
-        (id, self)
-    }
-
-    #[inline]
-    fn insert(mut self, entity: Entity, bundle: impl Bundle) -> Self {
-        Commands::entity(&mut self, entity).insert(bundle);
-        self
-    }
-
-    #[inline]
-    fn clone_specific<B: Bundle>(mut self, from: Entity, to: Entity) -> Self {
-        self.entity(from).clone_with_opt_in(to, |builder| {
-            builder.allow_if_new::<B>();
+impl<Clones: Bundle> Command for CloneSpecificCommand<Clones> {
+    fn apply(self, world: &mut World) -> () {
+        world.entity_mut(self.from).clone_with_opt_in(self.to, |b| {
+            b.allow_if_new::<Clones>();
         });
-        self
     }
 }
 
-impl Buffer for World {
-    type Reborrowed<'b> = &'b mut World;
-
-    #[inline]
-    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
-        self as &mut World
-    }
-
-    #[inline]
-    fn spawn(mut self, bundle: impl Bundle) -> (Entity, Self) {
-        let id = World::spawn(&mut self, bundle).id();
-        (id, self)
-    }
-
-    #[inline]
-    fn insert(mut self, entity: Entity, bundle: impl Bundle) -> Self {
-        World::entity_mut(&mut self, entity).insert(bundle);
-        self
-    }
-
-    #[inline]
-    fn clone_specific<B: Bundle>(mut self, from: Entity, to: Entity) -> Self {
-        self.entity_mut(from).clone_with_opt_in(to, |builder| {
-            builder.allow_if_new::<B>();
-        });
-        self
-    }
+struct InsertLexemeCommand {
+    entity: Entity,
+    ptr: ErasedNodePtr,
 }
 
-#[cfg(feature = "parallel")]
-impl<'w, 's> Buffer for ParallelCommands<'w, 's> {
-    type Reborrowed<'a>
-        = &'a ParallelCommands<'w, 'a>
-    where
-        Self: 'a;
-
-    #[inline]
-    fn reborrow(&mut self) -> Self::Reborrowed<'_> {
-        self as &ParallelCommands
-    }
-
-    #[inline]
-    fn spawn(self, bundle: impl Bundle) -> (Entity, Self) {
-        let id = self.command_scope(|mut c| Commands::spawn(&mut c, bundle).id());
-        (id, self)
-    }
-
-    #[inline]
-    fn insert(self, entity: Entity, bundle: impl Bundle) -> Self {
-        self.command_scope(|mut c| {
-            c.entity(entity).insert(bundle);
-        });
-        self
-    }
-
-    #[inline]
-    fn clone_specific<B: Bundle>(self, from: Entity, to: Entity) -> Self {
-        (&self).clone_specific::<B>(from, to);
-        self
-    }
-}
-
-#[cfg(feature = "parallel")]
-impl<'w, 's> RefBuffer for ParallelCommands<'w, 's> {
-    #[inline]
-    fn borrow(&self) -> Self::Reborrowed<'_> {
-        self
+impl Command for InsertLexemeCommand {
+    fn apply(self, world: &mut World) -> () {
+        world
+            .entity_mut(self.entity)
+            .insert(Lexeme(LexemeId::from(self.ptr)));
     }
 }
 
@@ -321,6 +165,22 @@ pub enum GenericSpawnContext<R, B: Buffer> {
 }
 
 pub type SpawnContext<'w, 's, R> = GenericSpawnContext<R, Commands<'w, 's>>;
+
+#[derive(Debug, Display, Error)]
+#[non_exhaustive]
+enum NodeVerificationError {
+    #[display(
+        "AST Node expected to has this component: {}, but it doesn't\n\tnode created at: {}",
+        name,
+        location
+    )]
+    MissingComponent {
+        #[error(not(source))]
+        name: DebugName,
+        #[error(not(backtrace))]
+        location: &'static Location<'static>,
+    },
+}
 
 impl<R, B: Buffer> GenericSpawnContext<R, B> {
     #[inline]
@@ -363,7 +223,11 @@ impl<R, B: Buffer> GenericSpawnContext<R, B> {
                 ..
             } => {
                 let (related_id, buffer) = buffer.spawn((R::from(parent), bundle));
-                let buffer = buffer.clone_specific::<Clones>(parent, related_id);
+                let buffer = buffer.queue(CloneSpecificCommand {
+                    from: parent,
+                    to: related_id,
+                    _phantom: PhantomData::<Clones>,
+                });
                 GenericSpawnContext::Related {
                     buffer,
                     related_id,
@@ -389,6 +253,7 @@ impl<R, B: Buffer> GenericSpawnContext<R, B> {
         }
     }
 
+    #[inline]
     pub fn reborrow_ref(&self) -> GenericSpawnContext<R, B::Reborrowed<'_>>
     where
         B: RefBuffer,
@@ -405,15 +270,45 @@ impl<R, B: Buffer> GenericSpawnContext<R, B> {
         }
     }
 
+    #[track_caller]
     #[inline]
-    fn link_with_lexeme(&mut self, spawned: impl Erase<Entity>, node: &impl SyntaxNode) {
-        let ptr = ErasedNodePtr::new(node);
-        match self {
-            GenericSpawnContext::Empty(buffer) | GenericSpawnContext::Related { buffer, .. } => {
-                let buffer = buffer.reborrow();
-                buffer.insert(spawned.erase(), Lexeme(LexemeId::from(ptr)));
-            }
+    fn ensure_node_has_required_components<T>(&mut self, id: NodeId<T>)
+    where
+        T: ASTNode,
+    {
+        fn require<T: Component>() -> (TypeId, DebugName) {
+            (TypeId::of::<T>(), DebugName::type_name::<T>())
         }
+
+        let location = Location::caller();
+        let command = move |world: &mut World| {
+            let Ok(entity) = world.get_entity(id.entity()) else {
+                return Ok(());
+            };
+            let required_ids = [
+                require::<Node>(),
+                require::<T>(),
+                require::<SourceSpan>(),
+                require::<Lexeme>(),
+            ];
+
+            for (id, name) in required_ids {
+                if !entity.contains_type_id(id) {
+                    return Err(NodeVerificationError::MissingComponent { name, location });
+                }
+            }
+
+            Ok(())
+        };
+
+        match self {
+            GenericSpawnContext::Empty(buffer) => {
+                buffer.reborrow().queue(command);
+            }
+            GenericSpawnContext::Related { buffer, .. } => {
+                buffer.reborrow().queue(command);
+            }
+        };
     }
 }
 
@@ -421,20 +316,6 @@ impl<B: Buffer> GenericSpawnContext<(), B> {
     #[inline]
     pub fn new(buffer: B) -> GenericSpawnContext<ChildOf, B> {
         GenericSpawnContext::Empty(buffer)
-    }
-}
-
-impl<B: Buffer> GenericSpawnContext<(), B> {
-    #[inline]
-    pub fn top_level<T: SyntaxNode, U: FromSyntax<T>>(
-        node: &T,
-        buffer: B,
-        source: impl CodeHolder,
-    ) -> Result<NodeId<U>, U::Error> {
-        let mut spawner = GenericSpawnContext::<ChildOf, _>::Empty(buffer);
-        let id = U::from_syntax(node, spawner.reborrow(), source)?;
-        spawner.link_with_lexeme(id, node);
-        Ok(id)
     }
 }
 
@@ -528,22 +409,25 @@ impl AstBuilder<()> {
 
 impl<B: Buffer, Rel: Relationship, Root> Context<Root> for GenericSpawnContext<Rel, B> {
     #[inline]
-    fn spawn_builder<P, C>(
+    #[track_caller]
+    fn spawn_builder<C: Constructed<Root = Root>>(
         self,
-        builder: AstBuilder<PropsState<Root, P, C>>,
+        builder: AstBuilder<C>,
     ) -> AstBuilder<impl SpawnedIn<Root>>
     where
-        P: Bundle,
         Root: ASTNode,
-        C: Bundle,
     {
-        let spawner = self.spawn::<Rel, C>(builder.state.into_bundle());
-        AstBuilder {
+        let spawner = self.spawn::<Rel, C::Clones>(builder.state.into_bundle());
+        let mut builder = AstBuilder {
             state: ChildState {
                 spawner,
                 _phantom: PhantomData,
             },
-        }
+        };
+        let id = builder.finish();
+        builder.spawner.ensure_node_has_required_components(id);
+
+        builder
     }
 }
 
@@ -556,18 +440,17 @@ where
     B: Buffer,
 {
     #[inline]
-    fn spawn_builder<P, C>(
+    #[track_caller]
+    fn spawn_builder<C: Constructed<Root = U>>(
         self,
-        builder: AstBuilder<PropsState<U, P, C>>,
-    ) -> AstBuilder<impl SpawnedIn<U>>
-    where
-        P: Bundle,
-        C: Bundle,
-    {
+        builder: AstBuilder<C>,
+    ) -> AstBuilder<impl SpawnedIn<U>> {
         let spawner = self
             .0
             .inner
-            .spawn::<<R as NodeRelationship<U, T>>::Relationship, C>(builder.state.into_bundle());
+            .spawn::<<R as NodeRelationship<T, A>>::Relationship, C::Clones>(
+                builder.state.into_bundle(),
+            );
         let mut builder = AstBuilder {
             state: ChildState {
                 spawner,
@@ -575,7 +458,7 @@ where
             },
         };
         let id = builder.finish();
-        builder.spawner.link_with_lexeme(id, self.1);
+        builder.spawner.ensure_node_has_required_components(id);
 
         builder
     }
@@ -590,36 +473,43 @@ where
     A: crate::arity::Arity,
 {
     #[inline]
-    fn spawn_builder<P, C>(
+    #[track_caller]
+    fn spawn_builder<C: Constructed<Root = U>>(
         self,
-        builder: AstBuilder<PropsState<U, P, C>>,
+        builder: AstBuilder<C>,
     ) -> AstBuilder<impl SpawnedIn<U>>
     where
-        P: Bundle,
-        C: Bundle,
         U: ASTNode,
     {
         let spawner = self
             .inner
-            .spawn::<<R as NodeRelationship<U, T>>::Relationship, (C, Lexeme)>(
+            .spawn::<<R as NodeRelationship<T, A>>::Relationship, C::Clones>(
                 builder.state.into_bundle(),
             );
-        AstBuilder {
+        let mut builder = AstBuilder {
             state: ChildState {
                 spawner,
                 _phantom: PhantomData,
             },
-        }
+        };
+        let id = builder.finish();
+        builder.spawner.ensure_node_has_required_components(id);
+
+        builder
     }
 }
 
-impl<R, P, C> PropsState<R, P, C> {
+impl<R, P, C> Constructed for PropsState<R, P, C>
+where
+    R: ASTNode,
+    P: Bundle,
+    C: Bundle,
+{
+    type Root = R;
+    type Clones = C;
+
     #[inline]
-    fn into_bundle(self) -> impl Bundle
-    where
-        R: ASTNode,
-        P: Bundle,
-    {
+    fn into_bundle(self) -> impl Bundle {
         (
             self.root,
             Node {
@@ -659,14 +549,18 @@ impl<R, P, C> AstBuilder<PropsState<R, P, C>> {
             },
         }
     }
+}
 
+impl<C> AstBuilder<C>
+where
+    C: Constructed,
+{
     #[inline]
     #[allow(private_bounds)]
-    pub fn spawn_in(self, spawner: impl Context<R>) -> AstBuilder<impl SpawnedIn<R>>
+    #[track_caller]
+    pub fn spawn_in(self, spawner: impl Context<C::Root>) -> AstBuilder<impl SpawnedIn<C::Root>>
     where
-        P: Bundle,
-        C: Bundle,
-        R: ASTNode,
+        C::Root: ASTNode,
     {
         spawner.spawn_builder(self)
     }
@@ -693,11 +587,10 @@ where
         let spawner = &mut self.spawner;
 
         let id = spawner.reborrow().cast_relationship(|spawner| {
-            U::from_syntax::<_, <R as NodeRelationship<U, Tag>>::Relationship>(
+            U::from_syntax::<_, <R as NodeRelationship<Tag, R::Arity>>::Relationship>(
                 node, spawner, source,
             )
         })?;
-        spawner.link_with_lexeme(id, node);
         Ok(self)
     }
 
@@ -715,11 +608,10 @@ where
         let spawner = &mut self.spawner;
         for node in nodes.into_iter() {
             let id = spawner.reborrow().cast_relationship(|spawner| {
-                U::from_syntax::<_, <R as NodeRelationship<U, Tag>>::Relationship>(
+                U::from_syntax::<_, <R as NodeRelationship<Tag, R::Arity>>::Relationship>(
                     node, spawner, source,
                 )
             })?;
-            spawner.link_with_lexeme(id, node);
         }
 
         Ok(self)
@@ -741,7 +633,6 @@ where
         let entity = spawner.reborrow().cast_relationship(|spawner| {
             dispatcher.dispatch(DispatchContext::new(spawner), source)
         })?;
-        spawner.link_with_lexeme(entity, node);
 
         Ok(self)
     }
@@ -760,7 +651,6 @@ where
         let entity = spawner
             .reborrow()
             .cast_relationship(|spawner| f(node, DispatchContext::new(spawner)))?;
-        spawner.link_with_lexeme(entity, node);
         Ok(self)
     }
 
@@ -781,7 +671,6 @@ where
             let entity = spawner.reborrow().cast_relationship(|spawner| {
                 dispatcher.dispatch(DispatchContext::new(spawner), source)
             })?;
-            spawner.link_with_lexeme(entity, node);
         }
 
         Ok(self)
@@ -819,10 +708,11 @@ mod tests {
     use crate::resource::rlt::LexemeId;
     use crate::syntax_tree::builder_v3::GenericSpawnContext;
     use crate::syntax_tree::builder_v3::SpawnedIn;
-    use crate::syntax_tree::children::HasChild;
+    use crate::syntax_tree::children::{Family, HasChild};
     use bevy_ecs::prelude::{ChildOf, Component, Entity, World};
     use kodept_core::code_point::{CodePoint, Span};
-    use kodept_rlt::prelude::Literal;
+    use kodept_rlt::new_types::Identifier;
+    use kodept_rlt::prelude::{Literal, UntypedParameter};
     use kodept_rlt::traversal::ErasedNodePtr;
     use std::convert::Infallible;
 
@@ -833,12 +723,18 @@ mod tests {
 
     impl ASTNode for A {}
     impl ASTNode for B {}
-    impl HasChild<B, ()> for A {
+
+    impl Family for A {
         type Arity = Plural;
     }
 
+    impl HasChild<B, ()> for A {}
+
     static NODE: &'static Literal = &Literal::String(CodePoint::new(3, 1));
     static LEXEME: Lexeme = Lexeme(LexemeId::from(ErasedNodePtr::new(NODE)));
+    static OTHER_NODE: &'static UntypedParameter = &UntypedParameter {
+        id: Identifier(CodePoint::new(4, 2)),
+    };
 
     #[test]
     fn test_lexeme_propagation() {
@@ -848,7 +744,7 @@ mod tests {
 
         let mut builder = AstBuilder::new(A)
             .with_property(SourceSpan(Span::default()))
-            .with_property(Lexeme(LexemeId::PLACEHOLDER))
+            .with_property(Lexeme(LexemeId::from_syntax(OTHER_NODE)))
             .spawn_in(context);
 
         _ = builder.with_dispatch_fn(NODE, |_, spawner| {

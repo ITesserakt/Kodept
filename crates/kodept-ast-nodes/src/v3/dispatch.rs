@@ -6,7 +6,7 @@ use bigdecimal::{BigDecimal, Num};
 use kodept_ast::arity::{Arity, Plural};
 use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, SplitRef};
 use kodept_ast::prelude::CodeHolder;
-use kodept_ast::properties::SourceSpan;
+use kodept_ast::properties::{Lexeme, SourceSpan};
 use kodept_ast::syntax_tree::children::HasChild;
 use kodept_ast::syntax_tree::experimental::{Buffer, SpawnedIn};
 use kodept_ast::Str;
@@ -148,6 +148,7 @@ where
 
                 let mut builder = AstBuilder::new(Call)
                     .with_property(SourceSpan(self.0.bounds()))
+                    .with_property(Lexeme::new(self.0))
                     .spawn_in((spawner, self.0));
 
                 builder.with_dispatch_fn::<_, Lhs, _, Infallible>(operator, |node, spawner| {
@@ -158,6 +159,7 @@ where
                         },
                     })
                     .with_property(SourceSpan(node.bounds()))
+                    .with_property(Lexeme::new(node))
                     .spawn_in((spawner, node))
                     .finish_any())
                 })?;
@@ -196,6 +198,7 @@ where
 
                 let mut builder = AstBuilder::new(Call)
                     .with_property(SourceSpan(self.0.bounds()))
+                    .with_property(Lexeme::new(self.0))
                     .spawn_in((spawner, self.0));
 
                 builder.with_dispatch_fn::<_, Lhs, _, Infallible>(operation, |node, spawner| {
@@ -206,6 +209,7 @@ where
                         },
                     })
                     .with_property(SourceSpan(node.bounds()))
+                    .with_property(Lexeme::new(node))
                     .spawn_in((spawner, node))
                     .finish_any())
                 })?;
@@ -319,6 +323,7 @@ where
             kodept_rlt::prelude::Literal::Tuple(items) => {
                 return Ok(AstBuilder::new(Tuple)
                     .with_property(SourceSpan(items.left.bounds() + items.right.bounds()))
+                    .with_property(Lexeme::new(node))
                     .spawn_in((spawner, node))
                     .with_dispatches::<Dispatcher<_>, _, _>(items.inner.as_ref(), source)?
                     .finish_any())
@@ -326,6 +331,7 @@ where
         };
         Ok(AstBuilder::new(value)
             .with_property(SourceSpan(node.bounds()))
+            .with_property(Lexeme::new(node))
             .spawn_in((spawner, node))
             .finish_any())
     }
@@ -373,6 +379,7 @@ where
         };
         let builder = AstBuilder::new(value)
             .with_property(SourceSpan(self.0.bounds()))
+            .with_property(Lexeme::new(self.0))
             .spawn_in((spawner, self.0));
 
         Ok(builder.finish_any())

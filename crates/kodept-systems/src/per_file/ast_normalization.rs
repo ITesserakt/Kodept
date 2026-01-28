@@ -4,15 +4,12 @@ use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::ComponentIdFor;
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::SystemParam;
-use kodept_ast::arity::{Plural, Singular};
-use kodept_ast::experimental::{AstBuilder, DispatchContext};
+use kodept_ast::experimental::AstBuilder;
 use kodept_ast::properties::{Lexeme, Node, SourceSpan};
-use kodept_ast::relationship::{ContainedBy, Nodes, RelBetween};
-use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
-use kodept_ast::syntax_tree::experimental::SpawnedIn;
+use kodept_ast::relationship::Nodes;
+use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
-    AnonFunction, Block, Expression, Link, Literal, Statement, Tuple, Unresolved, UserFunction,
-    Value, Variable,
+    AnonFunction, Block, Link, Literal, Statement, Tuple, Unresolved, UserFunction, Value, Variable,
 };
 use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
@@ -74,17 +71,17 @@ fn normalize_blocks(
             .iter_many(statement_ids)
             .all(|it| statement_component_ids.is_pure(&it.0))
         {
-            AstBuilder::new(Link)
-                .clone_property::<SourceSpan>()
-                .spawn_in(DispatchContext::from_buffer::<Block>(
-                    commands.reborrow(),
-                    id,
-                ))
-                .with_manual(|spawner| {
+            NodeModification::<Block>::new_unchecked(&mut commands, id)
+                .spawn_child(
+                    AstBuilder::new(Link)
+                        .clone_property::<SourceSpan>()
+                        .clone_property::<Lexeme>(),
+                )
+                .spawn_child(
                     AstBuilder::new(Tuple)
                         .clone_property::<SourceSpan>()
-                        .spawn_in(spawner);
-                });
+                        .clone_property::<Lexeme>(),
+                );
             continue;
         }
 
@@ -107,38 +104,28 @@ fn normalize_blocks(
 
             if archetype.contains(statement_component_ids.variable.get()) && !linked {
                 linked = true;
-                let mut builder = AstBuilder::new(Link)
-                    .with_property(*span)
-                    .with_property(*lexeme)
-                    .spawn_in(GenericSpawnContext::new(commands.reborrow()));
-                builder.with_manual(|spawner| {
-                    AstBuilder::new(Tuple)
-                        .with_property(*span)
-                        .with_property(*lexeme)
-                        .spawn_in(spawner);
-                });
-                let link_id = builder.finish_any();
-                drop(builder);
-                commands
-                    .entity(id)
-                    .insert_related::<RelBetween<Block, Link, _>>(index, &[link_id]);
+                NodeModification::<Block>::new_unchecked(&mut commands, id)
+                    .spawn_child(
+                        AstBuilder::new(Link)
+                            .with_property(*span)
+                            .with_property(*lexeme),
+                    )
+                    .place_at(index)
+                    .spawn_child(
+                        AstBuilder::new(Tuple)
+                            .with_property(*span)
+                            .with_property(*lexeme),
+                    );
             } else if statement_component_ids.is_non_normalized(archetype) && !linked {
-                commands
-                    .entity(id)
-                    .remove_related::<ContainedBy<Statement, Plural>>(&[statement_id]);
-                let link_id = AstBuilder::new(Link)
-                    .clone_property::<SourceSpan>()
-                    .spawn_in(DispatchContext::from_buffer::<Block>(
-                        commands.reborrow(),
-                        id,
-                    ))
-                    .finish_any();
-                commands
-                    .entity(link_id)
-                    .add_one_related::<ContainedBy<Expression, Singular>>(statement_id);
-                commands
-                    .entity(id)
-                    .insert_related::<RelBetween<Block, Link, _>>(index, &[link_id]);
+                let mut modification = NodeModification::<Block>::new_unchecked(&mut commands, id);
+                let statement = modification.remove_child_unchecked(statement_id);
+
+                modification
+                    .spawn_child(
+                        AstBuilder::new(Link).clone_property::<SourceSpan>(), // .clone_property::<Lexeme>(),
+                    )
+                    .place_at(index)
+                    .add_child_unchecked(statement);
             } else if statement_component_ids.is_non_normalized(archetype) && linked {
                 reporter.report(DanglingExpression { span: span.0 });
                 dangling = true;

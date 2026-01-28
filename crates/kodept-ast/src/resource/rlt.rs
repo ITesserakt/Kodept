@@ -10,7 +10,7 @@ use std::marker::PhantomPinned;
 use std::pin::Pin;
 
 #[derive(PartialEq, Copy, Clone)]
-pub struct LexemeId(Option<ErasedNodePtr>);
+pub struct LexemeId(ErasedNodePtr);
 
 #[derive(Debug)]
 struct PinnedRLT {
@@ -29,9 +29,14 @@ pub enum LookupError {
 }
 
 impl LexemeId {
-    pub(crate) const PLACEHOLDER: LexemeId = LexemeId(None);
+    #[inline]
     pub(crate) const fn from(value: ErasedNodePtr) -> Self {
-        Self(Some(value))
+        Self(value)
+    }
+
+    #[inline]
+    pub fn from_syntax(value: &impl SyntaxNode) -> Self {
+        Self::from(ErasedNodePtr::new(value))
     }
 }
 
@@ -50,7 +55,7 @@ impl SyntaxResolver {
     pub fn root(&self) -> (&rlt::File, LexemeId) {
         (
             &self.tree.inner.0,
-            LexemeId(Some(ErasedNodePtr::new(&self.tree.inner.0))),
+            LexemeId(ErasedNodePtr::new(&self.tree.inner.0)),
         )
     }
 
@@ -61,19 +66,11 @@ impl SyntaxResolver {
     }
 
     pub fn get_span(&self, id: LexemeId) -> Span {
-        if let Some(ptr) = id.0 {
-            self.borrow_ptr(&ptr).bounds()
-        } else {
-            panic!("Cannot get linked RLT node")
-        }
+        self.borrow_ptr(&id.0).bounds()
     }
 
     pub fn try_get_unknown(&self, id: LexemeId) -> Option<ErasedNodeBorrow<'_>> {
-        if let Some(ptr) = id.0 {
-            Some(self.borrow_ptr(&ptr))
-        } else {
-            None
-        }
+        Some(self.borrow_ptr(&id.0))
     }
 
     pub fn try_get<T: SyntaxNode>(&self, id: LexemeId) -> Result<&T, LookupError> {
@@ -86,12 +83,8 @@ impl SyntaxResolver {
 
 impl Debug for LexemeId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.0.is_none() {
-            f.debug_struct("LexemeId").finish()
-        } else {
-            f.debug_struct("LexemeId")
-                .field("ptr", &self.0)
-                .finish_non_exhaustive()
-        }
+        f.debug_struct("LexemeId")
+            .field("ptr", &self.0)
+            .finish_non_exhaustive()
     }
 }

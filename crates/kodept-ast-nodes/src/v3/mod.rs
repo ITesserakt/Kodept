@@ -40,6 +40,6 @@ pub(super) fn register_reflection_info(
     registry.register::<Call>();
     registry.register::<If>();
     registry.register::<Branch>();
-    registry.register::<Otherwise>();
+    registry.register::<types::Otherwise>();
     registry.register::<Link>();
 }

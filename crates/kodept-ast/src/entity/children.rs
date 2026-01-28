@@ -1,7 +1,7 @@
 use crate::arity::{Optional, Plural, Singular};
 use crate::prelude::{ASTNode, NodeId};
 use crate::relationship::NodeRelationship;
-use crate::syntax_tree::children::HasChild;
+use crate::syntax_tree::children::{Family, HasChild};
 use bevy_ecs::prelude::{Entity, Query, RelationshipTarget};
 use bevy_ecs::query::{QueryEntityError, QueryFilter};
 use bevy_ecs::relationship::Relationship;
@@ -12,9 +12,7 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
-pub type ChildrenBetween<'a, T, U, Tag = ()> = &'a Target<Rel<T, U, Tag>>;
-
-type Rel<T, U, Tag> = <T as NodeRelationship<U, Tag>>::Relationship;
+type Rel<T, Tag> = <T as NodeRelationship<Tag, <T as Family<Tag>>::Arity>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
 type Container<A, T> = <A as TryFromIter>::Container<T>;
 
@@ -27,8 +25,8 @@ where
     Tag: 'static,
     Filter: QueryFilter + 'static,
 {
-    parent_query: Query<'w, 's, (Entity, &'static T, &'static Target<Rel<T, U, Tag>>), Filter>,
-    children_query: Query<'w, 's, (Entity, &'static U, &'static Rel<T, U, Tag>)>,
+    parent_query: Query<'w, 's, (Entity, &'static T, &'static Target<Rel<T, Tag>>), Filter>,
+    children_query: Query<'w, 's, (Entity, &'static U, &'static Rel<T, Tag>)>,
 }
 
 pub trait TryFromIter {
