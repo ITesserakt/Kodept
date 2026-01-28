@@ -15,7 +15,7 @@ mod utils;
 pub mod prelude {
     pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, CodeHolder};
-    pub use crate::entity::children::{HierarchicalQuery, TryFromIter};
+    pub use crate::entity::children::{HierarchicalQuery, NarrowHierarchicalQuery, TryFromIter};
 }
 
 #[cfg(feature = "reflection")]

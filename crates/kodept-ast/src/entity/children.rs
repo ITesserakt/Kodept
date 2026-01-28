@@ -14,29 +14,35 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
+use std::marker::PhantomData;
 
 type Rel<T, Tag> = <T as NodeRelationship<Tag, <T as Family<Tag>>::Arity>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
 type Container<A, T> = <A as TryFromIter>::Container<T>;
 
-pub struct Children<'w, 's, Data, T, Tag>
+pub struct Children<'w, 's, Data, T, Tag = (), Id = Entity, Filter = ()>
 where
-    Data: QueryData + 'static,
+    Data: QueryData,
+    Filter: QueryFilter,
     T: Family<Tag>,
-    Tag: 'static,
+    Id: From<Entity>,
 {
-    query: Query<'w, 's, (Entity, Data, &'static Rel<T, Tag>)>,
+    query: Query<'w, 's, (Entity, Data, &'static Rel<T, Tag>), Filter>,
     collection: &'w Target<Rel<T, Tag>>,
+    _phantom: PhantomData<Id>,
 }
 
-pub struct ChildrenIter<'w, 's, Data, R>
+pub struct ChildrenIter<'w, 's, Data, R, Id, Filter>
 where
-    Data: QueryData + 'static,
+    Data: QueryData,
+    Filter: QueryFilter,
     R: Relationship,
+    Id: From<Entity>
 {
-    inner: QueryManyIter<'w, 's, (Entity, Data, &'static R), (),
+    inner: QueryManyIter<'w, 's, (Entity, Data, &'static R), Filter,
         <<R::RelationshipTarget as RelationshipTarget>::Collection as RelationshipSourceCollection>::SourceIter<'w>,
     >,
+    _phantom: PhantomData<Id>
 }
 
 #[derive(SystemParam)]
@@ -173,7 +179,7 @@ where
         Item = (
             NodeId<T>,
             ROQueryItem<'_, 's, ParentData>,
-            Children<'_, 's, ChildData::ReadOnly, T, Tag>,
+            Children<'_, 's, ChildData::ReadOnly, T, Tag, Entity, ()>,
         ),
     > {
         self.parent_query
@@ -185,98 +191,115 @@ where
                     Children {
                         collection: children,
                         query: self.children_query.as_readonly(),
+                        _phantom: PhantomData,
                     },
                 )
             })
     }
 }
 
-impl<'w, 's, Data, T, Tag> IntoIterator for Children<'w, 's, Data, T, Tag>
+impl<'w, 's, Data, T, Tag, Id, Filter> IntoIterator for Children<'w, 's, Data, T, Tag, Id, Filter>
 where
-    Data: QueryData + 'static,
+    Data: QueryData,
+    Filter: QueryFilter,
     T: Family<Tag>,
-    Tag: 'static,
+    Id: From<Entity>,
 {
-    type Item = (Entity, ROQueryItem<'w, 's, Data>);
-    type IntoIter = ChildrenIter<'w, 's, Data::ReadOnly, Rel<T, Tag>>;
+    type Item = (Id, ROQueryItem<'w, 's, Data>);
+    type IntoIter = ChildrenIter<'w, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter>;
 
     fn into_iter(self) -> Self::IntoIter {
         let query = self.query.into_readonly();
 
         ChildrenIter {
             inner: query.iter_many_inner(self.collection.iter()),
+            _phantom: PhantomData,
         }
     }
 }
 
-impl<'ww, 'w, 's, Data, T, Tag> IntoIterator for &'ww Children<'w, 's, Data, T, Tag>
+impl<'ww, 'w, 's, Data, T, Tag, Id, Filter> IntoIterator
+    for &'ww Children<'w, 's, Data, T, Tag, Id, Filter>
 where
-    Data: QueryData + 'static,
+    Data: QueryData,
+    Filter: QueryFilter,
     T: Family<Tag>,
-    Tag: 'static,
+    Id: From<Entity>,
 {
-    type Item = (Entity, ROQueryItem<'ww, 's, Data>);
-    type IntoIter = ChildrenIter<'ww, 's, Data::ReadOnly, Rel<T, Tag>>;
+    type Item = (Id, ROQueryItem<'ww, 's, Data>);
+    type IntoIter = ChildrenIter<'ww, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter>;
 
     fn into_iter(self) -> Self::IntoIter {
         let query = self.query.as_readonly();
         ChildrenIter {
             inner: query.iter_many_inner(self.collection.iter()),
+            _phantom: PhantomData,
         }
     }
 }
 
-impl<'w, 's, Data, Rel> Iterator for ChildrenIter<'w, 's, Data, Rel>
+impl<'w, 's, Data, Rel, Id, Filter> Iterator for ChildrenIter<'w, 's, Data, Rel, Id, Filter>
 where
-    Data: ReadOnlyQueryData + 'static,
+    Data: ReadOnlyQueryData,
+    Filter: QueryFilter,
     Rel: Relationship,
+    Id: From<Entity>,
 {
-    type Item = (Entity, ROQueryItem<'w, 's, Data>);
+    type Item = (Id, ROQueryItem<'w, 's, Data>);
 
     fn next(&mut self) -> Option<Self::Item> {
         let value = self.inner.next()?;
-        Some((value.0, value.1))
+        Some((Id::from(value.0), value.1))
     }
 }
 
-impl<'w, 's, Data, Rel> FusedIterator for ChildrenIter<'w, 's, Data, Rel>
+impl<'w, 's, Data, Rel, Id, Filter> FusedIterator for ChildrenIter<'w, 's, Data, Rel, Id, Filter>
 where
-    Data: ReadOnlyQueryData + 'static,
+    Data: ReadOnlyQueryData,
+    Filter: QueryFilter,
     Rel: Relationship,
+    Id: From<Entity>,
 {
 }
 
-impl<'w, 's, Data, Rel> DoubleEndedIterator for ChildrenIter<'w, 's, Data, Rel>
+impl<'w, 's, Data, Rel, Id, Filter> DoubleEndedIterator
+    for ChildrenIter<'w, 's, Data, Rel, Id, Filter>
 where
-    Data: ReadOnlyQueryData + 'static,
+    Data: ReadOnlyQueryData,
+    Filter: QueryFilter,
     Rel: Relationship<
         RelationshipTarget: RelationshipTarget<
             Collection: RelationshipSourceCollection<SourceIter<'w>: DoubleEndedIterator>,
         >,
     >,
+    Id: From<Entity>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let value = self.inner.next_back()?;
-        Some((value.0, value.1))
+        Some((Id::from(value.0), value.1))
     }
 }
 
-impl<'w, 's, Data, T, Tag> Children<'w, 's, Data, T, Tag>
+impl<'w, 's, Data, T, Tag, Id, Filter> Children<'w, 's, Data, T, Tag, Id, Filter>
 where
-    Data: QueryData + 'static,
-    T: Family<Tag, Arity: TryFromIter>,
-    Tag: 'static,
+    Data: QueryData,
+    Filter: QueryFilter,
+    T: Family<Tag>,
+    Id: From<Entity>,
 {
     #[inline]
-    pub fn iter(&self) -> ChildrenIter<'_, 's, Data::ReadOnly, Rel<T, Tag>> {
+    pub fn iter(&self) -> ChildrenIter<'_, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter> {
         self.into_iter()
     }
 
-    pub fn collect(self) -> Container<T::Arity, (Entity, ROQueryItem<'w, 's, Data>)> {
+    pub fn collect(self) -> Container<T::Arity, (Id, ROQueryItem<'w, 's, Data>)>
+    where
+        T::Arity: TryFromIter,
+    {
         let query = self.query.into_readonly();
         let iter = query
             .iter_many_inner(self.collection.iter())
-            .map(|it| (it.0, it.1));
+            .map(|it| (Id::from(it.0), it.1));
         <T::Arity as TryFromIter>::try_from_iter(iter).unwrap()
     }
 }
@@ -298,7 +321,7 @@ where
         Item = (
             NodeId<T>,
             ROQueryItem<'_, 's, ParentData>,
-            impl Iterator<Item = (NodeId<U>, ROQueryItem<'_, 's, ChildData>)>,
+            Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>, With<U>>,
         ),
     > {
         self.parent_query
@@ -307,9 +330,11 @@ where
                 (
                     NodeId::from(parent_id),
                     parent_data,
-                    self.children_query
-                        .iter_many(children.iter())
-                        .map(move |(child_id, child_data, _)| (NodeId::from(child_id), child_data)),
+                    Children {
+                        query: self.children_query.as_readonly(),
+                        collection: children,
+                        _phantom: PhantomData,
+                    },
                 )
             })
     }
@@ -331,7 +356,6 @@ where
     )
     where
         T::Arity: TryFromIter,
-        <T::Arity as TryFromIter>::Error: Debug,
     {
         self.try_get_down(id)
             .expect("Cannot collect children into container")
