@@ -1,25 +1,24 @@
 use crate::experimental::AstBuilder;
 use crate::prelude::{ASTNode, NodeId};
+use crate::syntax_tree::buffer::Buffer;
 use crate::syntax_tree::builder_v3::Constructed;
 use crate::syntax_tree::builder_v3::SpawnedIn;
 use crate::syntax_tree::children::{Family, HasChild};
 use crate::traits::DispatchContext;
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::{
-    ChildOf, Commands, EntityCommand, EntityWorldMut, RelationshipTarget, World,
-};
+use bevy_ecs::prelude::{ChildOf, Command, RelationshipTarget, World};
 use bevy_ecs::relationship::{OrderedRelationshipSourceCollection, Relationship};
 use derive_more::{Display, Error};
 use std::marker::PhantomData;
 
-pub struct NodeModification<'w, 's, T> {
-    commands: Commands<'w, 's>,
+pub struct NodeModification<T, B: Buffer> {
+    buffer: B,
     id: NodeId<T>,
     removed: Vec<std::sync::mpsc::Receiver<Entity>>,
 }
 
-pub struct ChainedNodeModification<'w, 's, Parent, Child, Tag> {
-    commands: Commands<'w, 's>,
+pub struct ChainedNodeModification<Parent, Child, Tag, B> {
+    buffer: B,
     parent_id: NodeId<Parent>,
     child_id: NodeId<Child>,
     _phantom: PhantomData<Tag>,
@@ -42,6 +41,7 @@ pub struct RemovedFamilyNode<F, Tag> {
 
 struct AddRelatedCommand<R: Relationship> {
     parent: Entity,
+    this: Entity,
     _phantom: PhantomData<R>,
 }
 
@@ -56,8 +56,9 @@ struct NodeConnectedError {
     this: Entity,
 }
 
-impl<R: Relationship> EntityCommand<Result<(), NodeConnectedError>> for AddRelatedCommand<R> {
-    fn apply(self, mut entity: EntityWorldMut) -> Result<(), NodeConnectedError> {
+impl<R: Relationship> Command<Result<(), NodeConnectedError>> for AddRelatedCommand<R> {
+    fn apply(self, world: &mut World) -> Result<(), NodeConnectedError> {
+        let mut entity = world.entity_mut(self.this);
         if let Some(&ChildOf(parent)) = entity.get::<ChildOf>() {
             return Err(NodeConnectedError {
                 parent,
@@ -84,14 +85,25 @@ impl Drop for Slot {
     }
 }
 
-impl<'w, 's, T> NodeModification<'w, 's, T>
+impl<B: Buffer> NodeModification<(), B> {
+    pub fn new_unchecked<T: ASTNode>(buffer: B, entity: Entity) -> NodeModification<T, B> {
+        NodeModification {
+            buffer,
+            id: entity.into(),
+            removed: vec![],
+        }
+    }
+}
+
+impl<T, B> NodeModification<T, B>
 where
     T: ASTNode,
+    B: Buffer,
 {
-    pub fn new_unchecked(commands: &'s mut Commands<'w, '_>, entity: Entity) -> Self {
+    pub fn new(buffer: B, id: NodeId<T>) -> Self {
         Self {
-            commands: commands.reborrow(),
-            id: entity.into(),
+            buffer,
+            id,
             removed: vec![],
         }
     }
@@ -100,19 +112,19 @@ where
     pub fn spawn_child<C, Tag>(
         &mut self,
         builder: AstBuilder<C>,
-    ) -> ChainedNodeModification<'w, '_, T, C::Root, Tag>
+    ) -> ChainedNodeModification<T, C::Root, Tag, B::Reborrowed<'_>>
     where
         C: Constructed,
         T: HasChild<C::Root, Tag>,
         Tag: Send + Sync + 'static,
     {
-        let buffer = self.commands.reborrow();
+        let buffer = self.buffer.reborrow();
         let builder = builder.spawn_in(DispatchContext::from_buffer(buffer, self.id));
         let child_id = builder.finish();
         drop(builder);
 
         ChainedNodeModification {
-            commands: self.commands.reborrow(),
+            buffer: self.buffer.reborrow(),
             parent_id: self.id,
             child_id,
             _phantom: PhantomData,
@@ -126,7 +138,7 @@ where
         Child: ASTNode,
     {
         let child_id = id.entity();
-        self.commands.queue(move |w: &mut World| {
+        (&mut self.buffer).queue(move |w: &mut World| {
             w.entity_mut(child_id).remove::<T::Relationship>();
         });
         let (slot, rx) = Slot::new(child_id);
@@ -142,7 +154,7 @@ where
         T: Family<Tag>,
         Tag: Send + Sync + 'static,
     {
-        self.commands.queue(move |w: &mut World| {
+        (&mut self.buffer).queue(move |w: &mut World| {
             w.entity_mut(id).remove::<T::Relationship>();
         });
         let (slot, rx) = Slot::new(id);
@@ -156,7 +168,7 @@ where
     pub fn add_child<Child, Tag>(
         &mut self,
         id: NodeId<Child>,
-    ) -> ChainedNodeModification<'w, '_, T, Child, Tag>
+    ) -> ChainedNodeModification<T, Child, Tag, B::Reborrowed<'_>>
     where
         T: HasChild<Child, Tag>,
         Child: ASTNode,
@@ -164,23 +176,27 @@ where
     {
         let child_id = id.entity();
         let parent_id = self.id.entity();
-        self.commands.entity(child_id).queue(AddRelatedCommand {
+        (&mut self.buffer).queue(AddRelatedCommand {
             parent: parent_id,
+            this: child_id,
             _phantom: PhantomData::<T::Relationship>,
         });
         ChainedNodeModification {
             child_id: id,
             parent_id: self.id,
-            commands: self.commands.reborrow(),
+            buffer: self.buffer.reborrow(),
             _phantom: PhantomData,
         }
     }
 }
 
-impl<T> Drop for NodeModification<'_, '_, T> {
+impl<T, B> Drop for NodeModification<T, B>
+where
+    B: Buffer,
+{
     fn drop(&mut self) {
         let to_despawn = std::mem::take(&mut self.removed);
-        self.commands.queue(move |w: &mut World| {
+        (&mut self.buffer).queue(move |w: &mut World| {
             to_despawn
                 .into_iter()
                 .filter_map(|it| it.try_recv().ok())
@@ -191,23 +207,26 @@ impl<T> Drop for NodeModification<'_, '_, T> {
     }
 }
 
-impl<'w, 's, Parent, Child, Tag> ChainedNodeModification<'w, 's, Parent, Child, Tag> {
+impl<Parent, Child, Tag, B> ChainedNodeModification<Parent, Child, Tag, B>
+where
+    B: Buffer,
+{
     pub fn spawn_child<C, T>(
         &mut self,
         builder: AstBuilder<C>,
-    ) -> ChainedNodeModification<'w, '_, Child, C::Root, T>
+    ) -> ChainedNodeModification<Child, C::Root, T, B::Reborrowed<'_>>
     where
         C: Constructed,
         Child: HasChild<C::Root, T>,
         T: Send + Sync + 'static,
     {
-        let buffer = self.commands.reborrow();
+        let buffer = self.buffer.reborrow();
         let builder = builder.spawn_in(DispatchContext::from_buffer(buffer, self.child_id));
         let child_id = builder.finish();
         drop(builder);
 
         ChainedNodeModification {
-            commands: self.commands.reborrow(),
+            buffer: self.buffer.reborrow(),
             parent_id: self.child_id,
             child_id,
             _phantom: PhantomData,
@@ -222,7 +241,7 @@ impl<'w, 's, Parent, Child, Tag> ChainedNodeModification<'w, 's, Parent, Child, 
     {
         let parent_id = self.parent_id.entity();
         let child_id = self.child_id.entity();
-        self.commands.queue(move |w: &mut World| {
+        (&mut self.buffer).queue(move |w: &mut World| {
             let component =
                 w.get_mut::<<Parent::Relationship as Relationship>::RelationshipTarget>(parent_id);
             if let Some(mut component) = component {
@@ -239,7 +258,8 @@ impl<'w, 's, Parent, Child, Tag> ChainedNodeModification<'w, 's, Parent, Child, 
     {
         let parent_id = self.child_id.entity();
         let child_id = id.into();
-        self.commands.entity(child_id).queue(AddRelatedCommand {
+        (&mut self.buffer).queue(AddRelatedCommand {
+            this: child_id,
             parent: parent_id,
             _phantom: PhantomData::<Child::Relationship>,
         });

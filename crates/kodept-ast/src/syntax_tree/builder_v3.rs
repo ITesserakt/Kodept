@@ -1,10 +1,9 @@
 use crate::properties::SourceSpan;
 use crate::syntax_tree::buffer::{Buffer, RefBuffer};
 use crate::{
-    node_id::{Erase, NodeId},
+    node_id::NodeId,
     properties::{HasProperty, Lexeme, Node, NodeProperty},
     relationship::NodeRelationship,
-    resource::rlt::LexemeId,
     syntax_tree::children::HasChild,
     traits::{ASTNode, CodeHolder, Dispatch, FromSyntax},
     utils::IntoCommonIter,
@@ -13,9 +12,8 @@ use bevy_ecs::prelude::{ChildOf, Command, Commands, Component, World};
 use bevy_ecs::{bundle::Bundle, entity::Entity, relationship::Relationship};
 use bevy_utils::prelude::DebugName;
 use derive_more::{Deref, DerefMut, Display, Error};
-use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
+use kodept_rlt::traversal::SyntaxNode;
 use std::any::TypeId;
-use std::backtrace::Backtrace;
 use std::marker::PhantomData;
 use std::panic::Location;
 
@@ -137,19 +135,6 @@ impl<Clones: Bundle> Command for CloneSpecificCommand<Clones> {
     }
 }
 
-struct InsertLexemeCommand {
-    entity: Entity,
-    ptr: ErasedNodePtr,
-}
-
-impl Command for InsertLexemeCommand {
-    fn apply(self, world: &mut World) -> () {
-        world
-            .entity_mut(self.entity)
-            .insert(Lexeme(LexemeId::from(self.ptr)));
-    }
-}
-
 #[derive(Debug, Deref, DerefMut)]
 pub struct AstBuilder<State> {
     state: State,
@@ -177,7 +162,6 @@ enum NodeVerificationError {
     MissingComponent {
         #[error(not(source))]
         name: DebugName,
-        #[error(not(backtrace))]
         location: &'static Location<'static>,
     },
 }

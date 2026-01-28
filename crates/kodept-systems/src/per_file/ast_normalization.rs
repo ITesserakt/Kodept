@@ -2,11 +2,11 @@ use crate::source::collection::Reporter;
 use crate::utils::LogSystemEx;
 use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::ComponentIdFor;
-use bevy_ecs::prelude::*;
+use bevy_ecs::prelude::Commands;
 use bevy_ecs::system::SystemParam;
 use kodept_ast::experimental::AstBuilder;
-use kodept_ast::properties::{Lexeme, Node, SourceSpan};
-use kodept_ast::relationship::Nodes;
+use kodept_ast::prelude::HierarchicalQuery;
+use kodept_ast::properties::{Lexeme, SourceSpan};
 use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
     AnonFunction, Block, Link, Literal, Statement, Tuple, Unresolved, UserFunction, Value, Variable,
@@ -15,7 +15,6 @@ use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report_macros::Report;
-use tracing::error;
 
 define_phase! {
     pub phase AstNormalizationPhase[AstNormalizationPhaseLabel];
@@ -58,20 +57,19 @@ impl StatementComponentIds<'_> {
 }
 
 fn normalize_blocks(
-    blocks: Query<(Entity, &Nodes<Statement>), With<Block>>,
-    statements: Query<(&Archetype, &SourceSpan, &Lexeme), With<Node>>,
+    blocks_: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
     statement_component_ids: StatementComponentIds,
     mut commands: Commands,
     mut reporter: Reporter,
 ) {
-    for (id, statement_ids) in blocks {
-        // if block contains no statements or all of them are pure
-        // then just add a link to unit
+    for (id, _, statements) in blocks_.iter_by_layers() {
+        let mut modification = NodeModification::new(commands.reborrow(), id);
+
         if statements
-            .iter_many(statement_ids)
-            .all(|it| statement_component_ids.is_pure(&it.0))
+            .iter()
+            .all(|(_, (archetype, _, _))| statement_component_ids.is_pure(archetype))
         {
-            NodeModification::<Block>::new_unchecked(&mut commands, id)
+            modification
                 .spawn_child(
                     AstBuilder::new(Link)
                         .clone_property::<SourceSpan>()
@@ -87,59 +85,53 @@ fn normalize_blocks(
 
         let mut linked = false;
         let mut dangling = false;
-        let mut iter = statement_ids.iter().enumerate();
-
-        loop {
-            let Some((index, statement_id)) = iter.next_back() else {
-                break;
-            };
-            let Ok((archetype, span, lexeme)) = statements.get(statement_id) else {
-                error!("AST Node does not have span or archetype");
-                break;
-            };
-
+        for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
             if archetype.contains(statement_component_ids.user_function.get()) {
                 continue;
             }
 
-            if archetype.contains(statement_component_ids.variable.get()) && !linked {
-                linked = true;
-                NodeModification::<Block>::new_unchecked(&mut commands, id)
+            if statement_component_ids.is_non_normalized(archetype) && linked {
+                reporter.report(DanglingExpression { span: span.0 });
+                dangling = true;
+                continue;
+            }
+
+            if linked {
+                continue;
+            }
+
+            linked = true;
+            if archetype.contains(statement_component_ids.variable.get()) {
+                modification
                     .spawn_child(
                         AstBuilder::new(Link)
                             .with_property(*span)
                             .with_property(*lexeme),
                     )
-                    .place_at(index)
                     .spawn_child(
                         AstBuilder::new(Tuple)
                             .with_property(*span)
                             .with_property(*lexeme),
                     );
-            } else if statement_component_ids.is_non_normalized(archetype) && !linked {
-                let mut modification = NodeModification::<Block>::new_unchecked(&mut commands, id);
+            } else if statement_component_ids.is_non_normalized(archetype) {
                 let statement = modification.remove_child_unchecked(statement_id);
 
                 modification
                     .spawn_child(
                         AstBuilder::new(Link)
-                            .clone_property::<SourceSpan>()
-                            .clone_property::<Lexeme>(),
+                            .with_property(*span)
+                            .with_property(*lexeme),
                     )
-                    .place_at(index)
                     .add_child_unchecked(statement);
-            } else if statement_component_ids.is_non_normalized(archetype) && linked {
-                reporter.report(DanglingExpression { span: span.0 });
-                dangling = true;
-            }
-
-            if !statement_component_ids.is_pure(archetype) {
-                linked = true;
             }
         }
 
+        drop(modification);
         if !dangling {
-            commands.entity(id).remove::<Block>().insert(Block::<true>);
+            commands
+                .entity(id.entity())
+                .remove::<Block>()
+                .insert(Block::<true>);
         }
     }
 }
