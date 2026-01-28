@@ -9,6 +9,7 @@ use bevy_ecs::prelude::{
     ChildOf, Commands, EntityCommand, EntityWorldMut, RelationshipTarget, World,
 };
 use bevy_ecs::relationship::{OrderedRelationshipSourceCollection, Relationship};
+use derive_more::{Display, Error};
 use std::marker::PhantomData;
 
 pub struct NodeModification<'w, 's, T> {
@@ -25,13 +26,15 @@ pub struct ChainedNodeModification<'w, 's, Parent, Child, Tag> {
 }
 
 #[derive(Debug, Clone)]
-struct Slot(Entity, std::sync::mpsc::SyncSender<Entity>);
+struct Slot(Option<Entity>, std::sync::mpsc::SyncSender<Entity>);
 
+#[derive(Debug, Clone)]
 pub struct RemovedNode<T> {
     slot: Slot,
     _phantom: PhantomData<T>,
 }
 
+#[derive(Debug, Clone)]
 pub struct RemovedFamilyNode<F, Tag> {
     slot: Slot,
     _phantom: PhantomData<(F, Tag)>,
@@ -42,25 +45,42 @@ struct AddRelatedCommand<R: Relationship> {
     _phantom: PhantomData<R>,
 }
 
-impl<R: Relationship> EntityCommand for AddRelatedCommand<R> {
-    fn apply(self, mut entity: EntityWorldMut) -> () {
-        if entity.contains::<ChildOf>() {
-            panic!("AST node is still connected to the tree")
+#[derive(Debug, Display, Error)]
+#[display(
+    "While inserting node to AST: node is already connected to the tree ({} -> {})",
+    parent,
+    this
+)]
+struct NodeConnectedError {
+    parent: Entity,
+    this: Entity,
+}
+
+impl<R: Relationship> EntityCommand<Result<(), NodeConnectedError>> for AddRelatedCommand<R> {
+    fn apply(self, mut entity: EntityWorldMut) -> Result<(), NodeConnectedError> {
+        if let Some(&ChildOf(parent)) = entity.get::<ChildOf>() {
+            return Err(NodeConnectedError {
+                parent,
+                this: entity.id(),
+            });
         }
         entity.insert::<R>(Relationship::from(self.parent));
+        Ok(())
     }
 }
 
 impl Slot {
     fn new(value: Entity) -> (Self, std::sync::mpsc::Receiver<Entity>) {
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
-        (Self(value, tx), rx)
+        (Self(Some(value), tx), rx)
     }
 }
 
 impl Drop for Slot {
     fn drop(&mut self) {
-        _ = self.1.try_send(self.0);
+        if let Some(id) = self.0 {
+            _ = self.1.try_send(id);
+        }
     }
 }
 
@@ -228,13 +248,13 @@ impl<'w, 's, Parent, Child, Tag> ChainedNodeModification<'w, 's, Parent, Child, 
 }
 
 impl<T, Tag> From<RemovedFamilyNode<T, Tag>> for Entity {
-    fn from(value: RemovedFamilyNode<T, Tag>) -> Self {
-        value.slot.0
+    fn from(mut value: RemovedFamilyNode<T, Tag>) -> Self {
+        value.slot.0.take().unwrap()
     }
 }
 
 impl<T> From<RemovedNode<T>> for NodeId<T> {
-    fn from(value: RemovedNode<T>) -> Self {
-        value.slot.0.into()
+    fn from(mut value: RemovedNode<T>) -> Self {
+        value.slot.0.take().unwrap().into()
     }
 }

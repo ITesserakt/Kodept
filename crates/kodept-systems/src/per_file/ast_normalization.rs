@@ -122,7 +122,9 @@ fn normalize_blocks(
 
                 modification
                     .spawn_child(
-                        AstBuilder::new(Link).clone_property::<SourceSpan>(), // .clone_property::<Lexeme>(),
+                        AstBuilder::new(Link)
+                            .clone_property::<SourceSpan>()
+                            .clone_property::<Lexeme>(),
                     )
                     .place_at(index)
                     .add_child_unchecked(statement);
