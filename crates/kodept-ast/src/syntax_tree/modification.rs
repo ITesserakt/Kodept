@@ -1,7 +1,7 @@
 use crate::node_id::Erase;
 use crate::prelude::{ASTNode, NodeId};
 use crate::syntax_tree::buffer::Buffer;
-use crate::syntax_tree::builder_v4::{Constructed, RelatedNodeSpawner};
+use crate::syntax_tree::builder_v4::{Constructed, ConstructingNode, RelatedNodeSpawner};
 use crate::syntax_tree::children::{Family, HasChild};
 use bevy_ecs::error::CommandWithEntity;
 use bevy_ecs::prelude::{
@@ -93,12 +93,12 @@ impl<B: Buffer> NodeModification<(), B> {
     }
 }
 
-impl<T, B> NodeModification<T, B>
+impl<Node, B> NodeModification<Node, B>
 where
-    T: ASTNode,
+    Node: ASTNode,
     B: Buffer,
 {
-    pub fn new(buffer: B, id: NodeId<T>) -> Self {
+    pub fn new(buffer: B, id: NodeId<Node>) -> Self {
         Self {
             buffer,
             id,
@@ -107,17 +107,17 @@ where
     }
 
     #[track_caller]
-    pub fn spawn_child<Builder, Tag>(
+    pub fn spawn_child<Child, Properties, Clones, Tag>(
         &mut self,
-        builder: Builder,
-    ) -> ChainedNodeModification<T, Builder::Node, Tag, B::Reborrowed<'_>>
+        builder: ConstructingNode<Child, Properties, Clones>,
+    ) -> ChainedNodeModification<Node, Child, Tag, B::Reborrowed<'_>>
     where
-        Builder: Constructed<Node: ASTNode, Properties: Bundle, Clones: Bundle>,
-        T: HasChild<Builder::Node, Tag>,
-        Tag: Send + Sync + 'static,
+        Node: HasChild<Child, Tag>,
+        Child: ASTNode,
+        Properties: Bundle,
+        Clones: Bundle,
     {
-        let mut spawner = RelatedNodeSpawner::new(&mut self.buffer, self.id);
-        let node = builder.spawn(&mut spawner);
+        let node = builder.spawn(RelatedNodeSpawner::new(self.buffer.reborrow(), self.id));
 
         ChainedNodeModification {
             buffer: self.buffer.reborrow(),
@@ -129,13 +129,13 @@ where
 
     pub fn remove_child<Child, Tag>(&mut self, id: NodeId<Child>) -> RemovedNode<Child>
     where
-        T: HasChild<Child, Tag>,
+        Node: HasChild<Child, Tag>,
         Tag: Send + Sync + 'static,
         Child: ASTNode,
     {
         let child_id = id.entity();
         (&mut self.buffer).queue(move |w: &mut World| {
-            w.entity_mut(child_id).remove::<T::Relationship>();
+            w.entity_mut(child_id).remove::<Node::Relationship>();
         });
         let (slot, rx) = Slot::new(id.cast());
         self.removed.push(rx);
@@ -145,14 +145,14 @@ where
         }
     }
 
-    pub fn remove_child_unchecked<Tag>(&mut self, id: impl Erase) -> RemovedFamilyNode<T, Tag>
+    pub fn remove_child_unchecked<Tag>(&mut self, id: impl Erase) -> RemovedFamilyNode<Node, Tag>
     where
-        T: Family<Tag>,
+        Node: Family<Tag>,
         Tag: Send + Sync + 'static,
     {
         let id = id.erase();
         (&mut self.buffer).queue(move |w: &mut World| {
-            w.entity_mut(id.entity()).remove::<T::Relationship>();
+            w.entity_mut(id.entity()).remove::<Node::Relationship>();
         });
         let (slot, rx) = Slot::new(id);
         self.removed.push(rx);
@@ -165,9 +165,9 @@ where
     pub fn add_child<Child, Tag>(
         &mut self,
         id: NodeId<Child>,
-    ) -> ChainedNodeModification<T, Child, Tag, B::Reborrowed<'_>>
+    ) -> ChainedNodeModification<Node, Child, Tag, B::Reborrowed<'_>>
     where
-        T: HasChild<Child, Tag>,
+        Node: HasChild<Child, Tag>,
         Child: ASTNode,
         Tag: Send + Sync + 'static,
     {
@@ -175,7 +175,7 @@ where
         (&mut self.buffer).queue(
             AddRelatedCommand {
                 parent: self.id.cast(),
-                _phantom: PhantomData::<T::Relationship>,
+                _phantom: PhantomData::<Node::Relationship>,
             }
             .with_entity(child_id),
         );
@@ -209,17 +209,20 @@ impl<Parent, Child, Tag, B> ChainedNodeModification<Parent, Child, Tag, B>
 where
     B: Buffer,
 {
-    pub fn spawn_child<Builder, T>(
+    pub fn spawn_child<GrandChild, Properties, Clones, ChildTag>(
         &mut self,
-        builder: Builder,
-    ) -> ChainedNodeModification<Child, Builder::Node, T, B::Reborrowed<'_>>
+        builder: ConstructingNode<GrandChild, Properties, Clones>,
+    ) -> ChainedNodeModification<Child, GrandChild, ChildTag, B::Reborrowed<'_>>
     where
-        Builder: Constructed<Node: ASTNode, Properties: Bundle, Clones: Bundle>,
-        Child: HasChild<Builder::Node, T>,
-        T: Send + Sync + 'static,
+        Child: HasChild<GrandChild, ChildTag>,
+        GrandChild: ASTNode,
+        Properties: Bundle,
+        Clones: Bundle,
     {
-        let mut spawner = RelatedNodeSpawner::new(&mut self.buffer, self.child_id);
-        let node = builder.spawn(&mut spawner);
+        let node = builder.spawn(RelatedNodeSpawner::new(
+            self.buffer.reborrow(),
+            self.child_id,
+        ));
 
         ChainedNodeModification {
             buffer: self.buffer.reborrow(),

@@ -20,13 +20,10 @@ pub struct NodeBuilder<State>(State);
 pub trait Spawner<Node> {
     type Buffer: Buffer;
 
-    fn spawn_builder<Properties, Clones>(
+    fn spawn_builder<C: Constructed<Node = Node>>(
         self,
-        builder: ConstructingNode<Node, Properties, Clones>,
-    ) -> SpawnerNode<Node, Self::Buffer>
-    where
-        Properties: Bundle,
-        Clones: Bundle;
+        builder: C,
+    ) -> SpawnerNode<Node, Self::Buffer>;
 }
 
 pub trait AnonSpawner<Parent, Tag> {
@@ -36,16 +33,6 @@ pub trait AnonSpawner<Parent, Tag> {
         Parent: HasChild<Node, Tag>,
         Node: ASTNode;
 
-    fn spawn_builder<Node, Properties, Clones>(
-        self,
-        builder: ConstructingNode<Node, Properties, Clones>,
-    ) -> SpawnerNode<Node, Self::Buffer>
-    where
-        Parent: HasChild<Node, Tag>,
-        Node: ASTNode,
-        Properties: Bundle,
-        Clones: Bundle;
-
     fn into_concrete<Node>(self) -> Self::Spawner<Node>
     where
         Parent: HasChild<Node, Tag>,
@@ -53,9 +40,9 @@ pub trait AnonSpawner<Parent, Tag> {
 }
 
 pub trait Constructed: Sized {
-    type Node;
-    type Properties;
-    type Clones;
+    type Node: ASTNode;
+    type Properties: Bundle;
+    type Clones: Bundle;
 
     fn spawn_in<S>(
         self,
@@ -68,6 +55,8 @@ pub trait Constructed: Sized {
     fn spawn(self, spawner: impl Spawner<Self::Node>) -> SpawnedNode<Self::Node, ()> {
         self.spawn_in(spawner).finish()
     }
+
+    fn into_bundle(self) -> impl Bundle;
 }
 
 pub struct Constructing<Node, Properties, Clones> {
@@ -120,6 +109,7 @@ pub type SpawnerNode<Node, Buffer> = SpawnedNode<Node, RelatedNodeSpawner<Node, 
 
 impl<N, P, C> Constructed for ConstructingNode<N, P, C>
 where
+    N: ASTNode,
     P: Bundle,
     C: Bundle,
 {
@@ -134,6 +124,11 @@ where
         S: Spawner<Self::Node>,
     {
         spawner.spawn_builder(self)
+    }
+
+    #[inline]
+    fn into_bundle(self) -> impl Bundle {
+        ConstructingNode::into_bundle(self)
     }
 }
 
@@ -307,11 +302,7 @@ where
 
     #[inline]
     #[track_caller]
-    fn spawn_builder<P, C>(self, builder: ConstructingNode<N, P, C>) -> SpawnerNode<N, Self::Buffer>
-    where
-        P: Bundle,
-        C: Bundle,
-    {
+    fn spawn_builder<C: Constructed<Node = N>>(self, builder: C) -> SpawnerNode<N, Self::Buffer> {
         let bundle = builder.into_bundle();
         let (id, buffer) = (&mut self.buffer).spawn(bundle);
         buffer.queue(EnsureRequiredProperties::<N>::on(id));
@@ -333,11 +324,7 @@ where
 
     #[inline]
     #[track_caller]
-    fn spawn_builder<P, C>(self, builder: ConstructingNode<N, P, C>) -> SpawnerNode<N, Self::Buffer>
-    where
-        P: Bundle,
-        C: Bundle,
-    {
+    fn spawn_builder<C: Constructed<Node = N>>(self, builder: C) -> SpawnerNode<N, Self::Buffer> {
         let bundle = builder.into_bundle();
         let (id, buffer) = (&self.buffer).spawn(bundle);
         buffer.queue(EnsureRequiredProperties::<N>::on(id));
@@ -359,15 +346,11 @@ where
 
     #[inline]
     #[track_caller]
-    fn spawn_builder<Properties, Clones>(
+    fn spawn_builder<C: Constructed<Node = N>>(
         mut self,
-        builder: ConstructingNode<N, Properties, Clones>,
-    ) -> SpawnerNode<N, Self::Buffer>
-    where
-        Properties: Bundle,
-        Clones: Bundle,
-    {
-        let node = (&mut self).spawn_builder(builder).finish();
+        builder: C,
+    ) -> SpawnerNode<N, Self::Buffer> {
+        let node = builder.spawn(&mut self);
         NodeBuilder(Spawned {
             id: node.id,
             spawner: RelatedNodeSpawner::new(self.buffer, node.id),
@@ -385,19 +368,12 @@ where
 
     #[inline]
     #[track_caller]
-    fn spawn_builder<Ps, C>(
-        self,
-        builder: ConstructingNode<N, Ps, C>,
-    ) -> SpawnerNode<N, Self::Buffer>
-    where
-        Ps: Bundle,
-        C: Bundle,
-    {
+    fn spawn_builder<C: Constructed<Node = N>>(self, builder: C) -> SpawnerNode<N, Self::Buffer> {
         let bundle = builder.into_bundle();
         let relationship: P::Relationship = Relationship::from(self.parent_id.entity());
         let (id, buffer) = (&mut self.buffer).spawn((bundle, relationship));
         buffer
-            .queue(Propagate::<C>::to(id).from(self.parent_id))
+            .queue(Propagate::<C::Clones>::to(id).from(self.parent_id))
             .queue(EnsureRequiredProperties::<N>::on(id));
         let id = id.into();
 
@@ -418,19 +394,12 @@ where
 
     #[inline]
     #[track_caller]
-    fn spawn_builder<Ps, C>(
-        self,
-        builder: ConstructingNode<N, Ps, C>,
-    ) -> SpawnerNode<N, Self::Buffer>
-    where
-        Ps: Bundle,
-        C: Bundle,
-    {
+    fn spawn_builder<C: Constructed<Node = N>>(self, builder: C) -> SpawnerNode<N, Self::Buffer> {
         let bundle = builder.into_bundle();
         let relationship: P::Relationship = Relationship::from(self.parent_id.entity());
         let (id, buffer) = (&self.buffer).spawn((bundle, relationship));
         buffer
-            .queue(Propagate::<C>::to(id).from(self.parent_id))
+            .queue(Propagate::<C::Clones>::to(id).from(self.parent_id))
             .queue(EnsureRequiredProperties::<N>::on(id));
         let id = id.into();
 
@@ -451,15 +420,11 @@ where
 
     #[inline]
     #[track_caller]
-    fn spawn_builder<Ps, C>(
+    fn spawn_builder<C: Constructed<Node = N>>(
         mut self,
-        builder: ConstructingNode<N, Ps, C>,
-    ) -> SpawnerNode<N, Self::Buffer>
-    where
-        Ps: Bundle,
-        C: Bundle,
-    {
-        let node = builder.spawn_in(&mut self).finish();
+        builder: C,
+    ) -> SpawnerNode<N, Self::Buffer> {
+        let node = builder.spawn(&mut self);
         NodeBuilder(Spawned {
             id: node.id,
             spawner: RelatedNodeSpawner::new(self.buffer, node.id),
@@ -477,21 +442,6 @@ where
     where
         P: HasChild<Node, T>,
         Node: ASTNode;
-
-    #[inline]
-    #[track_caller]
-    fn spawn_builder<Node, Properties, Clones>(
-        self,
-        builder: ConstructingNode<Node, Properties, Clones>,
-    ) -> SpawnerNode<Node, Self::Buffer>
-    where
-        P: HasChild<Node, T>,
-        Node: ASTNode,
-        Properties: Bundle,
-        Clones: Bundle,
-    {
-        builder.spawn_in(self)
-    }
 
     #[inline]
     fn into_concrete<Node>(self) -> Self::Spawner<Node>
@@ -515,21 +465,6 @@ where
         Node: ASTNode;
 
     #[inline]
-    #[track_caller]
-    fn spawn_builder<Node, Properties, Clones>(
-        self,
-        builder: ConstructingNode<Node, Properties, Clones>,
-    ) -> SpawnerNode<Node, Self::Buffer>
-    where
-        P: HasChild<Node, T>,
-        Node: ASTNode,
-        Properties: Bundle,
-        Clones: Bundle,
-    {
-        builder.spawn_in(self)
-    }
-
-    #[inline]
     fn into_concrete<Node>(self) -> Self::Spawner<Node>
     where
         P: HasChild<Node, T>,
@@ -549,21 +484,6 @@ where
     where
         P: HasChild<Node, T>,
         Node: ASTNode;
-
-    #[inline]
-    #[track_caller]
-    fn spawn_builder<Node, Properties, Clones>(
-        self,
-        builder: ConstructingNode<Node, Properties, Clones>,
-    ) -> SpawnerNode<Node, Self::Buffer>
-    where
-        P: HasChild<Node, T>,
-        Node: ASTNode,
-        Properties: Bundle,
-        Clones: Bundle,
-    {
-        builder.spawn_in(self)
-    }
 
     #[inline]
     fn into_concrete<Node>(self) -> Self::Spawner<Node>
