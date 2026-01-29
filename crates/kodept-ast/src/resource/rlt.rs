@@ -5,7 +5,7 @@ use kodept_rlt::exported::Span;
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use kodept_rlt::traversal::{ErasedNodeBorrow, ErasedNodePtr, SyntaxNode};
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::marker::PhantomPinned;
 use std::pin::Pin;
 
@@ -78,13 +78,5 @@ impl SyntaxResolver {
             Some(x) => x.try_cast().ok_or(LookupError::WrongType),
             None => Err(LookupError::NotFound),
         }
-    }
-}
-
-impl Debug for LexemeId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("LexemeId")
-            .field("ptr", &self.0)
-            .finish_non_exhaustive()
     }
 }

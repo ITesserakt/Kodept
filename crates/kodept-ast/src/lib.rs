@@ -21,7 +21,6 @@ pub mod prelude {
 pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegistry) {
     use bevy_ecs::prelude::{ChildOf, Children};
 
-    registry.register::<properties::Lexeme>();
     registry.register::<properties::Node>();
     registry.register::<properties::SourceSpan>();
     registry.register::<properties::Name>();
