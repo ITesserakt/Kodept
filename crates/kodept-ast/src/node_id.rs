@@ -1,3 +1,4 @@
+use crate::properties::Node;
 use bevy_ecs::archetype::Archetype;
 use bevy_ecs::change_detection::Tick;
 use bevy_ecs::component::{ComponentId, Components};
@@ -398,12 +399,21 @@ where
 //         Queries with NodeId behaves as entity
 #[allow(unsafe_code)]
 unsafe impl WorldQuery for NodeId {
-    type Fetch<'w> = <Entity as WorldQuery>::Fetch<'w>;
-    type State = <Entity as WorldQuery>::State;
+    type Fetch<'w> = (
+        <Entity as WorldQuery>::Fetch<'w>,
+        <With<Node> as WorldQuery>::Fetch<'w>,
+    );
+    type State = (
+        <Entity as WorldQuery>::State,
+        <With<Node> as WorldQuery>::State,
+    );
 
     #[inline]
     fn shrink_fetch<'wlong: 'wshort, 'wshort>(fetch: Self::Fetch<'wlong>) -> Self::Fetch<'wshort> {
-        Entity::shrink_fetch(fetch)
+        (
+            Entity::shrink_fetch(fetch.0),
+            With::<Node>::shrink_fetch(fetch.1),
+        )
     }
 
     #[inline]
@@ -413,10 +423,13 @@ unsafe impl WorldQuery for NodeId {
         last_run: Tick,
         this_run: Tick,
     ) -> Self::Fetch<'w> {
-        unsafe { Entity::init_fetch(world, state, last_run, this_run) }
+        (
+            unsafe { Entity::init_fetch(world, &state.0, last_run, this_run) },
+            unsafe { With::<Node>::init_fetch(world, &state.1, last_run, this_run) },
+        )
     }
 
-    const IS_DENSE: bool = <Entity as WorldQuery>::IS_DENSE;
+    const IS_DENSE: bool = <Entity as WorldQuery>::IS_DENSE && <With<Node> as WorldQuery>::IS_DENSE;
 
     #[inline]
     unsafe fn set_archetype<'w, 's>(
@@ -425,7 +438,8 @@ unsafe impl WorldQuery for NodeId {
         archetype: &'w Archetype,
         table: &'w Table,
     ) {
-        unsafe { Entity::set_archetype(fetch, state, archetype, table) }
+        unsafe { Entity::set_archetype(&mut fetch.0, &state.0, archetype, table) };
+        unsafe { With::<Node>::set_archetype(&mut fetch.1, &state.1, archetype, table) };
     }
 
     #[inline]
@@ -434,22 +448,27 @@ unsafe impl WorldQuery for NodeId {
         state: &'s Self::State,
         table: &'w Table,
     ) {
-        unsafe { Entity::set_table(fetch, state, table) }
+        unsafe { Entity::set_table(&mut fetch.0, &state.0, table) };
+        unsafe { With::<Node>::set_table(&mut fetch.1, &state.1, table) };
     }
 
     #[inline]
     fn update_component_access(state: &Self::State, access: &mut FilteredAccess) {
-        Entity::update_component_access(state, access)
+        Entity::update_component_access(&state.0, access);
+        With::<Node>::update_component_access(&state.1, access);
     }
 
     #[inline]
     fn init_state(world: &mut World) -> Self::State {
-        Entity::init_state(world)
+        (Entity::init_state(world), With::<Node>::init_state(world))
     }
 
     #[inline]
     fn get_state(components: &Components) -> Option<Self::State> {
-        Entity::get_state(components)
+        Some((
+            Entity::get_state(components)?,
+            With::<Node>::get_state(components)?,
+        ))
     }
 
     #[inline]
@@ -457,7 +476,8 @@ unsafe impl WorldQuery for NodeId {
         state: &Self::State,
         set_contains_id: &impl Fn(ComponentId) -> bool,
     ) -> bool {
-        Entity::matches_component_set(state, set_contains_id)
+        Entity::matches_component_set(&state.0, set_contains_id)
+            && With::<Node>::matches_component_set(&state.1, set_contains_id)
     }
 }
 
@@ -492,7 +512,7 @@ unsafe impl QueryData for NodeId {
 
     #[inline]
     fn iter_access(state: &Self::State) -> impl Iterator<Item = EcsAccessType<'_>> {
-        Entity::iter_access(state)
+        Entity::iter_access(&state.0)
     }
 }
 
