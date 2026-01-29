@@ -1,3 +1,4 @@
+use crate::node_id::NodeId;
 use crate::relationship::ArityValue;
 use bevy_ecs::entity::{EntityMapper, MapEntities};
 use bevy_ecs::prelude::Entity;
@@ -35,7 +36,7 @@ pub struct Plural;
 
 impl Sealed for Singular {}
 impl Arity for Singular {
-    type Collection = Entity;
+    type Collection = NodeId;
     const VALUE: ArityValue = ArityValue::Singular;
 }
 impl Sealed for Optional {}
