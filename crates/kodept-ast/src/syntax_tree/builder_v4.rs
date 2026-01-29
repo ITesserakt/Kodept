@@ -52,6 +52,7 @@ pub trait Constructed: Sized {
         S: Spawner<Self::Node>;
 
     #[inline]
+    #[track_caller]
     fn spawn(self, spawner: impl Spawner<Self::Node>) -> SpawnedNode<Self::Node, ()> {
         self.spawn_in(spawner).finish()
     }
