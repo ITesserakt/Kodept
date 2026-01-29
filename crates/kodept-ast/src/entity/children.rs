@@ -2,7 +2,7 @@ use crate::arity::{Optional, Plural, Singular};
 use crate::prelude::{ASTNode, NodeId};
 use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::{Family, HasChild};
-use bevy_ecs::prelude::{Entity, Query, RelationshipTarget, With};
+use bevy_ecs::prelude::{Query, RelationshipTarget};
 use bevy_ecs::query::{
     QueryData, QueryEntityError, QueryFilter, QueryManyIter, ROQueryItem, ReadOnlyQueryData,
 };
@@ -14,22 +14,20 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
-use std::marker::PhantomData;
 
 type Rel<T, Tag> = <T as NodeRelationship<Tag, <T as Family<Tag>>::Arity>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
 type Container<A, T> = <A as TryFromIter>::Container<T>;
 
-pub struct Children<'w, 's, Data, T, Tag = (), Id = Entity, Filter = ()>
+pub struct Children<'w, 's, Data, T, Tag = (), Id = NodeId, Filter = ()>
 where
     Data: QueryData,
     Filter: QueryFilter,
     T: Family<Tag>,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
-    query: Query<'w, 's, (Entity, Data, &'static Rel<T, Tag>), Filter>,
+    query: Query<'w, 's, (Id, Data, &'static Rel<T, Tag>), Filter>,
     collection: &'w Target<Rel<T, Tag>>,
-    _phantom: PhantomData<Id>,
 }
 
 pub struct ChildrenIter<'w, 's, Data, R, Id, Filter>
@@ -37,12 +35,11 @@ where
     Data: QueryData,
     Filter: QueryFilter,
     R: Relationship,
-    Id: From<Entity>
+    Id: ReadOnlyQueryData
 {
-    inner: QueryManyIter<'w, 's, (Entity, Data, &'static R), Filter,
+    inner: QueryManyIter<'w, 's, (Id, Data, &'static R), Filter,
         <<R::RelationshipTarget as RelationshipTarget>::Collection as RelationshipSourceCollection>::SourceIter<'w>,
     >,
-    _phantom: PhantomData<Id>
 }
 
 #[derive(SystemParam)]
@@ -62,8 +59,8 @@ pub struct HierarchicalQuery<
     ParentData: QueryData + 'static,
     ChildData: QueryData + 'static,
 {
-    parent_query: Query<'w, 's, (Entity, ParentData, &'static Target<Rel<T, Tag>>), Filter>,
-    children_query: Query<'w, 's, (Entity, ChildData, &'static Rel<T, Tag>)>,
+    parent_query: Query<'w, 's, (NodeId<T>, ParentData, &'static Target<Rel<T, Tag>>), Filter>,
+    children_query: Query<'w, 's, (NodeId, ChildData, &'static Rel<T, Tag>)>,
 }
 
 #[derive(SystemParam)]
@@ -85,8 +82,8 @@ pub struct NarrowHierarchicalQuery<
     ParentData: QueryData + 'static,
     ChildData: QueryData + 'static,
 {
-    parent_query: Query<'w, 's, (Entity, ParentData, &'static Target<Rel<T, Tag>>), Filter>,
-    children_query: Query<'w, 's, (Entity, ChildData, &'static Rel<T, Tag>), With<U>>,
+    parent_query: Query<'w, 's, (NodeId<T>, ParentData, &'static Target<Rel<T, Tag>>), Filter>,
+    children_query: Query<'w, 's, (NodeId<U>, ChildData, &'static Rel<T, Tag>)>,
 }
 
 pub trait TryFromIter {
@@ -179,19 +176,18 @@ where
         Item = (
             NodeId<T>,
             ROQueryItem<'_, 's, ParentData>,
-            Children<'_, 's, ChildData::ReadOnly, T, Tag, Entity, ()>,
+            Children<'_, 's, ChildData::ReadOnly, T, Tag>,
         ),
     > {
         self.parent_query
             .iter()
             .map(|(parent_id, parent_data, children)| {
                 (
-                    NodeId::from(parent_id),
+                    parent_id,
                     parent_data,
                     Children {
                         collection: children,
                         query: self.children_query.as_readonly(),
-                        _phantom: PhantomData,
                     },
                 )
             })
@@ -203,9 +199,9 @@ where
     Data: QueryData,
     Filter: QueryFilter,
     T: Family<Tag>,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
-    type Item = (Id, ROQueryItem<'w, 's, Data>);
+    type Item = (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>);
     type IntoIter = ChildrenIter<'w, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -213,7 +209,6 @@ where
 
         ChildrenIter {
             inner: query.iter_many_inner(self.collection.iter()),
-            _phantom: PhantomData,
         }
     }
 }
@@ -224,16 +219,15 @@ where
     Data: QueryData,
     Filter: QueryFilter,
     T: Family<Tag>,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
-    type Item = (Id, ROQueryItem<'ww, 's, Data>);
+    type Item = (ROQueryItem<'ww, 's, Id>, ROQueryItem<'ww, 's, Data>);
     type IntoIter = ChildrenIter<'ww, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter>;
 
     fn into_iter(self) -> Self::IntoIter {
         let query = self.query.as_readonly();
         ChildrenIter {
             inner: query.iter_many_inner(self.collection.iter()),
-            _phantom: PhantomData,
         }
     }
 }
@@ -243,13 +237,13 @@ where
     Data: ReadOnlyQueryData,
     Filter: QueryFilter,
     Rel: Relationship,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
-    type Item = (Id, ROQueryItem<'w, 's, Data>);
+    type Item = (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>);
 
     fn next(&mut self) -> Option<Self::Item> {
         let value = self.inner.next()?;
-        Some((Id::from(value.0), value.1))
+        Some((value.0, value.1))
     }
 }
 
@@ -258,7 +252,7 @@ where
     Data: ReadOnlyQueryData,
     Filter: QueryFilter,
     Rel: Relationship,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
 }
 
@@ -272,11 +266,11 @@ where
             Collection: RelationshipSourceCollection<SourceIter<'w>: DoubleEndedIterator>,
         >,
     >,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let value = self.inner.next_back()?;
-        Some((Id::from(value.0), value.1))
+        Some((value.0, value.1))
     }
 }
 
@@ -285,21 +279,23 @@ where
     Data: QueryData,
     Filter: QueryFilter,
     T: Family<Tag>,
-    Id: From<Entity>,
+    Id: ReadOnlyQueryData,
 {
     #[inline]
     pub fn iter(&self) -> ChildrenIter<'_, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter> {
         self.into_iter()
     }
 
-    pub fn collect(self) -> Container<T::Arity, (Id, ROQueryItem<'w, 's, Data>)>
+    pub fn collect(
+        self,
+    ) -> Container<T::Arity, (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>)>
     where
         T::Arity: TryFromIter,
     {
         let query = self.query.into_readonly();
         let iter = query
             .iter_many_inner(self.collection.iter())
-            .map(|it| (Id::from(it.0), it.1));
+            .map(|it| (it.0, it.1));
         <T::Arity as TryFromIter>::try_from_iter(iter).unwrap()
     }
 }
@@ -321,19 +317,18 @@ where
         Item = (
             NodeId<T>,
             ROQueryItem<'_, 's, ParentData>,
-            Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>, With<U>>,
+            Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
         ),
     > {
         self.parent_query
             .iter()
             .map(|(parent_id, parent_data, children)| {
                 (
-                    NodeId::from(parent_id),
+                    parent_id,
                     parent_data,
                     Children {
                         query: self.children_query.as_readonly(),
                         collection: children,
-                        _phantom: PhantomData,
                     },
                 )
             })

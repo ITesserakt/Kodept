@@ -1,7 +1,15 @@
+use bevy_ecs::archetype::Archetype;
+use bevy_ecs::change_detection::Tick;
+use bevy_ecs::component::{ComponentId, Components};
 use bevy_ecs::entity::{ContainsEntity, EntityEquivalent, EntityMapper, MapEntities};
-use bevy_ecs::prelude::Entity;
+use bevy_ecs::prelude::{Entity, With, World};
+use bevy_ecs::query::{
+    Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, QueryData, ReadOnlyQueryData,
+    ReleaseStateQueryData, WorldQuery,
+};
 use bevy_ecs::relationship::RelationshipSourceCollection;
-use derive_more::Into;
+use bevy_ecs::storage::{Table, TableRow};
+use bevy_ecs::world::unsafe_world_cell::UnsafeWorldCell;
 use std::borrow::Borrow;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
@@ -34,10 +42,8 @@ impl<T: Erase> Erase<Entity> for T {
     }
 }
 
-#[derive(Into)]
 pub struct NodeId<T = ()> {
     entity: Entity,
-    #[into(ignore)]
     _phantom: PhantomData<T>,
 }
 
@@ -221,3 +227,288 @@ impl<T> MapEntities for NodeId<T> {
         self.entity.map_entities(entity_mapper)
     }
 }
+
+impl<T> From<NodeId<T>> for Entity {
+    #[inline(always)]
+    fn from(value: NodeId<T>) -> Self {
+        value.entity
+    }
+}
+
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId behaves as entity with `With<T>` constrain
+#[allow(unsafe_code)]
+unsafe impl<T> WorldQuery for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+{
+    type Fetch<'w> = (
+        <Entity as WorldQuery>::Fetch<'w>,
+        <With<T> as WorldQuery>::Fetch<'w>,
+    );
+    type State = (
+        <Entity as WorldQuery>::State,
+        <With<T> as WorldQuery>::State,
+    );
+
+    #[inline]
+    fn shrink_fetch<'wlong: 'wshort, 'wshort>(fetch: Self::Fetch<'wlong>) -> Self::Fetch<'wshort> {
+        (
+            Entity::shrink_fetch(fetch.0),
+            With::<T>::shrink_fetch(fetch.1),
+        )
+    }
+
+    #[inline]
+    unsafe fn init_fetch<'w, 's>(
+        world: UnsafeWorldCell<'w>,
+        state: &'s Self::State,
+        last_run: Tick,
+        this_run: Tick,
+    ) -> Self::Fetch<'w> {
+        (
+            unsafe { Entity::init_fetch(world, &state.0, last_run, this_run) },
+            unsafe { With::<T>::init_fetch(world, &state.1, last_run, this_run) },
+        )
+    }
+
+    const IS_DENSE: bool = <Entity as WorldQuery>::IS_DENSE && <With<T> as WorldQuery>::IS_DENSE;
+
+    #[inline]
+    unsafe fn set_archetype<'w, 's>(
+        fetch: &mut Self::Fetch<'w>,
+        state: &'s Self::State,
+        archetype: &'w Archetype,
+        table: &'w Table,
+    ) {
+        unsafe { Entity::set_archetype(&mut fetch.0, &state.0, archetype, table) };
+        unsafe { With::<T>::set_archetype(&mut fetch.1, &state.1, archetype, table) };
+    }
+
+    #[inline]
+    unsafe fn set_table<'w, 's>(
+        fetch: &mut Self::Fetch<'w>,
+        state: &'s Self::State,
+        table: &'w Table,
+    ) {
+        unsafe { Entity::set_table(&mut fetch.0, &state.0, table) };
+        unsafe { With::<T>::set_table(&mut fetch.1, &state.1, table) };
+    }
+
+    #[inline]
+    fn update_component_access(state: &Self::State, access: &mut FilteredAccess) {
+        Entity::update_component_access(&state.0, access);
+        With::<T>::update_component_access(&state.1, access);
+    }
+
+    #[inline]
+    fn init_state(world: &mut World) -> Self::State {
+        (Entity::init_state(world), With::<T>::init_state(world))
+    }
+
+    #[inline]
+    fn get_state(components: &Components) -> Option<Self::State> {
+        Some((
+            Entity::get_state(components)?,
+            With::<T>::get_state(components)?,
+        ))
+    }
+
+    #[inline]
+    fn matches_component_set(
+        state: &Self::State,
+        set_contains_id: &impl Fn(ComponentId) -> bool,
+    ) -> bool {
+        Entity::matches_component_set(&state.0, set_contains_id)
+            && With::<T>::matches_component_set(&state.1, set_contains_id)
+    }
+}
+
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId<T> behaves as entity with `With<T>` constrain
+#[allow(unsafe_code)]
+unsafe impl<T> QueryData for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+{
+    const IS_READ_ONLY: bool = <Entity as QueryData>::IS_READ_ONLY;
+    const IS_ARCHETYPAL: bool = <Entity as QueryData>::IS_ARCHETYPAL;
+    type ReadOnly = Self;
+    type Item<'w, 's> = NodeId<T>;
+
+    #[inline]
+    fn shrink<'wlong: 'wshort, 'wshort, 's>(
+        item: Self::Item<'wlong, 's>,
+    ) -> Self::Item<'wshort, 's> {
+        item
+    }
+
+    #[inline]
+    fn provide_extra_access(
+        _state: &mut Self::State,
+        _access: &mut Access,
+        _available_access: &Access,
+    ) {
+        Entity::provide_extra_access(&mut _state.0, _access, _available_access);
+    }
+
+    #[inline]
+    unsafe fn fetch<'w, 's>(
+        _: &'s Self::State,
+        _: &mut Self::Fetch<'w>,
+        entity: Entity,
+        _: TableRow,
+    ) -> Option<Self::Item<'w, 's>> {
+        Some(NodeId {
+            entity,
+            _phantom: PhantomData,
+        })
+    }
+
+    #[inline]
+    fn iter_access(state: &Self::State) -> impl Iterator<Item = EcsAccessType<'_>> {
+        Entity::iter_access(&state.0)
+    }
+}
+
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId<T> behaves as entity with `With<T>` constrain
+#[allow(unsafe_code)]
+unsafe impl<T> ReadOnlyQueryData for NodeId<T> where T: crate::prelude::ASTNode {}
+
+impl<T> ReleaseStateQueryData for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+    Entity: ReleaseStateQueryData,
+{
+    #[inline]
+    fn release_state<'w>(item: Self::Item<'w, '_>) -> Self::Item<'w, 'static> {
+        item
+    }
+}
+
+impl<T> ArchetypeQueryData for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+    Entity: ArchetypeQueryData,
+{
+}
+
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId behaves as entity
+#[allow(unsafe_code)]
+unsafe impl WorldQuery for NodeId {
+    type Fetch<'w> = <Entity as WorldQuery>::Fetch<'w>;
+    type State = <Entity as WorldQuery>::State;
+
+    #[inline]
+    fn shrink_fetch<'wlong: 'wshort, 'wshort>(fetch: Self::Fetch<'wlong>) -> Self::Fetch<'wshort> {
+        Entity::shrink_fetch(fetch)
+    }
+
+    #[inline]
+    unsafe fn init_fetch<'w, 's>(
+        world: UnsafeWorldCell<'w>,
+        state: &'s Self::State,
+        last_run: Tick,
+        this_run: Tick,
+    ) -> Self::Fetch<'w> {
+        unsafe { Entity::init_fetch(world, state, last_run, this_run) }
+    }
+
+    const IS_DENSE: bool = <Entity as WorldQuery>::IS_DENSE;
+
+    #[inline]
+    unsafe fn set_archetype<'w, 's>(
+        fetch: &mut Self::Fetch<'w>,
+        state: &'s Self::State,
+        archetype: &'w Archetype,
+        table: &'w Table,
+    ) {
+        unsafe { Entity::set_archetype(fetch, state, archetype, table) }
+    }
+
+    #[inline]
+    unsafe fn set_table<'w, 's>(
+        fetch: &mut Self::Fetch<'w>,
+        state: &'s Self::State,
+        table: &'w Table,
+    ) {
+        unsafe { Entity::set_table(fetch, state, table) }
+    }
+
+    #[inline]
+    fn update_component_access(state: &Self::State, access: &mut FilteredAccess) {
+        Entity::update_component_access(state, access)
+    }
+
+    #[inline]
+    fn init_state(world: &mut World) -> Self::State {
+        Entity::init_state(world)
+    }
+
+    #[inline]
+    fn get_state(components: &Components) -> Option<Self::State> {
+        Entity::get_state(components)
+    }
+
+    #[inline]
+    fn matches_component_set(
+        state: &Self::State,
+        set_contains_id: &impl Fn(ComponentId) -> bool,
+    ) -> bool {
+        Entity::matches_component_set(state, set_contains_id)
+    }
+}
+
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId behaves as entity
+#[allow(unsafe_code)]
+unsafe impl QueryData for NodeId {
+    const IS_READ_ONLY: bool = <Entity as QueryData>::IS_READ_ONLY;
+    const IS_ARCHETYPAL: bool = <Entity as QueryData>::IS_ARCHETYPAL;
+    type ReadOnly = Self;
+    type Item<'w, 's> = NodeId;
+
+    #[inline]
+    fn shrink<'wlong: 'wshort, 'wshort, 's>(
+        item: Self::Item<'wlong, 's>,
+    ) -> Self::Item<'wshort, 's> {
+        item
+    }
+
+    #[inline]
+    unsafe fn fetch<'w, 's>(
+        _: &'s Self::State,
+        _: &mut Self::Fetch<'w>,
+        entity: Entity,
+        _: TableRow,
+    ) -> Option<Self::Item<'w, 's>> {
+        Some(NodeId {
+            entity,
+            _phantom: PhantomData,
+        })
+    }
+
+    #[inline]
+    fn iter_access(state: &Self::State) -> impl Iterator<Item = EcsAccessType<'_>> {
+        Entity::iter_access(state)
+    }
+}
+
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId behaves as entity
+#[allow(unsafe_code)]
+unsafe impl ReadOnlyQueryData for NodeId {}
+
+impl ReleaseStateQueryData for NodeId
+where
+    Entity: ReleaseStateQueryData,
+{
+    #[inline]
+    fn release_state<'w>(item: Self::Item<'w, '_>) -> Self::Item<'w, 'static> {
+        item
+    }
+}
+
+impl ArchetypeQueryData for NodeId where Entity: ArchetypeQueryData {}
