@@ -8,6 +8,7 @@ pub trait Buffer {
 
     fn reborrow(&mut self) -> Self::Reborrowed<'_>;
 
+    #[track_caller]
     fn spawn(self, bundle: impl Bundle) -> (Entity, Self);
     fn queue<T>(self, action: impl Command<T> + HandleError<T>) -> Self;
 }

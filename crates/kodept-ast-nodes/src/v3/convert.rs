@@ -1,13 +1,13 @@
 use crate::v3::dispatch::Dispatcher;
-use crate::v3::tags::*;
 use crate::v3::types;
 use crate::v3::types::*;
-use bevy_ecs::prelude::Name;
-use bevy_ecs::relationship::Relationship;
-use kodept_ast::experimental::{AstBuilder, FromSyntax};
+use crate::{Condition, Lhs, Rhs};
+use kodept_ast::experimental::{Dispatch, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
-use kodept_ast::properties::{Lexeme, SourceSpan};
-use kodept_ast::syntax_tree::experimental::{Buffer, GenericSpawnContext, SpawnedIn};
+use kodept_ast::properties::{Lexeme, Name, SourceSpan};
+use kodept_ast::syntax_tree::experimental::{
+    Buffer, Constructed, NodeBuilder, Spawner, SpawnerNode,
+};
 use kodept_rlt::exported::SpanBounds;
 use kodept_rlt::prelude::*;
 use kodept_rlt::traversal::SyntaxNode;
@@ -34,12 +34,15 @@ fn type_to_unresolved_type(value: &Type, source: impl CodeHolder) -> Unresolved 
     }
 }
 
-impl FromSyntax<kodept_rlt::prelude::Module> for types::Module {
+impl<B> FromSyntax<kodept_rlt::prelude::Module, B> for types::Module
+where
+    B: Buffer,
+{
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &kodept_rlt::prelude::Module,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let (module_name, rest) = match node {
@@ -50,24 +53,26 @@ impl FromSyntax<kodept_rlt::prelude::Module> for types::Module {
                 (source.get_chunk_located(id), rest)
             }
         };
-        let mut builder = AstBuilder::new(Module)
+        let mut builder = NodeBuilder::new(Module)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Name::new(module_name))
             .with_property(Lexeme::new(node))
             .spawn_in(spawner);
 
-        builder.with_dispatches::<Dispatcher<_>, _, _>(rest.as_ref(), source)?;
+        for item in rest.iter() {
+            Dispatcher::dispatch(item, builder.spawner(), source)?;
+        }
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<Enum> for UserType {
+impl<B: Buffer> FromSyntax<Enum, B> for UserType {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &Enum,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let (name, inner) = match node {
@@ -75,7 +80,7 @@ impl FromSyntax<Enum> for UserType {
             Enum::Heap { .. } => return Err(crate::Error::Unsupported(node.bounds())),
         };
 
-        let mut builder = AstBuilder::new(UserType)
+        let mut builder = NodeBuilder::new(UserType)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Name::new(name))
             .with_property(Lexeme::new(node))
@@ -83,35 +88,30 @@ impl FromSyntax<Enum> for UserType {
 
         for variant in inner.into_iter().flat_map(|it| it.inner.as_ref()) {
             let variant_name = source.get_chunk_located(variant);
-            builder.with_dispatch_fn(variant, |node, spawner| {
-                Ok::<_, Infallible>(
-                    AstBuilder::new(TypeCtor::<Resolved> {
-                        name: CtorName::Explicit(variant_name),
-                        params: vec![],
-                    })
-                    .with_property(SourceSpan(node.bounds()))
-                    .with_property(Lexeme::new(node))
-                    .spawn_in((spawner, node))
-                    .finish_any(),
-                )
-            })?;
+            NodeBuilder::new(TypeCtor::<Resolved> {
+                name: CtorName::Explicit(variant_name),
+                params: vec![],
+            })
+            .with_property(SourceSpan(variant.bounds()))
+            .with_property(Lexeme::new(variant))
+            .spawn_in(&mut builder.spawner());
         }
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<Struct> for UserType {
+impl<B: Buffer> FromSyntax<Struct, B> for UserType {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &Struct,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
 
-        let mut builder = AstBuilder::new(UserType)
+        let mut builder = NodeBuilder::new(UserType)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Name::new(name))
             .with_property(Lexeme::new(node))
@@ -126,38 +126,31 @@ impl FromSyntax<Struct> for UserType {
                 ty_id: type_to_unresolved_type(&it.parameter_type, source),
             });
 
-        builder.with_dispatch_fn(node, |node, spawner| {
-            let bounds = match &node.parameters {
-                Some(x) => x.left.bounds() + x.right.bounds(),
-                None => node.id.bounds(),
-            };
+        NodeBuilder::new(TypeCtor {
+            name: CtorName::Inline,
+            params: params.collect(),
+        })
+        .with_property(SourceSpan(node.parameters.as_ref().map_or_else(
+            || node.id.bounds(),
+            |it| it.left.bounds() + it.right.bounds(),
+        )))
+        .with_property(Lexeme::new(&node.id))
+        .spawn_in(&mut builder.spawner());
 
-            Ok::<_, Infallible>(
-                AstBuilder::new(TypeCtor {
-                    name: CtorName::Inline,
-                    params: params.collect(),
-                })
-                .with_property(SourceSpan(bounds))
-                .with_property(Lexeme::new(node))
-                .spawn_in((spawner, node))
-                .finish_any(),
-            )
-        })?;
-
-        if let Some(body) = &node.body {
-            builder.with_children::<_, UserFunction<_>, _>(body.inner.as_ref(), source)?;
+        for func in node.body.iter().flat_map(|it| it.inner.as_ref()) {
+            UserFunction::from_syntax(func, builder.spawner(), source)?;
         }
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<BodiedFunction> for UserFunction<Option<Unresolved>> {
+impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<Option<Unresolved>> {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &BodiedFunction,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let name = source.get_chunk_located(&node.id);
@@ -166,7 +159,7 @@ impl FromSyntax<BodiedFunction> for UserFunction<Option<Unresolved>> {
             .as_ref()
             .map(|it| type_to_unresolved_type(&it.1, source));
 
-        let mut builder = AstBuilder::new(UserFunction {
+        let mut builder = NodeBuilder::new(UserFunction {
             params: node
                 .params
                 .iter()
@@ -206,83 +199,103 @@ impl FromSyntax<BodiedFunction> for UserFunction<Option<Unresolved>> {
                 expression: BlockLevelNode::Block(node),
                 ..
             } => {
-                builder.with_dispatch_fn(node, |node, spawner| {
-                    let mut builder = AstBuilder::new(Block)
-                        .with_property(SourceSpan(node.bounds()))
-                        .with_property(Lexeme::new(node))
-                        .spawn_in((spawner, node));
-
-                    builder.with_dispatch_fn(node, |node, spawner| {
-                        Ok::<_, crate::Error>(
-                            AstBuilder::new(Link)
-                                .with_property(SourceSpan(node.bounds()))
-                                .with_property(Lexeme::new(node))
-                                .spawn_in((spawner, node))
-                                .with_child::<_, Block, _>(node, source)?
-                                .finish_any(),
-                        )
-                    })?;
-
-                    Ok::<_, crate::Error>(builder.finish_any())
-                })?;
+                Block::from_syntax(node, builder.spawner(), source)?;
             }
             Body::Simplified {
                 expression: BlockLevelNode::Operation(node),
                 ..
             } => {
-                builder.with_dispatch_fn(node, |node, spawner| {
-                    let mut builder = AstBuilder::new(Block)
-                        .with_property(SourceSpan(node.bounds()))
-                        .with_property(Lexeme::new(node))
-                        .spawn_in((spawner, node));
+                let mut builder = NodeBuilder::new(Block)
+                    .with_property(SourceSpan(node.bounds()))
+                    .with_property(Lexeme::new(node))
+                    .spawn_in(builder.spawner());
 
-                    builder.with_dispatch_fn(node, |node, spawner| {
-                        Ok::<_, crate::Error>(
-                            AstBuilder::new(Link)
-                                .with_property(SourceSpan(node.bounds()))
-                                .with_property(Lexeme::new(node))
-                                .spawn_in((spawner, node))
-                                .with_dispatch::<Dispatcher<_>, _, _>(node, source)?
-                                .finish_any(),
-                        )
-                    })?;
+                let mut builder = NodeBuilder::new(Link)
+                    .clone_property::<SourceSpan>()
+                    .clone_property::<Lexeme>()
+                    .spawn_in(builder.spawner());
 
-                    Ok::<_, crate::Error>(builder.finish_any())
-                })?;
+                Dispatcher::<Operation>::dispatch(node, builder.spawner(), source)?;
             }
             Body::Block(list) => {
-                builder.with_child::<_, Block, _>(list, source)?;
+                Block::from_syntax(list, builder.spawner(), source)?;
             }
         };
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<ExpressionBlock> for Block {
+impl<B: Buffer> FromSyntax<ExpressionBlock, B> for Block {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &ExpressionBlock,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let mut builder = AstBuilder::new(Block)
+        let mut builder = NodeBuilder::new(Block)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Lexeme::new(node))
             .spawn_in(spawner);
 
-        builder.with_dispatches::<Dispatcher<_>, _, _>(node.expression.as_ref(), source)?;
+        for statement in node.expression.iter() {
+            Dispatcher::<BlockLevelNode>::dispatch(statement, builder.spawner(), source)?;
+        }
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<InitializedVariable> for super::types::Variable<Option<Unresolved>> {
+impl<B: Buffer> FromSyntax<Term, B> for Value<Unresolved> {
+    type Error = Infallible;
+
+    fn from_syntax(
+        node: &Term,
+        spawner: impl Spawner<Self, Buffer = B>,
+        source: impl CodeHolder,
+    ) -> Result<NodeId<Self>, Self::Error> {
+        let value = match node {
+            Term::Reference(x) => Value {
+                inner: Unresolved::Named {
+                    ident: source.get_chunk_located(x),
+                    context: Path::empty(false),
+                },
+            },
+            Term::ContextualReference(x) => Value {
+                inner: Unresolved::Named {
+                    ident: source.get_chunk_located(&x.inner),
+                    context: (&x.context, source).into(),
+                },
+            },
+            Term::Constant(x) => Value {
+                inner: Unresolved::Named {
+                    ident: source.get_chunk_located(x),
+                    context: Path::empty(false),
+                },
+            },
+            Term::ContextualConstant(x) => Value {
+                inner: Unresolved::Named {
+                    ident: source.get_chunk_located(&x.inner),
+                    context: (&x.context, source).into(),
+                },
+            },
+        };
+
+        let builder = NodeBuilder::new(value)
+            .with_property(SourceSpan(node.bounds()))
+            .with_property(Lexeme::new(node))
+            .spawn_in(spawner);
+
+        Ok(builder.id())
+    }
+}
+
+impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Option<Unresolved>> {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &InitializedVariable,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let (name, mutable, annotation) = match &node.variable {
@@ -294,7 +307,7 @@ impl FromSyntax<InitializedVariable> for super::types::Variable<Option<Unresolve
             } => (source.get_chunk_located(id), true, assigned_type),
         };
 
-        let mut builder = AstBuilder::new(super::types::Variable {
+        let mut builder = NodeBuilder::new(super::types::Variable {
             mutable,
             annotation: annotation
                 .as_ref()
@@ -305,42 +318,43 @@ impl FromSyntax<InitializedVariable> for super::types::Variable<Option<Unresolve
         .with_property(Name::new(name))
         .spawn_in(spawner);
 
-        builder.with_dispatch::<Dispatcher<_>, _, _>(&node.expression, source)?;
+        Dispatcher::<Operation>::dispatch(&node.expression, builder.spawner(), source)?;
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<Application> for Call {
+impl<B: Buffer> FromSyntax<Application, B> for Call {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &Application,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let mut builder = AstBuilder::new(Call)
+        let mut builder = NodeBuilder::new(Call)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Lexeme::new(node))
             .spawn_in(spawner);
-        builder.with_dispatch::<Dispatcher<_>, Lhs, _>(&node.expr, source)?;
-        if let Some(params) = &node.params {
-            builder.with_dispatches::<Dispatcher<_>, Rhs, _>(params.inner.as_ref(), source)?;
+
+        Dispatcher::<Operation>::dispatch(&node.expr, builder.spawner::<Lhs>(), source)?;
+        for param in node.params.iter().flat_map(|it| it.inner.as_ref()) {
+            Dispatcher::<Operation>::dispatch(param, builder.spawner::<Rhs>(), source)?;
         }
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<Lambda> for AnonFunction<Option<Unresolved>> {
+impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<Option<Unresolved>> {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &Lambda,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let mut builder = AstBuilder::new(AnonFunction {
+        let mut builder = NodeBuilder::new(AnonFunction {
             return_type: None,
             params: node
                 .binds
@@ -362,36 +376,33 @@ impl FromSyntax<Lambda> for AnonFunction<Option<Unresolved>> {
         .with_property(SourceSpan(node.bounds()))
         .spawn_in(spawner);
 
-        builder.with_dispatch_fn(&*node.expr, |node, spawner| {
-            Ok::<_, crate::Error>(
-                AstBuilder::new(Block)
-                    .with_property(SourceSpan(node.bounds()))
-                    .with_property(Lexeme::new(node))
-                    .spawn_in((spawner, node))
-                    .with_dispatch::<Dispatcher<_>, _, _>(node, source)?
-                    .finish_any(),
-            )
-        })?;
+        let mut block_builder = NodeBuilder::new(Block)
+            .with_property(SourceSpan(node.expr.bounds()))
+            .with_property(Lexeme::new(&*node.expr))
+            .spawn_in(builder.spawner());
 
-        Ok(builder.finish())
+        Dispatcher::<Operation>::dispatch(&*node.expr, block_builder.spawner(), source)?;
+        block_builder.finish();
+
+        Ok(builder.id())
     }
 }
 
-impl FromSyntax<IfExpr> for If {
+impl<B: Buffer> FromSyntax<IfExpr, B> for If {
     type Error = crate::Error;
 
-    fn from_syntax<B: Buffer, R: Relationship>(
+    fn from_syntax(
         node: &IfExpr,
-        spawner: GenericSpawnContext<R, B>,
+        spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let mut builder = AstBuilder::new(If)
+        let mut builder = NodeBuilder::new(If)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Lexeme::new(node))
             .spawn_in(spawner);
 
-        fn make_branch<T>(
-            builder: &mut AstBuilder<impl SpawnedIn<If>>,
+        fn make_branch<T, B: Buffer>(
+            builder: &mut SpawnerNode<If, B>,
             node: &T,
             source: impl CodeHolder,
             condition: fn(&T) -> &Operation,
@@ -400,17 +411,14 @@ impl FromSyntax<IfExpr> for If {
         where
             T: SyntaxNode,
         {
-            builder.with_dispatch_fn(node, move |node, spawner| {
-                Ok::<_, crate::Error>(
-                    AstBuilder::new(Branch)
-                        .with_property(SourceSpan(condition(node).bounds() + body(node).bounds()))
-                        .with_property(Lexeme::new(node))
-                        .spawn_in((spawner, node))
-                        .with_dispatch::<Dispatcher<_>, Condition, _>(condition(node), source)?
-                        .with_dispatch::<Dispatcher<_>, Statement, _>(body(node), source)?
-                        .finish_any(),
-                )
-            })?;
+            let condition = condition(node);
+            let body = body(node);
+            let mut builder = NodeBuilder::new(Branch)
+                .with_property(SourceSpan(condition.bounds() + body.bounds()))
+                .with_property(Lexeme::new(node))
+                .spawn_in(builder.spawner());
+            Dispatcher::<Operation>::dispatch(condition, builder.spawner::<Condition>(), source)?;
+            Dispatcher::<Body>::dispatch(body, builder.spawner(), source)?;
             Ok(())
         }
 
@@ -433,18 +441,13 @@ impl FromSyntax<IfExpr> for If {
         }
 
         if let Some(el) = &node.el {
-            builder.with_dispatch_fn(el, |node, spawner| {
-                Ok::<_, crate::Error>(
-                    AstBuilder::new(Otherwise)
-                        .with_property(SourceSpan(node.bounds()))
-                        .with_property(Lexeme::new(node))
-                        .spawn_in((spawner, node))
-                        .with_dispatch::<Dispatcher<_>, Statement, _>(&node.body, source)?
-                        .finish_any(),
-                )
-            })?;
+            let mut builder = NodeBuilder::new(Otherwise)
+                .with_property(SourceSpan(node.bounds()))
+                .with_property(Lexeme::new(node))
+                .spawn_in(builder.spawner());
+            Dispatcher::<Body>::dispatch(&el.body, builder.spawner(), source)?;
         }
 
-        Ok(builder.finish())
+        Ok(builder.id())
     }
 }

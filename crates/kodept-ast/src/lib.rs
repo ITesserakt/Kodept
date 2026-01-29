@@ -10,7 +10,6 @@ pub mod relationship;
 pub mod resource;
 pub mod syntax_tree;
 mod traits;
-mod utils;
 
 pub mod prelude {
     pub use super::node_id::{Erase, NodeId};
@@ -32,12 +31,11 @@ pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegist
 }
 
 pub mod experimental {
-    pub use super::syntax_tree::experimental::{AstBuilder, DispatchContext, SpawnContext};
-    pub use super::traits::{Dispatch, FromSyntax, SplitRef};
+    pub use super::traits::{Dispatch, FromSyntax};
 }
 
-#[deprecated]
-pub mod external {
+pub mod export {
+    pub use bevy_ecs;
     pub use bevy_ecs::prelude::Component;
 }
 

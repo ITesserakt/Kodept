@@ -1,11 +1,11 @@
 extern crate core;
 
-use bevy_ecs::prelude::World;
 use criterion::measurement::Measurement;
-use criterion::{criterion_group, BatchSize, Bencher, Criterion, Throughput};
+use criterion::{BatchSize, Bencher, Criterion, Throughput, criterion_group};
 use kodept_ast::experimental::FromSyntax;
+use kodept_ast::export::bevy_ecs::prelude::World;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
+use kodept_ast::syntax_tree::experimental::NodeSpawner;
 use kodept_ast_nodes::Module;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
@@ -21,7 +21,7 @@ static PARSED_FILE: LazyLock<RLT> =
     LazyLock::new(|| serde_json::from_str(SERIALIZED_RLT_CONTENTS).unwrap());
 
 fn parsed_file(modules: u64) -> SyntaxResolver {
-    let module = PARSED_FILE.0 .0.first().unwrap();
+    let module = PARSED_FILE.0.0.first().unwrap();
     let modules = (0..modules).map(|_| module.clone()).collect::<Box<_>>();
     SyntaxResolver::build(RLT(File(modules)))
 }
@@ -40,9 +40,8 @@ fn bench_fns<M: Measurement>(size: u64) -> impl FnMut(&mut Bencher<M>) {
             |(mut world, code)| {
                 let syntax = world.remove_resource::<SyntaxResolver>().unwrap();
 
-                for module in &syntax.root().0 .0 {
-                    Module::from_syntax(module, GenericSpawnContext::new(&mut world), code)
-                        .unwrap();
+                for module in &syntax.root().0.0 {
+                    Module::from_syntax(module, NodeSpawner::new(&mut world), code).unwrap();
                 }
                 world.flush();
             },

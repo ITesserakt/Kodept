@@ -1,143 +1,155 @@
-use crate::v3::tags::*;
-use crate::v3::types::*;
 use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
-use bevy_ecs::prelude::Entity;
+use crate::{
+    AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple, Unresolved,
+    UserFunction, UserType, Value, Variable,
+};
 use bigdecimal::{BigDecimal, Num};
-use kodept_ast::arity::{Arity, Plural};
-use kodept_ast::experimental::{AstBuilder, Dispatch, DispatchContext, SplitRef};
-use kodept_ast::prelude::CodeHolder;
+use kodept_ast::Str;
+use kodept_ast::experimental::{Dispatch, FromSyntax};
+use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Lexeme, SourceSpan};
 use kodept_ast::syntax_tree::children::HasChild;
-use kodept_ast::syntax_tree::experimental::{Buffer, SpawnedIn};
-use kodept_ast::Str;
+use kodept_ast::syntax_tree::experimental::{AnonSpawner, Buffer, Constructed, NodeBuilder};
 use kodept_rlt::exported::{Located, SpanBounds};
 use kodept_rlt::new_types::{BinaryOperationSymbol, UnaryOperationSymbol};
 use kodept_rlt::prelude::Literal::{Binary, Hex, Octal};
-use kodept_rlt::prelude::{BlockLevelNode, Body, Operation, Term, TopLevelNode};
+use kodept_rlt::prelude::{BlockLevelNode, Body, Expression, Operation, TopLevelNode};
 use num_bigint::BigInt;
 use std::borrow::Cow;
-use std::convert::Infallible;
+use std::marker::PhantomData;
 use std::str::FromStr;
 
-pub(super) struct Dispatcher<'a, T>(&'a T);
+pub(super) struct Dispatcher<T>(PhantomData<T>);
 
-impl<'a, T> SplitRef<'a, T> for Dispatcher<'a, T> {
-    fn split(self) -> (Self, &'a T) {
-        let reference = self.0;
-        (self, reference)
-    }
-}
-
-impl<'a> Dispatch<'a, Module, Declaration, Plural> for Dispatcher<'a, TopLevelNode> {
-    type Node = TopLevelNode;
+impl<B: Buffer> Dispatch<Module, Declaration, B> for Dispatcher<TopLevelNode> {
+    type Syntax = TopLevelNode;
     type Error = crate::Error;
 
-    fn dispatch<B: Buffer>(
-        self,
-        mut spawner: DispatchContext<B, Module, Declaration, Plural>,
+    #[inline]
+    fn dispatch(
+        node: &Self::Syntax,
+        spawner: impl AnonSpawner<Module, Declaration, Buffer = B>,
         source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
-        match self.0 {
-            TopLevelNode::Enum(node) => spawner.forward::<_, UserType>(node, source),
-            TopLevelNode::Struct(node) => spawner.forward::<_, UserType>(node, source),
+    ) -> Result<NodeId, Self::Error> {
+        match node {
+            TopLevelNode::Enum(node) => {
+                Ok(UserType::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
+            TopLevelNode::Struct(node) => {
+                Ok(UserType::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
             TopLevelNode::BodiedFunction(node) => {
-                spawner.forward::<_, UserFunction<_>>(node, source)
+                Ok(UserFunction::from_syntax(node, spawner.into_concrete(), source)?.cast())
             }
         }
     }
 }
 
-impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Body>
+impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Body>
 where
-    T: Send + Sync + 'static,
-    A: Arity,
-    R: HasChild<Block, T, Arity = A>,
-    R: HasChild<UserFunction<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<Variable<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<Value<Unresolved>, T, Arity = A>,
-    R: HasChild<Literal, T, Arity = A>,
-    R: HasChild<Tuple, T, Arity = A>,
-    R: HasChild<Call, T, Arity = A>,
-    R: HasChild<AnonFunction<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<If, T, Arity = A>,
+    P: HasChild<Variable<Option<Unresolved>>, T>,
+    P: HasChild<Block, T>,
+    P: HasChild<UserFunction<Option<Unresolved>>, T>,
+    P: HasChild<Block, T>,
+    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<If, T>,
+    P: HasChild<Literal, T>,
+    P: HasChild<Tuple, T>,
+    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<Call, T>,
 {
-    type Node = Body;
+    type Syntax = Body;
     type Error = crate::Error;
 
-    fn dispatch<B: Buffer>(
-        self,
-        mut spawner: DispatchContext<B, R, T, A>,
+    #[inline]
+    fn dispatch(
+        node: &Self::Syntax,
+        spawner: impl AnonSpawner<P, T, Buffer = B>,
         source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
-        match self.0 {
-            Body::Block(node) => spawner.forward::<_, Block>(node, source),
+    ) -> Result<NodeId, Self::Error> {
+        match node {
+            Body::Block(node) => {
+                Ok(Block::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
             Body::Simplified { expression, .. } => {
-                spawner.dispatch::<Dispatcher<_>>(expression, source)
+                Dispatcher::<BlockLevelNode>::dispatch(expression, spawner, source)
             }
         }
     }
 }
 
-impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, BlockLevelNode>
+impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<BlockLevelNode>
 where
-    R: HasChild<Block, T, Arity = A>,
-    R: HasChild<UserFunction<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<Variable<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<Value<Unresolved>, T, Arity = A>,
-    R: HasChild<Literal, T, Arity = A>,
-    R: HasChild<Tuple, T, Arity = A>,
-    R: HasChild<Call, T, Arity = A>,
-    R: HasChild<AnonFunction<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<If, T, Arity = A>,
-    T: Send + Sync + 'static,
-    A: Arity,
+    P: HasChild<Variable<Option<Unresolved>>, T>,
+    P: HasChild<Block, T>,
+    P: HasChild<UserFunction<Option<Unresolved>>, T>,
+    P: HasChild<Block, T>,
+    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<If, T>,
+    P: HasChild<Literal, T>,
+    P: HasChild<Tuple, T>,
+    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<Call, T>,
 {
-    type Node = BlockLevelNode;
+    type Syntax = BlockLevelNode;
     type Error = crate::Error;
 
-    fn dispatch<B: Buffer>(
-        self,
-        mut spawner: DispatchContext<B, R, T, A>,
+    #[inline]
+    fn dispatch(
+        node: &Self::Syntax,
+        spawner: impl AnonSpawner<P, T, Buffer = B>,
         source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
-        match self.0 {
-            BlockLevelNode::InitVar(node) => spawner.forward::<_, Variable<_>>(node, source),
-            BlockLevelNode::Block(node) => spawner.forward::<_, Block>(node, source),
-            BlockLevelNode::Function(node) => spawner.forward::<_, UserFunction<_>>(node, source),
-            BlockLevelNode::Operation(node) => spawner.dispatch::<Dispatcher<_>>(node, source),
+    ) -> Result<NodeId, Self::Error> {
+        match node {
+            BlockLevelNode::InitVar(node) => {
+                Ok(Variable::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
+            BlockLevelNode::Block(node) => {
+                Ok(Block::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
+            BlockLevelNode::Function(node) => {
+                Ok(UserFunction::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
+            BlockLevelNode::Operation(node) => {
+                Dispatcher::<Operation>::dispatch(node, spawner, source)
+            }
         }
     }
 }
 
-impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Operation>
+impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Operation>
 where
-    T: Send + Sync + 'static,
-    A: Arity,
-    R: HasChild<Block, T, Arity = A>,
-    R: HasChild<Value<Unresolved>, T, Arity = A>,
-    R: HasChild<Literal, T, Arity = A>,
-    R: HasChild<Tuple, T, Arity = A>,
-    R: HasChild<Call, T, Arity = A>,
-    R: HasChild<AnonFunction<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<If, T, Arity = A>,
+    P: HasChild<Block, T>,
+    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<If, T>,
+    P: HasChild<Literal, T>,
+    P: HasChild<Tuple, T>,
+    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<Call, T>,
 {
-    type Node = Operation;
+    type Syntax = Operation;
     type Error = crate::Error;
 
-    fn dispatch<B: Buffer>(
-        self,
-        mut spawner: DispatchContext<B, R, T, A>,
+    fn dispatch(
+        node: &Self::Syntax,
+        spawner: impl AnonSpawner<P, T, Buffer = B>,
         source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
+    ) -> Result<NodeId, Self::Error> {
         const CORE_PATH: Path = Path {
             is_global: true,
             segments: Cow::Borrowed(&[Str::Borrowed("Core"), Str::Borrowed("Traits")]),
         };
 
-        match self.0 {
-            Operation::Block(node) => spawner.forward::<_, Block>(node, source),
-            Operation::Expression(node) => spawner.dispatch::<Dispatcher<_>>(node, source),
-            Operation::Application(node) => spawner.forward::<_, Call>(node, source),
+        match node {
+            Operation::Block(node) => {
+                Ok(Block::from_syntax(node, spawner.into_concrete(), source)?.cast())
+            }
+            Operation::Expression(node) => {
+                Dispatcher::<kodept_rlt::prelude::Expression>::dispatch(node, spawner, source)
+            }
+            Operation::Application(node) => {
+                Ok(Call::from_syntax(&*node, spawner.into_concrete(), source)?.cast())
+            }
             Operation::Unary { operator, expr } => {
                 let ident = match operator {
                     UnaryOperationSymbol::Neg(_) => "neg".into(),
@@ -146,26 +158,24 @@ where
                     UnaryOperationSymbol::Plus(_) => "pos".into(),
                 };
 
-                let mut builder = AstBuilder::new(Call)
-                    .with_property(SourceSpan(self.0.bounds()))
-                    .with_property(Lexeme::new(self.0))
-                    .spawn_in((spawner, self.0));
-
-                builder.with_dispatch_fn::<_, Lhs, _, Infallible>(operator, |node, spawner| {
-                    Ok(AstBuilder::new(Value {
-                        inner: Unresolved::Named {
-                            context: CORE_PATH,
-                            ident,
-                        },
-                    })
+                let mut builder = NodeBuilder::new(Call)
                     .with_property(SourceSpan(node.bounds()))
                     .with_property(Lexeme::new(node))
-                    .spawn_in((spawner, node))
-                    .finish_any())
-                })?;
-                builder.with_dispatch::<Dispatcher<_>, Rhs, _>(expr.as_ref(), source)?;
+                    .spawn_in(spawner.into_concrete());
 
-                Ok(builder.finish_any())
+                NodeBuilder::new(Value {
+                    inner: Unresolved::Named {
+                        context: CORE_PATH,
+                        ident,
+                    },
+                })
+                .with_property(SourceSpan(operator.bounds()))
+                .with_property(Lexeme::new(operator))
+                .spawn_in(builder.spawner::<Lhs>());
+
+                Self::dispatch(&*expr, builder.spawner::<Rhs>(), source)?;
+
+                Ok(builder.id().cast())
             }
             Operation::Binary {
                 left,
@@ -196,82 +206,79 @@ where
                     }
                 };
 
-                let mut builder = AstBuilder::new(Call)
-                    .with_property(SourceSpan(self.0.bounds()))
-                    .with_property(Lexeme::new(self.0))
-                    .spawn_in((spawner, self.0));
-
-                builder.with_dispatch_fn::<_, Lhs, _, Infallible>(operation, |node, spawner| {
-                    Ok(AstBuilder::new(Value {
-                        inner: Unresolved::Named {
-                            context: CORE_PATH,
-                            ident,
-                        },
-                    })
+                let mut builder = NodeBuilder::new(Call)
                     .with_property(SourceSpan(node.bounds()))
                     .with_property(Lexeme::new(node))
-                    .spawn_in((spawner, node))
-                    .finish_any())
-                })?;
-                builder.with_dispatch::<Dispatcher<_>, Rhs, _>(left.as_ref(), source)?;
-                builder.with_dispatch::<Dispatcher<_>, Rhs, _>(right.as_ref(), source)?;
+                    .spawn_in(spawner.into_concrete());
 
-                Ok(builder.finish_any())
+                NodeBuilder::new(Value {
+                    inner: Unresolved::Named {
+                        context: CORE_PATH,
+                        ident,
+                    },
+                })
+                .with_property(SourceSpan(operation.bounds()))
+                .with_property(Lexeme::new(operation))
+                .spawn_in(builder.spawner::<Lhs>());
+
+                Self::dispatch(&*left, builder.spawner::<Rhs>(), source)?;
+                Self::dispatch(&*right, builder.spawner::<Rhs>(), source)?;
+
+                Ok(builder.id().cast())
             }
-            Operation::Access { .. } => Err(crate::Error::Unsupported(self.0.bounds())),
+            Operation::Access { .. } => Err(crate::Error::Unsupported(node.bounds())),
         }
     }
 }
 
-impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, kodept_rlt::prelude::Expression>
+impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<kodept_rlt::prelude::Expression>
 where
-    T: Send + Sync + 'static,
-    A: Arity,
-    R: HasChild<Value<Unresolved>, T, Arity = A>,
-    R: HasChild<Literal, T, Arity = A>,
-    R: HasChild<Tuple, T, Arity = A>,
-    R: HasChild<AnonFunction<Option<Unresolved>>, T, Arity = A>,
-    R: HasChild<If, T, Arity = A>,
+    P: HasChild<Literal, T>,
+    P: HasChild<Tuple, T>,
+    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<If, T>,
 {
-    type Node = kodept_rlt::prelude::Expression;
+    type Syntax = kodept_rlt::prelude::Expression;
     type Error = crate::Error;
 
-    fn dispatch<B: Buffer>(
-        self,
-        mut spawner: DispatchContext<B, R, T, A>,
+    #[inline]
+    fn dispatch(
+        node: &Self::Syntax,
+        spawner: impl AnonSpawner<P, T, Buffer = B>,
         source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
-        match self.0 {
-            kodept_rlt::prelude::Expression::Term(node) => {
-                spawner.dispatch::<Dispatcher<_>>(node, source)
+    ) -> Result<NodeId, Self::Error> {
+        match node {
+            Expression::Lambda(node) => {
+                Ok(AnonFunction::from_syntax(node, spawner.into_concrete(), source)?.cast())
             }
-            kodept_rlt::prelude::Expression::Literal(node) => {
-                spawner.dispatch::<Dispatcher<_>>(node, source)
+            Expression::Term(node) => {
+                Ok(Value::from_syntax(node, spawner.into_concrete(), source)?.cast())
             }
-            kodept_rlt::prelude::Expression::Lambda(node) => {
-                spawner.forward::<_, AnonFunction<_>>(node, source)
+            Expression::Literal(node) => {
+                Dispatcher::<kodept_rlt::prelude::Literal>::dispatch(node, spawner, source)
             }
-            kodept_rlt::prelude::Expression::If(node) => spawner.forward::<_, If>(node, source),
+            Expression::If(node) => {
+                Ok(If::from_syntax(&*node, spawner.into_concrete(), source)?.cast())
+            }
         }
     }
 }
 
-impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, kodept_rlt::prelude::Literal>
+impl<P, T, B> Dispatch<P, T, B> for Dispatcher<kodept_rlt::prelude::Literal>
 where
-    T: Send + Sync + 'static,
-    A: Arity,
-    R: HasChild<Literal, T, Arity = A>,
-    R: HasChild<Tuple, T, Arity = A>,
+    P: HasChild<Tuple, T>,
+    P: HasChild<Literal, T>,
+    B: Buffer,
 {
-    type Node = kodept_rlt::prelude::Literal;
+    type Syntax = kodept_rlt::prelude::Literal;
     type Error = crate::Error;
 
-    fn dispatch<B: Buffer>(
-        self,
-        spawner: DispatchContext<B, R, T, A>,
+    fn dispatch(
+        node: &Self::Syntax,
+        spawner: impl AnonSpawner<P, T, Buffer = B>,
         source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
-        let node = self.0;
+    ) -> Result<NodeId, Self::Error> {
         let text = source.get_chunk_located(node);
         let value = match node {
             kodept_rlt::prelude::Literal::String(_) => {
@@ -309,7 +316,7 @@ where
                 }
             }
             Binary(point) | Hex(point) | Octal(point) if text.len() < 3 => {
-                return Err(WrongLiteralLength(*point, 3))
+                return Err(WrongLiteralLength(*point, 3));
             }
             Binary(point) => BigInt::from_str_radix(&text[2..], 2)
                 .map_err(|e| CannotParseInt(*point, e))
@@ -321,73 +328,19 @@ where
                 .map_err(|e| CannotParseInt(*point, e))
                 .map(Literal::Integer)?,
             kodept_rlt::prelude::Literal::Tuple(items) => {
-                return Ok(AstBuilder::new(Tuple)
+                return Ok(NodeBuilder::new(Tuple)
                     .with_property(SourceSpan(items.left.bounds() + items.right.bounds()))
                     .with_property(Lexeme::new(node))
-                    .spawn_in((spawner, node))
-                    .with_dispatches::<Dispatcher<_>, _, _>(items.inner.as_ref(), source)?
-                    .finish_any())
+                    .spawn_in(spawner.into_concrete())
+                    .id()
+                    .cast());
             }
         };
-        Ok(AstBuilder::new(value)
+        Ok(NodeBuilder::new(value)
             .with_property(SourceSpan(node.bounds()))
             .with_property(Lexeme::new(node))
-            .spawn_in((spawner, node))
-            .finish_any())
-    }
-}
-
-impl<'a, R, T, A> Dispatch<'a, R, T, A> for Dispatcher<'a, Term>
-where
-    T: Send + Sync + 'static,
-    A: Arity,
-    R: HasChild<Value<Unresolved>, T, Arity = A>,
-{
-    type Node = Term;
-    type Error = crate::Error;
-
-    fn dispatch<B: Buffer>(
-        self,
-        spawner: DispatchContext<B, R, T, A>,
-        source: impl CodeHolder,
-    ) -> Result<Entity, Self::Error> {
-        let value = match self.0 {
-            Term::Reference(x) => Value {
-                inner: Unresolved::Named {
-                    ident: source.get_chunk_located(x),
-                    context: Path::empty(false),
-                },
-            },
-            Term::ContextualReference(x) => Value {
-                inner: Unresolved::Named {
-                    ident: source.get_chunk_located(&x.inner),
-                    context: (&x.context, source).into(),
-                },
-            },
-            Term::Constant(x) => Value {
-                inner: Unresolved::Named {
-                    ident: source.get_chunk_located(x),
-                    context: Path::empty(false),
-                },
-            },
-            Term::ContextualConstant(x) => Value {
-                inner: Unresolved::Named {
-                    ident: source.get_chunk_located(&x.inner),
-                    context: (&x.context, source).into(),
-                },
-            },
-        };
-        let builder = AstBuilder::new(value)
-            .with_property(SourceSpan(self.0.bounds()))
-            .with_property(Lexeme::new(self.0))
-            .spawn_in((spawner, self.0));
-
-        Ok(builder.finish_any())
-    }
-}
-
-impl<'a, T> From<&'a T> for Dispatcher<'a, T> {
-    fn from(value: &'a T) -> Self {
-        Self(value)
+            .spawn_in(spawner.into_concrete())
+            .id()
+            .cast())
     }
 }

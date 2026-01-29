@@ -1,9 +1,9 @@
-use bevy_ecs::prelude::Component;
-use bevy_ecs::prelude::{Entity, Name};
 use bigdecimal::BigDecimal;
-use kodept_ast::prelude::CodeHolder;
-use kodept_ast::properties::Node;
 use kodept_ast::Str;
+use kodept_ast::export::Component;
+use kodept_ast::export::bevy_ecs;
+use kodept_ast::prelude::{CodeHolder, NodeId};
+use kodept_ast::properties::{Name, Node};
 use kodept_rlt::prelude::Context;
 use num_bigint::BigInt;
 use std::borrow::Cow;
@@ -28,7 +28,7 @@ pub enum Param<T> {
     Named {
         name: Str,
         ty_id: T,
-        default_expr_id: Option<Entity>,
+        default_expr_id: Option<NodeId>,
     },
 }
 
@@ -138,7 +138,7 @@ pub enum Unresolved {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Resolved(pub Entity);
+pub struct Resolved(pub NodeId);
 
 impl NameRef for Unresolved {}
 impl NameRef for Resolved {}

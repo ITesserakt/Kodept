@@ -1,3 +1,4 @@
+use crate::v3::Link;
 use crate::v3::tags::{
     Condition, Declaration, Expression, IsDeclaration, IsExpression, IsStatement, Lhs, Rhs,
     Statement,
@@ -6,11 +7,9 @@ use crate::v3::types::{
     AnonFunction, Block, Branch, Call, ForeignFunction, If, Literal, Module, NameRef, Otherwise,
     PrimType, Tuple, TypeCtor, TypeRef, UserFunction, UserType, Value, Variable,
 };
-use crate::v3::Link;
-use bevy_ecs::prelude::Name;
 use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
-use kodept_ast::properties::{HasProperty, RequireProperty};
+use kodept_ast::properties::{HasProperty, Name, RequireProperty};
 use kodept_ast::syntax_tree::children::{Family, HasChild};
 
 impl ASTNode for Module {}

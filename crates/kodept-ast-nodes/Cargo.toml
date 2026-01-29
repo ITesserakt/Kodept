@@ -8,7 +8,6 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-bevy_ecs.workspace = true
 bigdecimal = "0.4"
 num-bigint = "0.4"
 
@@ -26,7 +25,7 @@ kodept-rlt = { version = "0.2", features = ["arbitrary", "serde"], path = "../ko
 
 [features]
 defalt = []
-parallel = ["kodept-ast/parallel", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
+parallel = ["kodept-ast/parallel"]
 reflection = ["kodept-ast/reflection"]
 
 [[bench]]

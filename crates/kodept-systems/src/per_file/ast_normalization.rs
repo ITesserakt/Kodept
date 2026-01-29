@@ -4,10 +4,9 @@ use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::ComponentIdFor;
 use bevy_ecs::prelude::Commands;
 use bevy_ecs::system::SystemParam;
-use kodept_ast::experimental::AstBuilder;
 use kodept_ast::prelude::HierarchicalQuery;
 use kodept_ast::properties::{Lexeme, SourceSpan};
-use kodept_ast::syntax_tree::experimental::NodeModification;
+use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
     AnonFunction, Block, Link, Literal, Statement, Tuple, Unresolved, UserFunction, Value, Variable,
 };
@@ -71,12 +70,12 @@ fn normalize_blocks(
         {
             modification
                 .spawn_child(
-                    AstBuilder::new(Link)
+                    NodeBuilder::new(Link)
                         .clone_property::<SourceSpan>()
                         .clone_property::<Lexeme>(),
                 )
                 .spawn_child(
-                    AstBuilder::new(Tuple)
+                    NodeBuilder::new(Tuple)
                         .clone_property::<SourceSpan>()
                         .clone_property::<Lexeme>(),
                 );
@@ -104,12 +103,12 @@ fn normalize_blocks(
             if archetype.contains(statement_component_ids.variable.get()) {
                 modification
                     .spawn_child(
-                        AstBuilder::new(Link)
+                        NodeBuilder::new(Link)
                             .with_property(*span)
                             .with_property(*lexeme),
                     )
                     .spawn_child(
-                        AstBuilder::new(Tuple)
+                        NodeBuilder::new(Tuple)
                             .with_property(*span)
                             .with_property(*lexeme),
                     );
@@ -118,7 +117,7 @@ fn normalize_blocks(
 
                 modification
                     .spawn_child(
-                        AstBuilder::new(Link)
+                        NodeBuilder::new(Link)
                             .with_property(*span)
                             .with_property(*lexeme),
                     )

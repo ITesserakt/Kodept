@@ -1,4 +1,5 @@
-use bevy_ecs::prelude::Component;
+use kodept_ast::export::Component;
+use kodept_ast::export::bevy_ecs;
 use kodept_ast::properties::Node;
 
 mod convert;
@@ -40,6 +41,6 @@ pub(super) fn register_reflection_info(
     registry.register::<Call>();
     registry.register::<If>();
     registry.register::<Branch>();
-    registry.register::<types::Otherwise>();
+    registry.register::<Otherwise>();
     registry.register::<Link>();
 }

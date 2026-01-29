@@ -1,4 +1,4 @@
-use crate::arity::{Arity, Optional, Plural, Singular};
+use crate::arity::{Arity, Optional, Singular};
 use crate::syntax_tree::children::Family;
 use bevy_ecs::component::{Component, ComponentId, Immutable};
 use bevy_ecs::entity::Entity;
@@ -24,22 +24,6 @@ pub enum ArityValue {
     Optional,
     Plural,
 }
-
-/// Type alias for a single child relationship collection.
-///
-/// Equivalent to `Contains<Tag, Singular>`. Use when a node is expected to
-/// contain exactly one child associated with `Tag`.
-pub type Node<Tag = ()> = Contains<Tag, Singular>;
-/// Type alias for a plural child relationship collection.
-///
-/// Equivalent to `Contains<Tag, Plural>`. Use when a node may contain
-/// multiple children associated with `Tag`.
-pub type Nodes<Tag = ()> = Contains<Tag, Plural>;
-/// Type alias for an optional child relationship collection.
-///
-/// Equivalent to `Contains<Tag, Optional>`. Use when a node may contain
-/// zero or one child associated with `Tag`.
-pub type MaybeNode<Tag = ()> = Contains<Tag, Optional>;
 
 /// Describes the entity that acts like a parent node for this entity
 ///

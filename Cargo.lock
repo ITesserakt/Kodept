@@ -965,7 +965,6 @@ dependencies = [
 name = "kodept-ast-nodes"
 version = "0.3.1"
 dependencies = [
- "bevy_ecs",
  "bigdecimal",
  "criterion",
  "kodept-ast",

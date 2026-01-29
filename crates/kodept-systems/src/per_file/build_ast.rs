@@ -8,7 +8,7 @@ use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Root;
 use kodept_ast::relationship::ContainedBy;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::experimental::GenericSpawnContext;
+use kodept_ast::syntax_tree::experimental::NodeSpawner;
 use kodept_ast_nodes::Error;
 use kodept_ast_nodes::{Module, Modules};
 use kodept_core::structure::CodeHolder;
@@ -44,7 +44,7 @@ fn system(
 
     for module in &root.0 {
         let module_id: NodeId<Module> =
-            Module::from_syntax(module, GenericSpawnContext::new(&mut commands), code_holder)?;
+            Module::from_syntax(module, NodeSpawner::new(&mut commands), code_holder)?;
         commands
             .entity(root_id)
             .add_one_related::<ContainedBy<(), Plural>>(module_id.entity());
