@@ -88,7 +88,7 @@ impl<B: Buffer> FromSyntax<Enum, B> for UserType {
 
         for variant in inner.into_iter().flat_map(|it| it.inner.as_ref()) {
             let variant_name = source.get_chunk_located(variant);
-            NodeBuilder::new(TypeCtor::<Resolved> {
+            NodeBuilder::new(ValueCtor::<Resolved> {
                 name: CtorName::Explicit(variant_name),
                 params: vec![],
             })
@@ -126,7 +126,7 @@ impl<B: Buffer> FromSyntax<Struct, B> for UserType {
                 ty_id: type_to_unresolved_type(&it.parameter_type, source),
             });
 
-        NodeBuilder::new(TypeCtor {
+        NodeBuilder::new(ValueCtor {
             name: CtorName::Inline,
             params: params.collect(),
         })

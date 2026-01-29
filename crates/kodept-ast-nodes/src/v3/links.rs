@@ -5,7 +5,7 @@ use crate::v3::tags::{
 };
 use crate::v3::types::{
     AnonFunction, Block, Branch, Call, ForeignFunction, If, Literal, Module, NameRef, Otherwise,
-    PrimType, Tuple, TypeCtor, TypeRef, UserFunction, UserType, Value, Variable,
+    PrimType, Tuple, TypeRef, UserFunction, UserType, Value, ValueCtor, Variable,
 };
 use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
@@ -28,10 +28,10 @@ impl Family for UserType {
 impl Family<Declaration> for UserType {
     type Arity = Plural;
 }
-impl<T: TypeRef<true>> HasChild<TypeCtor<T>, ()> for UserType {}
+impl<T: TypeRef<true>> HasChild<ValueCtor<T>, ()> for UserType {}
 impl<T: TypeRef<false>> HasChild<UserFunction<T>, Declaration> for UserType {}
 
-impl<T: TypeRef<true>> ASTNode for TypeCtor<T> {}
+impl<T: TypeRef<true>> ASTNode for ValueCtor<T> {}
 
 impl ASTNode for PrimType {}
 impl IsDeclaration for PrimType {}

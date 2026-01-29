@@ -20,8 +20,8 @@ pub(super) fn register_reflection_info(
     registry: &mut kodept_ast::resource::reflection::DebugRegistry,
 ) {
     registry.register::<UserType>();
-    registry.register::<TypeCtor<Resolved>>();
-    registry.register::<TypeCtor<Unresolved>>();
+    registry.register::<ValueCtor<Resolved>>();
+    registry.register::<ValueCtor<Unresolved>>();
     registry.register::<PrimType>();
     registry.register::<Module>();
     registry.register::<UserFunction<Option<Unresolved>>>();

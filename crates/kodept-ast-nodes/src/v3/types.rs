@@ -34,7 +34,7 @@ pub enum Param<T> {
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct TypeCtor<T> {
+pub struct ValueCtor<T> {
     pub name: CtorName,
     pub params: Vec<Param<T>>,
 }
