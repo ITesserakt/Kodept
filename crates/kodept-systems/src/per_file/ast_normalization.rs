@@ -2,13 +2,15 @@ use crate::source::collection::Reporter;
 use crate::utils::LogSystemEx;
 use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::ComponentIdFor;
-use bevy_ecs::prelude::Commands;
+use bevy_ecs::prelude::{Commands, Query};
+use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
-use kodept_ast::prelude::HierarchicalQuery;
+use kodept_ast::prelude::{HierarchicalQuery, NodeId};
 use kodept_ast::properties::{Lexeme, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Link, Literal, Statement, Tuple, Unresolved, UserFunction, Value, Variable,
+    AnonFunction, Block, Link, Literal, NormalizedBlock, Statement, Tuple, Unresolved,
+    UserFunction, Value,
 };
 use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
@@ -19,7 +21,10 @@ define_phase! {
     pub phase AstNormalizationPhase[AstNormalizationPhaseLabel];
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(normalize_blocks.trace_completion());
+        engine.add_systems((
+            normalize_blocks.trace_completion(),
+            ensure_no_non_normalized_blocks.trace_completion()
+        ).chain());
     }
 }
 
@@ -32,6 +37,15 @@ struct DanglingExpression {
     span: Span,
 }
 
+#[derive(Debug, Report)]
+#[severity("bug")]
+#[message("Unexpected non-normalized block: {}", self.id)]
+struct UnexpectedNonNormalizedBlock {
+    id: NodeId<Block>,
+    #[primary_label("this block should be normalized")]
+    span: Span,
+}
+
 #[derive(SystemParam)]
 struct StatementComponentIds<'s> {
     anon_function: ComponentIdFor<'s, AnonFunction<Option<Unresolved>>>,
@@ -39,7 +53,6 @@ struct StatementComponentIds<'s> {
     tuple: ComponentIdFor<'s, Tuple>,
     value: ComponentIdFor<'s, Value<Unresolved>>,
     user_function: ComponentIdFor<'s, UserFunction<Option<Unresolved>>>,
-    variable: ComponentIdFor<'s, Variable<Option<Unresolved>>>,
 }
 
 impl StatementComponentIds<'_> {
@@ -49,10 +62,15 @@ impl StatementComponentIds<'_> {
             || archetype.contains(self.tuple.get())
             || archetype.contains(self.value.get())
     }
+}
 
-    fn is_pure(&self, archetype: &Archetype) -> bool {
-        archetype.contains(self.user_function.get()) || archetype.contains(self.variable.get())
-    }
+fn ensure_no_non_normalized_blocks(
+    blocks: Query<(NodeId<Block>, &SourceSpan)>,
+    mut reporter: Reporter,
+) {
+    blocks
+        .iter()
+        .for_each(|(id, span)| reporter.report(UnexpectedNonNormalizedBlock { id, span: span.0 }))
 }
 
 fn normalize_blocks(
@@ -64,31 +82,9 @@ fn normalize_blocks(
     for (id, _, statements) in blocks_.iter_by_layers() {
         let mut modification = NodeModification::new(commands.reborrow(), id);
 
-        if statements
-            .iter()
-            .all(|(_, (archetype, _, _))| statement_component_ids.is_pure(archetype))
-        {
-            modification
-                .spawn_child(
-                    NodeBuilder::new(Link)
-                        .clone_property::<SourceSpan>()
-                        .clone_property::<Lexeme>(),
-                )
-                .spawn_child(
-                    NodeBuilder::new(Tuple)
-                        .clone_property::<SourceSpan>()
-                        .clone_property::<Lexeme>(),
-                );
-            continue;
-        }
-
         let mut linked = false;
         let mut dangling = false;
         for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
-            if archetype.contains(statement_component_ids.user_function.get()) {
-                continue;
-            }
-
             if statement_component_ids.is_non_normalized(archetype) && linked {
                 reporter.report(DanglingExpression { span: span.0 });
                 dangling = true;
@@ -99,8 +95,20 @@ fn normalize_blocks(
                 continue;
             }
 
-            linked = true;
-            if archetype.contains(statement_component_ids.variable.get()) {
+            if archetype.contains(statement_component_ids.user_function.get()) {
+            } else if statement_component_ids.is_non_normalized(archetype) {
+                linked = true;
+                let statement = modification.remove_child_unchecked(statement_id);
+
+                modification
+                    .spawn_child(
+                        NodeBuilder::new(Link)
+                            .with_property(*span)
+                            .with_property(*lexeme),
+                    )
+                    .add_child_unchecked(statement);
+            } else {
+                linked = true;
                 modification
                     .spawn_child(
                         NodeBuilder::new(Link)
@@ -112,16 +120,6 @@ fn normalize_blocks(
                             .with_property(*span)
                             .with_property(*lexeme),
                     );
-            } else if statement_component_ids.is_non_normalized(archetype) {
-                let statement = modification.remove_child_unchecked(statement_id);
-
-                modification
-                    .spawn_child(
-                        NodeBuilder::new(Link)
-                            .with_property(*span)
-                            .with_property(*lexeme),
-                    )
-                    .add_child_unchecked(statement);
             }
         }
 
@@ -130,7 +128,7 @@ fn normalize_blocks(
             commands
                 .entity(id.entity())
                 .remove::<Block>()
-                .insert(Block::<true>);
+                .insert(NormalizedBlock {});
         }
     }
 }
