@@ -2,14 +2,15 @@ use crate::source::collection::Reporter;
 use crate::utils::LogSystemEx;
 use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::ComponentIdFor;
-use bevy_ecs::prelude::{Commands, Query};
+use bevy_ecs::prelude::{ChildOf, Commands, Has, Insert, On, Query, With};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
+use kodept_ast::export::Component;
 use kodept_ast::prelude::{HierarchicalQuery, NodeId};
-use kodept_ast::properties::{Lexeme, SourceSpan};
+use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Link, Literal, NormalizedBlock, Statement, Tuple, Unresolved,
+    AnonFunction, Block, Link, Literal, Module, NormalizedBlock, Statement, Tuple, Unresolved,
     UserFunction, Value,
 };
 use kodept_core::code_point::Span;
@@ -25,6 +26,8 @@ define_phase! {
             normalize_blocks.trace_completion(),
             ensure_no_non_normalized_blocks.trace_completion()
         ).chain());
+
+        engine.add_observer(propagate_module_info);
     }
 }
 
@@ -55,12 +58,42 @@ struct StatementComponentIds<'s> {
     user_function: ComponentIdFor<'s, UserFunction<Option<Unresolved>>>,
 }
 
+#[derive(Debug, Component, Clone)]
+#[component(immutable)]
+pub struct InModule(pub NodeId<Module>);
+
 impl StatementComponentIds<'_> {
     fn is_non_normalized(&self, archetype: &Archetype) -> bool {
         archetype.contains(self.anon_function.get())
             || archetype.contains(self.literal.get())
             || archetype.contains(self.tuple.get())
             || archetype.contains(self.value.get())
+    }
+}
+
+fn propagate_module_info(
+    parent_changed: On<Insert, ChildOf>,
+    nodes: Query<(&ChildOf, Option<&InModule>, Has<Module>), With<Node>>,
+    mut commands: Commands,
+) {
+    let this = parent_changed.entity;
+    let mut current = this;
+    loop {
+        match nodes.get(current) {
+            Ok((_, _, true)) => {
+                commands.entity(this).insert(InModule(current.into()));
+                return;
+            }
+            Ok((_, Some(value), false)) if current != this => {
+                commands.entity(this).insert(value.clone());
+                return;
+            }
+            Ok((ChildOf(parent), _, _)) => {
+                current = *parent;
+                continue;
+            }
+            Err(_) => return,
+        }
     }
 }
 

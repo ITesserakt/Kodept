@@ -10,7 +10,6 @@ crate-type = ["dylib"]
 [dependencies]
 bevy_ecs.workspace = true
 derive_more.workspace = true
-hashbrown = "0.16.1"
 memmap2 = "0.9.8"
 tracing.workspace = true
 yoke = "0.8.0"
@@ -22,7 +21,6 @@ kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
 kodept-parse = { path = "../kodept-parse", version = "0.4" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 kodept-report-macros = { path = "../kodept-report-macros", version = "0.1" }
-kodept-rlt = { path = "../kodept-rlt", version = "0.2" }
 
 [dev-dependencies]
 tempfile = "3.23.0"
@@ -33,3 +31,4 @@ workspace = true
 [features]
 default = []
 parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std"]
+reflection = ["kodept-ast/reflection"]

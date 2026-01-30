@@ -105,10 +105,7 @@ impl<T> DerefMut for NodeId<T> {
 
 impl<T> Debug for NodeId<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("NodeId")
-            .field("entity", &self.entity)
-            .field("_phantom", &self._phantom)
-            .finish()
+        Debug::fmt(&self.entity, f)
     }
 }
 

@@ -10,6 +10,7 @@ impl Plugin for RegisterReflectionPlugin {
         let mut registry = DebugRegistry::new();
         kodept_ast_nodes::register_reflection_info(&mut registry);
         kodept_ast::register_reflection_info(&mut registry);
+        kodept_systems::register_reflection_info(&mut registry);
 
         engine.insert_resource(registry);
     }

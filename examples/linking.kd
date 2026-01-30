@@ -1,15 +1,19 @@
-module Test =>
+module Test {
+    fun main {
+        val this_is_return_value = nested(3)
+        this_is_return_value
 
-fun main {
-    val this_is_return_value = nested(3)
-    this_is_return_value
+        fun nested(x) => x
+    }
 
-    fun nested(x) => x
+    fun main2 {
+        val this_is_error = 3
+        // this_is_error
+
+        val because_return_value_is_unit = ()
+    }
 }
 
-fun main2 {
-    val this_is_error = 3
-    // this_is_error
-
-    val because_return_value_is_unit = ()
+module X {
+    struct Example
 }
