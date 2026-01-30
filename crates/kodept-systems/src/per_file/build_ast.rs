@@ -2,13 +2,11 @@ use crate::source::collection::SourceView;
 use crate::utils::{LogSystemEx, ReportSystemEx};
 use bevy_ecs::prelude::*;
 use derive_more::From;
-use kodept_ast::arity::Plural;
 use kodept_ast::experimental::FromSyntax;
 use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Root;
-use kodept_ast::relationship::ContainedBy;
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::experimental::NodeSpawner;
+use kodept_ast::syntax_tree::experimental::RelatedNodeSpawner;
 use kodept_ast_nodes::Error;
 use kodept_ast_nodes::{Module, Modules};
 use kodept_core::structure::CodeHolder;
@@ -41,13 +39,10 @@ fn system(
             Modules,
         ))
         .id();
+    let mut spawner = RelatedNodeSpawner::new(&mut commands, NodeId::<Modules>::from(root_id));
 
     for module in &root.0 {
-        let module_id: NodeId<Module> =
-            Module::from_syntax(module, NodeSpawner::new(&mut commands), code_holder)?;
-        commands
-            .entity(root_id)
-            .add_one_related::<ContainedBy<(), Plural>>(module_id.entity());
+        Module::from_syntax(module, &mut spawner, code_holder)?;
     }
 
     Ok(())

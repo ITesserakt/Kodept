@@ -1,7 +1,3 @@
-use kodept_ast::export::Component;
-use kodept_ast::export::bevy_ecs;
-use kodept_ast::properties::Node;
-
 mod convert;
 mod dispatch;
 mod links;
@@ -10,10 +6,6 @@ mod types;
 
 pub use tags::*;
 pub use types::*;
-
-#[derive(Debug, PartialEq, Component)]
-#[require(Node::of::<Self>())]
-pub struct Modules;
 
 #[cfg(feature = "reflection")]
 pub(super) fn register_reflection_info(

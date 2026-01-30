@@ -1,3 +1,4 @@
+use crate::Modules;
 use crate::v3::Link;
 use crate::v3::tags::{
     Condition, Declaration, Expression, IsDeclaration, IsExpression, IsStatement, Lhs, Rhs,
@@ -11,6 +12,12 @@ use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
 use kodept_ast::properties::{HasProperty, Name, RequireProperty};
 use kodept_ast::syntax_tree::children::{Family, HasChild};
+
+impl ASTNode for Modules {}
+impl Family for Modules {
+    type Arity = Plural;
+}
+impl HasChild<Module, ()> for Modules {}
 
 impl ASTNode for Module {}
 impl RequireProperty<Name> for Module {}

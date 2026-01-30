@@ -177,7 +177,7 @@ impl<N, P, C> ConstructingNode<N, P, C> {
         N: ASTNode,
         P: Bundle,
     {
-        (self.0.node, self.0.properties, Node::of::<N>())
+        (self.0.node, self.0.properties)
     }
 }
 

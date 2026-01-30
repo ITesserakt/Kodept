@@ -9,6 +9,10 @@ use num_bigint::BigInt;
 use std::borrow::Cow;
 
 #[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
+pub struct Modules;
+
+#[derive(Debug, PartialEq, Component)]
 #[require(Name)]
 #[require(Node::of::<Self>())]
 pub struct Module;
