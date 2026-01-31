@@ -56,6 +56,7 @@ struct StatementComponentIds<'s> {
     tuple: ComponentIdFor<'s, Tuple>,
     value: ComponentIdFor<'s, Value<Unresolved>>,
     user_function: ComponentIdFor<'s, UserFunction<Option<Unresolved>>>,
+    link: ComponentIdFor<'s, Link>,
 }
 
 #[derive(Debug, Component, Clone)]
@@ -140,6 +141,8 @@ fn normalize_blocks(
                             .with_property(*lexeme),
                     )
                     .add_child_unchecked(statement);
+            } else if archetype.contains(statement_component_ids.link.get()) {
+                linked = true;
             } else {
                 linked = true;
                 modification
