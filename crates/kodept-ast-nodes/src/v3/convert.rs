@@ -205,7 +205,7 @@ impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<Option<Unresolved
                 expression: BlockLevelNode::Operation(node),
                 ..
             } => {
-                let mut builder = NodeBuilder::new(Block)
+                let mut builder = NodeBuilder::new(Block::<false> {})
                     .with_property(SourceSpan(node.bounds()))
                     .with_property(Lexeme::new(node))
                     .spawn_in(builder.spawner());
@@ -312,10 +312,13 @@ impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Op
             annotation: annotation
                 .as_ref()
                 .map(|it| type_to_unresolved_type(&it.1, source)),
+            name: match name.as_ref() {
+                "_" => VariableName::Empty,
+                _ => VariableName::Name(name),
+            },
         })
         .with_property(SourceSpan(node.bounds()))
         .with_property(Lexeme::new(node))
-        .with_property(Name::new(name))
         .spawn_in(spawner);
 
         Dispatcher::<Operation>::dispatch(&node.expression, builder.spawner(), source)?;

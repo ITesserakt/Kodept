@@ -51,7 +51,10 @@ impl<T: TypeRef<false>> RequireProperty<Name> for UserFunction<T> {}
 impl<U: TypeRef<false>> Family for UserFunction<U> {
     type Arity = Singular;
 }
-impl<U: TypeRef<false>> HasChild<Block, ()> for UserFunction<U> {}
+impl<U: TypeRef<false>, const NORMALIZED: bool> HasChild<Block<NORMALIZED>, ()>
+    for UserFunction<U>
+{
+}
 
 impl<T: TypeRef<true>> ASTNode for ForeignFunction<T> {}
 impl<T: TypeRef<true>> IsDeclaration for ForeignFunction<T> {}
@@ -63,12 +66,14 @@ impl<T: TypeRef<false>> IsStatement for AnonFunction<T> {}
 impl<T: TypeRef<false>> Family for AnonFunction<T> {
     type Arity = Singular;
 }
-impl<T: TypeRef<false>> HasChild<Block, ()> for AnonFunction<T> {}
+impl<T: TypeRef<false>, const NORMALIZED: bool> HasChild<Block<NORMALIZED>, ()>
+    for AnonFunction<T>
+{
+}
 
 impl<T: TypeRef<false>> ASTNode for Variable<T> {}
 impl<T: TypeRef<false>> IsStatement for Variable<T> {}
 impl<T: TypeRef<false>> IsStatement<true> for Variable<T> {}
-impl<T: TypeRef<false>> RequireProperty<Name> for Variable<T> {}
 impl<T: TypeRef<false>> Family<Expression> for Variable<T> {
     type Arity = Singular;
 }

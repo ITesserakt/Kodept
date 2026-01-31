@@ -76,11 +76,11 @@ pub struct AnonFunction<T> {
 }
 
 #[derive(Debug, PartialEq, Component)]
-#[require(Name)]
 #[require(Node::of::<Self>())]
 pub struct Variable<T> {
     pub mutable: bool,
     pub annotation: T,
+    pub name: VariableName,
 }
 
 #[derive(Debug, PartialEq, Component)]
@@ -134,6 +134,12 @@ pub(super) trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
 pub struct Path {
     pub is_global: bool,
     pub segments: Cow<'static, [Str]>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum VariableName {
+    Empty,
+    Name(Str),
 }
 
 #[derive(Debug, PartialEq)]
