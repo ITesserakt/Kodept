@@ -1,9 +1,14 @@
-use crate::arity::{Optional, Plural, Singular};
+use crate::arity::{Arity, Optional, Plural, Singular};
+use crate::export::Component;
+use crate::prelude::ASTNode;
 use crate::properties::{Node, Root};
-use crate::relationship::{ArityValue, Contains, NodeRelationships, RelationshipMetadata};
+use crate::relationship::{ArityValue, NodeRelationship, NodeRelationships, RelationshipMetadata};
+use crate::syntax_tree::children::Family;
 use bevy_ecs::prelude::{Entity, EntityRef, Query, Res, Single, With};
+use bevy_ecs::relationship::Relationship;
 use bevy_ecs::system::SystemParam;
 use std::fmt::{Debug, Formatter};
+use std::marker::PhantomData;
 
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum NodeSlot<'a> {
@@ -57,7 +62,14 @@ where
                 continue;
             };
 
-            type Rel<A> = Contains<(), A>;
+            #[derive(Component)]
+            struct Helper<A: Arity>(PhantomData<A>);
+            impl<A: Arity> ASTNode for Helper<A> {}
+            impl<A: Arity> Family for Helper<A> {
+                type Arity = A;
+            }
+
+            type Rel<A> = <<Helper<A> as NodeRelationship<(), A>>::Relationship as Relationship>::RelationshipTarget;
             #[allow(unsafe_code)]
             match meta.arity() {
                 ArityValue::Singular => {
@@ -118,8 +130,10 @@ impl<'a> Debug for NodeSlot<'a> {
 #[cfg(test)]
 mod tests {
     use crate::arity::{Plural, Singular};
-    use crate::properties::{Node, Root};
-    use crate::relationship::Contains;
+    use crate::prelude::ASTNode;
+    use crate::properties::{HasProperty, Node, Root};
+    use crate::syntax_tree::builder_v4::{Constructed, NodeBuilder, NodeSpawner};
+    use crate::syntax_tree::children::{Family, HasChild};
     use crate::syntax_tree::iteration::{AllNodesQuery, NodeSlot};
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::RunSystemOnce;
@@ -130,20 +144,33 @@ mod tests {
     #[require(Node { kind: DebugName::type_name::<Self>() })]
     struct A(usize);
 
+    impl ASTNode for A {}
+    impl Family for A {
+        type Arity = Plural;
+    }
+    impl HasChild<A, ()> for A {}
+    impl HasProperty<Root> for A {}
+    impl Family<bool> for A {
+        type Arity = Singular;
+    }
+    impl HasChild<A, bool> for A {}
+
     #[test]
     fn test_nodes_iteration() {
         let mut world = World::new();
+        let associated_file = FileDescriptor::new(FileName::Anon, FileId::generate());
 
-        world.spawn((
-            A(1),
-            Root {
-                associated_file: FileDescriptor::new(FileName::Anon, FileId::generate()),
-            },
-            related!(
-                Contains < (),
-                Plural > [A(2), (A(3), related!(Contains < bool, Singular > [A(4)]))]
-            ),
-        ));
+        {
+            let mut builder = NodeBuilder::new(A(1))
+                .with_property(Root { associated_file })
+                .spawn_in(NodeSpawner::new(&mut world));
+            NodeBuilder::new(A(2)).spawn(builder.spawner::<()>());
+
+            {
+                let mut builder = NodeBuilder::new(A(3)).spawn_in(builder.spawner::<()>());
+                NodeBuilder::new(A(4)).spawn(builder.spawner::<bool>());
+            }
+        }
 
         world.run_system_once(system).unwrap();
     }

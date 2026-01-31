@@ -7,7 +7,7 @@ pub mod arity {
     pub use crate::arity::{Optional, Plural, Singular};
 }
 
-pub trait HasChild<Child, Tag>: Family<Tag>
+pub trait HasChild<Child, Tag = ()>: Family<Tag>
 where
     Self: ASTNode,
     Child: ASTNode,
