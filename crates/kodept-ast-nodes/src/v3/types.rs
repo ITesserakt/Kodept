@@ -38,7 +38,7 @@ pub enum Param<T> {
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct ValueCtor<T> {
+pub struct ValueCtor<T: TypeRef<true>> {
     pub name: CtorName,
     pub params: Vec<Param<T>>,
 }
@@ -55,7 +55,7 @@ pub struct PrimType;
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
 #[require(Node::of::<Self>())]
-pub struct UserFunction<T> {
+pub struct UserFunction<T: TypeRef<false>> {
     pub params: Vec<Param<T>>,
     pub return_type: T,
 }
@@ -63,21 +63,21 @@ pub struct UserFunction<T> {
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
 #[require(Node::of::<Self>())]
-pub struct ForeignFunction<T> {
+pub struct ForeignFunction<T: TypeRef<true>> {
     pub params: Vec<T>,
     pub return_type: T,
 }
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct AnonFunction<T> {
+pub struct AnonFunction<T: TypeRef<false>> {
     pub params: Vec<Param<T>>,
     pub return_type: T,
 }
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct Variable<T> {
+pub struct Variable<T: TypeRef<false>> {
     pub mutable: bool,
     pub annotation: T,
     pub name: VariableName,
@@ -90,7 +90,7 @@ pub type NormalizedBlock = Block<true>;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct Value<T> {
+pub struct Value<T: NameRef> {
     pub inner: T,
 }
 
@@ -127,8 +127,8 @@ pub struct Otherwise;
 #[require(Node::of::<Self>())]
 pub struct Link;
 
-pub(super) trait NameRef: Send + Sync + 'static {}
-pub(super) trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
+pub trait NameRef: Send + Sync + 'static {}
+pub trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
 
 #[derive(Debug, PartialEq)]
 pub struct Path {
