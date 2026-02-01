@@ -2,7 +2,7 @@ use crate::source::collection::Reporter;
 use crate::utils::LogSystemEx;
 use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::ComponentIdFor;
-use bevy_ecs::prelude::{ChildOf, Commands, Has, Insert, On, Query, With};
+use bevy_ecs::prelude::{Add, ChildOf, Commands, Has, Insert, On, Query, With};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
 use kodept_ast::export::Component;
@@ -101,10 +101,20 @@ fn propagate_module_info(
 fn ensure_no_non_normalized_blocks(
     blocks: Query<(NodeId<Block>, &SourceSpan)>,
     mut reporter: Reporter,
+    mut commands: Commands,
 ) {
     blocks
         .iter()
-        .for_each(|(id, span)| reporter.report(UnexpectedNonNormalizedBlock { id, span: span.0 }))
+        .for_each(|(id, span)| reporter.report(UnexpectedNonNormalizedBlock { id, span: span.0 }));
+    commands.add_observer(
+        |block_added: On<Add, Block>, spans: Query<&SourceSpan>, mut reporter: Reporter| {
+            let span = spans.get(block_added.entity).unwrap();
+            reporter.report(UnexpectedNonNormalizedBlock {
+                id: block_added.entity.into(),
+                span: span.0,
+            })
+        },
+    );
 }
 
 fn normalize_blocks(
