@@ -4,6 +4,7 @@ use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
 use kodept_core::file_name::FileDescriptor;
+use std::any::TypeId;
 use std::fmt::{Debug, Display, Formatter};
 
 pub use bevy_ecs::name::Name;
@@ -14,8 +15,10 @@ pub trait NodeProperty: Component {}
 
 #[derive(Component, Display)]
 #[component(immutable)]
+#[display("{name}")]
 pub struct Node {
-    pub kind: DebugName,
+    pub name: DebugName,
+    pub kind: TypeId,
 }
 
 #[derive(Debug, Component)]
@@ -50,10 +53,15 @@ impl<T: ASTNode> RequireProperty<SourceSpan> for T {}
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {}
 
 impl Node {
-    pub fn of<T>() -> Self {
+    pub fn of<T: ASTNode>() -> Self {
         Self {
-            kind: DebugName::type_name::<T>(),
+            name: DebugName::type_name::<T>(),
+            kind: TypeId::of::<T>(),
         }
+    }
+
+    pub fn is<T: ASTNode>(&self) -> bool {
+        self.kind == TypeId::of::<T>()
     }
 }
 

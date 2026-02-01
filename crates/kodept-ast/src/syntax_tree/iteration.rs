@@ -137,11 +137,10 @@ mod tests {
     use crate::syntax_tree::iteration::{AllNodesQuery, NodeSlot};
     use bevy_ecs::prelude::*;
     use bevy_ecs::system::RunSystemOnce;
-    use bevy_utils::prelude::DebugName;
     use kodept_core::file_name::{FileDescriptor, FileId, FileName};
 
     #[derive(Debug, Component, PartialEq)]
-    #[require(Node { kind: DebugName::type_name::<Self>() })]
+    #[require(Node::of::<Self>())]
     struct A(usize);
 
     impl ASTNode for A {}

@@ -46,44 +46,62 @@ where
 pub struct HierarchicalQuery<
     'w,
     's,
-    T,
+    Parent,
     Tag = (),
-    ParentData = &'static T,
+    ParentData = &'static Parent,
     ChildData = (),
     Filter = (),
 > where
-    T: Family<Tag>,
-    T: ASTNode,
+    Parent: Family<Tag>,
+    Parent: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
     ParentData: QueryData + 'static,
     ChildData: QueryData + 'static,
 {
-    parent_query: Query<'w, 's, (NodeId<T>, ParentData, &'static Target<Rel<T, Tag>>), Filter>,
-    children_query: Query<'w, 's, (NodeId, ChildData, &'static Rel<T, Tag>)>,
+    parent_query: Query<
+        'w,
+        's,
+        (
+            NodeId<Parent>,
+            ParentData,
+            &'static Target<Rel<Parent, Tag>>,
+        ),
+        Filter,
+    >,
+    children_query: Query<'w, 's, (NodeId, ChildData, &'static Rel<Parent, Tag>)>,
 }
 
 #[derive(SystemParam)]
 pub struct NarrowHierarchicalQuery<
     'w,
     's,
-    T,
-    U,
+    Parent,
+    Child,
     Tag = (),
-    ParentData = &'static T,
-    ChildData = &'static U,
+    ParentData = &'static Parent,
+    ChildData = &'static Child,
     Filter = (),
 > where
-    T: HasChild<U, Tag>,
-    T: ASTNode,
-    U: ASTNode,
+    Parent: HasChild<Child, Tag>,
+    Parent: ASTNode,
+    Child: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
     ParentData: QueryData + 'static,
     ChildData: QueryData + 'static,
 {
-    parent_query: Query<'w, 's, (NodeId<T>, ParentData, &'static Target<Rel<T, Tag>>), Filter>,
-    children_query: Query<'w, 's, (NodeId<U>, ChildData, &'static Rel<T, Tag>)>,
+    parent_query: Query<
+        'w,
+        's,
+        (
+            NodeId<Parent>,
+            ParentData,
+            &'static Target<Rel<Parent, Tag>>,
+        ),
+        Filter,
+    >,
+    children_query: Query<'w, 's, (NodeId<Child>, ChildData, &'static Rel<Parent, Tag>)>,
 }
 
 pub trait TryFromIter {
