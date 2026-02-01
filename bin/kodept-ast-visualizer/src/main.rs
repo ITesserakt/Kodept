@@ -19,7 +19,9 @@ use kodept_frontend::engine::{Engine, SubEngine};
 use kodept_systems::configs::{Lexer, OutputDirectory};
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
-use kodept_systems::per_file::prelude::{AstNormalizationPhase, BuildAstPhase, ParseSourcePhase};
+use kodept_systems::per_file::prelude::{
+    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, ReferenceResolutionPhase,
+};
 use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
 
@@ -138,6 +140,7 @@ fn main() -> Result<(), CompilationFailed> {
                 .install(ParseSourcePhase)
                 .install(BuildAstPhase)
                 .install(AstNormalizationPhase)
+                .install(ReferenceResolutionPhase)
                 .install(ExportAstPhase);
         }))
         .install(FinishPhase);

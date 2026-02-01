@@ -14,6 +14,10 @@ module Test {
     }
 }
 
-module X {
-    struct Example
+module Core {
+    struct Traits {
+        fun less(a, b) {
+            a(b)
+        }
+    }
 }

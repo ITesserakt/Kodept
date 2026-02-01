@@ -185,7 +185,7 @@ fn draw_node(
                     (false, true) => {
                         #[allow(unsafe_code)]
                         let node = unsafe { repr.into_inner().deref::<Node>() };
-                        let path = node.kind.shortname();
+                        let path = node.name.shortname();
                         sanitize(path, config.max_length)
                     }
                     _ => sanitize(DebugAsDisplay(repr), config.max_length),
