@@ -1,7 +1,11 @@
+mod common;
 #[cfg(feature = "graphviz")]
 mod graphviz;
 mod phase;
 mod plugins;
+#[cfg(feature = "typst")]
+mod typst;
+pub mod utils;
 
 use crate::phase::ExportAstPhase;
 use crate::plugins::Plugins;
@@ -134,6 +138,10 @@ fn main() -> Result<(), CompilationFailed> {
             {
                 engine.add_plugin(graphviz::GraphvizPlugin);
                 engine.insert_resource(cli_args.draw_config.clone());
+            }
+            #[cfg(feature = "typst")]
+            {
+                engine.add_plugin(typst::TypstPlugin);
             }
 
             engine

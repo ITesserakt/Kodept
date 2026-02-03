@@ -21,3 +21,4 @@ workspace = true
 [features]
 default = ["graphviz"]
 graphviz = []
+typst = []
