@@ -33,4 +33,6 @@ pub(super) fn register_reflection_info(
     registry.register::<ForeignFunction<ResolvedType>>();
     registry.register::<AnonFunction<TypeAnnotation>>();
     registry.register::<AnonFunction<ResolvedTypeAnnotation>>();
+    registry.register::<ValueCtor<UnresolvedType>>();
+    registry.register::<ValueCtor<ResolvedType>>();
 }
