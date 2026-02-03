@@ -31,6 +31,8 @@ pub(crate) struct Config {
     long_type_paths: bool,
     #[arg(short, long, default_value_t = 50)]
     max_length: usize,
+    #[arg(long, default_value_t = false)]
+    multiline: bool,
 }
 
 impl Plugin for GraphvizPlugin {
@@ -43,18 +45,37 @@ mod helpers {
     use std::fmt::{Debug, Display, Formatter};
     use std::io::Write;
 
-    #[repr(transparent)]
-    pub(super) struct DebugAsDisplay<T>(pub T);
+    pub(super) struct DebugAsDisplay<T> {
+        value: T,
+        fancy: bool,
+    }
 
     impl<T: Debug> Display for DebugAsDisplay<T> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{:?}", self.0)
+            Debug::fmt(self, f)
         }
     }
 
     impl<T: Debug> Debug for DebugAsDisplay<T> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{:?}", self.0)
+            if self.fancy {
+                write!(f, "{:#?}", self.value)
+            } else {
+                write!(f, "{:?}", self.value)
+            }
+        }
+    }
+
+    impl<T> DebugAsDisplay<T> {
+        pub(super) fn new(value: T) -> Self {
+            Self {
+                fancy: false,
+                value,
+            }
+        }
+
+        pub(super) fn fancy(value: T) -> Self {
+            Self { value, fancy: true }
         }
     }
 
@@ -119,11 +140,23 @@ mod helpers {
             tail = &result[offset..];
         }
 
-        if result.len() > max_len {
-            result.truncate(max_len);
-            result.push_str("...");
+        let mut lines = String::new();
+        let mut first = true;
+        for line in result.lines() {
+            if first {
+                first = false;
+            } else {
+                lines.push_str("<BR/>");
+            }
+            let line = line.replace("    ", "&nbsp;");
+            if line.len() >= max_len {
+                lines.push_str(&line[..max_len]);
+                lines.push_str("...");
+            } else {
+                lines.push_str(&line);
+            }
         }
-        result
+        lines
     }
 }
 
@@ -188,7 +221,14 @@ fn draw_node(
                         let path = node.name.shortname();
                         sanitize(path, config.max_length)
                     }
-                    _ => sanitize(DebugAsDisplay(repr), config.max_length),
+                    _ => {
+                        let render = sanitize(DebugAsDisplay::new(repr), config.max_length);
+                        if render.len() >= config.max_length && config.multiline {
+                            sanitize(DebugAsDisplay::fancy(repr), usize::MAX)
+                        } else {
+                            render
+                        }
+                    }
                 };
 
                 row(buffer, |buffer| {
@@ -202,7 +242,7 @@ fn draw_node(
                     } else {
                         write!(buffer, "{name}</td>")?;
                     }
-                    cell(buffer, |buffer| write!(buffer, "{repr}"))?;
+                    write!(buffer, "<td>{repr}</td>")?;
                     Ok(())
                 })?;
             }

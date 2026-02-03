@@ -13,6 +13,7 @@ pub struct DebugRegistry {
     mapping: HashMap<TypeId, DynDebugFn>,
 }
 
+#[derive(Copy, Clone)]
 pub struct DynDebug<'a> {
     value: Ptr<'a>,
     debug_fn: Option<DynDebugFn>,
