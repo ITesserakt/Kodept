@@ -1,4 +1,4 @@
-use crate::arity::Arity;
+use crate::arity::{Arity, Empty};
 use crate::prelude::ASTNode;
 use crate::relationship::NodeRelationship;
 use bevy_ecs::prelude::Component;
@@ -39,11 +39,13 @@ pub trait Members<Parent, Tag> {
 }
 pub enum Nothing {}
 
+impl<T: ASTNode> Family<Nothing> for T {
+    type Arity = Empty;
+    type Members = Nothing;
+}
+
 impl<Parent, Tag> Members<Parent, Tag> for Nothing {
-    type Map<M>
-        = Nothing
-    where
-        M: Mapper<Self>;
+    type Map<M: Mapper<Self>> = Nothing;
 }
 
 macro_rules! impl_for_tuple {

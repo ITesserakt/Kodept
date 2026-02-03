@@ -97,6 +97,7 @@ where
                         self.stack.push((Some((current, meta)), child));
                     }
                 }
+                ArityValue::Empty => unreachable!(),
             };
         }
 

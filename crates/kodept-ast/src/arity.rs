@@ -1,5 +1,6 @@
 use crate::node_id::NodeId;
 use crate::relationship::ArityValue;
+use crate::syntax_tree::children::Nothing;
 use bevy_ecs::entity::{EntityMapper, MapEntities};
 use bevy_ecs::prelude::Entity;
 use bevy_ecs::relationship::RelationshipSourceCollection;
@@ -19,6 +20,11 @@ pub trait Arity: Sealed + 'static + Send + Sync {
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct Option(Entity);
 
+/// Describes that parent must have no children of that type
+/// Zero-to-one relationship
+#[derive(Debug)]
+pub struct Empty;
+
 /// Describes that parent must have a single child of that type
 /// One-to-one relationship
 #[derive(Debug)]
@@ -34,6 +40,11 @@ pub struct Optional;
 #[derive(Debug)]
 pub struct Plural;
 
+impl Sealed for Empty {}
+impl Arity for Empty {
+    type Collection = Nothing;
+    const VALUE: ArityValue = ArityValue::Empty;
+}
 impl Sealed for Singular {}
 impl Arity for Singular {
     type Collection = NodeId;
@@ -130,4 +141,53 @@ impl From<Option> for std::option::Option<Entity> {
     fn from(value: Option) -> Self {
         value.into_inner()
     }
+}
+
+impl RelationshipSourceCollection for Nothing {
+    type SourceIter<'a> = std::iter::Empty<Entity>;
+
+    fn new() -> Self {
+        unreachable!("Children with `Empty` arity cannot exist")
+    }
+
+    #[inline]
+    fn with_capacity(_: usize) -> Self {
+        Self::new()
+    }
+
+    #[inline]
+    fn reserve(&mut self, _: usize) {}
+
+    #[inline]
+    fn add(&mut self, _: Entity) -> bool {
+        false
+    }
+
+    #[inline]
+    fn remove(&mut self, _: Entity) -> bool {
+        false
+    }
+
+    #[inline]
+    fn iter(&self) -> Self::SourceIter<'_> {
+        std::iter::empty()
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        0
+    }
+
+    #[inline]
+    fn clear(&mut self) {}
+
+    #[inline]
+    fn shrink_to_fit(&mut self) {}
+
+    #[inline]
+    fn extend_from_iter(&mut self, _: impl IntoIterator<Item = Entity>) {}
+}
+
+impl MapEntities for Nothing {
+    fn map_entities<E: EntityMapper>(&mut self, _: &mut E) {}
 }

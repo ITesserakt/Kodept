@@ -9,12 +9,14 @@ use std::collections::HashSet;
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 // Describes the multiplicity of a relationship between AST node entities.
 ///
+/// - `Empty`: exactly none related nodes (zero-to-one).
 /// - `Singular`: exactly one related node (one-to-one).
 /// - `Optional`: zero or one related node (zero-or-one).
 /// - `Plural`: zero or more related nodes (zero-to-many).
 ///
 /// This enum is used at runtime to register and query relationship metadata.
 pub enum ArityValue {
+    Empty,
     Singular,
     Optional,
     Plural,
