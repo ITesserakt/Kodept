@@ -1,7 +1,7 @@
 use crate::v3::dispatch::Dispatcher;
 use crate::v3::types;
 use crate::v3::types::*;
-use crate::{Condition, Lhs, Rhs};
+use crate::{Condition, Expression, Lhs, Rhs};
 use kodept_ast::experimental::{Dispatch, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Lexeme, Name, SourceSpan};
@@ -13,22 +13,22 @@ use kodept_rlt::prelude::*;
 use kodept_rlt::traversal::SyntaxNode;
 use std::convert::Infallible;
 
-fn type_to_unresolved_type(value: &Type, source: impl CodeHolder) -> Unresolved {
-    match value {
-        Type::ContextualReference(ctx, ident) => Unresolved::Named {
+fn convert_type(ty: &Type, source: impl CodeHolder) -> UnresolvedType {
+    match ty {
+        Type::ContextualReference(ctx, ident) => UnresolvedType::Named {
             context: (ctx, source).into(),
             ident: source.get_chunk_located(ident),
         },
-        Type::Reference(ident) => Unresolved::Named {
+        Type::Reference(ident) => UnresolvedType::Named {
             context: Path::empty(false),
             ident: source.get_chunk_located(ident),
         },
-        Type::Tuple(items) => Unresolved::Tuple(
+        Type::Tuple(items) => UnresolvedType::Tuple(
             items
                 .0
                 .inner
                 .iter()
-                .map(|it| type_to_unresolved_type(it, source))
+                .map(|it| TypeAnnotation::Bound(convert_type(it, source)))
                 .collect(),
         ),
     }
@@ -88,7 +88,7 @@ impl<B: Buffer> FromSyntax<Enum, B> for UserType {
 
         for variant in inner.into_iter().flat_map(|it| it.inner.as_ref()) {
             let variant_name = source.get_chunk_located(variant);
-            NodeBuilder::new(ValueCtor::<Resolved> {
+            NodeBuilder::new(ValueCtor::<ResolvedType> {
                 name: CtorName::Explicit(variant_name),
                 params: vec![],
             })
@@ -123,7 +123,7 @@ impl<B: Buffer> FromSyntax<Struct, B> for UserType {
             .flat_map(|it| it.inner.as_ref())
             .map(|it| Param::Positional {
                 name: Some(source.get_chunk_located(&it.id)),
-                ty_id: type_to_unresolved_type(&it.parameter_type, source),
+                ty_id: convert_type(&it.parameter_type, source),
             });
 
         NodeBuilder::new(ValueCtor {
@@ -145,7 +145,7 @@ impl<B: Buffer> FromSyntax<Struct, B> for UserType {
     }
 }
 
-impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<Option<Unresolved>> {
+impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<TypeAnnotation> {
     type Error = crate::Error;
 
     fn from_syntax(
@@ -157,7 +157,8 @@ impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<Option<Unresolved
         let return_type = node
             .return_type
             .as_ref()
-            .map(|it| type_to_unresolved_type(&it.1, source));
+            .map(|it| convert_type(&it.1, source))
+            .map_or(TypeAnnotation::Infer, TypeAnnotation::Bound);
 
         let mut builder = NodeBuilder::new(UserFunction {
             params: node
@@ -167,11 +168,11 @@ impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<Option<Unresolved
                 .map(|it| match it {
                     Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
                         name: Some(source.get_chunk_located(id)),
-                        ty_id: Some(type_to_unresolved_type(parameter_type, source)),
+                        ty_id: TypeAnnotation::Bound(convert_type(parameter_type, source)),
                     },
                     Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
                         name: Some(source.get_chunk_located(id)),
-                        ty_id: None,
+                        ty_id: TypeAnnotation::Infer,
                     },
                 })
                 .collect(),
@@ -246,7 +247,7 @@ impl<B: Buffer> FromSyntax<ExpressionBlock, B> for Block {
     }
 }
 
-impl<B: Buffer> FromSyntax<Term, B> for Value<Unresolved> {
+impl<B: Buffer> FromSyntax<Term, B> for Value<UnresolvedName> {
     type Error = Infallible;
 
     fn from_syntax(
@@ -256,25 +257,25 @@ impl<B: Buffer> FromSyntax<Term, B> for Value<Unresolved> {
     ) -> Result<NodeId<Self>, Self::Error> {
         let value = match node {
             Term::Reference(x) => Value {
-                inner: Unresolved::Named {
+                inner: UnresolvedName {
                     ident: source.get_chunk_located(x),
                     context: Path::empty(false),
                 },
             },
             Term::ContextualReference(x) => Value {
-                inner: Unresolved::Named {
+                inner: UnresolvedName {
                     ident: source.get_chunk_located(&x.inner),
                     context: (&x.context, source).into(),
                 },
             },
             Term::Constant(x) => Value {
-                inner: Unresolved::Named {
+                inner: UnresolvedName {
                     ident: source.get_chunk_located(x),
                     context: Path::empty(false),
                 },
             },
             Term::ContextualConstant(x) => Value {
-                inner: Unresolved::Named {
+                inner: UnresolvedName {
                     ident: source.get_chunk_located(&x.inner),
                     context: (&x.context, source).into(),
                 },
@@ -290,7 +291,7 @@ impl<B: Buffer> FromSyntax<Term, B> for Value<Unresolved> {
     }
 }
 
-impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Option<Unresolved>> {
+impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<TypeAnnotation> {
     type Error = crate::Error;
 
     fn from_syntax(
@@ -311,7 +312,8 @@ impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Op
             mutable,
             annotation: annotation
                 .as_ref()
-                .map(|it| type_to_unresolved_type(&it.1, source)),
+                .map(|it| convert_type(&it.1, source))
+                .map_or(TypeAnnotation::Infer, TypeAnnotation::Bound),
             name: match name.as_ref() {
                 "_" => VariableName::Empty,
                 _ => VariableName::Name(name),
@@ -349,7 +351,7 @@ impl<B: Buffer> FromSyntax<Application, B> for Call {
     }
 }
 
-impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<Option<Unresolved>> {
+impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<TypeAnnotation> {
     type Error = crate::Error;
 
     fn from_syntax(
@@ -358,7 +360,7 @@ impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<Option<Unresolved>> {
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
         let mut builder = NodeBuilder::new(AnonFunction {
-            return_type: None,
+            return_type: TypeAnnotation::Infer,
             params: node
                 .binds
                 .inner
@@ -366,11 +368,11 @@ impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<Option<Unresolved>> {
                 .map(|it| match it {
                     Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
                         name: Some(source.get_chunk_located(id)),
-                        ty_id: Some(type_to_unresolved_type(parameter_type, source)),
+                        ty_id: TypeAnnotation::Bound(convert_type(parameter_type, source)),
                     },
                     Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
                         name: Some(source.get_chunk_located(id)),
-                        ty_id: None,
+                        ty_id: TypeAnnotation::Infer,
                     },
                 })
                 .collect(),
@@ -421,6 +423,10 @@ impl<B: Buffer> FromSyntax<IfExpr, B> for If {
                 .with_property(Lexeme::new(node))
                 .spawn_in(builder.spawner());
             Dispatcher::<Operation>::dispatch(condition, builder.spawner::<Condition>(), source)?;
+            let mut builder = NodeBuilder::new(Block)
+                .with_property(SourceSpan(body.bounds()))
+                .with_property(Lexeme::new(body))
+                .spawn_in(builder.spawner::<Expression>());
             Dispatcher::<Body>::dispatch(body, builder.spawner(), source)?;
             Ok(())
         }
@@ -445,8 +451,12 @@ impl<B: Buffer> FromSyntax<IfExpr, B> for If {
 
         if let Some(el) = &node.el {
             let mut builder = NodeBuilder::new(Otherwise)
-                .with_property(SourceSpan(node.bounds()))
-                .with_property(Lexeme::new(node))
+                .with_property(SourceSpan(el.bounds()))
+                .with_property(Lexeme::new(el))
+                .spawn_in(builder.spawner());
+            let mut builder = NodeBuilder::new(Block)
+                .clone_property::<SourceSpan>()
+                .clone_property::<Lexeme>()
                 .spawn_in(builder.spawner());
             Dispatcher::<Body>::dispatch(&el.body, builder.spawner(), source)?;
         }

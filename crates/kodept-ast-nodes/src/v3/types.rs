@@ -143,21 +143,45 @@ pub enum VariableName {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Unresolved {
-    Named { context: Path, ident: Str },
-    Tuple(Vec<Unresolved>),
+pub struct UnresolvedName {
+    pub context: Path,
+    pub ident: Str,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Resolved(pub NodeId);
+pub enum TypeAnnotation {
+    Infer,
+    Bound(UnresolvedType),
+}
 
-impl NameRef for Unresolved {}
-impl NameRef for Resolved {}
+#[derive(Debug, PartialEq)]
+pub enum UnresolvedType {
+    Named { context: Path, ident: Str },
+    Tuple(Vec<TypeAnnotation>),
+}
 
-impl TypeRef<true> for Unresolved {}
-impl<const REQUIRED: bool> TypeRef<REQUIRED> for Resolved {}
+#[derive(Debug, PartialEq)]
+pub struct ResolvedName(pub NodeId);
 
-impl TypeRef<false> for Option<Unresolved> {}
+#[derive(Debug, PartialEq)]
+pub enum ResolvedTypeAnnotation {
+    Infer,
+    Bound(ResolvedType),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ResolvedType {
+    Named(NodeId),
+    Tuple(Vec<NodeId>),
+}
+
+impl NameRef for UnresolvedName {}
+impl NameRef for ResolvedName {}
+
+impl TypeRef<true> for UnresolvedType {}
+impl TypeRef<true> for ResolvedType {}
+impl TypeRef<false> for TypeAnnotation {}
+impl TypeRef<false> for ResolvedTypeAnnotation {}
 
 impl Path {
     pub const fn empty(is_global: bool) -> Self {

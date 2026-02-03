@@ -12,22 +12,12 @@ pub(super) fn register_reflection_info(
     registry: &mut kodept_ast::resource::reflection::DebugRegistry,
 ) {
     registry.register::<UserType>();
-    registry.register::<ValueCtor<Resolved>>();
-    registry.register::<ValueCtor<Unresolved>>();
     registry.register::<PrimType>();
     registry.register::<Module>();
-    registry.register::<UserFunction<Option<Unresolved>>>();
-    registry.register::<UserFunction<Resolved>>();
-    registry.register::<ForeignFunction<Unresolved>>();
-    registry.register::<ForeignFunction<Resolved>>();
-    registry.register::<AnonFunction<Option<Unresolved>>>();
-    registry.register::<AnonFunction<Resolved>>();
-    registry.register::<Variable<Option<Unresolved>>>();
-    registry.register::<Variable<Resolved>>();
     registry.register::<Block>();
     registry.register::<Block<true>>();
-    registry.register::<Value<Unresolved>>();
-    registry.register::<Value<Resolved>>();
+    registry.register::<Value<UnresolvedName>>();
+    registry.register::<Value<ResolvedName>>();
     registry.register::<Literal>();
     registry.register::<Tuple>();
     registry.register::<Call>();
@@ -35,4 +25,12 @@ pub(super) fn register_reflection_info(
     registry.register::<Branch>();
     registry.register::<Otherwise>();
     registry.register::<Link>();
+    registry.register::<UserFunction<TypeAnnotation>>();
+    registry.register::<UserFunction<ResolvedTypeAnnotation>>();
+    registry.register::<Variable<TypeAnnotation>>();
+    registry.register::<Variable<ResolvedTypeAnnotation>>();
+    registry.register::<ForeignFunction<UnresolvedType>>();
+    registry.register::<ForeignFunction<ResolvedType>>();
+    registry.register::<AnonFunction<TypeAnnotation>>();
+    registry.register::<AnonFunction<ResolvedTypeAnnotation>>();
 }

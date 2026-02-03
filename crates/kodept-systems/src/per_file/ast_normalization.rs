@@ -10,8 +10,8 @@ use kodept_ast::prelude::{HierarchicalQuery, NodeId};
 use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Link, Literal, Module, NormalizedBlock, Statement, Tuple, Unresolved,
-    UserFunction, Value,
+    AnonFunction, Block, Link, Literal, Module, NormalizedBlock, Statement, Tuple, TypeAnnotation,
+    UnresolvedName, UserFunction, Value,
 };
 use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
@@ -51,11 +51,11 @@ struct UnexpectedNonNormalizedBlock {
 
 #[derive(SystemParam)]
 struct StatementComponentIds<'s> {
-    anon_function: ComponentIdFor<'s, AnonFunction<Option<Unresolved>>>,
+    anon_function: ComponentIdFor<'s, AnonFunction<TypeAnnotation>>,
     literal: ComponentIdFor<'s, Literal>,
     tuple: ComponentIdFor<'s, Tuple>,
-    value: ComponentIdFor<'s, Value<Unresolved>>,
-    user_function: ComponentIdFor<'s, UserFunction<Option<Unresolved>>>,
+    value: ComponentIdFor<'s, Value<UnresolvedName>>,
+    user_function: ComponentIdFor<'s, UserFunction<TypeAnnotation>>,
     link: ComponentIdFor<'s, Link>,
 }
 
@@ -169,12 +169,8 @@ fn normalize_blocks(
             }
         }
 
-        drop(modification);
         if !dangling {
-            commands
-                .entity(id.entity())
-                .remove::<Block>()
-                .insert(NormalizedBlock {});
+            modification.transmute(NormalizedBlock {});
         }
     }
 }

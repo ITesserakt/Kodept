@@ -1,8 +1,11 @@
 use crate::arity::{Optional, Plural, Singular};
 use crate::prelude::{ASTNode, NodeId};
+use crate::properties::{HasProperty, NodeProperty, RequireProperty};
 use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::{Family, HasChild};
-use bevy_ecs::prelude::{Query, RelationshipTarget};
+use bevy_ecs::archetype::Archetype;
+use bevy_ecs::component::Mutable;
+use bevy_ecs::prelude::{Component, Mut, Query, Ref, RelationshipTarget};
 use bevy_ecs::query::{
     QueryData, QueryEntityError, QueryFilter, QueryManyIter, ROQueryItem, ReadOnlyQueryData,
 };
@@ -19,15 +22,61 @@ type Rel<T, Tag> = <T as NodeRelationship<Tag, <T as Family<Tag>>::Arity>>::Rela
 type Target<T> = <T as Relationship>::RelationshipTarget;
 type Container<A, T> = <A as TryFromIter>::Container<T>;
 
-pub struct Children<'w, 's, Data, T, Tag = (), Id = NodeId, Filter = ()>
+pub trait NodeQueryData<Of>: QueryData {}
+
+impl<T> NodeQueryData<T> for () {}
+impl<A, T> NodeQueryData<T> for (A,) where A: NodeQueryData<T> {}
+impl<A, B, T> NodeQueryData<T> for (A, B)
+where
+    A: NodeQueryData<T>,
+    B: NodeQueryData<T>,
+{
+}
+impl<A, B, C, T> NodeQueryData<T> for (A, B, C)
+where
+    A: NodeQueryData<T>,
+    B: NodeQueryData<T>,
+    C: NodeQueryData<T>,
+{
+}
+impl<T: ASTNode> NodeQueryData<T> for NodeId<T> {}
+impl<T> NodeQueryData<T> for &Archetype {}
+impl<'a, T: ASTNode> NodeQueryData<T> for Ref<'a, T> {}
+impl<'a, T> NodeQueryData<T> for Mut<'a, T> where T: ASTNode<Mutability = Mutable> {}
+impl<P, T> NodeQueryData<T> for Option<&P>
+where
+    P: NodeProperty + Component,
+    T: HasProperty<P>,
+{
+}
+impl<P, T> NodeQueryData<T> for &P
+where
+    P: NodeProperty + Component,
+    T: RequireProperty<P>,
+{
+}
+impl<P, T> NodeQueryData<T> for Option<&mut P>
+where
+    P: NodeProperty<Mutability = Mutable>,
+    T: HasProperty<P>,
+{
+}
+impl<P, T> NodeQueryData<T> for &mut P
+where
+    P: NodeProperty<Mutability = Mutable>,
+    T: RequireProperty<P>,
+{
+}
+
+pub struct Children<'w, 's, Data, Parent, Tag = (), Id = NodeId, Filter = ()>
 where
     Data: QueryData,
     Filter: QueryFilter,
-    T: Family<Tag>,
+    Parent: Family<Tag>,
     Id: ReadOnlyQueryData,
 {
-    query: Query<'w, 's, (Id, Data, &'static Rel<T, Tag>), Filter>,
-    collection: &'w Target<Rel<T, Tag>>,
+    query: Query<'w, 's, (Id, Data, &'static Rel<Parent, Tag>), Filter>,
+    collection: &'w Target<Rel<Parent, Tag>>,
 }
 
 pub struct ChildrenIter<'w, 's, Data, R, Id, Filter>
@@ -48,7 +97,7 @@ pub struct HierarchicalQuery<
     's,
     Parent,
     Tag = (),
-    ParentData = &'static Parent,
+    ParentData = Ref<'static, Parent>,
     ChildData = (),
     Filter = (),
 > where
@@ -56,7 +105,7 @@ pub struct HierarchicalQuery<
     Parent: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
-    ParentData: QueryData + 'static,
+    ParentData: NodeQueryData<Parent> + 'static,
     ChildData: QueryData + 'static,
 {
     parent_query: Query<
@@ -79,8 +128,8 @@ pub struct NarrowHierarchicalQuery<
     Parent,
     Child,
     Tag = (),
-    ParentData = &'static Parent,
-    ChildData = &'static Child,
+    ParentData = Ref<'static, Parent>,
+    ChildData = Ref<'static, Child>,
     Filter = (),
 > where
     Parent: HasChild<Child, Tag>,
@@ -88,8 +137,8 @@ pub struct NarrowHierarchicalQuery<
     Child: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
-    ParentData: QueryData + 'static,
-    ChildData: QueryData + 'static,
+    ParentData: NodeQueryData<Parent> + 'static,
+    ChildData: NodeQueryData<Child> + 'static,
 {
     parent_query: Query<
         'w,
@@ -184,7 +233,7 @@ where
     T: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
-    ParentData: QueryData + 'static,
+    ParentData: NodeQueryData<T> + 'static,
     ChildData: QueryData + 'static,
 {
     #[allow(unsafe_code)]
@@ -310,11 +359,24 @@ where
     where
         T::Arity: TryFromIter,
     {
+        self.try_collect().unwrap()
+    }
+
+    pub fn try_collect(
+        self,
+    ) -> Result<
+        Container<T::Arity, (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>)>,
+        HierarchicalError<T::Arity>,
+    >
+    where
+        T::Arity: TryFromIter,
+    {
         let query = self.query.into_readonly();
         let iter = query
             .iter_many_inner(self.collection.iter())
             .map(|it| (it.0, it.1));
-        <T::Arity as TryFromIter>::try_from_iter(iter).unwrap()
+        <T::Arity as TryFromIter>::try_from_iter(iter)
+            .map_err(|e| HierarchicalError::WrongContainerSize(e))
     }
 }
 
@@ -326,8 +388,8 @@ where
     U: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
-    ParentData: QueryData + 'static,
-    ChildData: QueryData + 'static,
+    ParentData: NodeQueryData<T> + 'static,
+    ChildData: NodeQueryData<U> + 'static,
 {
     pub fn iter_by_layers(
         &self,
@@ -353,19 +415,12 @@ where
     }
 
     /// Retrieves from world references to both parent and child by given *parent* id.
-    /// Essentially, this method costs one constant lookup into world and one iteration through all found children, so overall time complexity is `O(n)` where `n` is amount of children with respect to arity.
-    /// If arity is [`Singular`] then `n == 1` and so on.
-    ///
-    /// # Panics
-    ///
-    /// Panics if amount of found children does not conform with the arity of this relationship.
-    /// Or if there is no such parent by the given [`id`]
     pub fn get_down(
         &self,
         id: NodeId<T>,
     ) -> (
         ROQueryItem<'_, 's, ParentData>,
-        Container<T::Arity, (NodeId<U>, ROQueryItem<'_, 's, ChildData>)>,
+        Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
     )
     where
         T::Arity: TryFromIter,
@@ -374,13 +429,24 @@ where
             .expect("Cannot collect children into container")
     }
 
+    #[inline]
+    pub fn get_children(
+        &self,
+        id: NodeId<T>,
+    ) -> Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>
+    where
+        T::Arity: TryFromIter,
+    {
+        self.get_down(id).1
+    }
+
     pub fn try_get_down(
         &self,
         id: NodeId<T>,
     ) -> Result<
         (
             ROQueryItem<'_, 's, ParentData>,
-            Container<T::Arity, (NodeId<U>, ROQueryItem<'_, 's, ChildData>)>,
+            Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
         ),
         HierarchicalError<T::Arity>,
     >
@@ -388,13 +454,13 @@ where
         T::Arity: TryFromIter,
     {
         let (_, parent, children) = self.parent_query.get(id.entity())?;
-        let iter = self
-            .children_query
-            .iter_many(children.iter())
-            .map(|it| (it.0.into(), it.1));
-        let container = <T::Arity as TryFromIter>::try_from_iter(iter)
-            .map_err(HierarchicalError::WrongContainerSize)?;
-        Ok((parent, container))
+        Ok((
+            parent,
+            Children {
+                collection: children,
+                query: self.children_query.as_readonly(),
+            },
+        ))
     }
 
     /// Retrieves from world references to both parent and child by given *child* id.

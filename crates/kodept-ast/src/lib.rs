@@ -14,7 +14,9 @@ mod traits;
 pub mod prelude {
     pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, CodeHolder};
-    pub use crate::entity::children::{HierarchicalQuery, NarrowHierarchicalQuery, TryFromIter};
+    pub use crate::entity::children::{
+        HierarchicalQuery, NarrowHierarchicalQuery, NodeQueryData, TryFromIter,
+    };
 }
 
 #[cfg(feature = "reflection")]
@@ -30,7 +32,7 @@ pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegist
 }
 
 pub mod experimental {
-    pub use super::traits::{Dispatch, FromSyntax};
+    pub use super::traits::{Dispatch, FromSyntax, TransmuteInto};
 }
 
 pub mod export {

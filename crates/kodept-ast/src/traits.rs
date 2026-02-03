@@ -29,3 +29,10 @@ pub trait Dispatch<Parent, Tag, Buffer> {
 }
 
 pub trait ASTNode: Component {}
+#[allow(unsafe_code)]
+pub unsafe trait TransmuteInto<Into>
+where
+    Self: ASTNode,
+    Into: ASTNode,
+{
+}

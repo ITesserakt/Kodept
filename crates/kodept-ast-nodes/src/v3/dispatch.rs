@@ -1,7 +1,7 @@
 use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
 use crate::{
-    AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple, Unresolved,
-    UserFunction, UserType, Value, Variable,
+    AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple,
+    TypeAnnotation, UnresolvedName, UserFunction, UserType, Value, Variable,
 };
 use bigdecimal::{BigDecimal, Num};
 use kodept_ast::Str;
@@ -47,15 +47,15 @@ impl<B: Buffer> Dispatch<Module, Declaration, B> for Dispatcher<TopLevelNode> {
 
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Body>
 where
-    P: HasChild<Variable<Option<Unresolved>>, T>,
+    P: HasChild<Variable<TypeAnnotation>, T>,
     P: HasChild<Block, T>,
-    P: HasChild<UserFunction<Option<Unresolved>>, T>,
+    P: HasChild<UserFunction<TypeAnnotation>, T>,
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<AnonFunction<TypeAnnotation>, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<Value<UnresolvedName>, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = Body;
@@ -80,15 +80,15 @@ where
 
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<BlockLevelNode>
 where
-    P: HasChild<Variable<Option<Unresolved>>, T>,
+    P: HasChild<Variable<TypeAnnotation>, T>,
     P: HasChild<Block, T>,
-    P: HasChild<UserFunction<Option<Unresolved>>, T>,
+    P: HasChild<UserFunction<TypeAnnotation>, T>,
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<AnonFunction<TypeAnnotation>, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<Value<UnresolvedName>, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = BlockLevelNode;
@@ -120,11 +120,11 @@ where
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Operation>
 where
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<AnonFunction<TypeAnnotation>, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<Unresolved>, T>,
+    P: HasChild<Value<UnresolvedName>, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = Operation;
@@ -164,7 +164,7 @@ where
                     .spawn_in(spawner.into_concrete());
 
                 NodeBuilder::new(Value {
-                    inner: Unresolved::Named {
+                    inner: UnresolvedName {
                         context: CORE_PATH,
                         ident,
                     },
@@ -212,7 +212,7 @@ where
                     .spawn_in(spawner.into_concrete());
 
                 NodeBuilder::new(Value {
-                    inner: Unresolved::Named {
+                    inner: UnresolvedName {
                         context: CORE_PATH,
                         ident,
                     },
@@ -235,8 +235,8 @@ impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<kodept_rlt::prelude::Expr
 where
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<Unresolved>, T>,
-    P: HasChild<AnonFunction<Option<Unresolved>>, T>,
+    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<AnonFunction<TypeAnnotation>, T>,
     P: HasChild<If, T>,
 {
     type Syntax = kodept_rlt::prelude::Expression;
@@ -328,12 +328,16 @@ where
                 .map_err(|e| CannotParseInt(*point, e))
                 .map(Literal::Integer)?,
             kodept_rlt::prelude::Literal::Tuple(items) => {
-                return Ok(NodeBuilder::new(Tuple)
+                let mut builder = NodeBuilder::new(Tuple)
                     .with_property(SourceSpan(items.left.bounds() + items.right.bounds()))
                     .with_property(Lexeme::new(node))
-                    .spawn_in(spawner.into_concrete())
-                    .id()
-                    .cast());
+                    .spawn_in(spawner.into_concrete());
+
+                for item in items.inner.as_ref() {
+                    Dispatcher::<Operation>::dispatch(item, builder.spawner(), source)?;
+                }
+
+                return Ok(builder.id().cast());
             }
         };
         Ok(NodeBuilder::new(value)

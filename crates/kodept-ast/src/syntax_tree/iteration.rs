@@ -3,7 +3,7 @@ use crate::export::Component;
 use crate::prelude::ASTNode;
 use crate::properties::{Node, Root};
 use crate::relationship::{ArityValue, NodeRelationship, NodeRelationships, RelationshipMetadata};
-use crate::syntax_tree::children::Family;
+use crate::syntax_tree::children::{Family, Nothing};
 use bevy_ecs::prelude::{Entity, EntityRef, Query, Res, Single, With};
 use bevy_ecs::relationship::Relationship;
 use bevy_ecs::system::SystemParam;
@@ -67,6 +67,7 @@ where
             impl<A: Arity> ASTNode for Helper<A> {}
             impl<A: Arity> Family for Helper<A> {
                 type Arity = A;
+                type Members = Nothing;
             }
 
             type Rel<A> = <<Helper<A> as NodeRelationship<(), A>>::Relationship as Relationship>::RelationshipTarget;
@@ -146,11 +147,13 @@ mod tests {
     impl ASTNode for A {}
     impl Family for A {
         type Arity = Plural;
+        type Members = (A,);
     }
     impl HasChild<A, ()> for A {}
     impl HasProperty<Root> for A {}
     impl Family<bool> for A {
         type Arity = Singular;
+        type Members = (A,);
     }
     impl HasChild<A, bool> for A {}
 

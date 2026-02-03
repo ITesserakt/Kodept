@@ -951,6 +951,7 @@ dependencies = [
  "kodept-rlt",
  "rayon",
  "smallvec",
+ "tracing",
 ]
 
 [[package]]
@@ -1115,6 +1116,7 @@ dependencies = [
  "kodept-parse",
  "kodept-report",
  "kodept-report-macros",
+ "kodept-rlt",
  "memmap2",
  "tempfile",
  "tracing",

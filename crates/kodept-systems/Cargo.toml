@@ -21,6 +21,7 @@ kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
 kodept-parse = { path = "../kodept-parse", version = "0.4" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 kodept-report-macros = { path = "../kodept-report-macros", version = "0.1" }
+kodept-rlt = { path = "../kodept-rlt", version = "0.2" }
 
 [dev-dependencies]
 tempfile = "3.23.0"

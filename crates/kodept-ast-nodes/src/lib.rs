@@ -1,6 +1,8 @@
 //! This crate contains actual AST nodes used in Kodept with appropriate
 //! conversion implementation from RLT nodes.
 
+extern crate core;
+
 use bigdecimal::ParseBigDecimalError;
 use kodept_rlt::exported::CodePoint;
 use num_bigint::ParseBigIntError;

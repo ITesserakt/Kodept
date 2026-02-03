@@ -1,0 +1,9 @@
+module Test =>
+
+fun a() {
+	val a = (1, 2, 3)
+	val b = (a, 2, 3)
+	val c = ((a, b), 3)
+	val d = (a, (b, ), c)
+	val e = (a, b, c)
+}

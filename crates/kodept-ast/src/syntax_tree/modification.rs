@@ -1,8 +1,10 @@
 use crate::node_id::Erase;
 use crate::prelude::{ASTNode, NodeId};
+use crate::properties::{HasProperty, NodeProperty};
 use crate::syntax_tree::buffer::Buffer;
 use crate::syntax_tree::builder_v4::{Constructed, ConstructingNode, RelatedNodeSpawner};
 use crate::syntax_tree::children::{Family, HasChild};
+use crate::traits::TransmuteInto;
 use bevy_ecs::error::CommandWithEntity;
 use bevy_ecs::prelude::{
     Bundle, ChildOf, EntityCommand, EntityWorldMut, RelationshipTarget, World,
@@ -10,6 +12,7 @@ use bevy_ecs::prelude::{
 use bevy_ecs::relationship::{OrderedRelationshipSourceCollection, Relationship};
 use derive_more::{Display, Error};
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 
 pub struct NodeModification<T, B: Buffer> {
     buffer: B,
@@ -185,6 +188,49 @@ where
             buffer: self.buffer.reborrow(),
             _phantom: PhantomData,
         }
+    }
+
+    pub fn transmute<Into>(self, value: Into) -> NodeModification<Into, B>
+    where
+        Node: TransmuteInto<Into>,
+        Into: ASTNode,
+    {
+        #[allow(unsafe_code)]
+        let (id, buffer, removed) = match *ManuallyDrop::new(self) {
+            NodeModification {
+                ref id,
+                ref buffer,
+                ref removed,
+            } => unsafe {
+                (
+                    <*const _>::read(id),
+                    <*const _>::read(buffer),
+                    <*const _>::read(removed),
+                )
+            },
+        };
+
+        let this = id.entity();
+        let buffer = buffer.queue(move |world: &mut World| {
+            world.entity_mut(this).remove::<Node>().insert(value);
+        });
+        NodeModification {
+            id: id.cast(),
+            buffer,
+            removed,
+        }
+    }
+
+    pub fn add_property<Property>(&mut self, value: Property) -> &mut Self
+    where
+        Node: HasProperty<Property>,
+        Property: NodeProperty,
+    {
+        let this = self.id.entity();
+        (&mut self.buffer).queue(move |world: &mut World| {
+            world.entity_mut(this).insert(value);
+        });
+        self
     }
 }
 
