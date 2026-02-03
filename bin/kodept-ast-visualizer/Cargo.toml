@@ -6,7 +6,7 @@ rust-version.workspace = true
 
 [dependencies]
 bevy_ecs.workspace = true
-bevy_utils = { version = "0.17", default-features = false, features = ["debug"] }
+bevy_utils.workspace = true
 clap = { version = "4.5", features = ["derive", "env"] }
 
 kodept-ast = { path = "../../crates/kodept-ast", version = "0.7", features = ["reflection"] }

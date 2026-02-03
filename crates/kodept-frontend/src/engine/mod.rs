@@ -1,15 +1,46 @@
 use crate::engine::function_impls::InlineFunctionPhase;
 use crate::engine::reporter::CompilationFailed;
+use crate::prelude::Global;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
 use bevy_ecs::system::{IntoObserverSystem, ScheduleSystem};
+use kodept_report::codespan::external::{ColorChoice, Config, DisplayStyle};
+use kodept_report::message::Severity;
+use kodept_report::prelude::{CodespanSettings, Diagnostic, Report, Reportable, ad_hoc_message};
+use std::any::Any;
+use std::backtrace::{Backtrace, BacktraceStatus};
+use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::panic::AssertUnwindSafe;
+use std::sync::OnceLock;
 
 pub mod macros;
 pub mod reporter;
 pub mod utils;
+
+#[derive(Debug)]
+enum Location {
+    Unknown,
+    Known {
+        filename: String,
+        column: u32,
+        line: u32,
+    },
+}
+
+impl Display for Location {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Location::Unknown => write!(f, "<unknown>:1:1"),
+            Location::Known {
+                filename,
+                column,
+                line,
+            } => write!(f, "{filename}:{line}:{column}"),
+        }
+    }
+}
 
 #[derive(ScheduleLabel, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct Startup;
@@ -156,16 +187,71 @@ impl Engine {
     }
 
     pub fn run(&mut self) -> Result<(), CompilationFailed> {
+        static PANIC_LOCATION: OnceLock<Location> = OnceLock::new();
+        static PANIC_BACKTRACE: OnceLock<Backtrace> = OnceLock::new();
+        std::panic::set_hook(Box::new(|info| {
+            let location = info.location();
+            _ = PANIC_LOCATION.set(location.map_or(Location::Unknown, |it| Location::Known {
+                filename: it.file().to_string(),
+                column: it.column(),
+                line: it.line(),
+            }));
+            _ = PANIC_BACKTRACE.set(Backtrace::capture());
+        }));
+
         let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
             self.engine_world.run_schedule(Startup);
         }));
         if let Err(error) = result {
-            match error.downcast::<CompilationFailed>() {
-                Ok(stop) => return Err(*stop),
-                Err(e) => std::panic::resume_unwind(e),
-            }
+            Self::report_panic(
+                error,
+                PANIC_LOCATION.get_or_init(|| Location::Unknown),
+                PANIC_BACKTRACE.get_or_init(|| Backtrace::disabled()),
+            );
+            return Err(CompilationFailed);
         }
         Ok(())
+    }
+
+    #[inline]
+    fn report_panic(error: Box<dyn Any + Send>, location: &Location, backtrace: &Backtrace) {
+        let payload = if let Some(s) = error.downcast_ref::<&str>() {
+            Some(s.to_string())
+        } else if let Some(s) = error.downcast_ref::<String>() {
+            Some(s.to_string())
+        } else if let Some(_) = error.downcast_ref::<CompilationFailed>() {
+            return;
+        } else {
+            None
+        };
+
+        let report = Report::from_message(
+            (),
+            ad_hoc_message(|| {
+                let mut diagnostic = Diagnostic::new(Severity::Bug)
+                    .with_message("Unknown internal error occurred")
+                    .with_note(format!("panicked at {}", location))
+                    .with_note(payload.unwrap_or(String::from("<unknown>")));
+                diagnostic = match backtrace.status() {
+                    BacktraceStatus::Captured => {
+                        diagnostic.with_note(format!("Backtrace:\n{}", backtrace))
+                    }
+                    BacktraceStatus::Disabled => {
+                        diagnostic.with_note("Enable backtrace with RUST_BACKTRACE=1")
+                    }
+                    _ => diagnostic,
+                };
+                diagnostic
+            }),
+        );
+        let mut settings = CodespanSettings::stderr(
+            Config {
+                display_style: DisplayStyle::Medium,
+                ..Config::default()
+            },
+            ColorChoice::AlwaysAnsi,
+        );
+        _ = report.emit(&mut settings, &Global);
     }
 
     fn with_schedule(&mut self, label: impl ScheduleLabel, callback: impl FnOnce(&mut Schedule)) {
