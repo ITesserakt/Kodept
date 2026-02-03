@@ -8,12 +8,12 @@ use kodept_ast::export::Component;
 use kodept_ast::prelude::{ASTNode, Erase, HierarchicalQuery, NodeId, NodeQueryData};
 use kodept_ast::properties::{HasProperty, Lexeme, NodeProperty, RequireProperty, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::children::{Family, MembersOf, Wrapper};
+use kodept_ast::syntax_tree::children::{Family, MembersOf, Nothing, Wrapper};
 use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
-    CtorName, Declaration, Module, NormalizedBlock, Param, ResolvedTypeAnnotation, Statement,
-    TypeAnnotation, TypeRef, UnresolvedName, UserFunction, UserType, Value, ValueCtor, Variable,
-    VariableName,
+    AnonFunction, CtorName, Declaration, Module, NormalizedBlock, Param, ResolvedType,
+    ResolvedTypeAnnotation, Statement, TypeAnnotation, TypeRef, UnresolvedName, UnresolvedType,
+    UserFunction, UserType, Value, ValueCtor, Variable, VariableName,
 };
 use kodept_core::code_point::Span;
 use kodept_core::structure::Located;
@@ -38,12 +38,16 @@ define_phase! {
     pub phase ReferenceResolutionPhase[ReferenceResolutionPhaseLabel];
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(NormalizedBlock::system);
-        engine.add_systems(UserFunction::<TypeAnnotation>::system);
-        engine.add_systems(UserFunction::<ResolvedTypeAnnotation>::system);
-        engine.add_systems(<UserType as CollectSymbols<Declaration>>::system);
-        engine.add_systems(<UserType as CollectSymbols<()>>::system);
-        engine.add_systems(Module::system);
+        // engine.add_systems(AnonFunction::<TypeAnnotation>::system);
+        // engine.add_systems(AnonFunction::<ResolvedTypeAnnotation>::system);
+        // engine.add_systems(NormalizedBlock::system);
+        // engine.add_systems(UserFunction::<TypeAnnotation>::system);
+        // engine.add_systems(UserFunction::<ResolvedTypeAnnotation>::system);
+        engine.add_systems(ValueCtor::<UnresolvedType>::system);
+        engine.add_systems(ValueCtor::<ResolvedType>::system);
+        // engine.add_systems(<UserType as CollectSymbols<Declaration>>::system);
+        // engine.add_systems(<UserType as CollectSymbols<()>>::system);
+        // engine.add_systems(Module::system);
     }
 }
 
@@ -58,6 +62,8 @@ impl RequireProperty<SymbolTable> for Module {}
 impl RequireProperty<SymbolTable> for UserType {}
 impl<T: TypeRef<false>> RequireProperty<SymbolTable> for UserFunction<T> {}
 impl RequireProperty<SymbolTable> for NormalizedBlock {}
+impl<T: TypeRef<false>> RequireProperty<SymbolTable> for AnonFunction<T> {}
+impl<T: TypeRef<true>> RequireProperty<SymbolTable> for ValueCtor<T> {}
 
 #[derive(Debug, Clone)]
 enum SymbolKind {
@@ -221,6 +227,31 @@ impl SymbolRegistrator<'_, '_, '_> {
     }
 }
 
+fn register_param<T>(
+    value: &Param<T>,
+    id: impl Erase,
+    index: usize,
+    registrator: &mut SymbolRegistrator,
+) {
+    match value {
+        Param::Positional { name: None, .. } => {
+            registrator.register(
+                Name::new(index.to_string()),
+                SymbolKind::Parameter(index),
+                id,
+            );
+        }
+        Param::Positional {
+            name: Some(name), ..
+        } => {
+            registrator.register(Name::new(name.clone()), SymbolKind::Parameter(index), id);
+        }
+        Param::Named { name, .. } => {
+            registrator.register(Name::new(name.clone()), SymbolKind::Parameter(index), id);
+        }
+    }
+}
+
 impl CollectSymbols<Declaration> for Module {
     type ParentFetch = ();
     type ChildFetch = (&'static Archetype, &'static Name);
@@ -312,6 +343,24 @@ impl CollectSymbols<()> for UserType {
     }
 }
 
+impl<T: TypeRef<true>> CollectSymbols<Nothing> for ValueCtor<T> {
+    type ParentFetch = Ref<'static, Self>;
+    type ChildFetch = ();
+    type Params = ();
+
+    fn each<'a>(
+        id: NodeId<Self>,
+        additional: QueryItem<Self::ParentFetch>,
+        _: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
+        _: &mut SystemParamItem<Self::Params>,
+        mut registrator: SymbolRegistrator,
+    ) {
+        for (index, param) in additional.params.iter().enumerate() {
+            register_param(param, id, index, &mut registrator);
+        }
+    }
+}
+
 impl<T: TypeRef<false>> CollectSymbols<()> for UserFunction<T> {
     type ParentFetch = Ref<'static, Self>;
     type ChildFetch = ();
@@ -325,22 +374,7 @@ impl<T: TypeRef<false>> CollectSymbols<()> for UserFunction<T> {
         mut registrator: SymbolRegistrator,
     ) {
         for (index, param) in value.params.iter().enumerate() {
-            match param {
-                Param::Positional {
-                    name: Some(name), ..
-                } => {
-                    let name = Name::new(name.clone());
-                    registrator.register(name, SymbolKind::Parameter(index), id);
-                }
-                Param::Positional { name: None, .. } => {
-                    let name = Name::new(index.to_string());
-                    registrator.register(name, SymbolKind::Parameter(index), id);
-                }
-                Param::Named { name, .. } => {
-                    let name = Name::new(name.clone());
-                    registrator.register(name, SymbolKind::Parameter(index), id);
-                }
-            }
+            register_param(param, id, index, &mut registrator);
         }
     }
 }
@@ -385,6 +419,24 @@ impl CollectSymbols<Statement> for NormalizedBlock {
                 let name = Name::new(name.clone());
                 registrator.register(name, SymbolKind::Variable, child_id);
             }
+        }
+    }
+}
+
+impl<T: TypeRef<false>> CollectSymbols<()> for AnonFunction<T> {
+    type ParentFetch = Ref<'static, Self>;
+    type ChildFetch = ();
+    type Params = ();
+
+    fn each<'a>(
+        id: NodeId<Self>,
+        additional: QueryItem<Self::ParentFetch>,
+        _: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
+        _: &mut SystemParamItem<Self::Params>,
+        mut registrator: SymbolRegistrator,
+    ) {
+        for (index, param) in additional.params.iter().enumerate() {
+            register_param(param, id, index, &mut registrator);
         }
     }
 }

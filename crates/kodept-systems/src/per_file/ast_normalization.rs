@@ -10,8 +10,8 @@ use kodept_ast::prelude::{HierarchicalQuery, NodeId};
 use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Link, Literal, Module, NormalizedBlock, Statement, Tuple, TypeAnnotation,
-    UnresolvedName, UserFunction, Value,
+    AnonFunction, Block, Expression, Link, Literal, Module, NormalizedBlock, Statement, Tuple,
+    TypeAnnotation, UnresolvedName, UserFunction, Value,
 };
 use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
@@ -142,7 +142,7 @@ fn normalize_blocks(
             if archetype.contains(statement_component_ids.user_function.get()) {
             } else if statement_component_ids.is_non_normalized(archetype) {
                 linked = true;
-                let statement = modification.remove_child_unchecked(statement_id);
+                let statement = modification.remove_child_unchecked::<Statement>(statement_id);
 
                 modification
                     .spawn_child(
@@ -150,7 +150,7 @@ fn normalize_blocks(
                             .with_property(*span)
                             .with_property(*lexeme),
                     )
-                    .add_child_unchecked(statement);
+                    .add_child_unchecked::<Expression>(statement);
             } else if archetype.contains(statement_component_ids.link.get()) {
                 linked = true;
             } else {

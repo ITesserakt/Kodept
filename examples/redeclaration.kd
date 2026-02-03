@@ -1,6 +1,6 @@
 module Main =>
 
-struct Foo(a: (), b: ()) {
+struct Foo(a: (), a: ()) {
     fun foo() => 0
 }
 
