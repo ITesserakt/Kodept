@@ -1,7 +1,7 @@
 use clap::Parser;
 use kodept_cli::prelude::{
-    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, ParserChoice, ParsingConfig,
-    ReportsPlugin,
+    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, LogPlugin, LoggingLevel, ParserChoice,
+    ParsingConfig, ReportsPlugin,
 };
 use kodept_frontend::engine::Engine;
 use kodept_frontend::engine::reporter::CompilationFailed;
@@ -10,7 +10,9 @@ use kodept_systems::configs::Lexer;
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::inject_common_resources_phase;
-use kodept_systems::per_file::prelude::{AstNormalizationPhase, BuildAstPhase, ParseSourcePhase};
+use kodept_systems::per_file::prelude::{
+    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, ReferenceResolutionPhase,
+};
 use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
 
@@ -63,6 +65,10 @@ fn main() -> Result<(), CompilationFailed> {
     engine.add_plugin(ReportsPlugin {
         config: &cli.diagnostic_config,
     });
+    engine.add_plugin(LogPlugin {
+        level: LoggingLevel::Trace,
+        display_thread_names: false,
+    });
 
     engine
         .install(LoadAllSourcesPhase {
@@ -88,7 +94,8 @@ fn main() -> Result<(), CompilationFailed> {
             engine
                 .install(ParseSourcePhase)
                 .install(BuildAstPhase)
-                .install(AstNormalizationPhase);
+                .install(AstNormalizationPhase)
+                .install(ReferenceResolutionPhase);
         }))
         .install(FinishPhase);
 

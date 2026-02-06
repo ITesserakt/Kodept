@@ -12,5 +12,5 @@ fun main() {
 	val vaLue = 3
 	val local_ref = vaLue
 	val unit = ::Test::Unit::unit()
-	val true = Bool::True
+	val true = Test::Bool::True
 }

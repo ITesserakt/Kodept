@@ -4,6 +4,7 @@ mod resolve;
 
 use crate::per_file::symbols::collect::{CollectSymbols, collect_params_on};
 use crate::per_file::symbols::resolve::resolve_values;
+use crate::utils::LogSystemEx;
 use bevy_ecs::component::ComponentIdFor;
 use bevy_ecs::prelude::Name;
 use kodept_ast::Str;
@@ -37,21 +38,24 @@ define_phase! {
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
         let collect_set = (
-            collect_params_on(|ctor: &ValueCtor<UnresolvedType>| &*ctor.params),
-            collect_params_on(|ctor: &ValueCtor<ResolvedType>| &*ctor.params),
-            collect_params_on(|ctor: &AnonFunction<TypeAnnotation>| &*ctor.params),
-            collect_params_on(|ctor: &AnonFunction<ResolvedTypeAnnotation>| &*ctor.params),
-            collect_params_on(|ctor: &UserFunction<TypeAnnotation>| &*ctor.params),
-            collect_params_on(|ctor: &UserFunction<ResolvedTypeAnnotation>| &*ctor.params),
-            NormalizedBlock::system,
+            collect_params_on(|item: &ValueCtor<UnresolvedType>| &*item.params).trace_completion(),
+            collect_params_on(|item: &ValueCtor<ResolvedType>| &*item.params).trace_completion(),
+            collect_params_on(|item: &AnonFunction<TypeAnnotation>| &*item.params).trace_completion(),
+            collect_params_on(|item: &AnonFunction<ResolvedTypeAnnotation>| &*item.params).trace_completion(),
+            collect_params_on(|item: &UserFunction<TypeAnnotation>| &*item.params).trace_completion(),
+            collect_params_on(|item: &UserFunction<ResolvedTypeAnnotation>| &*item.params).trace_completion(),
+            NormalizedBlock::system.trace_completion(),
             (
-                <UserType as CollectSymbols<Declaration>>::system,
-                <UserType as CollectSymbols<()>>::system
+                <UserType as CollectSymbols<Declaration>>::system.trace_completion(),
+                <UserType as CollectSymbols<()>>::system.trace_completion()
             ).chain(),
-            Module::system
+            Module::system.trace_completion()
         );
 
-        engine.add_systems((collect_set, resolve_values).chain());
+        engine.add_systems((
+            collect_set,
+            resolve_values.trace_completion()
+        ).chain());
     }
 }
 
