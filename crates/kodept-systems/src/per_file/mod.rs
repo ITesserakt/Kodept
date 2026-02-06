@@ -3,7 +3,6 @@ use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Phase, SubEngine, reporter};
 
 mod ast_normalization;
-// mod ast_shenanigans;
 mod build_ast;
 mod parse_source;
 mod symbols;
@@ -12,12 +11,9 @@ pub mod prelude {
     pub use super::ast_normalization::{
         AstNormalizationPhase, AstNormalizationPhaseLabel, InModule,
     };
-    // pub use super::ast_shenanigans::*;
     pub use super::build_ast::{BuildAstPhase, BuildAstPhaseLabel};
     pub use super::parse_source::{ParseSourcePhase, ParseSourcePhaseLabel};
-    pub use super::symbols::{
-        ReferenceResolutionPhase, ReferenceResolutionPhaseLabel, SymbolTable,
-    };
+    pub use super::symbols::{ReferenceResolutionPhase, ReferenceResolutionPhaseLabel};
 }
 
 pub fn inject_common_resources_phase() -> impl Phase {

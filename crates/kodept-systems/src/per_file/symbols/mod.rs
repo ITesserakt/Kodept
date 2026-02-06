@@ -56,11 +56,24 @@ define_phase! {
             collect_set,
             resolve_values.trace_completion()
         ).chain());
+
+        #[cfg(feature = "reflection")]
+        engine.add_systems(register_reflection_info);
     }
 }
 
+#[cfg(feature = "reflection")]
+fn register_reflection_info(
+    mut debug_registry: bevy_ecs::prelude::If<
+        bevy_ecs::prelude::ResMut<kodept_ast::resource::reflection::DebugRegistry>,
+    >,
+) {
+    debug_registry.register::<SymbolTable>();
+    debug_registry.register::<resolve::ResolvedTo>();
+}
+
 #[derive(Component, Default)]
-pub struct SymbolTable {
+struct SymbolTable {
     order: Vec<(SymbolKind, NodeId)>,
     names: HashMap<SymbolName, usize>,
 }

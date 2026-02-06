@@ -21,7 +21,7 @@ use std::ops::ControlFlow;
 
 #[derive(Debug, Component)]
 #[component(immutable)]
-struct ResolvedTo(NodeId, SymbolKind);
+pub(super) struct ResolvedTo(NodeId, SymbolKind);
 
 #[derive(Debug, Report)]
 #[severity("error")]

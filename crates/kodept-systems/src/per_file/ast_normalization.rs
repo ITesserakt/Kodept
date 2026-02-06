@@ -28,7 +28,21 @@ define_phase! {
         ).chain());
 
         engine.add_observer(propagate_module_info);
+
+        #[cfg(feature = "reflection")]
+        {
+            engine.add_systems(register_reflection_info);
+        }
     }
+}
+
+#[cfg(feature = "reflection")]
+fn register_reflection_info(
+    mut debug_registry: bevy_ecs::prelude::If<
+        bevy_ecs::prelude::ResMut<kodept_ast::resource::reflection::DebugRegistry>,
+    >,
+) {
+    debug_registry.register::<InModule>();
 }
 
 #[derive(Debug, Report)]
