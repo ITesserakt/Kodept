@@ -7,7 +7,8 @@ use bevy_ecs::archetype::Archetype;
 use bevy_ecs::component::Mutable;
 use bevy_ecs::prelude::{Component, Mut, Query, Ref, RelationshipTarget};
 use bevy_ecs::query::{
-    QueryData, QueryEntityError, QueryFilter, QueryManyIter, ROQueryItem, ReadOnlyQueryData,
+    QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem,
+    ReadOnlyQueryData,
 };
 use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
 use bevy_ecs::system::SystemParam;
@@ -37,6 +38,23 @@ where
     A: NodeQueryData<T>,
     B: NodeQueryData<T>,
     C: NodeQueryData<T>,
+{
+}
+impl<A, B, C, D, T> NodeQueryData<T> for (A, B, C, D)
+where
+    A: NodeQueryData<T>,
+    B: NodeQueryData<T>,
+    C: NodeQueryData<T>,
+    D: NodeQueryData<T>,
+{
+}
+impl<A, B, C, D, E, T> NodeQueryData<T> for (A, B, C, D, E)
+where
+    A: NodeQueryData<T>,
+    B: NodeQueryData<T>,
+    C: NodeQueryData<T>,
+    D: NodeQueryData<T>,
+    E: NodeQueryData<T>,
 {
 }
 impl<T: ASTNode> NodeQueryData<T> for NodeId<T> {}
@@ -76,7 +94,7 @@ where
     Id: ReadOnlyQueryData,
 {
     query: Query<'w, 's, (Id, Data, &'static Rel<Parent, Tag>), Filter>,
-    collection: &'w Target<Rel<Parent, Tag>>,
+    collection: Option<&'w Target<Rel<Parent, Tag>>>,
 }
 
 pub struct ChildrenIter<'w, 's, Data, R, Id, Filter>
@@ -86,9 +104,9 @@ where
     R: Relationship,
     Id: ReadOnlyQueryData
 {
-    inner: QueryManyIter<'w, 's, (Id, Data, &'static R), Filter,
+    inner: Option<QueryManyIter<'w, 's, (Id, Data, &'static R), Filter,
         <<R::RelationshipTarget as RelationshipTarget>::Collection as RelationshipSourceCollection>::SourceIter<'w>,
-    >,
+    >>,
 }
 
 #[derive(SystemParam)]
@@ -114,7 +132,7 @@ pub struct HierarchicalQuery<
         (
             NodeId<Parent>,
             ParentData,
-            &'static Target<Rel<Parent, Tag>>,
+            Option<&'static Target<Rel<Parent, Tag>>>,
         ),
         Filter,
     >,
@@ -146,7 +164,7 @@ pub struct NarrowHierarchicalQuery<
         (
             NodeId<Parent>,
             ParentData,
-            &'static Target<Rel<Parent, Tag>>,
+            Option<&'static Target<Rel<Parent, Tag>>>,
         ),
         Filter,
     >,
@@ -238,16 +256,16 @@ where
 {
     #[allow(unsafe_code)]
     pub fn iter_by_layers(
-        &self,
+        &mut self,
     ) -> impl Iterator<
         Item = (
             NodeId<T>,
-            ROQueryItem<'_, 's, ParentData>,
+            QueryItem<'_, 's, ParentData>,
             Children<'_, 's, ChildData::ReadOnly, T, Tag>,
         ),
     > {
         self.parent_query
-            .iter()
+            .iter_mut()
             .map(|(parent_id, parent_data, children)| {
                 (
                     parent_id,
@@ -275,7 +293,7 @@ where
         let query = self.query.into_readonly();
 
         ChildrenIter {
-            inner: query.iter_many_inner(self.collection.iter()),
+            inner: self.collection.map(|it| query.iter_many_inner(it.iter())),
         }
     }
 }
@@ -294,7 +312,7 @@ where
     fn into_iter(self) -> Self::IntoIter {
         let query = self.query.as_readonly();
         ChildrenIter {
-            inner: query.iter_many_inner(self.collection.iter()),
+            inner: self.collection.map(|it| query.iter_many_inner(it.iter())),
         }
     }
 }
@@ -309,7 +327,8 @@ where
     type Item = (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let value = self.inner.next()?;
+        let iter = self.inner.as_mut()?;
+        let value = iter.next()?;
         Some((value.0, value.1))
     }
 }
@@ -336,7 +355,8 @@ where
     Id: ReadOnlyQueryData,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let value = self.inner.next_back()?;
+        let iter = self.inner.as_mut()?;
+        let value = iter.next_back()?;
         Some((value.0, value.1))
     }
 }
@@ -373,7 +393,7 @@ where
     {
         let query = self.query.into_readonly();
         let iter = query
-            .iter_many_inner(self.collection.iter())
+            .iter_many_inner(self.collection.iter().flat_map(|it| it.iter()))
             .map(|it| (it.0, it.1));
         <T::Arity as TryFromIter>::try_from_iter(iter)
             .map_err(|e| HierarchicalError::WrongContainerSize(e))
