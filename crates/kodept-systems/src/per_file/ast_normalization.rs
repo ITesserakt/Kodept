@@ -118,7 +118,7 @@ fn ensure_no_non_normalized_blocks(
 }
 
 fn normalize_blocks(
-    blocks_: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
+    mut blocks_: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
     statement_component_ids: StatementComponentIds,
     mut commands: Commands,
     mut reporter: Reporter,
