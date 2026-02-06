@@ -13,7 +13,7 @@ use kodept_parse::token_stream::PackedTokenStream;
 use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
 use kodept_report::prelude::*;
 use std::borrow::Cow;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, SystemSet, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub struct ParseSourcePhaseLabel;
@@ -24,7 +24,11 @@ impl Phase for ParseSourcePhase {
     type Set = ParseSourcePhaseLabel;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports().trace_completion())
+        engine.add_systems(
+            system
+                .extract_reports()
+                .trace_completion_with_name(std::any::type_name_of_val(&system)),
+        )
     }
 }
 

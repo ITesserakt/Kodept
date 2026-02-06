@@ -19,7 +19,7 @@ define_phase!(
     pub phase BuildAstPhase[BuildAstPhaseLabel];
 
     fn build (self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports().trace_completion());
+        engine.add_systems(system.trace_completion().extract_reports());
     }
 );
 
