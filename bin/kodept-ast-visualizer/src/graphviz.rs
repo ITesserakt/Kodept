@@ -1,5 +1,5 @@
 use crate::ExportControlEvent;
-use crate::graphviz::helpers::{DebugAsDisplay, cell, row, sanitize, table};
+use crate::graphviz::helpers::{DebugAsDisplay, row, sanitize, table};
 use bevy_ecs::component::Components;
 use bevy_ecs::prelude::{EntityRef, Local, Name, On, Query, Res, Resource, With};
 use bevy_utils::prelude::ShortName;
@@ -113,15 +113,6 @@ mod helpers {
         write!(writer, "<tr>")?;
         f(writer)?;
         write!(writer, "</tr>")
-    }
-
-    pub(super) fn cell<W: Write>(
-        writer: &mut W,
-        f: impl FnOnce(&mut W) -> std::io::Result<()>,
-    ) -> std::io::Result<()> {
-        write!(writer, "<td>")?;
-        f(writer)?;
-        write!(writer, "</td>")
     }
 
     pub(super) fn sanitize(value: impl Display, max_len: usize) -> String {
