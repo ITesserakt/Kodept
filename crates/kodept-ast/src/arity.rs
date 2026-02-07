@@ -152,7 +152,7 @@ impl RelationshipSourceCollection for Nothing {
 
     #[inline]
     fn with_capacity(_: usize) -> Self {
-        Self::new()
+        unreachable!("Children with `Empty` arity cannot exist")
     }
 
     #[inline]
