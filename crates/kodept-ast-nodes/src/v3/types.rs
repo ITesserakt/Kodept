@@ -90,8 +90,9 @@ pub type NormalizedBlock = Block<true>;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct Value<T: NameRef> {
-    pub inner: T,
+pub struct Value {
+    pub path: Path,
+    pub ident: Str,
 }
 
 #[derive(Debug, PartialEq, Component)]
@@ -127,7 +128,6 @@ pub struct Otherwise;
 #[require(Node::of::<Self>())]
 pub struct Link;
 
-pub trait NameRef: Send + Sync + 'static {}
 pub trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
 
 #[derive(Debug, PartialEq)]
@@ -143,12 +143,6 @@ pub enum VariableName {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct UnresolvedName {
-    pub context: Path,
-    pub ident: Str,
-}
-
-#[derive(Debug, PartialEq)]
 pub enum TypeAnnotation {
     Infer,
     Bound(UnresolvedType),
@@ -161,9 +155,6 @@ pub enum UnresolvedType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ResolvedName(pub NodeId);
-
-#[derive(Debug, PartialEq)]
 pub enum ResolvedTypeAnnotation {
     Infer,
     Bound(ResolvedType),
@@ -174,9 +165,6 @@ pub enum ResolvedType {
     Named(NodeId),
     Tuple(Vec<NodeId>),
 }
-
-impl NameRef for UnresolvedName {}
-impl NameRef for ResolvedName {}
 
 impl TypeRef<true> for UnresolvedType {}
 impl TypeRef<true> for ResolvedType {}

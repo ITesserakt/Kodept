@@ -3,12 +3,11 @@ use crate::v3::tags::{
     Statement,
 };
 use crate::v3::types::{
-    AnonFunction, Block, Branch, Call, ForeignFunction, If, Link, Literal, Module, NameRef,
-    Otherwise, PrimType, Tuple, TypeRef, UserFunction, UserType, Value, ValueCtor, Variable,
+    AnonFunction, Block, Branch, Call, ForeignFunction, If, Link, Literal, Module, Otherwise,
+    PrimType, Tuple, TypeRef, UserFunction, UserType, Value, ValueCtor, Variable,
 };
 use crate::{
-    Modules, NormalizedBlock, ResolvedType, ResolvedTypeAnnotation, TypeAnnotation, UnresolvedName,
-    UnresolvedType,
+    Modules, NormalizedBlock, ResolvedType, ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType,
 };
 use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
@@ -24,8 +23,7 @@ type Expressions = (
     If,
     Literal,
     Tuple,
-    Value<UnresolvedName>,
-    // Value<ResolvedName>,
+    Value,
 );
 
 impl ASTNode for Modules {}
@@ -130,8 +128,7 @@ impl Family<Statement> for Block<false> {
         UserFunction<ResolvedTypeAnnotation>,
         Variable<TypeAnnotation>,
         Variable<ResolvedTypeAnnotation>,
-        Value<UnresolvedName>,
-        // Value<ResolvedName>
+        Value,
     );
 }
 impl Family<Statement> for Block<true> {
@@ -150,9 +147,9 @@ impl Family<Statement> for Block<true> {
 impl<T: IsStatement<false>> HasChild<T, Statement> for Block<false> {}
 impl<T: IsStatement<true>> HasChild<T, Statement> for Block<true> {}
 
-impl<T: NameRef> ASTNode for Value<T> {}
-impl<T: NameRef> IsExpression for Value<T> {}
-impl<T: NameRef> IsStatement for Value<T> {}
+impl ASTNode for Value {}
+impl IsExpression for Value {}
+impl IsStatement for Value {}
 
 impl ASTNode for Literal {}
 impl IsExpression for Literal {}
@@ -228,14 +225,12 @@ impl<T: IsExpression> HasChild<T, Expression> for Link {}
 #[allow(unsafe_code)]
 mod transmutes {
     use crate::{
-        AnonFunction, Block, ForeignFunction, NormalizedBlock, ResolvedName, ResolvedType,
-        ResolvedTypeAnnotation, TypeAnnotation, UnresolvedName, UnresolvedType, UserFunction,
-        Value,
+        AnonFunction, Block, ForeignFunction, NormalizedBlock, ResolvedType,
+        ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction,
     };
     use kodept_ast::experimental::TransmuteInto;
 
     unsafe impl TransmuteInto<NormalizedBlock> for Block {}
-    unsafe impl TransmuteInto<Value<ResolvedName>> for Value<UnresolvedName> {}
     unsafe impl TransmuteInto<UserFunction<ResolvedTypeAnnotation>> for UserFunction<TypeAnnotation> {}
     unsafe impl TransmuteInto<ForeignFunction<ResolvedType>> for ForeignFunction<UnresolvedType> {}
     unsafe impl TransmuteInto<AnonFunction<ResolvedTypeAnnotation>> for AnonFunction<TypeAnnotation> {}

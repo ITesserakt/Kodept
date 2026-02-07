@@ -247,7 +247,7 @@ impl<B: Buffer> FromSyntax<ExpressionBlock, B> for Block {
     }
 }
 
-impl<B: Buffer> FromSyntax<Term, B> for Value<UnresolvedName> {
+impl<B: Buffer> FromSyntax<Term, B> for Value {
     type Error = Infallible;
 
     fn from_syntax(
@@ -257,28 +257,20 @@ impl<B: Buffer> FromSyntax<Term, B> for Value<UnresolvedName> {
     ) -> Result<NodeId<Self>, Self::Error> {
         let value = match node {
             Term::Reference(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(x),
-                    context: Path::empty(false),
-                },
+                ident: source.get_chunk_located(x),
+                path: Path::empty(false),
             },
             Term::ContextualReference(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(&x.inner),
-                    context: (&x.context, source).into(),
-                },
+                ident: source.get_chunk_located(&x.inner),
+                path: (&x.context, source).into(),
             },
             Term::Constant(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(x),
-                    context: Path::empty(false),
-                },
+                ident: source.get_chunk_located(x),
+                path: Path::empty(false),
             },
             Term::ContextualConstant(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(&x.inner),
-                    context: (&x.context, source).into(),
-                },
+                ident: source.get_chunk_located(&x.inner),
+                path: (&x.context, source).into(),
             },
         };
 

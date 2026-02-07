@@ -16,8 +16,7 @@ pub(super) fn register_reflection_info(
     registry.register::<Module>();
     registry.register::<Block>();
     registry.register::<Block<true>>();
-    registry.register::<Value<UnresolvedName>>();
-    registry.register::<Value<ResolvedName>>();
+    registry.register::<Value>();
     registry.register::<Literal>();
     registry.register::<Tuple>();
     registry.register::<Call>();

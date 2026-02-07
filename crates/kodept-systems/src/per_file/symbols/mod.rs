@@ -3,7 +3,7 @@ mod collect;
 mod resolve;
 
 use crate::per_file::symbols::collect::{CollectSymbols, collect_params_on};
-use crate::per_file::symbols::resolve::resolve_values;
+use crate::per_file::symbols::resolve::{ensure_all_values_resolved, resolve_values};
 use crate::utils::LogSystemEx;
 use bevy_ecs::component::ComponentIdFor;
 use bevy_ecs::prelude::Name;
@@ -54,7 +54,8 @@ define_phase! {
 
         engine.add_systems((
             collect_set,
-            resolve_values.trace_completion()
+            resolve_values.trace_completion(),
+            ensure_all_values_resolved
         ).chain());
 
         #[cfg(feature = "reflection")]

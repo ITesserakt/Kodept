@@ -11,7 +11,7 @@ use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
     AnonFunction, Block, Expression, Link, Literal, Module, NormalizedBlock, Statement, Tuple,
-    TypeAnnotation, UnresolvedName, UserFunction, Value,
+    TypeAnnotation, UserFunction, Value,
 };
 use kodept_core::code_point::Span;
 use kodept_frontend::define_phase;
@@ -68,7 +68,7 @@ struct StatementComponentIds<'s> {
     anon_function: ComponentIdFor<'s, AnonFunction<TypeAnnotation>>,
     literal: ComponentIdFor<'s, Literal>,
     tuple: ComponentIdFor<'s, Tuple>,
-    value: ComponentIdFor<'s, Value<UnresolvedName>>,
+    value: ComponentIdFor<'s, Value>,
     user_function: ComponentIdFor<'s, UserFunction<TypeAnnotation>>,
     link: ComponentIdFor<'s, Link>,
 }

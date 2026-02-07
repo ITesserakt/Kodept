@@ -4,13 +4,13 @@ use crate::source::collection::Reporter;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::name::Name;
 use bevy_ecs::prelude::{Children, Entity};
-use bevy_ecs::query::QueryData;
+use bevy_ecs::query::{QueryData, Without};
 use bevy_ecs::system::{Commands, Query};
 use kodept_ast::Str;
 use kodept_ast::export::Component;
 use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast::properties::SourceSpan;
-use kodept_ast_nodes::{Module, Path, UnresolvedName, Value};
+use kodept_ast_nodes::{Module, Path, Value};
 use kodept_core::code_point::Span;
 use kodept_core::try_port::Try;
 use kodept_report_macros::Report;
@@ -29,6 +29,15 @@ pub(super) struct ResolvedTo(NodeId, SymbolKind);
 struct UnresolvedReference {
     name: Str,
     #[primary_label("not found in scope")]
+    span: Span,
+}
+
+#[derive(Debug, Report)]
+#[severity("bug")]
+#[message("Reference `{}` is not resolved still", self.id)]
+struct UnexpectedUnresolvedReference {
+    id: NodeId<Value>,
+    #[primary_label("expected this to be resolved")]
     span: Span,
 }
 
@@ -207,21 +216,16 @@ fn resolve_local_value_with_context(
 }
 
 pub(super) fn resolve_values(
-    values: Query<(
-        NodeId<Value<UnresolvedName>>,
-        &Value<UnresolvedName>,
-        &InModule,
-        &SourceSpan,
-    )>,
+    values: Query<(NodeId<Value>, &Value, &InModule, &SourceSpan)>,
     parent_symbol_tables: AncestorsQuery,
     children_symbol_tables: DescendantsQuery,
     mut reporter: Reporter,
     mut commands: Commands,
 ) {
     for (id, value, &InModule(module_id), span) in values {
-        let UnresolvedName { context, ident } = &value.inner;
+        let Value { path, ident } = value;
 
-        let result = match &context {
+        let result = match &path {
             Path {
                 is_global: false,
                 segments,
@@ -250,7 +254,7 @@ pub(super) fn resolve_values(
         match result {
             None => {
                 reporter.report(UnresolvedReference {
-                    name: value.inner.ident.clone(),
+                    name: ident.clone(),
                     span: span.0,
                 });
             }
@@ -260,5 +264,14 @@ pub(super) fn resolve_values(
                     .insert(ResolvedTo(decl_id, kind));
             }
         };
+    }
+}
+
+pub(super) fn ensure_all_values_resolved(
+    query: Query<(NodeId<Value>, &SourceSpan), Without<ResolvedTo>>,
+    mut reporter: Reporter,
+) {
+    for (id, span) in query {
+        reporter.report(UnexpectedUnresolvedReference { id, span: span.0 });
     }
 }

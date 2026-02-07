@@ -1,7 +1,7 @@
 use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
 use crate::{
     AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple,
-    TypeAnnotation, UnresolvedName, UserFunction, UserType, Value, Variable,
+    TypeAnnotation, UserFunction, UserType, Value, Variable,
 };
 use bigdecimal::{BigDecimal, Num};
 use kodept_ast::Str;
@@ -55,7 +55,7 @@ where
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = Body;
@@ -88,7 +88,7 @@ where
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = BlockLevelNode;
@@ -124,7 +124,7 @@ where
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = Operation;
@@ -145,7 +145,7 @@ where
                 Ok(Block::from_syntax(node, spawner.into_concrete(), source)?.cast())
             }
             Operation::Expression(node) => {
-                Dispatcher::<kodept_rlt::prelude::Expression>::dispatch(node, spawner, source)
+                Dispatcher::<Expression>::dispatch(node, spawner, source)
             }
             Operation::Application(node) => {
                 Ok(Call::from_syntax(&*node, spawner.into_concrete(), source)?.cast())
@@ -164,10 +164,8 @@ where
                     .spawn_in(spawner.into_concrete());
 
                 NodeBuilder::new(Value {
-                    inner: UnresolvedName {
-                        context: CORE_PATH,
-                        ident,
-                    },
+                    path: CORE_PATH,
+                    ident,
                 })
                 .with_property(SourceSpan(operator.bounds()))
                 .with_property(Lexeme::new(operator))
@@ -212,10 +210,8 @@ where
                     .spawn_in(spawner.into_concrete());
 
                 NodeBuilder::new(Value {
-                    inner: UnresolvedName {
-                        context: CORE_PATH,
-                        ident,
-                    },
+                    path: CORE_PATH,
+                    ident,
                 })
                 .with_property(SourceSpan(operation.bounds()))
                 .with_property(Lexeme::new(operation))
@@ -231,15 +227,15 @@ where
     }
 }
 
-impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<kodept_rlt::prelude::Expression>
+impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Expression>
 where
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<AnonFunction<TypeAnnotation>, T>,
     P: HasChild<If, T>,
 {
-    type Syntax = kodept_rlt::prelude::Expression;
+    type Syntax = Expression;
     type Error = crate::Error;
 
     #[inline]
