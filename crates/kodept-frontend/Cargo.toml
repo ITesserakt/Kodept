@@ -16,4 +16,4 @@ tracing.workspace = true
 yoke = "0.8.0"
 
 [features]
-parallel = ["bevy_ecs/multi_threaded"]
+parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std"]
