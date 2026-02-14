@@ -3,7 +3,9 @@ mod collect;
 mod resolve;
 
 use crate::per_file::symbols::collect::{CollectSymbols, collect_params_on};
-use crate::per_file::symbols::resolve::{ensure_all_values_resolved, resolve_values};
+use crate::per_file::symbols::resolve::{
+    add_opaque_markers, add_passthrough_markers, ensure_all_values_resolved, resolve_values,
+};
 use crate::utils::LogSystemEx;
 use bevy_ecs::component::ComponentIdFor;
 use bevy_ecs::prelude::Name;
@@ -49,7 +51,9 @@ define_phase! {
                 <UserType as CollectSymbols<Declaration>>::system.trace_completion(),
                 <UserType as CollectSymbols<()>>::system.trace_completion()
             ).chain(),
-            Module::system.trace_completion()
+            Module::system.trace_completion(),
+            add_passthrough_markers,
+            add_opaque_markers
         );
 
         engine.add_systems((
@@ -166,14 +170,14 @@ impl SymbolTable {
         Ok(())
     }
 
-    fn lookup<Q>(&self, name: &Q) -> Option<(NodeId, &SymbolKind)>
+    fn lookup<Q>(&self, name: &Q) -> Option<(NodeId, SymbolKind)>
     where
         SymbolName: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
         let index = *self.names.get(name)?;
         let (kind, id) = &self.order[index];
-        Some((*id, kind))
+        Some((*id, kind.clone()))
     }
 }
 
