@@ -12,5 +12,5 @@ struct D(
 );
 
 fun test(): (A, B, C) {
-
+	val infer: _ = 3
 }

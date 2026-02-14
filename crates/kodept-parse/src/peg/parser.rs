@@ -46,8 +46,10 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     /// Type grammar
     /// --------------------------------------------------------------------------------------------
 
-    rule return_type() -> (Symbol, rlt::Type) =
-        c:$":" _ ty:type_grammar() { (Symbol::from_located(c), ty) }
+    rule return_type() -> Option<(Symbol, rlt::Type)> =
+        c:$":" _ ty:type_grammar() { Some((Symbol::from_located(c), ty)) } /
+        ":" _ "_"                  { None }                                /
+        _                          { None }
 
     rule tuple() -> rlt::Type =
         i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(rlt::Tuple(i.into())) }
@@ -400,12 +402,12 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         simple()
 
     rule var_decl() -> rlt::Variable =
-        k:$"val" _ id:ident() _ ty:return_type()? { rlt::Variable::Immutable {
+        k:$"val" _ id:ident() _ ty:return_type() { rlt::Variable::Immutable {
             keyword: Keyword::from_located(k),
             id: Identifier::from_located(id.point),
             assigned_type: ty
         } } /
-        k:$"var" _ id:ident() _ ty:return_type()? { rlt::Variable::Mutable {
+        k:$"var" _ id:ident() _ ty:return_type() { rlt::Variable::Mutable {
             keyword: Keyword::from_located(k),
             id: Identifier::from_located(id.point),
             assigned_type: ty
@@ -429,7 +431,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
 
     rule bodied() -> rlt::BodiedFunction =
         k:$"fun" _ id:ident() _ ps:paren_enclosed(<comma_separated0(<parameter()>)>)? _
-        ty:return_type()? _ b:body() {
+        ty:return_type() _ b:body() {
             rlt::BodiedFunction {
                 keyword: Keyword::from_located(k),
                 params: ps.map(|it| it.into()),
