@@ -1,5 +1,6 @@
 use crate::source::collection::Reporter;
 use bevy_ecs::prelude::*;
+use bevy_ecs::system::ScheduleSystem;
 use kodept_core::try_port::Try;
 use kodept_frontend::prelude::ExtractReports;
 use kodept_report::prelude::IntoSpannedReportMessage;
@@ -21,6 +22,10 @@ where
     fn trace_completion(self) -> impl IntoSystem<In, Out, ()>;
 
     fn trace_completion_with_name(self, name: &'static str) -> impl IntoSystem<In, Out, ()>;
+}
+
+pub trait LogSystemSetEx<Marker> {
+    fn trace_completion(self) -> impl IntoScheduleConfigs<ScheduleSystem, ()>;
 }
 
 impl<SystemMarker, ExtractMarker, Input, Out, T: IntoSystem<Input, Out, SystemMarker>>
@@ -64,6 +69,110 @@ where
         });
         IntoSystem::into_system(system)
     }
+}
+
+macro_rules! impl_log_system_set_ex {
+    ($([$t:ident, $m:ident, $field:tt]$(,)?)+) => {
+        impl<$($t, $m, )+> LogSystemSetEx<($($m, )+)> for ($($t, )+)
+        where
+            $($t: IntoSystem<(), (), $m>,)+
+        {
+            fn trace_completion(self) -> impl IntoScheduleConfigs<ScheduleSystem, ()> {
+                IntoScheduleConfigs::into_configs(
+                    ($({self.$field}.trace_completion(),)+)
+                )
+            }
+        }
+    };
+}
+
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+    [T6, M6, 5],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+    [T6, M6, 5],
+    [T7, M7, 6],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+    [T6, M6, 5],
+    [T7, M7, 6],
+    [T8, M8, 7],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+    [T6, M6, 5],
+    [T7, M7, 6],
+    [T8, M8, 7],
+    [T9, M9, 8],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+    [T6, M6, 5],
+    [T7, M7, 6],
+    [T8, M8, 7],
+    [T9, M9, 8],
+    [T10, M10, 9],
+}
+impl_log_system_set_ex! {
+    [T1, M1, 0],
+    [T2, M2, 1],
+    [T3, M3, 2],
+    [T4, M4, 3],
+    [T5, M5, 4],
+    [T6, M6, 5],
+    [T7, M7, 6],
+    [T8, M8, 7],
+    [T9, M9, 8],
+    [T10, M10, 9],
+    [T11, M11, 10],
 }
 
 pub type ForwardReport<T> = Result<(), T>;
