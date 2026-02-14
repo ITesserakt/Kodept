@@ -16,11 +16,11 @@ use std::convert::Infallible;
 fn convert_type(ty: &Type, source: impl CodeHolder) -> UnresolvedType {
     match ty {
         Type::ContextualReference(ctx, ident) => UnresolvedType::Named {
-            context: (ctx, source).into(),
+            path: (ctx, source).into(),
             ident: source.get_chunk_located(ident),
         },
         Type::Reference(ident) => UnresolvedType::Named {
-            context: Path::empty(false),
+            path: Path::empty(false),
             ident: source.get_chunk_located(ident),
         },
         Type::Tuple(items) => UnresolvedType::Tuple(
@@ -28,7 +28,7 @@ fn convert_type(ty: &Type, source: impl CodeHolder) -> UnresolvedType {
                 .0
                 .inner
                 .iter()
-                .map(|it| TypeAnnotation::Bound(convert_type(it, source)))
+                .map(|it| convert_type(it, source))
                 .collect(),
         ),
     }
@@ -122,8 +122,8 @@ impl<B: Buffer> FromSyntax<Struct, B> for UserType {
             .iter()
             .flat_map(|it| it.inner.as_ref())
             .map(|it| Param::Positional {
-                name: Some(source.get_chunk_located(&it.id)),
-                ty_id: convert_type(&it.parameter_type, source),
+                name: source.get_chunk_located(&it.id),
+                ty: convert_type(&it.parameter_type, source),
             });
 
         NodeBuilder::new(ValueCtor {
@@ -157,8 +157,8 @@ impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<TypeAnnotation> {
         let return_type = node
             .return_type
             .as_ref()
-            .map(|it| convert_type(&it.1, source))
-            .map_or(TypeAnnotation::Infer, TypeAnnotation::Bound);
+            .map(|it| convert_type(&it.1, source).into_annotation())
+            .unwrap_or(TypeAnnotation::Infer);
 
         let mut builder = NodeBuilder::new(UserFunction {
             params: node
@@ -167,12 +167,12 @@ impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<TypeAnnotation> {
                 .flat_map(|it| it.inner.as_ref())
                 .map(|it| match it {
                     Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Bound(convert_type(parameter_type, source)),
+                        name: source.get_chunk_located(id),
+                        ty: convert_type(parameter_type, source).into_annotation(),
                     },
                     Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Infer,
+                        name: source.get_chunk_located(id),
+                        ty: TypeAnnotation::Infer,
                     },
                 })
                 .collect(),
@@ -304,8 +304,8 @@ impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Ty
             mutable,
             annotation: annotation
                 .as_ref()
-                .map(|it| convert_type(&it.1, source))
-                .map_or(TypeAnnotation::Infer, TypeAnnotation::Bound),
+                .map(|it| convert_type(&it.1, source).into_annotation())
+                .unwrap_or(TypeAnnotation::Infer),
             name: match name.as_ref() {
                 "_" => VariableName::Empty,
                 _ => VariableName::Name(name),
@@ -359,12 +359,12 @@ impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<TypeAnnotation> {
                 .iter()
                 .map(|it| match it {
                     Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Bound(convert_type(parameter_type, source)),
+                        name: source.get_chunk_located(id),
+                        ty: convert_type(parameter_type, source).into_annotation(),
                     },
                     Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Infer,
+                        name: source.get_chunk_located(id),
+                        ty: TypeAnnotation::Infer,
                     },
                 })
                 .collect(),

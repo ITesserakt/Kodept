@@ -11,7 +11,7 @@ use tracing::error_span;
 
 #[derive(Debug, Report)]
 #[severity("error")]
-#[message("Cannot proceed")]
+#[message("Aborting due to previous errors")]
 #[fail_fast("Cannot process input files")]
 struct CannotProceed;
 

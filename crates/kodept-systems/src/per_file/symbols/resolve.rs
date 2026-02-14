@@ -4,17 +4,22 @@ use crate::source::collection::Reporter;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::lifecycle::Add;
 use bevy_ecs::name::Name;
-use bevy_ecs::prelude::{Children, Entity, On, With};
-use bevy_ecs::query::{Has, Or, QueryData, Without};
-use bevy_ecs::system::{Commands, Query};
+use bevy_ecs::prelude::{Children, Entity, On, Res, With};
+use bevy_ecs::query::{Has, Or, QueryData, QueryFilter};
+use bevy_ecs::system::{Commands, Query, SystemParam};
 use kodept_ast::Str;
 use kodept_ast::export::Component;
-use kodept_ast::prelude::{Erase, NodeId};
-use kodept_ast::properties::SourceSpan;
+use kodept_ast::prelude::{ASTNode, Erase, NodeId};
+use kodept_ast::properties::{Lexeme, SourceSpan};
+use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
-    Module, Path, ResolvedTypeAnnotation, TypeAnnotation, UserFunction, UserType, Value,
+    AnonFunction, CtorName, ForeignFunction, Module, Param, Path, ResolvedType,
+    ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction, UserType, Value,
+    ValueCtor, Variable,
 };
 use kodept_core::code_point::Span;
+use kodept_core::structure::SpanBounds;
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use kodept_report_macros::Report;
@@ -51,17 +56,31 @@ pub(super) struct Passthrough;
 pub(super) struct Opaque;
 
 #[derive(Debug)]
-struct UnresolvedReference<I> {
-    name: Str,
+struct UnresolvedReference<'a, I> {
+    name: &'a str,
     span: Span,
     note: I,
+}
+
+#[derive(Debug, Report)]
+#[severity("error")]
+#[message("Definition of `{}` expected to be a type, but it is a {}", self.name, self.actual_kind)]
+struct SymbolIsNotType<'a> {
+    #[secondary_label("is not a type")]
+    span: Span,
+    actual_kind: SymbolKind,
+    name: &'a str,
+    #[primary_label("required by a {} `{}`", self.ref_kind, self.ref_name)]
+    ref_span: Span,
+    ref_kind: &'static str,
+    ref_name: &'a str,
 }
 
 #[derive(Debug, Report)]
 #[severity("bug")]
 #[message("Reference `{}` is not resolved still", self.id)]
 struct UnexpectedUnresolvedReference {
-    id: NodeId<Value>,
+    id: NodeId,
     #[primary_label("expected this to be resolved")]
     span: Span,
 }
@@ -89,7 +108,7 @@ enum Reject<'a> {
 #[derive(Debug, Default)]
 struct Rejects<'a>(HashSet<Reject<'a>>);
 
-impl<I> IntoSpannedReportMessage for UnresolvedReference<I>
+impl<I> IntoSpannedReportMessage for UnresolvedReference<'_, I>
 where
     I: IntoIterator<Item: Display>,
 {
@@ -456,53 +475,70 @@ fn resolve_local_value_with_context<'i>(
     )
 }
 
+#[derive(SystemParam, Copy, Clone)]
+pub(super) struct Properties<'w, 's> {
+    ancestors: Query<'w, 's, &'static ChildOf>,
+    descendants: Query<'w, 's, Option<&'static Children>>,
+    table_and_passthrough:
+        Query<'w, 's, (Option<&'static SymbolTable>, Has<Passthrough>, Has<Opaque>)>,
+    name_and_table: Query<'w, 's, (Option<&'static Name>, Option<&'static SymbolTable>)>,
+    name_and_passthrough: Query<'w, 's, (Option<&'static Name>, Has<Passthrough>, Has<Opaque>)>,
+}
+
+fn resolve_ident_with_path<'i>(
+    id: impl Erase,
+    module_id: NodeId<Module>,
+    path: &'i Path,
+    ident: &'i Str,
+    properties: Properties,
+) -> SearchResult<(NodeId, SymbolKind), Rejects<'i>> {
+    match &path {
+        Path {
+            is_global: false,
+            segments,
+        } if segments.is_empty() => resolve_local_value(
+            id,
+            ident,
+            properties.ancestors,
+            properties.table_and_passthrough,
+        ),
+        Path {
+            is_global: true,
+            segments,
+        } => resolve_global_value_with_context(
+            module_id,
+            segments,
+            ident,
+            properties.descendants,
+            properties.name_and_table,
+        ),
+        Path {
+            is_global: false,
+            segments,
+        } => resolve_local_value_with_context(
+            id,
+            segments,
+            ident,
+            properties.ancestors,
+            properties.descendants,
+            properties.name_and_passthrough,
+            properties.name_and_table,
+        ),
+    }
+}
+
 pub(super) fn resolve_values(
     values: Query<(NodeId<Value>, &Value, &InModule, &SourceSpan)>,
-    ancestors: Query<&ChildOf>,
-    descendants: Query<Option<&Children>>,
-    table_and_passthrough: Query<(Option<&SymbolTable>, Has<Passthrough>, Has<Opaque>)>,
-    name_and_table: Query<(Option<&Name>, Option<&SymbolTable>)>,
-    name_and_passthrough: Query<(Option<&Name>, Has<Passthrough>, Has<Opaque>)>,
+    properties: Properties,
     mut reporter: Reporter,
     mut commands: Commands,
 ) {
     for (id, value, &InModule(module_id), span) in values {
         let Value { path, ident } = value;
 
-        let result = match &path {
-            Path {
-                is_global: false,
-                segments,
-            } if segments.is_empty() => {
-                resolve_local_value(id, ident, ancestors, table_and_passthrough)
-            }
-            Path {
-                is_global: true,
-                segments,
-            } => resolve_global_value_with_context(
-                module_id,
-                segments,
-                ident,
-                descendants,
-                name_and_table,
-            ),
-            Path {
-                is_global: false,
-                segments,
-            } => resolve_local_value_with_context(
-                id,
-                segments,
-                ident,
-                ancestors,
-                descendants,
-                name_and_passthrough,
-                name_and_table,
-            ),
-        };
-
-        match result {
+        match resolve_ident_with_path(id, module_id, path, ident, properties) {
             SearchResult::Rejected(rejects) => reporter.report(UnresolvedReference {
-                name: ident.clone(),
+                name: ident,
                 span: span.0,
                 note: rejects,
             }),
@@ -515,11 +551,500 @@ pub(super) fn resolve_values(
     }
 }
 
-pub(super) fn ensure_all_values_resolved(
-    query: Query<(NodeId<Value>, &SourceSpan), Without<ResolvedTo>>,
+enum TypeResolutionError<'a> {
+    Rejected(Rejects<'a>, &'a str),
+    WrongKind(NodeId, SymbolKind, &'a str),
+}
+
+fn resolve_type_annotation<'i>(
+    id: impl Erase + Copy,
+    module_id: NodeId<Module>,
+    annotation: &'i TypeAnnotation,
+    properties: Properties,
+) -> Result<ResolvedTypeAnnotation, TypeResolutionError<'i>> {
+    match annotation {
+        TypeAnnotation::Infer => Ok(ResolvedTypeAnnotation::Infer),
+        TypeAnnotation::Named { path, ident } => {
+            match resolve_ident_with_path(id, module_id, path, ident, properties) {
+                SearchResult::Rejected(rejects) => {
+                    Err(TypeResolutionError::Rejected(rejects, ident))
+                }
+                SearchResult::Accepted(_, (resolved_to, SymbolKind::Type)) => {
+                    Ok(ResolvedTypeAnnotation::Named(resolved_to))
+                }
+                SearchResult::Accepted(_, (resolved_to, actual_kind)) => Err(
+                    TypeResolutionError::WrongKind(resolved_to, actual_kind, ident),
+                ),
+            }
+        }
+        TypeAnnotation::Tuple(items) => {
+            let items = items
+                .iter()
+                .map(|it| resolve_type_annotation(id, module_id, it, properties))
+                .collect::<Result<_, _>>()?;
+            Ok(ResolvedTypeAnnotation::Tuple(items))
+        }
+    }
+}
+
+fn resolve_type<'i>(
+    id: impl Erase + Copy,
+    module_id: NodeId<Module>,
+    ty: &'i UnresolvedType,
+    properties: Properties,
+) -> Result<ResolvedType, TypeResolutionError<'i>> {
+    match ty {
+        UnresolvedType::Named { path, ident } => {
+            match resolve_ident_with_path(id, module_id, path, ident, properties) {
+                SearchResult::Rejected(rejects) => {
+                    Err(TypeResolutionError::Rejected(rejects, ident))
+                }
+                SearchResult::Accepted(_, (resolved_to, SymbolKind::Type)) => {
+                    Ok(ResolvedType::Named(resolved_to))
+                }
+                SearchResult::Accepted(_, (resolved_to, actual_kind)) => Err(
+                    TypeResolutionError::WrongKind(resolved_to, actual_kind, ident),
+                ),
+            }
+        }
+        UnresolvedType::Tuple(items) => {
+            let items = items
+                .iter()
+                .map(|it| resolve_type(id, module_id, it, properties))
+                .collect::<Result<_, _>>()?;
+            Ok(ResolvedType::Tuple(items))
+        }
+    }
+}
+
+pub(super) fn resolve_type_in_variables(
+    variables: Query<(
+        NodeId<Variable<TypeAnnotation>>,
+        &Variable<TypeAnnotation>,
+        &InModule,
+        &Lexeme,
+        &SourceSpan,
+    )>,
+    all_spans: Query<&SourceSpan>,
+    syntax: Res<SyntaxResolver>,
+    properties: Properties,
+    mut reporter: Reporter,
+    mut commands: Commands,
+) {
+    for (id, variable, &InModule(module_id), lexeme, span) in variables {
+        let return_type_span = syntax
+            .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme.0)
+            .ok()
+            .and_then(|it| match &it.variable {
+                kodept_rlt::prelude::Variable::Immutable { assigned_type, .. }
+                | kodept_rlt::prelude::Variable::Mutable { assigned_type, .. } => {
+                    assigned_type.as_ref().map(|it| it.1.bounds())
+                }
+            })
+            .unwrap_or(span.0);
+        let modification = NodeModification::new(commands.reborrow(), id);
+        match resolve_type_annotation(id, module_id, &variable.annotation, properties) {
+            Ok(annotation) => {
+                _ = modification.transmute(Variable {
+                    mutable: variable.mutable,
+                    name: variable.name.clone(),
+                    annotation,
+                })
+            }
+            Err(TypeResolutionError::Rejected(rejects, name)) => {
+                reporter.report(UnresolvedReference {
+                    span: return_type_span,
+                    name,
+                    note: rejects,
+                })
+            }
+            Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                reporter.report(SymbolIsNotType {
+                    name,
+                    actual_kind,
+                    span: all_spans
+                        .get(resolved_to.entity())
+                        .map(|it| it.0)
+                        .unwrap_or_default(),
+                    ref_span: return_type_span,
+                    ref_kind: "explicit type annotation",
+                    ref_name: variable.name.as_str(),
+                })
+            }
+        }
+    }
+}
+
+pub(super) fn resolve_types_in_user_functions(
+    user_functions: Query<(
+        NodeId<UserFunction<TypeAnnotation>>,
+        &mut UserFunction<TypeAnnotation>,
+        &Name,
+        &InModule,
+        &Lexeme,
+        &SourceSpan,
+    )>,
+    all_spans: Query<&SourceSpan>,
+    syntax: Res<SyntaxResolver>,
+    properties: Properties,
+    mut reporter: Reporter,
+    mut commands: Commands,
+) {
+    for (id, mut func, func_name, &InModule(module_id), lexeme, span) in user_functions {
+        let modification = NodeModification::new(commands.reborrow(), id);
+        let func_syntax = syntax
+            .try_get::<kodept_rlt::prelude::BodiedFunction>(lexeme.0)
+            .ok();
+        let return_type_span = func_syntax
+            .and_then(|it| it.return_type.as_ref())
+            .map(|it| it.1.bounds())
+            .unwrap_or(span.0);
+
+        let return_type =
+            match resolve_type_annotation(id, module_id, &func.return_type, properties) {
+                Ok(annotation) => annotation,
+                Err(TypeResolutionError::Rejected(rejects, name)) => {
+                    reporter.report(UnresolvedReference {
+                        name,
+                        note: rejects,
+                        span: return_type_span,
+                    });
+                    continue;
+                }
+                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                    reporter.report(SymbolIsNotType {
+                        name,
+                        actual_kind,
+                        span: all_spans
+                            .get(resolved_to.entity())
+                            .map(|it| it.0)
+                            .unwrap_or_default(),
+                        ref_span: return_type_span,
+                        ref_kind: "return type",
+                        ref_name: func_name.as_ref(),
+                    });
+                    continue;
+                }
+            };
+
+        let params = func.params.drain(..).enumerate().map(|(index, param)| {
+            let result = resolve_type_annotation(id, module_id, param.ty(), properties);
+            let param_span = func_syntax
+                .and_then(|it| it.params.as_ref())
+                .and_then(|it| it.inner.get(index))
+                .map(|it| it.bounds())
+                .unwrap_or(span.0);
+
+            let annotation = match result {
+                Ok(x) => x,
+                Err(TypeResolutionError::Rejected(rejects, name)) => {
+                    reporter.report(UnresolvedReference {
+                        name,
+                        note: rejects,
+                        span: param_span,
+                    });
+                    return None;
+                }
+                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                    reporter.report(SymbolIsNotType {
+                        name,
+                        actual_kind,
+                        span: all_spans
+                            .get(resolved_to.entity())
+                            .map(|it| it.0)
+                            .unwrap_or_default(),
+                        ref_span: param_span,
+                        ref_kind: "parameter",
+                        ref_name: param.name(),
+                    });
+                    return None;
+                }
+            };
+
+            match param {
+                Param::Positional { name, .. } => Some(Param::Positional {
+                    name,
+                    ty: annotation,
+                }),
+                Param::Named {
+                    name,
+                    default_expr_id,
+                    ..
+                } => Some(Param::Named {
+                    name,
+                    ty: annotation,
+                    default_expr_id,
+                }),
+            }
+        });
+        let Some(params) = params.collect() else {
+            continue;
+        };
+
+        modification.transmute(UserFunction {
+            return_type,
+            params,
+        });
+    }
+}
+
+pub(super) fn resolve_types_in_value_ctors(
+    query: Query<(
+        NodeId<ValueCtor<UnresolvedType>>,
+        &mut ValueCtor<UnresolvedType>,
+        &InModule,
+        &SourceSpan,
+    )>,
+    all_spans: Query<&SourceSpan>,
+    properties: Properties,
+    mut reporter: Reporter,
+    mut commands: Commands,
+) {
+    for (id, mut ctor, &InModule(module_id), span) in query {
+        let modification = NodeModification::new(commands.reborrow(), id);
+
+        let params = ctor.params.drain(..).map(|param| {
+            let result = resolve_type(id, module_id, param.ty(), properties);
+            let ty = match result {
+                Ok(x) => x,
+                Err(TypeResolutionError::Rejected(rejects, name)) => {
+                    reporter.report(UnresolvedReference {
+                        name,
+                        note: rejects,
+                        span: span.0,
+                    });
+                    return None;
+                }
+                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                    reporter.report(SymbolIsNotType {
+                        name,
+                        actual_kind,
+                        ref_kind: "parameter",
+                        ref_name: param.name(),
+                        span: all_spans
+                            .get(resolved_to.entity())
+                            .map(|it| it.0)
+                            .unwrap_or_default(),
+                        ref_span: span.0,
+                    });
+                    return None;
+                }
+            };
+
+            match param {
+                Param::Positional { name, .. } => Some(Param::Positional { name, ty }),
+                Param::Named {
+                    name,
+                    default_expr_id,
+                    ..
+                } => Some(Param::Named {
+                    name,
+                    default_expr_id,
+                    ty,
+                }),
+            }
+        });
+        let Some(params) = params.collect() else {
+            continue;
+        };
+
+        modification.transmute(ValueCtor {
+            name: std::mem::replace(&mut ctor.name, CtorName::Inline),
+            params,
+        });
+    }
+}
+
+pub(super) fn resolve_types_in_anon_functions(
+    query: Query<(
+        NodeId<AnonFunction<TypeAnnotation>>,
+        &mut AnonFunction<TypeAnnotation>,
+        &InModule,
+        &Lexeme,
+        &SourceSpan,
+    )>,
+    all_spans: Query<&SourceSpan>,
+    properties: Properties,
+    syntax: Res<SyntaxResolver>,
+    mut reporter: Reporter,
+    mut commands: Commands,
+) {
+    for (id, mut func, &InModule(module_id), lexeme, span) in query {
+        let func_syntax = syntax.try_get::<kodept_rlt::prelude::Lambda>(lexeme.0).ok();
+
+        let return_type =
+            match resolve_type_annotation(id, module_id, &func.return_type, properties) {
+                Ok(x) => x,
+                Err(TypeResolutionError::Rejected(rejects, name)) => {
+                    reporter.report(UnresolvedReference {
+                        name,
+                        note: rejects,
+                        span: span.0,
+                    });
+                    continue;
+                }
+                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                    reporter.report(SymbolIsNotType {
+                        span: all_spans
+                            .get(resolved_to.entity())
+                            .map(|it| it.0)
+                            .unwrap_or_default(),
+                        actual_kind,
+                        name,
+
+                        ref_span: Default::default(),
+                        ref_kind: "parameter",
+                        ref_name: "anonymous function",
+                    });
+                    continue;
+                }
+            };
+
+        let params = func.params.drain(..).enumerate().map(|(index, it)| {
+            let result = resolve_type_annotation(id, module_id, it.ty(), properties);
+            let param_span = func_syntax
+                .and_then(|it| it.binds.inner.get(index))
+                .map(|it| it.bounds())
+                .unwrap_or(span.0);
+
+            let ty = match result {
+                Ok(x) => x,
+                Err(TypeResolutionError::Rejected(rejects, name)) => {
+                    reporter.report(UnresolvedReference {
+                        name,
+                        note: rejects,
+                        span: param_span,
+                    });
+                    return None;
+                }
+                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                    reporter.report(SymbolIsNotType {
+                        span: all_spans
+                            .get(resolved_to.entity())
+                            .map(|it| it.0)
+                            .unwrap_or_default(),
+                        name,
+                        ref_span: param_span,
+                        ref_kind: "parameter",
+                        actual_kind,
+                        ref_name: it.name(),
+                    });
+                    return None;
+                }
+            };
+
+            Some(match it {
+                Param::Positional { name, .. } => Param::Positional { name, ty },
+                Param::Named {
+                    name,
+                    default_expr_id,
+                    ..
+                } => Param::Named {
+                    name,
+                    default_expr_id,
+                    ty,
+                },
+            })
+        });
+        let Some(params) = params.collect() else {
+            continue;
+        };
+
+        let modification = NodeModification::new(commands.reborrow(), id);
+        modification.transmute(AnonFunction {
+            return_type,
+            params,
+        });
+    }
+}
+
+pub(super) fn resolve_types_in_foreign_functions(
+    query: Query<(
+        NodeId<ForeignFunction<UnresolvedType>>,
+        &mut ForeignFunction<UnresolvedType>,
+        &Name,
+        &InModule,
+        &SourceSpan,
+    )>,
+    all_spans: Query<&SourceSpan>,
+    properties: Properties,
+    mut reporter: Reporter,
+    mut commands: Commands,
+) {
+    for (id, mut func, func_name, &InModule(module_id), span) in query {
+        let return_type = match resolve_type(id, module_id, &func.return_type, properties) {
+            Ok(x) => x,
+            Err(TypeResolutionError::Rejected(rejects, name)) => {
+                reporter.report(UnresolvedReference {
+                    name,
+                    note: rejects,
+                    span: span.0,
+                });
+                continue;
+            }
+            Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                reporter.report(SymbolIsNotType {
+                    name,
+                    actual_kind,
+                    span: all_spans
+                        .get(resolved_to.entity())
+                        .map(|it| it.0)
+                        .unwrap_or_default(),
+                    ref_kind: "return type",
+                    ref_name: func_name.as_ref(),
+                    ref_span: span.0,
+                });
+                continue;
+            }
+        };
+
+        let params = func.params.drain(..).enumerate().map(|(index, it)| {
+            match resolve_type(id, module_id, &it, properties) {
+                Ok(x) => Some(x),
+                Err(TypeResolutionError::Rejected(rejected, name)) => {
+                    reporter.report(UnresolvedReference {
+                        name,
+                        note: rejected,
+                        span: span.0,
+                    });
+                    None
+                }
+                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                    reporter.report(SymbolIsNotType {
+                        name,
+                        actual_kind,
+                        span: all_spans
+                            .get(resolved_to.entity())
+                            .map(|it| it.0)
+                            .unwrap_or_default(),
+                        ref_kind: "parameter",
+                        ref_name: &index.to_string(),
+                        ref_span: span.0,
+                    });
+                    None
+                }
+            }
+        });
+        let Some(params) = params.collect() else {
+            continue;
+        };
+
+        let modification = NodeModification::new(commands.reborrow(), id);
+        modification.transmute(ForeignFunction {
+            return_type,
+            params,
+        });
+    }
+}
+
+pub(super) fn ensure_absent<T: ASTNode, F: QueryFilter>(
+    query: Query<(NodeId<T>, &SourceSpan), F>,
     mut reporter: Reporter,
 ) {
     for (id, span) in query {
-        reporter.report(UnexpectedUnresolvedReference { id, span: span.0 });
+        reporter.report(UnexpectedUnresolvedReference {
+            id: id.cast(),
+            span: span.0,
+        });
     }
 }

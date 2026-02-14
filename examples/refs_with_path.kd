@@ -10,7 +10,6 @@ enum struct Bool {
 
 fun main() {
 	fun inner {
-		val foo = unit
 		val true = Test::Bool::True
 	}
 

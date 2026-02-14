@@ -226,7 +226,7 @@ impl<T: IsExpression> HasChild<T, Expression> for Link {}
 mod transmutes {
     use crate::{
         AnonFunction, Block, ForeignFunction, NormalizedBlock, ResolvedType,
-        ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction,
+        ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction, ValueCtor, Variable,
     };
     use kodept_ast::experimental::TransmuteInto;
 
@@ -234,4 +234,6 @@ mod transmutes {
     unsafe impl TransmuteInto<UserFunction<ResolvedTypeAnnotation>> for UserFunction<TypeAnnotation> {}
     unsafe impl TransmuteInto<ForeignFunction<ResolvedType>> for ForeignFunction<UnresolvedType> {}
     unsafe impl TransmuteInto<AnonFunction<ResolvedTypeAnnotation>> for AnonFunction<TypeAnnotation> {}
+    unsafe impl TransmuteInto<Variable<ResolvedTypeAnnotation>> for Variable<TypeAnnotation> {}
+    unsafe impl TransmuteInto<ValueCtor<ResolvedType>> for ValueCtor<UnresolvedType> {}
 }

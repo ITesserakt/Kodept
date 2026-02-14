@@ -31,5 +31,4 @@ workspace = true
 
 [features]
 default = []
-parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std"]
 reflection = ["kodept-ast/reflection"]

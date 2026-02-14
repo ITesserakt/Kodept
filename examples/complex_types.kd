@@ -3,7 +3,7 @@ module Main =>
 struct A;
 struct B(a: A);
 
-struct List(head: A, tail: List);
+struct List(head: A, tail: Main::List);
 
 enum struct C { A, B }
 struct D(
@@ -12,5 +12,7 @@ struct D(
 );
 
 fun test(): (A, B, C) {
+	val foo: (B, C) = (Main::B::B(Main::A::A), Main::C::A)
 	val infer: _ = 3
+	val lambda = [x: A] => x
 }

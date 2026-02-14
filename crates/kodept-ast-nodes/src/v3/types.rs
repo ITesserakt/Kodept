@@ -26,12 +26,12 @@ pub enum CtorName {
 #[derive(Debug, PartialEq)]
 pub enum Param<T> {
     Positional {
-        name: Option<Str>,
-        ty_id: T,
+        name: Str,
+        ty: T,
     },
     Named {
         name: Str,
-        ty_id: T,
+        ty: T,
         default_expr_id: Option<NodeId>,
     },
 }
@@ -136,7 +136,7 @@ pub struct Path {
     pub segments: Cow<'static, [Str]>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum VariableName {
     Empty,
     Name(Str),
@@ -145,25 +145,27 @@ pub enum VariableName {
 #[derive(Debug, PartialEq)]
 pub enum TypeAnnotation {
     Infer,
-    Bound(UnresolvedType),
+    Named { path: Path, ident: Str },
+    Tuple(Vec<Self>),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum UnresolvedType {
-    Named { context: Path, ident: Str },
-    Tuple(Vec<TypeAnnotation>),
+    Named { path: Path, ident: Str },
+    Tuple(Vec<Self>),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum ResolvedTypeAnnotation {
     Infer,
-    Bound(ResolvedType),
+    Named(NodeId),
+    Tuple(Vec<Self>),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum ResolvedType {
     Named(NodeId),
-    Tuple(Vec<NodeId>),
+    Tuple(Vec<Self>),
 }
 
 impl TypeRef<true> for UnresolvedType {}
@@ -176,6 +178,42 @@ impl Path {
         Self {
             is_global,
             segments: Cow::Borrowed(&[]),
+        }
+    }
+}
+
+impl VariableName {
+    pub fn as_str(&self) -> &str {
+        match self {
+            VariableName::Empty => "_",
+            VariableName::Name(name) => name,
+        }
+    }
+}
+
+impl<T> Param<T> {
+    pub fn name(&self) -> &str {
+        match self {
+            Param::Positional { name, .. } => name,
+            Param::Named { name, .. } => name,
+        }
+    }
+
+    pub fn ty(&self) -> &T {
+        match self {
+            Param::Positional { ty, .. } => ty,
+            Param::Named { ty, .. } => ty,
+        }
+    }
+}
+
+impl UnresolvedType {
+    pub fn into_annotation(self) -> TypeAnnotation {
+        match self {
+            UnresolvedType::Named { path, ident } => TypeAnnotation::Named { path, ident },
+            UnresolvedType::Tuple(items) => {
+                TypeAnnotation::Tuple(items.into_iter().map(|it| it.into_annotation()).collect())
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ mod ast_normalization;
 mod build_ast;
 mod parse_source;
 mod symbols;
+mod typeck;
 
 pub mod prelude {
     pub use super::ast_normalization::{

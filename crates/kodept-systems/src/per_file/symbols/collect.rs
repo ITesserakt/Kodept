@@ -327,12 +327,7 @@ where
 
             for (index, param) in get_params(ctor).iter().enumerate() {
                 match param {
-                    Param::Positional { name: None, .. } => {
-                        registrator.register(index.to_string(), SymbolKind::Parameter(index), id);
-                    }
-                    Param::Positional {
-                        name: Some(name), ..
-                    } => {
+                    Param::Positional { name, .. } => {
                         registrator.register(name, SymbolKind::Parameter(index), id);
                     }
                     Param::Named { name, .. } => {

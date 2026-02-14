@@ -24,7 +24,7 @@ define_phase! {
     fn build(self, engine: &mut PhaseEngine<Self>) {
         engine.add_systems((
             normalize_blocks.trace_completion(),
-            ensure_no_non_normalized_blocks.trace_completion()
+            ensure_no_non_normalized_blocks
         ).chain());
 
         engine.add_observer(propagate_module_info);
