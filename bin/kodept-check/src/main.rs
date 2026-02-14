@@ -1,7 +1,7 @@
 use clap::Parser;
 use kodept_cli::prelude::{
     DiagnosticConfig, Extension, LexerChoice, LoadingConfig, LogPlugin, LoggingLevel, ParserChoice,
-    ParsingConfig, ReportsPlugin,
+    ParsingConfig, ReportsPlugin, ThreadPoolPlugin,
 };
 use kodept_frontend::engine::Engine;
 use kodept_frontend::engine::reporter::CompilationFailed;
@@ -21,6 +21,9 @@ struct Cli {
     /// Measure duration of different stages
     #[arg(short = 't', long, action)]
     timings: bool,
+    /// Specifies amount of parallel threads to use
+    #[arg(short, long, default_value_t = 1)]
+    jobs: usize,
 
     #[command(flatten, next_help_heading = "Parsing options")]
     parsing_config: ParsingConfig,
@@ -68,6 +71,9 @@ fn main() -> Result<(), CompilationFailed> {
     engine.add_plugin(LogPlugin {
         level: LoggingLevel::Trace,
         display_thread_names: false,
+    });
+    engine.add_plugin(ThreadPoolPlugin {
+        total_threads: cli.jobs,
     });
 
     engine
