@@ -298,7 +298,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         }
 
     rule local_type_ref() -> (rlt::Context, TypeName) =
-        ctx:(type_ref() **<2,> "::") {
+        ctx:(type_ref() **<1,> "::") {
             let start = rlt::Context::Local;
             let mut ctx = ctx;
             let last = ctx.pop().unwrap();
