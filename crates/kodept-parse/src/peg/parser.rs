@@ -56,8 +56,8 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
 
     pub rule type_grammar() -> rlt::Type =
         i:global_type_ref() { rlt::Type::ContextualReference(i.0, i.1) } /
-        i:type_ident()      { rlt::Type::Reference(i) }                  /
         i:local_type_ref()  { rlt::Type::ContextualReference(i.0, i.1) } /
+        i:type_ident()      { rlt::Type::Reference(i) }                  /
         tuple()
 
     /// Parameters grammar
@@ -300,7 +300,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         }
 
     rule local_type_ref() -> (rlt::Context, TypeName) =
-        ctx:(type_ref() **<1,> "::") {
+        ctx:(type_ref() ++ "::") {
             let start = rlt::Context::Local;
             let mut ctx = ctx;
             let last = ctx.pop().unwrap();
