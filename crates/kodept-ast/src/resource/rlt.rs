@@ -23,6 +23,7 @@ pub struct SyntaxResolver {
     tree: Pin<Box<PinnedRLT>>,
 }
 
+#[derive(Debug)]
 pub enum LookupError {
     NotFound,
     WrongType,
