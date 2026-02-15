@@ -92,7 +92,10 @@ pub mod tasks {
 }
 pub mod utils {
     pub use bevy_utils::prelude::{DebugName, ShortName};
-    pub use bevy_utils::{Parallel, PreHashMap, PreHashMapExt, TypeIdMap, TypeIdMapExt};
+    pub use bevy_utils::{PreHashMap, PreHashMapExt, TypeIdMap, TypeIdMapExt};
+
+    #[cfg(feature = "parallel")]
+    pub use bevy_utils::Parallel;
 }
 
 /// Use this module *only* to bring `bevy_ecs` crate into scope _for macros_

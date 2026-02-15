@@ -10,10 +10,11 @@ crate-type = ["dylib"]
 [dependencies]
 bevy_ecs = { version = "0.18.0", default-features = false }
 bevy_tasks = { version = "0.18.0", default-features = false }
-bevy_utils = { version = "0.18.0" }
+bevy_utils = { version = "0.18.0", default-features = false }
 
 [lints]
 workspace = true
 
 [features]
-parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std", "bevy_tasks/async_executor"]
+parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std", "bevy_tasks/async_executor", "bevy_utils/parallel"]
+debug = ["bevy_utils/debug"]
