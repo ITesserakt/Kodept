@@ -65,9 +65,12 @@ fn main() -> Result<(), CompilationFailed> {
         engine.init_resource::<Timings>();
     }
 
-    engine.add_plugin(ReportsPlugin {
-        config: &cli.diagnostic_config,
-    });
+    engine.add_plugin_if(
+        !cli.diagnostic_config.disable,
+        ReportsPlugin {
+            config: &cli.diagnostic_config,
+        },
+    );
     engine.add_plugin(LogPlugin {
         level: LoggingLevel::Trace,
         display_thread_names: false,
