@@ -1,6 +1,6 @@
 [package]
 name = "kodept-parse"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Владимир Никитин <potyras85@mail.ru>"]
 description = "Simple compiler with dependent types support in mind"
 repository = "https://github.com/ITesserakt/Kodept/"
