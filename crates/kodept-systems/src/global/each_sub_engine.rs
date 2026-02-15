@@ -57,6 +57,8 @@ where
         let _guard = span.enter();
         // Update source
         engine.insert_resource(source.clone());
+        #[cfg(feature = "parallel")]
+        engine.set_executor_kind(kodept_ecs::schedule::ExecutorKind::MultiThreaded);
         // Configure engine
         configuration(&mut *engine);
         // Run it!

@@ -10,7 +10,7 @@ tracing.workspace = true
 tracing-subscriber = "0.3"
 rayon = "1.11"
 
-kodept-frontend = { path = "../kodept-frontend", version = "0.2", features = ["parallel"] }
+kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 
 [lints]

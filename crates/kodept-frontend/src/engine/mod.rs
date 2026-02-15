@@ -320,6 +320,11 @@ impl SubEngine {
     {
         self.engine_world.resource()
     }
+
+    pub fn set_executor_kind(&mut self, kind: ExecutorKind) -> &mut Self {
+        self.inner.set_schedule_executor_kind(Startup, kind);
+        self
+    }
 }
 
 impl Deref for SubEngine {

@@ -59,25 +59,10 @@ impl CodeHolder for InlineCodeHolder {
     }
 }
 
-#[cfg(feature = "parallel")]
-fn build_thread_pool(size: usize) -> rayon::ThreadPool {
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(size)
-        .build()
-        .unwrap();
-    pool
-}
-
 fn bench_complexity(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     for size in [1, 2, 5, 10, 50, 200, 400, 700] {
         group.throughput(Throughput::Elements(size));
-        #[cfg(feature = "parallel")]
-        fn bencher(size: u64) -> impl FnMut(&mut Bencher) {
-            static POOL: LazyLock<rayon::ThreadPool> = LazyLock::new(|| build_thread_pool(9));
-            move |b| POOL.install(|| bench_fns(size)(b))
-        }
-        #[cfg(not(feature = "parallel"))]
         fn bencher(size: u64) -> impl FnMut(&mut Bencher) {
             bench_fns(size)
         }
@@ -89,41 +74,16 @@ fn bench_complexity(c: &mut Criterion) {
     }
 }
 
-#[cfg(feature = "parallel")]
-fn parallel_bench<M>(id: &str, group: &mut criterion::BenchmarkGroup<M>)
-where
-    M: Measurement<Value: Send> + Sync,
-{
-    for parallelism in 1..11 {
-        let pool = build_thread_pool(parallelism);
-
-        group.bench_function(criterion::BenchmarkId::new(id, parallelism), |b| {
-            pool.install(|| bench_fns(MODULES_COUNT)(b))
-        });
-    }
-}
-
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     group.throughput(Throughput::Elements(MODULES_COUNT));
 
-    #[cfg(not(feature = "parallel"))]
     group.bench_function("no interning, no parallelization", bench_fns(MODULES_COUNT));
-
-    #[cfg(feature = "parallel")]
-    parallel_bench("no interning, parallelization", &mut group);
 }
 
 criterion_group!(benches, bench_impls, bench_complexity);
 
 fn main() {
-    #[cfg(feature = "parallel")]
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(1)
-        .use_current_thread()
-        .build_global()
-        .unwrap();
-
     benches();
 
     Criterion::default().configure_from_args().final_summary();

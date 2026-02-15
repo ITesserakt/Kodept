@@ -139,7 +139,6 @@ where
 {
     pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
         let behaviour = message.behaviour();
-        trace!(?behaviour, "Reported new message");
 
         match (
             self.settings.as_deref(),

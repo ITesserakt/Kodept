@@ -940,7 +940,6 @@ dependencies = [
  "kodept-rlt",
  "num-bigint",
  "proptest",
- "rayon",
  "serde_json",
 ]
 
