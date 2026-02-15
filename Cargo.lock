@@ -919,10 +919,9 @@ dependencies = [
 name = "kodept-ast"
 version = "0.7.5"
 dependencies = [
- "bevy_ecs",
- "bevy_utils",
  "derive_more",
  "kodept-core",
+ "kodept-ecs",
  "kodept-rlt",
  "rayon",
  "smallvec",
@@ -937,6 +936,7 @@ dependencies = [
  "criterion",
  "kodept-ast",
  "kodept-core",
+ "kodept-ecs",
  "kodept-rlt",
  "num-bigint",
  "proptest",
@@ -948,12 +948,11 @@ dependencies = [
 name = "kodept-ast-visualizer"
 version = "0.1.0"
 dependencies = [
- "bevy_ecs",
- "bevy_utils",
  "clap",
  "kodept-ast",
  "kodept-ast-nodes",
  "kodept-cli",
+ "kodept-ecs",
  "kodept-frontend",
  "kodept-systems",
 ]
@@ -991,12 +990,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "kodept-frontend"
-version = "0.2.0"
+name = "kodept-ecs"
+version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "bevy_tasks",
+ "bevy_utils",
+]
+
+[[package]]
+name = "kodept-frontend"
+version = "0.2.0"
+dependencies = [
  "kodept-core",
+ "kodept-ecs",
  "kodept-report",
  "tracing",
  "yoke",
@@ -1082,11 +1089,11 @@ dependencies = [
 name = "kodept-systems"
 version = "0.1.4"
 dependencies = [
- "bevy_ecs",
  "derive_more",
  "kodept-ast",
  "kodept-ast-nodes",
  "kodept-core",
+ "kodept-ecs",
  "kodept-frontend",
  "kodept-parse",
  "kodept-report",

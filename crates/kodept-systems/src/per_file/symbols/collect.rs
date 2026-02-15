@@ -2,10 +2,6 @@ use crate::per_file::symbols::{
     ComponentIdForMapper, RefMapper, SymbolKind, SymbolName, SymbolTable,
 };
 use crate::source::collection::Reporter;
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::change_detection::Res;
-use bevy_ecs::query::{AnyOf, Has, QueryItem, ROQueryItem, ReadOnlyQueryData};
-use bevy_ecs::system::{Commands, Query, StaticSystemParam, SystemParam, SystemParamItem};
 use kodept_ast::prelude::{ASTNode, Erase, HierarchicalQuery, NodeId, NodeQueryData};
 use kodept_ast::properties::{HasProperty, Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
@@ -17,6 +13,10 @@ use kodept_ast_nodes::{
 };
 use kodept_core::code_point::Span;
 use kodept_core::structure::Located;
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::{AnyOf, Has, QueryItem, ROQueryItem, ReadOnlyQueryData};
+use kodept_ecs::system::{Commands, Query, Res, StaticSystemParam, SystemParam, SystemParamItem};
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report_macros::Report;
 use kodept_rlt::traversal::ErasedNodeBorrow;

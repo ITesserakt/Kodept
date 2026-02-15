@@ -1,6 +1,5 @@
 use crate::source::collection::SourceView;
 use crate::utils::{LogSystemEx, ReportSystemEx};
-use bevy_ecs::prelude::*;
 use derive_more::From;
 use kodept_ast::experimental::FromSyntax;
 use kodept_ast::prelude::NodeId;
@@ -10,6 +9,8 @@ use kodept_ast::syntax_tree::experimental::RelatedNodeSpawner;
 use kodept_ast_nodes::Modules;
 use kodept_ast_nodes::{Error, Module};
 use kodept_core::structure::CodeHolder;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::system::{Commands, Res};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};

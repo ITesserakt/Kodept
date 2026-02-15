@@ -1,9 +1,9 @@
 use bigdecimal::BigDecimal;
 use kodept_ast::Str;
-use kodept_ast::export::Component;
-use kodept_ast::export::bevy_ecs;
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Name, Node};
+use kodept_ecs::component::Component;
+use kodept_ecs::exported::bevy_ecs;
 use kodept_rlt::prelude::Context;
 use num_bigint::BigInt;
 use std::borrow::Cow;

@@ -3,16 +3,17 @@ use crate::prelude::{ASTNode, NodeId};
 use crate::properties::{HasProperty, NodeProperty, RequireProperty};
 use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::{Family, HasChild};
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::component::Mutable;
-use bevy_ecs::prelude::{Component, Mut, Query, Ref, RelationshipTarget};
-use bevy_ecs::query::{
+use derive_more::{Display, Error, From};
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::component::{Component, Mutable};
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::{
     QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem,
     ReadOnlyQueryData,
 };
-use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
-use bevy_ecs::system::SystemParam;
-use derive_more::{Display, Error, From};
+use kodept_ecs::relationship::{Relationship, RelationshipSourceCollection, RelationshipTarget};
+use kodept_ecs::system::{Query, SystemParam};
+use kodept_ecs::world::{Mut, Ref};
 use smallvec::SmallVec;
 use std::convert::Infallible;
 use std::error::Error;

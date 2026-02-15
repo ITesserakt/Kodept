@@ -2,9 +2,12 @@ use crate::arity::{Arity, Optional, Plural, Singular};
 use crate::properties::{Node, Root};
 use crate::relationship::{ArityValue, NodeRelationship, NodeRelationships, RelationshipMetadata};
 use crate::syntax_tree::children::{Family, Nothing};
-use bevy_ecs::prelude::{Entity, EntityRef, Query, Res, Single, With};
-use bevy_ecs::relationship::Relationship;
-use bevy_ecs::system::SystemParam;
+use kodept_ecs::entity::Entity;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::With;
+use kodept_ecs::relationship::Relationship;
+use kodept_ecs::system::{Query, Res, Single, SystemParam};
+use kodept_ecs::world::EntityRef;
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 
@@ -133,9 +136,11 @@ mod tests {
     use crate::syntax_tree::builder_v4::{Constructed, NodeBuilder, NodeSpawner};
     use crate::syntax_tree::children::{Family, HasChild};
     use crate::syntax_tree::iteration::{AllNodesQuery, NodeSlot};
-    use bevy_ecs::prelude::*;
-    use bevy_ecs::system::RunSystemOnce;
     use kodept_core::code_point::{CodePoint, Span};
+    use kodept_ecs::component::Component;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::exported::bevy_ecs::system::RunSystemOnce;
+    use kodept_ecs::world::World;
 
     #[derive(Debug, Component, PartialEq)]
     #[require(Node::of::<Self>())]

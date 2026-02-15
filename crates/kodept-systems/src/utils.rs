@@ -1,7 +1,7 @@
 use crate::source::collection::Reporter;
-use bevy_ecs::prelude::*;
-use bevy_ecs::system::ScheduleSystem;
 use kodept_core::try_port::Try;
+use kodept_ecs::schedule::IntoScheduleConfigs;
+use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, SystemInput};
 use kodept_frontend::prelude::ExtractReports;
 use kodept_report::prelude::IntoSpannedReportMessage;
 use std::fmt::Debug;

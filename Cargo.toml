@@ -16,7 +16,7 @@ members = [
     , "crates/kodept-ir"
     , "bin/kodept-ast-visualizer"
     , "bin/kodept-check"
-]
+    , "crates/kodept-ecs"]
 
 [workspace.package]
 edition = "2024"
@@ -25,9 +25,6 @@ rust-version = "1.89.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-bevy_ecs = { version = "0.18.0", default-features = false }
-bevy_tasks = { version = "0.18.0", default-features = false, features = ["async_executor"] }
-bevy_utils = { version = "0.18.0" }
 tracing = "0.1.40"
 
 [workspace.dependencies.derive_more]

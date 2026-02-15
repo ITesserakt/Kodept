@@ -1,8 +1,9 @@
 use crate::prelude::Erase;
 use crate::properties::SourceSpan;
-use bevy_ecs::prelude::{Entity, Query};
-use bevy_ecs::system::SystemParam;
 use kodept_core::code_point::Span;
+use kodept_ecs::entity::Entity;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::system::{Query, SystemParam};
 use tracing::warn;
 
 #[derive(SystemParam)]

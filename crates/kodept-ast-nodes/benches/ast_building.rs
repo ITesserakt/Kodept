@@ -1,14 +1,12 @@
-extern crate core;
-
 use criterion::measurement::Measurement;
 use criterion::{BatchSize, Bencher, Criterion, Throughput, criterion_group};
 use kodept_ast::experimental::FromSyntax;
-use kodept_ast::export::bevy_ecs::prelude::World;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::NodeSpawner;
 use kodept_ast_nodes::Module;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
+use kodept_ecs::world::World;
 use kodept_rlt::prelude::{File, RLT};
 use std::borrow::Cow;
 use std::sync::LazyLock;

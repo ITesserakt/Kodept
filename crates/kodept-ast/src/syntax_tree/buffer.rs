@@ -1,5 +1,8 @@
-use bevy_ecs::error::HandleError;
-use bevy_ecs::prelude::*;
+use kodept_ecs::bundle::Bundle;
+use kodept_ecs::entity::Entity;
+use kodept_ecs::exported::bevy_ecs::error::HandleError;
+use kodept_ecs::system::{Command, Commands, EntityCommands};
+use kodept_ecs::world::{EntityWorldMut, World};
 
 pub trait Buffer {
     type Reborrowed<'a>: Buffer
@@ -230,8 +233,10 @@ impl<'s, 'w> Buffer for ReborrowedEntityWorldMut<'s, 'w> {
 #[cfg(feature = "parallel")]
 mod parallel {
     use crate::syntax_tree::buffer::{Buffer, RefBuffer};
-    use bevy_ecs::error::HandleError;
-    use bevy_ecs::prelude::*;
+    use kodept_ecs::bundle::Bundle;
+    use kodept_ecs::entity::Entity;
+    use kodept_ecs::error::HandleError;
+    use kodept_ecs::system::{Command, Commands, ParallelCommands};
 
     pub struct BorrowedParallelCommands<'w, 's>(&'s ParallelCommands<'w, 's>);
 
@@ -307,8 +312,10 @@ mod parallel {
 #[cfg(test)]
 mod tests {
     use crate::syntax_tree::buffer::Buffer;
-    use bevy_ecs::prelude::{Command, Component};
-    use bevy_ecs::world::World;
+    use kodept_ecs::component::Component;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::system::Command;
+    use kodept_ecs::world::World;
 
     #[derive(Debug, Component)]
     struct Success;
@@ -355,8 +362,7 @@ mod tests {
     #[test]
     #[cfg(feature = "parallel")]
     fn test_buffer_ref() {
-        use bevy_ecs::system::ParallelCommands;
-        use bevy_ecs::system::SystemState;
+        use kodept_ecs::system::{ParallelCommands, SystemState};
 
         let mut world = World::new();
         let mut state = SystemState::<ParallelCommands>::new(&mut world);

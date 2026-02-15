@@ -1,6 +1,8 @@
 use crate::prelude::{CollectedSources, Global, Source, SourceView};
-use bevy_ecs::prelude::*;
-use bevy_ecs::system::{SystemBuffer, SystemMeta, SystemParam};
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
+use kodept_ecs::system::{Deferred, Res, SystemBuffer, SystemMeta, SystemParam};
+use kodept_ecs::world::World;
 use kodept_report::prelude::*;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};

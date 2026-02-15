@@ -1,5 +1,6 @@
-use bevy_ecs::prelude::Resource;
-use bevy_ecs::ptr::Ptr;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::ptr::Ptr;
+use kodept_ecs::resource::Resource;
 use std::any::{Any, TypeId};
 use std::borrow::Cow;
 use std::collections::HashMap;

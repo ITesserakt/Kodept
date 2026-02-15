@@ -1,16 +1,9 @@
 use crate::per_file::ast_normalization::InModule;
 use crate::per_file::symbols::{SymbolKind, SymbolTable};
 use crate::source::collection::Reporter;
-use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::lifecycle::Add;
-use bevy_ecs::name::Name;
-use bevy_ecs::prelude::{Children, Entity, On, Res, With};
-use bevy_ecs::query::{Has, Or, QueryData, QueryFilter};
-use bevy_ecs::system::{Commands, Query, SystemParam};
 use kodept_ast::Str;
-use kodept_ast::export::Component;
 use kodept_ast::prelude::{ASTNode, Erase, NodeId};
-use kodept_ast::properties::{Lexeme, SourceSpan};
+use kodept_ast::properties::{Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
@@ -20,6 +13,13 @@ use kodept_ast_nodes::{
 };
 use kodept_core::code_point::Span;
 use kodept_core::structure::SpanBounds;
+use kodept_ecs::component::Component;
+use kodept_ecs::entity::Entity;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::hierarchy::{ChildOf, Children};
+use kodept_ecs::lifecycle::Add;
+use kodept_ecs::query::{Has, Or, QueryData, QueryFilter, With};
+use kodept_ecs::system::{Commands, On, Query, Res, SystemParam};
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report::traits::IntoSpannedReportMessage;
 use kodept_report_macros::Report;

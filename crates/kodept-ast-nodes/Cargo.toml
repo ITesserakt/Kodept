@@ -11,8 +11,9 @@ workspace = true
 bigdecimal = "0.4"
 num-bigint = "0.4"
 
-kodept-ast = { path = "../kodept-ast" }
-kodept-rlt = { path = "../kodept-rlt" }
+kodept-ast = { path = "../kodept-ast", version = "0.7" }
+kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
+kodept-rlt = { path = "../kodept-rlt", version = "0.2" }
 
 [dev-dependencies]
 criterion = "0.7.0"
@@ -25,7 +26,6 @@ kodept-rlt = { version = "0.2", features = ["arbitrary", "serde"], path = "../ko
 
 [features]
 defalt = []
-parallel = ["kodept-ast/parallel"]
 reflection = ["kodept-ast/reflection"]
 
 [[bench]]

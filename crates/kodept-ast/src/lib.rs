@@ -21,7 +21,7 @@ pub mod prelude {
 
 #[cfg(feature = "reflection")]
 pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegistry) {
-    use bevy_ecs::prelude::{ChildOf, Children};
+    use kodept_ecs::hierarchy::{ChildOf, Children};
 
     registry.register::<properties::Node>();
     registry.register::<properties::SourceSpan>();
@@ -33,11 +33,6 @@ pub fn register_reflection_info(registry: &mut resource::reflection::DebugRegist
 
 pub mod experimental {
     pub use super::traits::{Dispatch, FromSyntax, TransmuteInto};
-}
-
-pub mod export {
-    pub use bevy_ecs;
-    pub use bevy_ecs::prelude::Component;
 }
 
 pub type Str = std::borrow::Cow<'static, str>;

@@ -1,7 +1,7 @@
 use crate::arity::Arity;
 use crate::prelude::ASTNode;
 use crate::relationship::NodeRelationship;
-use bevy_ecs::prelude::Component;
+use kodept_ecs::component::Component;
 
 #[deprecated]
 pub mod arity {

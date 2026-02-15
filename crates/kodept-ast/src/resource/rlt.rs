@@ -1,6 +1,7 @@
-use bevy_ecs::prelude::Resource;
 use kodept_core::Freeze;
 use kodept_core::structure::SpanBounds;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
 use kodept_rlt::exported::Span;
 use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;

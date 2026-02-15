@@ -1,8 +1,10 @@
 use crate::configs::{Lexer, Parser};
 use crate::source::collection::SourceView;
 use crate::utils::{LogSystemEx, ReportSystemEx};
-use bevy_ecs::prelude::*;
 use kodept_ast::resource::rlt::SyntaxResolver;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::schedule::SystemSet;
+use kodept_ecs::system::{Commands, Res};
 use kodept_frontend::Either;
 use kodept_frontend::engine::{Phase, PhaseEngine};
 use kodept_parse::common::{ErrorAdapter, RLTProducer};

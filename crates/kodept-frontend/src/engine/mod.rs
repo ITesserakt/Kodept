@@ -1,9 +1,16 @@
 use crate::engine::function_impls::InlineFunctionPhase;
 use crate::engine::reporter::CompilationFailed;
 use crate::prelude::Global;
-use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::{ExecutorKind, ScheduleLabel};
-use bevy_ecs::system::{IntoObserverSystem, ScheduleSystem};
+use kodept_ecs::bundle::Bundle;
+use kodept_ecs::component::Component;
+use kodept_ecs::event::Event;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
+use kodept_ecs::schedule::{
+    ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules,
+};
+use kodept_ecs::system::{IntoObserverSystem, ScheduleSystem};
+use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
 use kodept_report::codespan::external::{ColorChoice, Config, DisplayStyle};
 use kodept_report::message::Severity;
 use kodept_report::prelude::{CodespanSettings, Diagnostic, Report, Reportable, ad_hoc_message};
@@ -67,7 +74,8 @@ pub trait Plugin {
 
 mod function_impls {
     use crate::engine::{Engine, Phase, PhaseEngine, Plugin};
-    use bevy_ecs::prelude::SystemSet;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::schedule::SystemSet;
 
     #[derive(Debug, SystemSet, Copy, Clone, PartialEq, Hash, Default, Eq)]
     pub struct SingletonSet;
@@ -346,8 +354,10 @@ impl<P> DerefMut for PhaseEngine<'_, P> {
 mod tests {
     use crate::define_phase;
     use crate::engine::{Engine, PhaseEngine};
-    use bevy_ecs::prelude::{Res, ResMut, Resource};
-    use bevy_ecs::schedule::IntoScheduleConfigs;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::resource::Resource;
+    use kodept_ecs::schedule::IntoScheduleConfigs;
+    use kodept_ecs::system::{Res, ResMut};
     use std::hash::Hash;
 
     #[derive(Debug, Resource)]

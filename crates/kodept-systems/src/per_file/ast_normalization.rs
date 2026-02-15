@@ -1,11 +1,5 @@
 use crate::source::collection::Reporter;
 use crate::utils::LogSystemEx;
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::component::ComponentIdFor;
-use bevy_ecs::prelude::{Add, ChildOf, Commands, Has, Insert, On, Query, With};
-use bevy_ecs::schedule::IntoScheduleConfigs;
-use bevy_ecs::system::SystemParam;
-use kodept_ast::export::Component;
 use kodept_ast::prelude::{HierarchicalQuery, NodeId};
 use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
@@ -14,6 +8,14 @@ use kodept_ast_nodes::{
     TypeAnnotation, UserFunction, Value,
 };
 use kodept_core::code_point::Span;
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::component::{Component, ComponentIdFor};
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::hierarchy::ChildOf;
+use kodept_ecs::lifecycle::{Add, Insert};
+use kodept_ecs::query::{Has, With};
+use kodept_ecs::schedule::IntoScheduleConfigs;
+use kodept_ecs::system::{Commands, On, Query, SystemParam};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report_macros::Report;

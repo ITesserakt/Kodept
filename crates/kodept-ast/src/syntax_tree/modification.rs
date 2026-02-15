@@ -5,12 +5,15 @@ use crate::syntax_tree::buffer::Buffer;
 use crate::syntax_tree::builder_v4::{Constructed, ConstructingNode, RelatedNodeSpawner};
 use crate::syntax_tree::children::{Family, HasChild};
 use crate::traits::TransmuteInto;
-use bevy_ecs::error::CommandWithEntity;
-use bevy_ecs::prelude::{
-    Bundle, ChildOf, EntityCommand, EntityWorldMut, RelationshipTarget, World,
-};
-use bevy_ecs::relationship::{OrderedRelationshipSourceCollection, Relationship};
 use derive_more::{Display, Error};
+use kodept_ecs::bundle::Bundle;
+use kodept_ecs::error::CommandWithEntity;
+use kodept_ecs::hierarchy::ChildOf;
+use kodept_ecs::relationship::{
+    OrderedRelationshipSourceCollection, Relationship, RelationshipTarget,
+};
+use kodept_ecs::system::EntityCommand;
+use kodept_ecs::world::{EntityWorldMut, World};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 

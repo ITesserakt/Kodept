@@ -1,14 +1,14 @@
+use crate::Str;
 use crate::prelude::ASTNode;
 use crate::resource::rlt::LexemeId;
-use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
+use kodept_ecs::component::Component;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::utils::DebugName;
+use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 use std::any::TypeId;
 use std::fmt::{Debug, Display, Formatter};
-
-pub use bevy_ecs::name::Name;
-use bevy_utils::prelude::DebugName;
-use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 
 pub trait NodeProperty: Component {}
 
@@ -32,6 +32,11 @@ pub struct Lexeme(pub LexemeId);
 #[derive(Component, Copy, Clone, From, Into, Display)]
 #[component(immutable)]
 pub struct SourceSpan(pub Span);
+
+#[derive(Component, PartialEq, Eq, Hash, Clone, Default)]
+pub struct Name {
+    name: Str,
+}
 
 pub trait HasProperty<Property: NodeProperty>: Sized {}
 
@@ -66,6 +71,34 @@ impl Lexeme {
     #[inline]
     pub const fn new(value: &impl SyntaxNode) -> Self {
         Self(LexemeId::from(ErasedNodePtr::new(value)))
+    }
+}
+
+impl Name {
+    pub fn new(value: impl Into<Str>) -> Self {
+        Self { name: value.into() }
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.name.as_ref()
+    }
+}
+
+impl AsRef<Str> for Name {
+    fn as_ref(&self) -> &Str {
+        &self.name
+    }
+}
+
+impl Display for Name {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.name, f)
+    }
+}
+
+impl Debug for Name {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.name, f)
     }
 }
 

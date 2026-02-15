@@ -1,4 +1,3 @@
-use bevy_ecs::schedule::IntoScheduleConfigs;
 mod collect;
 mod resolve;
 
@@ -9,19 +8,19 @@ use crate::per_file::symbols::resolve::{
     resolve_types_in_user_functions, resolve_types_in_value_ctors, resolve_values,
 };
 use crate::utils::LogSystemSetEx;
-use bevy_ecs::component::ComponentIdFor;
-use bevy_ecs::prelude::Name;
-use bevy_ecs::query::Without;
 use kodept_ast::Str;
-use kodept_ast::export::Component;
 use kodept_ast::prelude::{Erase, NodeId};
-use kodept_ast::properties::{NodeProperty, RequireProperty};
+use kodept_ast::properties::{Name, NodeProperty, RequireProperty};
 use kodept_ast::syntax_tree::children::Wrapper;
 use kodept_ast_nodes::{
     AnonFunction, Declaration, ForeignFunction, Module, NormalizedBlock, ResolvedType,
     ResolvedTypeAnnotation, TypeAnnotation, TypeRef, UnresolvedType, UserFunction, UserType, Value,
     ValueCtor, Variable,
 };
+use kodept_ecs::component::{Component, ComponentIdFor};
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::Without;
+use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use std::borrow::Borrow;

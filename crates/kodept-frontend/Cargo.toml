@@ -8,12 +8,11 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-bevy_ecs.workspace = true
-bevy_tasks.workspace = true
 kodept-core = { path = "../kodept-core", version = "0.4" }
+kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 tracing.workspace = true
 yoke = "0.8.0"
 
 [features]
-parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std"]
+parallel = []

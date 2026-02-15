@@ -5,7 +5,6 @@ mod plugins;
 
 use crate::phase::ExportAstPhase;
 use crate::plugins::Plugins;
-use bevy_ecs::prelude::{Entity, Event, InMut, Res};
 use clap::Parser;
 use kodept_ast::relationship::RelationshipMetadata;
 use kodept_ast::resource::reflection::DebugRegistry;
@@ -13,6 +12,10 @@ use kodept_cli::prelude::{
     DiagnosticConfig, Extension, LexerChoice, LoadingConfig, OutputConfig, ParserChoice,
     ParsingConfig,
 };
+use kodept_ecs::entity::Entity;
+use kodept_ecs::event::Event;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::system::{InMut, Res};
 use kodept_frontend::engine::reporter::CompilationFailed;
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Engine, SubEngine};

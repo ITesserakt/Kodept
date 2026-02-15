@@ -1,9 +1,8 @@
 use crate::node_id::NodeId;
 use crate::relationship::ArityValue;
 use crate::syntax_tree::children::Nothing;
-use bevy_ecs::entity::{EntityMapper, MapEntities};
-use bevy_ecs::prelude::Entity;
-use bevy_ecs::relationship::RelationshipSourceCollection;
+use kodept_ecs::entity::{Entity, EntityMapper, MapEntities};
+use kodept_ecs::relationship::RelationshipSourceCollection;
 use private::Sealed;
 use smallvec::SmallVec;
 

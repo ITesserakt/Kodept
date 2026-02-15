@@ -1,5 +1,7 @@
 use crate::utils::{ForwardReport, ReportSystemEx, forward};
-use bevy_ecs::prelude::*;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
+use kodept_ecs::system::Res;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report_macros::Report;
