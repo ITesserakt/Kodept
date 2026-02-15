@@ -2,7 +2,7 @@ use bevy_ecs::schedule::IntoScheduleConfigs;
 mod collect;
 mod resolve;
 
-use crate::per_file::symbols::collect::{CollectSymbols, collect_params_on};
+use crate::per_file::symbols::collect::{CollectSymbols, check_module_names, collect_params_on};
 use crate::per_file::symbols::resolve::{
     ResolvedTo, add_opaque_markers, add_passthrough_markers, ensure_absent,
     resolve_type_in_variables, resolve_types_in_anon_functions, resolve_types_in_foreign_functions,
@@ -26,6 +26,7 @@ use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -59,6 +60,7 @@ fn build(engine: &mut PhaseEngine<ReferenceResolutionPhase>) {
             collect_params_on(|item: &UserFunction<ResolvedTypeAnnotation>| &*item.params),
             NormalizedBlock::system,
             Module::system,
+            check_module_names,
         )
             .trace_completion(),
         (
@@ -119,7 +121,7 @@ impl<T: TypeRef<true>> RequireProperty<SymbolTable> for ValueCtor<T> {}
 #[repr(transparent)]
 struct SymbolName(Str);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 enum SymbolKind {
     Type,
     Function,
@@ -185,14 +187,19 @@ impl SymbolTable {
         name: impl Into<SymbolName>,
         kind: SymbolKind,
         id: impl Erase,
-    ) -> Result<(), (&SymbolKind, NodeId)> {
-        let index = self.order.len();
-        self.order.push((kind, id.erase()));
-        if let Some(registered_index) = self.names.insert(name.into(), index) {
-            let value = &self.order[registered_index];
-            return Err((&value.0, value.1));
+    ) -> Result<(), (SymbolKind, NodeId)> {
+        match self.names.entry(name.into()) {
+            Entry::Occupied(entry) => {
+                let value = self.order[*entry.get()];
+                Err((value.0, value.1))
+            }
+            Entry::Vacant(entry) => {
+                let index = self.order.len();
+                self.order.push((kind, id.erase()));
+                entry.insert(index);
+                Ok(())
+            }
         }
-        Ok(())
     }
 
     fn lookup<Q>(&self, name: &Q) -> Option<(NodeId, SymbolKind)>

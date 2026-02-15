@@ -6,7 +6,6 @@ use bevy_ecs::archetype::Archetype;
 use bevy_ecs::change_detection::Res;
 use bevy_ecs::query::{AnyOf, Has, QueryItem, ROQueryItem, ReadOnlyQueryData};
 use bevy_ecs::system::{Commands, Query, StaticSystemParam, SystemParam, SystemParamItem};
-use kodept_ast::Str;
 use kodept_ast::prelude::{ASTNode, Erase, HierarchicalQuery, NodeId, NodeQueryData};
 use kodept_ast::properties::{HasProperty, Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
@@ -18,15 +17,18 @@ use kodept_ast_nodes::{
 };
 use kodept_core::code_point::Span;
 use kodept_core::structure::Located;
+use kodept_report::message::{Diagnostic, Severity};
 use kodept_report_macros::Report;
 use kodept_rlt::traversal::ErasedNodeBorrow;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 #[derive(Debug, Report)]
 #[severity("error")]
-#[message("Element with name `{}` already defined", self.name)]
-#[note("Name of {} clashes with other {}", self.current_kind, self.previous_kind)]
-struct DuplicateSymbol {
-    name: Str,
+#[message("Element `{}` has already been defined", self.name)]
+#[note("Name of {} clashes with another {}", self.current_kind, self.previous_kind)]
+struct DuplicateSymbol<'a> {
+    name: &'a str,
     current_kind: SymbolKind,
     previous_kind: SymbolKind,
     #[primary_label]
@@ -71,7 +73,7 @@ impl SymbolRegistrator<'_, '_, '_> {
             };
 
             self.reporter.report(DuplicateSymbol {
-                name: name.0,
+                name: name.0.as_ref(),
                 scope_span: self.scope_span,
                 previous_kind: previous_kind.clone(),
                 current_kind: kind.clone(),
@@ -337,6 +339,27 @@ where
             }
 
             modification.add_property(table);
+        }
+    }
+}
+
+pub(super) fn check_module_names(modules: Query<(&Name, &SourceSpan)>, mut reporter: Reporter) {
+    let mut set = HashMap::new();
+    for (name, span) in modules {
+        match set.entry(name.as_ref()) {
+            Entry::Occupied(entry) => {
+                let old_span = entry.get();
+
+                reporter.report_ad_hoc(|| {
+                    Diagnostic::new(Severity::Error)
+                        .with_message(format!("Module `{}` has already been defined", entry.key()))
+                        .with_primary_label("", span.0)
+                        .with_secondary_label("previous definition", *old_span)
+                });
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(span.0);
+            }
         }
     }
 }
