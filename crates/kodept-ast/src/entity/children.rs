@@ -87,7 +87,7 @@ where
 {
 }
 
-pub struct Children<'w, 's, Data, Parent, Tag = (), Id = NodeId, Filter = ()>
+pub struct ChildrenFetch<'w, 's, Data, Parent, Tag = (), Id = NodeId, Filter = ()>
 where
     Data: QueryData,
     Filter: QueryFilter,
@@ -103,7 +103,7 @@ where
     Data: QueryData,
     Filter: QueryFilter,
     R: Relationship,
-    Id: ReadOnlyQueryData
+    Id: ReadOnlyQueryData,
 {
     inner: Option<QueryManyIter<'w, 's, (Id, Data, &'static R), Filter,
         <<R::RelationshipTarget as RelationshipTarget>::Collection as RelationshipSourceCollection>::SourceIter<'w>,
@@ -262,7 +262,7 @@ where
         Item = (
             NodeId<T>,
             QueryItem<'_, 's, ParentData>,
-            Children<'_, 's, ChildData::ReadOnly, T, Tag>,
+            ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
         ),
     > {
         self.parent_query
@@ -271,16 +271,41 @@ where
                 (
                     parent_id,
                     parent_data,
-                    Children {
+                    ChildrenFetch {
                         collection: children,
                         query: self.children_query.as_readonly(),
                     },
                 )
             })
     }
+
+    pub fn par_iter_by_layers(
+        &mut self,
+        f: impl Fn(
+            NodeId<T>,
+            QueryItem<'_, 's, ParentData>,
+            ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
+        ) + Send
+        + Sync
+        + Clone,
+    ) {
+        self.parent_query
+            .par_iter_mut()
+            .for_each(|(parent_id, parent_data, children)| {
+                f(
+                    parent_id,
+                    parent_data,
+                    ChildrenFetch {
+                        collection: children,
+                        query: self.children_query.as_readonly(),
+                    },
+                )
+            });
+    }
 }
 
-impl<'w, 's, Data, T, Tag, Id, Filter> IntoIterator for Children<'w, 's, Data, T, Tag, Id, Filter>
+impl<'w, 's, Data, T, Tag, Id, Filter> IntoIterator
+    for ChildrenFetch<'w, 's, Data, T, Tag, Id, Filter>
 where
     Data: QueryData,
     Filter: QueryFilter,
@@ -300,7 +325,7 @@ where
 }
 
 impl<'ww, 'w, 's, Data, T, Tag, Id, Filter> IntoIterator
-    for &'ww Children<'w, 's, Data, T, Tag, Id, Filter>
+    for &'ww ChildrenFetch<'w, 's, Data, T, Tag, Id, Filter>
 where
     Data: QueryData,
     Filter: QueryFilter,
@@ -362,7 +387,7 @@ where
     }
 }
 
-impl<'w, 's, Data, T, Tag, Id, Filter> Children<'w, 's, Data, T, Tag, Id, Filter>
+impl<'w, 's, Data, T, Tag, Id, Filter> ChildrenFetch<'w, 's, Data, T, Tag, Id, Filter>
 where
     Data: QueryData,
     Filter: QueryFilter,
@@ -418,7 +443,7 @@ where
         Item = (
             NodeId<T>,
             ROQueryItem<'_, 's, ParentData>,
-            Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
+            ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
         ),
     > {
         self.parent_query
@@ -427,7 +452,7 @@ where
                 (
                     parent_id,
                     parent_data,
-                    Children {
+                    ChildrenFetch {
                         query: self.children_query.as_readonly(),
                         collection: children,
                     },
@@ -441,7 +466,7 @@ where
         id: NodeId<T>,
     ) -> (
         ROQueryItem<'_, 's, ParentData>,
-        Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
+        ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
     )
     where
         T::Arity: TryFromIter,
@@ -454,7 +479,7 @@ where
     pub fn get_children(
         &self,
         id: NodeId<T>,
-    ) -> Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>
+    ) -> ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>
     where
         T::Arity: TryFromIter,
     {
@@ -467,7 +492,7 @@ where
     ) -> Result<
         (
             ROQueryItem<'_, 's, ParentData>,
-            Children<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
+            ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
         ),
         HierarchicalError<T::Arity>,
     >
@@ -477,7 +502,7 @@ where
         let (_, parent, children) = self.parent_query.get(id.entity())?;
         Ok((
             parent,
-            Children {
+            ChildrenFetch {
                 collection: children,
                 query: self.children_query.as_readonly(),
             },

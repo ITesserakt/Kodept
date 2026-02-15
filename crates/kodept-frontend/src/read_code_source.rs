@@ -31,6 +31,20 @@ where
     }
 }
 
+pub trait SyncSource
+where
+    Self: Send + Sync + 'static,
+    Self: for<'a> Source<Ref<'a>: AsRef<str>>,
+{
+}
+
+impl<T> SyncSource for T
+where
+    T: Send + Sync + 'static,
+    T: for<'a> Source<Ref<'a>: AsRef<str>>,
+{
+}
+
 impl Source for String {
     type Ref<'a> = &'a str;
 

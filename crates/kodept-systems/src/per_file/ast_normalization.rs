@@ -1,6 +1,6 @@
 use crate::source::collection::Reporter;
 use crate::utils::LogSystemEx;
-use kodept_ast::prelude::{HierarchicalQuery, NodeId};
+use kodept_ast::prelude::{ChildrenFetch, HierarchicalQuery, NodeId};
 use kodept_ast::properties::{Lexeme, Node, SourceSpan};
 use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
@@ -133,60 +133,90 @@ fn ensure_no_non_normalized_blocks(
     );
 }
 
+fn normalize_block(
+    block_id: NodeId<Block>,
+    statements: ChildrenFetch<(&Archetype, &SourceSpan, &Lexeme), Block, Statement>,
+    commands: Commands,
+    statement_component_ids: &StatementComponentIds,
+) -> Option<DanglingExpression> {
+    let mut modification = NodeModification::new(commands, block_id);
+
+    let mut linked = false;
+
+    for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
+        if statement_component_ids.is_non_normalized(archetype) && linked {
+            return Some(DanglingExpression { span: span.0 });
+        }
+
+        if linked {
+            continue;
+        }
+
+        if archetype.contains(statement_component_ids.user_function.get()) {
+        } else if statement_component_ids.is_non_normalized(archetype) {
+            linked = true;
+            let statement = modification.remove_child_unchecked::<Statement>(statement_id);
+
+            modification
+                .spawn_child(
+                    NodeBuilder::new(Link)
+                        .with_property(*span)
+                        .with_property(*lexeme),
+                )
+                .add_child_unchecked::<Expression>(statement);
+        } else if archetype.contains(statement_component_ids.link.get()) {
+            linked = true;
+        } else {
+            linked = true;
+            modification
+                .spawn_child(
+                    NodeBuilder::new(Link)
+                        .with_property(*span)
+                        .with_property(*lexeme),
+                )
+                .spawn_child(
+                    NodeBuilder::new(Tuple)
+                        .with_property(*span)
+                        .with_property(*lexeme),
+                );
+        }
+    }
+
+    modification.transmute(NormalizedBlock {});
+    None
+}
+
+#[cfg(not(feature = "parallel"))]
 fn normalize_blocks(
-    mut blocks_: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
+    mut blocks: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
     statement_component_ids: StatementComponentIds,
     mut commands: Commands,
     mut reporter: Reporter,
 ) {
-    for (id, _, statements) in blocks_.iter_by_layers() {
-        let mut modification = NodeModification::new(commands.reborrow(), id);
-
-        let mut linked = false;
-        let mut dangling = false;
-        for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
-            if statement_component_ids.is_non_normalized(archetype) && linked {
-                reporter.report(DanglingExpression { span: span.0 });
-                dangling = true;
-                continue;
-            }
-
-            if linked {
-                continue;
-            }
-
-            if archetype.contains(statement_component_ids.user_function.get()) {
-            } else if statement_component_ids.is_non_normalized(archetype) {
-                linked = true;
-                let statement = modification.remove_child_unchecked::<Statement>(statement_id);
-
-                modification
-                    .spawn_child(
-                        NodeBuilder::new(Link)
-                            .with_property(*span)
-                            .with_property(*lexeme),
-                    )
-                    .add_child_unchecked::<Expression>(statement);
-            } else if archetype.contains(statement_component_ids.link.get()) {
-                linked = true;
-            } else {
-                linked = true;
-                modification
-                    .spawn_child(
-                        NodeBuilder::new(Link)
-                            .with_property(*span)
-                            .with_property(*lexeme),
-                    )
-                    .spawn_child(
-                        NodeBuilder::new(Tuple)
-                            .with_property(*span)
-                            .with_property(*lexeme),
-                    );
-            }
-        }
-
-        if !dangling {
-            modification.transmute(NormalizedBlock {});
+    for (id, _, statements) in blocks.iter_by_layers() {
+        if let Some(dangling) = normalize_block(
+            id,
+            statements,
+            commands.reborrow(),
+            &statement_component_ids,
+        ) {
+            reporter.report(dangling);
         }
     }
+}
+
+#[cfg(feature = "parallel")]
+fn normalize_blocks(
+    mut blocks: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
+    statement_component_ids: StatementComponentIds,
+    commands: kodept_ecs::system::ParallelCommands,
+    reporter: crate::source::collection::ParallelReporter,
+) {
+    blocks.par_iter_by_layers(|id, _, statements| {
+        commands.command_scope(|c| {
+            if let Some(dangling) = normalize_block(id, statements, c, &statement_component_ids) {
+                reporter.report(dangling);
+            }
+        });
+    })
 }

@@ -28,5 +28,5 @@ workspace = true
 
 [features]
 default = []
-parallel = ["kodept-ecs/parallel"]
+parallel = ["kodept-ecs/parallel", "kodept-frontend/parallel"]
 reflection = ["kodept-ast/reflection"]

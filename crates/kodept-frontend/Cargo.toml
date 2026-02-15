@@ -13,3 +13,6 @@ kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 tracing.workspace = true
 yoke = "0.8.0"
+
+[features]
+parallel = ["kodept-ecs/parallel"]

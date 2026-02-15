@@ -15,7 +15,7 @@ pub mod prelude {
     pub use super::node_id::{Erase, NodeId};
     pub use super::traits::{ASTNode, CodeHolder};
     pub use crate::entity::children::{
-        HierarchicalQuery, NarrowHierarchicalQuery, NodeQueryData, TryFromIter,
+        ChildrenFetch, HierarchicalQuery, NarrowHierarchicalQuery, NodeQueryData, TryFromIter,
     };
 }
 
