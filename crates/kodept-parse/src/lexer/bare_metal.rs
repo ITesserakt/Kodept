@@ -25,11 +25,22 @@ impl Lexer {
 }
 
 impl<F: FnMut(PackedToken)> Sink<F> {
+    #[inline(always)]
     fn push(&mut self, token: PackedToken) {
         self.0(token)
     }
 
     fn parse<'t>(&mut self, input: &'t [u8]) -> Result<&'t [u8], Error> {
+        #[inline]
+        fn boundary(rest: &[u8]) -> bool {
+            match rest {
+                [b'_', ..] => false,
+                [c, ..] if c.is_ascii_alphanumeric() => false,
+                [_, ..] => true,
+                [] => true,
+            }
+        }
+
         match input {
             [b'\n', rest @ ..] | [b'\r', b'\n', rest @ ..] => {
                 self.push(PackedToken::Newline);
@@ -53,83 +64,79 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                     Ok(&[])
                 }
             }
-            [b'f', b'u', b'n', rest @ ..] => {
+            [b'f', b'u', b'n', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Fun);
                 Ok(rest)
             }
-            [b'v', b'a', b'l', rest @ ..] => {
+            [b'v', b'a', b'l', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Val);
                 Ok(rest)
             }
-            [b'v', b'a', b'r', rest @ ..] => {
+            [b'v', b'a', b'r', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Var);
                 Ok(rest)
             }
-            [b'm', b'a', b't', b'c', b'h', rest @ ..] => {
+            [b'm', b'a', b't', b'c', b'h', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Match);
                 Ok(rest)
             }
-            [b'w', b'h', b'i', b'l', b'e', rest @ ..] => {
+            [b'w', b'h', b'i', b'l', b'e', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::While);
                 Ok(rest)
             }
-            [b'm', b'o', b'd', b'u', b'l', b'e', rest @ ..] => {
+            [b'm', b'o', b'd', b'u', b'l', b'e', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Module);
                 Ok(rest)
             }
-            [b'e', b'x', b't', b'e', b'n', b'd', rest @ ..] => {
+            [b'e', b'x', b't', b'e', b'n', b'd', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Extend);
                 Ok(rest)
             }
-            [b'r', b'e', b't', b'u', b'r', b'n', rest @ ..] => {
+            [b'r', b'e', b't', b'u', b'r', b'n', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Return);
                 Ok(rest)
             }
-            [b'\\', rest @ ..] => {
-                self.push(PackedToken::Lambda);
-                Ok(rest)
-            }
-            [b'i', b'f', rest @ ..] => {
+            [b'i', b'f', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::If);
                 Ok(rest)
             }
-            [b'e', b'l', b'i', b'f', rest @ ..] => {
+            [b'e', b'l', b'i', b'f', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Elif);
                 Ok(rest)
             }
-            [b'e', b'l', b's', b'e', rest @ ..] => {
+            [b'e', b'l', b's', b'e', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Else);
                 Ok(rest)
             }
-            [b'a', b'b', b's', b't', b'r', b'a', b'c', b't', rest @ ..] => {
+            [b'a', b'b', b's', b't', b'r', b'a', b'c', b't', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Abstract);
                 Ok(rest)
             }
-            [b't', b'r', b'a', b'i', b't', rest @ ..] => {
+            [b't', b'r', b'a', b'i', b't', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Trait);
                 Ok(rest)
             }
-            [b's', b't', b'r', b'u', b'c', b't', rest @ ..] => {
+            [b's', b't', b'r', b'u', b'c', b't', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Struct);
                 Ok(rest)
             }
-            [b'c', b'l', b'a', b's', b's', rest @ ..] => {
+            [b'c', b'l', b'a', b's', b's', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Class);
                 Ok(rest)
             }
-            [b'e', b'n', b'u', b'm', rest @ ..] => {
+            [b'e', b'n', b'u', b'm', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Enum);
                 Ok(rest)
             }
-            [b'f', b'o', b'r', b'e', b'i', b'g', b'n', rest @ ..] => {
+            [b'f', b'o', b'r', b'e', b'i', b'g', b'n', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::Foreign);
                 Ok(rest)
             }
-            [b't', b'y', b'p', b'e', rest @ ..] => {
+            [b't', b'y', b'p', b'e', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::TypeAlias);
                 Ok(rest)
             }
-            [b'w', b'i', b't', b'h', rest @ ..] => {
+            [b'w', b'i', b't', b'h', rest @ ..] if boundary(rest) => {
                 self.push(PackedToken::With);
                 Ok(rest)
             }

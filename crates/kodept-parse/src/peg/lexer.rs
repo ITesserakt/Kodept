@@ -22,27 +22,27 @@ peg::parser! {grammar grammar() for str {
         newline()           { PackedToken::Newline }
     ) { i }}
 
+    rule letter() = [c if c.is_alphanumeric()] / "_"
     rule keyword() -> PackedToken =
-        "fun"       { PackedToken::Fun }       /
-        "val"       { PackedToken::Val }       /
-        "var"       { PackedToken::Var }       /
-        "match"     { PackedToken::Match }     /
-        "while"     { PackedToken::While }     /
-        "module"    { PackedToken::Module }    /
-        "extend"    { PackedToken::Extend }    /
-        "return"    { PackedToken::Return }    /
-        "\\"        { PackedToken::Lambda }    /
-        "if"        { PackedToken::If }        /
-        "elif"      { PackedToken::Elif }      /
-        "else"      { PackedToken::Else }      /
-        "abstract"  { PackedToken::Abstract }  /
-        "trait"     { PackedToken::Trait }     /
-        "struct"    { PackedToken::Struct }    /
-        "class"     { PackedToken::Class }     /
-        "enum"      { PackedToken::Enum }      /
-        "foreign"   { PackedToken::Foreign }   /
-        "type"      { PackedToken::TypeAlias } /
-        "with"      { PackedToken::With }
+        "fun" !letter()        { PackedToken::Fun }       /
+        "val" !letter()        { PackedToken::Val }       /
+        "var" !letter()        { PackedToken::Var }       /
+        "match" !letter()      { PackedToken::Match }     /
+        "while" !letter()      { PackedToken::While }     /
+        "module" !letter()     { PackedToken::Module }    /
+        "extend" !letter()     { PackedToken::Extend }    /
+        "return" !letter()     { PackedToken::Return }    /
+        "if" !letter()         { PackedToken::If }        /
+        "elif" !letter()       { PackedToken::Elif }      /
+        "else" !letter()       { PackedToken::Else }      /
+        "abstract" !letter()   { PackedToken::Abstract }  /
+        "trait" !letter()      { PackedToken::Trait }     /
+        "struct" !letter()     { PackedToken::Struct }    /
+        "class" !letter()      { PackedToken::Class }     /
+        "enum" !letter()       { PackedToken::Enum }      /
+        "foreign" !letter()    { PackedToken::Foreign }   /
+        "type" !letter()       { PackedToken::TypeAlias } /
+        "with" !letter()       { PackedToken::With }
 
     rule symbol() -> PackedToken =
         ","  { PackedToken::Comma }       /
@@ -95,9 +95,9 @@ peg::parser! {grammar grammar() for str {
         bin_lit()                                                                    /
         oct_lit()                                                                    /
         hex_lit()                                                                    /
-        (sign() whitespace()*)? floating_lit() e_notation()? { PackedToken::Floating } /
-        "'" i:$(!"'" [_]) "'"                                { PackedToken::Char }     /
-        "\"" i:$((!"\"" [_])*) "\""                          { PackedToken::String }
+        sign()? floating_lit() e_notation()?               { PackedToken::Floating } /
+        "'" i:$(!"'" [_]) "'"                              { PackedToken::Char }     /
+        "\"" i:$((!"\"" [_])*) "\""                        { PackedToken::String }
 
     rule operator() -> PackedToken =
         "."   { PackedToken::Dot }           /
@@ -129,8 +129,8 @@ peg::parser! {grammar grammar() for str {
         keyword()    /
         symbol()     /
         identifier() /
-        operator()   /
-        literal()
+        literal()    /
+        operator()
 
     rule token_match() -> PackedTokenMatch =
         start:position!() t:token_() end:position!() {

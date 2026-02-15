@@ -1,4 +1,6 @@
-use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
+use crate::Error::{
+    CannotParseFloat, CannotParseInt, NoQuotesInLiteral, UnicodeLiteral, WrongLiteralLength,
+};
 use crate::{
     AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple,
     TypeAnnotation, UserFunction, UserType, Value, Variable,
@@ -277,6 +279,11 @@ where
     ) -> Result<NodeId, Self::Error> {
         let text = source.get_chunk_located(node);
         let value = match node {
+            kodept_rlt::prelude::Literal::String(_) | kodept_rlt::prelude::Literal::Char(_)
+                if !text.is_ascii() =>
+            {
+                return Err(UnicodeLiteral(node.location()));
+            }
             kodept_rlt::prelude::Literal::String(_) => {
                 if !text.starts_with('"') || !text.ends_with('"') {
                     return Err(NoQuotesInLiteral(node.location()));
@@ -294,9 +301,6 @@ where
             kodept_rlt::prelude::Literal::Char(_) => {
                 if !text.starts_with('\'') || !text.ends_with('\'') {
                     return Err(NoQuotesInLiteral(node.location()));
-                }
-                if text.len() != 3 {
-                    return Err(WrongLiteralLength(node.location(), 3));
                 }
                 Literal::Char(text.chars().nth(1).unwrap())
             }
