@@ -155,13 +155,6 @@ mod interning {
             boxy_leak(self)
         }
 
-        fn leak_owned(self) -> &'static Self
-        where
-            Self: Sized,
-        {
-            Box::leak(Box::new(self))
-        }
-
         fn ref_eq(&self, other: &Self) -> bool {
             std::ptr::eq(self, other)
         }
