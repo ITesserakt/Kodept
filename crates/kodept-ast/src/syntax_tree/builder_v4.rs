@@ -196,14 +196,22 @@ impl<N, Spawner> SpawnedNode<N, Spawner> {
     }
 }
 
-impl<N, B> SpawnerNode<N, B>
-where
-    B: Buffer,
-{
+impl<N, B: Buffer> SpawnerNode<N, B> {
     #[inline]
     pub fn spawner<Tag>(&mut self) -> RelatedNodeSpawner<N, Tag, B::Reborrowed<'_>> {
         RelatedNodeSpawner {
             buffer: self.0.spawner.buffer.reborrow(),
+            parent_id: self.0.spawner.parent_id,
+            tag: PhantomData,
+        }
+    }
+}
+
+impl<N, B: RefBuffer> SpawnerNode<N, B> {
+    #[inline]
+    pub fn spawner_ref<Tag>(&self) -> RelatedNodeSpawner<N, Tag, B::Reborrowed<'_>> {
+        RelatedNodeSpawner {
+            buffer: self.0.spawner.buffer.borrow(),
             parent_id: self.0.spawner.parent_id,
             tag: PhantomData,
         }

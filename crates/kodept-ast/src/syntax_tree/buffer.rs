@@ -308,7 +308,6 @@ mod parallel {
 mod tests {
     use crate::syntax_tree::buffer::Buffer;
     use bevy_ecs::prelude::{Command, Component};
-    use bevy_ecs::system::SystemState;
     use bevy_ecs::world::World;
 
     #[derive(Debug, Component)]
@@ -357,6 +356,7 @@ mod tests {
     #[cfg(feature = "parallel")]
     fn test_buffer_ref() {
         use bevy_ecs::system::ParallelCommands;
+        use bevy_ecs::system::SystemState;
 
         let mut world = World::new();
         let mut state = SystemState::<ParallelCommands>::new(&mut world);

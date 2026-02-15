@@ -3,7 +3,6 @@ use crate::resource::rlt::LexemeId;
 use bevy_ecs::prelude::Component;
 use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
-use kodept_core::file_name::FileDescriptor;
 use std::any::TypeId;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -24,9 +23,7 @@ pub struct Node {
 #[derive(Debug, Component)]
 #[component(storage = "SparseSet")]
 #[component(immutable)]
-pub struct Root {
-    pub associated_file: FileDescriptor,
-}
+pub struct Root;
 
 #[derive(Component, From, Into, Copy, Clone)]
 #[component(immutable)]
@@ -53,7 +50,7 @@ impl<T: ASTNode> RequireProperty<SourceSpan> for T {}
 impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {}
 
 impl Node {
-    pub fn of<T: ASTNode>() -> Self {
+    pub fn of<T: 'static>() -> Self {
         Self {
             name: DebugName::type_name::<T>(),
             kind: TypeId::of::<T>(),
@@ -67,7 +64,7 @@ impl Node {
 
 impl Lexeme {
     #[inline]
-    pub fn new(value: &impl SyntaxNode) -> Self {
+    pub const fn new(value: &impl SyntaxNode) -> Self {
         Self(LexemeId::from(ErasedNodePtr::new(value)))
     }
 }

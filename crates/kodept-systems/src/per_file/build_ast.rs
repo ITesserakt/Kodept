@@ -7,8 +7,8 @@ use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Root;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::RelatedNodeSpawner;
-use kodept_ast_nodes::Error;
-use kodept_ast_nodes::{Module, Modules};
+use kodept_ast_nodes::Modules;
+use kodept_ast_nodes::{Error, Module};
 use kodept_core::structure::CodeHolder;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
@@ -31,14 +31,7 @@ fn system(
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
     let (root, _) = syntax.root();
-    let root_id = commands
-        .spawn((
-            Root {
-                associated_file: source.describe(),
-            },
-            Modules,
-        ))
-        .id();
+    let root_id = commands.spawn((Root, Modules)).id();
     let mut spawner = RelatedNodeSpawner::new(&mut commands, NodeId::<Modules>::from(root_id));
 
     for module in &root.0 {
