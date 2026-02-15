@@ -9,7 +9,7 @@ use kodept_ecs::resource::Resource;
 use kodept_ecs::schedule::{
     ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules,
 };
-use kodept_ecs::system::{IntoObserverSystem, ScheduleSystem};
+use kodept_ecs::system::{IntoObserverSystem, Res, ScheduleSystem};
 use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
 use kodept_report::codespan::external::{ColorChoice, Config, DisplayStyle};
 use kodept_report::message::Severity;
@@ -131,6 +131,10 @@ where
     P: Phase,
 {
     pub fn add_systems<M>(&mut self, config: impl IntoScheduleConfigs<ScheduleSystem, M>) {
+        fn check_for_failure(resource: Option<Res<CompilationFailed>>) -> bool {
+            resource.is_none()
+        }
+
         let label = P::Set::default();
         let config = if self.instrumented {
             let name = std::any::type_name::<P>();
@@ -138,8 +142,12 @@ where
         } else {
             config.into_configs()
         };
-        self.engine
-            .add_systems(Startup, config.in_set(label.into_system_set()))
+        self.engine.add_systems(
+            Startup,
+            config
+                .in_set(label.into_system_set())
+                .distributive_run_if(check_for_failure),
+        )
     }
 }
 
@@ -216,9 +224,12 @@ impl Engine {
                 PANIC_LOCATION.get_or_init(|| Location::Unknown),
                 PANIC_BACKTRACE.get_or_init(|| Backtrace::disabled()),
             );
-            return Err(CompilationFailed);
+            Err(CompilationFailed)
+        } else if self.engine_world.contains_resource::<CompilationFailed>() {
+            Err(CompilationFailed)
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     #[inline]

@@ -7,7 +7,7 @@ use kodept_report::prelude::*;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use tracing::{debug, error, trace};
+use tracing::{debug, error};
 
 #[derive(Debug)]
 enum GenericReport {
@@ -87,18 +87,13 @@ where
         });
         if any_error || self.should_stop {
             self.should_stop = false;
-            CompilationFailed::stop()
+            world.insert_resource(CompilationFailed);
         }
     }
 }
 
+#[derive(Resource)]
 pub struct CompilationFailed;
-
-impl CompilationFailed {
-    fn stop() -> ! {
-        std::panic::resume_unwind(Box::new(CompilationFailed))
-    }
-}
 
 impl Error for CompilationFailed {}
 
