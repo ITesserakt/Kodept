@@ -310,8 +310,8 @@ pub(super) mod instrument {
         let label = P::Set::default();
         IntoScheduleConfigs::into_configs(
             (
-                before.before_ignore_deferred(InnerSet::<P::Set>::new()),
-                after.after_ignore_deferred(InnerSet::<P::Set>::new()),
+                before.before(InnerSet::<P::Set>::new()),
+                after.after(InnerSet::<P::Set>::new()),
             )
                 .in_set(label.into_system_set()),
         )
