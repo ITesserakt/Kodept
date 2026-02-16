@@ -2,7 +2,6 @@ use crate::prelude::{Source, TryReadCode};
 use crate::read_code_source::ReadSource;
 use kodept_core::Freeze;
 use kodept_core::file_name::FileName;
-use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::resource::Resource;
 use kodept_report::files::external::{Error, Files};
@@ -12,7 +11,7 @@ use std::ops::{Deref, Range};
 use std::sync::Arc;
 use yoke::Yoke;
 
-#[derive(Debug, Component, Resource)]
+#[derive(Debug, Resource)]
 pub struct SourceView<Impl: 'static> {
     pub id: Freeze<FileId>,
     source: Yoke<&'static ReadSource<Impl>, Arc<SourceFiles<Impl>>>,

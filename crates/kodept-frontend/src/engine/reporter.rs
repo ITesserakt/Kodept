@@ -139,7 +139,7 @@ mod sequential {
     use crate::report::Global;
     use crate::source_files::{CollectedSources, SourceView};
     use kodept_ecs::system::{SystemBuffer, SystemMeta};
-    use kodept_ecs::world::World;
+    use kodept_ecs::world::{DeferredWorld, World};
     use kodept_report::codespan::Reportable;
     use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
     use std::marker::PhantomData;
@@ -206,6 +206,10 @@ mod sequential {
                 world.insert_resource(CompilationFailed);
             }
         }
+
+        fn queue(&mut self, _system_meta: &SystemMeta, _world: DeferredWorld) {
+            ()
+        }
     }
 
     impl<Impl> Ops for &mut Reports<Impl> {
@@ -241,7 +245,7 @@ mod parallel {
     use crate::read_code_source::SyncSource;
     use kodept_ecs::system::{SystemBuffer, SystemMeta};
     use kodept_ecs::utils::Parallel;
-    use kodept_ecs::world::World;
+    use kodept_ecs::world::{DeferredWorld, World};
     use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
     use std::marker::PhantomData;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -272,6 +276,10 @@ mod parallel {
             self.sinks.drain_into(&mut local_reports.deferred_reports);
             local_reports.apply(system_meta, world);
             *self.should_stop.get_mut() = local_reports.should_stop;
+        }
+
+        fn queue(&mut self, _system_meta: &SystemMeta, _world: DeferredWorld) {
+            ()
         }
     }
 

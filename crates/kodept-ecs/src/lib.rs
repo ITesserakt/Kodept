@@ -34,7 +34,7 @@ pub mod hierarchy {
     pub use bevy_ecs::hierarchy::{ChildOf, Children};
 }
 pub mod lifecycle {
-    pub use bevy_ecs::lifecycle::{Add, Despawn, HookContext, Insert, Remove, Replace};
+    pub use bevy_ecs::lifecycle::{Add, Despawn, Discard, HookContext, Insert, Remove};
 }
 pub mod ptr {
     pub use bevy_ecs::ptr::{MovingPtr, Ptr, PtrMut};

@@ -8,7 +8,7 @@ use kodept_ecs::event::Event;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::resource::Resource;
 use kodept_ecs::schedule::{
-    ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules, SystemSet,
+    ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules,
 };
 use kodept_ecs::system::{IntoObserverSystem, Res, ScheduleSystem};
 use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
@@ -107,7 +107,7 @@ mod inner_set {
     use std::hash::{Hash, Hasher};
     use std::marker::PhantomData;
 
-    pub struct InnerSet<T>(PhantomData<fn() -> T>);
+    pub(super) struct InnerSet<T>(PhantomData<fn() -> T>);
 
     impl<T> Debug for InnerSet<T> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -144,7 +144,7 @@ mod inner_set {
     }
 
     impl<T: IntoSystemSet<()>> InnerSet<T> {
-        pub fn new() -> Self {
+        pub(super) fn new() -> Self {
             Self(PhantomData)
         }
     }
