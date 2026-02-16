@@ -238,9 +238,14 @@ mod task_pool {
 }
 
 pub(super) mod instrument {
+    use crate::engine::Phase;
+    use crate::engine::inner_set::InnerSet;
     use kodept_ecs::exported::bevy_ecs;
     use kodept_ecs::resource::Resource;
-    use kodept_ecs::schedule::{IntoScheduleConfigs, ScheduleConfigs};
+    use kodept_ecs::schedule::{
+        Chain, GraphInfo, InternedSystemSet, IntoScheduleConfigs, IntoSystemSet, Schedulable,
+        ScheduleConfigs,
+    };
     use kodept_ecs::system::{If, Res, ResMut, ScheduleSystem};
     use std::collections::HashMap;
     use std::sync::atomic::AtomicU16;
@@ -279,10 +284,8 @@ pub(super) mod instrument {
         }
     }
 
-    pub(crate) fn instrument<M>(
-        config: impl IntoScheduleConfigs<ScheduleSystem, M>,
-        name: &'static str,
-    ) -> ScheduleConfigs<ScheduleSystem> {
+    #[must_use]
+    pub(crate) fn instrument<P: Phase>(name: &'static str) -> ScheduleConfigs<ScheduleSystem> {
         static GENERATOR: AtomicU16 = AtomicU16::new(0);
         let id = GENERATOR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let before = move |mut timings: If<ResMut<Timings>>| {
@@ -304,7 +307,14 @@ pub(super) mod instrument {
             }
         };
 
-        (before, config, after).chain_ignore_deferred()
+        let label = P::Set::default();
+        IntoScheduleConfigs::into_configs(
+            (
+                before.before_ignore_deferred(InnerSet::<P::Set>::new()),
+                after.after_ignore_deferred(InnerSet::<P::Set>::new()),
+            )
+                .in_set(label.into_system_set()),
+        )
     }
 }
 

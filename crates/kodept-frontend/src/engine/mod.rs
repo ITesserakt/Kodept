@@ -1,4 +1,5 @@
 use crate::engine::function_impls::InlineFunctionPhase;
+use crate::engine::inner_set::InnerSet;
 use crate::engine::reporter::CompilationFailed;
 use crate::prelude::Global;
 use kodept_ecs::bundle::Bundle;
@@ -7,7 +8,7 @@ use kodept_ecs::event::Event;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::resource::Resource;
 use kodept_ecs::schedule::{
-    ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules,
+    ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules, SystemSet,
 };
 use kodept_ecs::system::{IntoObserverSystem, Res, ScheduleSystem};
 use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
@@ -63,7 +64,7 @@ pub struct SubEngine {
 }
 
 pub trait Phase: Sized {
-    type Set: IntoSystemSet<()> + Default;
+    type Set: IntoSystemSet<()> + Default + 'static;
 
     fn build(self, engine: &mut PhaseEngine<Self>);
 }
@@ -100,6 +101,55 @@ mod function_impls {
     }
 }
 
+mod inner_set {
+    use kodept_ecs::schedule::{IntoSystemSet, SystemSet};
+    use std::fmt::{Debug, Formatter};
+    use std::hash::{Hash, Hasher};
+    use std::marker::PhantomData;
+
+    pub struct InnerSet<T>(PhantomData<fn() -> T>);
+
+    impl<T> Debug for InnerSet<T> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("InnerSet").finish()
+        }
+    }
+
+    impl<T> Clone for InnerSet<T> {
+        fn clone(&self) -> Self {
+            Self(PhantomData)
+        }
+    }
+
+    impl<T> Copy for InnerSet<T> {}
+
+    impl<T> PartialEq for InnerSet<T> {
+        fn eq(&self, _: &Self) -> bool {
+            true
+        }
+    }
+
+    impl<T> Eq for InnerSet<T> {}
+
+    impl<T> Hash for InnerSet<T> {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            self.0.hash(state);
+        }
+    }
+
+    impl<T: 'static> SystemSet for InnerSet<T> {
+        fn dyn_clone(&self) -> Box<dyn SystemSet> {
+            Box::new(*self)
+        }
+    }
+
+    impl<T: IntoSystemSet<()>> InnerSet<T> {
+        pub fn new() -> Self {
+            Self(PhantomData)
+        }
+    }
+}
+
 pub struct Chaining<'a, P> {
     engine: &'a mut Engine,
     _phantom: PhantomData<fn() -> P>,
@@ -120,7 +170,7 @@ impl<P> Chaining<'_, P> {
     }
 }
 
-pub struct PhaseEngine<'a, P> {
+pub struct PhaseEngine<'a, P: Phase> {
     engine: &'a mut Engine,
     pub instrumented: bool,
     _phantom: PhantomData<fn() -> P>,
@@ -135,19 +185,26 @@ where
             resource.is_none()
         }
 
-        let label = P::Set::default();
-        let config = if self.instrumented {
-            let name = std::any::type_name::<P>();
-            utils::instrument::instrument(config, name)
-        } else {
-            config.into_configs()
-        };
         self.engine.add_systems(
             Startup,
             config
-                .in_set(label.into_system_set())
+                .in_set(InnerSet::<P::Set>::new())
                 .distributive_run_if(check_for_failure),
         )
+    }
+}
+
+impl<P: Phase> Drop for PhaseEngine<'_, P> {
+    fn drop(&mut self) {
+        if self.instrumented {
+            let name = std::any::type_name::<P>();
+            self.engine
+                .add_systems(Startup, utils::instrument::instrument::<P>(name));
+        }
+        self.with_schedule(Startup, |s| {
+            let label = P::Set::default();
+            s.configure_sets(InnerSet::<P::Set>::new().in_set(label.into_system_set()));
+        })
     }
 }
 
@@ -352,7 +409,7 @@ impl DerefMut for SubEngine {
     }
 }
 
-impl<P> Deref for PhaseEngine<'_, P> {
+impl<P: Phase> Deref for PhaseEngine<'_, P> {
     type Target = Engine;
 
     fn deref(&self) -> &Self::Target {
@@ -360,7 +417,7 @@ impl<P> Deref for PhaseEngine<'_, P> {
     }
 }
 
-impl<P> DerefMut for PhaseEngine<'_, P> {
+impl<P: Phase> DerefMut for PhaseEngine<'_, P> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.engine
     }

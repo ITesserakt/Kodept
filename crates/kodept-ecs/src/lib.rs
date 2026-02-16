@@ -57,8 +57,8 @@ pub mod resource {
 }
 pub mod schedule {
     pub use bevy_ecs::schedule::{
-        ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleConfigs, ScheduleLabel,
-        Schedules, SystemSet,
+        Chain, ExecutorKind, GraphInfo, InternedSystemSet, IntoScheduleConfigs, IntoSystemSet,
+        Schedulable, Schedule, ScheduleConfigs, ScheduleLabel, Schedules, SystemSet,
     };
 }
 pub mod storage {
