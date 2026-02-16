@@ -15,6 +15,7 @@ pub mod prelude {
     pub use super::build_ast::{BuildAstPhase, BuildAstPhaseLabel};
     pub use super::parse_source::{ParseSourcePhase, ParseSourcePhaseLabel};
     pub use super::symbols::{ReferenceResolutionPhase, ReferenceResolutionPhaseLabel};
+    pub use super::typeck::{TypeCheckPhase, TypeCheckPhaseLabel};
 }
 
 pub fn inject_common_resources_phase() -> impl Phase {

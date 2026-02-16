@@ -1039,7 +1039,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "criterion",
  "derive_more",
@@ -1094,11 +1094,13 @@ dependencies = [
  "kodept-core",
  "kodept-ecs",
  "kodept-frontend",
+ "kodept-inference",
  "kodept-parse",
  "kodept-report",
  "kodept-report-macros",
  "kodept-rlt",
  "memmap2",
+ "num-bigint",
  "tempfile",
  "tracing",
  "yoke",

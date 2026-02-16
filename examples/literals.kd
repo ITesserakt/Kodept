@@ -1,12 +1,15 @@
 module Main =>
 
 fun test => {
-	val a = -12345678
 	val b = 12345678.9
 	val c = 0b10
 	val d = 0xFFFFFF
 	val e = 0c7
 	val f = 'a'
 	val g = "Hello, world!"
-	val all = (a, b, c, d, e, f, g)
+	var value = f
+	var reevaluate = g
+	val embedded = "module Main { }"
+	val fun_123 = ()
+	val all = (b, c, d, e, f, g)
 }

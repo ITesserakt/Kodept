@@ -16,5 +16,6 @@ bevy_utils = { version = "0.18.0", default-features = false }
 workspace = true
 
 [features]
+default = ["debug"]
 parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std", "bevy_tasks/async_executor", "bevy_utils/parallel"]
 debug = ["bevy_utils/debug"]

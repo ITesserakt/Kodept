@@ -73,6 +73,10 @@ impl IntoSpannedReportMessage for Wrapper {
                 .with_message("Expression in this position is unexpected")
                 .with_primary_label("expected statement", span)
                 .with_note("Try calling or linking this expression"),
+            Error::UnicodeLiteral(point) => Diagnostic::new(Severity::Error)
+                .with_message("Literals with explicit unicode symbols is unsupported")
+                .with_primary_label("unsupported", point)
+                .with_note("Try escaping unicode symbols"),
         }
     }
 }

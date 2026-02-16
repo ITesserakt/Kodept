@@ -1,3 +1,5 @@
+extern crate core;
+
 pub mod configs;
 pub mod global;
 pub mod loader;

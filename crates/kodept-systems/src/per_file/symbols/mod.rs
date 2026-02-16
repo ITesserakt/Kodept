@@ -120,8 +120,8 @@ impl<T: TypeRef<true>> RequireProperty<SymbolTable> for ValueCtor<T> {}
 #[repr(transparent)]
 struct SymbolName(Str);
 
-#[derive(Debug, Clone, Copy)]
-enum SymbolKind {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum SymbolKind {
     Type,
     Function,
     Constructor,

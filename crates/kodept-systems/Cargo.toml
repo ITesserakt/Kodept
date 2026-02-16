@@ -7,6 +7,7 @@ rust-version.workspace = true
 [dependencies]
 derive_more.workspace = true
 memmap2 = "0.9.8"
+num-bigint = "0.4"
 tracing.workspace = true
 yoke = "0.8.0"
 
@@ -15,6 +16,7 @@ kodept-ast-nodes = { path = "../kodept-ast-nodes", version = "0.3" }
 kodept-core = { path = "../kodept-core", version = "0.4" }
 kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
 kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
+kodept-inference = { path = "../kodept-inference", version = "0.2" }
 kodept-parse = { path = "../kodept-parse", version = "0.4" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 kodept-report-macros = { path = "../kodept-report-macros", version = "0.1" }
