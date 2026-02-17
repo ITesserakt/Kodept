@@ -242,10 +242,7 @@ pub(super) mod instrument {
     use crate::engine::inner_set::InnerSet;
     use kodept_ecs::exported::bevy_ecs;
     use kodept_ecs::resource::Resource;
-    use kodept_ecs::schedule::{
-        Chain, GraphInfo, InternedSystemSet, IntoScheduleConfigs, IntoSystemSet, Schedulable,
-        ScheduleConfigs,
-    };
+    use kodept_ecs::schedule::{IntoScheduleConfigs, IntoSystemSet, ScheduleConfigs};
     use kodept_ecs::system::{If, Res, ResMut, ScheduleSystem};
     use std::collections::HashMap;
     use std::sync::atomic::AtomicU16;
