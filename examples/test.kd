@@ -2,9 +2,9 @@ module Prelude {
 }
 
 module Testing {
-    fun test(m) {
-        val y = m
-        val x = y(1)
-        x
+    struct Int;
+    struct String;
+    struct Person(name: String, age: Int) {
+        fun new(name) => Person(name, 18)
     }
 }

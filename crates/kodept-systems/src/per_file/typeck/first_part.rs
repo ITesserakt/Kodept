@@ -113,7 +113,7 @@ pub(super) fn typeck_value_ctors(
         all_types: Query<&Foo>,
     ) -> Option<MonomorphicType> {
         match params.split_first() {
-            None => Some(MonomorphicType::fun1(MonomorphicType::UNIT, output)),
+            None => Some(output.clone()),
             Some((head, tail)) => {
                 let head = resolved_ty_as_monomorphic(head.ty(), all_types)?;
                 let tail = tail
