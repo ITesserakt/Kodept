@@ -16,7 +16,7 @@ use kodept_core::code_point::Span;
 use kodept_core::structure::Located;
 use kodept_ecs::archetype::Archetype;
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::query::{AnyOf, Has, QueryItem, ROQueryItem, ReadOnlyQueryData};
+use kodept_ecs::query::{AnyOf, Has, QueryItem, ROQueryItem, ReadOnlyQueryData, With};
 use kodept_ecs::system::{Commands, Query, Res, StaticSystemParam, SystemParam, SystemParamItem};
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report_macros::Report;
@@ -338,7 +338,7 @@ where
     }
 }
 
-pub(super) fn check_module_names(modules: Query<(&Name, &SourceSpan)>, mut reporter: Reporter) {
+pub(super) fn check_module_names(modules: Query<(&Name, &SourceSpan), With<Module>>, mut reporter: Reporter) {
     let mut set = HashMap::new();
     for (name, span) in modules {
         match set.entry(name.as_ref()) {

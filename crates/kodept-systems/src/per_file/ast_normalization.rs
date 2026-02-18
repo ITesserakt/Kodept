@@ -133,6 +133,7 @@ struct StatementComponentIds<'s> {
     value: ComponentIdFor<'s, Value>,
     user_function: ComponentIdFor<'s, UserFunction<TypeAnnotation>>,
     link: ComponentIdFor<'s, Link>,
+    block: ComponentIdFor<'s, Block>,
 }
 
 #[derive(Debug, Component, Clone)]
@@ -145,6 +146,7 @@ impl StatementComponentIds<'_> {
             || archetype.contains(self.literal.get())
             || archetype.contains(self.tuple.get())
             || archetype.contains(self.value.get())
+            || archetype.contains(self.block.get())
     }
 }
 
