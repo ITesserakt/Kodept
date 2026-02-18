@@ -1,11 +1,9 @@
 use crate::source::collection::Reporter;
-use kodept_core::try_port::Try;
 use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, SystemInput};
 use kodept_frontend::prelude::ExtractReports;
 use kodept_report::prelude::IntoSpannedReportMessage;
 use std::fmt::Debug;
-use std::ops::ControlFlow;
 use tracing::trace;
 
 pub trait ReportSystemEx<In, Out, SystemMarker, ExtractMarker>
@@ -31,19 +29,13 @@ pub trait LogSystemSetEx<Marker> {
 impl<SystemMarker, ExtractMarker, Input, Out, T: IntoSystem<Input, Out, SystemMarker>>
     ReportSystemEx<Input, Out, SystemMarker, ExtractMarker> for T
 where
-    Out: Try<Output = ()> + 'static,
-    Out::Residual: ExtractReports<ExtractMarker>,
+    Out: ExtractReports<ExtractMarker> + 'static,
     Input: SystemInput,
 {
     #[track_caller]
     fn extract_reports(self) -> impl IntoSystem<Input, (), ()> {
         IntoSystem::into_system(self.pipe(|In(output): In<Out>, mut reporter: Reporter| {
-            match output.branch() {
-                ControlFlow::Continue(_) => {}
-                ControlFlow::Break(e) => {
-                    e.extract_reports(&mut reporter);
-                }
-            }
+            _ = output.extract_reports(&mut reporter);
         }))
     }
 }

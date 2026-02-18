@@ -358,11 +358,11 @@ impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<TypeAnnotation> {
                 .inner
                 .iter()
                 .map(|it| match it {
-                    Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
+                    Parameter::Typed(TypedParameter { id, parameter_type }) => PositionalParam {
                         name: source.get_chunk_located(id),
                         ty: convert_type(parameter_type, source).into_annotation(),
                     },
-                    Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
+                    Parameter::Untyped(UntypedParameter { id }) => PositionalParam {
                         name: source.get_chunk_located(id),
                         ty: TypeAnnotation::Infer,
                     },

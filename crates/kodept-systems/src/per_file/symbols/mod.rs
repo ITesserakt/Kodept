@@ -13,7 +13,7 @@ use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast::properties::{Name, NodeProperty, RequireProperty};
 use kodept_ast::syntax_tree::children::Wrapper;
 use kodept_ast_nodes::{
-    AnonFunction, Declaration, ForeignFunction, Module, NormalizedBlock, ResolvedType,
+    AnonFunction, Declaration, ForeignFunction, Module, NormalizedBlock, Param, ResolvedType,
     ResolvedTypeAnnotation, TypeAnnotation, TypeRef, UnresolvedType, UserFunction, UserType, Value,
     ValueCtor, Variable,
 };
@@ -49,14 +49,39 @@ define_phase! {
 
 fn build(engine: &mut PhaseEngine<ReferenceResolutionPhase>) {
     let setup_set = (add_passthrough_markers, add_opaque_markers);
+    fn param_to_name<T>(param: &Param<T>) -> &Str {
+        match param {
+            Param::Positional { name, .. } => name,
+            Param::Named { name, .. } => name,
+        }
+    }
+
     let collect_set = (
         (
-            collect_params_on(|item: &ValueCtor<UnresolvedType>| &*item.params),
-            collect_params_on(|item: &ValueCtor<ResolvedType>| &*item.params),
-            collect_params_on(|item: &AnonFunction<TypeAnnotation>| &*item.params),
-            collect_params_on(|item: &AnonFunction<ResolvedTypeAnnotation>| &*item.params),
-            collect_params_on(|item: &UserFunction<TypeAnnotation>| &*item.params),
-            collect_params_on(|item: &UserFunction<ResolvedTypeAnnotation>| &*item.params),
+            collect_params_on(
+                |item: &ValueCtor<UnresolvedType>| &*item.params,
+                param_to_name,
+            ),
+            collect_params_on(
+                |item: &ValueCtor<ResolvedType>| &*item.params,
+                param_to_name,
+            ),
+            collect_params_on(
+                |item: &AnonFunction<TypeAnnotation>| &*item.params,
+                |it| &it.name,
+            ),
+            collect_params_on(
+                |item: &AnonFunction<ResolvedTypeAnnotation>| &*item.params,
+                |it| &it.name,
+            ),
+            collect_params_on(
+                |item: &UserFunction<TypeAnnotation>| &*item.params,
+                param_to_name,
+            ),
+            collect_params_on(
+                |item: &UserFunction<ResolvedTypeAnnotation>| &*item.params,
+                param_to_name,
+            ),
             NormalizedBlock::system,
             Module::system,
             check_module_names,

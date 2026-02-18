@@ -28,12 +28,14 @@ pub trait TypeTable<Name>: Sized {
     }
 }
 
+#[derive(Clone)]
 enum RawAssumptionSet<Name> {
     Empty,
     Single(Name, Vec<Interned<MonomorphicType>>),
     Map(HashMap<Name, Vec<Interned<MonomorphicType>>>),
 }
 
+#[derive(Clone)]
 pub struct AssumptionSet<Name>(RawAssumptionSet<Name>);
 
 impl<Name> TypeTable<Name> for AssumptionSet<Name>

@@ -16,17 +16,5 @@ define_phase! {
 
 fn build(engine: &mut PhaseEngine<TypeCheckPhase>) {
     engine.add_systems(typeck_literals);
-    engine.add_systems((typeck_user_types, typeck_value_ctors).chain());
-
-    #[cfg(feature = "reflection")]
-    engine.add_systems(register_reflection_info);
-}
-
-#[cfg(feature = "reflection")]
-fn register_reflection_info(
-    mut registry: kodept_ecs::system::If<
-        kodept_ecs::system::ResMut<kodept_ast::resource::reflection::DebugRegistry>,
-    >,
-) {
-    registry.register::<first_part::Foo>();
+    engine.add_systems((typeck_value_ctors, typeck_user_types).chain());
 }

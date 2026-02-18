@@ -1,0 +1,9 @@
+module Test =>
+
+struct String;
+struct Int;
+struct Person(name: String, age: Int);
+
+fun makeAlice: Person {
+	Test::Person::Person("Alice")
+}

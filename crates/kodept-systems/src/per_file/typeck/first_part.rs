@@ -7,32 +7,29 @@ use kodept_core::code_point::Span;
 use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::system::{Commands, Query};
-use kodept_ecs::world::Ref;
+use kodept_inference::assumption::TypeTable;
 use kodept_inference::process::PartialInfer;
-use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TConstant};
-use kodept_report::message::Diagnostic;
-use kodept_report::prelude::Severity;
+use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TConstant, TVar};
 use kodept_report_macros::Report;
 use num_bigint::Sign;
 use std::num::NonZeroU8;
 
-#[derive(Debug, Component)]
-pub(super) struct PartiallyTypechecked(PartialInfer<(NodeId, SymbolKind)>);
+type Referral = (NodeId, SymbolKind);
+
 #[derive(Debug, Component)]
 #[component(storage = "SparseSet")]
-#[component(immutable)]
-pub(super) struct Foo(MonomorphicType);
+pub(super) struct PartiallyTypechecked(PartialInfer<Referral>);
 
 impl NodeProperty for PartiallyTypechecked {}
 impl RequireProperty<PartiallyTypechecked> for Literal {}
-
-impl NodeProperty for Foo {}
-impl RequireProperty<Foo> for UserType {}
+impl RequireProperty<PartiallyTypechecked> for UserType {}
+impl RequireProperty<PartiallyTypechecked> for ValueCtor<ResolvedType> {}
 
 #[derive(Debug, Report)]
 #[severity("error")]
 #[message("Integer literal is too big to fit into 256 bits")]
 struct IntegerIsTooBig {
+    #[primary_label]
     span: Span,
 }
 
@@ -70,72 +67,74 @@ pub(super) fn typeck_literals(
     }
 }
 
-pub(super) fn typeck_user_types(query: Query<NodeId<UserType>>, mut commands: Commands) {
-    for id in query {
+pub(super) fn typeck_user_types(
+    mut query: NarrowHierarchicalQuery<
+        UserType,
+        ValueCtor<ResolvedType>,
+        (),
+        (),
+        &PartiallyTypechecked,
+    >,
+    mut commands: Commands,
+) {
+    for (id, _, ctors) in query.iter_by_layers() {
         let constant = TConstant::new();
-        commands
-            .entity(id.entity())
-            .insert(Foo(MonomorphicType::Constant(constant)));
     }
 }
 
-fn resolved_ty_as_monomorphic(
-    ty: &ResolvedType,
-    all_types: Query<&Foo>,
-) -> Option<MonomorphicType> {
+fn resolved_ty_as_monomorphic(ty: &ResolvedType) -> PartialInfer<Referral> {
     match ty {
-        ResolvedType::Named(id) => all_types.get(id.entity()).ok().map(|it| it.0.clone()),
+        ResolvedType::Named(id) => {
+            let var = TVar::new();
+            PartialInfer::new(var).with_assumption((*id, SymbolKind::Type), var)
+        }
         ResolvedType::Tuple(items) => {
-            let collection = items
+            let mut result = PartialInfer::new(MonomorphicType::UNIT);
+            let ty = items
                 .iter()
-                .map(|it| resolved_ty_as_monomorphic(it, all_types))
-                .collect::<Option<Vec<_>>>()?;
-            Some(MonomorphicType::tuple(collection))
+                .map(|it| resolved_ty_as_monomorphic(it))
+                .map(|it| {
+                    result.assumptions.merge(it.assumptions);
+                    result.constraints.extend(it.constraints);
+                    it.current_type.0
+                });
+
+            let monomorphic_type = MonomorphicType::tuple(ty);
+            result.with_type(monomorphic_type)
         }
     }
 }
 
 pub(super) fn typeck_value_ctors(
-    query: NarrowHierarchicalQuery<
-        UserType,
-        ValueCtor<ResolvedType>,
-        (),
-        &Foo,
-        (Ref<ValueCtor<ResolvedType>>, &SourceSpan),
-    >,
-    all_types: Query<&Foo>,
-    mut reporter: Reporter,
+    query: Query<(NodeId<ValueCtor<ResolvedType>>, &ValueCtor<ResolvedType>)>,
     mut commands: Commands,
 ) {
-    fn single(
-        output: &MonomorphicType,
-        params: &[Param<ResolvedType>],
-        all_types: Query<&Foo>,
-    ) -> Option<MonomorphicType> {
-        match params.split_first() {
-            None => Some(output.clone()),
-            Some((head, tail)) => {
-                let head = resolved_ty_as_monomorphic(head.ty(), all_types)?;
-                let tail = tail
-                    .iter()
-                    .map(|it| resolved_ty_as_monomorphic(it.ty(), all_types))
-                    .collect::<Option<Vec<_>>>()?;
+    for (id, ctor) in query {
+        let named_params_count = ctor
+            .params
+            .iter()
+            .rev()
+            .take_while(|it| matches!(it, Param::Named { .. }))
+            .count();
+        let total_params_count = ctor.params.len();
+        let (positional, named) = ctor
+            .params
+            .split_at(total_params_count - named_params_count);
+        // TODO: add support for named parameters
+        assert_eq!(named.len(), 0);
 
-                Some(MonomorphicType::fun(head, tail, output.clone()))
-            }
-        }
-    }
+        let mut result = PartialInfer::new(MonomorphicType::UNIT);
+        let ctor_ty = positional
+            .iter()
+            .map(|it| resolved_ty_as_monomorphic(it.ty()))
+            .rfold(MonomorphicType::var(), |acc, next| {
+                result.assumptions.merge(next.assumptions);
+                result.constraints.extend(next.constraints);
+                MonomorphicType::fun1(&*next.current_type, acc)
+            });
 
-    for (_, Foo(ty), ctors) in query.iter_by_layers() {
-        for (id, (ctor, span)) in ctors {
-            match single(ty, &ctor.params, all_types) {
-                None => reporter.report_ad_hoc(|| {
-                    Diagnostic::new(Severity::Bug)
-                        .with_message("Monomorphic type is unknown")
-                        .with_primary_label("in constructor", span.0)
-                }),
-                Some(ty) => _ = commands.entity(id.entity()).insert(Foo(ty)),
-            }
-        }
+        commands
+            .entity(id.entity())
+            .insert(PartiallyTypechecked(result.with_type(ctor_ty)));
     }
 }

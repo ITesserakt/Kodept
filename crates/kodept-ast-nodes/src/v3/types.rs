@@ -36,6 +36,12 @@ pub enum Param<T> {
     },
 }
 
+#[derive(Debug, PartialEq)]
+pub struct PositionalParam<T> {
+    pub name: Str,
+    pub ty: T,
+}
+
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
 pub struct ValueCtor<T: TypeRef<true>> {
@@ -71,7 +77,7 @@ pub struct ForeignFunction<T: TypeRef<true>> {
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
 pub struct AnonFunction<T: TypeRef<false>> {
-    pub params: Vec<Param<T>>,
+    pub params: Vec<PositionalParam<T>>,
     pub return_type: T,
 }
 

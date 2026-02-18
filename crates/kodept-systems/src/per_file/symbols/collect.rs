@@ -2,13 +2,14 @@ use crate::per_file::symbols::{
     ComponentIdForMapper, RefMapper, SymbolKind, SymbolName, SymbolTable,
 };
 use crate::source::collection::Reporter;
+use kodept_ast::Str;
 use kodept_ast::prelude::{ASTNode, Erase, HierarchicalQuery, NodeId, NodeQueryData};
 use kodept_ast::properties::{HasProperty, Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::children::{Family, MembersOf};
 use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
-    CtorName, Declaration, Module, NormalizedBlock, Param, ResolvedTypeAnnotation, Statement,
+    CtorName, Declaration, Module, NormalizedBlock, ResolvedTypeAnnotation, Statement,
     TypeAnnotation, UserFunction, UserType, ValueCtor, Variable, VariableName,
 };
 use kodept_core::code_point::Span;
@@ -309,7 +310,8 @@ impl CollectSymbols<Statement> for NormalizedBlock {
 }
 
 pub(super) fn collect_params_on<T, U>(
-    get_params: impl Fn(&T) -> &[Param<U>],
+    get_params: impl Fn(&T) -> &[U],
+    get_param_name: impl Fn(&U) -> &Str,
 ) -> impl FnMut(SymbolsCollector<Query<(NodeId<T>, &T, &SourceSpan)>>)
 where
     T: ASTNode + HasProperty<SymbolTable>,
@@ -328,14 +330,7 @@ where
             };
 
             for (index, param) in get_params(ctor).iter().enumerate() {
-                match param {
-                    Param::Positional { name, .. } => {
-                        registrator.register(name, SymbolKind::Parameter(index), id);
-                    }
-                    Param::Named { name, .. } => {
-                        registrator.register(name, SymbolKind::Parameter(index), id);
-                    }
-                }
+                registrator.register(get_param_name(param), SymbolKind::Parameter(index), id);
             }
 
             modification.add_property(table);

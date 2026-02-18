@@ -215,7 +215,11 @@ where
 
         let this = id.entity();
         let buffer = buffer.queue(move |world: &mut World| {
-            world.entity_mut(this).remove::<Node>().insert(value);
+            world
+                .entity_mut(this)
+                .remove::<Node>()
+                .insert(value)
+                .modify_component(|it| *it = crate::properties::Node::of::<Into>());
         });
         NodeModification {
             id: id.cast(),

@@ -7,7 +7,7 @@ use kodept_ast::properties::{Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::NodeModification;
 use kodept_ast_nodes::{
-    AnonFunction, CtorName, ForeignFunction, Module, Param, Path, ResolvedType,
+    AnonFunction, CtorName, ForeignFunction, Module, Param, Path, PositionalParam, ResolvedType,
     ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction, UserType, Value,
     ValueCtor, Variable,
 };
@@ -901,7 +901,7 @@ pub(super) fn resolve_types_in_anon_functions(
             };
 
         let params = func.params.drain(..).enumerate().map(|(index, it)| {
-            let result = resolve_type_annotation(id, module_id, it.ty(), properties);
+            let result = resolve_type_annotation(id, module_id, &it.ty, properties);
             let param_span = func_syntax
                 .and_then(|it| it.binds.inner.get(index))
                 .map(|it| it.bounds())
@@ -927,24 +927,13 @@ pub(super) fn resolve_types_in_anon_functions(
                         ref_span: param_span,
                         ref_kind: "parameter",
                         actual_kind,
-                        ref_name: it.name(),
+                        ref_name: &it.name,
                     });
                     return None;
                 }
             };
 
-            Some(match it {
-                Param::Positional { name, .. } => Param::Positional { name, ty },
-                Param::Named {
-                    name,
-                    default_expr_id,
-                    ..
-                } => Param::Named {
-                    name,
-                    default_expr_id,
-                    ty,
-                },
-            })
+            Some(PositionalParam { name: it.name, ty })
         });
         let Some(params) = params.collect() else {
             continue;

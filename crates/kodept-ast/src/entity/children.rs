@@ -438,16 +438,16 @@ where
     ChildData: NodeQueryData<U> + 'static,
 {
     pub fn iter_by_layers(
-        &self,
+        &mut self,
     ) -> impl Iterator<
         Item = (
             NodeId<T>,
-            ROQueryItem<'_, 's, ParentData>,
+            ParentData::Item<'_, 's>,
             ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
         ),
     > {
         self.parent_query
-            .iter()
+            .iter_mut()
             .map(|(parent_id, parent_data, children)| {
                 (
                     parent_id,
