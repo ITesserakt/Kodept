@@ -291,18 +291,13 @@ impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Ty
         spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let (name, mutable, annotation) = match &node.variable {
-            kodept_rlt::prelude::Variable::Immutable {
-                id, assigned_type, ..
-            } => (source.get_chunk_located(id), false, assigned_type),
-            kodept_rlt::prelude::Variable::Mutable {
-                id, assigned_type, ..
-            } => (source.get_chunk_located(id), true, assigned_type),
-        };
+        let name = source.get_chunk_located(&node.variable.id);
 
         let mut builder = NodeBuilder::new(super::types::Variable {
-            mutable,
-            annotation: annotation
+            mutable: node.variable.is_mutable,
+            annotation: node
+                .variable
+                .assigned_type
                 .as_ref()
                 .map(|it| convert_type(&it.1, source).into_annotation())
                 .unwrap_or(TypeAnnotation::Infer),

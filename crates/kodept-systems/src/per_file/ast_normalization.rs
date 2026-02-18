@@ -194,7 +194,6 @@ fn ensure_no_non_normalized_blocks(
 }
 
 fn normalize_block(
-    block_id: NodeId<Block>,
     statements: ChildrenFetch<(&Archetype, &SourceSpan, &Lexeme), Block, Statement>,
     mut modification: NodeModification<Block, Commands>,
     statement_component_ids: &StatementComponentIds,
@@ -253,7 +252,6 @@ fn normalize_blocks(
 ) {
     for (id, _, statements) in blocks.iter_by_layers() {
         if let Some(dangling) = normalize_block(
-            id,
             statements,
             NodeModification::new(commands.reborrow(), id),
             &statement_component_ids,
@@ -273,7 +271,6 @@ fn normalize_blocks(
     blocks.par_iter_by_layers(|id, _, statements| {
         commands.command_scope(|c| {
             if let Some(dangling) = normalize_block(
-                id,
                 statements,
                 NodeModification::new(c, id),
                 &statement_component_ids,

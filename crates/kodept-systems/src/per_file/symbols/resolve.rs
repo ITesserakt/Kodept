@@ -635,12 +635,8 @@ pub(super) fn resolve_type_in_variables(
         let return_type_span = syntax
             .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme.0)
             .ok()
-            .and_then(|it| match &it.variable {
-                kodept_rlt::prelude::Variable::Immutable { assigned_type, .. }
-                | kodept_rlt::prelude::Variable::Mutable { assigned_type, .. } => {
-                    assigned_type.as_ref().map(|it| it.1.bounds())
-                }
-            })
+            .and_then(|it| it.variable.assigned_type.as_ref())
+            .map(|it| it.1.bounds())
             .unwrap_or(span.0);
         let modification = NodeModification::new(commands.reborrow(), id);
         match resolve_type_annotation(id, module_id, &variable.annotation, properties) {

@@ -208,7 +208,7 @@ mod tests {
     #[test]
     fn zero_sized_type() {
         #[derive(PartialEq, Eq, Hash, Debug)]
-        pub struct A;
+        struct A;
 
         impl Internable for A {
             fn leak(&self) -> &'static Self {
@@ -233,7 +233,7 @@ mod tests {
     #[test]
     fn fieldless_enum() {
         #[derive(PartialEq, Eq, Hash, Debug, Clone)]
-        pub enum A {
+        enum A {
             X,
             Y,
         }
