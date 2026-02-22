@@ -1,6 +1,6 @@
-use crate::Either;
 use crate::engine::reporter::Reporter;
 use crate::read_code_source::SyncSource;
+use kodept_core::either::Either;
 use kodept_core::try_port::Try;
 use kodept_report::prelude::IntoSpannedReportMessage;
 use std::ops::ControlFlow;
