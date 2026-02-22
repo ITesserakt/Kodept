@@ -1,278 +1,315 @@
 use crate::per_file::ast_normalization::InModule;
+use crate::per_file::symbols::resolve::control::{
+    Decision, Reject, Rejects, SearchResult, WalkDownController, walk_down, walk_up,
+};
+use crate::per_file::symbols::resolve::types::{
+    Opaque, Passthrough, SymbolIsNotType, UnexpectedUnresolvedReference, UnresolvedReference,
+};
 use crate::per_file::symbols::{SymbolKind, SymbolTable};
+use crate::per_file::utils::{IterableSystemParam, ParIterableSystem};
 use crate::source::collection::Reporter;
+use crate::utils::TryReport;
 use kodept_ast::Str;
-use kodept_ast::prelude::{ASTNode, Erase, NodeId};
+use kodept_ast::prelude::{ASTNode, Erase, NodeId, Property};
 use kodept_ast::properties::{Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::experimental::NodeModification;
+use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ast_nodes::{
     AnonFunction, CtorName, ForeignFunction, Module, Param, Path, PositionalParam, ResolvedType,
     ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction, UserType, Value,
     ValueCtor, Variable,
 };
-use kodept_core::code_point::Span;
+use kodept_core::either::Either;
 use kodept_core::structure::SpanBounds;
 use kodept_ecs::component::Component;
-use kodept_ecs::entity::Entity;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::hierarchy::{ChildOf, Children};
 use kodept_ecs::lifecycle::Add;
-use kodept_ecs::query::{Has, Or, QueryData, QueryFilter, With};
+use kodept_ecs::query::{Has, Or, QueryFilter, With};
 use kodept_ecs::system::{Commands, On, Query, Res, SystemParam};
-use kodept_report::message::{Diagnostic, Severity};
-use kodept_report::traits::IntoSpannedReportMessage;
-use kodept_report_macros::Report;
-use std::cmp::Ordering;
-use std::collections::{HashSet, VecDeque};
-use std::fmt::{Debug, Display, Formatter};
 use std::iter::Peekable;
 use std::marker::PhantomData;
+pub(crate) use types::ResolvedTo;
 
-#[derive(Debug, Component)]
-#[component(immutable)]
-pub(super) struct ResolvedTo(NodeId, SymbolKind);
+mod types {
+    use crate::per_file::symbols::SymbolKind;
+    use kodept_ast::prelude::NodeId;
+    use kodept_ast::properties::{NodeProperty, RequireProperty};
+    use kodept_ast_nodes::Value;
+    use kodept_core::code_point::Span;
+    use kodept_ecs::component::Component;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_report::prelude::{Diagnostic, Severity};
+    use kodept_report::traits::IntoSpannedReportMessage;
+    use kodept_report_macros::Report;
+    use std::fmt::Display;
 
-#[derive(Debug)]
-enum Decision<A, R> {
-    Next,
-    Reject(R),
-    Accept(A),
-}
-
-#[derive(Debug)]
-enum SearchResult<A, R> {
-    Rejected(R),
-    Accepted(NodeId, A),
-}
-
-#[derive(Debug, Component)]
-#[component(immutable, storage = "SparseSet")]
-/// Marks nodes that inhibits resolution until node with [`Opaque`] component is found
-pub(super) struct Passthrough;
-#[derive(Debug, Component)]
-#[component(immutable, storage = "SparseSet")]
-/// Marks nodes that enabled resolution back
-pub(super) struct Opaque;
-
-#[derive(Debug)]
-struct UnresolvedReference<'a, I> {
-    name: &'a str,
-    span: Span,
-    note: I,
-}
-
-#[derive(Debug, Report)]
-#[severity("error")]
-#[message("Definition of `{}` expected to be a type, but it is a {}", self.name, self.actual_kind)]
-struct SymbolIsNotType<'a> {
-    #[secondary_label("is not a type")]
-    span: Span,
-    actual_kind: SymbolKind,
-    name: &'a str,
-    #[primary_label("required by a {} `{}`", self.ref_kind, self.ref_name)]
-    ref_span: Span,
-    ref_kind: &'static str,
-    ref_name: &'a str,
-}
-
-#[derive(Debug, Report)]
-#[severity("bug")]
-#[message("Reference `{}` is not resolved still", self.id)]
-struct UnexpectedUnresolvedReference {
-    id: NodeId,
-    #[primary_label("expected this to be resolved")]
-    span: Span,
-}
-
-#[derive(Debug)]
-enum Layered<T> {
-    Layer,
-    Value(T),
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-enum Reject<'a> {
-    SegmentMismatch {
-        expected: &'a str,
-    },
-    NotFound {
-        scope_name: Name,
-        symbol_name: &'a str,
-    },
-    Exhausted,
-    UnnamedScope,
-    Passthrough,
-}
-
-#[derive(Debug, Default)]
-struct Rejects<'a>(HashSet<Reject<'a>>);
-
-impl<I> IntoSpannedReportMessage for UnresolvedReference<'_, I>
-where
-    I: IntoIterator<Item: Display>,
-{
-    type Message = Diagnostic;
-
-    fn into_message(self) -> Self::Message {
-        let diagnostic = Diagnostic::new(Severity::Error)
-            .with_message(format!("Cannot resolve reference `{}`", self.name))
-            .with_primary_label("not found in scope", self.span);
-
-        self.note
-            .into_iter()
-            .fold(diagnostic, |acc, next| acc.with_note(next.to_string()))
+    #[derive(Debug, Component)]
+    #[component(immutable)]
+    pub(crate) struct ResolvedTo {
+        pub referral: NodeId,
+        pub kind: SymbolKind,
     }
-}
 
-impl Display for Reject<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Reject::SegmentMismatch { expected } => write!(f, "Unknown segment `{expected}`"),
-            Reject::NotFound {
-                scope_name,
-                symbol_name,
-            } => write!(f, "`{scope_name}` doesn't have `{symbol_name}` defined"),
-            Reject::Exhausted => write!(f, "Exhausted"),
-            Reject::UnnamedScope => write!(f, "UnnamedScope"),
-            Reject::Passthrough => write!(f, "Cannot access definitions of outer scope"),
+    impl NodeProperty for ResolvedTo {}
+    impl RequireProperty<ResolvedTo> for Value {}
+
+    #[derive(Debug, Component)]
+    #[component(immutable, storage = "SparseSet")]
+    /// Marks nodes that inhibits resolution until node with [`Opaque`] component is found
+    pub(super) struct Passthrough;
+    #[derive(Debug, Component)]
+    #[component(immutable, storage = "SparseSet")]
+    /// Marks nodes that enabled resolution back
+    pub(super) struct Opaque;
+
+    #[derive(Debug)]
+    pub(super) struct UnresolvedReference<'a, I> {
+        pub(super) name: &'a str,
+        pub(super) span: Span,
+        pub(super) note: I,
+    }
+
+    #[derive(Debug, Report)]
+    #[severity("error")]
+    #[message("Definition of `{}` expected to be a type, but it is a {}", self.name, self.actual_kind
+    )]
+    pub(super) struct SymbolIsNotType<'a> {
+        #[secondary_label("is not a type")]
+        pub(super) span: Span,
+        pub(super) actual_kind: SymbolKind,
+        pub(super) name: &'a str,
+        #[primary_label("required by a {} `{}`", self.ref_kind, self.ref_name)]
+        pub(super) ref_span: Span,
+        pub(super) ref_kind: &'static str,
+        pub(super) ref_name: &'a str,
+    }
+
+    #[derive(Debug, Report)]
+    #[severity("bug")]
+    #[message("Reference `{}` is not resolved still", self.id)]
+    pub(super) struct UnexpectedUnresolvedReference {
+        pub(super) id: NodeId,
+        #[primary_label("expected this to be resolved")]
+        pub(super) span: Span,
+    }
+
+    impl<I> IntoSpannedReportMessage for UnresolvedReference<'_, I>
+    where
+        I: IntoIterator<Item: Display>,
+    {
+        type Message = Diagnostic;
+
+        fn into_message(self) -> Self::Message {
+            let diagnostic = Diagnostic::new(Severity::Error)
+                .with_message(format!("Cannot resolve reference `{}`", self.name))
+                .with_primary_label("not found in scope", self.span);
+
+            self.note
+                .into_iter()
+                .fold(diagnostic, |acc, next| acc.with_note(next.to_string()))
         }
     }
 }
 
-impl PartialOrd for Reject<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+mod control {
+    use kodept_ast::prelude::{Erase, NodeId};
+    use kodept_ast::properties::Name;
+    use kodept_ecs::entity::Entity;
+    use kodept_ecs::hierarchy::{ChildOf, Children};
+    use kodept_ecs::query::QueryData;
+    use kodept_ecs::system::Query;
+    use std::cmp::Ordering;
+    use std::collections::{HashSet, VecDeque};
+    use std::fmt::{Display, Formatter};
+
+    #[derive(Debug)]
+    pub(super) enum Decision<A, R> {
+        Next,
+        Reject(R),
+        Accept(A),
     }
-}
 
-impl Ord for Reject<'_> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Reject::NotFound { .. }, Reject::NotFound { .. }) => Ordering::Equal,
-            (Reject::SegmentMismatch { .. }, Reject::SegmentMismatch { .. }) => Ordering::Equal,
-            (Reject::Passthrough, Reject::Passthrough) => Ordering::Equal,
+    #[derive(Debug)]
+    pub(super) enum SearchResult<A, R> {
+        Rejected(R),
+        Accepted(NodeId, A),
+    }
 
-            (Reject::Passthrough, Reject::NotFound { .. }) => Ordering::Equal,
-            (Reject::NotFound { .. }, Reject::Passthrough) => Ordering::Equal,
+    #[derive(Debug)]
+    enum Layered<T> {
+        Layer,
+        Value(T),
+    }
 
-            (Reject::NotFound { .. }, _) => Ordering::Greater,
-            (_, Reject::NotFound { .. }) => Ordering::Less,
+    #[derive(Debug, PartialEq, Eq, Hash)]
+    pub(super) enum Reject<'a> {
+        SegmentMismatch {
+            expected: &'a str,
+        },
+        NotFound {
+            scope_name: Name,
+            symbol_name: &'a str,
+        },
+        Exhausted,
+        UnnamedScope,
+        Passthrough,
+    }
 
-            (Reject::SegmentMismatch { .. }, _) => Ordering::Greater,
-            (_, Reject::SegmentMismatch { .. }) => Ordering::Less,
+    #[derive(Debug, Default)]
+    pub(super) struct Rejects<'a>(HashSet<Reject<'a>>);
 
-            _ => Ordering::Equal,
+    impl Display for Reject<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Reject::SegmentMismatch { expected } => write!(f, "Unknown segment `{expected}`"),
+                Reject::NotFound {
+                    scope_name,
+                    symbol_name,
+                } => write!(f, "`{scope_name}` doesn't have `{symbol_name}` defined"),
+                Reject::Exhausted => write!(f, "Exhausted"),
+                Reject::UnnamedScope => write!(f, "UnnamedScope"),
+                Reject::Passthrough => write!(f, "Cannot access definitions of outer scope"),
+            }
         }
     }
-}
 
-impl<'a> Extend<Reject<'a>> for Rejects<'a> {
-    fn extend<T: IntoIterator<Item = Reject<'a>>>(&mut self, iter: T) {
-        for reject in iter {
-            match self.0.iter().next().map(|it| reject.cmp(it)) {
-                None => _ = self.0.insert(reject),
-                Some(Ordering::Equal) => _ = self.0.insert(reject),
-                Some(Ordering::Less) => {}
-                Some(Ordering::Greater) => {
-                    self.0.clear();
-                    self.0.insert(reject);
-                }
+    impl PartialOrd for Reject<'_> {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl Ord for Reject<'_> {
+        fn cmp(&self, other: &Self) -> Ordering {
+            match (self, other) {
+                (Reject::NotFound { .. }, Reject::NotFound { .. }) => Ordering::Equal,
+                (Reject::SegmentMismatch { .. }, Reject::SegmentMismatch { .. }) => Ordering::Equal,
+                (Reject::Passthrough, Reject::Passthrough) => Ordering::Equal,
+
+                (Reject::Passthrough, Reject::NotFound { .. }) => Ordering::Equal,
+                (Reject::NotFound { .. }, Reject::Passthrough) => Ordering::Equal,
+
+                (Reject::NotFound { .. }, _) => Ordering::Greater,
+                (_, Reject::NotFound { .. }) => Ordering::Less,
+
+                (Reject::SegmentMismatch { .. }, _) => Ordering::Greater,
+                (_, Reject::SegmentMismatch { .. }) => Ordering::Less,
+
+                _ => Ordering::Equal,
+            }
+        }
+    }
+
+    impl<'a> Extend<Reject<'a>> for Rejects<'a> {
+        fn extend<T: IntoIterator<Item = Reject<'a>>>(&mut self, iter: T) {
+            for reject in iter {
+                match self.0.iter().next().map(|it| reject.cmp(it)) {
+                    None => _ = self.0.insert(reject),
+                    Some(Ordering::Equal) => _ = self.0.insert(reject),
+                    Some(Ordering::Less) => {}
+                    Some(Ordering::Greater) => {
+                        self.0.clear();
+                        self.0.insert(reject);
+                    }
+                };
+            }
+        }
+    }
+
+    impl<'a> IntoIterator for Rejects<'a> {
+        type Item = Reject<'a>;
+        type IntoIter = std::collections::hash_set::IntoIter<Reject<'a>>;
+
+        fn into_iter(self) -> Self::IntoIter {
+            self.0.into_iter()
+        }
+    }
+
+    pub(super) fn walk_up<'s, T, A, R, P>(
+        ancestors: Query<&ChildOf>,
+        mut properties: Query<'_, 's, T>,
+        start: impl Erase<Entity>,
+        mut control: impl FnMut(T::Item<'_, 's>) -> Decision<A, R>,
+    ) -> SearchResult<A, P>
+    where
+        T: QueryData,
+        R: Ord,
+        P: Default + Extend<R>,
+    {
+        let mut current = start.erase();
+        let mut rejects = P::default();
+        loop {
+            let Ok(properties) = properties.get_mut(current) else {
+                return SearchResult::Rejected(rejects);
             };
+            match control(properties) {
+                Decision::Next => {
+                    let Ok(ChildOf(parent)) = ancestors.get(current) else {
+                        return SearchResult::Rejected(rejects);
+                    };
+                    current = *parent;
+                }
+                Decision::Reject(reject) => {
+                    let Ok(ChildOf(parent)) = ancestors.get(current) else {
+                        return SearchResult::Rejected(rejects);
+                    };
+                    current = *parent;
+                    rejects.extend([reject]);
+                }
+                Decision::Accept(accept) => return SearchResult::Accepted(current.into(), accept),
+            }
         }
     }
-}
 
-impl<'a> IntoIterator for Rejects<'a> {
-    type Item = Reject<'a>;
-    type IntoIter = std::collections::hash_set::IntoIter<Reject<'a>>;
+    pub(super) trait WalkDownController<T> {
+        type Accept;
+        type Reject;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+        fn on_iteration(&mut self, item: T) -> Decision<Self::Accept, Self::Reject>;
+        fn on_layer(&mut self);
     }
-}
 
-fn walk_up<'s, T, A, R, P>(
-    ancestors: Query<&ChildOf>,
-    mut properties: Query<'_, 's, T>,
-    start: impl Erase<Entity>,
-    mut control: impl FnMut(T::Item<'_, 's>) -> Decision<A, R>,
-) -> SearchResult<A, P>
-where
-    T: QueryData,
-    R: Ord,
-    P: Default + Extend<R>,
-{
-    let mut current = start.erase();
-    let mut rejects = P::default();
-    loop {
-        let Ok(properties) = properties.get_mut(current) else {
-            return SearchResult::Rejected(rejects);
-        };
-        match control(properties) {
-            Decision::Next => {
-                let Ok(ChildOf(parent)) = ancestors.get(current) else {
-                    return SearchResult::Rejected(rejects);
-                };
-                current = *parent;
-            }
-            Decision::Reject(reject) => {
-                let Ok(ChildOf(parent)) = ancestors.get(current) else {
-                    return SearchResult::Rejected(rejects);
-                };
-                current = *parent;
-                rejects.extend([reject]);
-            }
-            Decision::Accept(accept) => return SearchResult::Accepted(current.into(), accept),
-        }
-    }
-}
+    pub(super) fn walk_down<'s, T, A, R, P>(
+        descendants: Query<Option<&Children>>,
+        mut properties: Query<'_, 's, T>,
+        start: impl Erase<Entity>,
+        mut control: impl for<'w> WalkDownController<T::Item<'w, 's>, Accept = A, Reject = R>,
+    ) -> SearchResult<A, P>
+    where
+        T: QueryData,
+        R: Ord,
+        P: Default + Extend<R>,
+    {
+        let mut stack = VecDeque::from([Layered::Value(start.erase()), Layered::Layer]);
+        let mut rejects = P::default();
+        loop {
+            match stack.pop_front() {
+                None => return SearchResult::Rejected(rejects),
+                Some(Layered::Layer) if stack.is_empty() => control.on_layer(),
+                Some(Layered::Layer) => {
+                    control.on_layer();
+                    stack.push_back(Layered::Layer);
+                }
+                Some(Layered::Value(id)) => {
+                    let Ok(properties) = properties.get_mut(id) else {
+                        return SearchResult::Rejected(rejects);
+                    };
 
-trait WalkDownController<T> {
-    type Accept;
-    type Reject;
-
-    fn on_iteration(&mut self, item: T) -> Decision<Self::Accept, Self::Reject>;
-    fn on_layer(&mut self);
-}
-
-fn walk_down<'s, T, A, R, P>(
-    descendants: Query<Option<&Children>>,
-    mut properties: Query<'_, 's, T>,
-    start: impl Erase<Entity>,
-    mut control: impl for<'w> WalkDownController<T::Item<'w, 's>, Accept = A, Reject = R>,
-) -> SearchResult<A, P>
-where
-    T: QueryData,
-    R: Ord,
-    P: Default + Extend<R>,
-{
-    let mut stack = VecDeque::from([Layered::Value(start.erase()), Layered::Layer]);
-    let mut rejects = P::default();
-    loop {
-        match stack.pop_front() {
-            None => return SearchResult::Rejected(rejects),
-            Some(Layered::Layer) if stack.is_empty() => control.on_layer(),
-            Some(Layered::Layer) => {
-                control.on_layer();
-                stack.push_back(Layered::Layer);
-            }
-            Some(Layered::Value(id)) => {
-                let Ok(properties) = properties.get_mut(id) else {
-                    return SearchResult::Rejected(rejects);
-                };
-
-                match control.on_iteration(properties) {
-                    Decision::Next => stack.extend(
-                        descendants
-                            .get(id)
-                            .iter()
-                            .flat_map(|it| it.iter())
-                            .flat_map(|it| it.iter())
-                            .map(|it| Layered::Value(*it)),
-                    ),
-                    Decision::Reject(reject) => rejects.extend([reject]),
-                    Decision::Accept(accept) => return SearchResult::Accepted(id.into(), accept),
+                    match control.on_iteration(properties) {
+                        Decision::Next => stack.extend(
+                            descendants
+                                .get(id)
+                                .iter()
+                                .flat_map(|it| it.iter())
+                                .flat_map(|it| it.iter())
+                                .map(|it| Layered::Value(*it)),
+                        ),
+                        Decision::Reject(reject) => rejects.extend([reject]),
+                        Decision::Accept(accept) => {
+                            return SearchResult::Accepted(id.into(), accept);
+                        }
+                    }
                 }
             }
         }
@@ -527,27 +564,52 @@ fn resolve_ident_with_path<'i>(
     }
 }
 
-pub(super) fn resolve_values(
-    values: Query<(NodeId<Value>, &Value, &InModule, &SourceSpan)>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, value, &InModule(module_id), span) in values {
-        let Value { path, ident } = value;
+#[derive(SystemParam)]
+pub(super) struct ResolveValues<'w, 's> {
+    properties: Properties<'w, 's>,
+}
 
-        match resolve_ident_with_path(id, module_id, path, ident, properties) {
-            SearchResult::Rejected(rejects) => reporter.report(UnresolvedReference {
-                name: ident,
-                span: span.0,
-                note: rejects,
-            }),
-            SearchResult::Accepted(_, item) => {
-                commands
-                    .entity(id.entity())
-                    .insert(ResolvedTo(item.0, item.1));
+impl ParIterableSystem for ResolveValues<'_, '_> {
+    type Iterable = Query<
+        'static,
+        'static,
+        (
+            NodeId<Value>,
+            &'static Value,
+            Property<InModule>,
+            Property<SourceSpan>,
+        ),
+    >;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let (value, &InModule(module_id), &SourceSpan(span)) = params;
+
+        match resolve_ident_with_path(
+            modification.id(),
+            module_id,
+            &value.path,
+            &value.ident,
+            self.properties,
+        ) {
+            SearchResult::Rejected(rejects) => {
+                return Err(UnresolvedReference {
+                    name: &value.ident,
+                    span,
+                    note: rejects,
+                });
             }
-        }
+            SearchResult::Accepted(_, (resolved_to, kind)) => {
+                modification.add_property(ResolvedTo {
+                    referral: resolved_to,
+                    kind,
+                })
+            }
+        };
+        Ok(())
     }
 }
 
@@ -617,55 +679,74 @@ fn resolve_type<'i>(
     }
 }
 
-pub(super) fn resolve_type_in_variables(
-    variables: Query<(
-        NodeId<Variable<TypeAnnotation>>,
-        &Variable<TypeAnnotation>,
-        &InModule,
-        &Lexeme,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    syntax: Res<SyntaxResolver>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, variable, &InModule(module_id), lexeme, span) in variables {
-        let return_type_span = syntax
-            .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme.0)
+#[derive(SystemParam)]
+pub struct ResolveTypeInVariables<'w, 's> {
+    all_spans: Query<'w, 's, &'static SourceSpan>,
+    properties: Properties<'w, 's>,
+    syntax: Res<'w, SyntaxResolver>,
+}
+
+impl ParIterableSystem for ResolveTypeInVariables<'_, '_> {
+    type Iterable = Query<
+        'static,
+        'static,
+        (
+            NodeId<Variable<TypeAnnotation>>,
+            &'static Variable<TypeAnnotation>,
+            Property<InModule>,
+            Property<Lexeme>,
+            Property<SourceSpan>,
+        ),
+    >;
+
+    fn for_each<B: Buffer>(
+        &self,
+        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let (variable, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let return_type_span = self
+            .syntax
+            .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme)
             .ok()
             .and_then(|it| it.variable.assigned_type.as_ref())
             .map(|it| it.1.bounds())
-            .unwrap_or(span.0);
-        let modification = NodeModification::new(commands.reborrow(), id);
-        match resolve_type_annotation(id, module_id, &variable.annotation, properties) {
+            .unwrap_or(span);
+
+        match resolve_type_annotation(
+            modification.id(),
+            module_id,
+            &variable.annotation,
+            self.properties,
+        ) {
             Ok(annotation) => {
                 _ = modification.transmute(Variable {
                     mutable: variable.mutable,
                     name: variable.name.clone(),
                     annotation,
-                })
+                });
+                Ok(())
             }
             Err(TypeResolutionError::Rejected(rejects, name)) => {
-                reporter.report(UnresolvedReference {
+                Err(Either::Left(UnresolvedReference {
                     span: return_type_span,
                     name,
                     note: rejects,
-                })
+                }))
             }
             Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                reporter.report(SymbolIsNotType {
+                Err(Either::Right(SymbolIsNotType {
                     name,
                     actual_kind,
-                    span: all_spans
+                    span: self
+                        .all_spans
                         .get(resolved_to.entity())
                         .map(|it| it.0)
                         .unwrap_or_default(),
                     ref_span: return_type_span,
                     ref_kind: "explicit type annotation",
                     ref_name: variable.name.as_str(),
-                })
+                }))
             }
         }
     }

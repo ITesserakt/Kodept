@@ -1,5 +1,5 @@
 use crate::Str;
-use crate::message::Diagnostic;
+use crate::message::{Diagnostic, ReportMessage, Severity};
 use kodept_core::code_point::CodePoint;
 use kodept_core::either::Either;
 use std::any::type_name_of_val;
@@ -126,5 +126,13 @@ where
             Either::Left(x) => IntoSpannedReportMessage::into_message(x),
             Either::Right(x) => IntoSpannedReportMessage::into_message(x),
         }
+    }
+}
+
+impl IntoSpannedReportMessage for std::io::Error {
+    type Message = ReportMessage;
+
+    fn into_message(self) -> Self::Message {
+        ReportMessage::new(Severity::Error, self.to_string())
     }
 }

@@ -3,11 +3,11 @@ mod resolve;
 
 use crate::per_file::symbols::collect::{CollectSymbols, check_module_names, collect_params_on};
 use crate::per_file::symbols::resolve::{
-    ResolvedTo, add_opaque_markers, add_passthrough_markers, ensure_absent,
-    resolve_type_in_variables, resolve_types_in_anon_functions, resolve_types_in_foreign_functions,
-    resolve_types_in_user_functions, resolve_types_in_value_ctors, resolve_values,
+    ResolveTypeInVariables, ResolveValues, ResolvedTo, add_opaque_markers, add_passthrough_markers,
+    ensure_absent, resolve_types_in_anon_functions, resolve_types_in_foreign_functions,
+    resolve_types_in_user_functions, resolve_types_in_value_ctors,
 };
-use crate::utils::LogSystemSetEx;
+use crate::per_file::utils::IntoNodeSystem;
 use kodept_ast::Str;
 use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast::properties::{Name, NodeProperty, RequireProperty};
@@ -40,79 +40,97 @@ impl<'a> Wrapper for RefMapper<'a> {
 }
 
 define_phase! {
-    pub phase ReferenceResolutionPhase[ReferenceResolutionPhaseLabel];
+    pub phase SymbolsPhase[SymbolsPhaseLabel];
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
         build(engine);
     }
 }
 
-fn build(engine: &mut PhaseEngine<ReferenceResolutionPhase>) {
-    let setup_set = (add_passthrough_markers, add_opaque_markers);
-    fn param_to_name<T>(param: &Param<T>) -> &Str {
-        match param {
-            Param::Positional { name, .. } => name,
-            Param::Named { name, .. } => name,
-        }
-    }
+define_phase! {
+    phase SetupReferenceResolutionPhase[SetupReferenceResolutionLabel];
 
-    let collect_set = (
-        (
-            collect_params_on(
-                |item: &ValueCtor<UnresolvedType>| &*item.params,
-                param_to_name,
-            ),
-            collect_params_on(
-                |item: &ValueCtor<ResolvedType>| &*item.params,
-                param_to_name,
-            ),
-            collect_params_on(
-                |item: &AnonFunction<TypeAnnotation>| &*item.params,
-                |it| &it.name,
-            ),
-            collect_params_on(
-                |item: &AnonFunction<ResolvedTypeAnnotation>| &*item.params,
-                |it| &it.name,
-            ),
-            collect_params_on(
-                |item: &UserFunction<TypeAnnotation>| &*item.params,
-                param_to_name,
-            ),
-            collect_params_on(
-                |item: &UserFunction<ResolvedTypeAnnotation>| &*item.params,
-                param_to_name,
-            ),
-            NormalizedBlock::system,
-            Module::system,
-            check_module_names,
-        )
-            .trace_completion(),
-        (
+    fn build(self, engine: &mut PhaseEngine<Self>) {
+        engine.add_systems(add_passthrough_markers);
+        engine.add_systems(add_opaque_markers);
+    }
+}
+
+define_phase! {
+    phase CollectSymbolsPhase[CollectSymbolsPhaseLabel];
+
+    fn build(self, engine: &mut PhaseEngine<Self>) {
+        fn param_to_name<T>(param: &Param<T>) -> &Str {
+            match param {
+                Param::Positional { name, .. } => name,
+                Param::Named { name, .. } => name,
+            }
+        }
+
+        engine.add_systems(collect_params_on(
+            |it: &ValueCtor<UnresolvedType>| &*it.params,
+            param_to_name
+        ));
+        engine.add_systems(collect_params_on(
+            |item: &ValueCtor<ResolvedType>| &*item.params,
+            param_to_name,
+        ));
+        engine.add_systems(collect_params_on(
+            |item: &AnonFunction<TypeAnnotation>| &*item.params,
+            |it| &it.name,
+        ));
+        engine.add_systems(collect_params_on(
+            |item: &AnonFunction<ResolvedTypeAnnotation>| &*item.params,
+            |it| &it.name,
+        ));
+        engine.add_systems(collect_params_on(
+            |item: &UserFunction<TypeAnnotation>| &*item.params,
+            param_to_name,
+        ));
+        engine.add_systems(collect_params_on(
+            |item: &UserFunction<ResolvedTypeAnnotation>| &*item.params,
+            param_to_name,
+        ));
+        engine.add_systems(NormalizedBlock::system);
+        engine.add_systems(Module::system);
+        engine.add_systems(check_module_names);
+        engine.add_systems((
             <UserType as CollectSymbols<Declaration>>::system,
             <UserType as CollectSymbols<()>>::system,
-        )
-            .trace_completion()
-            .chain(),
-    );
-    let resolve_set = (
-        resolve_values,
-        resolve_type_in_variables,
-        resolve_types_in_user_functions,
-        resolve_types_in_value_ctors,
-        resolve_types_in_anon_functions,
-        resolve_types_in_foreign_functions,
-    )
-        .trace_completion();
-    let ensure_set = (
-        ensure_absent::<Value, Without<ResolvedTo>>,
-        ensure_absent::<Variable<TypeAnnotation>, ()>,
-        ensure_absent::<UserFunction<TypeAnnotation>, ()>,
-        ensure_absent::<AnonFunction<TypeAnnotation>, ()>,
-        ensure_absent::<ForeignFunction<UnresolvedType>, ()>,
-        ensure_absent::<ValueCtor<UnresolvedType>, ()>,
-    );
+        ).chain());
+    }
+}
 
-    engine.add_systems(((setup_set, collect_set), resolve_set, ensure_set).chain());
+define_phase! {
+    phase ResolvePhase[ResolvePhaseLabel];
+
+    fn build(self, engine: &mut PhaseEngine<Self>) {
+        let resolve_set = (
+            ResolveValues::system(),
+            ResolveTypeInVariables::system(),
+            resolve_types_in_user_functions,
+            resolve_types_in_value_ctors,
+            resolve_types_in_anon_functions,
+            resolve_types_in_foreign_functions,
+        );
+        let ensure_set = (
+            ensure_absent::<Value, Without<ResolvedTo>>,
+            ensure_absent::<Variable<TypeAnnotation>, ()>,
+            ensure_absent::<UserFunction<TypeAnnotation>, ()>,
+            ensure_absent::<AnonFunction<TypeAnnotation>, ()>,
+            ensure_absent::<ForeignFunction<UnresolvedType>, ()>,
+            ensure_absent::<ValueCtor<UnresolvedType>, ()>,
+        );
+
+      engine.add_systems((resolve_set, ensure_set).chain());
+    }
+}
+
+fn build(engine: &mut PhaseEngine<SymbolsPhase>) {
+    engine
+        .install(SetupReferenceResolutionPhase)
+        .install(CollectSymbolsPhase)
+        .install(ResolvePhase);
 
     #[cfg(feature = "reflection")]
     engine.add_systems(register_reflection_info);
@@ -125,7 +143,7 @@ fn register_reflection_info(
     >,
 ) {
     debug_registry.register::<SymbolTable>();
-    debug_registry.register::<resolve::ResolvedTo>();
+    debug_registry.register::<ResolvedTo>();
 }
 
 #[derive(Component, Default)]

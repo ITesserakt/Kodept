@@ -7,6 +7,7 @@ mod build_ast;
 mod parse_source;
 mod symbols;
 mod typeck;
+mod utils;
 
 pub mod prelude {
     pub use super::ast_normalization::{
@@ -14,7 +15,7 @@ pub mod prelude {
     };
     pub use super::build_ast::{BuildAstPhase, BuildAstPhaseLabel};
     pub use super::parse_source::{ParseSourcePhase, ParseSourcePhaseLabel};
-    pub use super::symbols::{ReferenceResolutionPhase, ReferenceResolutionPhaseLabel};
+    pub use super::symbols::{SymbolsPhase, SymbolsPhaseLabel};
     pub use super::typeck::{TypeCheckPhase, TypeCheckPhaseLabel};
 }
 

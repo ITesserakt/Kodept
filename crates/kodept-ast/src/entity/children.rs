@@ -1,11 +1,10 @@
 use crate::arity::{Optional, Plural, Singular};
 use crate::prelude::{ASTNode, NodeId};
-use crate::properties::{HasProperty, NodeProperty, RequireProperty};
+use crate::properties::NodeProperty;
 use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::{Family, HasChild};
 use derive_more::{Display, Error, From};
-use kodept_ecs::archetype::Archetype;
-use kodept_ecs::component::{Component, Mutable};
+use kodept_ecs::component::Mutable;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::{
     QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem,
@@ -13,7 +12,6 @@ use kodept_ecs::query::{
 };
 use kodept_ecs::relationship::{Relationship, RelationshipSourceCollection, RelationshipTarget};
 use kodept_ecs::system::{Query, SystemParam};
-use kodept_ecs::world::{Mut, Ref};
 use smallvec::SmallVec;
 use std::convert::Infallible;
 use std::error::Error;
@@ -24,67 +22,284 @@ type Rel<T, Tag> = <T as NodeRelationship<Tag, <T as Family<Tag>>::Arity>>::Rela
 type Target<T> = <T as Relationship>::RelationshipTarget;
 type Container<A, T> = <A as TryFromIter>::Container<T>;
 
+#[repr(transparent)]
+pub struct Property<T: NodeProperty>(&'static T);
+#[repr(transparent)]
+pub struct MutProperty<T: NodeProperty<Mutability = Mutable>>(&'static mut T);
+
 pub trait NodeQueryData<Of>: QueryData {}
 
-impl<T> NodeQueryData<T> for () {}
-impl<A, T> NodeQueryData<T> for (A,) where A: NodeQueryData<T> {}
-impl<A, B, T> NodeQueryData<T> for (A, B)
-where
-    A: NodeQueryData<T>,
-    B: NodeQueryData<T>,
-{
-}
-impl<A, B, C, T> NodeQueryData<T> for (A, B, C)
-where
-    A: NodeQueryData<T>,
-    B: NodeQueryData<T>,
-    C: NodeQueryData<T>,
-{
-}
-impl<A, B, C, D, T> NodeQueryData<T> for (A, B, C, D)
-where
-    A: NodeQueryData<T>,
-    B: NodeQueryData<T>,
-    C: NodeQueryData<T>,
-    D: NodeQueryData<T>,
-{
-}
-impl<A, B, C, D, E, T> NodeQueryData<T> for (A, B, C, D, E)
-where
-    A: NodeQueryData<T>,
-    B: NodeQueryData<T>,
-    C: NodeQueryData<T>,
-    D: NodeQueryData<T>,
-    E: NodeQueryData<T>,
-{
-}
-impl<T: ASTNode> NodeQueryData<T> for NodeId<T> {}
-impl<T> NodeQueryData<T> for &Archetype {}
-impl<'a, T: ASTNode> NodeQueryData<T> for Ref<'a, T> {}
-impl<'a, T> NodeQueryData<T> for Mut<'a, T> where T: ASTNode<Mutability = Mutable> {}
-impl<P, T> NodeQueryData<T> for Option<&P>
-where
-    P: NodeProperty + Component,
-    T: HasProperty<P>,
-{
-}
-impl<P, T> NodeQueryData<T> for &P
-where
-    P: NodeProperty + Component,
-    T: RequireProperty<P>,
-{
-}
-impl<P, T> NodeQueryData<T> for Option<&mut P>
-where
-    P: NodeProperty<Mutability = Mutable>,
-    T: HasProperty<P>,
-{
-}
-impl<P, T> NodeQueryData<T> for &mut P
-where
-    P: NodeProperty<Mutability = Mutable>,
-    T: RequireProperty<P>,
-{
+mod node_query_data_impls {
+    use crate::entity::children::{MutProperty, Property};
+    use crate::node_id::NodeId;
+    use crate::prelude::NodeQueryData;
+    use crate::properties::{HasProperty, NodeProperty, RequireProperty};
+    use crate::traits::ASTNode;
+    use kodept_ecs::archetype::Archetype;
+    use kodept_ecs::change_detection::Tick;
+    use kodept_ecs::component::{Component, ComponentId, Components, Mutable};
+    use kodept_ecs::entity::Entity;
+    use kodept_ecs::query::{
+        Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, QueryData, ReadOnlyQueryData,
+        WorldQuery,
+    };
+    use kodept_ecs::storage::{Table, TableRow};
+    use kodept_ecs::world::{UnsafeWorldCell, World};
+
+    impl<T> NodeQueryData<T> for () {}
+    impl<A, T> NodeQueryData<T> for (A,) where A: NodeQueryData<T> {}
+    impl<A, B, T> NodeQueryData<T> for (A, B)
+    where
+        A: NodeQueryData<T>,
+        B: NodeQueryData<T>,
+    {
+    }
+    impl<A, B, C, T> NodeQueryData<T> for (A, B, C)
+    where
+        A: NodeQueryData<T>,
+        B: NodeQueryData<T>,
+        C: NodeQueryData<T>,
+    {
+    }
+    impl<A, B, C, D, T> NodeQueryData<T> for (A, B, C, D)
+    where
+        A: NodeQueryData<T>,
+        B: NodeQueryData<T>,
+        C: NodeQueryData<T>,
+        D: NodeQueryData<T>,
+    {
+    }
+    impl<A, B, C, D, E, T> NodeQueryData<T> for (A, B, C, D, E)
+    where
+        A: NodeQueryData<T>,
+        B: NodeQueryData<T>,
+        C: NodeQueryData<T>,
+        D: NodeQueryData<T>,
+        E: NodeQueryData<T>,
+    {
+    }
+    impl<T: ASTNode> NodeQueryData<T> for NodeId<T> {}
+    impl<T> NodeQueryData<T> for &Archetype {}
+    impl<'a, T: ASTNode> NodeQueryData<T> for &'a T {}
+    impl<'a, T> NodeQueryData<T> for &'a mut T where T: ASTNode<Mutability = Mutable> {}
+    impl<P, T> NodeQueryData<T> for Option<Property<P>>
+    where
+        P: NodeProperty + Component,
+        T: HasProperty<P>,
+    {
+    }
+    impl<P, T> NodeQueryData<T> for Property<P>
+    where
+        P: NodeProperty + Component,
+        T: RequireProperty<P>,
+    {
+    }
+    impl<P, T> NodeQueryData<T> for Option<MutProperty<P>>
+    where
+        P: NodeProperty<Mutability = Mutable>,
+        T: HasProperty<P>,
+    {
+    }
+    impl<P, T> NodeQueryData<T> for MutProperty<P>
+    where
+        P: NodeProperty<Mutability = Mutable>,
+        T: RequireProperty<P>,
+    {
+    }
+
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty> WorldQuery for Property<T> {
+        type Fetch<'w> = <&'static T as WorldQuery>::Fetch<'w>;
+        type State = <&'static T as WorldQuery>::State;
+
+        fn shrink_fetch<'wlong: 'wshort, 'wshort>(
+            fetch: Self::Fetch<'wlong>,
+        ) -> Self::Fetch<'wshort> {
+            <&'static T as WorldQuery>::shrink_fetch(fetch)
+        }
+
+        unsafe fn init_fetch<'w, 's>(
+            world: UnsafeWorldCell<'w>,
+            state: &'s Self::State,
+            last_run: Tick,
+            this_run: Tick,
+        ) -> Self::Fetch<'w> {
+            unsafe { <&'static T as WorldQuery>::init_fetch(world, state, last_run, this_run) }
+        }
+
+        const IS_DENSE: bool = <&'static T as WorldQuery>::IS_DENSE;
+
+        unsafe fn set_archetype<'w, 's>(
+            fetch: &mut Self::Fetch<'w>,
+            state: &'s Self::State,
+            archetype: &'w Archetype,
+            table: &'w Table,
+        ) {
+            unsafe { <&'static T as WorldQuery>::set_archetype(fetch, state, archetype, table) }
+        }
+
+        unsafe fn set_table<'w, 's>(
+            fetch: &mut Self::Fetch<'w>,
+            state: &'s Self::State,
+            table: &'w Table,
+        ) {
+            unsafe { <&'static T as WorldQuery>::set_table(fetch, state, table) }
+        }
+
+        fn update_component_access(state: &Self::State, access: &mut FilteredAccess) {
+            <&'static T as WorldQuery>::update_component_access(state, access)
+        }
+
+        fn init_state(world: &mut World) -> Self::State {
+            <&'static T as WorldQuery>::init_state(world)
+        }
+
+        fn get_state(components: &Components) -> Option<Self::State> {
+            <&'static T as WorldQuery>::get_state(components)
+        }
+
+        fn matches_component_set(
+            state: &Self::State,
+            set_contains_id: &impl Fn(ComponentId) -> bool,
+        ) -> bool {
+            <&'static T as WorldQuery>::matches_component_set(state, set_contains_id)
+        }
+    }
+
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty> QueryData for Property<T> {
+        const IS_READ_ONLY: bool = <&'static T as QueryData>::IS_READ_ONLY;
+        const IS_ARCHETYPAL: bool = <&'static T as QueryData>::IS_ARCHETYPAL;
+        type ReadOnly = Self;
+        type Item<'w, 's> = <&'static T as QueryData>::Item<'w, 's>;
+
+        fn shrink<'wlong: 'wshort, 'wshort, 's>(
+            item: Self::Item<'wlong, 's>,
+        ) -> Self::Item<'wshort, 's> {
+            <&'static T as QueryData>::shrink(item)
+        }
+
+        fn provide_extra_access(
+            _state: &mut Self::State,
+            _access: &mut Access,
+            _available_access: &Access,
+        ) {
+            <&'static T as QueryData>::provide_extra_access(_state, _access, _available_access)
+        }
+
+        unsafe fn fetch<'w, 's>(
+            state: &'s Self::State,
+            fetch: &mut Self::Fetch<'w>,
+            entity: Entity,
+            table_row: TableRow,
+        ) -> Option<Self::Item<'w, 's>> {
+            unsafe { <&'static T as QueryData>::fetch(state, fetch, entity, table_row) }
+        }
+
+        fn iter_access(state: &Self::State) -> impl Iterator<Item = EcsAccessType<'_>> {
+            <&'static T as QueryData>::iter_access(state)
+        }
+    }
+
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty> ReadOnlyQueryData for Property<T> {}
+    impl<T: NodeProperty> ArchetypeQueryData for Property<T> {}
+
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty<Mutability = Mutable>> WorldQuery for MutProperty<T> {
+        type Fetch<'w> = <&'static mut T as WorldQuery>::Fetch<'w>;
+        type State = <&'static mut T as WorldQuery>::State;
+
+        fn shrink_fetch<'wlong: 'wshort, 'wshort>(
+            fetch: Self::Fetch<'wlong>,
+        ) -> Self::Fetch<'wshort> {
+            <&'static mut T as WorldQuery>::shrink_fetch(fetch)
+        }
+
+        unsafe fn init_fetch<'w, 's>(
+            world: UnsafeWorldCell<'w>,
+            state: &'s Self::State,
+            last_run: Tick,
+            this_run: Tick,
+        ) -> Self::Fetch<'w> {
+            unsafe { <&'static mut T as WorldQuery>::init_fetch(world, state, last_run, this_run) }
+        }
+
+        const IS_DENSE: bool = <&'static mut T as WorldQuery>::IS_DENSE;
+
+        unsafe fn set_archetype<'w, 's>(
+            fetch: &mut Self::Fetch<'w>,
+            state: &'s Self::State,
+            archetype: &'w Archetype,
+            table: &'w Table,
+        ) {
+            unsafe { <&'static mut T as WorldQuery>::set_archetype(fetch, state, archetype, table) }
+        }
+
+        unsafe fn set_table<'w, 's>(
+            fetch: &mut Self::Fetch<'w>,
+            state: &'s Self::State,
+            table: &'w Table,
+        ) {
+            unsafe { <&'static mut T as WorldQuery>::set_table(fetch, state, table) }
+        }
+
+        fn update_component_access(state: &Self::State, access: &mut FilteredAccess) {
+            <&'static mut T as WorldQuery>::update_component_access(state, access)
+        }
+
+        fn init_state(world: &mut World) -> Self::State {
+            <&'static mut T as WorldQuery>::init_state(world)
+        }
+
+        fn get_state(components: &Components) -> Option<Self::State> {
+            <&'static mut T as WorldQuery>::get_state(components)
+        }
+
+        fn matches_component_set(
+            state: &Self::State,
+            set_contains_id: &impl Fn(ComponentId) -> bool,
+        ) -> bool {
+            <&'static mut T as WorldQuery>::matches_component_set(state, set_contains_id)
+        }
+    }
+
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty<Mutability = Mutable>> QueryData for MutProperty<T> {
+        const IS_READ_ONLY: bool = <&'static mut T as QueryData>::IS_READ_ONLY;
+        const IS_ARCHETYPAL: bool = <&'static mut T as QueryData>::IS_ARCHETYPAL;
+        type ReadOnly = Property<T>;
+        type Item<'w, 's> = <&'static mut T as QueryData>::Item<'w, 's>;
+
+        fn shrink<'wlong: 'wshort, 'wshort, 's>(
+            item: Self::Item<'wlong, 's>,
+        ) -> Self::Item<'wshort, 's> {
+            <&'static mut T as QueryData>::shrink(item)
+        }
+
+        fn provide_extra_access(
+            _state: &mut Self::State,
+            _access: &mut Access,
+            _available_access: &Access,
+        ) {
+            <&'static mut T as QueryData>::provide_extra_access(_state, _access, _available_access)
+        }
+
+        unsafe fn fetch<'w, 's>(
+            state: &'s Self::State,
+            fetch: &mut Self::Fetch<'w>,
+            entity: Entity,
+            table_row: TableRow,
+        ) -> Option<Self::Item<'w, 's>> {
+            unsafe { <&'static mut T as QueryData>::fetch(state, fetch, entity, table_row) }
+        }
+
+        fn iter_access(state: &Self::State) -> impl Iterator<Item = EcsAccessType<'_>> {
+            <&'static mut T as QueryData>::iter_access(state)
+        }
+    }
+
+    impl<T: NodeProperty<Mutability = Mutable>> ArchetypeQueryData for MutProperty<T> {}
 }
 
 pub struct ChildrenFetch<'w, 's, Data, Parent, Tag = (), Id = NodeId, Filter = ()>
@@ -116,7 +331,7 @@ pub struct HierarchicalQuery<
     's,
     Parent,
     Tag = (),
-    ParentData = Ref<'static, Parent>,
+    ParentData = &'static Parent,
     ChildData = (),
     Filter = (),
 > where
@@ -147,8 +362,8 @@ pub struct NarrowHierarchicalQuery<
     Parent,
     Child,
     Tag = (),
-    ParentData = Ref<'static, Parent>,
-    ChildData = Ref<'static, Child>,
+    ParentData = &'static Parent,
+    ChildData = &'static Child,
     Filter = (),
 > where
     Parent: HasChild<Child, Tag>,
@@ -281,10 +496,10 @@ where
 
     pub fn par_iter_by_layers(
         &mut self,
-        f: impl Fn(
+        f: impl for<'ww> Fn(
             NodeId<T>,
-            QueryItem<'_, 's, ParentData>,
-            ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
+            QueryItem<'ww, 's, ParentData>,
+            ChildrenFetch<'ww, 's, ChildData::ReadOnly, T, Tag>,
         ) + Send
         + Sync
         + Clone,
@@ -450,6 +665,30 @@ where
             .iter_mut()
             .map(|(parent_id, parent_data, children)| {
                 (
+                    parent_id,
+                    parent_data,
+                    ChildrenFetch {
+                        query: self.children_query.as_readonly(),
+                        collection: children,
+                    },
+                )
+            })
+    }
+
+    pub fn par_iter_by_layers(
+        &mut self,
+        callback: impl for<'ww> Fn(
+            NodeId<T>,
+            ParentData::Item<'ww, 's>,
+            ChildrenFetch<'ww, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
+        ) + Send
+        + Sync
+        + Clone,
+    ) {
+        self.parent_query
+            .par_iter_mut()
+            .for_each(|(parent_id, parent_data, children)| {
+                callback(
                     parent_id,
                     parent_data,
                     ChildrenFetch {

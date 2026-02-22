@@ -1,24 +1,23 @@
+use crate::per_file::utils::{IntoNodeSystem, IterableSystemParam, ParIterableSystem};
 use crate::source::collection::Reporter;
-use crate::utils::{LogSystemEx, ReportSystemEx};
-use kodept_ast::prelude::{ASTNode, ChildrenFetch, HierarchicalQuery, NodeId};
-use kodept_ast::properties::{Lexeme, Node, SourceSpan};
+use crate::utils::TryReport;
+use kodept_ast::prelude::{ASTNode, ChildrenFetch, HierarchicalQuery, NodeId, Property};
+use kodept_ast::properties::{Lexeme, Node, NodeProperty, RequireProperty, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::experimental::{NodeBuilder, NodeModification};
+use kodept_ast::syntax_tree::experimental::{Buffer, NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Expression, Link, Literal, Module, NormalizedBlock, Param, ResolvedType,
-    ResolvedTypeAnnotation, Statement, Tuple, TypeAnnotation, UnresolvedType, UserFunction, Value,
-    ValueCtor,
+    AnonFunction, Block, Expression, Link, Literal, Module, NormalizedBlock, Param, Statement,
+    Tuple, TypeAnnotation, TypeRef, UserFunction, Value, Variable,
 };
 use kodept_core::code_point::Span;
-use kodept_core::structure::SpanBounds;
 use kodept_ecs::archetype::Archetype;
 use kodept_ecs::component::{Component, ComponentIdFor};
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::hierarchy::ChildOf;
 use kodept_ecs::lifecycle::{Add, Insert};
 use kodept_ecs::query::{Has, With};
-use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{Commands, On, Query, Res, SystemParam};
+use kodept_ecs::world::Ref;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report_macros::Report;
@@ -33,56 +32,71 @@ define_phase! {
 }
 
 fn build(engine: &mut PhaseEngine<AstNormalizationPhase>) {
-    engine.add_systems(
-        (
-            normalize_blocks.trace_completion(),
-            ensure_no_non_normalized_blocks,
-        )
-            .chain(),
-    );
+    engine.add_systems(NormalizeBlock::system());
 
-    engine.add_systems(
-        ensure_named_params_are_at_the_end(
-            |it: &ValueCtor<UnresolvedType>| &*it.params,
-            |_: &kodept_rlt::prelude::Struct| None,
-        )
-        .trace_completion()
-        .extract_reports(),
-    );
-    engine.add_systems(
-        ensure_named_params_are_at_the_end(
-            |it: &ValueCtor<ResolvedType>| &*it.params,
-            |_: &kodept_rlt::prelude::Struct| None,
-        )
-        .trace_completion()
-        .extract_reports(),
-    );
-    engine.add_systems(
-        ensure_named_params_are_at_the_end(
-            |it: &UserFunction<TypeAnnotation>| &*it.params,
-            |it: &kodept_rlt::prelude::BodiedFunction| {
-                it.params
-                    .as_ref()
-                    .map(|it| it.left.bounds() + it.right.bounds())
-                    .or(Some(it.id.bounds()))
-            },
-        )
-        .trace_completion()
-        .extract_reports(),
-    );
-    engine.add_systems(
-        ensure_named_params_are_at_the_end(
-            |it: &UserFunction<ResolvedTypeAnnotation>| &*it.params,
-            |it: &kodept_rlt::prelude::BodiedFunction| {
-                it.params
-                    .as_ref()
-                    .map(|it| it.left.bounds() + it.right.bounds())
-                    .or(Some(it.id.bounds()))
-            },
-        )
-        .trace_completion()
-        .extract_reports(),
-    );
+    // engine.add_systems(
+    //     SystemBuilder::of()
+    //         .hierarchy()
+    //         .parent_data()
+    //         .children_data()
+    //         .extra_params::<StatementComponentIds>()
+    //         .handler(normalize_block)
+    //         .into_system()
+    //         .trace_completion()
+    //         .before(ensure_no_non_normalized_blocks),
+    // );
+    // engine.add_systems(ensure_no_non_normalized_blocks);
+    //
+    // engine.add_systems(
+    //     SystemBuilder::of()
+    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
+    //         .extra_params::<Res<_>>()
+    //         .handler(ensure_named_params_are_at_the_end(
+    //             |it: &ValueCtor<UnresolvedType>| &*it.params,
+    //             |_: &kodept_rlt::prelude::Struct| None,
+    //         ))
+    //         .into_system(),
+    // );
+    // engine.add_systems(
+    //     SystemBuilder::of()
+    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
+    //         .extra_params::<Res<SyntaxResolver>>()
+    //         .handler(ensure_named_params_are_at_the_end(
+    //             |it: &ValueCtor<ResolvedType>| &*it.params,
+    //             |_: &kodept_rlt::prelude::Struct| None,
+    //         ))
+    //         .into_system(),
+    // );
+    // engine.add_systems(
+    //     SystemBuilder::of()
+    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
+    //         .extra_params::<Res<SyntaxResolver>>()
+    //         .handler(ensure_named_params_are_at_the_end(
+    //             |it: &UserFunction<TypeAnnotation>| &*it.params,
+    //             |it: &kodept_rlt::prelude::BodiedFunction| {
+    //                 it.params
+    //                     .as_ref()
+    //                     .map(|it| it.left.bounds() + it.right.bounds())
+    //                     .or(Some(it.id.bounds()))
+    //             },
+    //         ))
+    //         .into_system(),
+    // );
+    // engine.add_systems(
+    //     SystemBuilder::of()
+    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
+    //         .extra_params::<Res<SyntaxResolver>>()
+    //         .handler(ensure_named_params_are_at_the_end(
+    //             |it: &UserFunction<ResolvedTypeAnnotation>| &*it.params,
+    //             |it: &kodept_rlt::prelude::BodiedFunction| {
+    //                 it.params
+    //                     .as_ref()
+    //                     .map(|it| it.left.bounds() + it.right.bounds())
+    //                     .or(Some(it.id.bounds()))
+    //             },
+    //         ))
+    //         .into_system(),
+    // );
 
     engine.add_observer(propagate_module_info);
 
@@ -125,30 +139,12 @@ struct NamedParamsShouldBeLast {
     span: Span,
 }
 
-#[derive(SystemParam)]
-struct StatementComponentIds<'s> {
-    anon_function: ComponentIdFor<'s, AnonFunction<TypeAnnotation>>,
-    literal: ComponentIdFor<'s, Literal>,
-    tuple: ComponentIdFor<'s, Tuple>,
-    value: ComponentIdFor<'s, Value>,
-    user_function: ComponentIdFor<'s, UserFunction<TypeAnnotation>>,
-    link: ComponentIdFor<'s, Link>,
-    block: ComponentIdFor<'s, Block>,
-}
-
 #[derive(Debug, Component, Clone)]
 #[component(immutable)]
 pub struct InModule(pub NodeId<Module>);
-
-impl StatementComponentIds<'_> {
-    fn is_non_normalized(&self, archetype: &Archetype) -> bool {
-        archetype.contains(self.anon_function.get())
-            || archetype.contains(self.literal.get())
-            || archetype.contains(self.tuple.get())
-            || archetype.contains(self.value.get())
-            || archetype.contains(self.block.get())
-    }
-}
+impl NodeProperty for InModule {}
+impl RequireProperty<InModule> for Value {}
+impl<T: TypeRef<false>> RequireProperty<InModule> for Variable<T> {}
 
 fn propagate_module_info(
     parent_changed: On<Insert, ChildOf>,
@@ -195,119 +191,113 @@ fn ensure_no_non_normalized_blocks(
     );
 }
 
-fn normalize_block(
-    statements: ChildrenFetch<(&Archetype, &SourceSpan, &Lexeme), Block, Statement>,
-    mut modification: NodeModification<Block, Commands>,
-    statement_component_ids: &StatementComponentIds,
-) -> Option<DanglingExpression> {
-    let mut linked = false;
-
-    for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
-        if statement_component_ids.is_non_normalized(archetype) && linked {
-            return Some(DanglingExpression { span: span.0 });
-        }
-
-        if linked {
-            continue;
-        }
-
-        if archetype.contains(statement_component_ids.user_function.get()) {
-        } else if statement_component_ids.is_non_normalized(archetype) {
-            linked = true;
-            let statement = modification.remove_child_unchecked::<Statement>(statement_id);
-
-            modification
-                .spawn_child(
-                    NodeBuilder::new(Link)
-                        .with_property(*span)
-                        .with_property(*lexeme),
-                )
-                .add_child_unchecked::<Expression>(statement);
-        } else if archetype.contains(statement_component_ids.link.get()) {
-            linked = true;
-        } else {
-            linked = true;
-            modification
-                .spawn_child(
-                    NodeBuilder::new(Link)
-                        .with_property(*span)
-                        .with_property(*lexeme),
-                )
-                .spawn_child(
-                    NodeBuilder::new(Tuple)
-                        .with_property(*span)
-                        .with_property(*lexeme),
-                );
-        }
-    }
-
-    modification.transmute(NormalizedBlock {});
-    None
+#[derive(SystemParam)]
+struct NormalizeBlock<'s> {
+    anon_function: ComponentIdFor<'s, AnonFunction<TypeAnnotation>>,
+    literal: ComponentIdFor<'s, Literal>,
+    tuple: ComponentIdFor<'s, Tuple>,
+    value: ComponentIdFor<'s, Value>,
+    user_function: ComponentIdFor<'s, UserFunction<TypeAnnotation>>,
+    link: ComponentIdFor<'s, Link>,
+    block: ComponentIdFor<'s, Block>,
 }
 
-#[cfg(not(feature = "parallel"))]
-fn normalize_blocks(
-    mut blocks: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
-    statement_component_ids: StatementComponentIds,
-    mut commands: Commands,
-    mut reporter: Reporter,
-) {
-    for (id, _, statements) in blocks.iter_by_layers() {
-        if let Some(dangling) = normalize_block(
-            statements,
-            NodeModification::new(commands.reborrow(), id),
-            &statement_component_ids,
-        ) {
-            reporter.report(dangling);
-        }
+impl NormalizeBlock<'_> {
+    fn is_non_normalized(&self, archetype: &Archetype) -> bool {
+        archetype.contains(self.anon_function.get())
+            || archetype.contains(self.literal.get())
+            || archetype.contains(self.tuple.get())
+            || archetype.contains(self.value.get())
+            || archetype.contains(self.block.get())
     }
 }
 
-#[cfg(feature = "parallel")]
-fn normalize_blocks(
-    mut blocks: HierarchicalQuery<Block, Statement, (), (&Archetype, &SourceSpan, &Lexeme)>,
-    statement_component_ids: StatementComponentIds,
-    commands: kodept_ecs::system::ParallelCommands,
-    reporter: crate::source::collection::ParallelReporter,
-) {
-    blocks.par_iter_by_layers(|id, _, statements| {
-        commands.command_scope(|c| {
-            if let Some(dangling) = normalize_block(
-                statements,
-                NodeModification::new(c, id),
-                &statement_component_ids,
-            ) {
-                reporter.report(dangling);
+impl ParIterableSystem for NormalizeBlock<'_> {
+    type Iterable = HierarchicalQuery<
+        'static,
+        'static,
+        Block,
+        Statement,
+        (),
+        (&'static Archetype, Property<SourceSpan>, Property<Lexeme>),
+    >;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let ((), statements) = params;
+        let mut linked = false;
+
+        for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
+            if self.is_non_normalized(archetype) && linked {
+                return Err(DanglingExpression { span: span.0 });
             }
-        });
-    })
+
+            if linked {
+                continue;
+            }
+
+            if archetype.contains(self.user_function.get()) {
+            } else if self.is_non_normalized(archetype) {
+                linked = true;
+                let statement = modification.remove_child_unchecked::<Statement>(statement_id);
+
+                modification
+                    .spawn_child(
+                        NodeBuilder::new(Link)
+                            .with_property(*span)
+                            .with_property(*lexeme),
+                    )
+                    .add_child_unchecked::<Expression>(statement);
+            } else if archetype.contains(self.link.get()) {
+                linked = true;
+            } else {
+                linked = true;
+                modification
+                    .spawn_child(
+                        NodeBuilder::new(Link)
+                            .with_property(*span)
+                            .with_property(*lexeme),
+                    )
+                    .spawn_child(
+                        NodeBuilder::new(Tuple)
+                            .with_property(*span)
+                            .with_property(*lexeme),
+                    );
+            }
+        }
+
+        modification.transmute(NormalizedBlock {});
+        Ok(())
+    }
 }
 
 fn ensure_named_params_are_at_the_end<T: ASTNode, U, L: SyntaxNode>(
     mut get_params: impl FnMut(&T) -> &[Param<U>],
     mut get_span: impl FnMut(&L) -> Option<Span>,
 ) -> impl FnMut(
-    Query<(&T, &Lexeme, &SourceSpan)>,
-    Res<SyntaxResolver>,
+    NodeId<T>,
+    (Ref<T>, &Lexeme, &SourceSpan),
+    &mut Res<SyntaxResolver>,
 ) -> Result<(), NamedParamsShouldBeLast> {
-    move |query, syntax| {
-        for (item, lexeme, span) in query {
-            let span = syntax
-                .try_get::<L>(lexeme.0)
-                .ok()
-                .and_then(|it| get_span(it))
-                .unwrap_or(span.0);
+    move |_, (item, lexeme, span), syntax| {
+        let span = syntax
+            .try_get::<L>(lexeme.0)
+            .ok()
+            .and_then(|it| get_span(it))
+            .unwrap_or(span.0);
 
-            let params = get_params(item);
-            let mut is_named_params = false;
-            for param in params {
-                match (is_named_params, param) {
-                    (false, Param::Positional { .. }) => continue,
-                    (false, Param::Named { .. }) => is_named_params = true,
-                    (true, Param::Named { .. }) => continue,
-                    (true, Param::Positional { .. }) => {
-                        return Err(NamedParamsShouldBeLast { span });
-                    }
+        let params = get_params(&*item);
+        let mut is_named_params = false;
+        for param in params {
+            match (is_named_params, param) {
+                (false, Param::Positional { .. }) => continue,
+                (false, Param::Named { .. }) => is_named_params = true,
+                (true, Param::Named { .. }) => continue,
+                (true, Param::Positional { .. }) => {
+                    return Err(NamedParamsShouldBeLast { span });
                 }
             }
         }

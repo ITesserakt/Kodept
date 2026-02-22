@@ -1,12 +1,49 @@
 use crate::source::collection::Reporter;
 use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, SystemInput};
-use kodept_frontend::prelude::ExtractReports;
 use kodept_report::prelude::IntoSpannedReportMessage;
+use std::convert::Infallible;
 use std::fmt::Debug;
+use std::ops::ControlFlow;
 use tracing::trace;
 
-pub trait ReportSystemEx<In, Out, SystemMarker, ExtractMarker>
+pub(super) trait TryReport {
+    type Output: IntoSpannedReportMessage;
+
+    fn branch(self) -> ControlFlow<Self::Output, ()>;
+}
+
+impl TryReport for () {
+    type Output = Infallible;
+
+    #[inline(always)]
+    fn branch(self) -> ControlFlow<Self::Output, ()> {
+        ControlFlow::Continue(())
+    }
+}
+
+impl<T: IntoSpannedReportMessage> TryReport for Result<(), T> {
+    type Output = T;
+
+    #[inline(always)]
+    fn branch(self) -> ControlFlow<Self::Output, ()> {
+        match self {
+            Ok(()) => ControlFlow::Continue(()),
+            Err(e) => ControlFlow::Break(e),
+        }
+    }
+}
+
+impl<T: IntoSpannedReportMessage> TryReport for ControlFlow<T> {
+    type Output = T;
+
+    #[inline(always)]
+    fn branch(self) -> ControlFlow<Self::Output, ()> {
+        self
+    }
+}
+
+pub trait ReportSystemEx<In, Out, SystemMarker>
 where
     In: SystemInput,
 {
@@ -26,16 +63,19 @@ pub trait LogSystemSetEx<Marker> {
     fn trace_completion(self) -> impl IntoScheduleConfigs<ScheduleSystem, ()>;
 }
 
-impl<SystemMarker, ExtractMarker, Input, Out, T: IntoSystem<Input, Out, SystemMarker>>
-    ReportSystemEx<Input, Out, SystemMarker, ExtractMarker> for T
+impl<SystemMarker, Input, Out, T: IntoSystem<Input, Out, SystemMarker>>
+    ReportSystemEx<Input, Out, SystemMarker> for T
 where
-    Out: ExtractReports<ExtractMarker> + 'static,
+    Out: TryReport + 'static,
     Input: SystemInput,
 {
     #[track_caller]
     fn extract_reports(self) -> impl IntoSystem<Input, (), ()> {
         IntoSystem::into_system(self.pipe(|In(output): In<Out>, mut reporter: Reporter| {
-            _ = output.extract_reports(&mut reporter);
+            match output.branch() {
+                ControlFlow::Continue(()) => (),
+                ControlFlow::Break(error) => reporter.report(error),
+            }
         }))
     }
 }

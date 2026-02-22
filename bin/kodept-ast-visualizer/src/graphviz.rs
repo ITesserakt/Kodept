@@ -11,7 +11,6 @@ use kodept_ecs::resource::Resource;
 use kodept_ecs::system::{Local, On, Query, Res};
 use kodept_ecs::utils::ShortName;
 use kodept_ecs::world::EntityRef;
-use kodept_frontend::Either;
 use kodept_frontend::engine::{Engine, Plugin};
 use kodept_systems::configs::OutputDirectory;
 use kodept_systems::source::collection::SourceView;
@@ -255,19 +254,28 @@ fn draw_edge(
     config: &Config,
     buffer: &mut impl Write,
 ) -> std::io::Result<()> {
-    let edge_label = match (config.long_type_paths, meta.is_empty_tag()) {
-        (_, true) => Either::Left(""),
-        (true, _) => Either::Left(meta.tag_name()),
-        (false, _) => Either::Right(ShortName::from(meta.tag_name())),
-    };
-    writeln!(
-        buffer,
-        "\t\"{}\" -> \"{}\" [ label = \"{}\" ]",
-        parent.id().to_bits(),
-        entity.id().to_bits(),
-        edge_label
-    )?;
-    Ok(())
+    match (config.long_type_paths, meta.is_empty_tag()) {
+        (_, true) => writeln!(
+            buffer,
+            "\t\"{}\" -> \"{}\"",
+            parent.id().to_bits(),
+            entity.id().to_bits()
+        ),
+        (true, _) => writeln!(
+            buffer,
+            "\t\"{}\" -> \"{}\" [ label = \"{}\" ]",
+            parent.id().to_bits(),
+            entity.id().to_bits(),
+            meta.tag_name()
+        ),
+        (false, _) => writeln!(
+            buffer,
+            "\t\"{}\" -> \"{}\" [ label = \"{}\" ]",
+            parent.id().to_bits(),
+            entity.id().to_bits(),
+            ShortName::from(meta.tag_name())
+        ),
+    }
 }
 
 fn on_control_event(

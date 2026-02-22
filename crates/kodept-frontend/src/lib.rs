@@ -1,6 +1,5 @@
 extern crate core;
 
-use std::fmt::{Display, Formatter};
 use std::ops::ControlFlow;
 
 pub mod engine;

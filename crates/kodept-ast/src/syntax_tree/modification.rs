@@ -112,6 +112,10 @@ where
         }
     }
 
+    pub fn id(&self) -> NodeId<Node> {
+        self.id
+    }
+
     #[track_caller]
     pub fn spawn_child<Child, Properties, Clones, Tag>(
         &mut self,

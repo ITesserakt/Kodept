@@ -1,10 +1,10 @@
 use crate::loader::{Loader, LoadingError};
 use crate::source::{SourcesLoadingError, load_each_source};
 use crate::utils::ReportSystemEx;
+use kodept_core::either::Either;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::schedule::SystemSet;
 use kodept_ecs::system::{Commands, InMut, IntoSystem};
-use kodept_frontend::Either;
 use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine};
 use kodept_frontend::prelude::CollectedSources;
 use std::sync::Arc;

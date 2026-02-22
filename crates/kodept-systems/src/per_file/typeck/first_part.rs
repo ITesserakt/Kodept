@@ -1,6 +1,6 @@
 use crate::per_file::symbols::SymbolKind;
 use crate::source::collection::Reporter;
-use kodept_ast::prelude::{NarrowHierarchicalQuery, NodeId};
+use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::{NodeProperty, RequireProperty, SourceSpan};
 use kodept_ast_nodes::{Literal, Param, ResolvedType, UserType, ValueCtor};
 use kodept_core::code_point::Span;
@@ -9,7 +9,7 @@ use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::system::{Commands, Query};
 use kodept_inference::assumption::TypeTable;
 use kodept_inference::process::PartialInfer;
-use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TConstant, TVar};
+use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TVar};
 use kodept_report_macros::Report;
 use num_bigint::Sign;
 use std::num::NonZeroU8;
@@ -64,21 +64,6 @@ pub(super) fn typeck_literals(
         commands
             .entity(id.entity())
             .insert(PartiallyTypechecked(PartialInfer::new(ty)));
-    }
-}
-
-pub(super) fn typeck_user_types(
-    mut query: NarrowHierarchicalQuery<
-        UserType,
-        ValueCtor<ResolvedType>,
-        (),
-        (),
-        &PartiallyTypechecked,
-    >,
-    mut commands: Commands,
-) {
-    for (id, _, ctors) in query.iter_by_layers() {
-        let constant = TConstant::new();
     }
 }
 

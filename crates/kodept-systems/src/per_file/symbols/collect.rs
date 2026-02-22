@@ -3,7 +3,9 @@ use crate::per_file::symbols::{
 };
 use crate::source::collection::Reporter;
 use kodept_ast::Str;
-use kodept_ast::prelude::{ASTNode, Erase, HierarchicalQuery, NodeId, NodeQueryData};
+use kodept_ast::prelude::{
+    ASTNode, Erase, HierarchicalQuery, MutProperty, NodeId, NodeQueryData, Property,
+};
 use kodept_ast::properties::{HasProperty, Lexeme, Name, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::children::{Family, MembersOf};
@@ -106,9 +108,9 @@ where
                 Tag,
                 (
                     Self::ParentFetch,
-                    Option<&mut SymbolTable>,
-                    &SourceSpan,
-                    &Lexeme,
+                    Option<MutProperty<SymbolTable>>,
+                    Property<SourceSpan>,
+                    Property<Lexeme>,
                 ),
                 (&SourceSpan, Self::ChildFetch),
             >,
@@ -134,7 +136,6 @@ where
                         custom_into_span: |lexeme| Some(lexeme.location().into()),
                     };
                     Self::each(
-                        id,
                         additional,
                         children.iter().map(|it| (it.0, it.1.1)),
                         &mut params,
@@ -156,7 +157,6 @@ where
                         custom_into_span: |lexeme| Some(lexeme.location().into()),
                     };
                     Self::each(
-                        id,
                         additional,
                         children.iter().map(|it| (it.0, it.1.1)),
                         &mut params,
@@ -168,7 +168,6 @@ where
     }
 
     fn each<'a>(
-        id: NodeId<Self>,
         additional: QueryItem<Self::ParentFetch>,
         children: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
         params: &mut SystemParamItem<Self::Params>,
@@ -182,9 +181,8 @@ impl CollectSymbols<Declaration> for Module {
     type Params = MembersOf<Module, Declaration, ComponentIdForMapper<'static>>;
 
     fn each<'a>(
-        _: NodeId<Self>,
         _: QueryItem<Self::ParentFetch>,
-        children: impl Iterator<Item = (NodeId, (&'a Archetype, &'a Name))>,
+        children: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
         params: &mut SystemParamItem<Self::Params>,
         mut registrator: SymbolRegistrator,
     ) {
@@ -206,7 +204,6 @@ impl CollectSymbols<Declaration> for UserType {
     type Params = ();
 
     fn each<'a>(
-        _: NodeId<Self>,
         _: QueryItem<Self::ParentFetch>,
         children: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
         _: &mut SystemParamItem<Self::Params>,
@@ -219,13 +216,12 @@ impl CollectSymbols<Declaration> for UserType {
 }
 
 impl CollectSymbols<()> for UserType {
-    type ParentFetch = &'static Name;
+    type ParentFetch = Property<Name>;
     type ChildFetch = AnyOf<MembersOf<UserType, (), RefMapper<'static>>>;
     type Params = ();
 
     fn each<'a>(
-        _: NodeId<Self>,
-        type_name: QueryItem<Self::ParentFetch>,
+        additional: QueryItem<Self::ParentFetch>,
         children: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
         _: &mut SystemParamItem<Self::Params>,
         mut registrator: SymbolRegistrator,
@@ -245,7 +241,7 @@ impl CollectSymbols<()> for UserType {
                         name: CtorName::Inline,
                         ..
                     }),
-                ) => SymbolName::from(type_name),
+                ) => SymbolName::from(additional),
                 (
                     Some(ValueCtor {
                         name: CtorName::Explicit(name),
@@ -279,7 +275,6 @@ impl CollectSymbols<Statement> for NormalizedBlock {
     type Params = ();
 
     fn each<'a>(
-        _: NodeId<Self>,
         _: QueryItem<Self::ParentFetch>,
         children: impl Iterator<Item = (NodeId, ROQueryItem<'a, 'a, Self::ChildFetch>)>,
         _: &mut SystemParamItem<Self::Params>,
@@ -338,7 +333,10 @@ where
     }
 }
 
-pub(super) fn check_module_names(modules: Query<(&Name, &SourceSpan), With<Module>>, mut reporter: Reporter) {
+pub(super) fn check_module_names(
+    modules: Query<(&Name, &SourceSpan), With<Module>>,
+    mut reporter: Reporter,
+) {
     let mut set = HashMap::new();
     for (name, span) in modules {
         match set.entry(name.as_ref()) {
