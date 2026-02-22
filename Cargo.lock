@@ -980,7 +980,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "derive_more",
  "pathdiff",
@@ -1055,7 +1055,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-report"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "codespan-reporting",
  "kodept-core",

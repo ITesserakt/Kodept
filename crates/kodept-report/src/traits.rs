@@ -1,8 +1,9 @@
 use crate::Str;
-use crate::message::{Diagnostic, ReportMessage, Severity};
+use crate::message::Diagnostic;
 use kodept_core::code_point::CodePoint;
+use kodept_core::either::Either;
 use std::any::type_name_of_val;
-use std::error::Error;
+use std::convert::Infallible;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::marker::PhantomData;
 
@@ -77,10 +78,53 @@ impl MessageBehaviour {
     }
 }
 
-impl<E: Error> IntoSpannedReportMessage for E {
-    type Message = ReportMessage;
+impl IntoSpannedReportMessage for Infallible {
+    type Message = Diagnostic;
 
+    #[inline(always)]
+    fn behaviour(&self) -> MessageBehaviour {
+        match *self {}
+    }
+
+    #[inline(always)]
+    fn code(&self) -> u32 {
+        match *self {}
+    }
+
+    #[inline(always)]
     fn into_message(self) -> Self::Message {
-        ReportMessage::new(Severity::Error, self.to_string())
+        match self {}
+    }
+}
+
+impl<A, B, M: SpannedReportMessage> IntoSpannedReportMessage for Either<A, B>
+where
+    A: IntoSpannedReportMessage<Message = M>,
+    B: IntoSpannedReportMessage<Message = M>,
+{
+    type Message = M;
+
+    #[inline(always)]
+    fn behaviour(&self) -> MessageBehaviour {
+        match self {
+            Either::Left(x) => IntoSpannedReportMessage::behaviour(x),
+            Either::Right(x) => IntoSpannedReportMessage::behaviour(x),
+        }
+    }
+
+    #[inline(always)]
+    fn code(&self) -> u32 {
+        match self {
+            Either::Left(x) => IntoSpannedReportMessage::code(x),
+            Either::Right(x) => IntoSpannedReportMessage::code(x),
+        }
+    }
+
+    #[inline(always)]
+    fn into_message(self) -> Self::Message {
+        match self {
+            Either::Left(x) => IntoSpannedReportMessage::into_message(x),
+            Either::Right(x) => IntoSpannedReportMessage::into_message(x),
+        }
     }
 }
