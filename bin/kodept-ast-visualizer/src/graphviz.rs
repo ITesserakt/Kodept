@@ -29,11 +29,19 @@ pub(crate) struct Config {
     /// Specifies whether components with no debug representation should appear in tables
     #[arg(short = 'u', long = "unknown", action, default_value_t = false)]
     show_unknown_components: bool,
+    /// Specifies whether components with zero size (ZST) should appear in tables
+    #[arg(short = 'z', long = "zst", action, default_value_t = true)]
+    show_zst_components: bool,
+    /// Adds a table column with components' size in bytes
+    #[arg(long = "size", action, default_value_t = false)]
+    show_components_size: bool,
     /// Do not trim type path at component names
     #[arg(short = 'l', long, action, default_value_t = false)]
     long_type_paths: bool,
+    /// Specifies maximum length of a component value
     #[arg(short, long, default_value_t = 50)]
     max_length: usize,
+    /// Print component values with line breaks
     #[arg(long, default_value_t = false)]
     multiline: bool,
 }
@@ -177,14 +185,20 @@ fn draw_node(
         .filter(|id| config.verbose || non_verbose_components.contains(&Some(**id)))
         .map(|id| (entity.get_by_id(*id), id))
         .filter_map(|(value, &id)| Some((value.ok()?, components.get_info(id)?)))
+        .filter(|(_, info)| config.show_zst_components || info.layout().size() != 0)
         .filter_map(|(value, info)| {
             let type_id = info.type_id()?;
             let debug_repr = match debug_registry {
                 Some(registry) => unsafe { registry.debug_dynamic(value, type_id) },
                 None => unsafe { DebugRegistry::debug_dynamic_global(value, type_id) },
             };
-            Some((debug_repr, info.name(), info.mutable(), type_id))
+            Some((debug_repr, info.name(), info.mutable(), info))
         });
+    let total_node_size = all_components
+        .into_iter()
+        .filter_map(|it| components.get_info(*it))
+        .map(|it| it.layout().size())
+        .sum::<usize>();
 
     write!(buffer, "\t\"{}\" [ label=<", entity.id().to_bits())?;
     table(
@@ -196,10 +210,15 @@ fn draw_node(
                     buffer,
                     "<td bgcolor=\"#00000033\" colspan=\"2\"><b>{}</b></td>",
                     entity.id()
-                )
+                )?;
+
+                if config.show_components_size {
+                    write!(buffer, "<td>{}</td>", total_node_size)?;
+                }
+                Ok(())
             })?;
 
-            for (repr, name, is_mutable, type_id) in components_debug_repr {
+            for (repr, name, is_mutable, info) in components_debug_repr {
                 if !repr.is_known() && !config.show_unknown_components {
                     continue;
                 }
@@ -208,11 +227,12 @@ fn draw_node(
                     false => sanitize(name.shortname(), config.max_length),
                 };
                 let is_known = repr.is_known();
-                let repr = match (config.long_type_paths, type_id == TypeId::of::<Node>()) {
+                let is_node = info.type_id().is_some_and(|it| it == TypeId::of::<Node>());
+                let repr = match (config.long_type_paths, is_node) {
                     (false, true) => {
                         #[allow(unsafe_code)]
                         let node = unsafe { repr.into_inner().deref::<Node>() };
-                        let path = node.name.shortname();
+                        let path = ShortName::from(node.name);
                         sanitize(path, config.max_length)
                     }
                     _ => {
@@ -237,6 +257,9 @@ fn draw_node(
                         write!(buffer, "{name}</td>")?;
                     }
                     write!(buffer, "<td>{repr}</td>")?;
+                    if config.show_components_size {
+                        write!(buffer, "<td>{}</td>", info.layout().size())?;
+                    }
                     Ok(())
                 })?;
             }

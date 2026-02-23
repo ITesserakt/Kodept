@@ -5,7 +5,6 @@ use derive_more::{Display, From, Into};
 use kodept_core::code_point::Span;
 use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::utils::DebugName;
 use kodept_rlt::traversal::{ErasedNodePtr, SyntaxNode};
 use std::any::TypeId;
 use std::fmt::{Debug, Display, Formatter};
@@ -16,7 +15,7 @@ pub trait NodeProperty: Component {}
 #[component(immutable)]
 #[display("{name}")]
 pub struct Node {
-    pub name: DebugName,
+    pub name: &'static str,
     pub kind: TypeId,
 }
 
@@ -57,7 +56,7 @@ impl<P: NodeProperty, T: RequireProperty<P>> HasProperty<P> for T {}
 impl Node {
     pub fn of<T: 'static>() -> Self {
         Self {
-            name: DebugName::type_name::<T>(),
+            name: std::any::type_name::<T>(),
             kind: TypeId::of::<T>(),
         }
     }
