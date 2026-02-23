@@ -1,16 +1,12 @@
 use crate::Str;
 use crate::message::{Diagnostic, ReportMessage, Severity};
-use kodept_core::code_point::CodePoint;
 use kodept_core::either::Either;
 use std::any::type_name_of_val;
 use std::convert::Infallible;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::marker::PhantomData;
 
-pub trait Message: Into<Diagnostic> {
-    #[deprecated]
-    fn with_node_location(self, location: CodePoint) -> impl IntoMessage;
-}
+pub trait Message: Into<Diagnostic> {}
 
 /// Determines whether a message will break execution
 #[derive(Debug)]

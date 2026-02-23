@@ -166,36 +166,6 @@ impl<E: Error> From<SpannedError<E>> for Diagnostic {
     }
 }
 
-impl Message for ReportMessage {
-    fn with_node_location(self, location: CodePoint) -> impl IntoMessage {
-        lazy_message(move || {
-            let mut diagnostic = Diagnostic::from(self);
-            diagnostic
-                .labels
-                .push(Label::secondary("while checking", location));
-            diagnostic
-        })
-    }
-}
-
-impl Message for Diagnostic {
-    fn with_node_location(mut self, location: CodePoint) -> impl IntoMessage {
-        lazy_message(move || {
-            self.labels
-                .push(Label::secondary("while checking", location));
-            self
-        })
-    }
-}
-
-impl<E: Error> Message for SpannedError<E> {
-    fn with_node_location(self, location: CodePoint) -> impl IntoMessage {
-        lazy_message(move || {
-            let mut diagnostic = Diagnostic::from(self);
-            diagnostic
-                .labels
-                .push(Label::secondary("while checking", location));
-            diagnostic
-        })
-    }
-}
+impl Message for ReportMessage {}
+impl Message for Diagnostic {}
+impl<E: Error> Message for SpannedError<E> {}
