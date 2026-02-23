@@ -9,7 +9,7 @@ use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::resource::Resource;
 use kodept_ecs::schedule::{
     ExecutorKind, InternedSystemSet, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel,
-    Schedules,
+    Schedules, SystemSet,
 };
 use kodept_ecs::system::{IntoObserverSystem, Res, ScheduleSystem};
 use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
