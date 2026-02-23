@@ -1,5 +1,5 @@
 use crate::Str;
-use crate::traits::{IntoSpannedReportMessage, SpannedReportMessage, ad_hoc_message};
+use crate::traits::{IntoMessage, Message, lazy_message};
 use kodept_core::code_point::{CodePoint, Span};
 use std::borrow::Cow;
 use std::error::Error;
@@ -166,9 +166,9 @@ impl<E: Error> From<SpannedError<E>> for Diagnostic {
     }
 }
 
-impl SpannedReportMessage for ReportMessage {
-    fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
-        ad_hoc_message(move || {
+impl Message for ReportMessage {
+    fn with_node_location(self, location: CodePoint) -> impl IntoMessage {
+        lazy_message(move || {
             let mut diagnostic = Diagnostic::from(self);
             diagnostic
                 .labels
@@ -178,9 +178,9 @@ impl SpannedReportMessage for ReportMessage {
     }
 }
 
-impl SpannedReportMessage for Diagnostic {
-    fn with_node_location(mut self, location: CodePoint) -> impl IntoSpannedReportMessage {
-        ad_hoc_message(move || {
+impl Message for Diagnostic {
+    fn with_node_location(mut self, location: CodePoint) -> impl IntoMessage {
+        lazy_message(move || {
             self.labels
                 .push(Label::secondary("while checking", location));
             self
@@ -188,9 +188,9 @@ impl SpannedReportMessage for Diagnostic {
     }
 }
 
-impl<E: Error> SpannedReportMessage for SpannedError<E> {
-    fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage {
-        ad_hoc_message(move || {
+impl<E: Error> Message for SpannedError<E> {
+    fn with_node_location(self, location: CodePoint) -> impl IntoMessage {
+        lazy_message(move || {
             let mut diagnostic = Diagnostic::from(self);
             diagnostic
                 .labels

@@ -28,7 +28,7 @@ mod diagnostic;
 /// }
 /// ```
 #[proc_macro_derive(
-    Report,
+    IntoMessage,
     attributes(
         primary_label,
         secondary_label,

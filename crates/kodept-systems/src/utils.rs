@@ -1,7 +1,7 @@
 use crate::source::collection::Reporter;
 use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, System, SystemInput};
-use kodept_report::prelude::IntoSpannedReportMessage;
+use kodept_report::prelude::IntoMessage;
 use std::borrow::Cow;
 use std::convert::Infallible;
 use std::fmt::Debug;
@@ -9,7 +9,7 @@ use std::ops::ControlFlow;
 use tracing::trace;
 
 pub(super) trait TryReport {
-    type Output: IntoSpannedReportMessage;
+    type Output: IntoMessage;
 
     fn branch(self) -> ControlFlow<Self::Output, ()>;
 }
@@ -23,7 +23,7 @@ impl TryReport for () {
     }
 }
 
-impl<T: IntoSpannedReportMessage> TryReport for Result<(), T> {
+impl<T: IntoMessage> TryReport for Result<(), T> {
     type Output = T;
 
     #[inline(always)]
@@ -35,7 +35,7 @@ impl<T: IntoSpannedReportMessage> TryReport for Result<(), T> {
     }
 }
 
-impl<T: IntoSpannedReportMessage> TryReport for ControlFlow<T> {
+impl<T: IntoMessage> TryReport for ControlFlow<T> {
     type Output = T;
 
     #[inline(always)]
@@ -222,7 +222,7 @@ pub type ForwardReport<T> = Result<(), T>;
 #[inline(always)]
 pub fn forward<T>(report: T) -> ForwardReport<T>
 where
-    T: IntoSpannedReportMessage,
+    T: IntoMessage,
 {
     Err(report)
 }

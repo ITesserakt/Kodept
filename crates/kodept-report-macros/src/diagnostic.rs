@@ -102,7 +102,7 @@ pub fn derive_diagnostic(input: DeriveInput) -> Result<TokenStream, Error> {
     };
 
     let expanded = quote! {
-        impl #impl_generics kodept_report::traits::IntoSpannedReportMessage for #struct_name #ty_generics #where_clause {
+        impl #impl_generics kodept_report::traits::IntoMessage for #struct_name #ty_generics #where_clause {
             type Message = kodept_report::message::Diagnostic;
 
             #code_fn_impl

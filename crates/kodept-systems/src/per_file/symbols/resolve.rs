@@ -40,8 +40,8 @@ mod types {
     use kodept_ecs::component::Component;
     use kodept_ecs::exported::bevy_ecs;
     use kodept_report::prelude::{Diagnostic, Severity};
-    use kodept_report::traits::IntoSpannedReportMessage;
-    use kodept_report_macros::Report;
+    use kodept_report::traits::IntoMessage;
+    use kodept_report_macros::IntoMessage;
     use std::borrow::Cow;
     use std::fmt::Display;
 
@@ -71,7 +71,7 @@ mod types {
         pub(super) note: I,
     }
 
-    #[derive(Debug, Report)]
+    #[derive(Debug, IntoMessage)]
     #[severity("error")]
     #[message("Definition of `{}` expected to be a type, but it is a {}", self.name, self.actual_kind
     )]
@@ -85,7 +85,7 @@ mod types {
         pub(super) description: Cow<'static, str>,
     }
 
-    #[derive(Debug, Report)]
+    #[derive(Debug, IntoMessage)]
     #[severity("bug")]
     #[message("Reference `{}` is not resolved still", self.id)]
     pub(super) struct UnexpectedUnresolvedReference {
@@ -94,7 +94,7 @@ mod types {
         pub(super) span: Span,
     }
 
-    impl<I> IntoSpannedReportMessage for UnresolvedReference<'_, I>
+    impl<I> IntoMessage for UnresolvedReference<'_, I>
     where
         I: IntoIterator<Item: Display>,
     {

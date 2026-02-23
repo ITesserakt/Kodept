@@ -2,7 +2,7 @@ use crate::engine::reporter::Reporter;
 use crate::read_code_source::SyncSource;
 use kodept_core::either::Either;
 use kodept_core::try_port::Try;
-use kodept_report::prelude::IntoSpannedReportMessage;
+use kodept_report::prelude::IntoMessage;
 use std::ops::ControlFlow;
 use std::ops::ControlFlow::{Break, Continue};
 
@@ -19,7 +19,7 @@ pub trait ExtractReports<Marker> {
 
 impl<T> ExtractReports<SingleExtractMarker> for T
 where
-    T: IntoSpannedReportMessage,
+    T: IntoMessage,
 {
     type Output = ();
 

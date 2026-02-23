@@ -12,13 +12,13 @@ use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::With;
 use kodept_ecs::system::{Query, SystemParam};
 use kodept_report::message::{Diagnostic, Severity};
-use kodept_report_macros::Report;
+use kodept_report_macros::IntoMessage;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Debug, Report)]
+#[derive(Debug, IntoMessage)]
 #[severity("error")]
 #[message("Element `{}` has already been defined", self.name)]
 #[note("Name of {} clashes with another {}", self.current_kind, self.previous_kind)]

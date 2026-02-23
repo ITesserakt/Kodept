@@ -13,7 +13,7 @@ use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::system::{Commands, Res};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
+use kodept_report::prelude::{Diagnostic, IntoMessage, Severity};
 use std::borrow::Cow;
 
 define_phase!(
@@ -46,7 +46,7 @@ fn system(
 #[derive(Debug, From)]
 struct Wrapper(Error);
 
-impl IntoSpannedReportMessage for Wrapper {
+impl IntoMessage for Wrapper {
     type Message = Diagnostic;
 
     fn into_message(self) -> Self::Message {

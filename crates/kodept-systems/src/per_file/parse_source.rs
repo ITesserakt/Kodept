@@ -81,7 +81,7 @@ fn system(
 
 struct Wrapper<T>(T);
 
-impl<A: Display> IntoSpannedReportMessage for Wrapper<ParseError<A>> {
+impl<A: Display> IntoMessage for Wrapper<ParseError<A>> {
     type Message = Diagnostic;
 
     fn behaviour(&self) -> MessageBehaviour {

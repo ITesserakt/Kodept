@@ -10,7 +10,7 @@ use kodept_ecs::system::{
     Commands, InMut, IntoSystem, Query, StaticSystemParam, SystemParam, SystemParamItem,
 };
 use kodept_report::prelude::MessageBehaviour;
-use kodept_report::traits::IntoSpannedReportMessage;
+use kodept_report::traits::IntoMessage;
 use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::warn;
@@ -101,7 +101,7 @@ pub(super) trait IntoParNodeSystem<Input> {
 }
 
 #[inline]
-fn handle_output<T: IntoSpannedReportMessage>(
+fn handle_output<T: IntoMessage>(
     value: ControlFlow<T>,
     handler: impl FnOnce(T),
 ) -> ControlFlow<()> {

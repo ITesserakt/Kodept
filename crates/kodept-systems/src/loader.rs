@@ -1,7 +1,7 @@
 use crate::source::unloaded::{CodeSource, CodeSourceError};
 use derive_more::{Display, Error, From};
 use kodept_report::message::{ReportMessage, Severity};
-use kodept_report::traits::IntoSpannedReportMessage;
+use kodept_report::traits::IntoMessage;
 use std::borrow::Cow;
 use std::env::current_dir;
 use std::ffi::OsStr;
@@ -167,7 +167,7 @@ impl Default for Loader {
     }
 }
 
-impl IntoSpannedReportMessage for LoadingError {
+impl IntoMessage for LoadingError {
     type Message = ReportMessage;
 
     fn into_message(self) -> Self::Message {

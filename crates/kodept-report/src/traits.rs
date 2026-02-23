@@ -7,9 +7,9 @@ use std::convert::Infallible;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::marker::PhantomData;
 
-pub trait SpannedReportMessage: Into<Diagnostic> {
+pub trait Message: Into<Diagnostic> {
     #[deprecated]
-    fn with_node_location(self, location: CodePoint) -> impl IntoSpannedReportMessage;
+    fn with_node_location(self, location: CodePoint) -> impl IntoMessage;
 }
 
 /// Determines whether a message will break execution
@@ -23,8 +23,8 @@ pub enum MessageBehaviour {
     Suppress,
 }
 
-pub trait IntoSpannedReportMessage {
-    type Message: SpannedReportMessage;
+pub trait IntoMessage {
+    type Message: Message;
 
     #[inline]
     fn behaviour(&self) -> MessageBehaviour {
@@ -44,15 +44,15 @@ pub trait IntoSpannedReportMessage {
 }
 
 #[inline(always)]
-pub fn ad_hoc_message<T>(f: impl FnOnce() -> T) -> impl IntoSpannedReportMessage<Message = T>
+pub fn lazy_message<T>(f: impl FnOnce() -> T) -> impl IntoMessage<Message = T>
 where
-    T: SpannedReportMessage,
+    T: Message,
 {
     struct Helper<F, T>(F, PhantomData<T>);
 
-    impl<F, T> IntoSpannedReportMessage for Helper<F, T>
+    impl<F, T> IntoMessage for Helper<F, T>
     where
-        T: SpannedReportMessage,
+        T: Message,
         F: FnOnce() -> T,
     {
         type Message = T;
@@ -78,7 +78,7 @@ impl MessageBehaviour {
     }
 }
 
-impl IntoSpannedReportMessage for Infallible {
+impl IntoMessage for Infallible {
     type Message = Diagnostic;
 
     #[inline(always)]
@@ -97,39 +97,39 @@ impl IntoSpannedReportMessage for Infallible {
     }
 }
 
-impl<A, B, M: SpannedReportMessage> IntoSpannedReportMessage for Either<A, B>
+impl<A, B, M: Message> IntoMessage for Either<A, B>
 where
-    A: IntoSpannedReportMessage<Message = M>,
-    B: IntoSpannedReportMessage<Message = M>,
+    A: IntoMessage<Message = M>,
+    B: IntoMessage<Message = M>,
 {
     type Message = M;
 
     #[inline(always)]
     fn behaviour(&self) -> MessageBehaviour {
         match self {
-            Either::Left(x) => IntoSpannedReportMessage::behaviour(x),
-            Either::Right(x) => IntoSpannedReportMessage::behaviour(x),
+            Either::Left(x) => IntoMessage::behaviour(x),
+            Either::Right(x) => IntoMessage::behaviour(x),
         }
     }
 
     #[inline(always)]
     fn code(&self) -> u32 {
         match self {
-            Either::Left(x) => IntoSpannedReportMessage::code(x),
-            Either::Right(x) => IntoSpannedReportMessage::code(x),
+            Either::Left(x) => IntoMessage::code(x),
+            Either::Right(x) => IntoMessage::code(x),
         }
     }
 
     #[inline(always)]
     fn into_message(self) -> Self::Message {
         match self {
-            Either::Left(x) => IntoSpannedReportMessage::into_message(x),
-            Either::Right(x) => IntoSpannedReportMessage::into_message(x),
+            Either::Left(x) => IntoMessage::into_message(x),
+            Either::Right(x) => IntoMessage::into_message(x),
         }
     }
 }
 
-impl IntoSpannedReportMessage for std::io::Error {
+impl IntoMessage for std::io::Error {
     type Message = ReportMessage;
 
     fn into_message(self) -> Self::Message {

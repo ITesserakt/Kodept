@@ -15,7 +15,7 @@ use kodept_ecs::system::{IntoObserverSystem, Res, ScheduleSystem};
 use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
 use kodept_report::codespan::external::{ColorChoice, Config, DisplayStyle};
 use kodept_report::message::Severity;
-use kodept_report::prelude::{CodespanSettings, Diagnostic, Report, Reportable, ad_hoc_message};
+use kodept_report::prelude::{CodespanSettings, Diagnostic, Report, Reportable, lazy_message};
 use std::any::Any;
 use std::backtrace::{Backtrace, BacktraceStatus};
 use std::fmt::{Display, Formatter};
@@ -327,7 +327,7 @@ impl Engine {
 
         let report = Report::from_message(
             (),
-            ad_hoc_message(|| {
+            lazy_message(|| {
                 let mut diagnostic = Diagnostic::new(Severity::Bug)
                     .with_message("Unknown internal error occurred")
                     .with_note(format!("panicked at {}", location))

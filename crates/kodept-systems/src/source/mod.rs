@@ -3,7 +3,7 @@ use crate::source::collection::Sources;
 use crate::source::unloaded::CodeSourceError;
 use derive_more::{Display, Error, From};
 use kodept_report::message::Severity;
-use kodept_report::prelude::{IntoSpannedReportMessage, ReportMessage};
+use kodept_report::prelude::{IntoMessage, ReportMessage};
 
 pub mod collection;
 pub mod loaded;
@@ -24,7 +24,7 @@ pub fn load_each_source(loader: Loader) -> Result<Sources, SourcesLoadingError> 
     Ok(sources)
 }
 
-impl IntoSpannedReportMessage for SourcesLoadingError {
+impl IntoMessage for SourcesLoadingError {
     type Message = ReportMessage;
 
     fn into_message(self) -> Self::Message {

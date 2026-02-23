@@ -70,7 +70,7 @@ trait Ops {
 }
 
 impl<Impl: SyncSource> Config<'_, Impl> {
-    fn report_inner(&self, message: impl IntoSpannedReportMessage, buffer: impl Ops) {
+    fn report_inner(&self, message: impl IntoMessage, buffer: impl Ops) {
         let behaviour = message.behaviour();
         let buffer = match behaviour {
             MessageBehaviour::FailFast { reason } => {
@@ -118,9 +118,9 @@ impl<Impl: SyncSource> Config<'_, Impl> {
 }
 
 struct Helper<F, T>(F, PhantomData<fn() -> T>);
-impl<F, T> IntoSpannedReportMessage for Helper<F, T>
+impl<F, T> IntoMessage for Helper<F, T>
 where
-    T: SpannedReportMessage,
+    T: Message,
     F: FnOnce() -> T,
 {
     type Message = T;
@@ -141,7 +141,7 @@ mod sequential {
     use kodept_ecs::system::{SystemBuffer, SystemMeta};
     use kodept_ecs::world::World;
     use kodept_report::codespan::Reportable;
-    use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
+    use kodept_report::traits::{IntoMessage, Message};
     use std::marker::PhantomData;
     use tracing::error;
 
@@ -221,14 +221,14 @@ mod sequential {
 
     impl<Impl: SyncSource> Reporter<'_, '_, Impl> {
         #[inline]
-        pub fn report(&mut self, message: impl IntoSpannedReportMessage) {
+        pub fn report(&mut self, message: impl IntoMessage) {
             self.config.report_inner(message, &mut *self.buffer);
         }
 
         #[inline]
         pub fn report_ad_hoc<T>(&mut self, message: impl FnOnce() -> T)
         where
-            T: SpannedReportMessage,
+            T: Message,
         {
             self.report(Helper(message, PhantomData))
         }
@@ -242,7 +242,7 @@ mod parallel {
     use kodept_ecs::system::{SystemBuffer, SystemMeta};
     use kodept_ecs::utils::Parallel;
     use kodept_ecs::world::World;
-    use kodept_report::traits::{IntoSpannedReportMessage, SpannedReportMessage};
+    use kodept_report::traits::{IntoMessage, Message};
     use std::marker::PhantomData;
     use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -287,11 +287,11 @@ mod parallel {
     }
 
     impl<Impl: SyncSource> Reporter<'_, '_, Impl, ParallelReports<Impl>> {
-        pub fn report(&self, message: impl IntoSpannedReportMessage) {
+        pub fn report(&self, message: impl IntoMessage) {
             self.config.report_inner(message, &*self.buffer);
         }
 
-        pub fn report_ad_hoc<T: SpannedReportMessage>(&self, f: impl FnOnce() -> T) {
+        pub fn report_ad_hoc<T: Message>(&self, f: impl FnOnce() -> T) {
             self.report(Helper(f, PhantomData))
         }
     }

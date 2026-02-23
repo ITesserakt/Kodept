@@ -24,7 +24,7 @@ use kodept_inference::assumption::TypeTable;
 use kodept_inference::constraint::eq_cst;
 use kodept_inference::process::PartialInfer;
 use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TVar};
-use kodept_report_macros::Report;
+use kodept_report_macros::IntoMessage;
 use num_bigint::Sign;
 use std::marker::PhantomData;
 use std::num::NonZeroU8;
@@ -66,7 +66,7 @@ impl RequireProperty<PartiallyTypechecked> for Link {}
 impl RequireProperty<PartiallyTypechecked> for AnonFunction {}
 impl RequireProperty<PartiallyTypechecked> for UserFunction {}
 
-#[derive(Debug, Report)]
+#[derive(Debug, IntoMessage)]
 #[severity("error")]
 #[message("Integer literal is too big to fit into 256 bits")]
 struct IntegerIsTooBig {

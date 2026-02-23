@@ -5,10 +5,10 @@ use std::borrow::Cow;
 
 use kodept_core::code_point::{CodePoint, Span};
 use kodept_report::{FileId, report::Report};
-use kodept_report_macros::Report;
+use kodept_report_macros::IntoMessage;
 
 // Simple diagnostic with primary and secondary labels
-#[derive(Report, Debug)]
+#[derive(IntoMessage, Debug)]
 #[severity("Error")]
 #[note("Remove or rename previous symbol")]
 struct DuplicatedSymbolError {
@@ -19,7 +19,7 @@ struct DuplicatedSymbolError {
 }
 
 // Diagnostic with multiple notes and labels
-#[derive(Report, Debug)]
+#[derive(IntoMessage, Debug)]
 #[severity("Error")]
 #[note("Unresolved reference: {}", self.ref_name)]
 #[note("{}", self.suggestion)]
@@ -33,7 +33,7 @@ struct UnresolvedReferenceError {
 }
 
 // Diagnostic with custom message fields
-#[derive(Report, Debug)]
+#[derive(IntoMessage, Debug)]
 #[severity("Error")]
 #[code(1234)]
 struct TypeMismatchError {
@@ -47,7 +47,7 @@ struct TypeMismatchError {
 }
 
 // Diagnostic with optional fields
-#[derive(Report, Debug)]
+#[derive(IntoMessage, Debug)]
 #[severity("Error")]
 #[message("{message}")]
 #[note("{}", self.hint_text)]

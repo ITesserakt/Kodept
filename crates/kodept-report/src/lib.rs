@@ -17,7 +17,5 @@ pub mod prelude {
     pub use super::codespan::{CodespanSettings, Reportable, Settings};
     pub use super::message::{Diagnostic, Label, ReportMessage, Severity, SpannedError};
     pub use super::report::Report;
-    pub use super::traits::{
-        IntoSpannedReportMessage, MessageBehaviour, SpannedReportMessage, ad_hoc_message,
-    };
+    pub use super::traits::{IntoMessage, Message, MessageBehaviour, lazy_message};
 }

@@ -19,7 +19,7 @@ use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{Commands, On, Query, SystemParam};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_report_macros::Report;
+use kodept_report_macros::IntoMessage;
 
 define_phase! {
     pub phase AstNormalizationPhase[AstNormalizationPhaseLabel];
@@ -52,7 +52,7 @@ fn register_reflection_info(
     debug_registry.register::<InModule>();
 }
 
-#[derive(Debug, Report)]
+#[derive(Debug, IntoMessage)]
 #[severity("error")]
 #[message("Expression in this position is unexpected")]
 #[note("Remove, assign to a variable, call or link this expression")]
@@ -61,7 +61,7 @@ struct DanglingExpression {
     span: Span,
 }
 
-#[derive(Debug, Report)]
+#[derive(Debug, IntoMessage)]
 #[severity("bug")]
 #[message("Unexpected non-normalized block: {}", self.id)]
 struct UnexpectedNonNormalizedBlock {
