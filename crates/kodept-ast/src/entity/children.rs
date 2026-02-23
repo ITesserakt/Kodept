@@ -1,10 +1,11 @@
-use crate::arity::{Optional, Plural, Singular};
+use crate::arity::{Arity, Optional, Plural, Singular};
 use crate::prelude::{ASTNode, NodeId};
 use crate::properties::NodeProperty;
 use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::{Family, HasChild};
 use derive_more::{Display, Error, From};
 use kodept_ecs::component::Mutable;
+use kodept_ecs::entity::Entity;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::{
     QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem,
@@ -17,15 +18,17 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::FusedIterator;
+use std::marker::PhantomData;
 
 type Rel<T, Tag> = <T as NodeRelationship<Tag, <T as Family<Tag>>::Arity>>::Relationship;
 type Target<T> = <T as Relationship>::RelationshipTarget;
+type Collection<T> = <Target<T> as RelationshipTarget>::Collection;
 type Container<A, T> = <A as TryFromIter>::Container<T>;
 
 #[repr(transparent)]
-pub struct Property<T: NodeProperty>(&'static T);
+pub struct Property<T: NodeProperty>(PhantomData<&'static T>);
 #[repr(transparent)]
-pub struct MutProperty<T: NodeProperty<Mutability = Mutable>>(&'static mut T);
+pub struct MutProperty<T: NodeProperty<Mutability = Mutable>>(PhantomData<&'static mut T>);
 
 pub trait NodeQueryData<Of>: QueryData {}
 
@@ -517,6 +520,80 @@ where
                 )
             });
     }
+
+    pub fn get_down_mut(
+        &mut self,
+        id: NodeId<T>,
+    ) -> (
+        QueryItem<'_, 's, ParentData>,
+        ChildrenFetch<'_, 's, ChildData, T, Tag>,
+    )
+    where
+        T::Arity: TryFromIter,
+    {
+        self.try_get_down_mut(id).unwrap()
+    }
+
+    pub fn try_get_down_mut(
+        &mut self,
+        id: NodeId<T>,
+    ) -> Result<
+        (
+            QueryItem<'_, 's, ParentData>,
+            ChildrenFetch<'_, 's, ChildData, T, Tag>,
+        ),
+        HierarchicalError<T::Arity>,
+    >
+    where
+        T::Arity: TryFromIter,
+    {
+        let (_, parent, children) = self.parent_query.get_mut(id.entity())?;
+        Ok((
+            parent,
+            ChildrenFetch {
+                collection: children,
+                query: self.children_query.reborrow(),
+            },
+        ))
+    }
+
+    // Retrieves from world references to both parent and child by given *parent* id.
+    pub fn get_down(
+        &self,
+        id: NodeId<T>,
+    ) -> (
+        ROQueryItem<'_, 's, ParentData>,
+        ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
+    )
+    where
+        T::Arity: TryFromIter,
+    {
+        self.try_get_down(id)
+            .expect("Cannot collect children into container")
+    }
+
+    pub fn try_get_down(
+        &self,
+        id: NodeId<T>,
+    ) -> Result<
+        (
+            ROQueryItem<'_, 's, ParentData>,
+            ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
+        ),
+        HierarchicalError<T::Arity>,
+    >
+    where
+        T::Arity: TryFromIter,
+    {
+        let (_, parent, children) = self.parent_query.get(id.entity())?;
+        Ok((
+            parent,
+            ChildrenFetch {
+                collection: children,
+                query: self.children_query.as_readonly(),
+            },
+        ))
+    }
 }
 
 impl<'w, 's, Data, T, Tag, Id, Filter> IntoIterator
@@ -614,9 +691,7 @@ where
         self.into_iter()
     }
 
-    pub fn collect(
-        self,
-    ) -> Container<T::Arity, (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>)>
+    pub fn collect(self) -> Container<T::Arity, (QueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>)>
     where
         T::Arity: TryFromIter,
     {
@@ -626,18 +701,38 @@ where
     pub fn try_collect(
         self,
     ) -> Result<
-        Container<T::Arity, (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>)>,
+        Container<T::Arity, (QueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>)>,
         HierarchicalError<T::Arity>,
     >
     where
         T::Arity: TryFromIter,
     {
-        let query = self.query.into_readonly();
-        let iter = query
-            .iter_many_inner(self.collection.iter().flat_map(|it| it.iter()))
+        let Some(children) = self.collection else {
+            let container = <T::Arity as TryFromIter>::try_from_iter(None);
+            return container.map_err(|e| HierarchicalError::WrongContainerSize(e));
+        };
+        let collection: &<T::Arity as Arity>::Collection = children.collection();
+        let iter = self
+            .query
+            .iter_many_unique_inner(collection.iter())
             .map(|it| (it.0, it.1));
+
         <T::Arity as TryFromIter>::try_from_iter(iter)
             .map_err(|e| HierarchicalError::WrongContainerSize(e))
+    }
+
+    pub fn as_slice(&self) -> &[Entity]
+    where
+        Collection<Rel<T, Tag>>: AsRef<[Entity]>,
+    {
+        match self.collection {
+            None => &[],
+            Some(x) => {
+                let collection = x.collection();
+                let slice = collection.as_ref();
+                slice
+            }
+        }
     }
 }
 
@@ -744,6 +839,42 @@ where
             ChildrenFetch {
                 collection: children,
                 query: self.children_query.as_readonly(),
+            },
+        ))
+    }
+
+    pub fn get_down_mut(
+        &mut self,
+        id: NodeId<T>,
+    ) -> (
+        QueryItem<'_, 's, ParentData>,
+        ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>>,
+    )
+    where
+        T::Arity: TryFromIter,
+    {
+        self.try_get_down_mut(id).unwrap()
+    }
+
+    pub fn try_get_down_mut(
+        &mut self,
+        id: NodeId<T>,
+    ) -> Result<
+        (
+            QueryItem<'_, 's, ParentData>,
+            ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>>,
+        ),
+        HierarchicalError<T::Arity>,
+    >
+    where
+        T::Arity: TryFromIter,
+    {
+        let (_, parent, children) = self.parent_query.get_mut(id.entity())?;
+        Ok((
+            parent,
+            ChildrenFetch {
+                collection: children,
+                query: self.children_query.reborrow(),
             },
         ))
     }

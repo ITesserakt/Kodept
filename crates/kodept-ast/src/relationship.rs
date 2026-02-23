@@ -2,7 +2,7 @@ use crate::relationship::internal::ContainedBy;
 use crate::syntax_tree::children::Family;
 use kodept_ecs::component::{ComponentId, Immutable};
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::relationship::Relationship;
+use kodept_ecs::relationship::{Relationship, RelationshipTarget};
 use kodept_ecs::resource::Resource;
 use std::any::TypeId;
 use std::collections::HashSet;
@@ -217,8 +217,11 @@ pub struct RelationshipMetadata {
 #[derive(Debug, Resource, Default)]
 pub(crate) struct NodeRelationships(HashSet<RelationshipMetadata>);
 
-pub trait NodeRelationship<Tag, Arity> {
-    type Relationship: Relationship<Mutability = Immutable>;
+pub trait NodeRelationship<Tag, Arity: crate::arity::Arity> {
+    type Relationship: Relationship<
+            Mutability = Immutable,
+            RelationshipTarget: RelationshipTarget<Collection = Arity::Collection>,
+        >;
 }
 
 impl RelationshipMetadata {

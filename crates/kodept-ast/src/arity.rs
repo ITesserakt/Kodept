@@ -1,17 +1,28 @@
 use crate::node_id::NodeId;
 use crate::relationship::ArityValue;
 use crate::syntax_tree::children::Nothing;
-use kodept_ecs::entity::{Entity, EntityMapper, MapEntities};
+use kodept_ecs::entity::{Entity, EntityIndexSet, EntityMapper, EntitySetIterator, MapEntities};
 use kodept_ecs::relationship::RelationshipSourceCollection;
 use private::Sealed;
-use smallvec::SmallVec;
 
 mod private {
     pub trait Sealed {}
 }
 
+pub trait UniqueRelationshipSourceCollection:
+    for<'a> RelationshipSourceCollection<SourceIter<'a>: EntitySetIterator>
+{
+}
+
+impl<T> UniqueRelationshipSourceCollection for T
+where
+    T: RelationshipSourceCollection,
+    for<'a> T::SourceIter<'a>: EntitySetIterator,
+{
+}
+
 pub trait Arity: Sealed + 'static + Send + Sync {
-    type Collection: RelationshipSourceCollection + MapEntities + Send + Sync + 'static;
+    type Collection: UniqueRelationshipSourceCollection + MapEntities + Send + Sync + 'static;
 
     const VALUE: ArityValue;
 }
@@ -56,7 +67,7 @@ impl Arity for Optional {
 }
 impl Sealed for Plural {}
 impl Arity for Plural {
-    type Collection = SmallVec<[Entity; 2]>;
+    type Collection = EntityIndexSet;
     const VALUE: ArityValue = ArityValue::Plural;
 }
 

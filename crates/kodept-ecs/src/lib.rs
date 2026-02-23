@@ -21,7 +21,8 @@ pub mod change_detection {
 }
 pub mod entity {
     pub use bevy_ecs::entity::{
-        ContainsEntity, Entity, EntityEquivalent, EntityMapper, MapEntities,
+        ContainsEntity, Entity, EntityEquivalent, EntityHashSet, EntityIndexSet, EntityMapper,
+        EntitySet, EntitySetIterator, MapEntities,
     };
 }
 pub mod error {
@@ -69,8 +70,8 @@ pub mod system {
     pub use bevy_ecs::system::entity_command::{EntityCommand, EntityCommandError};
     pub use bevy_ecs::system::{
         Adapt, Command, Commands, Deferred, EntityCommands, If, In, InMut, InRef,
-        IntoObserverSystem, IntoSystem, Local, NonSend, NonSendMut, Populated, Query, QueryLens,
-        ReadOnlySystem, ReadOnlySystemParam, Res, ResMut, ScheduleSystem, Single,
+        IntoObserverSystem, IntoSystem, Local, NonSend, NonSendMut, ParamSet, Populated, Query,
+        QueryLens, ReadOnlySystem, ReadOnlySystemParam, Res, ResMut, ScheduleSystem, Single,
         StaticSystemParam, System, SystemBuffer, SystemInput, SystemMeta, SystemParam,
         SystemParamItem, SystemState,
     };

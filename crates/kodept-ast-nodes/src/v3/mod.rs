@@ -29,4 +29,10 @@ pub(super) fn register_reflection_info(
     registry.register::<ForeignFunction>();
     registry.register::<AnonFunction>();
     registry.register::<ValueCtor>();
+    registry.register::<Param>();
+
+    registry.register::<TypeAnnotation>();
+    registry.register::<ResolvedTypeAnnotation>();
+    registry.register::<UnresolvedType>();
+    registry.register::<ResolvedType>();
 }

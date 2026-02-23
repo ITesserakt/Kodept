@@ -3,8 +3,8 @@ mod resolve;
 
 use crate::per_file::symbols::collect::{CollectSymbolsIn, check_module_names};
 use crate::per_file::symbols::resolve::{
-    ResolveTypeIn, ResolveValues, ResolvedTo, StrictType, add_opaque_markers,
-    add_passthrough_markers, ensure_absent,
+    ResolveTypeIn, ResolveValues, StrictType, add_opaque_markers, add_passthrough_markers,
+    ensure_absent,
 };
 use crate::per_file::utils::IntoNodeSystem;
 use kodept_ast::Str;
@@ -21,6 +21,7 @@ use kodept_ecs::query::{With, Without};
 use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
+pub(crate) use resolve::ResolvedTo;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
