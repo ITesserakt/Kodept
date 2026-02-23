@@ -16,13 +16,16 @@ use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::warn;
 
+pub(super) type Modification<I, B> = NodeModification<<I as IterableSystemParam>::Node, B>;
+pub(super) type Params<'w, 's, I> = <I as IterableSystemParam>::Target<'w, 's>;
+
 pub(super) trait IterableSystem<Input = ()> {
     type Iterable: IterableSystemParam + 'static;
 
     fn for_each_with_input<B: Buffer>(
         &mut self,
-        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
         input: &mut Input,
     ) -> impl TryReport {
         _ = input;
@@ -31,8 +34,8 @@ pub(super) trait IterableSystem<Input = ()> {
 
     fn for_each<B: Buffer>(
         &mut self,
-        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
     ) -> impl TryReport {
         _ = modification;
         _ = params;
@@ -44,8 +47,8 @@ pub(super) trait ParIterableSystem<Input = ()> {
 
     fn for_each_with_input<B: Buffer>(
         &self,
-        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
         input: &Input,
     ) -> impl TryReport {
         _ = input;
@@ -54,8 +57,8 @@ pub(super) trait ParIterableSystem<Input = ()> {
 
     fn for_each<B: Buffer>(
         &self,
-        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
     ) -> impl TryReport {
         _ = modification;
         _ = params;
@@ -368,18 +371,3 @@ impl_extract_on_tuple!(A, B, C, D, E, F, G => [self] (self.0, (self.1, self.2, s
 impl_extract_on_tuple!(A, B, C, D, E, F, G, H => [self] (self.0, (self.1, self.2, self.3, self.4, self.5, self.6, self.7, self.8)));
 impl_extract_on_tuple!(A, B, C, D, E, F, G, H, I => [self] (self.0, (self.1, self.2, self.3, self.4, self.5, self.6, self.7, self.8, self.9)));
 impl_extract_on_tuple!(A, B, C, D, E, F, G, H, I, J => [self] (self.0, (self.1, self.2, self.3, self.4, self.5, self.6, self.7, self.8, self.9, self.10)));
-
-#[cfg(test)]
-mod tests {
-    use kodept_ecs::exported::bevy_ecs::system::RunSystemOnce;
-    use kodept_ecs::system::IntoSystem;
-    use kodept_ecs::world::World;
-
-    fn assert_is_system<M>(s: impl IntoSystem<(), (), M>) {
-        let mut world = World::new();
-        match world.run_system_once(s) {
-            Ok(_) => {}
-            Err(e) => assert!(false, "Cannot run system: {e}"),
-        }
-    }
-}

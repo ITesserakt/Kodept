@@ -5,13 +5,15 @@ use crate::relationship::NodeRelationship;
 use crate::syntax_tree::children::{Family, HasChild};
 use derive_more::{Display, Error, From};
 use kodept_ecs::component::Mutable;
-use kodept_ecs::entity::Entity;
+use kodept_ecs::entity::{Entity, EntitySetIterator};
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::{
-    QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem,
-    ReadOnlyQueryData,
+    QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, QueryManyUniqueIter,
+    ROQueryItem, ReadOnlyQueryData,
 };
-use kodept_ecs::relationship::{Relationship, RelationshipSourceCollection, RelationshipTarget};
+use kodept_ecs::relationship::{
+    Relationship, RelationshipSourceCollection, RelationshipTarget, SourceIter,
+};
 use kodept_ecs::system::{Query, SystemParam};
 use smallvec::SmallVec;
 use std::convert::Infallible;
@@ -323,9 +325,34 @@ where
     R: Relationship,
     Id: ReadOnlyQueryData,
 {
-    inner: Option<QueryManyIter<'w, 's, (Id, Data, &'static R), Filter,
-        <<R::RelationshipTarget as RelationshipTarget>::Collection as RelationshipSourceCollection>::SourceIter<'w>,
-    >>,
+    inner: Option<
+        QueryManyIter<
+            'w,
+            's,
+            (Id, Data, &'static R),
+            Filter,
+            SourceIter<'w, R::RelationshipTarget>,
+        >,
+    >,
+}
+
+pub struct ChildrenMutIter<'w, 's, Data, R, Id, Filter>
+where
+    Data: QueryData,
+    Filter: QueryFilter,
+    R: Relationship,
+    Id: ReadOnlyQueryData,
+    SourceIter<'w, R::RelationshipTarget>: EntitySetIterator,
+{
+    inner: Option<
+        QueryManyUniqueIter<
+            'w,
+            's,
+            (Id, Data, &'static R),
+            Filter,
+            SourceIter<'w, R::RelationshipTarget>,
+        >,
+    >,
 }
 
 #[derive(SystemParam)]
@@ -604,14 +631,16 @@ where
     T: Family<Tag>,
     Id: ReadOnlyQueryData,
 {
-    type Item = (ROQueryItem<'w, 's, Id>, ROQueryItem<'w, 's, Data>);
-    type IntoIter = ChildrenIter<'w, 's, Data::ReadOnly, Rel<T, Tag>, Id, Filter>;
+    type Item = (ROQueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>);
+    type IntoIter = ChildrenMutIter<'w, 's, Data, Rel<T, Tag>, Id, Filter>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let query = self.query.into_readonly();
+        let query = self.query;
 
-        ChildrenIter {
-            inner: self.collection.map(|it| query.iter_many_inner(it.iter())),
+        ChildrenMutIter {
+            inner: self
+                .collection
+                .map(|it| query.iter_many_unique_inner(it.iter())),
         }
     }
 }
@@ -633,6 +662,33 @@ where
             inner: self.collection.map(|it| query.iter_many_inner(it.iter())),
         }
     }
+}
+
+impl<'w, 's, Data, Rel, Id, Filter> Iterator for ChildrenMutIter<'w, 's, Data, Rel, Id, Filter>
+where
+    Data: QueryData,
+    Filter: QueryFilter,
+    Rel: Relationship,
+    Id: ReadOnlyQueryData,
+    SourceIter<'w, Rel::RelationshipTarget>: EntitySetIterator,
+{
+    type Item = (ROQueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let iter = self.inner.as_mut()?;
+        let value = iter.next()?;
+        Some((value.0, value.1))
+    }
+}
+
+impl<'w, 's, Data, Rel, Id, Filter> FusedIterator for ChildrenMutIter<'w, 's, Data, Rel, Id, Filter>
+where
+    Data: QueryData,
+    Filter: QueryFilter,
+    Rel: Relationship,
+    Id: ReadOnlyQueryData,
+    SourceIter<'w, Rel::RelationshipTarget>: EntitySetIterator,
+{
 }
 
 impl<'w, 's, Data, Rel, Id, Filter> Iterator for ChildrenIter<'w, 's, Data, Rel, Id, Filter>
@@ -665,12 +721,9 @@ impl<'w, 's, Data, Rel, Id, Filter> DoubleEndedIterator
 where
     Data: ReadOnlyQueryData,
     Filter: QueryFilter,
-    Rel: Relationship<
-        RelationshipTarget: RelationshipTarget<
-            Collection: RelationshipSourceCollection<SourceIter<'w>: DoubleEndedIterator>,
-        >,
-    >,
+    Rel: Relationship,
     Id: ReadOnlyQueryData,
+    SourceIter<'w, Rel::RelationshipTarget>: DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let iter = self.inner.as_mut()?;
@@ -691,6 +744,16 @@ where
         self.into_iter()
     }
 
+    #[inline]
+    pub fn iter_mut(&mut self) -> ChildrenMutIter<'_, 's, Data, Rel<T, Tag>, Id, Filter> {
+        ChildrenMutIter {
+            inner: self
+                .collection
+                .map(|it| self.query.iter_many_unique_mut(it.iter())),
+        }
+    }
+
+    #[inline]
     pub fn collect(self) -> Container<T::Arity, (QueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>)>
     where
         T::Arity: TryFromIter,

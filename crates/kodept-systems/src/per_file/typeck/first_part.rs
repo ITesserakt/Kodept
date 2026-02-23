@@ -1,17 +1,22 @@
 use crate::per_file::symbols::{ResolvedTo, SymbolKind};
-use crate::per_file::utils::{IterableSystem, IterableSystemParam, ParIterableSystem, StaticQuery};
+use crate::per_file::utils::{
+    IterableSystem, IterableSystemParam, Modification, ParIterableSystem, Params, StaticQuery,
+};
 use crate::utils::TryReport;
 use kodept_ast::prelude::{
     HierarchicalQuery, MutProperty, NarrowHierarchicalQuery, NodeId, Property,
 };
 use kodept_ast::properties::{NodeProperty, RequireProperty, SourceSpan};
+use kodept_ast::syntax_tree::children::{MembersOf, Wrapper};
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ast_nodes::{
-    Branch, Condition, Else, Expression, If, Literal, NormalizedBlock, Otherwise, ResolvedType,
-    Tuple, Value,
+    AnonFunction, Branch, Call, Condition, Else, Expression, If, Lhs, Link, Literal, NamedParams,
+    NormalizedBlock, Otherwise, Param, ResolvedTypeAnnotation, Rhs, Statement, Tuple, UserFunction,
+    Value,
 };
 use kodept_core::code_point::Span;
-use kodept_ecs::component::Component;
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::component::{Component, ComponentIdFor};
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::Without;
 use kodept_ecs::system::{ParamSet, Query, SystemParam};
@@ -21,6 +26,7 @@ use kodept_inference::process::PartialInfer;
 use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TVar};
 use kodept_report_macros::Report;
 use num_bigint::Sign;
+use std::marker::PhantomData;
 use std::num::NonZeroU8;
 
 type Referral = (NodeId, SymbolKind);
@@ -34,7 +40,7 @@ impl PartiallyTypechecked {
         Self(Some(PartialInfer::new(ty)))
     }
 
-    fn take(&mut self) -> PartialInfer<Referral> {
+    pub(super) fn take(&mut self) -> PartialInfer<Referral> {
         self.0.take().expect("Cannot take partial")
     }
 
@@ -55,6 +61,10 @@ impl RequireProperty<PartiallyTypechecked> for Value {}
 impl RequireProperty<PartiallyTypechecked> for Tuple {}
 impl RequireProperty<PartiallyTypechecked> for If {}
 impl RequireProperty<PartiallyTypechecked> for NormalizedBlock {}
+impl RequireProperty<PartiallyTypechecked> for Call {}
+impl RequireProperty<PartiallyTypechecked> for Link {}
+impl RequireProperty<PartiallyTypechecked> for AnonFunction {}
+impl RequireProperty<PartiallyTypechecked> for UserFunction {}
 
 #[derive(Debug, Report)]
 #[severity("error")]
@@ -263,25 +273,372 @@ impl IterableSystem for TypeckIf<'_, '_> {
     }
 }
 
-fn resolved_ty_as_monomorphic(ty: &ResolvedType) -> PartialInfer<Referral> {
-    match ty {
-        ResolvedType::Named(id) => {
-            let var = TVar::new();
-            PartialInfer::new(var).with_assumption((*id, SymbolKind::Type), var)
-        }
-        ResolvedType::Tuple(items) => {
-            let mut result = PartialInfer::new(MonomorphicType::UNIT);
-            let ty = items
-                .iter()
-                .map(|it| resolved_ty_as_monomorphic(it))
-                .map(|it| {
-                    result.assumptions.merge(it.assumptions);
-                    result.constraints.extend(it.constraints);
-                    it.current_type.0
-                });
+#[derive(SystemParam)]
+pub(super) struct TypeckCall<'w, 's> {
+    param_set: ParamSet<
+        'w,
+        's,
+        (
+            HierarchicalQuery<
+                'static,
+                'static,
+                Call,
+                Lhs,
+                (),
+                Option<MutProperty<PartiallyTypechecked>>,
+            >,
+            HierarchicalQuery<
+                'static,
+                'static,
+                Call,
+                Rhs,
+                (),
+                Option<MutProperty<PartiallyTypechecked>>,
+            >,
+        ),
+    >,
+}
 
-            let monomorphic_type = MonomorphicType::tuple(ty);
-            result.with_type(monomorphic_type)
+impl IterableSystem for TypeckCall<'_, '_> {
+    type Iterable = StaticQuery<(NodeId<Call>,), Without<PartiallyTypechecked>>;
+
+    fn for_each<B: Buffer>(
+        &mut self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let lhs = self.param_set.p0();
+        if lhs
+            .get_down(modification.id())
+            .1
+            .into_iter()
+            .any(|it| it.1.is_none())
+        {
+            return ();
         }
+        let rhs = self.param_set.p1();
+        if rhs
+            .get_down(modification.id())
+            .1
+            .into_iter()
+            .any(|it| it.1.is_none())
+        {
+            return ();
+        }
+
+        let tv = TVar::new();
+        let mut partial = PartialInfer::new(tv);
+
+        let lhs_ty = {
+            let mut lhs_fetch = self.param_set.p0();
+            let ((), lhs_fetch) = lhs_fetch.get_down_mut(modification.id());
+            let (_, lhs) = lhs_fetch.collect();
+            let lhs_partial = lhs.unwrap().take();
+
+            partial.assumptions.merge(lhs_partial.assumptions);
+            partial.constraints.extend(lhs_partial.constraints);
+            lhs_partial.current_type.0
+        };
+
+        let mut rhs = self.param_set.p1();
+        let mut inputs = vec![];
+        for (_, rhs) in rhs.get_down_mut(modification.id()).1 {
+            let rhs = rhs.unwrap().take();
+            partial.assumptions.merge(rhs.assumptions);
+            partial.constraints.extend(rhs.constraints);
+            inputs.push(rhs.current_type.0);
+        }
+        if inputs.is_empty() {
+            partial.constraints.push(eq_cst(
+                lhs_ty,
+                MonomorphicType::fun1(MonomorphicType::UNIT, tv),
+            ));
+        } else {
+            let func_ty = inputs
+                .into_iter()
+                .rfold(MonomorphicType::from(tv), |acc, next| {
+                    MonomorphicType::fun1(next, acc)
+                });
+            partial.constraints.push(eq_cst(lhs_ty, func_ty));
+        }
+
+        modification.add_property(PartiallyTypechecked::from(partial));
+    }
+}
+
+#[derive(SystemParam)]
+pub(super) struct TypeckLink<'w, 's> {
+    links: HierarchicalQuery<
+        'w,
+        's,
+        Link,
+        Expression,
+        (),
+        Option<MutProperty<PartiallyTypechecked>>,
+        Without<PartiallyTypechecked>,
+    >,
+}
+
+impl IterableSystem for TypeckLink<'_, '_> {
+    type Iterable = StaticQuery<(NodeId<Link>,), Without<PartiallyTypechecked>>;
+
+    fn for_each<B: Buffer>(
+        &mut self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let ((), expr_fetch) = self.links.get_down_mut(modification.id());
+        let (_, Some(mut expr)) = expr_fetch.collect() else {
+            return ();
+        };
+        let partial = expr.take();
+        modification.add_property(PartiallyTypechecked::from(partial));
+    }
+}
+
+struct ComponentIdWrapper<'a>(PhantomData<&'a ()>);
+impl<'a> Wrapper for ComponentIdWrapper<'a> {
+    type Wrapped<T: Component> = ComponentIdFor<'a, T>;
+}
+
+#[derive(SystemParam)]
+pub(super) struct TypeckBlock<'w, 's> {
+    statements: HierarchicalQuery<
+        'w,
+        's,
+        NormalizedBlock,
+        Statement,
+        (),
+        (
+            &'static Archetype,
+            Option<MutProperty<PartiallyTypechecked>>,
+        ),
+        Without<PartiallyTypechecked>,
+    >,
+    statement_component_ids: MembersOf<NormalizedBlock, Statement, ComponentIdWrapper<'s>>,
+}
+
+impl IterableSystem for TypeckBlock<'_, '_> {
+    type Iterable = StaticQuery<(NodeId<NormalizedBlock>,), Without<PartiallyTypechecked>>;
+
+    fn for_each<B: Buffer>(
+        &mut self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        if self
+            .statements
+            .get_down(modification.id())
+            .1
+            .into_iter()
+            .any(|it| it.1.1.is_none())
+        {
+            return ();
+        }
+        let tv = TVar::new();
+        let mut result = PartialInfer::new(tv);
+
+        for (_, (archetype, partial)) in self.statements.get_down_mut(modification.id()).1 {
+            let partial = partial.unwrap().take();
+            if archetype.contains(self.statement_component_ids.0.get()) {
+                // statement is block
+                result.assumptions.merge(partial.assumptions);
+                result.constraints.extend(partial.constraints);
+            } else if archetype.contains(self.statement_component_ids.1.get()) {
+                // statement is call
+                result.assumptions.merge(partial.assumptions);
+                result.constraints.extend(partial.constraints);
+            } else if archetype.contains(self.statement_component_ids.2.get()) {
+                // statement is if
+                result.assumptions.merge(partial.assumptions);
+                result.constraints.extend(partial.constraints);
+            } else if archetype.contains(self.statement_component_ids.3.get()) {
+                // statement is link
+                result.assumptions.merge(partial.assumptions);
+                result.constraints.extend(partial.constraints);
+                result.constraints.push(eq_cst(tv, partial.current_type.0));
+            } else if archetype.contains(self.statement_component_ids.4.get()) {
+                // statement is user function
+            } else if archetype.contains(self.statement_component_ids.5.get()) {
+                // statement is variable
+            }
+        }
+
+        modification.add_property(PartiallyTypechecked::from(result));
+    }
+}
+
+#[derive(SystemParam)]
+pub(super) struct TypeckAnonFunction<'w, 's> {
+    bodies: NarrowHierarchicalQuery<
+        'w,
+        's,
+        AnonFunction,
+        NormalizedBlock,
+        (),
+        (),
+        Option<MutProperty<PartiallyTypechecked>>,
+        Without<PartiallyTypechecked>,
+    >,
+    params: NarrowHierarchicalQuery<
+        'w,
+        's,
+        AnonFunction,
+        Param,
+        kodept_ast_nodes::Params,
+        (),
+        Property<ResolvedTypeAnnotation>,
+    >,
+}
+
+fn apply_bound(
+    bound: &ResolvedTypeAnnotation,
+    partial: &mut PartialInfer<Referral>,
+    tv: MonomorphicType,
+) {
+    match bound {
+        ResolvedTypeAnnotation::Infer => {}
+        &ResolvedTypeAnnotation::Named(x) => {
+            partial.assumptions.push_single((x, SymbolKind::Type), tv)
+        }
+        ResolvedTypeAnnotation::Tuple(items) => {
+            let tuple = items.iter().map(|it| {
+                let tp = TVar::new();
+                apply_bound(it, partial, tp.into());
+                tp
+            });
+            let tu = MonomorphicType::tuple(tuple);
+            partial.constraints.push(eq_cst(tv, tu));
+        }
+    }
+}
+
+impl IterableSystem for TypeckAnonFunction<'_, '_> {
+    type Iterable = StaticQuery<(NodeId<AnonFunction>,), Without<PartiallyTypechecked>>;
+
+    fn for_each<B: Buffer>(
+        &mut self,
+        mut modification: Modification<Self::Iterable, B>,
+        _: Params<Self::Iterable>,
+    ) -> impl TryReport {
+        let ((), body_fetch) = self.bodies.get_down_mut(modification.id());
+        let (_, Some(mut body_partial)) = body_fetch.collect() else {
+            return ();
+        };
+
+        let inputs = self
+            .params
+            .get_down(modification.id())
+            .1
+            .into_iter()
+            .map(|_| TVar::new())
+            .collect::<Vec<_>>();
+        let mut body_ty = body_partial.take();
+
+        for (&tv, (param_id, bound)) in inputs.iter().zip(self.params.get_down(modification.id()).1)
+        {
+            let param_assumptions = body_ty
+                .assumptions
+                .resolve_take((param_id.cast(), SymbolKind::Parameter));
+            for assumption in param_assumptions.into_iter() {
+                body_ty.constraints.push(eq_cst(assumption.0, tv));
+            }
+            apply_bound(bound, &mut body_ty, tv.into());
+        }
+
+        let func_ty = if inputs.is_empty() {
+            MonomorphicType::fun1(MonomorphicType::UNIT, body_ty.current_type.0)
+        } else {
+            inputs
+                .into_iter()
+                .rfold(body_ty.current_type.0.clone(), |acc, next| {
+                    MonomorphicType::fun1(next, acc)
+                })
+        };
+
+        modification.add_property(PartiallyTypechecked::from(
+            PartialInfer::new(func_ty)
+                .with_assumptions(body_ty.assumptions)
+                .with_constraints(body_ty.constraints),
+        ));
+    }
+}
+
+#[derive(SystemParam)]
+pub(super) struct TypeckUserFunction<'w, 's> {
+    block: NarrowHierarchicalQuery<
+        'w,
+        's,
+        UserFunction,
+        NormalizedBlock,
+        (),
+        (),
+        Option<MutProperty<PartiallyTypechecked>>,
+        Without<PartiallyTypechecked>,
+    >,
+    params: NarrowHierarchicalQuery<
+        'w,
+        's,
+        UserFunction,
+        Param,
+        kodept_ast_nodes::Params,
+        (),
+        Property<ResolvedTypeAnnotation>,
+        Without<PartiallyTypechecked>,
+    >,
+}
+
+impl IterableSystem for TypeckUserFunction<'_, '_> {
+    type Iterable = StaticQuery<
+        (NodeId<UserFunction>, Property<ResolvedTypeAnnotation>),
+        Without<PartiallyTypechecked>,
+    >;
+
+    fn for_each<B: Buffer>(
+        &mut self,
+        mut modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
+    ) -> impl TryReport {
+        let ((), block_fetch) = self.block.get_down_mut(modification.id());
+        let (_, Some(mut block_partial)) = block_fetch.collect() else {
+            return ();
+        };
+        let mut block_ty = block_partial.take();
+
+        let inputs = self
+            .params
+            .get_down(modification.id())
+            .1
+            .into_iter()
+            .map(|_| TVar::new())
+            .collect::<Vec<_>>();
+
+        for (&tv, (param_id, bound)) in inputs.iter().zip(self.params.get_down(modification.id()).1)
+        {
+            let param_assumptions = block_ty
+                .assumptions
+                .resolve_take((param_id.cast(), SymbolKind::Parameter));
+            for assumption in param_assumptions.into_iter() {
+                block_ty.constraints.push(eq_cst(assumption.0, tv));
+            }
+            apply_bound(bound, &mut block_ty, tv.into());
+        }
+
+        let output_ty = block_ty.current_type.0.clone();
+        let func_ty = if inputs.is_empty() {
+            MonomorphicType::fun1(MonomorphicType::UNIT, output_ty.clone())
+        } else {
+            inputs.into_iter().rfold(output_ty.clone(), |acc, next| {
+                MonomorphicType::fun1(next, acc)
+            })
+        };
+
+        apply_bound(params.0, &mut block_ty, output_ty);
+
+        modification.add_property(PartiallyTypechecked::from(
+            PartialInfer::new(func_ty)
+                .with_assumptions(block_ty.assumptions)
+                .with_constraints(block_ty.constraints),
+        ));
     }
 }

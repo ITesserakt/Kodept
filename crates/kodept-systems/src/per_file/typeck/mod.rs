@@ -1,11 +1,14 @@
 mod first_part;
 
 use crate::per_file::typeck::first_part::{
-    PartiallyTypechecked, TypeckIf, TypeckLiteral, TypeckTuple, TypeckValue,
+    PartiallyTypechecked, TypeckAnonFunction, TypeckBlock, TypeckCall, TypeckIf, TypeckLink,
+    TypeckLiteral, TypeckTuple, TypeckUserFunction, TypeckValue,
 };
 use crate::per_file::utils::IntoNodeSystem;
+use crate::utils::LogSystemEx;
 use kodept_ast::prelude::NodeId;
 use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::Added;
 use kodept_ecs::schedule::{IntoScheduleConfigs, Schedule, ScheduleLabel};
 use kodept_ecs::system::{Commands, Query};
 use kodept_ecs::world::World;
@@ -33,15 +36,28 @@ fn build(engine: &mut PhaseEngine<TypeCheckPhase>) {
 
 fn partial_propagation_system(world: &mut World) {
     let mut schedule = Schedule::new(PartialsPropagationSchedule);
-    schedule.add_systems((TypeckIf::system(), TypeckTuple::system()));
+    schedule.add_systems((
+        TypeckIf::system(),
+        TypeckTuple::system(),
+        TypeckCall::system(),
+        TypeckBlock::system(),
+        TypeckLink::system(),
+        TypeckAnonFunction::system(),
+        TypeckUserFunction::system(),
+    ));
     world.add_schedule(schedule);
+    let mut any_partial_added_state = world.query_filtered::<(), Added<PartiallyTypechecked>>();
 
-    for _ in 0..10 {
+    loop {
+        world.run_schedule(PartialsPropagationSchedule);
+
         if world.contains_resource::<CompilationFailed>() {
             return;
         }
-
-        world.run_schedule(PartialsPropagationSchedule);
+        if any_partial_added_state.query(world).is_empty() {
+            return;
+        }
+        world.clear_trackers();
     }
 }
 

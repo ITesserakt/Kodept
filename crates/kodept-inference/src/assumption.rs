@@ -2,7 +2,7 @@ use crate::assumption::RawAssumptionSet::Map;
 use crate::r#type::MonomorphicType;
 use crate::utils::JoinedDisplay;
 use RawAssumptionSet::{Empty, Single};
-use kodept_interning::Interned;
+use kodept_interning::{InternInto, Interned};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -138,6 +138,13 @@ impl<Name> AssumptionSet<Name> {
             Single(k, v) => Either::Left(Either::Right(std::iter::once((k, v)))),
             Map(map) => Either::Right(map.into_iter()),
         }
+    }
+
+    pub fn push_single(&mut self, name: Name, value: impl InternInto<MonomorphicType>)
+    where
+        Name: Hash + Eq,
+    {
+        self.push(name, Cow::Borrowed(&[value.intern_into()]))
     }
 }
 

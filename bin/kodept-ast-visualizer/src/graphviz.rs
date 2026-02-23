@@ -30,7 +30,7 @@ pub(crate) struct Config {
     #[arg(short = 'u', long = "unknown", action, default_value_t = false)]
     show_unknown_components: bool,
     /// Specifies whether components with zero size (ZST) should appear in tables
-    #[arg(short = 'z', long = "zst", action, default_value_t = true)]
+    #[arg(short = 'z', long = "zst", action, default_value_t = false)]
     show_zst_components: bool,
     /// Adds a table column with components' size in bytes
     #[arg(long = "size", action, default_value_t = false)]

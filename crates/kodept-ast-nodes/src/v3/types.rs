@@ -176,6 +176,17 @@ impl UnresolvedType {
     }
 }
 
+impl ResolvedType {
+    pub fn into_annotation(self) -> ResolvedTypeAnnotation {
+        match self {
+            ResolvedType::Named(node_id) => ResolvedTypeAnnotation::Named(node_id),
+            ResolvedType::Tuple(items) => ResolvedTypeAnnotation::Tuple(
+                items.into_iter().map(|it| it.into_annotation()).collect(),
+            ),
+        }
+    }
+}
+
 impl<T: CodeHolder> From<(&Context, T)> for Path {
     fn from((value, source): (&Context, T)) -> Self {
         let (is_global, items) = value.unfold();

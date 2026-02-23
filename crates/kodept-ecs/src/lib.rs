@@ -42,15 +42,15 @@ pub mod ptr {
 }
 pub mod query {
     pub use bevy_ecs::query::{
-        Access, AnyOf, ArchetypeQueryData, EcsAccessType, FilteredAccess, Has, Or, QueryData,
-        QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem, ReadOnlyQueryData,
-        ReleaseStateQueryData, With, Without, WorldQuery,
+        Access, Added, AnyOf, ArchetypeQueryData, Changed, EcsAccessType, FilteredAccess, Has, Or,
+        QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, QueryManyUniqueIter,
+        ROQueryItem, ReadOnlyQueryData, ReleaseStateQueryData, With, Without, WorldQuery,
     };
 }
 pub mod relationship {
     pub use bevy_ecs::relationship::{
         OrderedRelationshipSourceCollection, Relationship, RelationshipSourceCollection,
-        RelationshipTarget,
+        RelationshipTarget, SourceIter,
     };
 }
 pub mod resource {

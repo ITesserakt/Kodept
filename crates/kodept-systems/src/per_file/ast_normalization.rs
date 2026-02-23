@@ -167,7 +167,7 @@ impl ParIterableSystem for NormalizeBlock<'_> {
         let ((), statements) = params;
         let mut linked = false;
 
-        for (statement_id, (archetype, span, lexeme)) in statements.into_iter().rev() {
+        for (statement_id, (archetype, span, lexeme)) in statements.iter().rev() {
             if self.is_non_normalized(archetype) && linked {
                 return Err(DanglingExpression { span: span.0 });
             }
