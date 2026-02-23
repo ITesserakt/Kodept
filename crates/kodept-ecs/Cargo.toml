@@ -4,9 +4,6 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 
-[lib]
-crate-type = ["dylib"]
-
 [dependencies]
 bevy_ecs = { version = "0.19.0-dev", default-features = false, git = "https://github.com/bevyengine/bevy" }
 bevy_tasks = { version = "0.19.0-dev", default-features = false, git = "https://github.com/bevyengine/bevy" }
@@ -16,6 +13,6 @@ bevy_utils = { version = "0.19.0-dev", default-features = false, git = "https://
 workspace = true
 
 [features]
-default = ["debug"]
+default = []
 parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std", "bevy_tasks/async_executor", "bevy_utils/parallel"]
 debug = ["bevy_utils/debug"]

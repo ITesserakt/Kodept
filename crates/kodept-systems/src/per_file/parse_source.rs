@@ -1,15 +1,14 @@
 use crate::configs::{Lexer, Parser};
-use crate::source::collection::SourceView;
-use crate::utils::{LogSystemEx, ReportSystemEx};
+use crate::source::collection::{Reporter, SourceView};
+use crate::utils::LogSystemEx;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::schedule::SystemSet;
 use kodept_ecs::system::{Commands, Res};
-use kodept_frontend::Either;
 use kodept_frontend::engine::{Phase, PhaseEngine};
 use kodept_parse::common::{ErrorAdapter, RLTProducer};
-use kodept_parse::error::ParseError;
-use kodept_parse::lexer::{ASCIILexer, PackedToken, PegLexer};
+use kodept_parse::error::{ParseError, ParseErrors};
+use kodept_parse::lexer::{ASCIILexer, PegLexer};
 use kodept_parse::parser::PegParser;
 use kodept_parse::token_stream::PackedTokenStream;
 use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
@@ -26,11 +25,7 @@ impl Phase for ParseSourcePhase {
     type Set = ParseSourcePhaseLabel;
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(
-            system
-                .extract_reports()
-                .trace_completion_with_name(std::any::type_name_of_val(&system)),
-        )
+        engine.add_systems(system.trace_completion())
     }
 }
 
@@ -39,30 +34,30 @@ fn system(
     lexer: Res<Lexer>,
     parser: Res<Parser>,
     mut commands: Commands,
-) -> Result<
-    (),
-    Either<
-        impl Iterator<Item = Wrapper<ParseError<String>>> + use<>,
-        impl Iterator<Item = Wrapper<ParseError<PackedToken>>> + use<>,
-    >,
-> {
+    mut reporter: Reporter,
+) {
     let input = source.contents();
 
     let tokens = match &*lexer {
         Lexer::Peg => EagerTokenizer::new(input, PegLexer::<false>::new())
             .try_into_vec()
             .map_err(|e| e.adapt(input, 0))
-            .map_err(|e| e.into_iter().map(Wrapper))
-            .map_err(Either::Left)?,
+            .map_err(|e: ParseErrors<&str>| e.into_iter().map(Wrapper)),
         Lexer::PegWithTracing => EagerTokenizer::new(input, PegLexer::<true>::new())
             .try_into_vec()
             .map_err(|e| e.adapt(input, 0))
-            .map_err(|e| e.into_iter().map(Wrapper))
-            .map_err(Either::Left)?,
+            .map_err(|e| e.into_iter().map(Wrapper)),
         Lexer::Ascii => match EagerTokenizer::new(input, ASCIILexer::new()).try_into_vec() {
-            Ok(x) => x,
+            Ok(x) => Ok(x),
             Err(e) => match e {},
         },
+    };
+    let tokens = match tokens {
+        Ok(x) => x,
+        Err(errors) => {
+            errors.for_each(|it| reporter.report(it));
+            return;
+        }
     };
 
     let stream = PackedTokenStream::new(&tokens);
@@ -71,13 +66,17 @@ fn system(
         Parser::Peg => PegParser::new()
             .parse_stream(&stream)
             .map_err(|e| e.adapt(stream, 0))
-            .map_err(|e| e.into_iter().map(Wrapper))
-            .map_err(Either::Right)?,
+            .map_err(|e| e.into_iter().map(Wrapper)),
+    };
+    let rlt = match rlt {
+        Ok(x) => x,
+        Err(errors) => {
+            errors.for_each(|it| reporter.report(it));
+            return;
+        }
     };
 
     commands.insert_resource(SyntaxResolver::build(rlt));
-
-    Ok(())
 }
 
 struct Wrapper<T>(T);

@@ -21,7 +21,7 @@ pub enum InferError<Name, E> {
     UnknownName(#[error(not(source))] Name),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PartialInfer<Name> {
     pub assumptions: AssumptionSet<Name>,
     pub constraints: SmallVec<[Constraint; CONSTRAINTS_SIZE]>,
@@ -58,6 +58,20 @@ where
 
     pub fn with_assumptions(mut self, set: AssumptionSet<Name>) -> Self {
         self.assumptions.merge(set);
+        self
+    }
+
+    pub fn add_constraint(&mut self, constraint: Constraint) {
+        self.constraints.push(constraint)
+    }
+
+    pub fn add_assumption(&mut self, key: Name, value: impl InternInto<MonomorphicType>) {
+        self.assumptions
+            .push(key, Cow::Borrowed(&[value.intern_into()]))
+    }
+
+    pub fn with_type(mut self, ty: impl InternInto<MonomorphicType>) -> Self {
+        self.current_type = ty.intern_into();
         self
     }
 

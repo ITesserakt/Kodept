@@ -1,6 +1,6 @@
-use crate::Either;
 use crate::engine::reporter::Reporter;
-use crate::prelude::Source;
+use crate::read_code_source::SyncSource;
+use kodept_core::either::Either;
 use kodept_core::try_port::Try;
 use kodept_report::prelude::IntoSpannedReportMessage;
 use std::ops::ControlFlow;
@@ -14,10 +14,7 @@ pub struct EitherExtractMarker;
 pub trait ExtractReports<Marker> {
     type Output;
 
-    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
-    where
-        Impl: Send + Sync + 'static,
-        Impl: for<'a> Source<Ref<'a>: AsRef<str>>;
+    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output;
 }
 
 impl<T> ExtractReports<SingleExtractMarker> for T
@@ -27,11 +24,7 @@ where
     type Output = ();
 
     #[inline]
-    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
-    where
-        Impl: Send + Sync + 'static,
-        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
-    {
+    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
         sink.report(self);
     }
 }
@@ -43,11 +36,7 @@ where
     type Output = ControlFlow<(), T>;
 
     #[inline]
-    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
-    where
-        Impl: Send + Sync + 'static,
-        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
-    {
+    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
@@ -63,21 +52,16 @@ where
     I: IntoIterator<Item = E>,
     E: ExtractReports<M, Output: Try<Output = ()>>,
 {
-    type Output = ControlFlow<<E::Output as Try>::Residual, ()>;
+    type Output = ControlFlow<<E::Output as Try>::Residual>;
 
     #[inline]
-    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
-    where
-        Impl: Send + Sync + 'static,
-        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
-    {
-        let mut error = Continue(());
-        for item in self {
-            if let Break(e) = item.extract_reports(sink).branch() {
-                error = Break(e);
+    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
+        self.into_iter().fold(Continue(()), |acc, next| {
+            match next.extract_reports(sink).branch() {
+                Continue(()) => acc,
+                Break(e) => Break(e),
             }
-        }
-        error
+        })
     }
 }
 
@@ -89,11 +73,7 @@ where
     type Output = Output;
 
     #[inline]
-    fn extract_reports<Impl>(self, sink: &mut Reporter<Impl>) -> Self::Output
-    where
-        Impl: Send + Sync + 'static,
-        Impl: for<'a> Source<Ref<'a>: AsRef<str>>,
-    {
+    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
         match self {
             Either::Left(left) => left.extract_reports(sink),
             Either::Right(right) => right.extract_reports(sink),

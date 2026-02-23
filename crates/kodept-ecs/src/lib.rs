@@ -21,7 +21,8 @@ pub mod change_detection {
 }
 pub mod entity {
     pub use bevy_ecs::entity::{
-        ContainsEntity, Entity, EntityEquivalent, EntityMapper, MapEntities,
+        ContainsEntity, Entity, EntityEquivalent, EntityHashSet, EntityIndexSet, EntityMapper,
+        EntitySet, EntitySetIterator, MapEntities,
     };
 }
 pub mod error {
@@ -41,15 +42,15 @@ pub mod ptr {
 }
 pub mod query {
     pub use bevy_ecs::query::{
-        Access, AnyOf, ArchetypeQueryData, EcsAccessType, FilteredAccess, Has, Or, QueryData,
-        QueryEntityError, QueryFilter, QueryItem, QueryManyIter, ROQueryItem, ReadOnlyQueryData,
-        ReleaseStateQueryData, With, Without, WorldQuery,
+        Access, Added, AnyOf, ArchetypeQueryData, Changed, EcsAccessType, FilteredAccess, Has, Or,
+        QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, QueryManyUniqueIter,
+        ROQueryItem, ReadOnlyQueryData, ReleaseStateQueryData, With, Without, WorldQuery,
     };
 }
 pub mod relationship {
     pub use bevy_ecs::relationship::{
         OrderedRelationshipSourceCollection, Relationship, RelationshipSourceCollection,
-        RelationshipTarget,
+        RelationshipTarget, SourceIter,
     };
 }
 pub mod resource {
@@ -68,10 +69,11 @@ pub mod system {
     pub use bevy_ecs::observer::{Observer, On};
     pub use bevy_ecs::system::entity_command::{EntityCommand, EntityCommandError};
     pub use bevy_ecs::system::{
-        Adapt, Command, Commands, Deferred, EntityCommands, If, In, InMut, IntoObserverSystem,
-        IntoSystem, Local, NonSend, NonSendMut, Populated, Query, QueryLens, ReadOnlySystem,
-        ReadOnlySystemParam, Res, ResMut, ScheduleSystem, Single, StaticSystemParam, SystemBuffer,
-        SystemInput, SystemMeta, SystemParam, SystemParamItem, SystemState,
+        Adapt, Command, Commands, Deferred, EntityCommands, If, In, InMut, InRef,
+        IntoObserverSystem, IntoSystem, Local, NonSend, NonSendMut, ParamSet, Populated, Query,
+        QueryLens, ReadOnlySystem, ReadOnlySystemParam, Res, ResMut, ScheduleSystem, Single,
+        StaticSystemParam, System, SystemBuffer, SystemInput, SystemMeta, SystemParam,
+        SystemParamItem, SystemState,
     };
 
     #[cfg(feature = "parallel")]

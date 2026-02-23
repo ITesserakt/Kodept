@@ -3,6 +3,7 @@
 use std::ops::Deref;
 
 pub mod code_point;
+pub mod either;
 pub mod file_name;
 pub mod structure;
 pub mod try_port;

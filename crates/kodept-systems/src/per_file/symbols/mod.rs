@@ -1,28 +1,27 @@
 mod collect;
 mod resolve;
 
-use crate::per_file::symbols::collect::{CollectSymbols, check_module_names, collect_params_on};
+use crate::per_file::symbols::collect::{CollectSymbolsIn, check_module_names};
 use crate::per_file::symbols::resolve::{
-    ResolvedTo, add_opaque_markers, add_passthrough_markers, ensure_absent,
-    resolve_type_in_variables, resolve_types_in_anon_functions, resolve_types_in_foreign_functions,
-    resolve_types_in_user_functions, resolve_types_in_value_ctors, resolve_values,
+    ResolveTypeIn, ResolveValues, StrictType, add_opaque_markers, add_passthrough_markers,
+    ensure_absent,
 };
-use crate::utils::LogSystemSetEx;
+use crate::per_file::utils::IntoNodeSystem;
 use kodept_ast::Str;
 use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast::properties::{Name, NodeProperty, RequireProperty};
 use kodept_ast::syntax_tree::children::Wrapper;
 use kodept_ast_nodes::{
-    AnonFunction, Declaration, ForeignFunction, Module, NormalizedBlock, ResolvedType,
-    ResolvedTypeAnnotation, TypeAnnotation, TypeRef, UnresolvedType, UserFunction, UserType, Value,
-    ValueCtor, Variable,
+    AnonFunction, ForeignFunction, Module, NamedParams, NormalizedBlock, Param, Params,
+    TypeAnnotation, UnresolvedType, UserFunction, UserType, Value, ValueCtor, Variable,
 };
 use kodept_ecs::component::{Component, ComponentIdFor};
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::query::Without;
+use kodept_ecs::query::{With, Without};
 use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
+pub(crate) use resolve::ResolvedTo;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -40,54 +39,85 @@ impl<'a> Wrapper for RefMapper<'a> {
 }
 
 define_phase! {
-    pub phase ReferenceResolutionPhase[ReferenceResolutionPhaseLabel];
+    pub phase SymbolsPhase[SymbolsPhaseLabel];
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
         build(engine);
     }
 }
 
-fn build(engine: &mut PhaseEngine<ReferenceResolutionPhase>) {
-    let setup_set = (add_passthrough_markers, add_opaque_markers);
-    let collect_set = (
-        (
-            collect_params_on(|item: &ValueCtor<UnresolvedType>| &*item.params),
-            collect_params_on(|item: &ValueCtor<ResolvedType>| &*item.params),
-            collect_params_on(|item: &AnonFunction<TypeAnnotation>| &*item.params),
-            collect_params_on(|item: &AnonFunction<ResolvedTypeAnnotation>| &*item.params),
-            collect_params_on(|item: &UserFunction<TypeAnnotation>| &*item.params),
-            collect_params_on(|item: &UserFunction<ResolvedTypeAnnotation>| &*item.params),
-            NormalizedBlock::system,
-            Module::system,
-            check_module_names,
-        )
-            .trace_completion(),
-        (
-            <UserType as CollectSymbols<Declaration>>::system,
-            <UserType as CollectSymbols<()>>::system,
-        )
-            .trace_completion()
-            .chain(),
-    );
-    let resolve_set = (
-        resolve_values,
-        resolve_type_in_variables,
-        resolve_types_in_user_functions,
-        resolve_types_in_value_ctors,
-        resolve_types_in_anon_functions,
-        resolve_types_in_foreign_functions,
-    )
-        .trace_completion();
-    let ensure_set = (
-        ensure_absent::<Value, Without<ResolvedTo>>,
-        ensure_absent::<Variable<TypeAnnotation>, ()>,
-        ensure_absent::<UserFunction<TypeAnnotation>, ()>,
-        ensure_absent::<AnonFunction<TypeAnnotation>, ()>,
-        ensure_absent::<ForeignFunction<UnresolvedType>, ()>,
-        ensure_absent::<ValueCtor<UnresolvedType>, ()>,
-    );
+define_phase! {
+    phase SetupReferenceResolutionPhase[SetupReferenceResolutionLabel];
 
-    engine.add_systems(((setup_set, collect_set), resolve_set, ensure_set).chain());
+    fn build(self, engine: &mut PhaseEngine<Self>) {
+        engine.add_systems(add_passthrough_markers);
+        engine.add_systems(add_opaque_markers);
+    }
+}
+
+define_phase! {
+    phase CollectSymbolsPhase[CollectSymbolsPhaseLabel];
+
+    fn build(self, engine: &mut PhaseEngine<Self>) {
+        engine.add_systems(CollectSymbolsIn::<ValueCtor, _, Param>::system_with_input(SymbolKind::Parameter));
+
+        engine.add_systems((
+            CollectSymbolsIn::<UserFunction, Params, Param>::system_with_input(SymbolKind::Parameter),
+            CollectSymbolsIn::<UserFunction, NamedParams, Param>::system_with_input(SymbolKind::Parameter)
+        ).chain());
+
+        engine.add_systems(CollectSymbolsIn::<AnonFunction, _, Param>::system_with_input(SymbolKind::Parameter));
+
+        engine.add_systems((
+            CollectSymbolsIn::<NormalizedBlock, _, Variable>::system(),
+            CollectSymbolsIn::<NormalizedBlock, _, UserFunction>::system_with_input(SymbolKind::Function),
+        ).chain());
+
+        engine.add_systems((
+            CollectSymbolsIn::<Module, _, UserFunction>::system_with_input(SymbolKind::Function),
+            CollectSymbolsIn::<Module, _, UserType>::system_with_input(SymbolKind::Type),
+        ).chain());
+
+        engine.add_systems((
+            CollectSymbolsIn::<UserType, _, ValueCtor>::system(),
+            CollectSymbolsIn::<UserType, _, UserFunction>::system_with_input(SymbolKind::Function)
+        ).chain());
+
+        engine.add_systems(check_module_names);
+    }
+}
+
+define_phase! {
+    phase ResolvePhase[ResolvePhaseLabel];
+
+    fn build(self, engine: &mut PhaseEngine<Self>) {
+        let resolve_set = (
+            ResolveValues::system(),
+            ResolveTypeIn::<Variable>::system_with_input(()),
+            ResolveTypeIn::<UserFunction>::system_with_input("a return type"),
+            ResolveTypeIn::<AnonFunction>::system_with_input("a return type"),
+            ResolveTypeIn::<ForeignFunction>::system_with_input((StrictType, "a return type")),
+            ResolveTypeIn::<Param>::system_with_input("a parameter"),
+            ResolveTypeIn::<Param>::system_with_input((StrictType, "a parameter")),
+        );
+        let ensure_set = (
+            ensure_absent::<Value, Without<ResolvedTo>>,
+            ensure_absent::<Variable, With<TypeAnnotation>>,
+            ensure_absent::<UserFunction, With<TypeAnnotation>>,
+            ensure_absent::<AnonFunction, With<TypeAnnotation>>,
+            ensure_absent::<ForeignFunction, With<UnresolvedType>>,
+            ensure_absent::<ValueCtor, With<UnresolvedType>>,
+        );
+
+      engine.add_systems((resolve_set, ensure_set).chain());
+    }
+}
+
+fn build(engine: &mut PhaseEngine<SymbolsPhase>) {
+    engine
+        .install(SetupReferenceResolutionPhase)
+        .install(CollectSymbolsPhase)
+        .install(ResolvePhase);
 
     #[cfg(feature = "reflection")]
     engine.add_systems(register_reflection_info);
@@ -100,7 +130,7 @@ fn register_reflection_info(
     >,
 ) {
     debug_registry.register::<SymbolTable>();
-    debug_registry.register::<resolve::ResolvedTo>();
+    debug_registry.register::<ResolvedTo>();
 }
 
 #[derive(Component, Default)]
@@ -111,10 +141,10 @@ struct SymbolTable {
 impl NodeProperty for SymbolTable {}
 impl RequireProperty<SymbolTable> for Module {}
 impl RequireProperty<SymbolTable> for UserType {}
-impl<T: TypeRef<false>> RequireProperty<SymbolTable> for UserFunction<T> {}
+impl RequireProperty<SymbolTable> for UserFunction {}
 impl RequireProperty<SymbolTable> for NormalizedBlock {}
-impl<T: TypeRef<false>> RequireProperty<SymbolTable> for AnonFunction<T> {}
-impl<T: TypeRef<true>> RequireProperty<SymbolTable> for ValueCtor<T> {}
+impl RequireProperty<SymbolTable> for AnonFunction {}
+impl RequireProperty<SymbolTable> for ValueCtor {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 #[repr(transparent)]
@@ -125,7 +155,7 @@ pub(crate) enum SymbolKind {
     Type,
     Function,
     Constructor,
-    Parameter(usize),
+    Parameter,
     Variable,
 }
 
@@ -174,7 +204,7 @@ impl Display for SymbolKind {
             SymbolKind::Type => write!(f, "type"),
             SymbolKind::Function => write!(f, "function"),
             SymbolKind::Constructor => write!(f, "constructor"),
-            SymbolKind::Parameter(_) => write!(f, "parameter"),
+            SymbolKind::Parameter => write!(f, "parameter"),
             SymbolKind::Variable => write!(f, "variable"),
         }
     }

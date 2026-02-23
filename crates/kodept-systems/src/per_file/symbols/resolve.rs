@@ -1,278 +1,315 @@
 use crate::per_file::ast_normalization::InModule;
+use crate::per_file::symbols::resolve::control::{
+    Decision, Reject, Rejects, SearchResult, WalkDownController, walk_down, walk_up,
+};
+use crate::per_file::symbols::resolve::types::{
+    Opaque, Passthrough, SymbolIsNotType, UnexpectedUnresolvedReference, UnresolvedReference,
+};
 use crate::per_file::symbols::{SymbolKind, SymbolTable};
+use crate::per_file::utils::{IterableSystemParam, ParIterableSystem, StaticQuery};
 use crate::source::collection::Reporter;
+use crate::utils::TryReport;
 use kodept_ast::Str;
-use kodept_ast::prelude::{ASTNode, Erase, NodeId};
-use kodept_ast::properties::{Lexeme, Name, SourceSpan};
+use kodept_ast::prelude::{ASTNode, Erase, NodeId, Property};
+use kodept_ast::properties::{HasProperty, Lexeme, Name, RequireProperty, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
-use kodept_ast::syntax_tree::experimental::NodeModification;
+use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, CtorName, ForeignFunction, Module, Param, Path, ResolvedType,
-    ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction, UserType, Value,
-    ValueCtor, Variable,
+    Module, Path, ResolvedType, ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType,
+    UserFunction, UserType, Value, Variable,
 };
 use kodept_core::code_point::Span;
-use kodept_core::structure::SpanBounds;
+use kodept_core::either::Either;
+use kodept_core::structure::{Located, SpanBounds};
 use kodept_ecs::component::Component;
-use kodept_ecs::entity::Entity;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::hierarchy::{ChildOf, Children};
 use kodept_ecs::lifecycle::Add;
-use kodept_ecs::query::{Has, Or, QueryData, QueryFilter, With};
+use kodept_ecs::query::{Has, Or, QueryFilter, With};
 use kodept_ecs::system::{Commands, On, Query, Res, SystemParam};
-use kodept_report::message::{Diagnostic, Severity};
-use kodept_report::traits::IntoSpannedReportMessage;
-use kodept_report_macros::Report;
-use std::cmp::Ordering;
-use std::collections::{HashSet, VecDeque};
-use std::fmt::{Debug, Display, Formatter};
 use std::iter::Peekable;
 use std::marker::PhantomData;
+pub(crate) use types::ResolvedTo;
 
-#[derive(Debug, Component)]
-#[component(immutable)]
-pub(super) struct ResolvedTo(NodeId, SymbolKind);
+mod types {
+    use crate::per_file::symbols::SymbolKind;
+    use kodept_ast::prelude::NodeId;
+    use kodept_ast::properties::{NodeProperty, RequireProperty};
+    use kodept_ast_nodes::Value;
+    use kodept_core::code_point::Span;
+    use kodept_ecs::component::Component;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_report::prelude::{Diagnostic, Severity};
+    use kodept_report::traits::IntoSpannedReportMessage;
+    use kodept_report_macros::Report;
+    use std::borrow::Cow;
+    use std::fmt::Display;
 
-#[derive(Debug)]
-enum Decision<A, R> {
-    Next,
-    Reject(R),
-    Accept(A),
-}
-
-#[derive(Debug)]
-enum SearchResult<A, R> {
-    Rejected(R),
-    Accepted(NodeId, A),
-}
-
-#[derive(Debug, Component)]
-#[component(immutable, storage = "SparseSet")]
-/// Marks nodes that inhibits resolution until node with [`Opaque`] component is found
-pub(super) struct Passthrough;
-#[derive(Debug, Component)]
-#[component(immutable, storage = "SparseSet")]
-/// Marks nodes that enabled resolution back
-pub(super) struct Opaque;
-
-#[derive(Debug)]
-struct UnresolvedReference<'a, I> {
-    name: &'a str,
-    span: Span,
-    note: I,
-}
-
-#[derive(Debug, Report)]
-#[severity("error")]
-#[message("Definition of `{}` expected to be a type, but it is a {}", self.name, self.actual_kind)]
-struct SymbolIsNotType<'a> {
-    #[secondary_label("is not a type")]
-    span: Span,
-    actual_kind: SymbolKind,
-    name: &'a str,
-    #[primary_label("required by a {} `{}`", self.ref_kind, self.ref_name)]
-    ref_span: Span,
-    ref_kind: &'static str,
-    ref_name: &'a str,
-}
-
-#[derive(Debug, Report)]
-#[severity("bug")]
-#[message("Reference `{}` is not resolved still", self.id)]
-struct UnexpectedUnresolvedReference {
-    id: NodeId,
-    #[primary_label("expected this to be resolved")]
-    span: Span,
-}
-
-#[derive(Debug)]
-enum Layered<T> {
-    Layer,
-    Value(T),
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-enum Reject<'a> {
-    SegmentMismatch {
-        expected: &'a str,
-    },
-    NotFound {
-        scope_name: Name,
-        symbol_name: &'a str,
-    },
-    Exhausted,
-    UnnamedScope,
-    Passthrough,
-}
-
-#[derive(Debug, Default)]
-struct Rejects<'a>(HashSet<Reject<'a>>);
-
-impl<I> IntoSpannedReportMessage for UnresolvedReference<'_, I>
-where
-    I: IntoIterator<Item: Display>,
-{
-    type Message = Diagnostic;
-
-    fn into_message(self) -> Self::Message {
-        let diagnostic = Diagnostic::new(Severity::Error)
-            .with_message(format!("Cannot resolve reference `{}`", self.name))
-            .with_primary_label("not found in scope", self.span);
-
-        self.note
-            .into_iter()
-            .fold(diagnostic, |acc, next| acc.with_note(next.to_string()))
+    #[derive(Debug, Component)]
+    #[component(immutable)]
+    pub(crate) struct ResolvedTo {
+        pub referral: NodeId,
+        pub kind: SymbolKind,
     }
-}
 
-impl Display for Reject<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Reject::SegmentMismatch { expected } => write!(f, "Unknown segment `{expected}`"),
-            Reject::NotFound {
-                scope_name,
-                symbol_name,
-            } => write!(f, "`{scope_name}` doesn't have `{symbol_name}` defined"),
-            Reject::Exhausted => write!(f, "Exhausted"),
-            Reject::UnnamedScope => write!(f, "UnnamedScope"),
-            Reject::Passthrough => write!(f, "Cannot access definitions of outer scope"),
+    impl NodeProperty for ResolvedTo {}
+    impl RequireProperty<ResolvedTo> for Value {}
+
+    #[derive(Debug, Component)]
+    #[component(immutable, storage = "SparseSet")]
+    /// Marks nodes that inhibits resolution until node with [`Opaque`] component is found
+    pub(super) struct Passthrough;
+    #[derive(Debug, Component)]
+    #[component(immutable, storage = "SparseSet")]
+    /// Marks nodes that enabled resolution back
+    pub(super) struct Opaque;
+
+    #[derive(Debug)]
+    pub(super) struct UnresolvedReference<'a, I> {
+        pub(super) name: &'a str,
+        pub(super) span: Span,
+        pub(super) note: I,
+    }
+
+    #[derive(Debug, Report)]
+    #[severity("error")]
+    #[message("Definition of `{}` expected to be a type, but it is a {}", self.name, self.actual_kind
+    )]
+    pub(super) struct SymbolIsNotType<'a> {
+        #[secondary_label("is not a type")]
+        pub(super) span: Span,
+        pub(super) actual_kind: SymbolKind,
+        pub(super) name: &'a str,
+        #[primary_label("required by {}", self.description)]
+        pub(super) ref_span: Span,
+        pub(super) description: Cow<'static, str>,
+    }
+
+    #[derive(Debug, Report)]
+    #[severity("bug")]
+    #[message("Reference `{}` is not resolved still", self.id)]
+    pub(super) struct UnexpectedUnresolvedReference {
+        pub(super) id: NodeId,
+        #[primary_label("expected this to be resolved")]
+        pub(super) span: Span,
+    }
+
+    impl<I> IntoSpannedReportMessage for UnresolvedReference<'_, I>
+    where
+        I: IntoIterator<Item: Display>,
+    {
+        type Message = Diagnostic;
+
+        fn into_message(self) -> Self::Message {
+            let diagnostic = Diagnostic::new(Severity::Error)
+                .with_message(format!("Cannot resolve reference `{}`", self.name))
+                .with_primary_label("not found in scope", self.span);
+
+            self.note
+                .into_iter()
+                .fold(diagnostic, |acc, next| acc.with_note(next.to_string()))
         }
     }
 }
 
-impl PartialOrd for Reject<'_> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+mod control {
+    use kodept_ast::prelude::{Erase, NodeId};
+    use kodept_ast::properties::Name;
+    use kodept_ecs::entity::Entity;
+    use kodept_ecs::hierarchy::{ChildOf, Children};
+    use kodept_ecs::query::QueryData;
+    use kodept_ecs::system::Query;
+    use std::cmp::Ordering;
+    use std::collections::{HashSet, VecDeque};
+    use std::fmt::{Display, Formatter};
+
+    #[derive(Debug)]
+    pub(super) enum Decision<A, R> {
+        Next,
+        Reject(R),
+        Accept(A),
     }
-}
 
-impl Ord for Reject<'_> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Reject::NotFound { .. }, Reject::NotFound { .. }) => Ordering::Equal,
-            (Reject::SegmentMismatch { .. }, Reject::SegmentMismatch { .. }) => Ordering::Equal,
-            (Reject::Passthrough, Reject::Passthrough) => Ordering::Equal,
+    #[derive(Debug)]
+    pub(super) enum SearchResult<A, R> {
+        Rejected(R),
+        Accepted(NodeId, A),
+    }
 
-            (Reject::Passthrough, Reject::NotFound { .. }) => Ordering::Equal,
-            (Reject::NotFound { .. }, Reject::Passthrough) => Ordering::Equal,
+    #[derive(Debug)]
+    enum Layered<T> {
+        Layer,
+        Value(T),
+    }
 
-            (Reject::NotFound { .. }, _) => Ordering::Greater,
-            (_, Reject::NotFound { .. }) => Ordering::Less,
+    #[derive(Debug, PartialEq, Eq, Hash)]
+    pub(super) enum Reject<'a> {
+        SegmentMismatch {
+            expected: &'a str,
+        },
+        NotFound {
+            scope_name: Name,
+            symbol_name: &'a str,
+        },
+        Exhausted,
+        UnnamedScope,
+        Passthrough,
+    }
 
-            (Reject::SegmentMismatch { .. }, _) => Ordering::Greater,
-            (_, Reject::SegmentMismatch { .. }) => Ordering::Less,
+    #[derive(Debug, Default)]
+    pub(super) struct Rejects<'a>(HashSet<Reject<'a>>);
 
-            _ => Ordering::Equal,
+    impl Display for Reject<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Reject::SegmentMismatch { expected } => write!(f, "Unknown segment `{expected}`"),
+                Reject::NotFound {
+                    scope_name,
+                    symbol_name,
+                } => write!(f, "`{scope_name}` doesn't have `{symbol_name}` defined"),
+                Reject::Exhausted => write!(f, "Exhausted"),
+                Reject::UnnamedScope => write!(f, "UnnamedScope"),
+                Reject::Passthrough => write!(f, "Cannot access definitions of outer scope"),
+            }
         }
     }
-}
 
-impl<'a> Extend<Reject<'a>> for Rejects<'a> {
-    fn extend<T: IntoIterator<Item = Reject<'a>>>(&mut self, iter: T) {
-        for reject in iter {
-            match self.0.iter().next().map(|it| reject.cmp(it)) {
-                None => _ = self.0.insert(reject),
-                Some(Ordering::Equal) => _ = self.0.insert(reject),
-                Some(Ordering::Less) => {}
-                Some(Ordering::Greater) => {
-                    self.0.clear();
-                    self.0.insert(reject);
-                }
+    impl PartialOrd for Reject<'_> {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl Ord for Reject<'_> {
+        fn cmp(&self, other: &Self) -> Ordering {
+            match (self, other) {
+                (Reject::NotFound { .. }, Reject::NotFound { .. }) => Ordering::Equal,
+                (Reject::SegmentMismatch { .. }, Reject::SegmentMismatch { .. }) => Ordering::Equal,
+                (Reject::Passthrough, Reject::Passthrough) => Ordering::Equal,
+
+                (Reject::Passthrough, Reject::NotFound { .. }) => Ordering::Equal,
+                (Reject::NotFound { .. }, Reject::Passthrough) => Ordering::Equal,
+
+                (Reject::NotFound { .. }, _) => Ordering::Greater,
+                (_, Reject::NotFound { .. }) => Ordering::Less,
+
+                (Reject::SegmentMismatch { .. }, _) => Ordering::Greater,
+                (_, Reject::SegmentMismatch { .. }) => Ordering::Less,
+
+                _ => Ordering::Equal,
+            }
+        }
+    }
+
+    impl<'a> Extend<Reject<'a>> for Rejects<'a> {
+        fn extend<T: IntoIterator<Item = Reject<'a>>>(&mut self, iter: T) {
+            for reject in iter {
+                match self.0.iter().next().map(|it| reject.cmp(it)) {
+                    None => _ = self.0.insert(reject),
+                    Some(Ordering::Equal) => _ = self.0.insert(reject),
+                    Some(Ordering::Less) => {}
+                    Some(Ordering::Greater) => {
+                        self.0.clear();
+                        self.0.insert(reject);
+                    }
+                };
+            }
+        }
+    }
+
+    impl<'a> IntoIterator for Rejects<'a> {
+        type Item = Reject<'a>;
+        type IntoIter = std::collections::hash_set::IntoIter<Reject<'a>>;
+
+        fn into_iter(self) -> Self::IntoIter {
+            self.0.into_iter()
+        }
+    }
+
+    pub(super) fn walk_up<'s, T, A, R, P>(
+        ancestors: Query<&ChildOf>,
+        mut properties: Query<'_, 's, T>,
+        start: impl Erase<Entity>,
+        mut control: impl FnMut(T::Item<'_, 's>) -> Decision<A, R>,
+    ) -> SearchResult<A, P>
+    where
+        T: QueryData,
+        R: Ord,
+        P: Default + Extend<R>,
+    {
+        let mut current = start.erase();
+        let mut rejects = P::default();
+        loop {
+            let Ok(properties) = properties.get_mut(current) else {
+                return SearchResult::Rejected(rejects);
             };
+            match control(properties) {
+                Decision::Next => {
+                    let Ok(ChildOf(parent)) = ancestors.get(current) else {
+                        return SearchResult::Rejected(rejects);
+                    };
+                    current = *parent;
+                }
+                Decision::Reject(reject) => {
+                    let Ok(ChildOf(parent)) = ancestors.get(current) else {
+                        return SearchResult::Rejected(rejects);
+                    };
+                    current = *parent;
+                    rejects.extend([reject]);
+                }
+                Decision::Accept(accept) => return SearchResult::Accepted(current.into(), accept),
+            }
         }
     }
-}
 
-impl<'a> IntoIterator for Rejects<'a> {
-    type Item = Reject<'a>;
-    type IntoIter = std::collections::hash_set::IntoIter<Reject<'a>>;
+    pub(super) trait WalkDownController<T> {
+        type Accept;
+        type Reject;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+        fn on_iteration(&mut self, item: T) -> Decision<Self::Accept, Self::Reject>;
+        fn on_layer(&mut self);
     }
-}
 
-fn walk_up<'s, T, A, R, P>(
-    ancestors: Query<&ChildOf>,
-    mut properties: Query<'_, 's, T>,
-    start: impl Erase<Entity>,
-    mut control: impl FnMut(T::Item<'_, 's>) -> Decision<A, R>,
-) -> SearchResult<A, P>
-where
-    T: QueryData,
-    R: Ord,
-    P: Default + Extend<R>,
-{
-    let mut current = start.erase();
-    let mut rejects = P::default();
-    loop {
-        let Ok(properties) = properties.get_mut(current) else {
-            return SearchResult::Rejected(rejects);
-        };
-        match control(properties) {
-            Decision::Next => {
-                let Ok(ChildOf(parent)) = ancestors.get(current) else {
-                    return SearchResult::Rejected(rejects);
-                };
-                current = *parent;
-            }
-            Decision::Reject(reject) => {
-                let Ok(ChildOf(parent)) = ancestors.get(current) else {
-                    return SearchResult::Rejected(rejects);
-                };
-                current = *parent;
-                rejects.extend([reject]);
-            }
-            Decision::Accept(accept) => return SearchResult::Accepted(current.into(), accept),
-        }
-    }
-}
+    pub(super) fn walk_down<'s, T, A, R, P>(
+        descendants: Query<Option<&Children>>,
+        mut properties: Query<'_, 's, T>,
+        start: impl Erase<Entity>,
+        mut control: impl for<'w> WalkDownController<T::Item<'w, 's>, Accept = A, Reject = R>,
+    ) -> SearchResult<A, P>
+    where
+        T: QueryData,
+        R: Ord,
+        P: Default + Extend<R>,
+    {
+        let mut stack = VecDeque::from([Layered::Value(start.erase()), Layered::Layer]);
+        let mut rejects = P::default();
+        loop {
+            match stack.pop_front() {
+                None => return SearchResult::Rejected(rejects),
+                Some(Layered::Layer) if stack.is_empty() => control.on_layer(),
+                Some(Layered::Layer) => {
+                    control.on_layer();
+                    stack.push_back(Layered::Layer);
+                }
+                Some(Layered::Value(id)) => {
+                    let Ok(properties) = properties.get_mut(id) else {
+                        return SearchResult::Rejected(rejects);
+                    };
 
-trait WalkDownController<T> {
-    type Accept;
-    type Reject;
-
-    fn on_iteration(&mut self, item: T) -> Decision<Self::Accept, Self::Reject>;
-    fn on_layer(&mut self);
-}
-
-fn walk_down<'s, T, A, R, P>(
-    descendants: Query<Option<&Children>>,
-    mut properties: Query<'_, 's, T>,
-    start: impl Erase<Entity>,
-    mut control: impl for<'w> WalkDownController<T::Item<'w, 's>, Accept = A, Reject = R>,
-) -> SearchResult<A, P>
-where
-    T: QueryData,
-    R: Ord,
-    P: Default + Extend<R>,
-{
-    let mut stack = VecDeque::from([Layered::Value(start.erase()), Layered::Layer]);
-    let mut rejects = P::default();
-    loop {
-        match stack.pop_front() {
-            None => return SearchResult::Rejected(rejects),
-            Some(Layered::Layer) if stack.is_empty() => control.on_layer(),
-            Some(Layered::Layer) => {
-                control.on_layer();
-                stack.push_back(Layered::Layer);
-            }
-            Some(Layered::Value(id)) => {
-                let Ok(properties) = properties.get_mut(id) else {
-                    return SearchResult::Rejected(rejects);
-                };
-
-                match control.on_iteration(properties) {
-                    Decision::Next => stack.extend(
-                        descendants
-                            .get(id)
-                            .iter()
-                            .flat_map(|it| it.iter())
-                            .flat_map(|it| it.iter())
-                            .map(|it| Layered::Value(*it)),
-                    ),
-                    Decision::Reject(reject) => rejects.extend([reject]),
-                    Decision::Accept(accept) => return SearchResult::Accepted(id.into(), accept),
+                    match control.on_iteration(properties) {
+                        Decision::Next => stack.extend(
+                            descendants
+                                .get(id)
+                                .iter()
+                                .flat_map(|it| it.iter())
+                                .flat_map(|it| it.iter())
+                                .map(|it| Layered::Value(*it)),
+                        ),
+                        Decision::Reject(reject) => rejects.extend([reject]),
+                        Decision::Accept(accept) => {
+                            return SearchResult::Accepted(id.into(), accept);
+                        }
+                    }
                 }
             }
         }
@@ -289,26 +326,13 @@ fn add_on_add<T: Component, U: Component>(
 }
 
 pub(super) fn add_passthrough_markers(
-    query: Query<
-        NodeId,
-        Or<(
-            With<UserFunction<TypeAnnotation>>,
-            With<UserFunction<ResolvedTypeAnnotation>>,
-        )>,
-    >,
+    query: Query<NodeId, With<UserFunction>>,
     mut commands: Commands,
 ) {
     for id in query {
         commands.entity(id.entity()).insert(Passthrough);
     }
-    commands.add_observer(add_on_add(
-        || Passthrough,
-        PhantomData::<UserFunction<TypeAnnotation>>,
-    ));
-    commands.add_observer(add_on_add(
-        || Passthrough,
-        PhantomData::<UserFunction<ResolvedTypeAnnotation>>,
-    ));
+    commands.add_observer(add_on_add(|| Passthrough, PhantomData::<UserFunction>));
 }
 
 pub(super) fn add_opaque_markers(
@@ -527,27 +551,52 @@ fn resolve_ident_with_path<'i>(
     }
 }
 
-pub(super) fn resolve_values(
-    values: Query<(NodeId<Value>, &Value, &InModule, &SourceSpan)>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, value, &InModule(module_id), span) in values {
-        let Value { path, ident } = value;
+#[derive(SystemParam)]
+pub(super) struct ResolveValues<'w, 's> {
+    properties: Properties<'w, 's>,
+}
 
-        match resolve_ident_with_path(id, module_id, path, ident, properties) {
-            SearchResult::Rejected(rejects) => reporter.report(UnresolvedReference {
-                name: ident,
-                span: span.0,
-                note: rejects,
-            }),
-            SearchResult::Accepted(_, item) => {
-                commands
-                    .entity(id.entity())
-                    .insert(ResolvedTo(item.0, item.1));
+impl ParIterableSystem for ResolveValues<'_, '_> {
+    type Iterable = Query<
+        'static,
+        'static,
+        (
+            NodeId<Value>,
+            &'static Value,
+            Property<InModule>,
+            Property<SourceSpan>,
+        ),
+    >;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let (value, &InModule(module_id), &SourceSpan(span)) = params;
+
+        match resolve_ident_with_path(
+            modification.id(),
+            module_id,
+            &value.path,
+            &value.ident,
+            self.properties,
+        ) {
+            SearchResult::Rejected(rejects) => {
+                return Err(UnresolvedReference {
+                    name: &value.ident,
+                    span,
+                    note: rejects,
+                });
             }
-        }
+            SearchResult::Accepted(_, (resolved_to, kind)) => {
+                modification.add_property(ResolvedTo {
+                    referral: resolved_to,
+                    kind,
+                })
+            }
+        };
+        Ok(())
     }
 }
 
@@ -617,423 +666,186 @@ fn resolve_type<'i>(
     }
 }
 
-pub(super) fn resolve_type_in_variables(
-    variables: Query<(
-        NodeId<Variable<TypeAnnotation>>,
-        &Variable<TypeAnnotation>,
-        &InModule,
-        &Lexeme,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    syntax: Res<SyntaxResolver>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, variable, &InModule(module_id), lexeme, span) in variables {
-        let return_type_span = syntax
-            .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme.0)
+#[derive(SystemParam)]
+pub struct ResolveTypeIn<'w, 's, Parent: 'static> {
+    all_spans: Query<'w, 's, &'static SourceSpan>,
+    properties: Properties<'w, 's>,
+    syntax: Res<'w, SyntaxResolver>,
+    _phantom: PhantomData<Parent>,
+}
+
+impl ParIterableSystem for ResolveTypeIn<'_, '_, Variable> {
+    type Iterable = StaticQuery<(
+        NodeId<Variable>,
+        Property<TypeAnnotation>,
+        Property<InModule>,
+        Property<Lexeme>,
+        Property<SourceSpan>,
+    )>;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let (annotation, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let return_type_span = self
+            .syntax
+            .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme)
             .ok()
-            .and_then(|it| match &it.variable {
-                kodept_rlt::prelude::Variable::Immutable { assigned_type, .. }
-                | kodept_rlt::prelude::Variable::Mutable { assigned_type, .. } => {
-                    assigned_type.as_ref().map(|it| it.1.bounds())
-                }
-            })
-            .unwrap_or(span.0);
-        let modification = NodeModification::new(commands.reborrow(), id);
-        match resolve_type_annotation(id, module_id, &variable.annotation, properties) {
+            .and_then(|it| it.variable.assigned_type.as_ref())
+            .map(|it| it.1.bounds())
+            .unwrap_or(span);
+
+        match resolve_type_annotation(modification.id(), module_id, annotation, self.properties) {
             Ok(annotation) => {
-                _ = modification.transmute(Variable {
-                    mutable: variable.mutable,
-                    name: variable.name.clone(),
-                    annotation,
-                })
+                modification
+                    .remove_property::<TypeAnnotation>()
+                    .add_property(annotation);
+                Ok(())
             }
             Err(TypeResolutionError::Rejected(rejects, name)) => {
-                reporter.report(UnresolvedReference {
+                Err(Either::Left(UnresolvedReference {
                     span: return_type_span,
                     name,
                     note: rejects,
-                })
+                }))
             }
             Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                reporter.report(SymbolIsNotType {
+                Err(Either::Right(SymbolIsNotType {
                     name,
                     actual_kind,
-                    span: all_spans
+                    span: self
+                        .all_spans
                         .get(resolved_to.entity())
                         .map(|it| it.0)
                         .unwrap_or_default(),
                     ref_span: return_type_span,
-                    ref_kind: "explicit type annotation",
-                    ref_name: variable.name.as_str(),
-                })
+                    description: "a type annotation".into(),
+                }))
             }
         }
     }
 }
 
-pub(super) fn resolve_types_in_user_functions(
-    user_functions: Query<(
-        NodeId<UserFunction<TypeAnnotation>>,
-        &mut UserFunction<TypeAnnotation>,
-        &Name,
-        &InModule,
-        &Lexeme,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    syntax: Res<SyntaxResolver>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut func, func_name, &InModule(module_id), lexeme, span) in user_functions {
-        let modification = NodeModification::new(commands.reborrow(), id);
-        let func_syntax = syntax
-            .try_get::<kodept_rlt::prelude::BodiedFunction>(lexeme.0)
-            .ok();
-        let return_type_span = func_syntax
-            .and_then(|it| it.return_type.as_ref())
-            .map(|it| it.1.bounds())
-            .unwrap_or(span.0);
+pub(super) struct StrictType;
 
-        let return_type =
-            match resolve_type_annotation(id, module_id, &func.return_type, properties) {
-                Ok(annotation) => annotation,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: return_type_span,
-                    });
-                    continue;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_span: return_type_span,
-                        ref_kind: "return type",
-                        ref_name: func_name.as_ref(),
-                    });
-                    continue;
-                }
-            };
+impl<P: 'static> ParIterableSystem<&'static str> for ResolveTypeIn<'_, '_, P>
+where
+    P: ASTNode
+        + RequireProperty<TypeAnnotation>
+        + RequireProperty<InModule>
+        + HasProperty<ResolvedTypeAnnotation>,
+{
+    type Iterable = StaticQuery<(
+        NodeId<P>,
+        Property<TypeAnnotation>,
+        Property<InModule>,
+        Property<Lexeme>,
+        Property<SourceSpan>,
+    )>;
 
-        let params = func.params.drain(..).enumerate().map(|(index, param)| {
-            let result = resolve_type_annotation(id, module_id, param.ty(), properties);
-            let param_span = func_syntax
-                .and_then(|it| it.params.as_ref())
-                .and_then(|it| it.inner.get(index))
-                .map(|it| it.bounds())
-                .unwrap_or(span.0);
+    fn for_each_with_input<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        input: &&'static str,
+    ) -> impl TryReport {
+        let (annotation, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let ref_span = self
+            .syntax
+            .try_get_unknown(lexeme)
+            .map(|it| it.location())
+            .map(Span::from)
+            .unwrap_or_default();
 
-            let annotation = match result {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: param_span,
-                    });
-                    return None;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_span: param_span,
-                        ref_kind: "parameter",
-                        ref_name: param.name(),
-                    });
-                    return None;
-                }
-            };
-
-            match param {
-                Param::Positional { name, .. } => Some(Param::Positional {
-                    name,
-                    ty: annotation,
-                }),
-                Param::Named {
-                    name,
-                    default_expr_id,
-                    ..
-                } => Some(Param::Named {
-                    name,
-                    ty: annotation,
-                    default_expr_id,
-                }),
+        match resolve_type_annotation(modification.id(), module_id, annotation, self.properties) {
+            Ok(annotation) => {
+                modification
+                    .remove_property::<TypeAnnotation>()
+                    .add_property(annotation);
+                Ok(())
             }
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        modification.transmute(UserFunction {
-            return_type,
-            params,
-        });
-    }
-}
-
-pub(super) fn resolve_types_in_value_ctors(
-    query: Query<(
-        NodeId<ValueCtor<UnresolvedType>>,
-        &mut ValueCtor<UnresolvedType>,
-        &InModule,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut ctor, &InModule(module_id), span) in query {
-        let modification = NodeModification::new(commands.reborrow(), id);
-
-        let params = ctor.params.drain(..).map(|param| {
-            let result = resolve_type(id, module_id, param.ty(), properties);
-            let ty = match result {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: span.0,
-                    });
-                    return None;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        ref_kind: "parameter",
-                        ref_name: param.name(),
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_span: span.0,
-                    });
-                    return None;
-                }
-            };
-
-            match param {
-                Param::Positional { name, .. } => Some(Param::Positional { name, ty }),
-                Param::Named {
-                    name,
-                    default_expr_id,
-                    ..
-                } => Some(Param::Named {
-                    name,
-                    default_expr_id,
-                    ty,
-                }),
-            }
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        modification.transmute(ValueCtor {
-            name: std::mem::replace(&mut ctor.name, CtorName::Inline),
-            params,
-        });
-    }
-}
-
-pub(super) fn resolve_types_in_anon_functions(
-    query: Query<(
-        NodeId<AnonFunction<TypeAnnotation>>,
-        &mut AnonFunction<TypeAnnotation>,
-        &InModule,
-        &Lexeme,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    properties: Properties,
-    syntax: Res<SyntaxResolver>,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut func, &InModule(module_id), lexeme, span) in query {
-        let func_syntax = syntax.try_get::<kodept_rlt::prelude::Lambda>(lexeme.0).ok();
-
-        let return_type =
-            match resolve_type_annotation(id, module_id, &func.return_type, properties) {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: span.0,
-                    });
-                    continue;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        actual_kind,
-                        name,
-
-                        ref_span: Default::default(),
-                        ref_kind: "parameter",
-                        ref_name: "anonymous function",
-                    });
-                    continue;
-                }
-            };
-
-        let params = func.params.drain(..).enumerate().map(|(index, it)| {
-            let result = resolve_type_annotation(id, module_id, it.ty(), properties);
-            let param_span = func_syntax
-                .and_then(|it| it.binds.inner.get(index))
-                .map(|it| it.bounds())
-                .unwrap_or(span.0);
-
-            let ty = match result {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: param_span,
-                    });
-                    return None;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        name,
-                        ref_span: param_span,
-                        ref_kind: "parameter",
-                        actual_kind,
-                        ref_name: it.name(),
-                    });
-                    return None;
-                }
-            };
-
-            Some(match it {
-                Param::Positional { name, .. } => Param::Positional { name, ty },
-                Param::Named {
-                    name,
-                    default_expr_id,
-                    ..
-                } => Param::Named {
-                    name,
-                    default_expr_id,
-                    ty,
-                },
-            })
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        let modification = NodeModification::new(commands.reborrow(), id);
-        modification.transmute(AnonFunction {
-            return_type,
-            params,
-        });
-    }
-}
-
-pub(super) fn resolve_types_in_foreign_functions(
-    query: Query<(
-        NodeId<ForeignFunction<UnresolvedType>>,
-        &mut ForeignFunction<UnresolvedType>,
-        &Name,
-        &InModule,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut func, func_name, &InModule(module_id), span) in query {
-        let return_type = match resolve_type(id, module_id, &func.return_type, properties) {
-            Ok(x) => x,
             Err(TypeResolutionError::Rejected(rejects, name)) => {
-                reporter.report(UnresolvedReference {
+                Err(Either::Left(UnresolvedReference {
                     name,
+                    span,
                     note: rejects,
-                    span: span.0,
-                });
-                continue;
+                }))
             }
             Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                reporter.report(SymbolIsNotType {
+                Err(Either::Right(SymbolIsNotType {
                     name,
                     actual_kind,
-                    span: all_spans
+                    ref_span,
+                    span: self
+                        .all_spans
                         .get(resolved_to.entity())
                         .map(|it| it.0)
                         .unwrap_or_default(),
-                    ref_kind: "return type",
-                    ref_name: func_name.as_ref(),
-                    ref_span: span.0,
-                });
-                continue;
+                    description: format!("{input}").into(),
+                }))
             }
-        };
+        }
+    }
+}
 
-        let params = func.params.drain(..).enumerate().map(|(index, it)| {
-            match resolve_type(id, module_id, &it, properties) {
-                Ok(x) => Some(x),
-                Err(TypeResolutionError::Rejected(rejected, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejected,
-                        span: span.0,
-                    });
-                    None
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_kind: "parameter",
-                        ref_name: &index.to_string(),
-                        ref_span: span.0,
-                    });
-                    None
-                }
+impl<P: 'static> ParIterableSystem<(StrictType, &'static str)> for ResolveTypeIn<'_, '_, P>
+where
+    P: ASTNode
+        + RequireProperty<UnresolvedType>
+        + RequireProperty<InModule>
+        + HasProperty<ResolvedType>,
+{
+    type Iterable = StaticQuery<(
+        NodeId<P>,
+        Property<UnresolvedType>,
+        Property<InModule>,
+        Property<Lexeme>,
+        Property<SourceSpan>,
+    )>;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let (annotation, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let ref_span = self
+            .syntax
+            .try_get_unknown(lexeme)
+            .map(|it| it.location())
+            .map(Span::from)
+            .unwrap_or_default();
+
+        match resolve_type(modification.id(), module_id, annotation, self.properties) {
+            Ok(annotation) => {
+                modification
+                    .remove_property::<UnresolvedType>()
+                    .add_property(annotation);
+                Ok(())
             }
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        let modification = NodeModification::new(commands.reborrow(), id);
-        modification.transmute(ForeignFunction {
-            return_type,
-            params,
-        });
+            Err(TypeResolutionError::Rejected(rejects, name)) => {
+                Err(Either::Left(UnresolvedReference {
+                    name,
+                    span,
+                    note: rejects,
+                }))
+            }
+            Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                Err(Either::Right(SymbolIsNotType {
+                    name,
+                    actual_kind,
+                    ref_span,
+                    span: self
+                        .all_spans
+                        .get(resolved_to.entity())
+                        .map(|it| it.0)
+                        .unwrap_or_default(),
+                    description: "a return type".into(),
+                }))
+            }
+        }
     }
 }
 

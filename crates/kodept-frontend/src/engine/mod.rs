@@ -8,7 +8,8 @@ use kodept_ecs::event::Event;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::resource::Resource;
 use kodept_ecs::schedule::{
-    ExecutorKind, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel, Schedules,
+    ExecutorKind, InternedSystemSet, IntoScheduleConfigs, IntoSystemSet, Schedule, ScheduleLabel,
+    Schedules,
 };
 use kodept_ecs::system::{IntoObserverSystem, Res, ScheduleSystem};
 use kodept_ecs::world::{EntityWorldMut, FromWorld, World};
@@ -152,6 +153,7 @@ mod inner_set {
 
 pub struct Chaining<'a, P> {
     engine: &'a mut Engine,
+    parent_set: Option<InternedSystemSet>,
     _phantom: PhantomData<fn() -> P>,
 }
 
@@ -164,9 +166,16 @@ impl<P> Chaining<'_, P> {
         self.engine.with_schedule(Startup, |schedule| {
             let label1 = P::Set::default();
             let label2 = Q::Set::default();
-            schedule.configure_sets((label1.into_system_set(), label2.into_system_set()).chain());
+            let mut config = (label1.into_system_set(), label2.into_system_set()).chain();
+            if let Some(parent) = self.parent_set {
+                config.in_set_inner(parent);
+            }
+
+            schedule.configure_sets(config);
         });
-        self.engine.install(phase)
+        let mut chaining = self.engine.install(phase);
+        chaining.parent_set = self.parent_set;
+        chaining
     }
 }
 
@@ -191,6 +200,20 @@ where
                 .in_set(InnerSet::<P::Set>::new())
                 .distributive_run_if(check_for_failure),
         )
+    }
+
+    pub fn install<Q>(&mut self, phase: Q) -> Chaining<'_, Q>
+    where
+        Q: Phase,
+    {
+        let parent_set = InnerSet::<P::Set>::new();
+        self.engine.with_schedule(Startup, |schedule| {
+            let label2 = Q::Set::default();
+            schedule.configure_sets(label2.into_system_set().in_set(parent_set));
+        });
+        let mut chaining = self.engine.install(phase);
+        chaining.parent_set = Some(parent_set.intern());
+        chaining
     }
 }
 
@@ -244,6 +267,7 @@ impl Engine {
         });
         Chaining {
             engine: self,
+            parent_set: None,
             _phantom: PhantomData,
         }
     }

@@ -402,12 +402,14 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         simple()
 
     rule var_decl() -> rlt::Variable =
-        k:$"val" _ id:ident() _ ty:return_type() { rlt::Variable::Immutable {
+        k:$"val" _ id:ident() _ ty:return_type() { rlt::Variable {
+            is_mutable: false,
             keyword: Keyword::from_located(k),
             id: Identifier::from_located(id.point),
             assigned_type: ty
         } } /
-        k:$"var" _ id:ident() _ ty:return_type() { rlt::Variable::Mutable {
+        k:$"var" _ id:ident() _ ty:return_type() { rlt::Variable {
+            is_mutable: true,
             keyword: Keyword::from_located(k),
             id: Identifier::from_located(id.point),
             assigned_type: ty

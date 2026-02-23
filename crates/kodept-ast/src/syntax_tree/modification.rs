@@ -112,6 +112,10 @@ where
         }
     }
 
+    pub fn id(&self) -> NodeId<Node> {
+        self.id
+    }
+
     #[track_caller]
     pub fn spawn_child<Child, Properties, Clones, Tag>(
         &mut self,
@@ -215,7 +219,11 @@ where
 
         let this = id.entity();
         let buffer = buffer.queue(move |world: &mut World| {
-            world.entity_mut(this).remove::<Node>().insert(value);
+            world
+                .entity_mut(this)
+                .remove::<Node>()
+                .insert(value)
+                .modify_component(|it| *it = crate::properties::Node::of::<Into>());
         });
         NodeModification {
             id: id.cast(),
@@ -232,6 +240,18 @@ where
         let this = self.id.entity();
         (&mut self.buffer).queue(move |world: &mut World| {
             world.entity_mut(this).insert(value);
+        });
+        self
+    }
+
+    pub fn remove_property<Property>(&mut self) -> &mut Self
+    where
+        Node: HasProperty<Property>,
+        Property: NodeProperty,
+    {
+        let this = self.id.entity();
+        (&mut self.buffer).queue(move |world: &mut World| {
+            world.entity_mut(this).remove::<Property>();
         });
         self
     }

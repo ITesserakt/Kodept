@@ -11,8 +11,7 @@ use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSo
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::inject_common_resources_phase;
 use kodept_systems::per_file::prelude::{
-    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, ReferenceResolutionPhase,
-    TypeCheckPhase,
+    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, SymbolsPhase, TypeCheckPhase,
 };
 use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
@@ -105,7 +104,7 @@ fn main() -> Result<(), CompilationFailed> {
                 .install(ParseSourcePhase)
                 .install(BuildAstPhase)
                 .install(AstNormalizationPhase)
-                .install(ReferenceResolutionPhase)
+                .install(SymbolsPhase)
                 .install(TypeCheckPhase);
         }))
         .install(FinishPhase);
