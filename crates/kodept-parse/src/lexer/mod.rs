@@ -11,7 +11,7 @@ pub type ASCIILexer = bare_metal::Lexer;
 #[allow(clippy::unwrap_used)]
 mod tests {
     use crate::common::TokenProducer;
-    use crate::lexer::{PackedToken, PackedToken::*, PegLexer};
+    use crate::lexer::{PegLexer, Token, Token::*};
     use rstest::rstest;
 
     #[rstest]
@@ -31,7 +31,7 @@ mod tests {
     #[case::ignore_whitespace("   \t", Whitespace, None)]
     fn test_parser(
         #[case] input: &'static str,
-        #[case] expected: PackedToken,
+        #[case] expected: Token,
         #[case] expected_rest: Option<&'static str>,
     ) {
         let data = PegLexer::<true>::new().parse_string(input, 0).unwrap();

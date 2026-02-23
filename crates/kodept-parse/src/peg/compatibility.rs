@@ -1,6 +1,6 @@
-use crate::lexer::PackedToken;
-use crate::token_match::PackedTokenMatch;
-use crate::token_stream::PackedTokenStream;
+use crate::lexer::Token;
+use crate::token_match::TokenMatch;
+use crate::token_stream::TokenStream;
 use derive_more::Display;
 use kodept_core::code_point::CodePoint;
 use peg::str::LineCol;
@@ -32,7 +32,7 @@ impl From<LineCol> for Position {
     }
 }
 
-impl Parse for PackedTokenStream<'_> {
+impl Parse for TokenStream<'_> {
     type PositionRepr = Position;
 
     #[inline(always)]
@@ -54,13 +54,13 @@ impl Parse for PackedTokenStream<'_> {
         };
         let line = before
             .iter()
-            .filter(|it| matches!(it.token, PackedToken::Newline))
+            .filter(|it| matches!(it.token, Token::Newline))
             .count()
             + 1;
         let col = before
             .iter()
             .rev()
-            .take_while(|it| !matches!(it.token, PackedToken::Newline))
+            .take_while(|it| !matches!(it.token, Token::Newline))
             .map(|it| it.point.length)
             .sum::<u32>()
             + 1;
@@ -74,8 +74,8 @@ impl Parse for PackedTokenStream<'_> {
     }
 }
 
-impl<'input> ParseElem<'input> for PackedTokenStream<'input> {
-    type Element = PackedTokenMatch;
+impl<'input> ParseElem<'input> for TokenStream<'input> {
+    type Element = TokenMatch;
 
     #[inline(always)]
     fn parse_elem(&'input self, pos: usize) -> RuleResult<Self::Element> {
@@ -87,10 +87,10 @@ impl<'input> ParseElem<'input> for PackedTokenStream<'input> {
     }
 }
 
-impl ParseLiteral for PackedTokenStream<'_> {
+impl ParseLiteral for TokenStream<'_> {
     #[inline(always)]
     fn parse_string_literal(&self, pos: usize, literal: &str) -> RuleResult<()> {
-        let Some(token) = PackedToken::from_name(literal) else {
+        let Some(token) = Token::from_name(literal) else {
             unreachable!("Bug in grammar. Any literal used should be convertible to token.")
         };
 
@@ -102,8 +102,8 @@ impl ParseLiteral for PackedTokenStream<'_> {
     }
 }
 
-impl<'input> ParseSlice<'input> for PackedTokenStream<'input> {
-    type Slice = PackedTokenStream<'input>;
+impl<'input> ParseSlice<'input> for TokenStream<'input> {
+    type Slice = TokenStream<'input>;
 
     #[inline(always)]
     fn parse_slice(&'input self, p1: usize, p2: usize) -> Self::Slice {

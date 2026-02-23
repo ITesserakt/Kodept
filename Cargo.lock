@@ -980,7 +980,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-core"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "derive_more",
  "pathdiff",
@@ -1039,7 +1039,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-parse"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "criterion",
  "derive_more",
@@ -1055,7 +1055,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-report"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "codespan-reporting",
  "kodept-core",
@@ -1064,7 +1064,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-report-macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "kodept-core",
  "kodept-report",

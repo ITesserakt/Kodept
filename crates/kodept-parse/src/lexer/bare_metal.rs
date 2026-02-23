@@ -1,7 +1,7 @@
 use crate::common::{EagerTokensProducer, TokenProducer};
-use crate::lexer::PackedToken;
+use crate::lexer::Token;
 use crate::lexer::bare_metal::Error::{NotANumber, UnclosedChar, UnclosedString, Unknown};
-use crate::token_match::PackedTokenMatch;
+use crate::token_match::TokenMatch;
 use kodept_core::code_point::CodePoint;
 use std::cell::Cell;
 use std::convert::Infallible;
@@ -24,9 +24,9 @@ impl Lexer {
     }
 }
 
-impl<F: FnMut(PackedToken)> Sink<F> {
+impl<F: FnMut(Token)> Sink<F> {
     #[inline(always)]
-    fn push(&mut self, token: PackedToken) {
+    fn push(&mut self, token: Token) {
         self.0(token)
     }
 
@@ -43,12 +43,12 @@ impl<F: FnMut(PackedToken)> Sink<F> {
 
         match input {
             [b'\n', rest @ ..] | [b'\r', b'\n', rest @ ..] => {
-                self.push(PackedToken::Newline);
+                self.push(Token::Newline);
                 Ok(rest)
             }
             [b'\t' | b' ', rest @ ..] => {
                 let not_space = rest.iter().position(|&it| it != b'\t' && it != b' ');
-                self.push(PackedToken::Whitespace);
+                self.push(Token::Whitespace);
                 match not_space {
                     Some(pos) => Ok(&rest[pos..]),
                     None => Ok(&[]),
@@ -57,7 +57,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
             [b'/', b'/', rest @ ..] => {
                 // TODO: support \r\n endings
                 let separator = rest.iter().position(|it| matches!(it, b'\n'));
-                self.push(PackedToken::Comment);
+                self.push(Token::Comment);
                 if let Some(pos) = separator {
                     Ok(&rest[pos..])
                 } else {
@@ -65,211 +65,211 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 }
             }
             [b'f', b'u', b'n', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Fun);
+                self.push(Token::Fun);
                 Ok(rest)
             }
             [b'v', b'a', b'l', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Val);
+                self.push(Token::Val);
                 Ok(rest)
             }
             [b'v', b'a', b'r', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Var);
+                self.push(Token::Var);
                 Ok(rest)
             }
             [b'm', b'a', b't', b'c', b'h', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Match);
+                self.push(Token::Match);
                 Ok(rest)
             }
             [b'w', b'h', b'i', b'l', b'e', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::While);
+                self.push(Token::While);
                 Ok(rest)
             }
             [b'm', b'o', b'd', b'u', b'l', b'e', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Module);
+                self.push(Token::Module);
                 Ok(rest)
             }
             [b'e', b'x', b't', b'e', b'n', b'd', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Extend);
+                self.push(Token::Extend);
                 Ok(rest)
             }
             [b'r', b'e', b't', b'u', b'r', b'n', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Return);
+                self.push(Token::Return);
                 Ok(rest)
             }
             [b'i', b'f', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::If);
+                self.push(Token::If);
                 Ok(rest)
             }
             [b'e', b'l', b'i', b'f', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Elif);
+                self.push(Token::Elif);
                 Ok(rest)
             }
             [b'e', b'l', b's', b'e', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Else);
+                self.push(Token::Else);
                 Ok(rest)
             }
             [b'a', b'b', b's', b't', b'r', b'a', b'c', b't', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Abstract);
+                self.push(Token::Abstract);
                 Ok(rest)
             }
             [b't', b'r', b'a', b'i', b't', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Trait);
+                self.push(Token::Trait);
                 Ok(rest)
             }
             [b's', b't', b'r', b'u', b'c', b't', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Struct);
+                self.push(Token::Struct);
                 Ok(rest)
             }
             [b'c', b'l', b'a', b's', b's', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Class);
+                self.push(Token::Class);
                 Ok(rest)
             }
             [b'e', b'n', b'u', b'm', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Enum);
+                self.push(Token::Enum);
                 Ok(rest)
             }
             [b'f', b'o', b'r', b'e', b'i', b'g', b'n', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::Foreign);
+                self.push(Token::Foreign);
                 Ok(rest)
             }
             [b't', b'y', b'p', b'e', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::TypeAlias);
+                self.push(Token::TypeAlias);
                 Ok(rest)
             }
             [b'w', b'i', b't', b'h', rest @ ..] if boundary(rest) => {
-                self.push(PackedToken::With);
+                self.push(Token::With);
                 Ok(rest)
             }
             [b',', rest @ ..] => {
-                self.push(PackedToken::Comma);
+                self.push(Token::Comma);
                 Ok(rest)
             }
             [b';', rest @ ..] => {
-                self.push(PackedToken::Semicolon);
+                self.push(Token::Semicolon);
                 Ok(rest)
             }
             [b'{', rest @ ..] => {
-                self.push(PackedToken::LBrace);
+                self.push(Token::LBrace);
                 Ok(rest)
             }
             [b'}', rest @ ..] => {
-                self.push(PackedToken::RBrace);
+                self.push(Token::RBrace);
                 Ok(rest)
             }
             [b'[', rest @ ..] => {
-                self.push(PackedToken::LBracket);
+                self.push(Token::LBracket);
                 Ok(rest)
             }
             [b']', rest @ ..] => {
-                self.push(PackedToken::RBracket);
+                self.push(Token::RBracket);
                 Ok(rest)
             }
             [b'(', rest @ ..] => {
-                self.push(PackedToken::LParen);
+                self.push(Token::LParen);
                 Ok(rest)
             }
             [b')', rest @ ..] => {
-                self.push(PackedToken::RParen);
+                self.push(Token::RParen);
                 Ok(rest)
             }
             [b':', b':', rest @ ..] => {
-                self.push(PackedToken::DoubleColon);
+                self.push(Token::DoubleColon);
                 Ok(rest)
             }
             [b':', rest @ ..] => {
-                self.push(PackedToken::Colon);
+                self.push(Token::Colon);
                 Ok(rest)
             }
             [b'=', b'>', rest @ ..] => {
-                self.push(PackedToken::Flow);
+                self.push(Token::Flow);
                 Ok(rest)
             }
             [b'+', rest @ ..] => {
-                self.push(PackedToken::Plus);
+                self.push(Token::Plus);
                 Ok(rest)
             }
             [b'-', rest @ ..] => {
-                self.push(PackedToken::Sub);
+                self.push(Token::Sub);
                 Ok(rest)
             }
             [b'*', b'*', rest @ ..] => {
-                self.push(PackedToken::Pow);
+                self.push(Token::Pow);
                 Ok(rest)
             }
             [b'*', rest @ ..] => {
-                self.push(PackedToken::Times);
+                self.push(Token::Times);
                 Ok(rest)
             }
             [b'/', rest @ ..] => {
-                self.push(PackedToken::Div);
+                self.push(Token::Div);
                 Ok(rest)
             }
             [b'%', rest @ ..] => {
-                self.push(PackedToken::Mod);
+                self.push(Token::Mod);
                 Ok(rest)
             }
             [b'<', b'=', b'>', rest @ ..] => {
-                self.push(PackedToken::Spaceship);
+                self.push(Token::Spaceship);
                 Ok(rest)
             }
             [b'=', b'=', rest @ ..] => {
-                self.push(PackedToken::Equiv);
+                self.push(Token::Equiv);
                 Ok(rest)
             }
             [b'=', rest @ ..] => {
-                self.push(PackedToken::Equals);
+                self.push(Token::Equals);
                 Ok(rest)
             }
             [b'!', b'=', rest @ ..] => {
-                self.push(PackedToken::NotEquiv);
+                self.push(Token::NotEquiv);
                 Ok(rest)
             }
             [b'>', b'=', rest @ ..] => {
-                self.push(PackedToken::GreaterEquals);
+                self.push(Token::GreaterEquals);
                 Ok(rest)
             }
             [b'>', rest @ ..] => {
-                self.push(PackedToken::Greater);
+                self.push(Token::Greater);
                 Ok(rest)
             }
             [b'<', b'=', rest @ ..] => {
-                self.push(PackedToken::LessEquals);
+                self.push(Token::LessEquals);
                 Ok(rest)
             }
             [b'<', rest @ ..] => {
-                self.push(PackedToken::Less);
+                self.push(Token::Less);
                 Ok(rest)
             }
             [b'|', b'|', rest @ ..] => {
-                self.push(PackedToken::OrLogic);
+                self.push(Token::OrLogic);
                 Ok(rest)
             }
             [b'&', b'&', rest @ ..] => {
-                self.push(PackedToken::AndLogic);
+                self.push(Token::AndLogic);
                 Ok(rest)
             }
             [b'!', rest @ ..] => {
-                self.push(PackedToken::NotLogic);
+                self.push(Token::NotLogic);
                 Ok(rest)
             }
             [b'|', rest @ ..] => {
-                self.push(PackedToken::OrBit);
+                self.push(Token::OrBit);
                 Ok(rest)
             }
             [b'&', rest @ ..] => {
-                self.push(PackedToken::AndBit);
+                self.push(Token::AndBit);
                 Ok(rest)
             }
             [b'^', rest @ ..] => {
-                self.push(PackedToken::XorBit);
+                self.push(Token::XorBit);
                 Ok(rest)
             }
             [b'~', rest @ ..] => {
-                self.push(PackedToken::NotBit);
+                self.push(Token::NotBit);
                 Ok(rest)
             }
             [b'\'', _, b'\'', rest @ ..] => {
-                self.push(PackedToken::Char);
+                self.push(Token::Char);
                 Ok(rest)
             }
             [b'\'', ..] => Err(UnclosedChar),
@@ -277,7 +277,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 let closing = rest.iter().position(|&it| it == b'"');
                 match closing {
                     Some(pos) => {
-                        self.push(PackedToken::String);
+                        self.push(Token::String);
                         Ok(&rest[pos + 1..])
                     }
                     None => Err(UnclosedString),
@@ -287,7 +287,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 let not_letter = rest
                     .iter()
                     .position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
-                self.push(PackedToken::Type);
+                self.push(Token::Type);
                 match not_letter {
                     Some(pos) => Ok(&rest[pos..]),
                     None => Ok(&[]),
@@ -297,7 +297,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 let not_letter = rest
                     .iter()
                     .position(|&it| !it.is_ascii_alphanumeric() && it != b'_');
-                self.push(PackedToken::Identifier);
+                self.push(Token::Identifier);
                 match not_letter {
                     Some(pos) => Ok(&rest[pos..]),
                     None => Ok(&[]),
@@ -305,7 +305,7 @@ impl<F: FnMut(PackedToken)> Sink<F> {
             }
             // TODO: support multiple __ in identifiers
             [b'_', rest @ ..] => {
-                self.push(PackedToken::TypeGap);
+                self.push(Token::TypeGap);
                 Ok(rest)
             }
             [
@@ -331,9 +331,9 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                         .iter()
                         .position(|&it| it != b'_' && !digit_matches(system, it));
                     match system {
-                        b'b' | b'B' => self.push(PackedToken::Binary),
-                        b'c' | b'C' => self.push(PackedToken::Octal),
-                        b'x' | b'X' => self.push(PackedToken::Hex),
+                        b'b' | b'B' => self.push(Token::Binary),
+                        b'c' | b'C' => self.push(Token::Octal),
+                        b'x' | b'X' => self.push(Token::Hex),
                         _ => unreachable!(),
                     }
                     match not_number {
@@ -347,12 +347,12 @@ impl<F: FnMut(PackedToken)> Sink<F> {
                 let not_digit = rest.iter().position(|it| !matches!(it, b'0'..=b'9'));
                 match not_digit {
                     None => {
-                        self.push(PackedToken::Floating);
+                        self.push(Token::Floating);
                         Ok(&[])
                     }
                     Some(pos) => {
                         let input = &rest[pos..];
-                        self.push(PackedToken::Floating);
+                        self.push(Token::Floating);
                         if !matches!(input, [b'.', ..]) {
                             return Ok(input);
                         }
@@ -367,14 +367,14 @@ impl<F: FnMut(PackedToken)> Sink<F> {
             }
             [b'.', b'0'..=b'9', rest @ ..] => {
                 let not_digit = rest.iter().position(|it| !matches!(it, b'0'..=b'9'));
-                self.push(PackedToken::Floating);
+                self.push(Token::Floating);
                 match not_digit {
                     None => Ok(&[]),
                     Some(pos) => Ok(&rest[pos..]),
                 }
             }
             [b'.', rest @ ..] => {
-                self.push(PackedToken::Dot);
+                self.push(Token::Dot);
                 Ok(rest)
             }
             _ => Err(Unknown),
@@ -382,10 +382,10 @@ impl<F: FnMut(PackedToken)> Sink<F> {
     }
 }
 
-fn recover_from_error(input: &[u8], error: Error) -> PackedTokenMatch {
+fn recover_from_error(input: &[u8], error: Error) -> TokenMatch {
     match error {
-        UnclosedChar => PackedTokenMatch {
-            token: PackedToken::Char,
+        UnclosedChar => TokenMatch {
+            token: Token::Char,
             point: CodePoint {
                 length: 2,
                 offset: 0,
@@ -394,18 +394,18 @@ fn recover_from_error(input: &[u8], error: Error) -> PackedTokenMatch {
         e @ UnclosedString | e @ NotANumber => {
             let whitespace = input.iter().position(|it| matches!(it, b' ' | b'\t'));
             match whitespace {
-                None => PackedTokenMatch {
-                    token: PackedToken::Unknown,
+                None => TokenMatch {
+                    token: Token::Unknown,
                     point: CodePoint {
                         length: input.len() as u32,
                         offset: 0,
                     },
                 },
-                Some(pos) => PackedTokenMatch {
+                Some(pos) => TokenMatch {
                     token: if matches!(e, UnclosedString) {
-                        PackedToken::String
+                        Token::String
                     } else {
-                        PackedToken::Unknown
+                        Token::Unknown
                     },
                     point: CodePoint {
                         length: pos as u32,
@@ -414,8 +414,8 @@ fn recover_from_error(input: &[u8], error: Error) -> PackedTokenMatch {
                 },
             }
         }
-        Unknown => PackedTokenMatch {
-            token: PackedToken::Unknown,
+        Unknown => TokenMatch {
+            token: Token::Unknown,
             point: CodePoint::single_point(0),
         },
     }
@@ -428,15 +428,15 @@ impl TokenProducer for Lexer {
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
+    ) -> Result<TokenMatch, Self::Error<'t>> {
         let input = whole_input[position..].as_bytes();
-        let mut token = PackedToken::Unknown;
+        let mut token = Token::Unknown;
         let mut sink = Sink(|it| token = it);
 
         match sink.parse(input) {
             Ok(rest) => {
                 let length = input.len() - rest.len();
-                Ok(PackedTokenMatch {
+                Ok(TokenMatch {
                     token,
                     point: CodePoint {
                         length: length as u32,
@@ -452,10 +452,10 @@ impl TokenProducer for Lexer {
 impl EagerTokensProducer for Lexer {
     type Error<'t> = Infallible;
 
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch>, Self::Error<'t>> {
         let mut tokens = vec![];
         let mut offset = 0;
-        let current_token = Cell::new(PackedToken::Unknown);
+        let current_token = Cell::new(Token::Unknown);
         let mut sink = Sink(|it| current_token.set(it));
         let mut input = input.as_bytes();
 
@@ -463,7 +463,7 @@ impl EagerTokensProducer for Lexer {
             match sink.parse(input) {
                 Ok(rest) => {
                     let length = input.len() - rest.len();
-                    tokens.push(PackedTokenMatch {
+                    tokens.push(TokenMatch {
                         token: current_token.get(),
                         point: CodePoint {
                             length: length as u32,

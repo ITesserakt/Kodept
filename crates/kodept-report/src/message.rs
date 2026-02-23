@@ -1,6 +1,6 @@
 use crate::Str;
-use crate::traits::{IntoMessage, Message, lazy_message};
-use kodept_core::code_point::{CodePoint, Span};
+use crate::traits::Message;
+use kodept_core::code_point::Span;
 use std::borrow::Cow;
 use std::error::Error;
 

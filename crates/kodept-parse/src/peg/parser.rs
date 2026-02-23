@@ -1,11 +1,11 @@
 use crate::TRACING_OPTION;
 use crate::common::{RLTProducer, VerboseEnclosed};
-use crate::lexer::PackedToken;
-use crate::lexer::PackedToken::*;
+use crate::lexer::Token;
+use crate::lexer::Token::*;
 use crate::peg::compatibility::Position;
 use crate::peg::macros::tok;
-use crate::token_match::PackedTokenMatch;
-use crate::token_stream::PackedTokenStream;
+use crate::token_match::TokenMatch;
+use crate::token_stream::TokenStream;
 use derive_more::Constructor;
 use kodept_rlt::new_types::BinaryOperationSymbol;
 use kodept_rlt::new_types::UnaryOperationSymbol;
@@ -14,7 +14,7 @@ use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use peg::error::ParseError;
 
-peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
+peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// UTILITIES
     /// --------------------------------------------------------------------------------------------
     rule _ = quiet! { [tok!(Comment | MultilineComment | Newline | Whitespace)]* }
@@ -35,8 +35,8 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     rule separated<T>(inner: rule<T>) -> Vec<T> =
         inner() ** separation()
 
-    rule ident() -> PackedTokenMatch =
-        quiet!{ [tok!(PackedToken::Identifier)] } / expected!("<ident>")
+    rule ident() -> TokenMatch =
+        quiet!{ [tok!(Token::Identifier)] } / expected!("<ident>")
 
     rule type_ident() -> kodept_rlt::new_types::TypeName =
         i:(quiet!{ [tok!(Type)] } / expected!("<Ident>")) {
@@ -527,7 +527,7 @@ pub struct Parser<const TRACE: bool = false>;
 impl RLTProducer for Parser<TRACING_OPTION> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         grammar::kodept(input)
     }
 }
@@ -536,7 +536,7 @@ impl RLTProducer for Parser<TRACING_OPTION> {
 impl RLTProducer for Parser<false> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
         grammar::kodept(&input)
     }

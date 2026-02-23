@@ -10,7 +10,7 @@ use kodept_parse::common::{ErrorAdapter, RLTProducer};
 use kodept_parse::error::{ParseError, ParseErrors};
 use kodept_parse::lexer::{ASCIILexer, PegLexer};
 use kodept_parse::parser::PegParser;
-use kodept_parse::token_stream::PackedTokenStream;
+use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::{EagerTokenizer, Tok, TokCtor};
 use kodept_report::prelude::*;
 use std::borrow::Cow;
@@ -60,7 +60,7 @@ fn system(
         }
     };
 
-    let stream = PackedTokenStream::new(&tokens);
+    let stream = TokenStream::new(&tokens);
 
     let rlt = match &*parser {
         Parser::Peg => PegParser::new()
