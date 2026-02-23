@@ -243,6 +243,18 @@ where
         });
         self
     }
+
+    pub fn remove_property<Property>(&mut self) -> &mut Self
+    where
+        Node: HasProperty<Property>,
+        Property: NodeProperty,
+    {
+        let this = self.id.entity();
+        (&mut self.buffer).queue(move |world: &mut World| {
+            world.entity_mut(this).remove::<Property>();
+        });
+        self
+    }
 }
 
 impl<T, B> Drop for NodeModification<T, B>

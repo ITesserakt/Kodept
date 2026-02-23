@@ -1,7 +1,7 @@
 use bigdecimal::BigDecimal;
 use kodept_ast::Str;
 use kodept_ast::prelude::{CodeHolder, NodeId};
-use kodept_ast::properties::{Name, Node};
+use kodept_ast::properties::{Name, Node, NodeProperty, RequireProperty};
 use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_rlt::prelude::Context;
@@ -23,30 +23,15 @@ pub enum CtorName {
     Explicit(Str),
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Param<T> {
-    Positional {
-        name: Str,
-        ty: T,
-    },
-    Named {
-        name: Str,
-        ty: T,
-        default_expr_id: Option<NodeId>,
-    },
-}
-
-#[derive(Debug, PartialEq)]
-pub struct PositionalParam<T> {
-    pub name: Str,
-    pub ty: T,
-}
+#[derive(Debug, PartialEq, Component)]
+#[require(Node::of::<Self>())]
+#[require(Name)]
+pub struct Param;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct ValueCtor<T: TypeRef<true>> {
+pub struct ValueCtor {
     pub name: CtorName,
-    pub params: Vec<Param<T>>,
 }
 
 #[derive(Debug, PartialEq, Component)]
@@ -61,31 +46,21 @@ pub struct PrimType;
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
 #[require(Node::of::<Self>())]
-pub struct UserFunction<T: TypeRef<false>> {
-    pub params: Vec<Param<T>>,
-    pub return_type: T,
-}
+pub struct UserFunction;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Name)]
 #[require(Node::of::<Self>())]
-pub struct ForeignFunction<T: TypeRef<true>> {
-    pub params: Vec<T>,
-    pub return_type: T,
-}
+pub struct ForeignFunction;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct AnonFunction<T: TypeRef<false>> {
-    pub params: Vec<PositionalParam<T>>,
-    pub return_type: T,
-}
+pub struct AnonFunction;
 
 #[derive(Debug, PartialEq, Component)]
 #[require(Node::of::<Self>())]
-pub struct Variable<T: TypeRef<false>> {
+pub struct Variable {
     pub mutable: bool,
-    pub annotation: T,
     pub name: VariableName,
 }
 
@@ -134,8 +109,6 @@ pub struct Otherwise;
 #[require(Node::of::<Self>())]
 pub struct Link;
 
-pub trait TypeRef<const REQUIRED: bool>: Send + Sync + 'static {}
-
 #[derive(Debug, PartialEq)]
 pub struct Path {
     pub is_global: bool,
@@ -148,36 +121,31 @@ pub enum VariableName {
     Name(Str),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Component)]
 pub enum TypeAnnotation {
     Infer,
     Named { path: Path, ident: Str },
     Tuple(Vec<Self>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Component)]
 pub enum UnresolvedType {
     Named { path: Path, ident: Str },
     Tuple(Vec<Self>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Component)]
 pub enum ResolvedTypeAnnotation {
     Infer,
     Named(NodeId),
     Tuple(Vec<Self>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Component)]
 pub enum ResolvedType {
     Named(NodeId),
     Tuple(Vec<Self>),
 }
-
-impl TypeRef<true> for UnresolvedType {}
-impl TypeRef<true> for ResolvedType {}
-impl TypeRef<false> for TypeAnnotation {}
-impl TypeRef<false> for ResolvedTypeAnnotation {}
 
 impl Path {
     pub const fn empty(is_global: bool) -> Self {
@@ -193,22 +161,6 @@ impl VariableName {
         match self {
             VariableName::Empty => "_",
             VariableName::Name(name) => name,
-        }
-    }
-}
-
-impl<T> Param<T> {
-    pub fn name(&self) -> &str {
-        match self {
-            Param::Positional { name, .. } => name,
-            Param::Named { name, .. } => name,
-        }
-    }
-
-    pub fn ty(&self) -> &T {
-        match self {
-            Param::Positional { ty, .. } => ty,
-            Param::Named { ty, .. } => ty,
         }
     }
 }
@@ -236,3 +188,25 @@ impl<T: CodeHolder> From<(&Context, T)> for Path {
         }
     }
 }
+
+impl NodeProperty for TypeAnnotation {}
+impl NodeProperty for UnresolvedType {}
+impl NodeProperty for ResolvedTypeAnnotation {}
+impl NodeProperty for ResolvedType {}
+
+impl RequireProperty<TypeAnnotation> for Param {}
+impl RequireProperty<ResolvedTypeAnnotation> for Param {}
+impl RequireProperty<UnresolvedType> for Param {}
+impl RequireProperty<ResolvedType> for Param {}
+
+impl RequireProperty<TypeAnnotation> for Variable {}
+impl RequireProperty<ResolvedTypeAnnotation> for Variable {}
+
+impl RequireProperty<TypeAnnotation> for UserFunction {}
+impl RequireProperty<ResolvedTypeAnnotation> for UserFunction {}
+
+impl RequireProperty<UnresolvedType> for ForeignFunction {}
+impl RequireProperty<ResolvedType> for ForeignFunction {}
+
+impl RequireProperty<TypeAnnotation> for AnonFunction {}
+impl RequireProperty<ResolvedTypeAnnotation> for AnonFunction {}

@@ -68,10 +68,11 @@ pub mod system {
     pub use bevy_ecs::observer::{Observer, On};
     pub use bevy_ecs::system::entity_command::{EntityCommand, EntityCommandError};
     pub use bevy_ecs::system::{
-        Adapt, Command, Commands, Deferred, EntityCommands, If, In, InMut, IntoObserverSystem,
-        IntoSystem, Local, NonSend, NonSendMut, Populated, Query, QueryLens, ReadOnlySystem,
-        ReadOnlySystemParam, Res, ResMut, ScheduleSystem, Single, StaticSystemParam, System,
-        SystemBuffer, SystemInput, SystemMeta, SystemParam, SystemParamItem, SystemState,
+        Adapt, Command, Commands, Deferred, EntityCommands, If, In, InMut, InRef,
+        IntoObserverSystem, IntoSystem, Local, NonSend, NonSendMut, Populated, Query, QueryLens,
+        ReadOnlySystem, ReadOnlySystemParam, Res, ResMut, ScheduleSystem, Single,
+        StaticSystemParam, System, SystemBuffer, SystemInput, SystemMeta, SystemParam,
+        SystemParamItem, SystemState,
     };
 
     #[cfg(feature = "parallel")]

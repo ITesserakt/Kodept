@@ -6,21 +6,21 @@ use crate::per_file::symbols::resolve::types::{
     Opaque, Passthrough, SymbolIsNotType, UnexpectedUnresolvedReference, UnresolvedReference,
 };
 use crate::per_file::symbols::{SymbolKind, SymbolTable};
-use crate::per_file::utils::{IterableSystemParam, ParIterableSystem};
+use crate::per_file::utils::{IterableSystemParam, ParIterableSystem, StaticQuery};
 use crate::source::collection::Reporter;
 use crate::utils::TryReport;
 use kodept_ast::Str;
 use kodept_ast::prelude::{ASTNode, Erase, NodeId, Property};
-use kodept_ast::properties::{Lexeme, Name, SourceSpan};
+use kodept_ast::properties::{HasProperty, Lexeme, Name, RequireProperty, SourceSpan};
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, CtorName, ForeignFunction, Module, Param, Path, PositionalParam, ResolvedType,
-    ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType, UserFunction, UserType, Value,
-    ValueCtor, Variable,
+    Module, Path, ResolvedType, ResolvedTypeAnnotation, TypeAnnotation, UnresolvedType,
+    UserFunction, UserType, Value, Variable,
 };
+use kodept_core::code_point::Span;
 use kodept_core::either::Either;
-use kodept_core::structure::SpanBounds;
+use kodept_core::structure::{Located, SpanBounds};
 use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::hierarchy::{ChildOf, Children};
@@ -42,6 +42,7 @@ mod types {
     use kodept_report::prelude::{Diagnostic, Severity};
     use kodept_report::traits::IntoSpannedReportMessage;
     use kodept_report_macros::Report;
+    use std::borrow::Cow;
     use std::fmt::Display;
 
     #[derive(Debug, Component)]
@@ -79,10 +80,9 @@ mod types {
         pub(super) span: Span,
         pub(super) actual_kind: SymbolKind,
         pub(super) name: &'a str,
-        #[primary_label("required by a {} `{}`", self.ref_kind, self.ref_name)]
+        #[primary_label("required by {}", self.description)]
         pub(super) ref_span: Span,
-        pub(super) ref_kind: &'static str,
-        pub(super) ref_name: &'a str,
+        pub(super) description: Cow<'static, str>,
     }
 
     #[derive(Debug, Report)]
@@ -326,26 +326,13 @@ fn add_on_add<T: Component, U: Component>(
 }
 
 pub(super) fn add_passthrough_markers(
-    query: Query<
-        NodeId,
-        Or<(
-            With<UserFunction<TypeAnnotation>>,
-            With<UserFunction<ResolvedTypeAnnotation>>,
-        )>,
-    >,
+    query: Query<NodeId, With<UserFunction>>,
     mut commands: Commands,
 ) {
     for id in query {
         commands.entity(id.entity()).insert(Passthrough);
     }
-    commands.add_observer(add_on_add(
-        || Passthrough,
-        PhantomData::<UserFunction<TypeAnnotation>>,
-    ));
-    commands.add_observer(add_on_add(
-        || Passthrough,
-        PhantomData::<UserFunction<ResolvedTypeAnnotation>>,
-    ));
+    commands.add_observer(add_on_add(|| Passthrough, PhantomData::<UserFunction>));
 }
 
 pub(super) fn add_opaque_markers(
@@ -680,31 +667,28 @@ fn resolve_type<'i>(
 }
 
 #[derive(SystemParam)]
-pub struct ResolveTypeInVariables<'w, 's> {
+pub struct ResolveTypeIn<'w, 's, Parent: 'static> {
     all_spans: Query<'w, 's, &'static SourceSpan>,
     properties: Properties<'w, 's>,
     syntax: Res<'w, SyntaxResolver>,
+    _phantom: PhantomData<Parent>,
 }
 
-impl ParIterableSystem for ResolveTypeInVariables<'_, '_> {
-    type Iterable = Query<
-        'static,
-        'static,
-        (
-            NodeId<Variable<TypeAnnotation>>,
-            &'static Variable<TypeAnnotation>,
-            Property<InModule>,
-            Property<Lexeme>,
-            Property<SourceSpan>,
-        ),
-    >;
+impl ParIterableSystem for ResolveTypeIn<'_, '_, Variable> {
+    type Iterable = StaticQuery<(
+        NodeId<Variable>,
+        Property<TypeAnnotation>,
+        Property<InModule>,
+        Property<Lexeme>,
+        Property<SourceSpan>,
+    )>;
 
     fn for_each<B: Buffer>(
         &self,
-        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
         params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        let (variable, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let (annotation, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
         let return_type_span = self
             .syntax
             .try_get::<kodept_rlt::prelude::InitializedVariable>(lexeme)
@@ -713,18 +697,11 @@ impl ParIterableSystem for ResolveTypeInVariables<'_, '_> {
             .map(|it| it.1.bounds())
             .unwrap_or(span);
 
-        match resolve_type_annotation(
-            modification.id(),
-            module_id,
-            &variable.annotation,
-            self.properties,
-        ) {
+        match resolve_type_annotation(modification.id(), module_id, annotation, self.properties) {
             Ok(annotation) => {
-                _ = modification.transmute(Variable {
-                    mutable: variable.mutable,
-                    name: variable.name.clone(),
-                    annotation,
-                });
+                modification
+                    .remove_property::<TypeAnnotation>()
+                    .add_property(annotation);
                 Ok(())
             }
             Err(TypeResolutionError::Rejected(rejects, name)) => {
@@ -744,362 +721,131 @@ impl ParIterableSystem for ResolveTypeInVariables<'_, '_> {
                         .map(|it| it.0)
                         .unwrap_or_default(),
                     ref_span: return_type_span,
-                    ref_kind: "explicit type annotation",
-                    ref_name: variable.name.as_str(),
+                    description: "a type annotation".into(),
                 }))
             }
         }
     }
 }
 
-pub(super) fn resolve_types_in_user_functions(
-    user_functions: Query<(
-        NodeId<UserFunction<TypeAnnotation>>,
-        &mut UserFunction<TypeAnnotation>,
-        &Name,
-        &InModule,
-        &Lexeme,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    syntax: Res<SyntaxResolver>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut func, func_name, &InModule(module_id), lexeme, span) in user_functions {
-        let modification = NodeModification::new(commands.reborrow(), id);
-        let func_syntax = syntax
-            .try_get::<kodept_rlt::prelude::BodiedFunction>(lexeme.0)
-            .ok();
-        let return_type_span = func_syntax
-            .and_then(|it| it.return_type.as_ref())
-            .map(|it| it.1.bounds())
-            .unwrap_or(span.0);
+pub(super) struct StrictType;
 
-        let return_type =
-            match resolve_type_annotation(id, module_id, &func.return_type, properties) {
-                Ok(annotation) => annotation,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: return_type_span,
-                    });
-                    continue;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_span: return_type_span,
-                        ref_kind: "return type",
-                        ref_name: func_name.as_ref(),
-                    });
-                    continue;
-                }
-            };
+impl<P: 'static> ParIterableSystem<&'static str> for ResolveTypeIn<'_, '_, P>
+where
+    P: ASTNode
+        + RequireProperty<TypeAnnotation>
+        + RequireProperty<InModule>
+        + HasProperty<ResolvedTypeAnnotation>,
+{
+    type Iterable = StaticQuery<(
+        NodeId<P>,
+        Property<TypeAnnotation>,
+        Property<InModule>,
+        Property<Lexeme>,
+        Property<SourceSpan>,
+    )>;
 
-        let params = func.params.drain(..).enumerate().map(|(index, param)| {
-            let result = resolve_type_annotation(id, module_id, param.ty(), properties);
-            let param_span = func_syntax
-                .and_then(|it| it.params.as_ref())
-                .and_then(|it| it.inner.get(index))
-                .map(|it| it.bounds())
-                .unwrap_or(span.0);
+    fn for_each_with_input<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        input: &&'static str,
+    ) -> impl TryReport {
+        let (annotation, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let ref_span = self
+            .syntax
+            .try_get_unknown(lexeme)
+            .map(|it| it.location())
+            .map(Span::from)
+            .unwrap_or_default();
 
-            let annotation = match result {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: param_span,
-                    });
-                    return None;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_span: param_span,
-                        ref_kind: "parameter",
-                        ref_name: param.name(),
-                    });
-                    return None;
-                }
-            };
-
-            match param {
-                Param::Positional { name, .. } => Some(Param::Positional {
-                    name,
-                    ty: annotation,
-                }),
-                Param::Named {
-                    name,
-                    default_expr_id,
-                    ..
-                } => Some(Param::Named {
-                    name,
-                    ty: annotation,
-                    default_expr_id,
-                }),
+        match resolve_type_annotation(modification.id(), module_id, annotation, self.properties) {
+            Ok(annotation) => {
+                modification
+                    .remove_property::<TypeAnnotation>()
+                    .add_property(annotation);
+                Ok(())
             }
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        modification.transmute(UserFunction {
-            return_type,
-            params,
-        });
-    }
-}
-
-pub(super) fn resolve_types_in_value_ctors(
-    query: Query<(
-        NodeId<ValueCtor<UnresolvedType>>,
-        &mut ValueCtor<UnresolvedType>,
-        &InModule,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut ctor, &InModule(module_id), span) in query {
-        let modification = NodeModification::new(commands.reborrow(), id);
-
-        let params = ctor.params.drain(..).map(|param| {
-            let result = resolve_type(id, module_id, param.ty(), properties);
-            let ty = match result {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: span.0,
-                    });
-                    return None;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        ref_kind: "parameter",
-                        ref_name: param.name(),
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_span: span.0,
-                    });
-                    return None;
-                }
-            };
-
-            match param {
-                Param::Positional { name, .. } => Some(Param::Positional { name, ty }),
-                Param::Named {
-                    name,
-                    default_expr_id,
-                    ..
-                } => Some(Param::Named {
-                    name,
-                    default_expr_id,
-                    ty,
-                }),
-            }
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        modification.transmute(ValueCtor {
-            name: std::mem::replace(&mut ctor.name, CtorName::Inline),
-            params,
-        });
-    }
-}
-
-pub(super) fn resolve_types_in_anon_functions(
-    query: Query<(
-        NodeId<AnonFunction<TypeAnnotation>>,
-        &mut AnonFunction<TypeAnnotation>,
-        &InModule,
-        &Lexeme,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    properties: Properties,
-    syntax: Res<SyntaxResolver>,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut func, &InModule(module_id), lexeme, span) in query {
-        let func_syntax = syntax.try_get::<kodept_rlt::prelude::Lambda>(lexeme.0).ok();
-
-        let return_type =
-            match resolve_type_annotation(id, module_id, &func.return_type, properties) {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: span.0,
-                    });
-                    continue;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        actual_kind,
-                        name,
-
-                        ref_span: Default::default(),
-                        ref_kind: "parameter",
-                        ref_name: "anonymous function",
-                    });
-                    continue;
-                }
-            };
-
-        let params = func.params.drain(..).enumerate().map(|(index, it)| {
-            let result = resolve_type_annotation(id, module_id, &it.ty, properties);
-            let param_span = func_syntax
-                .and_then(|it| it.binds.inner.get(index))
-                .map(|it| it.bounds())
-                .unwrap_or(span.0);
-
-            let ty = match result {
-                Ok(x) => x,
-                Err(TypeResolutionError::Rejected(rejects, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejects,
-                        span: param_span,
-                    });
-                    return None;
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        name,
-                        ref_span: param_span,
-                        ref_kind: "parameter",
-                        actual_kind,
-                        ref_name: &it.name,
-                    });
-                    return None;
-                }
-            };
-
-            Some(PositionalParam { name: it.name, ty })
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        let modification = NodeModification::new(commands.reborrow(), id);
-        modification.transmute(AnonFunction {
-            return_type,
-            params,
-        });
-    }
-}
-
-pub(super) fn resolve_types_in_foreign_functions(
-    query: Query<(
-        NodeId<ForeignFunction<UnresolvedType>>,
-        &mut ForeignFunction<UnresolvedType>,
-        &Name,
-        &InModule,
-        &SourceSpan,
-    )>,
-    all_spans: Query<&SourceSpan>,
-    properties: Properties,
-    mut reporter: Reporter,
-    mut commands: Commands,
-) {
-    for (id, mut func, func_name, &InModule(module_id), span) in query {
-        let return_type = match resolve_type(id, module_id, &func.return_type, properties) {
-            Ok(x) => x,
             Err(TypeResolutionError::Rejected(rejects, name)) => {
-                reporter.report(UnresolvedReference {
+                Err(Either::Left(UnresolvedReference {
                     name,
+                    span,
                     note: rejects,
-                    span: span.0,
-                });
-                continue;
+                }))
             }
             Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                reporter.report(SymbolIsNotType {
+                Err(Either::Right(SymbolIsNotType {
                     name,
                     actual_kind,
-                    span: all_spans
+                    ref_span,
+                    span: self
+                        .all_spans
                         .get(resolved_to.entity())
                         .map(|it| it.0)
                         .unwrap_or_default(),
-                    ref_kind: "return type",
-                    ref_name: func_name.as_ref(),
-                    ref_span: span.0,
-                });
-                continue;
+                    description: format!("{input}").into(),
+                }))
             }
-        };
+        }
+    }
+}
 
-        let params = func.params.drain(..).enumerate().map(|(index, it)| {
-            match resolve_type(id, module_id, &it, properties) {
-                Ok(x) => Some(x),
-                Err(TypeResolutionError::Rejected(rejected, name)) => {
-                    reporter.report(UnresolvedReference {
-                        name,
-                        note: rejected,
-                        span: span.0,
-                    });
-                    None
-                }
-                Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
-                    reporter.report(SymbolIsNotType {
-                        name,
-                        actual_kind,
-                        span: all_spans
-                            .get(resolved_to.entity())
-                            .map(|it| it.0)
-                            .unwrap_or_default(),
-                        ref_kind: "parameter",
-                        ref_name: &index.to_string(),
-                        ref_span: span.0,
-                    });
-                    None
-                }
+impl<P: 'static> ParIterableSystem<(StrictType, &'static str)> for ResolveTypeIn<'_, '_, P>
+where
+    P: ASTNode
+        + RequireProperty<UnresolvedType>
+        + RequireProperty<InModule>
+        + HasProperty<ResolvedType>,
+{
+    type Iterable = StaticQuery<(
+        NodeId<P>,
+        Property<UnresolvedType>,
+        Property<InModule>,
+        Property<Lexeme>,
+        Property<SourceSpan>,
+    )>;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        let (annotation, &InModule(module_id), &Lexeme(lexeme), &SourceSpan(span)) = params;
+        let ref_span = self
+            .syntax
+            .try_get_unknown(lexeme)
+            .map(|it| it.location())
+            .map(Span::from)
+            .unwrap_or_default();
+
+        match resolve_type(modification.id(), module_id, annotation, self.properties) {
+            Ok(annotation) => {
+                modification
+                    .remove_property::<UnresolvedType>()
+                    .add_property(annotation);
+                Ok(())
             }
-        });
-        let Some(params) = params.collect() else {
-            continue;
-        };
-
-        let modification = NodeModification::new(commands.reborrow(), id);
-        modification.transmute(ForeignFunction {
-            return_type,
-            params,
-        });
+            Err(TypeResolutionError::Rejected(rejects, name)) => {
+                Err(Either::Left(UnresolvedReference {
+                    name,
+                    span,
+                    note: rejects,
+                }))
+            }
+            Err(TypeResolutionError::WrongKind(resolved_to, actual_kind, name)) => {
+                Err(Either::Right(SymbolIsNotType {
+                    name,
+                    actual_kind,
+                    ref_span,
+                    span: self
+                        .all_spans
+                        .get(resolved_to.entity())
+                        .map(|it| it.0)
+                        .unwrap_or_default(),
+                    description: "a return type".into(),
+                }))
+            }
+        }
     }
 }
 

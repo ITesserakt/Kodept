@@ -7,8 +7,7 @@ use kodept_ast::syntax_tree::children::{Family, HasChild};
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ecs::query::{QueryData, QueryFilter};
 use kodept_ecs::system::{
-    Commands, IntoSystem, Query, ReadOnlySystemParam, StaticSystemParam, SystemParam,
-    SystemParamItem,
+    Commands, InMut, IntoSystem, Query, StaticSystemParam, SystemParam, SystemParamItem,
 };
 use kodept_report::prelude::MessageBehaviour;
 use kodept_report::traits::IntoSpannedReportMessage;
@@ -17,63 +16,111 @@ use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::warn;
 
-pub(super) trait IterableSystem {
+pub(super) trait IterableSystem<Input = ()> {
     type Iterable: IterableSystemParam + 'static;
 
-    fn for_each<B: Buffer>(
+    fn for_each_with_input<B: Buffer>(
         &mut self,
         modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
         params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
-    ) -> impl TryReport;
-}
+        input: &mut Input,
+    ) -> impl TryReport {
+        _ = input;
+        Self::for_each(self, modification, params)
+    }
 
-pub(super) trait ParIterableSystem {
-    type Iterable: IterableSystemParam + 'static;
-
-    fn for_each<B: Buffer>(
-        &self,
-        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
-    ) -> impl TryReport;
-}
-
-impl<F: ParIterableSystem> IterableSystem for F {
-    type Iterable = F::Iterable;
-
-    #[inline]
     fn for_each<B: Buffer>(
         &mut self,
         modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
         params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        F::for_each(self, modification, params)
+        _ = modification;
+        _ = params;
     }
 }
 
-pub(super) trait IntoNodeSystem {
-    fn system() -> impl IntoSystem<(), (), ()>;
+pub(super) trait ParIterableSystem<Input = ()> {
+    type Iterable: IterableSystemParam + 'static;
+
+    fn for_each_with_input<B: Buffer>(
+        &self,
+        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        input: &Input,
+    ) -> impl TryReport {
+        _ = input;
+        Self::for_each(self, modification, params)
+    }
+
+    fn for_each<B: Buffer>(
+        &self,
+        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+    ) -> impl TryReport {
+        _ = modification;
+        _ = params;
+    }
 }
 
-pub(super) trait IntoParNodeSystem {
-    fn par_system() -> impl IntoSystem<(), (), ()>;
+impl<In, F: ParIterableSystem<In>> IterableSystem<In> for F {
+    type Iterable = F::Iterable;
+
+    #[inline]
+    fn for_each_with_input<B: Buffer>(
+        &mut self,
+        modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        input: &mut In,
+    ) -> impl TryReport {
+        F::for_each_with_input(self, modification, params, input)
+    }
 }
 
-impl<F: SystemParam, I: IterableSystemParam> IntoNodeSystem for F
+pub(super) trait IntoNodeSystem<Input> {
+    fn system_with_input(input: Input) -> impl IntoSystem<(), (), ()>;
+
+    fn system() -> impl IntoSystem<(), (), ()>
+    where
+        Input: Default,
+    {
+        Self::system_with_input(Input::default())
+    }
+}
+
+pub(super) trait IntoParNodeSystem<Input> {
+    fn par_system_with_input(input: Input) -> impl IntoSystem<(), (), ()>;
+
+    fn par_system() -> impl IntoSystem<(), (), ()>
+    where
+        Input: Default,
+    {
+        Self::par_system_with_input(Input::default())
+    }
+}
+
+impl<Input, F: SystemParam, I: IterableSystemParam> IntoNodeSystem<Input> for F
 where
+    Input: Send + Sync + 'static,
     F: 'static,
     I: 'static,
-    for<'w, 's> SystemParamItem<'w, 's, F>: IterableSystem<Iterable = I>,
+    for<'w, 's> SystemParamItem<'w, 's, F>: IterableSystem<Input, Iterable = I>,
     I::Node: ASTNode,
 {
-    fn system() -> impl IntoSystem<(), (), ()> {
+    fn system_with_input(input: Input) -> impl IntoSystem<(), (), ()> {
         let system = IntoSystem::into_system(
-            |mut query: StaticSystemParam<I>,
+            |mut input: InMut<Input>,
+             mut query: StaticSystemParam<I>,
              mut reporter: Reporter,
              mut extras: StaticSystemParam<F>,
              mut commands: Commands| {
                 I::for_each(&mut query, move |id, rest| {
                     let modification = NodeModification::new(commands.reborrow(), id);
-                    let output = IterableSystem::for_each(&mut *extras, modification, rest);
+                    let output = IterableSystem::for_each_with_input(
+                        &mut *extras,
+                        modification,
+                        rest,
+                        &mut *input,
+                    );
                     match output.branch() {
                         ControlFlow::Continue(_) => ControlFlow::Continue(()),
                         ControlFlow::Break(error) => match error.behaviour() {
@@ -93,44 +140,45 @@ where
         );
 
         let name = std::any::type_name::<F>();
-        system.with_name(Cow::Borrowed(name))
+        system.with_name(Cow::Borrowed(name)).with_input(input)
     }
 }
 
 #[cfg(feature = "parallel")]
-impl<F: ReadOnlySystemParam, I: IterableSystemParam> IntoParNodeSystem for F
+impl<In, F: kodept_ecs::system::ReadOnlySystemParam, I: IterableSystemParam> IntoParNodeSystem<In>
+    for F
 where
+    In: Send + Sync + 'static,
     F: 'static,
     I: 'static,
-    for<'w, 's> F::Item<'w, 's>: ParIterableSystem<Iterable = I> + Sync,
+    for<'w, 's> F::Item<'w, 's>: ParIterableSystem<In, Iterable = I> + Sync,
     I::Node: ASTNode,
 {
-    fn par_system() -> impl IntoSystem<(), (), ()> {
+    fn par_system_with_input(input: In) -> impl IntoSystem<(), (), ()> {
         let system = IntoSystem::into_system(
-            |mut query: StaticSystemParam<I>,
-             reporter: crate::source::collection::ParallelReporter,
-             extras: StaticSystemParam<F>,
-             commands: kodept_ecs::system::ParallelCommands| {
+            move |mut query: StaticSystemParam<I>,
+                  reporter: crate::source::collection::ParallelReporter,
+                  extras: StaticSystemParam<F>,
+                  commands: kodept_ecs::system::ParallelCommands| {
                 let extras = &*extras;
                 I::par_for_each(&mut query, |id, rest| {
-                    commands.command_scope(|c| {
-                        let modification = NodeModification::new(c, id);
-                        let output = ParIterableSystem::for_each(extras, modification, rest);
-                        match output.branch() {
-                            ControlFlow::Continue(_) => ControlFlow::Continue(()),
-                            ControlFlow::Break(error) => match error.behaviour() {
-                                MessageBehaviour::FailFast { reason } => {
-                                    warn!("Stopping iteration: {reason}");
-                                    reporter.report(error);
-                                    ControlFlow::Break(())
-                                }
-                                MessageBehaviour::Suppress => {
-                                    reporter.report(error);
-                                    ControlFlow::Continue(())
-                                }
-                            },
-                        }
-                    })
+                    let modification = NodeModification::new(&commands, id);
+                    let output =
+                        ParIterableSystem::for_each_with_input(extras, modification, rest, &input);
+                    match output.branch() {
+                        ControlFlow::Continue(_) => ControlFlow::Continue(()),
+                        ControlFlow::Break(error) => match error.behaviour() {
+                            MessageBehaviour::FailFast { reason } => {
+                                warn!("Stopping iteration: {reason}");
+                                reporter.report(error);
+                                ControlFlow::Break(())
+                            }
+                            MessageBehaviour::Suppress => {
+                                reporter.report(error);
+                                ControlFlow::Continue(())
+                            }
+                        },
+                    }
                 })
             },
         );
@@ -164,6 +212,8 @@ pub(super) trait SplitFirst {
 
     fn split(self) -> (Self::Head, Self::Tail);
 }
+
+pub(super) type StaticQuery<T, F = ()> = Query<'static, 'static, T, F>;
 
 impl<T, F, Node> IterableSystemParam for Query<'_, '_, T, F>
 where

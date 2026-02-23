@@ -3,7 +3,7 @@ use crate::Error::{
 };
 use crate::{
     AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple,
-    TypeAnnotation, UserFunction, UserType, Value, Variable,
+    UserFunction, UserType, Value, Variable,
 };
 use bigdecimal::{BigDecimal, Num};
 use kodept_ast::Str;
@@ -49,11 +49,11 @@ impl<B: Buffer> Dispatch<Module, Declaration, B> for Dispatcher<TopLevelNode> {
 
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Body>
 where
-    P: HasChild<Variable<TypeAnnotation>, T>,
+    P: HasChild<Variable, T>,
     P: HasChild<Block, T>,
-    P: HasChild<UserFunction<TypeAnnotation>, T>,
+    P: HasChild<UserFunction, T>,
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
@@ -82,11 +82,11 @@ where
 
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<BlockLevelNode>
 where
-    P: HasChild<Variable<TypeAnnotation>, T>,
+    P: HasChild<Variable, T>,
     P: HasChild<Block, T>,
-    P: HasChild<UserFunction<TypeAnnotation>, T>,
+    P: HasChild<UserFunction, T>,
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
@@ -122,7 +122,7 @@ where
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Operation>
 where
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
@@ -234,7 +234,7 @@ where
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
     P: HasChild<Value, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
 {
     type Syntax = Expression;

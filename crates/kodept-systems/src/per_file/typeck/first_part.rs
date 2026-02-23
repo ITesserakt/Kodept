@@ -2,7 +2,7 @@ use crate::per_file::symbols::SymbolKind;
 use crate::source::collection::Reporter;
 use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::{NodeProperty, RequireProperty, SourceSpan};
-use kodept_ast_nodes::{Literal, Param, ResolvedType, UserType, ValueCtor};
+use kodept_ast_nodes::{Literal, ResolvedType, UserType, ValueCtor};
 use kodept_core::code_point::Span;
 use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
@@ -23,7 +23,7 @@ pub(super) struct PartiallyTypechecked(PartialInfer<Referral>);
 impl NodeProperty for PartiallyTypechecked {}
 impl RequireProperty<PartiallyTypechecked> for Literal {}
 impl RequireProperty<PartiallyTypechecked> for UserType {}
-impl RequireProperty<PartiallyTypechecked> for ValueCtor<ResolvedType> {}
+impl RequireProperty<PartiallyTypechecked> for ValueCtor {}
 
 #[derive(Debug, Report)]
 #[severity("error")]
@@ -87,39 +87,5 @@ fn resolved_ty_as_monomorphic(ty: &ResolvedType) -> PartialInfer<Referral> {
             let monomorphic_type = MonomorphicType::tuple(ty);
             result.with_type(monomorphic_type)
         }
-    }
-}
-
-pub(super) fn typeck_value_ctors(
-    query: Query<(NodeId<ValueCtor<ResolvedType>>, &ValueCtor<ResolvedType>)>,
-    mut commands: Commands,
-) {
-    for (id, ctor) in query {
-        let named_params_count = ctor
-            .params
-            .iter()
-            .rev()
-            .take_while(|it| matches!(it, Param::Named { .. }))
-            .count();
-        let total_params_count = ctor.params.len();
-        let (positional, named) = ctor
-            .params
-            .split_at(total_params_count - named_params_count);
-        // TODO: add support for named parameters
-        assert_eq!(named.len(), 0);
-
-        let mut result = PartialInfer::new(MonomorphicType::UNIT);
-        let ctor_ty = positional
-            .iter()
-            .map(|it| resolved_ty_as_monomorphic(it.ty()))
-            .rfold(MonomorphicType::var(), |acc, next| {
-                result.assumptions.merge(next.assumptions);
-                result.constraints.extend(next.constraints);
-                MonomorphicType::fun1(&*next.current_type, acc)
-            });
-
-        commands
-            .entity(id.entity())
-            .insert(PartiallyTypechecked(result.with_type(ctor_ty)));
     }
 }

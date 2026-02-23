@@ -1,13 +1,12 @@
 use crate::per_file::utils::{IntoNodeSystem, IterableSystemParam, ParIterableSystem};
 use crate::source::collection::Reporter;
 use crate::utils::TryReport;
-use kodept_ast::prelude::{ASTNode, ChildrenFetch, HierarchicalQuery, NodeId, Property};
+use kodept_ast::prelude::{HierarchicalQuery, NodeId, Property};
 use kodept_ast::properties::{Lexeme, Node, NodeProperty, RequireProperty, SourceSpan};
-use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Expression, Link, Literal, Module, NormalizedBlock, Param, Statement,
-    Tuple, TypeAnnotation, TypeRef, UserFunction, Value, Variable,
+    AnonFunction, Block, Expression, ForeignFunction, Link, Literal, Module, NormalizedBlock,
+    Param, Statement, Tuple, UserFunction, Value, Variable,
 };
 use kodept_core::code_point::Span;
 use kodept_ecs::archetype::Archetype;
@@ -16,12 +15,11 @@ use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::hierarchy::ChildOf;
 use kodept_ecs::lifecycle::{Add, Insert};
 use kodept_ecs::query::{Has, With};
-use kodept_ecs::system::{Commands, On, Query, Res, SystemParam};
-use kodept_ecs::world::Ref;
+use kodept_ecs::schedule::IntoScheduleConfigs;
+use kodept_ecs::system::{Commands, On, Query, SystemParam};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_report_macros::Report;
-use kodept_rlt::traversal::SyntaxNode;
 
 define_phase! {
     pub phase AstNormalizationPhase[AstNormalizationPhaseLabel];
@@ -32,72 +30,7 @@ define_phase! {
 }
 
 fn build(engine: &mut PhaseEngine<AstNormalizationPhase>) {
-    engine.add_systems(NormalizeBlock::system());
-
-    // engine.add_systems(
-    //     SystemBuilder::of()
-    //         .hierarchy()
-    //         .parent_data()
-    //         .children_data()
-    //         .extra_params::<StatementComponentIds>()
-    //         .handler(normalize_block)
-    //         .into_system()
-    //         .trace_completion()
-    //         .before(ensure_no_non_normalized_blocks),
-    // );
-    // engine.add_systems(ensure_no_non_normalized_blocks);
-    //
-    // engine.add_systems(
-    //     SystemBuilder::of()
-    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
-    //         .extra_params::<Res<_>>()
-    //         .handler(ensure_named_params_are_at_the_end(
-    //             |it: &ValueCtor<UnresolvedType>| &*it.params,
-    //             |_: &kodept_rlt::prelude::Struct| None,
-    //         ))
-    //         .into_system(),
-    // );
-    // engine.add_systems(
-    //     SystemBuilder::of()
-    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
-    //         .extra_params::<Res<SyntaxResolver>>()
-    //         .handler(ensure_named_params_are_at_the_end(
-    //             |it: &ValueCtor<ResolvedType>| &*it.params,
-    //             |_: &kodept_rlt::prelude::Struct| None,
-    //         ))
-    //         .into_system(),
-    // );
-    // engine.add_systems(
-    //     SystemBuilder::of()
-    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
-    //         .extra_params::<Res<SyntaxResolver>>()
-    //         .handler(ensure_named_params_are_at_the_end(
-    //             |it: &UserFunction<TypeAnnotation>| &*it.params,
-    //             |it: &kodept_rlt::prelude::BodiedFunction| {
-    //                 it.params
-    //                     .as_ref()
-    //                     .map(|it| it.left.bounds() + it.right.bounds())
-    //                     .or(Some(it.id.bounds()))
-    //             },
-    //         ))
-    //         .into_system(),
-    // );
-    // engine.add_systems(
-    //     SystemBuilder::of()
-    //         .flat::<(_, Ref<_>, &Lexeme, &SourceSpan)>()
-    //         .extra_params::<Res<SyntaxResolver>>()
-    //         .handler(ensure_named_params_are_at_the_end(
-    //             |it: &UserFunction<ResolvedTypeAnnotation>| &*it.params,
-    //             |it: &kodept_rlt::prelude::BodiedFunction| {
-    //                 it.params
-    //                     .as_ref()
-    //                     .map(|it| it.left.bounds() + it.right.bounds())
-    //                     .or(Some(it.id.bounds()))
-    //             },
-    //         ))
-    //         .into_system(),
-    // );
-
+    engine.add_systems((NormalizeBlock::system(), ensure_no_non_normalized_blocks).chain());
     engine.add_observer(propagate_module_info);
 
     #[cfg(feature = "reflection")]
@@ -144,7 +77,11 @@ struct NamedParamsShouldBeLast {
 pub struct InModule(pub NodeId<Module>);
 impl NodeProperty for InModule {}
 impl RequireProperty<InModule> for Value {}
-impl<T: TypeRef<false>> RequireProperty<InModule> for Variable<T> {}
+impl RequireProperty<InModule> for Variable {}
+impl RequireProperty<InModule> for UserFunction {}
+impl RequireProperty<InModule> for AnonFunction {}
+impl RequireProperty<InModule> for ForeignFunction {}
+impl RequireProperty<InModule> for Param {}
 
 fn propagate_module_info(
     parent_changed: On<Insert, ChildOf>,
@@ -193,11 +130,11 @@ fn ensure_no_non_normalized_blocks(
 
 #[derive(SystemParam)]
 struct NormalizeBlock<'s> {
-    anon_function: ComponentIdFor<'s, AnonFunction<TypeAnnotation>>,
+    anon_function: ComponentIdFor<'s, AnonFunction>,
     literal: ComponentIdFor<'s, Literal>,
     tuple: ComponentIdFor<'s, Tuple>,
     value: ComponentIdFor<'s, Value>,
-    user_function: ComponentIdFor<'s, UserFunction<TypeAnnotation>>,
+    user_function: ComponentIdFor<'s, UserFunction>,
     link: ComponentIdFor<'s, Link>,
     block: ComponentIdFor<'s, Block>,
 }
@@ -270,37 +207,6 @@ impl ParIterableSystem for NormalizeBlock<'_> {
         }
 
         modification.transmute(NormalizedBlock {});
-        Ok(())
-    }
-}
-
-fn ensure_named_params_are_at_the_end<T: ASTNode, U, L: SyntaxNode>(
-    mut get_params: impl FnMut(&T) -> &[Param<U>],
-    mut get_span: impl FnMut(&L) -> Option<Span>,
-) -> impl FnMut(
-    NodeId<T>,
-    (Ref<T>, &Lexeme, &SourceSpan),
-    &mut Res<SyntaxResolver>,
-) -> Result<(), NamedParamsShouldBeLast> {
-    move |_, (item, lexeme, span), syntax| {
-        let span = syntax
-            .try_get::<L>(lexeme.0)
-            .ok()
-            .and_then(|it| get_span(it))
-            .unwrap_or(span.0);
-
-        let params = get_params(&*item);
-        let mut is_named_params = false;
-        for param in params {
-            match (is_named_params, param) {
-                (false, Param::Positional { .. }) => continue,
-                (false, Param::Named { .. }) => is_named_params = true,
-                (true, Param::Named { .. }) => continue,
-                (true, Param::Positional { .. }) => {
-                    return Err(NamedParamsShouldBeLast { span });
-                }
-            }
-        }
         Ok(())
     }
 }

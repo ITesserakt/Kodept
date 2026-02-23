@@ -32,6 +32,7 @@ fn system(
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
     let (root, _) = syntax.root();
+
     let root_id = commands.spawn((Root, Modules)).id();
     let mut spawner = RelatedNodeSpawner::new(&mut commands, NodeId::<Modules>::from(root_id));
 
