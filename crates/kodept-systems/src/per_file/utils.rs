@@ -11,7 +11,6 @@ use kodept_ecs::system::{
 };
 use kodept_report::prelude::MessageBehaviour;
 use kodept_report::traits::IntoSpannedReportMessage;
-use std::borrow::Cow;
 use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::warn;
@@ -101,6 +100,27 @@ pub(super) trait IntoParNodeSystem<Input> {
     }
 }
 
+#[inline]
+fn handle_output<T: IntoSpannedReportMessage>(
+    value: ControlFlow<T>,
+    handler: impl FnOnce(T),
+) -> ControlFlow<()> {
+    match value {
+        ControlFlow::Continue(()) => ControlFlow::Continue(()),
+        ControlFlow::Break(error) => match error.behaviour() {
+            MessageBehaviour::FailFast { reason } => {
+                warn!("Stopping iteration: {reason}");
+                handler(error);
+                ControlFlow::Break(())
+            }
+            MessageBehaviour::Suppress => {
+                handler(error);
+                ControlFlow::Break(())
+            }
+        },
+    }
+}
+
 impl<Input, F: SystemParam, I: IterableSystemParam> IntoNodeSystem<Input> for F
 where
     Input: Send + Sync + 'static,
@@ -124,26 +144,44 @@ where
                         rest,
                         &mut *input,
                     );
-                    match output.branch() {
-                        ControlFlow::Continue(_) => ControlFlow::Continue(()),
-                        ControlFlow::Break(error) => match error.behaviour() {
-                            MessageBehaviour::FailFast { reason } => {
-                                warn!("Stopping iteration: {reason}");
-                                reporter.report(error);
-                                ControlFlow::Break(())
-                            }
-                            MessageBehaviour::Suppress => {
-                                reporter.report(error);
-                                ControlFlow::Continue(())
-                            }
-                        },
-                    }
+                    handle_output(output.branch(), |e| reporter.report(e))
                 })
             },
         );
 
         let name = std::any::type_name::<F>();
-        system.with_name(Cow::Borrowed(name)).with_input(input)
+        system.with_name(name).with_input(input)
+    }
+}
+
+#[cfg(not(feature = "parallel"))]
+impl<In, F: kodept_ecs::system::ReadOnlySystemParam, I: IterableSystemParam> IntoParNodeSystem<In>
+    for F
+where
+    In: Send + Sync + 'static,
+    F: 'static,
+    I: 'static,
+    for<'w, 's> F::Item<'w, 's>: ParIterableSystem<In, Iterable = I> + Sync,
+    I::Node: ASTNode,
+{
+    fn par_system_with_input(input: In) -> impl IntoSystem<(), (), ()> {
+        let system = IntoSystem::into_system(
+            move |mut query: StaticSystemParam<I>,
+                  mut reporter: Reporter,
+                  extras: StaticSystemParam<F>,
+                  mut commands: Commands| {
+                let extras = &*extras;
+                I::for_each(&mut query, |id, rest| {
+                    let modification = NodeModification::new(&mut commands, id);
+                    let output =
+                        ParIterableSystem::for_each_with_input(extras, modification, rest, &input);
+                    handle_output(output.branch(), |e| reporter.report(e))
+                })
+            },
+        );
+
+        let name = std::any::type_name::<F>();
+        system.with_name(name)
     }
 }
 
@@ -168,20 +206,7 @@ where
                     let modification = NodeModification::new(&commands, id);
                     let output =
                         ParIterableSystem::for_each_with_input(extras, modification, rest, &input);
-                    match output.branch() {
-                        ControlFlow::Continue(_) => ControlFlow::Continue(()),
-                        ControlFlow::Break(error) => match error.behaviour() {
-                            MessageBehaviour::FailFast { reason } => {
-                                warn!("Stopping iteration: {reason}");
-                                reporter.report(error);
-                                ControlFlow::Break(())
-                            }
-                            MessageBehaviour::Suppress => {
-                                reporter.report(error);
-                                ControlFlow::Continue(())
-                            }
-                        },
-                    }
+                    handle_output(output.branch(), |e| reporter.report(e))
                 })
             },
         );
@@ -200,6 +225,7 @@ pub(super) trait IterableSystemParam: SystemParam {
         on_each: impl FnMut(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>,
     );
 
+    #[cfg_attr(not(feature = "parallel"), allow(dead_code))]
     fn par_for_each<'s>(
         this: &mut Self::Item<'_, 's>,
         on_each: impl Fn(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>

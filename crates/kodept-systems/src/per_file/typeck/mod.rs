@@ -4,8 +4,7 @@ use crate::per_file::typeck::first_part::{
     PartiallyTypechecked, TypeckAnonFunction, TypeckBlock, TypeckCall, TypeckIf, TypeckLink,
     TypeckLiteral, TypeckTuple, TypeckUserFunction, TypeckValue,
 };
-use crate::per_file::utils::IntoNodeSystem;
-use crate::utils::LogSystemEx;
+use crate::per_file::utils::{IntoNodeSystem, IntoParNodeSystem};
 use kodept_ast::prelude::NodeId;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::Added;
@@ -28,8 +27,8 @@ define_phase! {
 }
 
 fn build(engine: &mut PhaseEngine<TypeCheckPhase>) {
-    engine.add_systems(TypeckLiteral::system().before(partial_propagation_system));
-    engine.add_systems(TypeckValue::system().before(partial_propagation_system));
+    engine.add_systems(TypeckLiteral::par_system().before(partial_propagation_system));
+    engine.add_systems(TypeckValue::par_system().before(partial_propagation_system));
 
     engine.add_systems((partial_propagation_system, remove_empty_partials).chain());
 }

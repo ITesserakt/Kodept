@@ -1,4 +1,4 @@
-use crate::per_file::utils::{IntoNodeSystem, IterableSystemParam, ParIterableSystem};
+use crate::per_file::utils::{IntoParNodeSystem, IterableSystemParam, ParIterableSystem};
 use crate::source::collection::Reporter;
 use crate::utils::TryReport;
 use kodept_ast::prelude::{HierarchicalQuery, NodeId, Property};
@@ -30,7 +30,13 @@ define_phase! {
 }
 
 fn build(engine: &mut PhaseEngine<AstNormalizationPhase>) {
-    engine.add_systems((NormalizeBlock::system(), ensure_no_non_normalized_blocks).chain());
+    engine.add_systems(
+        (
+            NormalizeBlock::par_system(),
+            ensure_no_non_normalized_blocks,
+        )
+            .chain(),
+    );
     engine.add_observer(propagate_module_info);
 
     #[cfg(feature = "reflection")]
@@ -61,14 +67,6 @@ struct DanglingExpression {
 struct UnexpectedNonNormalizedBlock {
     id: NodeId<Block>,
     #[primary_label("this block should be normalized")]
-    span: Span,
-}
-
-#[derive(Debug, Report)]
-#[severity("error")]
-#[message("Named parameters should appear last")]
-struct NamedParamsShouldBeLast {
-    #[primary_label]
     span: Span,
 }
 

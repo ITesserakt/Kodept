@@ -1,7 +1,8 @@
 use crate::source::collection::Reporter;
 use kodept_ecs::schedule::IntoScheduleConfigs;
-use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, SystemInput};
+use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, System, SystemInput};
 use kodept_report::prelude::IntoSpannedReportMessage;
+use std::borrow::Cow;
 use std::convert::Infallible;
 use std::fmt::Debug;
 use std::ops::ControlFlow;
@@ -56,7 +57,10 @@ where
 {
     fn trace_completion(self) -> impl IntoSystem<In, Out, ()>;
 
-    fn trace_completion_with_name(self, name: &'static str) -> impl IntoSystem<In, Out, ()>;
+    fn trace_completion_with_name(
+        self,
+        name: impl Into<Cow<'static, str>>,
+    ) -> impl IntoSystem<In, Out, ()>;
 }
 
 pub trait LogSystemSetEx<Marker> {
@@ -88,13 +92,18 @@ where
 {
     #[track_caller]
     fn trace_completion(self) -> impl IntoSystem<In, Out, ()> {
-        let name = std::any::type_name::<T>();
-        self.trace_completion_with_name(name)
+        let system = IntoSystem::into_system(self);
+        let name = system.name();
+        system.trace_completion_with_name(name)
     }
 
     #[track_caller]
-    fn trace_completion_with_name(self, name: &'static str) -> impl IntoSystem<In, Out, ()> {
+    fn trace_completion_with_name(
+        self,
+        name: impl Into<Cow<'static, str>>,
+    ) -> impl IntoSystem<In, Out, ()> {
         let id = self.system_type_id();
+        let name = name.into();
         let system = self.map(move |out| {
             trace!(system_id=?id, output=?out, "System `{name}` completed");
             out
@@ -109,6 +118,7 @@ macro_rules! impl_log_system_set_ex {
         where
             $($t: IntoSystem<(), (), $m>,)+
         {
+            #[track_caller]
             fn trace_completion(self) -> impl IntoScheduleConfigs<ScheduleSystem, ()> {
                 IntoScheduleConfigs::into_configs(
                     ($({self.$field}.trace_completion(),)+)

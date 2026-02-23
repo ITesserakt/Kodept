@@ -17,8 +17,7 @@ workspace = true
 [features]
 default = []
 parallel = ["dep:rayon", "kodept-ecs/parallel"]
-debug = []
-reflection = ["debug"]
+reflection = []
 
 [dependencies]
 derive_more.workspace = true

@@ -667,7 +667,7 @@ fn resolve_type<'i>(
 }
 
 #[derive(SystemParam)]
-pub struct ResolveTypeIn<'w, 's, Parent: 'static> {
+pub(super) struct ResolveTypeIn<'w, 's, Parent: 'static> {
     all_spans: Query<'w, 's, &'static SourceSpan>,
     properties: Properties<'w, 's>,
     syntax: Res<'w, SyntaxResolver>,

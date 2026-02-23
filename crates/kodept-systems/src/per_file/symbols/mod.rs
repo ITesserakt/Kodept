@@ -6,16 +6,16 @@ use crate::per_file::symbols::resolve::{
     ResolveTypeIn, ResolveValues, StrictType, add_opaque_markers, add_passthrough_markers,
     ensure_absent,
 };
-use crate::per_file::utils::IntoNodeSystem;
+use crate::per_file::utils::IntoParNodeSystem;
+use crate::utils::LogSystemSetEx;
 use kodept_ast::Str;
 use kodept_ast::prelude::{Erase, NodeId};
 use kodept_ast::properties::{Name, NodeProperty, RequireProperty};
-use kodept_ast::syntax_tree::children::Wrapper;
 use kodept_ast_nodes::{
     AnonFunction, ForeignFunction, Module, NamedParams, NormalizedBlock, Param, Params,
     TypeAnnotation, UnresolvedType, UserFunction, UserType, Value, ValueCtor, Variable,
 };
-use kodept_ecs::component::{Component, ComponentIdFor};
+use kodept_ecs::component::Component;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::{With, Without};
 use kodept_ecs::schedule::IntoScheduleConfigs;
@@ -27,16 +27,6 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use std::marker::PhantomData;
-
-struct ComponentIdForMapper<'a>(PhantomData<&'a ()>);
-impl<'a> Wrapper for ComponentIdForMapper<'a> {
-    type Wrapped<T: Component> = ComponentIdFor<'a, T>;
-}
-struct RefMapper<'a>(PhantomData<&'a ()>);
-impl<'a> Wrapper for RefMapper<'a> {
-    type Wrapped<T: Component> = &'a T;
-}
 
 define_phase! {
     pub phase SymbolsPhase[SymbolsPhaseLabel];
@@ -59,28 +49,28 @@ define_phase! {
     phase CollectSymbolsPhase[CollectSymbolsPhaseLabel];
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(CollectSymbolsIn::<ValueCtor, _, Param>::system_with_input(SymbolKind::Parameter));
+        engine.add_systems(CollectSymbolsIn::<ValueCtor, _, Param>::par_system_with_input(SymbolKind::Parameter));
 
         engine.add_systems((
-            CollectSymbolsIn::<UserFunction, Params, Param>::system_with_input(SymbolKind::Parameter),
-            CollectSymbolsIn::<UserFunction, NamedParams, Param>::system_with_input(SymbolKind::Parameter)
+            CollectSymbolsIn::<UserFunction, Params, Param>::par_system_with_input(SymbolKind::Parameter),
+            CollectSymbolsIn::<UserFunction, NamedParams, Param>::par_system_with_input(SymbolKind::Parameter)
         ).chain());
 
-        engine.add_systems(CollectSymbolsIn::<AnonFunction, _, Param>::system_with_input(SymbolKind::Parameter));
+        engine.add_systems(CollectSymbolsIn::<AnonFunction, _, Param>::par_system_with_input(SymbolKind::Parameter));
 
         engine.add_systems((
-            CollectSymbolsIn::<NormalizedBlock, _, Variable>::system(),
-            CollectSymbolsIn::<NormalizedBlock, _, UserFunction>::system_with_input(SymbolKind::Function),
-        ).chain());
-
-        engine.add_systems((
-            CollectSymbolsIn::<Module, _, UserFunction>::system_with_input(SymbolKind::Function),
-            CollectSymbolsIn::<Module, _, UserType>::system_with_input(SymbolKind::Type),
+            CollectSymbolsIn::<NormalizedBlock, _, Variable>::par_system(),
+            CollectSymbolsIn::<NormalizedBlock, _, UserFunction>::par_system_with_input(SymbolKind::Function),
         ).chain());
 
         engine.add_systems((
-            CollectSymbolsIn::<UserType, _, ValueCtor>::system(),
-            CollectSymbolsIn::<UserType, _, UserFunction>::system_with_input(SymbolKind::Function)
+            CollectSymbolsIn::<Module, _, UserFunction>::par_system_with_input(SymbolKind::Function),
+            CollectSymbolsIn::<Module, _, UserType>::par_system_with_input(SymbolKind::Type),
+        ).chain());
+
+        engine.add_systems((
+            CollectSymbolsIn::<UserType, _, ValueCtor>::par_system(),
+            CollectSymbolsIn::<UserType, _, UserFunction>::par_system_with_input(SymbolKind::Function)
         ).chain());
 
         engine.add_systems(check_module_names);
@@ -92,14 +82,14 @@ define_phase! {
 
     fn build(self, engine: &mut PhaseEngine<Self>) {
         let resolve_set = (
-            ResolveValues::system(),
-            ResolveTypeIn::<Variable>::system_with_input(()),
-            ResolveTypeIn::<UserFunction>::system_with_input("a return type"),
-            ResolveTypeIn::<AnonFunction>::system_with_input("a return type"),
-            ResolveTypeIn::<ForeignFunction>::system_with_input((StrictType, "a return type")),
-            ResolveTypeIn::<Param>::system_with_input("a parameter"),
-            ResolveTypeIn::<Param>::system_with_input((StrictType, "a parameter")),
-        );
+            ResolveValues::par_system(),
+            ResolveTypeIn::<Variable>::par_system_with_input(()),
+            ResolveTypeIn::<UserFunction>::par_system_with_input("a return type"),
+            ResolveTypeIn::<AnonFunction>::par_system_with_input("a return type"),
+            ResolveTypeIn::<ForeignFunction>::par_system_with_input((StrictType, "a return type")),
+            ResolveTypeIn::<Param>::par_system_with_input("a parameter"),
+            ResolveTypeIn::<Param>::par_system_with_input((StrictType, "a parameter")),
+        ).trace_completion();
         let ensure_set = (
             ensure_absent::<Value, Without<ResolvedTo>>,
             ensure_absent::<Variable, With<TypeAnnotation>>,

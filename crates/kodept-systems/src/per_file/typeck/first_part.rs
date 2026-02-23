@@ -10,7 +10,7 @@ use kodept_ast::properties::{NodeProperty, RequireProperty, SourceSpan};
 use kodept_ast::syntax_tree::children::{MembersOf, Wrapper};
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Branch, Call, Condition, Else, Expression, If, Lhs, Link, Literal, NamedParams,
+    AnonFunction, Branch, Call, Condition, Else, Expression, If, Lhs, Link, Literal,
     NormalizedBlock, Otherwise, Param, ResolvedTypeAnnotation, Rhs, Statement, Tuple, UserFunction,
     Value,
 };
@@ -424,7 +424,7 @@ impl IterableSystem for TypeckBlock<'_, '_> {
     fn for_each<B: Buffer>(
         &mut self,
         mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
         if self
             .statements
