@@ -20,7 +20,6 @@ use kodept_ecs::component::{Component, ComponentIdFor};
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::Without;
 use kodept_ecs::system::{ParamSet, Query, SystemParam};
-use kodept_inference::assumption::TypeTable;
 use kodept_inference::constraint::eq_cst;
 use kodept_inference::process::PartialInfer;
 use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TVar};
@@ -166,11 +165,7 @@ impl IterableSystem for TypeckTuple<'_, '_> {
                 let mut partial = self.partials.get_mut(child_id.entity()).ok()??;
                 Some(partial.take())
             })
-            .map(|it| {
-                partial.assumptions.merge(it.assumptions);
-                partial.constraints.extend(it.constraints);
-                it.current_type.0
-            });
+            .map(|it| partial.merge(it).0);
         let tuple_ty = MonomorphicType::tuple(tuple_ty);
         let partial = partial.with_type(tuple_ty);
 
@@ -259,13 +254,11 @@ impl IterableSystem for TypeckIf<'_, '_> {
             let (_, body) = body.collect();
             let body = body.unwrap().take();
 
-            partial.assumptions.merge(condition.assumptions);
-            partial.assumptions.merge(body.assumptions);
-            partial.constraints.extend(condition.constraints);
-            partial.constraints.extend(body.constraints);
+            let condition_ty = partial.merge(condition);
+            let body_ty = partial.merge(body);
             partial.constraints.extend([
-                eq_cst(condition.current_type.0, PrimitiveType::Boolean),
-                eq_cst(body.current_type.0, partial.current_type.0),
+                eq_cst(condition_ty.0, PrimitiveType::Boolean),
+                eq_cst(body_ty.0, partial.current_type.0),
             ]);
         }
 
@@ -335,18 +328,14 @@ impl IterableSystem for TypeckCall<'_, '_> {
             let (_, lhs) = lhs_fetch.collect();
             let lhs_partial = lhs.unwrap().take();
 
-            partial.assumptions.merge(lhs_partial.assumptions);
-            partial.constraints.extend(lhs_partial.constraints);
-            lhs_partial.current_type.0
+            partial.merge(lhs_partial).0
         };
 
         let mut rhs = self.param_set.p1();
         let mut inputs = vec![];
         for (_, rhs) in rhs.get_down_mut(modification.id()).1 {
             let rhs = rhs.unwrap().take();
-            partial.assumptions.merge(rhs.assumptions);
-            partial.constraints.extend(rhs.constraints);
-            inputs.push(rhs.current_type.0);
+            inputs.push(partial.merge(rhs).0);
         }
         if inputs.is_empty() {
             partial.constraints.push(eq_cst(
@@ -442,21 +431,17 @@ impl IterableSystem for TypeckBlock<'_, '_> {
             let partial = partial.unwrap().take();
             if archetype.contains(self.statement_component_ids.0.get()) {
                 // statement is block
-                result.assumptions.merge(partial.assumptions);
-                result.constraints.extend(partial.constraints);
+                result.merge(partial);
             } else if archetype.contains(self.statement_component_ids.1.get()) {
                 // statement is call
-                result.assumptions.merge(partial.assumptions);
-                result.constraints.extend(partial.constraints);
+                result.merge(partial);
             } else if archetype.contains(self.statement_component_ids.2.get()) {
                 // statement is if
-                result.assumptions.merge(partial.assumptions);
-                result.constraints.extend(partial.constraints);
+                result.merge(partial);
             } else if archetype.contains(self.statement_component_ids.3.get()) {
                 // statement is link
-                result.assumptions.merge(partial.assumptions);
-                result.constraints.extend(partial.constraints);
-                result.constraints.push(eq_cst(tv, partial.current_type.0));
+                let link_ty = result.merge(partial);
+                result.constraints.push(eq_cst(tv, link_ty.0));
             } else if archetype.contains(self.statement_component_ids.4.get()) {
                 // statement is user function
             } else if archetype.contains(self.statement_component_ids.5.get()) {

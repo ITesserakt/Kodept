@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "kodept-inference"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "derive_more",
  "kodept-interning",

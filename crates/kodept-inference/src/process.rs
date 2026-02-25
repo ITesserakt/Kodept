@@ -1,16 +1,15 @@
 use crate::assumption::{AssumptionSet, TypeTable};
-use crate::constraint::{Constraint, ConstraintsSolverError, explicit_cst};
+use crate::constraint::{
+    Constraint, Constraints, ConstraintsSolverError, ExtendConstraints, explicit_cst,
+};
 use crate::substitution::Substitutions;
 use crate::traits::Substitutable;
 use crate::r#type::{MonomorphicType, PolymorphicType};
 use derive_more::{Display, Error, From};
 use kodept_interning::{InternInto, Interned};
-use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
-
-const CONSTRAINTS_SIZE: usize = 4;
 
 #[derive(Debug, Display, Error, From)]
 pub enum InferError<Name, E> {
@@ -21,10 +20,10 @@ pub enum InferError<Name, E> {
     UnknownName(#[error(not(source))] Name),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PartialInfer<Name> {
     pub assumptions: AssumptionSet<Name>,
-    pub constraints: SmallVec<[Constraint; CONSTRAINTS_SIZE]>,
+    pub constraints: Constraints,
     pub current_type: Interned<MonomorphicType>,
 }
 
@@ -35,7 +34,7 @@ where
     pub fn new(current_type: impl InternInto<MonomorphicType>) -> Self {
         Self {
             assumptions: AssumptionSet::empty(),
-            constraints: SmallVec::new(),
+            constraints: Constraints::new(),
             current_type: current_type.intern_into(),
         }
     }
@@ -51,8 +50,8 @@ where
         self
     }
 
-    pub fn with_constraints(mut self, iter: impl IntoIterator<Item = Constraint>) -> Self {
-        self.constraints.extend(iter);
+    pub fn with_constraints(mut self, iter: impl ExtendConstraints) -> Self {
+        iter.append_into(&mut self.constraints);
         self
     }
 
@@ -98,10 +97,18 @@ where
             return Err(errors);
         }
 
-        let substitutions = Constraint::solve(self.constraints.into_vec())
+        let substitutions = self
+            .constraints
+            .solve()
             .map_err(|it| vec![InferError::FailedConstraints(it)])?;
         let resulting_type = self.current_type.substitute(&substitutions);
         Ok((substitutions, resulting_type))
+    }
+
+    pub fn merge(&mut self, other: Self) -> Interned<MonomorphicType> {
+        self.assumptions.merge(other.assumptions);
+        self.constraints.merge(other.constraints);
+        other.current_type
     }
 }
 
