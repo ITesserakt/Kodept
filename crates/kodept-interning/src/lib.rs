@@ -25,7 +25,7 @@ pub trait GlobalInterner: Internable {
     }
 }
 
-pub trait InternInto<T> {
+pub trait InternInto<T: ?Sized + Internable> {
     fn intern_into(self) -> Interned<T>;
 }
 

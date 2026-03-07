@@ -1,7 +1,7 @@
-use crate::arity::{Arity, Empty};
+use crate::arity::Arity;
 use crate::prelude::ASTNode;
 use crate::relationship::NodeRelationship;
-use bevy_ecs::prelude::Component;
+use kodept_ecs::component::Component;
 
 #[deprecated]
 pub mod arity {
@@ -38,11 +38,6 @@ pub trait Members<Parent, Tag> {
     type Map<M: Mapper<Self>>;
 }
 pub enum Nothing {}
-
-impl<T: ASTNode> Family<Nothing> for T {
-    type Arity = Empty;
-    type Members = Nothing;
-}
 
 impl<Parent, Tag> Members<Parent, Tag> for Nothing {
     type Map<M: Mapper<Self>> = Nothing;

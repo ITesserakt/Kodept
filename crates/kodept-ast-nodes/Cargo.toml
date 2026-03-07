@@ -1,6 +1,6 @@
 [package]
 name = "kodept-ast-nodes"
-version = "0.3.1"
+version = "0.3.2"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -11,21 +11,20 @@ workspace = true
 bigdecimal = "0.4"
 num-bigint = "0.4"
 
-kodept-ast = { path = "../kodept-ast" }
-kodept-rlt = { path = "../kodept-rlt" }
+kodept-ast = { path = "../kodept-ast", version = "0.7" }
+kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
+kodept-rlt = { path = "../kodept-rlt", version = "0.2" }
 
 [dev-dependencies]
 criterion = "0.7.0"
 proptest = "1.6.0"
 serde_json = "1.0.145"
-rayon = "1.11.0"
 
 kodept-core = { version = "0.4", path = "../kodept-core" }
 kodept-rlt = { version = "0.2", features = ["arbitrary", "serde"], path = "../kodept-rlt" }
 
 [features]
 defalt = []
-parallel = ["kodept-ast/parallel"]
 reflection = ["kodept-ast/reflection"]
 
 [[bench]]

@@ -4,14 +4,6 @@ use std::path::PathBuf;
 
 #[derive(Debug, Args, Clone)]
 pub struct ParsingConfig {
-    /// Use parallelization when parsing
-    #[arg(
-        short,
-        long,
-        hide = !cfg!(feature = "parallel"),
-        default_value_t = cfg!(feature = "parallel")
-    )]
-    pub parallel: bool,
     /// Use specific lexer implementation
     #[arg(default_value = "auto", long)]
     pub lexer: LexerChoice,

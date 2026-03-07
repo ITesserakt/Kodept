@@ -1,25 +1,26 @@
 use crate::source::collection::SourceView;
 use crate::utils::{LogSystemEx, ReportSystemEx};
-use bevy_ecs::prelude::*;
 use derive_more::From;
 use kodept_ast::experimental::FromSyntax;
 use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Root;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::RelatedNodeSpawner;
-use kodept_ast_nodes::Error;
-use kodept_ast_nodes::{Module, Modules};
+use kodept_ast_nodes::Modules;
+use kodept_ast_nodes::{Error, Module};
 use kodept_core::structure::CodeHolder;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::system::{Commands, Res};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_report::prelude::{Diagnostic, IntoSpannedReportMessage, Severity};
+use kodept_report::prelude::{Diagnostic, IntoMessage, Severity};
 use std::borrow::Cow;
 
 define_phase!(
     pub phase BuildAstPhase[BuildAstPhaseLabel];
 
     fn build (self, engine: &mut PhaseEngine<Self>) {
-        engine.add_systems(system.extract_reports().trace_completion());
+        engine.add_systems(system.trace_completion().extract_reports());
     }
 );
 
@@ -31,14 +32,8 @@ fn system(
     let code_holder = source.map(|it| Cow::Owned(it.to_string()));
 
     let (root, _) = syntax.root();
-    let root_id = commands
-        .spawn((
-            Root {
-                associated_file: source.describe(),
-            },
-            Modules,
-        ))
-        .id();
+
+    let root_id = commands.spawn((Root, Modules)).id();
     let mut spawner = RelatedNodeSpawner::new(&mut commands, NodeId::<Modules>::from(root_id));
 
     for module in &root.0 {
@@ -51,7 +46,7 @@ fn system(
 #[derive(Debug, From)]
 struct Wrapper(Error);
 
-impl IntoSpannedReportMessage for Wrapper {
+impl IntoMessage for Wrapper {
     type Message = Diagnostic;
 
     fn into_message(self) -> Self::Message {
@@ -79,6 +74,10 @@ impl IntoSpannedReportMessage for Wrapper {
                 .with_message("Expression in this position is unexpected")
                 .with_primary_label("expected statement", span)
                 .with_note("Try calling or linking this expression"),
+            Error::UnicodeLiteral(point) => Diagnostic::new(Severity::Error)
+                .with_message("Literals with explicit unicode symbols is unsupported")
+                .with_primary_label("unsupported", point)
+                .with_note("Try escaping unicode symbols"),
         }
     }
 }

@@ -3,8 +3,8 @@ use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_m
 use kodept_parse::common::RLTProducer;
 use kodept_parse::lexer::PegLexer;
 use kodept_parse::parser::PegParser;
-use kodept_parse::token_match::PackedTokenMatch;
-use kodept_parse::token_stream::PackedTokenStream;
+use kodept_parse::token_match::TokenMatch;
+use kodept_parse::token_stream::TokenStream;
 use kodept_parse::tokenizer::{LazyTokenizer, Tok, TokCtor};
 
 const FILENAME: &str = "benches/benchmarking_file1.kd";
@@ -14,7 +14,7 @@ fn get_contents_with_factor(filename: &str, factor: usize) -> String {
     contents.repeat(factor)
 }
 
-fn get_tokens_from_contents(contents: &str) -> Vec<PackedTokenMatch> {
+fn get_tokens_from_contents(contents: &str) -> Vec<TokenMatch> {
     let tokenizer = LazyTokenizer::new(contents, PegLexer::<false>::new());
     tokenizer.into_vec()
 }
@@ -24,7 +24,7 @@ fn bench_impls(c: &mut Criterion) {
     for factor in (5..=10).map(|it| 2usize.pow(it)) {
         let contents = get_contents_with_factor(FILENAME, factor);
         let tokens = get_tokens_from_contents(&contents);
-        let tokens = PackedTokenStream::new(&tokens);
+        let tokens = TokenStream::new(&tokens);
         group.throughput(Throughput::Bytes(contents.len() as u64));
 
         group.bench_with_input(BenchmarkId::new("peg", factor), &tokens, |b, i| {

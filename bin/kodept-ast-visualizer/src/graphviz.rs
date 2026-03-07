@@ -1,19 +1,19 @@
 use crate::ExportControlEvent;
-use crate::common::{State, StateOps};
-use crate::graphviz::helpers::{DebugAsDisplay, cell, row, sanitize, table};
-use crate::utils::NonVerboseComponents;
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::component::{ComponentId, Components};
-use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::{EntityRef, Name, On, Res, Resource};
-use bevy_ecs::system::SystemParam;
-use bevy_utils::prelude::{DebugName, ShortName};
+use crate::graphviz::helpers::{DebugAsDisplay, row, sanitize, table};
 use clap::Args;
-use kodept_ast::properties::{Node, SourceSpan};
+use kodept_ast::properties::{Name, Node, SourceSpan};
 use kodept_ast::relationship::RelationshipMetadata;
-use kodept_ast::resource::reflection::{DebugRegistry, DynDebug};
-use kodept_frontend::Either;
+use kodept_ast::resource::reflection::DebugRegistry;
+use kodept_ecs::component::Components;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::With;
+use kodept_ecs::resource::Resource;
+use kodept_ecs::system::{Local, On, Query, Res};
+use kodept_ecs::utils::ShortName;
+use kodept_ecs::world::EntityRef;
 use kodept_frontend::engine::{Engine, Plugin};
+use kodept_systems::configs::OutputDirectory;
+use kodept_systems::source::collection::SourceView;
 use kodept_systems::utils::ReportSystemEx;
 use std::any::TypeId;
 use std::fs::File;
@@ -29,11 +29,21 @@ pub(crate) struct Config {
     /// Specifies whether components with no debug representation should appear in tables
     #[arg(short = 'u', long = "unknown", action, default_value_t = false)]
     show_unknown_components: bool,
+    /// Specifies whether components with zero size (ZST) should appear in tables
+    #[arg(short = 'z', long = "zst", action, default_value_t = false)]
+    show_zst_components: bool,
+    /// Adds a table column with components' size in bytes
+    #[arg(long = "size", action, default_value_t = false)]
+    show_components_size: bool,
     /// Do not trim type path at component names
     #[arg(short = 'l', long, action, default_value_t = false)]
     long_type_paths: bool,
+    /// Specifies maximum length of a component value
     #[arg(short, long, default_value_t = 50)]
     max_length: usize,
+    /// Print component values with line breaks
+    #[arg(long, default_value_t = false)]
+    multiline: bool,
 }
 
 impl Plugin for GraphvizPlugin {
@@ -45,6 +55,40 @@ impl Plugin for GraphvizPlugin {
 mod helpers {
     use std::fmt::{Debug, Display, Formatter};
     use std::io::Write;
+
+    pub(super) struct DebugAsDisplay<T> {
+        value: T,
+        fancy: bool,
+    }
+
+    impl<T: Debug> Display for DebugAsDisplay<T> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            Debug::fmt(self, f)
+        }
+    }
+
+    impl<T: Debug> Debug for DebugAsDisplay<T> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            if self.fancy {
+                write!(f, "{:#?}", self.value)
+            } else {
+                write!(f, "{:?}", self.value)
+            }
+        }
+    }
+
+    impl<T> DebugAsDisplay<T> {
+        pub(super) fn new(value: T) -> Self {
+            Self {
+                fancy: false,
+                value,
+            }
+        }
+
+        pub(super) fn fancy(value: T) -> Self {
+            Self { value, fancy: true }
+        }
+    }
 
     pub(super) fn table<W, T, U>(
         writer: &mut W,
@@ -82,15 +126,6 @@ mod helpers {
         write!(writer, "</tr>")
     }
 
-    pub(super) fn cell<W: Write>(
-        writer: &mut W,
-        f: impl FnOnce(&mut W) -> std::io::Result<()>,
-    ) -> std::io::Result<()> {
-        write!(writer, "<td>")?;
-        f(writer)?;
-        write!(writer, "</td>")
-    }
-
     pub(super) fn sanitize(value: impl Display, max_len: usize) -> String {
         let mut result = format!("{value}");
         let mut tail = result.as_str();
@@ -107,85 +142,132 @@ mod helpers {
             tail = &result[offset..];
         }
 
-        if result.len() > max_len {
-            result.truncate(max_len);
-            result.push_str("...");
+        let mut lines = String::new();
+        let mut first = true;
+        for line in result.lines() {
+            if first {
+                first = false;
+            } else {
+                lines.push_str("<BR/>");
+            }
+            let line = line.replace("    ", "&nbsp;");
+            if line.len() >= max_len {
+                lines.push_str(&line[..max_len]);
+                lines.push_str("...");
+            } else {
+                lines.push_str(&line);
+            }
         }
-        result
+        lines
     }
 }
 
-type ExtraState = (NonVerboseComponents<'static, 'static>, Res<'static, Config>);
+fn draw_node(
+    entity: EntityRef,
+    buffer: &mut impl Write,
+    debug_registry: Option<&DebugRegistry>,
+    components: &Components,
+    config: &Config,
+) -> std::io::Result<()> {
+    let non_verbose_components = [
+        components.component_id::<Node>(),
+        components.component_id::<SourceSpan>(),
+        components.component_id::<Name>(),
+    ];
 
-impl<'w, 's> StateOps for State<'w, 's, ExtraState> {
-    fn get_entity_components(&self, archetype: &Archetype) -> impl Iterator<Item = ComponentId> {
-        let non_verbose_components = self.extra.0.get();
-        archetype
-            .iter_components()
-            .filter(move |it| self.extra.1.verbose || non_verbose_components.contains(it))
-    }
+    let all_components = entity.archetype().components();
 
-    fn draw_node<'a>(
-        &self,
-        id: Entity,
-        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, TypeId)>,
-        buffer: &mut impl Write,
-    ) -> std::io::Result<()> {
-        let (_, config) = &*self.extra;
+    // SAFETY: `components_value` enumerates values in the same order as `all_components`.
+    //         That means type id must equal to the original type.
+    #[allow(unsafe_code)]
+    let components_debug_repr = all_components
+        .into_iter()
+        .filter(|id| config.verbose || non_verbose_components.contains(&Some(**id)))
+        .map(|id| (entity.get_by_id(*id), id))
+        .filter_map(|(value, &id)| Some((value.ok()?, components.get_info(id)?)))
+        .filter(|(_, info)| config.show_zst_components || info.layout().size() != 0)
+        .filter_map(|(value, info)| {
+            let type_id = info.type_id()?;
+            let debug_repr = match debug_registry {
+                Some(registry) => unsafe { registry.debug_dynamic(value, type_id) },
+                None => unsafe { DebugRegistry::debug_dynamic_global(value, type_id) },
+            };
+            Some((debug_repr, info.name(), info.mutable(), info))
+        });
+    let total_node_size = all_components
+        .into_iter()
+        .filter_map(|it| components.get_info(*it))
+        .map(|it| it.layout().size())
+        .sum::<usize>();
 
-        write!(buffer, "\t\"{}\" [ label=<", id.to_bits())?;
-        table(
-            buffer,
-            [("border", 0), ("cellborder", 1), ("cellspacing", 0)],
-            move |buffer| {
-                row(buffer, |buffer| {
-                    write!(
-                        buffer,
-                        "<td bgcolor=\"#00000033\" colspan=\"2\"><b>{}</b></td>",
-                        id
-                    )
-                })?;
+    write!(buffer, "\t\"{}\" [ label=<", entity.id().to_bits())?;
+    table(
+        buffer,
+        [("border", 0), ("cellborder", 1), ("cellspacing", 0)],
+        move |buffer| {
+            row(buffer, |buffer| {
+                write!(
+                    buffer,
+                    "<td bgcolor=\"#00000033\" colspan=\"2\"><b>{}</b></td>",
+                    entity.id()
+                )?;
 
-                for (repr, name, is_mutable, type_id) in properties {
-                    if !repr.is_known() && !config.show_unknown_components {
-                        continue;
-                    }
-                    let name = match config.long_type_paths {
-                        true => sanitize(name, config.max_length),
-                        false => sanitize(name.shortname(), config.max_length),
-                    };
-                    let is_known = repr.is_known();
-                    let repr = match (config.long_type_paths, type_id == TypeId::of::<Node>()) {
-                        (false, true) => {
-                            #[allow(unsafe_code)]
-                            let node = unsafe { repr.into_inner().deref::<Node>() };
-                            let path = node.name.shortname();
-                            sanitize(path, config.max_length)
-                        }
-                        _ => sanitize(DebugAsDisplay(repr), config.max_length),
-                    };
-
-                    row(buffer, |buffer| {
-                        if is_known {
-                            write!(buffer, "<td>")?;
-                        } else {
-                            write!(buffer, "<td bgcolor=\"#0000000a\">")?;
-                        }
-                        if is_mutable {
-                            write!(buffer, "<i>{name}</i></td>")?;
-                        } else {
-                            write!(buffer, "{name}</td>")?;
-                        }
-                        cell(buffer, |buffer| write!(buffer, "{repr}"))?;
-                        Ok(())
-                    })?;
+                if config.show_components_size {
+                    write!(buffer, "<td>{}</td>", total_node_size)?;
                 }
-
                 Ok(())
-            },
-        )?;
-        writeln!(buffer, ">, shape=plain ]")
-    }
+            })?;
+
+            for (repr, name, is_mutable, info) in components_debug_repr {
+                if !repr.is_known() && !config.show_unknown_components {
+                    continue;
+                }
+                let name = match config.long_type_paths {
+                    true => sanitize(name, config.max_length),
+                    false => sanitize(name.shortname(), config.max_length),
+                };
+                let is_known = repr.is_known();
+                let is_node = info.type_id().is_some_and(|it| it == TypeId::of::<Node>());
+                let repr = match (config.long_type_paths, is_node) {
+                    (false, true) => {
+                        #[allow(unsafe_code)]
+                        let node = unsafe { repr.into_inner().deref::<Node>() };
+                        let path = ShortName::from(node.name);
+                        sanitize(path, config.max_length)
+                    }
+                    _ => {
+                        let render = sanitize(DebugAsDisplay::new(repr), config.max_length);
+                        if render.len() >= config.max_length && config.multiline {
+                            sanitize(DebugAsDisplay::fancy(repr), usize::MAX)
+                        } else {
+                            render
+                        }
+                    }
+                };
+
+                row(buffer, |buffer| {
+                    if is_known {
+                        write!(buffer, "<td>")?;
+                    } else {
+                        write!(buffer, "<td bgcolor=\"#0000000a\">")?;
+                    }
+                    if is_mutable {
+                        write!(buffer, "<i>{name}</i></td>")?;
+                    } else {
+                        write!(buffer, "{name}</td>")?;
+                    }
+                    write!(buffer, "<td>{repr}</td>")?;
+                    if config.show_components_size {
+                        write!(buffer, "<td>{}</td>", info.layout().size())?;
+                    }
+                    Ok(())
+                })?;
+            }
+
+            Ok(())
+        },
+    )?;
+    writeln!(buffer, ">, shape=plain ]")
 }
 
 fn draw_edge(
@@ -195,32 +277,46 @@ fn draw_edge(
     config: &Config,
     buffer: &mut impl Write,
 ) -> std::io::Result<()> {
-    let edge_label = match (config.long_type_paths, meta.is_empty_tag()) {
-        (_, true) => Either::Left(""),
-        (true, _) => Either::Left(meta.tag_name()),
-        (false, _) => Either::Right(ShortName::from(meta.tag_name())),
-    };
-    writeln!(
-        buffer,
-        "\t\"{}\" -> \"{}\" [ label = \"{}\" ]",
-        parent.id().to_bits(),
-        entity.id().to_bits(),
-        edge_label
-    )?;
-    Ok(())
+    match (config.long_type_paths, meta.is_empty_tag()) {
+        (_, true) => writeln!(
+            buffer,
+            "\t\"{}\" -> \"{}\"",
+            parent.id().to_bits(),
+            entity.id().to_bits()
+        ),
+        (true, _) => writeln!(
+            buffer,
+            "\t\"{}\" -> \"{}\" [ label = \"{}\" ]",
+            parent.id().to_bits(),
+            entity.id().to_bits(),
+            meta.tag_name()
+        ),
+        (false, _) => writeln!(
+            buffer,
+            "\t\"{}\" -> \"{}\" [ label = \"{}\" ]",
+            parent.id().to_bits(),
+            entity.id().to_bits(),
+            ShortName::from(meta.tag_name())
+        ),
+    }
 }
 
 fn on_control_event(
     control: On<ExportControlEvent>,
-    state: State<ExtraState>,
+    output: Res<OutputDirectory>,
+    source: Res<SourceView>,
+    nodes: Query<EntityRef, With<Node>>,
+    components: &Components,
+    debug_registry: Option<Res<DebugRegistry>>,
+    config: Res<Config>,
     mut output_buffer: Local<Option<BufWriter<File>>>,
 ) -> std::io::Result<()> {
     match (control.event(), &mut *output_buffer) {
         (ExportControlEvent::Start, buffer) => {
-            state.output.create_missing_folders()?;
-            let descriptor = state.source.describe();
+            output.create_missing_folders()?;
+            let descriptor = source.describe();
             let filename = descriptor.name();
-            let filepath = state.output.get_path_for_source(filename, "dot")?;
+            let filepath = output.get_path_for_source(filename, "dot")?;
 
             let mut file = File::create(filepath)?;
             writeln!(file, "digraph g {{")?;
@@ -240,8 +336,14 @@ fn on_control_event(
             }
         }
         (&ExportControlEvent::Root(id), Some(buffer)) => {
-            let entity = state.nodes.get(id).expect("Cannot get node");
-            state.draw_node(entity, buffer)?;
+            let entity = nodes.get(id).expect("Cannot get node");
+            draw_node(
+                entity,
+                buffer,
+                debug_registry.as_deref(),
+                components,
+                &*config,
+            )?;
         }
         (
             ExportControlEvent::Inner {

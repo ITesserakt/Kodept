@@ -9,7 +9,6 @@ pub mod utils;
 
 use crate::phase::ExportAstPhase;
 use crate::plugins::Plugins;
-use bevy_ecs::prelude::{Entity, Event, InMut, Res};
 use clap::Parser;
 use kodept_ast::relationship::RelationshipMetadata;
 use kodept_ast::resource::reflection::DebugRegistry;
@@ -17,6 +16,10 @@ use kodept_cli::prelude::{
     DiagnosticConfig, Extension, LexerChoice, LoadingConfig, OutputConfig, ParserChoice,
     ParsingConfig,
 };
+use kodept_ecs::entity::Entity;
+use kodept_ecs::event::Event;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::system::{InMut, Res};
 use kodept_frontend::engine::reporter::CompilationFailed;
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Engine, SubEngine};
@@ -24,7 +27,7 @@ use kodept_systems::configs::{Lexer, OutputDirectory};
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::prelude::{
-    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, ReferenceResolutionPhase,
+    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, SymbolsPhase, TypeCheckPhase,
 };
 use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
@@ -148,7 +151,8 @@ fn main() -> Result<(), CompilationFailed> {
                 .install(ParseSourcePhase)
                 .install(BuildAstPhase)
                 .install(AstNormalizationPhase)
-                .install(ReferenceResolutionPhase)
+                .install(SymbolsPhase)
+                .install(TypeCheckPhase)
                 .install(ExportAstPhase);
         }))
         .install(FinishPhase);

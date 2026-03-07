@@ -1,8 +1,8 @@
 use crate::Str;
 use crate::node_id::NodeId;
 use crate::syntax_tree::experimental::{AnonSpawner, Spawner};
-use bevy_ecs::prelude::Component;
 use kodept_core::structure::span::CodeHolder as BasicCodeHolder;
+use kodept_ecs::component::Component;
 
 pub trait CodeHolder: BasicCodeHolder<Str = Str> {}
 impl<T: BasicCodeHolder<Str = Str>> CodeHolder for T {}

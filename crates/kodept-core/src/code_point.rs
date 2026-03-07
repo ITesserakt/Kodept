@@ -1,6 +1,5 @@
 use std::ops::{Add, Range};
 
-use crate::static_assert_size;
 use crate::structure::Located;
 use derive_more::{Constructor, Display};
 
@@ -20,8 +19,10 @@ pub struct Span {
     pub offset: u32,
 }
 
-static_assert_size!(CodePoint, 8);
-static_assert_size!(Span, 8);
+const _: () = {
+    assert!(size_of::<CodePoint>() - 8 == 0);
+    assert!(size_of::<Span>() - 8 == 0);
+};
 
 impl CodePoint {
     #[must_use]

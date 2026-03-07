@@ -1,7 +1,7 @@
 use clap::Parser;
 use kodept_cli::prelude::{
-    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, ParserChoice, ParsingConfig,
-    ReportsPlugin,
+    DiagnosticConfig, Extension, LexerChoice, LoadingConfig, LogPlugin, LoggingLevel, ParserChoice,
+    ParsingConfig, ReportsPlugin, ThreadPoolPlugin,
 };
 use kodept_frontend::engine::Engine;
 use kodept_frontend::engine::reporter::CompilationFailed;
@@ -10,7 +10,9 @@ use kodept_systems::configs::Lexer;
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::inject_common_resources_phase;
-use kodept_systems::per_file::prelude::{AstNormalizationPhase, BuildAstPhase, ParseSourcePhase};
+use kodept_systems::per_file::prelude::{
+    AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, SymbolsPhase, TypeCheckPhase,
+};
 use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
 
@@ -19,6 +21,9 @@ struct Cli {
     /// Measure duration of different stages
     #[arg(short = 't', long, action)]
     timings: bool,
+    /// Specifies amount of parallel threads to use
+    #[arg(short, long, default_value_t = 1)]
+    jobs: usize,
 
     #[command(flatten, next_help_heading = "Parsing options")]
     parsing_config: ParsingConfig,
@@ -60,8 +65,18 @@ fn main() -> Result<(), CompilationFailed> {
         engine.init_resource::<Timings>();
     }
 
-    engine.add_plugin(ReportsPlugin {
-        config: &cli.diagnostic_config,
+    engine.add_plugin_if(
+        !cli.diagnostic_config.disable,
+        ReportsPlugin {
+            config: &cli.diagnostic_config,
+        },
+    );
+    engine.add_plugin(LogPlugin {
+        level: LoggingLevel::Trace,
+        display_thread_names: false,
+    });
+    engine.add_plugin(ThreadPoolPlugin {
+        total_threads: cli.jobs,
     });
 
     engine
@@ -88,7 +103,9 @@ fn main() -> Result<(), CompilationFailed> {
             engine
                 .install(ParseSourcePhase)
                 .install(BuildAstPhase)
-                .install(AstNormalizationPhase);
+                .install(AstNormalizationPhase)
+                .install(SymbolsPhase)
+                .install(TypeCheckPhase);
         }))
         .install(FinishPhase);
 

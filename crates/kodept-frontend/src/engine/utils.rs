@@ -2,7 +2,7 @@ mod task_pool {
     //! Belongs to bevy 0.17.2: https://github.com/bevyengine/bevy/blob/release-0.17.2/crates/bevy_app/src/task_pool_plugin.rs
 
     use crate::engine::{Engine, Plugin};
-    use bevy_tasks::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool, TaskPoolBuilder};
+    use kodept_ecs::tasks::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool, TaskPoolBuilder};
     use std::fmt::Debug;
     use std::sync::Arc;
     use tracing::trace;
@@ -140,7 +140,8 @@ mod task_pool {
 
         /// Inserts the default thread pools into the given resource map based on the configured values
         pub fn create_default_pools(&self) {
-            let total_threads = bevy_tasks::available_parallelism()
+            let total_threads = std::thread::available_parallelism()
+                .map_or(1, |it| it.get())
                 .clamp(self.min_total_threads, self.max_total_threads);
             trace!("Assigning {total_threads} cores to default task pools");
 
@@ -237,9 +238,12 @@ mod task_pool {
 }
 
 pub(super) mod instrument {
-    use bevy_ecs::prelude::{If, IntoScheduleConfigs, Res, ResMut, Resource};
-    use bevy_ecs::schedule::ScheduleConfigs;
-    use bevy_ecs::system::ScheduleSystem;
+    use crate::engine::Phase;
+    use crate::engine::inner_set::InnerSet;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::resource::Resource;
+    use kodept_ecs::schedule::{IntoScheduleConfigs, IntoSystemSet, ScheduleConfigs};
+    use kodept_ecs::system::{If, Res, ResMut, ScheduleSystem};
     use std::collections::HashMap;
     use std::sync::atomic::AtomicU16;
     use std::time::{Duration, Instant};
@@ -277,10 +281,8 @@ pub(super) mod instrument {
         }
     }
 
-    pub(crate) fn instrument<M>(
-        config: impl IntoScheduleConfigs<ScheduleSystem, M>,
-        name: &'static str,
-    ) -> ScheduleConfigs<ScheduleSystem> {
+    #[must_use]
+    pub(crate) fn instrument<P: Phase>(name: &'static str) -> ScheduleConfigs<ScheduleSystem> {
         static GENERATOR: AtomicU16 = AtomicU16::new(0);
         let id = GENERATOR.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let before = move |mut timings: If<ResMut<Timings>>| {
@@ -302,13 +304,25 @@ pub(super) mod instrument {
             }
         };
 
-        (before, config, after).chain_ignore_deferred()
+        let label = P::Set::default();
+        IntoScheduleConfigs::into_configs(
+            (
+                before.before(InnerSet::<P::Set>::new()),
+                after.after(InnerSet::<P::Set>::new()),
+            )
+                .in_set(label.into_system_set()),
+        )
     }
 }
 
 mod inject_resources {
     use crate::engine::{Phase, PhaseEngine, SubEngine};
-    use bevy_ecs::prelude::*;
+    use kodept_ecs::entity::Entity;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::query::With;
+    use kodept_ecs::schedule::SystemSet;
+    use kodept_ecs::system::{InMut, IntoSystem, ReadOnlySystem};
+    use kodept_ecs::world::World;
     use std::fmt::Debug;
     use std::hash::{Hash, Hasher};
     use std::marker::PhantomData;

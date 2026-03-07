@@ -1,11 +1,13 @@
 use crate::utils::{ForwardReport, ReportSystemEx, forward};
-use bevy_ecs::prelude::*;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
+use kodept_ecs::system::Res;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_report_macros::Report;
+use kodept_report_macros::IntoMessage;
 use std::time::{Duration, Instant};
 
-#[derive(Debug, Report)]
+#[derive(Debug, IntoMessage)]
 #[severity("note")]
 #[message("Successfully completed in {:.3}{}", self.elapsed_value, self.elapsed_suffix)]
 struct TotalTimeReport {

@@ -1,6 +1,6 @@
 use crate::common::{EagerTokensProducer, TokenProducer};
-use crate::lexer::PackedToken;
-use crate::token_match::PackedTokenMatch;
+use crate::lexer::Token;
+use crate::token_match::TokenMatch;
 use derive_more::Constructor;
 use kodept_core::code_point::CodePoint;
 use peg::error::ParseError;
@@ -9,67 +9,67 @@ use peg::str::LineCol;
 peg::parser! {grammar grammar() for str {
     rule newline() = "\n" / "\r\n" / "\r"
 
-    rule comment() -> PackedToken =
-        "//" (!newline() [_])* &newline()? { PackedToken::Comment }
-    rule multiline_comment() -> PackedToken =
-        "/*" (!"*/" [_])* "*/" { PackedToken::MultilineComment }
-    rule whitespace() -> PackedToken =
-        ("\t" / " ") { PackedToken::Whitespace }
-    rule ignore() -> PackedToken = quiet!{i:(
+    rule comment() -> Token =
+        "//" (!newline() [_])* &newline()? { Token::Comment }
+    rule multiline_comment() -> Token =
+        "/*" (!"*/" [_])* "*/" { Token::MultilineComment }
+    rule whitespace() -> Token =
+        ("\t" / " ") { Token::Whitespace }
+    rule ignore() -> Token = quiet!{i:(
         comment()                                  /
         multiline_comment()                        /
-        whitespace()+       { PackedToken::Whitespace } /
-        newline()           { PackedToken::Newline }
+        whitespace()+       { Token::Whitespace } /
+        newline()           { Token::Newline }
     ) { i }}
 
-    rule keyword() -> PackedToken =
-        "fun"       { PackedToken::Fun }       /
-        "val"       { PackedToken::Val }       /
-        "var"       { PackedToken::Var }       /
-        "match"     { PackedToken::Match }     /
-        "while"     { PackedToken::While }     /
-        "module"    { PackedToken::Module }    /
-        "extend"    { PackedToken::Extend }    /
-        "return"    { PackedToken::Return }    /
-        "\\"        { PackedToken::Lambda }    /
-        "if"        { PackedToken::If }        /
-        "elif"      { PackedToken::Elif }      /
-        "else"      { PackedToken::Else }      /
-        "abstract"  { PackedToken::Abstract }  /
-        "trait"     { PackedToken::Trait }     /
-        "struct"    { PackedToken::Struct }    /
-        "class"     { PackedToken::Class }     /
-        "enum"      { PackedToken::Enum }      /
-        "foreign"   { PackedToken::Foreign }   /
-        "type"      { PackedToken::TypeAlias } /
-        "with"      { PackedToken::With }
+    rule letter() = [c if c.is_alphanumeric()] / "_"
+    rule keyword() -> Token =
+        "fun" !letter()        { Token::Fun }       /
+        "val" !letter()        { Token::Val }       /
+        "var" !letter()        { Token::Var }       /
+        "match" !letter()      { Token::Match }     /
+        "while" !letter()      { Token::While }     /
+        "module" !letter()     { Token::Module }    /
+        "extend" !letter()     { Token::Extend }    /
+        "return" !letter()     { Token::Return }    /
+        "if" !letter()         { Token::If }        /
+        "elif" !letter()       { Token::Elif }      /
+        "else" !letter()       { Token::Else }      /
+        "abstract" !letter()   { Token::Abstract }  /
+        "trait" !letter()      { Token::Trait }     /
+        "struct" !letter()     { Token::Struct }    /
+        "class" !letter()      { Token::Class }     /
+        "enum" !letter()       { Token::Enum }      /
+        "foreign" !letter()    { Token::Foreign }   /
+        "type" !letter()       { Token::TypeAlias } /
+        "with" !letter()       { Token::With }
 
-    rule symbol() -> PackedToken =
-        ","  { PackedToken::Comma }       /
-        ";"  { PackedToken::Semicolon }   /
-        "{"  { PackedToken::LBrace }      /
-        "}"  { PackedToken::RBrace }      /
-        "["  { PackedToken::LBracket }    /
-        "]"  { PackedToken::RBracket }    /
-        "("  { PackedToken::LParen }      /
-        ")"  { PackedToken::RParen }      /
-        "_"  { PackedToken::TypeGap }     /
-        "::" { PackedToken::DoubleColon } /
-        ":"  { PackedToken::Colon }
+    rule symbol() -> Token =
+        ","  { Token::Comma }       /
+        ";"  { Token::Semicolon }   /
+        "{"  { Token::LBrace }      /
+        "}"  { Token::RBrace }      /
+        "["  { Token::LBracket }    /
+        "]"  { Token::RBracket }    /
+        "("  { Token::LParen }      /
+        ")"  { Token::RParen }      /
+        "_"  { Token::TypeGap }     /
+        "::" { Token::DoubleColon } /
+        ":"  { Token::Colon }
 
-    rule type_() -> PackedToken = (
+    rule type_() -> Token = (
         "_"*
         (quiet!{[cl if cl.is_uppercase()]} / expected!("uppercase letter"))
         ("_" / (quiet!{[c if c.is_alphanumeric()]} / expected!("letter")))*
-    ) { PackedToken::Type }
+    ) { Token::Type }
 
-    rule reference() -> PackedToken = (
+    rule reference() -> Token = (
         "_"*
         (quiet!{[cl if cl.is_lowercase()]} / expected!("lowercase letter"))
         ("_" / (quiet!{[c if c.is_alphanumeric()]} / expected!("letter")))*
-    ) { PackedToken::Identifier }
+    ) { Token::Identifier }
 
-    rule identifier() -> PackedToken = reference() / type_()
+    rule identifier() -> Token = reference() / type_()
 
     rule number<T>(prefix_lower: char, prefix_upper: char, digits: rule<T>) -> () = (
         "0" [c if c == prefix_lower || c == prefix_upper] (
@@ -78,12 +78,12 @@ peg::parser! {grammar grammar() for str {
         )
     )
 
-    rule bin_lit() -> PackedToken =
-        i:number('b', 'B', <['0'..='1']>) { PackedToken::Binary }
-    rule oct_lit() -> PackedToken =
-        i:number('c', 'C', <['0'..='7']>) { PackedToken::Octal }
-    rule hex_lit() -> PackedToken =
-        i:number('x', 'X', <['0'..='9' | 'a'..='f' | 'A'..='F']>) { PackedToken::Hex }
+    rule bin_lit() -> Token =
+        i:number('b', 'B', <['0'..='1']>) { Token::Binary }
+    rule oct_lit() -> Token =
+        i:number('c', 'C', <['0'..='7']>) { Token::Octal }
+    rule hex_lit() -> Token =
+        i:number('x', 'X', <['0'..='9' | 'a'..='f' | 'A'..='F']>) { Token::Hex }
 
     rule sign() = ['+' | '-']
     rule floating_lit() =
@@ -91,51 +91,51 @@ peg::parser! {grammar grammar() for str {
     rule e_notation() =
         ['e' | 'E'] sign()? ['0'..='9']+
 
-    rule literal() -> PackedToken =
+    rule literal() -> Token =
         bin_lit()                                                                    /
         oct_lit()                                                                    /
         hex_lit()                                                                    /
-        (sign() whitespace()*)? floating_lit() e_notation()? { PackedToken::Floating } /
-        "'" i:$(!"'" [_]) "'"                                { PackedToken::Char }     /
-        "\"" i:$((!"\"" [_])*) "\""                          { PackedToken::String }
+        sign()? floating_lit() e_notation()?               { Token::Floating } /
+        "'" i:$(!"'" [_]) "'"                              { Token::Char }     /
+        "\"" i:$((!"\"" [_])*) "\""                        { Token::String }
 
-    rule operator() -> PackedToken =
-        "."   { PackedToken::Dot }           /
-        "=>"  { PackedToken::Flow }          /
-        "+"   { PackedToken::Plus }          /
-        "-"   { PackedToken::Sub }           /
-        "**"  { PackedToken::Pow }           /
-        "*"   { PackedToken::Times }         /
-        "/"   { PackedToken::Div }           /
-        "%"   { PackedToken::Mod }           /
-        "<=>" { PackedToken::Spaceship }     /
-        "=="  { PackedToken::Equiv }         /
-        "="   { PackedToken::Equals }        /
-        "!="  { PackedToken::NotEquiv }      /
-        ">="  { PackedToken::GreaterEquals } /
-        ">"   { PackedToken::Greater }       /
-        "<="  { PackedToken::LessEquals }    /
-        "<"   { PackedToken::Less }          /
-        "||"  { PackedToken::OrLogic }       /
-        "&&"  { PackedToken::AndLogic }      /
-        "!"   { PackedToken::NotLogic }      /
-        "|"   { PackedToken::OrBit }         /
-        "&"   { PackedToken::AndBit }        /
-        "^"   { PackedToken::XorBit }        /
-        "~"   { PackedToken::NotBit }
+    rule operator() -> Token =
+        "."   { Token::Dot }           /
+        "=>"  { Token::Flow }          /
+        "+"   { Token::Plus }          /
+        "-"   { Token::Sub }           /
+        "**"  { Token::Pow }           /
+        "*"   { Token::Times }         /
+        "/"   { Token::Div }           /
+        "%"   { Token::Mod }           /
+        "<=>" { Token::Spaceship }     /
+        "=="  { Token::Equiv }         /
+        "="   { Token::Equals }        /
+        "!="  { Token::NotEquiv }      /
+        ">="  { Token::GreaterEquals } /
+        ">"   { Token::Greater }       /
+        "<="  { Token::LessEquals }    /
+        "<"   { Token::Less }          /
+        "||"  { Token::OrLogic }       /
+        "&&"  { Token::AndLogic }      /
+        "!"   { Token::NotLogic }      /
+        "|"   { Token::OrBit }         /
+        "&"   { Token::AndBit }        /
+        "^"   { Token::XorBit }        /
+        "~"   { Token::NotBit }
 
-    rule token_() -> PackedToken =
+    rule token_() -> Token =
         ignore()     /
         keyword()    /
         symbol()     /
         identifier() /
-        operator()   /
-        literal()
+        literal()    /
+        operator()
 
-    rule token_match() -> PackedTokenMatch =
+    rule token_match() -> TokenMatch =
         start:position!() t:token_() end:position!() {
             let length = end - start;
-            PackedTokenMatch::new(t, CodePoint::new(length as u32, start as u32))
+            TokenMatch::new(t, CodePoint::new(length as u32, start as u32))
         }
 
     rule traced<T>(e: rule<T>) -> T =
@@ -149,11 +149,11 @@ peg::parser! {grammar grammar() for str {
             e.ok_or("")
         }
 
-    rule tokens_() -> Vec<PackedTokenMatch> = i:token_match()* ![_] { i }
+    rule tokens_() -> Vec<TokenMatch> = i:token_match()* ![_] { i }
 
-    pub rule tokens() -> Vec<PackedTokenMatch> = traced(<tokens_()>)
+    pub rule tokens() -> Vec<TokenMatch> = traced(<tokens_()>)
     #[no_eof]
-    pub rule token() -> PackedTokenMatch = traced(<token_match()>)
+    pub rule token() -> TokenMatch = traced(<token_match()>)
 }}
 
 #[derive(Constructor, Debug, Copy, Clone)]
@@ -189,7 +189,7 @@ impl<const TRACE: bool> TokenProducer for Lexer<TRACE> {
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
+    ) -> Result<TokenMatch, Self::Error<'t>> {
         let input = &whole_input[position..];
         let _gag = GagContainer::enable::<TRACE>();
         grammar::token(input)
@@ -199,7 +199,7 @@ impl<const TRACE: bool> TokenProducer for Lexer<TRACE> {
 impl<const TRACE: bool> EagerTokensProducer for Lexer<TRACE> {
     type Error<'t> = ParseError<LineCol>;
 
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch>, Self::Error<'t>> {
         let _gag = GagContainer::enable::<TRACE>();
         grammar::tokens(input)
     }

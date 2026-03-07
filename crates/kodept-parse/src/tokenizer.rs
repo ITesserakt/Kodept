@@ -1,6 +1,6 @@
 use crate::common::ErrorAdapter;
 use crate::error::{Original, ParseErrors};
-use crate::token_match::PackedTokenMatch;
+use crate::token_match::TokenMatch;
 use std::fmt::Debug;
 
 #[cfg(feature = "parallel")]
@@ -10,14 +10,14 @@ pub use {eager::Tokenizer as EagerTokenizer, lazy::Tokenizer as LazyTokenizer};
 pub trait Tok<'t> {
     type Error;
 
-    fn try_into_vec(self) -> Result<Vec<PackedTokenMatch>, Self::Error>;
+    fn try_into_vec(self) -> Result<Vec<TokenMatch>, Self::Error>;
 
-    fn try_collect_adapted<A>(self) -> Result<Vec<PackedTokenMatch>, ParseErrors<A>>
+    fn try_collect_adapted<A>(self) -> Result<Vec<TokenMatch>, ParseErrors<A>>
     where
         &'t str: Original<A>,
         Self::Error: ErrorAdapter<A, &'t str>;
 
-    fn into_vec(self) -> Vec<PackedTokenMatch>
+    fn into_vec(self) -> Vec<TokenMatch>
     where
         Self::Error: Debug,
         Self: Sized,
@@ -34,7 +34,7 @@ mod lazy {
     use super::{Tok, TokCtor};
     use crate::common::{ErrorAdapter, TokenProducer};
     use crate::error::{Original, ParseErrors};
-    use crate::token_match::PackedTokenMatch;
+    use crate::token_match::TokenMatch;
     use std::iter::FusedIterator;
 
     pub struct Tokenizer<'t, F> {
@@ -47,7 +47,7 @@ mod lazy {
     where
         F: TokenProducer,
     {
-        type Item = Result<PackedTokenMatch, F::Error<'t>>;
+        type Item = Result<TokenMatch, F::Error<'t>>;
 
         #[inline]
         fn next(&mut self) -> Option<Self::Item> {
@@ -76,14 +76,14 @@ mod lazy {
     {
         type Error = F::Error<'t>;
 
-        fn try_into_vec(self) -> Result<Vec<PackedTokenMatch>, Self::Error> {
+        fn try_into_vec(self) -> Result<Vec<TokenMatch>, Self::Error> {
             let vec: Result<Vec<_>, _> = <Self as Iterator>::collect(self);
             let mut vec = vec?;
             vec.shrink_to_fit();
             Ok(vec)
         }
 
-        fn try_collect_adapted<A>(self) -> Result<Vec<PackedTokenMatch>, ParseErrors<A>>
+        fn try_collect_adapted<A>(self) -> Result<Vec<TokenMatch>, ParseErrors<A>>
         where
             &'t str: Original<A>,
             Self::Error: ErrorAdapter<A, &'t str>,
@@ -109,14 +109,14 @@ mod eager {
     use super::{Tok, TokCtor};
     use crate::common::{EagerTokensProducer, ErrorAdapter};
     use crate::error::{Original, ParseErrors};
-    use crate::token_match::PackedTokenMatch;
+    use crate::token_match::TokenMatch;
     use std::fmt::Debug;
     use std::marker::PhantomData;
 
     #[derive(Debug)]
     pub struct Tokenizer<'t, E, F> {
         input: &'t str,
-        result: Result<Vec<PackedTokenMatch>, E>,
+        result: Result<Vec<TokenMatch>, E>,
         lexer_type: PhantomData<F>,
     }
 
@@ -127,11 +127,11 @@ mod eager {
         type Error = F::Error<'t>;
 
         #[inline]
-        fn try_into_vec(self) -> Result<Vec<PackedTokenMatch>, Self::Error> {
+        fn try_into_vec(self) -> Result<Vec<TokenMatch>, Self::Error> {
             self.result
         }
 
-        fn try_collect_adapted<A>(self) -> Result<Vec<PackedTokenMatch>, ParseErrors<A>>
+        fn try_collect_adapted<A>(self) -> Result<Vec<TokenMatch>, ParseErrors<A>>
         where
             &'t str: Original<A>,
             Self::Error: ErrorAdapter<A, &'t str>,
@@ -160,7 +160,7 @@ mod parallel {
     use super::{Tok, TokCtor, eager};
     use crate::common::{EagerTokensProducer, ErrorAdapter};
     use crate::error::{Original, ParseErrors};
-    use crate::token_match::PackedTokenMatch;
+    use crate::token_match::TokenMatch;
     use rayon::prelude::*;
     use std::fmt::Debug;
 
@@ -180,7 +180,7 @@ mod parallel {
     {
         type Error = F::Error<'t>;
 
-        fn try_into_vec(self) -> Result<Vec<PackedTokenMatch>, Self::Error> {
+        fn try_into_vec(self) -> Result<Vec<TokenMatch>, Self::Error> {
             self.lines
                 .into_par_iter()
                 .map(|(offset, line)| {
@@ -206,7 +206,7 @@ mod parallel {
                 })
         }
 
-        fn try_collect_adapted<A>(self) -> Result<Vec<PackedTokenMatch>, ParseErrors<A>>
+        fn try_collect_adapted<A>(self) -> Result<Vec<TokenMatch>, ParseErrors<A>>
         where
             &'t str: Original<A>,
             Self::Error: ErrorAdapter<A, &'t str>,

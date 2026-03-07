@@ -1,6 +1,6 @@
 use crate::error::{Original, ParseErrors};
-use crate::token_match::PackedTokenMatch;
-use crate::token_stream::PackedTokenStream;
+use crate::token_match::TokenMatch;
+use crate::token_stream::TokenStream;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::Located;
 use kodept_rlt::new_types::Enclosed;
@@ -15,19 +15,19 @@ pub trait TokenProducer {
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<PackedTokenMatch, Self::Error<'t>>;
+    ) -> Result<TokenMatch, Self::Error<'t>>;
 }
 
 pub trait EagerTokensProducer {
     type Error<'t>;
 
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>>;
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch>, Self::Error<'t>>;
 }
 
 pub trait RLTProducer<Output = RLT> {
     type Error<'t>;
 
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<Output, Self::Error<'t>>;
+    fn parse_stream<'t>(&self, input: &TokenStream<'t>) -> Result<Output, Self::Error<'t>>;
 }
 
 pub struct Adapted<T, A>(pub T, PhantomData<A>);
@@ -41,13 +41,13 @@ impl<T, A> Adapted<T, A> {
 impl<A, T> RLTProducer for Adapted<T, A>
 where
     T: RLTProducer,
-    for<'t> T::Error<'t>: ErrorAdapter<A, PackedTokenStream<'t>>,
-    for<'t> PackedTokenStream<'t>: Original<A>,
+    for<'t> T::Error<'t>: ErrorAdapter<A, TokenStream<'t>>,
+    for<'t> TokenStream<'t>: Original<A>,
 {
     type Error<'t> = ParseErrors<A>;
 
     #[inline]
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         self.0.parse_stream(input).map_err(|e| e.adapt(*input, 0))
     }
 }
@@ -61,7 +61,7 @@ where
     type Error<'t> = ParseErrors<A>;
 
     #[inline]
-    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<PackedTokenMatch>, Self::Error<'t>> {
+    fn parse_string<'t>(&self, input: &'t str) -> Result<Vec<TokenMatch>, Self::Error<'t>> {
         self.0.parse_string(input).map_err(|e| e.adapt(input, 0))
     }
 }
@@ -78,7 +78,7 @@ where
         &self,
         whole_input: &'t str,
         position: usize,
-    ) -> Result<PackedTokenMatch, Self::Error<'t>> {
+    ) -> Result<TokenMatch, Self::Error<'t>> {
         self.0
             .parse_string(whole_input, position)
             .map_err(|e| e.adapt(whole_input, position))
@@ -107,8 +107,8 @@ impl<T, U: From<T>> From<VerboseEnclosed<T>> for Enclosed<U> {
     }
 }
 
-impl<T> From<(PackedTokenMatch, T, PackedTokenMatch)> for VerboseEnclosed<T> {
-    fn from((left, inner, right): (PackedTokenMatch, T, PackedTokenMatch)) -> Self {
+impl<T> From<(TokenMatch, T, TokenMatch)> for VerboseEnclosed<T> {
+    fn from((left, inner, right): (TokenMatch, T, TokenMatch)) -> Self {
         Self::from_located(left, inner, right)
     }
 }

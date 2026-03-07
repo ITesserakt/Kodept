@@ -20,6 +20,7 @@ pub enum Error {
     Unsupported(kodept_rlt::exported::Span),
     UnexpectedStatement(kodept_rlt::exported::Span),
     UnexpectedExpression(kodept_rlt::exported::Span),
+    UnicodeLiteral(CodePoint),
 }
 
 #[cfg(feature = "reflection")]

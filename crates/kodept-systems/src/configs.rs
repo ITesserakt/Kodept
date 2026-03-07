@@ -1,5 +1,6 @@
-use bevy_ecs::prelude::Resource;
 use kodept_core::file_name::FileName;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
 use std::ffi::OsStr;
 use std::fs::create_dir_all;
 use std::io::ErrorKind;

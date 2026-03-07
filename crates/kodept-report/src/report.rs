@@ -1,6 +1,6 @@
 use crate::{
     message::{Diagnostic, Severity},
-    traits::IntoSpannedReportMessage,
+    traits::IntoMessage,
 };
 
 #[derive(Debug, Eq, PartialEq)]
@@ -14,7 +14,7 @@ impl<FileId> Report<FileId> {
     #[must_use]
     pub fn from_message<T>(file_id: FileId, msg: T) -> Self
     where
-        T: IntoSpannedReportMessage,
+        T: IntoMessage,
     {
         let code = format!("{:0>8X}", msg.code());
         let diagnostic = msg.into_message();

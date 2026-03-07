@@ -1,12 +1,13 @@
 use crate::arity::{Arity, Optional, Plural, Singular};
-use crate::export::Component;
-use crate::prelude::ASTNode;
 use crate::properties::{Node, Root};
 use crate::relationship::{ArityValue, NodeRelationship, NodeRelationships, RelationshipMetadata};
 use crate::syntax_tree::children::{Family, Nothing};
-use bevy_ecs::prelude::{Entity, EntityRef, Query, Res, Single, With};
-use bevy_ecs::relationship::Relationship;
-use bevy_ecs::system::SystemParam;
+use kodept_ecs::entity::Entity;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::With;
+use kodept_ecs::relationship::Relationship;
+use kodept_ecs::system::{Query, Res, Single, SystemParam};
+use kodept_ecs::world::EntityRef;
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 
@@ -62,9 +63,7 @@ where
                 continue;
             };
 
-            #[derive(Component)]
             struct Helper<A: Arity>(PhantomData<A>);
-            impl<A: Arity> ASTNode for Helper<A> {}
             impl<A: Arity> Family for Helper<A> {
                 type Arity = A;
                 type Members = Nothing;
@@ -133,13 +132,15 @@ impl<'a> Debug for NodeSlot<'a> {
 mod tests {
     use crate::arity::{Plural, Singular};
     use crate::prelude::ASTNode;
-    use crate::properties::{HasProperty, Node, Root};
+    use crate::properties::{HasProperty, Lexeme, Node, Root, SourceSpan};
     use crate::syntax_tree::builder_v4::{Constructed, NodeBuilder, NodeSpawner};
     use crate::syntax_tree::children::{Family, HasChild};
     use crate::syntax_tree::iteration::{AllNodesQuery, NodeSlot};
-    use bevy_ecs::prelude::*;
-    use bevy_ecs::system::RunSystemOnce;
-    use kodept_core::file_name::{FileDescriptor, FileId, FileName};
+    use kodept_core::code_point::{CodePoint, Span};
+    use kodept_ecs::component::Component;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::exported::bevy_ecs::system::RunSystemOnce;
+    use kodept_ecs::world::World;
 
     #[derive(Debug, Component, PartialEq)]
     #[require(Node::of::<Self>())]
@@ -158,20 +159,37 @@ mod tests {
     }
     impl HasChild<A, bool> for A {}
 
+    static FAKE_SPAN: SourceSpan = SourceSpan(Span {
+        length: 0,
+        offset: 0,
+    });
+    static FAKE_SYNTAX: kodept_rlt::new_types::Symbol =
+        kodept_rlt::new_types::Symbol(CodePoint::single_point(0));
+    static FAKE_LEXEME: Lexeme = Lexeme::new(&FAKE_SYNTAX);
+
     #[test]
     fn test_nodes_iteration() {
         let mut world = World::new();
-        let associated_file = FileDescriptor::new(FileName::Anon, FileId::generate());
-
         {
             let mut builder = NodeBuilder::new(A(1))
-                .with_property(Root { associated_file })
+                .with_property(Root)
+                .with_property(FAKE_SPAN)
+                .with_property(FAKE_LEXEME)
                 .spawn_in(NodeSpawner::new(&mut world));
-            NodeBuilder::new(A(2)).spawn(builder.spawner::<()>());
+            NodeBuilder::new(A(2))
+                .with_property(FAKE_SPAN)
+                .with_property(FAKE_LEXEME)
+                .spawn(builder.spawner::<()>());
 
             {
-                let mut builder = NodeBuilder::new(A(3)).spawn_in(builder.spawner::<()>());
-                NodeBuilder::new(A(4)).spawn(builder.spawner::<bool>());
+                let mut builder = NodeBuilder::new(A(3))
+                    .with_property(FAKE_SPAN)
+                    .with_property(FAKE_LEXEME)
+                    .spawn_in(builder.spawner::<()>());
+                NodeBuilder::new(A(4))
+                    .with_property(FAKE_SPAN)
+                    .with_property(FAKE_LEXEME)
+                    .spawn(builder.spawner::<bool>());
             }
         }
 

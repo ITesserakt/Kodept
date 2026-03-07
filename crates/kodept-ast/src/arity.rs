@@ -1,24 +1,34 @@
 use crate::node_id::NodeId;
 use crate::relationship::ArityValue;
 use crate::syntax_tree::children::Nothing;
-use bevy_ecs::entity::{EntityMapper, MapEntities};
-use bevy_ecs::prelude::Entity;
-use bevy_ecs::relationship::RelationshipSourceCollection;
+use kodept_ecs::entity::{Entity, EntityIndexSet, EntityMapper, EntitySetIterator, MapEntities};
+use kodept_ecs::relationship::RelationshipSourceCollection;
 use private::Sealed;
-use smallvec::SmallVec;
 
 mod private {
     pub trait Sealed {}
 }
 
+pub trait UniqueRelationshipSourceCollection:
+    for<'a> RelationshipSourceCollection<SourceIter<'a>: EntitySetIterator>
+{
+}
+
+impl<T> UniqueRelationshipSourceCollection for T
+where
+    T: RelationshipSourceCollection,
+    for<'a> T::SourceIter<'a>: EntitySetIterator,
+{
+}
+
 pub trait Arity: Sealed + 'static + Send + Sync {
-    type Collection: RelationshipSourceCollection + MapEntities + Send + Sync + 'static;
+    type Collection: UniqueRelationshipSourceCollection + MapEntities + Send + Sync + 'static;
 
     const VALUE: ArityValue;
 }
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct Option(Entity);
+pub struct MaybeEntity(Entity);
 
 /// Describes that parent must have no children of that type
 /// Zero-to-one relationship
@@ -52,20 +62,20 @@ impl Arity for Singular {
 }
 impl Sealed for Optional {}
 impl Arity for Optional {
-    type Collection = Option;
+    type Collection = MaybeEntity;
     const VALUE: ArityValue = ArityValue::Optional;
 }
 impl Sealed for Plural {}
 impl Arity for Plural {
-    type Collection = SmallVec<[Entity; 2]>;
+    type Collection = EntityIndexSet;
     const VALUE: ArityValue = ArityValue::Plural;
 }
 
-impl RelationshipSourceCollection for Option {
+impl RelationshipSourceCollection for MaybeEntity {
     type SourceIter<'a> = std::option::IntoIter<Entity>;
 
     fn new() -> Self {
-        Option(Entity::PLACEHOLDER)
+        MaybeEntity(Entity::PLACEHOLDER)
     }
 
     fn with_capacity(_: usize) -> Self {
@@ -76,7 +86,7 @@ impl RelationshipSourceCollection for Option {
 
     fn add(&mut self, entity: Entity) -> bool {
         if self.0 == Entity::PLACEHOLDER {
-            *self = Option(entity);
+            *self = MaybeEntity(entity);
             true
         } else {
             false
@@ -85,7 +95,7 @@ impl RelationshipSourceCollection for Option {
 
     fn remove(&mut self, entity: Entity) -> bool {
         if self.0 == entity {
-            *self = Option(Entity::PLACEHOLDER);
+            *self = MaybeEntity(Entity::PLACEHOLDER);
             true
         } else {
             false
@@ -105,7 +115,7 @@ impl RelationshipSourceCollection for Option {
     }
 
     fn clear(&mut self) {
-        *self = Option(Entity::PLACEHOLDER);
+        *self = MaybeEntity(Entity::PLACEHOLDER);
     }
 
     fn shrink_to_fit(&mut self) {}
@@ -121,13 +131,13 @@ impl RelationshipSourceCollection for Option {
     }
 }
 
-impl MapEntities for Option {
+impl MapEntities for MaybeEntity {
     fn map_entities<E: EntityMapper>(&mut self, entity_mapper: &mut E) {
         self.into_inner().map_entities(entity_mapper)
     }
 }
 
-impl Option {
+impl MaybeEntity {
     pub fn into_inner(self) -> std::option::Option<Entity> {
         if self.0 == Entity::PLACEHOLDER {
             None
@@ -137,8 +147,8 @@ impl Option {
     }
 }
 
-impl From<Option> for std::option::Option<Entity> {
-    fn from(value: Option) -> Self {
+impl From<MaybeEntity> for std::option::Option<Entity> {
+    fn from(value: MaybeEntity) -> Self {
         value.into_inner()
     }
 }
@@ -152,7 +162,7 @@ impl RelationshipSourceCollection for Nothing {
 
     #[inline]
     fn with_capacity(_: usize) -> Self {
-        Self::new()
+        unreachable!("Children with `Empty` arity cannot exist")
     }
 
     #[inline]

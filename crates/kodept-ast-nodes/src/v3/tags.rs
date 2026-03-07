@@ -10,3 +10,7 @@ pub struct Lhs;
 pub struct Rhs;
 pub struct Condition;
 pub struct Else;
+
+pub struct Params;
+pub struct NamedParams;
+pub struct ReturnType;

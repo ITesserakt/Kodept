@@ -4,7 +4,7 @@ This crate provides procedural macros to reduce boilerplate when creating diagno
 
 ## Features
 
-- **`#[derive(Diagnostic)]`**: Automatically implement `IntoSpannedReportMessage` for error types
+- **`#[derive(IntoMessage)]`**: Automatically implement `IntoMessage` for types
 - **Field attributes**: Mark fields as primary/secondary labels or notes
 - **Custom message formatting**: Generate error messages from field values
 - **Error codes**: Assign numeric error codes to diagnostics
@@ -18,7 +18,7 @@ This crate provides procedural macros to reduce boilerplate when creating diagno
 use kodept_diagnostic_macros::Diagnostic;
 use kodept_core::code_point::Span;
 
-#[derive(Diagnostic)]
+#[derive(IntoMessage)]
 #[severity("Error")]
 struct DuplicatedSymbolError {
     #[primary_label("symbol already defined")]
@@ -33,7 +33,7 @@ struct DuplicatedSymbolError {
 ### Field Attributes
 
 - `#[primary_label("message")]`: Creates a primary label with the given message
-- `#[secondary_label("message")]`: Creates a secondary label with the given message  
+- `#[secondary_label("message")]`: Creates a secondary label with the given message
 - `#[note]`: Adds the field value as a note to the diagnostic
 
 ### Struct-Level Attributes
@@ -46,10 +46,10 @@ struct DuplicatedSymbolError {
 ### Complex Example
 
 ```rust
-#[derive(Diagnostic)]
+#[derive(IntoMessage)]
 #[severity("Error")]
 #[code(1001)]
-#[message("Type mismatch: expected {expected_type}, found {found_type}")]
+#[message("Type mismatch: expected {expected_type}, found {found_type}", self.expected_type, self.found_type)]
 struct TypeMismatchError {
     #[primary_label("expected type")]
     expected_span: Span,
@@ -66,9 +66,9 @@ struct TypeMismatchError {
 You can use field values in custom messages:
 
 ```rust
-#[derive(Diagnostic)]
+#[derive(IntoMessage)]
 #[severity("Error")]
-#[message("Invalid syntax: {message}")]
+#[message("Invalid syntax: {message}", self.message)]
 struct InvalidSyntaxError {
     #[primary_label("syntax error")]
     error_span: Span,
@@ -80,9 +80,9 @@ struct InvalidSyntaxError {
 
 ## Generated Code
 
-The `#[derive(Diagnostic)]` macro generates:
+The `#[derive(IntoMessage)]` macro generates:
 
-1. Implementation of `IntoSpannedReportMessage`
+1. Implementation of `IntoMessage` trait
 2. Diagnostic construction with labels and notes based on field attributes
 3. Message generation from non-annotated fields or custom message format
 4. Error code and severity handling
@@ -98,9 +98,9 @@ use kodept_report::{FileId, report::Report};
 let file_id: FileId = todo!();
 
 let error = DuplicatedSymbolError {
-    current_def: span1,
-    previous_def: span2,
-    bound_name: "my_function".to_string(),
+current_def: span1,
+previous_def: span2,
+bound_name: "my_function".to_string(),
 };
 
 // Can be used directly with the reporting system
@@ -114,7 +114,7 @@ let report = Report::from_message(file_id, error);
 
 ## Benefits
 
-- **Reduced boilerplate**: No need to manually implement `IntoSpannedReportMessage`
+- **Reduced boilerplate**: No need to manually implement `IntoMessage`
 - **Type safety**: Compile-time checking of diagnostic structure
 - **Consistency**: Standardized error reporting across the codebase
 - **Flexibility**: Custom message formatting and field handling

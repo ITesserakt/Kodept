@@ -1,16 +1,15 @@
 use crate::properties::Node;
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::change_detection::Tick;
-use bevy_ecs::component::{ComponentId, Components};
-use bevy_ecs::entity::{ContainsEntity, EntityEquivalent, EntityMapper, MapEntities};
-use bevy_ecs::prelude::{Entity, With, World};
-use bevy_ecs::query::{
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::change_detection::Tick;
+use kodept_ecs::component::{ComponentId, Components};
+use kodept_ecs::entity::{ContainsEntity, Entity, EntityEquivalent, EntityMapper, MapEntities};
+use kodept_ecs::query::{
     Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, QueryData, ReadOnlyQueryData,
-    ReleaseStateQueryData, WorldQuery,
+    ReleaseStateQueryData, With, WorldQuery,
 };
-use bevy_ecs::relationship::RelationshipSourceCollection;
-use bevy_ecs::storage::{Table, TableRow};
-use bevy_ecs::world::unsafe_world_cell::UnsafeWorldCell;
+use kodept_ecs::relationship::RelationshipSourceCollection;
+use kodept_ecs::storage::{Table, TableRow};
+use kodept_ecs::world::{UnsafeWorldCell, World};
 use std::borrow::Borrow;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;

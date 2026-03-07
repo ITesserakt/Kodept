@@ -1,7 +1,7 @@
 use crate::v3::dispatch::Dispatcher;
 use crate::v3::types;
 use crate::v3::types::*;
-use crate::{Condition, Expression, Lhs, Rhs};
+use crate::{Condition, Expression, Lhs, Params, Rhs};
 use kodept_ast::experimental::{Dispatch, FromSyntax};
 use kodept_ast::prelude::{CodeHolder, NodeId};
 use kodept_ast::properties::{Lexeme, Name, SourceSpan};
@@ -16,11 +16,11 @@ use std::convert::Infallible;
 fn convert_type(ty: &Type, source: impl CodeHolder) -> UnresolvedType {
     match ty {
         Type::ContextualReference(ctx, ident) => UnresolvedType::Named {
-            context: (ctx, source).into(),
+            path: (ctx, source).into(),
             ident: source.get_chunk_located(ident),
         },
         Type::Reference(ident) => UnresolvedType::Named {
-            context: Path::empty(false),
+            path: Path::empty(false),
             ident: source.get_chunk_located(ident),
         },
         Type::Tuple(items) => UnresolvedType::Tuple(
@@ -28,7 +28,7 @@ fn convert_type(ty: &Type, source: impl CodeHolder) -> UnresolvedType {
                 .0
                 .inner
                 .iter()
-                .map(|it| TypeAnnotation::Bound(convert_type(it, source)))
+                .map(|it| convert_type(it, source))
                 .collect(),
         ),
     }
@@ -88,9 +88,8 @@ impl<B: Buffer> FromSyntax<Enum, B> for UserType {
 
         for variant in inner.into_iter().flat_map(|it| it.inner.as_ref()) {
             let variant_name = source.get_chunk_located(variant);
-            NodeBuilder::new(ValueCtor::<ResolvedType> {
+            NodeBuilder::new(ValueCtor {
                 name: CtorName::Explicit(variant_name),
-                params: vec![],
             })
             .with_property(SourceSpan(variant.bounds()))
             .with_property(Lexeme::new(variant))
@@ -117,25 +116,27 @@ impl<B: Buffer> FromSyntax<Struct, B> for UserType {
             .with_property(Lexeme::new(node))
             .spawn_in(spawner);
 
-        let params = node
-            .parameters
-            .iter()
-            .flat_map(|it| it.inner.as_ref())
-            .map(|it| Param::Positional {
-                name: Some(source.get_chunk_located(&it.id)),
-                ty_id: convert_type(&it.parameter_type, source),
-            });
+        {
+            let mut builder = NodeBuilder::new(ValueCtor {
+                name: CtorName::Inline,
+            })
+            .with_property(SourceSpan(node.parameters.as_ref().map_or_else(
+                || node.id.bounds(),
+                |it| it.left.bounds() + it.right.bounds(),
+            )))
+            .with_property(Lexeme::new(&node.id))
+            .spawn_in(builder.spawner());
 
-        NodeBuilder::new(ValueCtor {
-            name: CtorName::Inline,
-            params: params.collect(),
-        })
-        .with_property(SourceSpan(node.parameters.as_ref().map_or_else(
-            || node.id.bounds(),
-            |it| it.left.bounds() + it.right.bounds(),
-        )))
-        .with_property(Lexeme::new(&node.id))
-        .spawn_in(&mut builder.spawner());
+            for param in node.parameters.iter().flat_map(|it| it.inner.as_ref()) {
+                let name = source.get_chunk_located(&param.id);
+                NodeBuilder::new(Param)
+                    .with_property(SourceSpan(param.bounds()))
+                    .with_property(Lexeme::new(param))
+                    .with_property(Name::new(name))
+                    .with_property(convert_type(&param.parameter_type, source))
+                    .spawn_in(builder.spawner());
+            }
+        }
 
         for func in node.body.iter().flat_map(|it| it.inner.as_ref()) {
             UserFunction::from_syntax(func, builder.spawner(), source)?;
@@ -145,7 +146,7 @@ impl<B: Buffer> FromSyntax<Struct, B> for UserType {
     }
 }
 
-impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<TypeAnnotation> {
+impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction {
     type Error = crate::Error;
 
     fn from_syntax(
@@ -157,31 +158,33 @@ impl<B: Buffer> FromSyntax<BodiedFunction, B> for UserFunction<TypeAnnotation> {
         let return_type = node
             .return_type
             .as_ref()
-            .map(|it| convert_type(&it.1, source))
-            .map_or(TypeAnnotation::Infer, TypeAnnotation::Bound);
+            .map(|it| convert_type(&it.1, source).into_annotation())
+            .unwrap_or(TypeAnnotation::Infer);
 
-        let mut builder = NodeBuilder::new(UserFunction {
-            params: node
-                .params
-                .iter()
-                .flat_map(|it| it.inner.as_ref())
-                .map(|it| match it {
-                    Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Bound(convert_type(parameter_type, source)),
-                    },
-                    Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Infer,
-                    },
-                })
-                .collect(),
-            return_type,
-        })
-        .with_property(SourceSpan(node.bounds()))
-        .with_property(Lexeme::new(node))
-        .with_property(Name::new(name))
-        .spawn_in(spawner);
+        let mut builder = NodeBuilder::new(UserFunction)
+            .with_property(SourceSpan(node.bounds()))
+            .with_property(Lexeme::new(node))
+            .with_property(Name::new(name))
+            .with_property(return_type)
+            .spawn_in(spawner);
+
+        for param in node.params.iter().flat_map(|it| it.inner.as_ref()) {
+            let (name, ty) = match param {
+                Parameter::Typed(TypedParameter { id, parameter_type }) => (
+                    source.get_chunk_located(id),
+                    convert_type(parameter_type, source).into_annotation(),
+                ),
+                Parameter::Untyped(UntypedParameter { id }) => {
+                    (source.get_chunk_located(id), TypeAnnotation::Infer)
+                }
+            };
+            NodeBuilder::new(Param)
+                .with_property(SourceSpan(param.bounds()))
+                .with_property(Lexeme::new(param))
+                .with_property(Name::new(name))
+                .with_property(ty)
+                .spawn_in(builder.spawner::<Params>());
+        }
 
         match &*node.body {
             Body::Simplified {
@@ -247,7 +250,7 @@ impl<B: Buffer> FromSyntax<ExpressionBlock, B> for Block {
     }
 }
 
-impl<B: Buffer> FromSyntax<Term, B> for Value<UnresolvedName> {
+impl<B: Buffer> FromSyntax<Term, B> for Value {
     type Error = Infallible;
 
     fn from_syntax(
@@ -257,28 +260,20 @@ impl<B: Buffer> FromSyntax<Term, B> for Value<UnresolvedName> {
     ) -> Result<NodeId<Self>, Self::Error> {
         let value = match node {
             Term::Reference(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(x),
-                    context: Path::empty(false),
-                },
+                ident: source.get_chunk_located(x),
+                path: Path::empty(false),
             },
             Term::ContextualReference(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(&x.inner),
-                    context: (&x.context, source).into(),
-                },
+                ident: source.get_chunk_located(&x.inner),
+                path: (&x.context, source).into(),
             },
             Term::Constant(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(x),
-                    context: Path::empty(false),
-                },
+                ident: source.get_chunk_located(x),
+                path: Path::empty(false),
             },
             Term::ContextualConstant(x) => Value {
-                inner: UnresolvedName {
-                    ident: source.get_chunk_located(&x.inner),
-                    context: (&x.context, source).into(),
-                },
+                ident: source.get_chunk_located(&x.inner),
+                path: (&x.context, source).into(),
             },
         };
 
@@ -291,7 +286,7 @@ impl<B: Buffer> FromSyntax<Term, B> for Value<UnresolvedName> {
     }
 }
 
-impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<TypeAnnotation> {
+impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable {
     type Error = crate::Error;
 
     fn from_syntax(
@@ -299,21 +294,16 @@ impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Ty
         spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let (name, mutable, annotation) = match &node.variable {
-            kodept_rlt::prelude::Variable::Immutable {
-                id, assigned_type, ..
-            } => (source.get_chunk_located(id), false, assigned_type),
-            kodept_rlt::prelude::Variable::Mutable {
-                id, assigned_type, ..
-            } => (source.get_chunk_located(id), true, assigned_type),
-        };
+        let name = source.get_chunk_located(&node.variable.id);
+        let bound = node
+            .variable
+            .assigned_type
+            .as_ref()
+            .map(|it| convert_type(&it.1, source).into_annotation())
+            .unwrap_or(TypeAnnotation::Infer);
 
         let mut builder = NodeBuilder::new(super::types::Variable {
-            mutable,
-            annotation: annotation
-                .as_ref()
-                .map(|it| convert_type(&it.1, source))
-                .map_or(TypeAnnotation::Infer, TypeAnnotation::Bound),
+            mutable: node.variable.is_mutable,
             name: match name.as_ref() {
                 "_" => VariableName::Empty,
                 _ => VariableName::Name(name),
@@ -321,6 +311,7 @@ impl<B: Buffer> FromSyntax<InitializedVariable, B> for super::types::Variable<Ty
         })
         .with_property(SourceSpan(node.bounds()))
         .with_property(Lexeme::new(node))
+        .with_property(bound)
         .spawn_in(spawner);
 
         Dispatcher::<Operation>::dispatch(&node.expression, builder.spawner(), source)?;
@@ -351,7 +342,7 @@ impl<B: Buffer> FromSyntax<Application, B> for Call {
     }
 }
 
-impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<TypeAnnotation> {
+impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction {
     type Error = crate::Error;
 
     fn from_syntax(
@@ -359,27 +350,30 @@ impl<B: Buffer> FromSyntax<Lambda, B> for AnonFunction<TypeAnnotation> {
         spawner: impl Spawner<Self, Buffer = B>,
         source: impl CodeHolder,
     ) -> Result<NodeId<Self>, Self::Error> {
-        let mut builder = NodeBuilder::new(AnonFunction {
-            return_type: TypeAnnotation::Infer,
-            params: node
-                .binds
-                .inner
-                .iter()
-                .map(|it| match it {
-                    Parameter::Typed(TypedParameter { id, parameter_type }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Bound(convert_type(parameter_type, source)),
-                    },
-                    Parameter::Untyped(UntypedParameter { id }) => Param::Positional {
-                        name: Some(source.get_chunk_located(id)),
-                        ty_id: TypeAnnotation::Infer,
-                    },
-                })
-                .collect(),
-        })
-        .with_property(Lexeme::new(node))
-        .with_property(SourceSpan(node.bounds()))
-        .spawn_in(spawner);
+        let mut builder = NodeBuilder::new(AnonFunction)
+            .with_property(Lexeme::new(node))
+            .with_property(SourceSpan(node.bounds()))
+            .with_property(TypeAnnotation::Infer)
+            .spawn_in(spawner);
+
+        for param in node.binds.inner.iter() {
+            let (name, bound) = match param {
+                Parameter::Typed(TypedParameter { id, parameter_type }) => (
+                    source.get_chunk_located(id),
+                    convert_type(parameter_type, source).into_annotation(),
+                ),
+                Parameter::Untyped(UntypedParameter { id }) => {
+                    (source.get_chunk_located(id), TypeAnnotation::Infer)
+                }
+            };
+
+            NodeBuilder::new(Param)
+                .with_property(SourceSpan(param.bounds()))
+                .with_property(Lexeme::new(param))
+                .with_property(Name::new(name))
+                .with_property(bound)
+                .spawn_in(builder.spawner());
+        }
 
         let mut block_builder = NodeBuilder::new(Block)
             .with_property(SourceSpan(node.expr.bounds()))

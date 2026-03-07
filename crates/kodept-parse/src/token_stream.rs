@@ -1,19 +1,18 @@
-use crate::token_match::PackedTokenMatch;
+use crate::token_match::TokenMatch;
 use kodept_core::code_point::CodePoint;
-use kodept_core::static_assert_size;
 use kodept_core::structure::Located;
 use std::fmt::Debug;
 use std::ops::{Deref, Index, Range, RangeBounds};
 
 #[derive(Clone, Debug, PartialEq, Copy)]
-pub struct PackedTokenStream<'t> {
-    slice: &'t [PackedTokenMatch],
+pub struct TokenStream<'t> {
+    slice: &'t [TokenMatch],
 }
 
-static_assert_size!(PackedTokenStream<'static>, 16);
+const _: () = assert!(size_of::<TokenStream>() - 16 == 0);
 
-impl<'t> PackedTokenStream<'t> {
-    pub fn new(slice: &'t [PackedTokenMatch]) -> Self {
+impl<'t> TokenStream<'t> {
+    pub fn new(slice: &'t [TokenMatch]) -> Self {
         Self { slice }
     }
 
@@ -25,14 +24,14 @@ impl<'t> PackedTokenStream<'t> {
         self.slice.is_empty()
     }
 
-    pub fn sub_stream<B: RangeBounds<usize>>(&self, range: B) -> PackedTokenStream<'t>
+    pub fn sub_stream<B: RangeBounds<usize>>(&self, range: B) -> TokenStream<'t>
     where
-        [PackedTokenMatch]: Index<B, Output = [PackedTokenMatch]>,
+        [TokenMatch]: Index<B, Output = [TokenMatch]>,
     {
         Self::new(&self.slice[range])
     }
 
-    pub fn into_single(self) -> PackedTokenMatch {
+    pub fn into_single(self) -> TokenMatch {
         match self.slice {
             [x] => *x,
             _ => unreachable!("Token stream with 1 element can be coerced to match"),
@@ -40,17 +39,17 @@ impl<'t> PackedTokenStream<'t> {
     }
 
     /// Original implementation: subslice_range from std lib
-    pub fn sub_stream_range(&self, suffix: PackedTokenStream) -> Option<Range<usize>> {
+    pub fn sub_stream_range(&self, suffix: TokenStream) -> Option<Range<usize>> {
         let self_start = self.slice.as_ptr() as usize;
         let subslice_start = suffix.slice.as_ptr() as usize;
 
         let byte_start = subslice_start.wrapping_sub(self_start);
 
-        if byte_start % size_of::<PackedTokenMatch>() != 0 {
+        if byte_start % size_of::<TokenMatch>() != 0 {
             return None;
         }
 
-        let start = byte_start / size_of::<PackedTokenMatch>();
+        let start = byte_start / size_of::<TokenMatch>();
         let end = start.wrapping_add(suffix.len());
 
         if start <= self.len() && end <= self.len() {
@@ -61,7 +60,7 @@ impl<'t> PackedTokenStream<'t> {
     }
 }
 
-impl Located for PackedTokenStream<'_> {
+impl Located for TokenStream<'_> {
     fn location(&self) -> CodePoint {
         let len = self.slice.iter().map(|it| it.point.length).sum();
 
@@ -72,8 +71,8 @@ impl Located for PackedTokenStream<'_> {
     }
 }
 
-impl<'t> Deref for PackedTokenStream<'t> {
-    type Target = &'t [PackedTokenMatch];
+impl<'t> Deref for TokenStream<'t> {
+    type Target = &'t [TokenMatch];
 
     fn deref(&self) -> &Self::Target {
         &self.slice
@@ -82,18 +81,18 @@ impl<'t> Deref for PackedTokenStream<'t> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::PackedToken;
-    use crate::token_match::PackedTokenMatch;
-    use crate::token_stream::PackedTokenStream;
+    use crate::lexer::Token;
+    use crate::token_match::TokenMatch;
+    use crate::token_stream::TokenStream;
     use kodept_core::code_point::CodePoint;
 
     #[test]
     fn test_sub_streams() {
         let storage = &[
-            PackedTokenMatch::new(PackedToken::Abstract, CodePoint::new(1, 0)),
-            PackedTokenMatch::new(PackedToken::With, CodePoint::new(1, 1)),
+            TokenMatch::new(Token::Abstract, CodePoint::new(1, 0)),
+            TokenMatch::new(Token::With, CodePoint::new(1, 1)),
         ];
-        let stream = PackedTokenStream::new(storage);
+        let stream = TokenStream::new(storage);
         let suffix = stream.sub_stream(1..);
         let empty_suffix = stream.sub_stream(2..);
 

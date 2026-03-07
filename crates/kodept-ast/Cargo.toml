@@ -16,13 +16,10 @@ workspace = true
 
 [features]
 default = []
-parallel = ["dep:rayon", "bevy_ecs/multi_threaded", "bevy_ecs/async_executor"]
-debug = ["bevy_utils/debug"]
-reflection = ["debug"]
+parallel = ["dep:rayon", "kodept-ecs/parallel"]
+reflection = []
 
 [dependencies]
-bevy_ecs.workspace = true
-bevy_utils.workspace = true
 derive_more.workspace = true
 smallvec = "1.15.1"
 tracing.workspace = true
@@ -36,3 +33,7 @@ version = "0.4"
 [dependencies.kodept-rlt]
 path = "../kodept-rlt"
 version = "0.2"
+
+[dependencies.kodept-ecs]
+path = "../kodept-ecs"
+version = "0.1"

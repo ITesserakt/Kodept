@@ -3,29 +3,24 @@ use crate::v3::tags::{
     Statement,
 };
 use crate::v3::types::{
-    AnonFunction, Block, Branch, Call, ForeignFunction, If, Link, Literal, Module, NameRef,
-    Otherwise, PrimType, Tuple, TypeRef, UserFunction, UserType, Value, ValueCtor, Variable,
+    AnonFunction, Block, Branch, Call, ForeignFunction, If, Link, Literal, Module, Otherwise,
+    PrimType, Tuple, UserFunction, UserType, Value, ValueCtor, Variable,
 };
-use crate::{
-    Modules, NormalizedBlock, ResolvedType, ResolvedTypeAnnotation, TypeAnnotation, UnresolvedName,
-    UnresolvedType,
-};
+use crate::{Modules, NamedParams, NormalizedBlock, Param, Params};
 use kodept_ast::arity::{Optional, Plural, Singular};
 use kodept_ast::prelude::ASTNode;
 use kodept_ast::properties::{Name, RequireProperty};
 use kodept_ast::syntax_tree::children::{Family, HasChild};
 
 type Expressions = (
-    AnonFunction<TypeAnnotation>,
-    AnonFunction<ResolvedTypeAnnotation>,
+    AnonFunction,
     Block,
     NormalizedBlock,
     Call,
     If,
     Literal,
     Tuple,
-    Value<UnresolvedName>,
-    // Value<ResolvedName>,
+    Value,
 );
 
 impl ASTNode for Modules {}
@@ -39,14 +34,7 @@ impl ASTNode for Module {}
 impl RequireProperty<Name> for Module {}
 impl Family<Declaration> for Module {
     type Arity = Plural;
-    type Members = (
-        PrimType,
-        UserType,
-        ForeignFunction<UnresolvedType>,
-        ForeignFunction<ResolvedType>,
-        UserFunction<TypeAnnotation>,
-        UserFunction<ResolvedTypeAnnotation>,
-    );
+    type Members = (PrimType, UserType, ForeignFunction, UserFunction);
 }
 impl<T: IsDeclaration> HasChild<T, Declaration> for Module {}
 
@@ -55,62 +43,78 @@ impl IsDeclaration for UserType {}
 impl RequireProperty<Name> for UserType {}
 impl Family for UserType {
     type Arity = Plural;
-    type Members = (ValueCtor<UnresolvedType>, ValueCtor<ResolvedType>);
+    type Members = (ValueCtor,);
 }
 impl Family<Declaration> for UserType {
     type Arity = Plural;
-    type Members = (
-        UserFunction<TypeAnnotation>,
-        UserFunction<ResolvedTypeAnnotation>,
-    );
+    type Members = (UserFunction,);
 }
-impl<T: TypeRef<true>> HasChild<ValueCtor<T>, ()> for UserType {}
-impl<T: TypeRef<false>> HasChild<UserFunction<T>, Declaration> for UserType {}
+impl HasChild<ValueCtor, ()> for UserType {}
+impl HasChild<UserFunction, Declaration> for UserType {}
 
-impl<T: TypeRef<true>> ASTNode for ValueCtor<T> {}
+impl ASTNode for ValueCtor {}
+impl Family<Params> for ValueCtor {
+    type Arity = Plural;
+    type Members = (Param,);
+}
+impl HasChild<Param, Params> for ValueCtor {}
 
 impl ASTNode for PrimType {}
 impl IsDeclaration for PrimType {}
 impl RequireProperty<Name> for PrimType {}
 
-impl<T: TypeRef<false>> ASTNode for UserFunction<T> {}
-impl<T: TypeRef<false>> IsDeclaration for UserFunction<T> {}
-impl<T: TypeRef<false>> IsStatement for UserFunction<T> {}
-impl<T: TypeRef<false>> IsStatement<true> for UserFunction<T> {}
-impl<T: TypeRef<false>> RequireProperty<Name> for UserFunction<T> {}
-impl<U: TypeRef<false>> Family for UserFunction<U> {
+impl ASTNode for UserFunction {}
+impl IsDeclaration for UserFunction {}
+impl IsStatement for UserFunction {}
+impl IsStatement<true> for UserFunction {}
+impl RequireProperty<Name> for UserFunction {}
+impl Family for UserFunction {
     type Arity = Singular;
     type Members = (Block, NormalizedBlock);
 }
-impl<U: TypeRef<false>, const NORMALIZED: bool> HasChild<Block<NORMALIZED>, ()>
-    for UserFunction<U>
-{
+impl Family<Params> for UserFunction {
+    type Arity = Plural;
+    type Members = (Param,);
 }
+impl Family<NamedParams> for UserFunction {
+    type Arity = Plural;
+    type Members = (Param,);
+}
+impl HasChild<Param, Params> for UserFunction {}
+impl HasChild<Param, NamedParams> for UserFunction {}
+impl<const NORMALIZED: bool> HasChild<Block<NORMALIZED>, ()> for UserFunction {}
 
-impl<T: TypeRef<true>> ASTNode for ForeignFunction<T> {}
-impl<T: TypeRef<true>> IsDeclaration for ForeignFunction<T> {}
-impl<T: TypeRef<true>> RequireProperty<Name> for ForeignFunction<T> {}
+impl ASTNode for ForeignFunction {}
+impl IsDeclaration for ForeignFunction {}
+impl RequireProperty<Name> for ForeignFunction {}
+impl Family<Params> for ForeignFunction {
+    type Arity = Plural;
+    type Members = (Param,);
+}
+impl HasChild<Param, Params> for ForeignFunction {}
 
-impl<T: TypeRef<false>> ASTNode for AnonFunction<T> {}
-impl<T: TypeRef<false>> IsExpression for AnonFunction<T> {}
-impl<T: TypeRef<false>> IsStatement for AnonFunction<T> {}
-impl<T: TypeRef<false>> Family for AnonFunction<T> {
+impl ASTNode for AnonFunction {}
+impl IsExpression for AnonFunction {}
+impl IsStatement for AnonFunction {}
+impl Family for AnonFunction {
     type Arity = Singular;
     type Members = (Block, NormalizedBlock);
 }
-impl<T: TypeRef<false>, const NORMALIZED: bool> HasChild<Block<NORMALIZED>, ()>
-    for AnonFunction<T>
-{
+impl Family<Params> for AnonFunction {
+    type Arity = Plural;
+    type Members = (Param,);
 }
+impl<const NORMALIZED: bool> HasChild<Block<NORMALIZED>, ()> for AnonFunction {}
+impl HasChild<Param, Params> for AnonFunction {}
 
-impl<T: TypeRef<false>> ASTNode for Variable<T> {}
-impl<T: TypeRef<false>> IsStatement for Variable<T> {}
-impl<T: TypeRef<false>> IsStatement<true> for Variable<T> {}
-impl<T: TypeRef<false>> Family<Expression> for Variable<T> {
+impl ASTNode for Variable {}
+impl IsStatement for Variable {}
+impl IsStatement<true> for Variable {}
+impl Family<Expression> for Variable {
     type Arity = Singular;
     type Members = Expressions;
 }
-impl<T: IsExpression, U: TypeRef<false>> HasChild<T, Expression> for Variable<U> {}
+impl<T: IsExpression> HasChild<T, Expression> for Variable {}
 
 impl<const NORMALIZED: bool> ASTNode for Block<NORMALIZED> {}
 impl<const NORMALIZED: bool> IsStatement<NORMALIZED> for Block<NORMALIZED> {}
@@ -118,41 +122,28 @@ impl<const NORMALIZED: bool> IsExpression for Block<NORMALIZED> {}
 impl Family<Statement> for Block<false> {
     type Arity = Plural;
     type Members = (
-        AnonFunction<TypeAnnotation>,
-        AnonFunction<ResolvedTypeAnnotation>,
+        AnonFunction,
         Block,
         Call,
         If,
         Link,
         Literal,
         Tuple,
-        UserFunction<TypeAnnotation>,
-        UserFunction<ResolvedTypeAnnotation>,
-        Variable<TypeAnnotation>,
-        Variable<ResolvedTypeAnnotation>,
-        Value<UnresolvedName>,
-        // Value<ResolvedName>
+        UserFunction,
+        Variable,
+        // Value,
     );
 }
 impl Family<Statement> for Block<true> {
     type Arity = Plural;
-    type Members = (
-        NormalizedBlock,
-        Call,
-        If,
-        Link,
-        UserFunction<TypeAnnotation>,
-        UserFunction<ResolvedTypeAnnotation>,
-        Variable<TypeAnnotation>,
-        Variable<ResolvedTypeAnnotation>,
-    );
+    type Members = (NormalizedBlock, Call, If, Link, UserFunction, Variable);
 }
 impl<T: IsStatement<false>> HasChild<T, Statement> for Block<false> {}
 impl<T: IsStatement<true>> HasChild<T, Statement> for Block<true> {}
 
-impl<T: NameRef> ASTNode for Value<T> {}
-impl<T: NameRef> IsExpression for Value<T> {}
-impl<T: NameRef> IsStatement for Value<T> {}
+impl ASTNode for Value {}
+impl IsExpression for Value {}
+impl IsStatement for Value {}
 
 impl ASTNode for Literal {}
 impl IsExpression for Literal {}
@@ -225,18 +216,13 @@ impl Family<Expression> for Link {
 }
 impl<T: IsExpression> HasChild<T, Expression> for Link {}
 
+impl ASTNode for Param {}
+impl RequireProperty<Name> for Param {}
+
 #[allow(unsafe_code)]
 mod transmutes {
-    use crate::{
-        AnonFunction, Block, ForeignFunction, NormalizedBlock, ResolvedName, ResolvedType,
-        ResolvedTypeAnnotation, TypeAnnotation, UnresolvedName, UnresolvedType, UserFunction,
-        Value,
-    };
+    use crate::{Block, NormalizedBlock};
     use kodept_ast::experimental::TransmuteInto;
 
     unsafe impl TransmuteInto<NormalizedBlock> for Block {}
-    unsafe impl TransmuteInto<Value<ResolvedName>> for Value<UnresolvedName> {}
-    unsafe impl TransmuteInto<UserFunction<ResolvedTypeAnnotation>> for UserFunction<TypeAnnotation> {}
-    unsafe impl TransmuteInto<ForeignFunction<ResolvedType>> for ForeignFunction<UnresolvedType> {}
-    unsafe impl TransmuteInto<AnonFunction<ResolvedTypeAnnotation>> for AnonFunction<TypeAnnotation> {}
 }

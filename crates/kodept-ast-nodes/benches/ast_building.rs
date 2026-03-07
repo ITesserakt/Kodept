@@ -1,14 +1,12 @@
-extern crate core;
-
 use criterion::measurement::Measurement;
 use criterion::{BatchSize, Bencher, Criterion, Throughput, criterion_group};
 use kodept_ast::experimental::FromSyntax;
-use kodept_ast::export::bevy_ecs::prelude::World;
 use kodept_ast::resource::rlt::SyntaxResolver;
 use kodept_ast::syntax_tree::experimental::NodeSpawner;
 use kodept_ast_nodes::Module;
 use kodept_core::code_point::CodePoint;
 use kodept_core::structure::span::CodeHolder;
+use kodept_ecs::world::World;
 use kodept_rlt::prelude::{File, RLT};
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -61,25 +59,10 @@ impl CodeHolder for InlineCodeHolder {
     }
 }
 
-#[cfg(feature = "parallel")]
-fn build_thread_pool(size: usize) -> rayon::ThreadPool {
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(size)
-        .build()
-        .unwrap();
-    pool
-}
-
 fn bench_complexity(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     for size in [1, 2, 5, 10, 50, 200, 400, 700] {
         group.throughput(Throughput::Elements(size));
-        #[cfg(feature = "parallel")]
-        fn bencher(size: u64) -> impl FnMut(&mut Bencher) {
-            static POOL: LazyLock<rayon::ThreadPool> = LazyLock::new(|| build_thread_pool(9));
-            move |b| POOL.install(|| bench_fns(size)(b))
-        }
-        #[cfg(not(feature = "parallel"))]
         fn bencher(size: u64) -> impl FnMut(&mut Bencher) {
             bench_fns(size)
         }
@@ -91,41 +74,16 @@ fn bench_complexity(c: &mut Criterion) {
     }
 }
 
-#[cfg(feature = "parallel")]
-fn parallel_bench<M>(id: &str, group: &mut criterion::BenchmarkGroup<M>)
-where
-    M: Measurement<Value: Send> + Sync,
-{
-    for parallelism in 1..11 {
-        let pool = build_thread_pool(parallelism);
-
-        group.bench_function(criterion::BenchmarkId::new(id, parallelism), |b| {
-            pool.install(|| bench_fns(MODULES_COUNT)(b))
-        });
-    }
-}
-
 fn bench_impls(c: &mut Criterion) {
     let mut group = c.benchmark_group("ast_building");
     group.throughput(Throughput::Elements(MODULES_COUNT));
 
-    #[cfg(not(feature = "parallel"))]
     group.bench_function("no interning, no parallelization", bench_fns(MODULES_COUNT));
-
-    #[cfg(feature = "parallel")]
-    parallel_bench("no interning, parallelization", &mut group);
 }
 
 criterion_group!(benches, bench_impls, bench_complexity);
 
 fn main() {
-    #[cfg(feature = "parallel")]
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(1)
-        .use_current_thread()
-        .build_global()
-        .unwrap();
-
     benches();
 
     Criterion::default().configure_from_args().final_summary();

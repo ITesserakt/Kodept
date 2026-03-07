@@ -1,0 +1,20 @@
+module Test =>
+
+struct Unit {
+	fun unit {  }
+}
+
+enum struct Bool {
+	True, False
+}
+
+fun main() {
+	fun inner {
+		val true = Test::Bool::True
+	}
+
+	val vaLue = 3
+	val local_ref = vaLue
+	val unit = ::Test::Unit::unit()
+	val true = Test::Bool::True
+}

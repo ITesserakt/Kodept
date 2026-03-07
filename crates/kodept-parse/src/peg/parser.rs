@@ -1,11 +1,11 @@
 use crate::TRACING_OPTION;
 use crate::common::{RLTProducer, VerboseEnclosed};
-use crate::lexer::PackedToken;
-use crate::lexer::PackedToken::*;
+use crate::lexer::Token;
+use crate::lexer::Token::*;
 use crate::peg::compatibility::Position;
 use crate::peg::macros::tok;
-use crate::token_match::PackedTokenMatch;
-use crate::token_stream::PackedTokenStream;
+use crate::token_match::TokenMatch;
+use crate::token_stream::TokenStream;
 use derive_more::Constructor;
 use kodept_rlt::new_types::BinaryOperationSymbol;
 use kodept_rlt::new_types::UnaryOperationSymbol;
@@ -14,7 +14,7 @@ use kodept_rlt::prelude as rlt;
 use kodept_rlt::prelude::RLT;
 use peg::error::ParseError;
 
-peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
+peg::parser! {grammar grammar<'t>() for TokenStream<'t> {
     /// UTILITIES
     /// --------------------------------------------------------------------------------------------
     rule _ = quiet! { [tok!(Comment | MultilineComment | Newline | Whitespace)]* }
@@ -35,8 +35,8 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     rule separated<T>(inner: rule<T>) -> Vec<T> =
         inner() ** separation()
 
-    rule ident() -> PackedTokenMatch =
-        quiet!{ [tok!(PackedToken::Identifier)] } / expected!("<ident>")
+    rule ident() -> TokenMatch =
+        quiet!{ [tok!(Token::Identifier)] } / expected!("<ident>")
 
     rule type_ident() -> kodept_rlt::new_types::TypeName =
         i:(quiet!{ [tok!(Type)] } / expected!("<Ident>")) {
@@ -46,16 +46,18 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
     /// Type grammar
     /// --------------------------------------------------------------------------------------------
 
-    rule return_type() -> (Symbol, rlt::Type) =
-        c:$":" _ ty:type_grammar() { (Symbol::from_located(c), ty) }
+    rule return_type() -> Option<(Symbol, rlt::Type)> =
+        c:$":" _ ty:type_grammar() { Some((Symbol::from_located(c), ty)) } /
+        ":" _ "_"                  { None }                                /
+        _                          { None }
 
     rule tuple() -> rlt::Type =
         i:paren_enclosed(<comma_separated0(<type_grammar()>)>) { rlt::Type::Tuple(rlt::Tuple(i.into())) }
 
     pub rule type_grammar() -> rlt::Type =
         i:global_type_ref() { rlt::Type::ContextualReference(i.0, i.1) } /
-        i:type_ident()      { rlt::Type::Reference(i) }                  /
         i:local_type_ref()  { rlt::Type::ContextualReference(i.0, i.1) } /
+        i:type_ident()      { rlt::Type::Reference(i) }                  /
         tuple()
 
     /// Parameters grammar
@@ -298,7 +300,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         }
 
     rule local_type_ref() -> (rlt::Context, TypeName) =
-        ctx:(type_ref() **<2,> "::") {
+        ctx:(type_ref() ++ "::") {
             let start = rlt::Context::Local;
             let mut ctx = ctx;
             let last = ctx.pop().unwrap();
@@ -400,12 +402,14 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
         simple()
 
     rule var_decl() -> rlt::Variable =
-        k:$"val" _ id:ident() _ ty:return_type()? { rlt::Variable::Immutable {
+        k:$"val" _ id:ident() _ ty:return_type() { rlt::Variable {
+            is_mutable: false,
             keyword: Keyword::from_located(k),
             id: Identifier::from_located(id.point),
             assigned_type: ty
         } } /
-        k:$"var" _ id:ident() _ ty:return_type()? { rlt::Variable::Mutable {
+        k:$"var" _ id:ident() _ ty:return_type() { rlt::Variable {
+            is_mutable: true,
             keyword: Keyword::from_located(k),
             id: Identifier::from_located(id.point),
             assigned_type: ty
@@ -429,7 +433,7 @@ peg::parser! {grammar grammar<'t>() for PackedTokenStream<'t> {
 
     rule bodied() -> rlt::BodiedFunction =
         k:$"fun" _ id:ident() _ ps:paren_enclosed(<comma_separated0(<parameter()>)>)? _
-        ty:return_type()? _ b:body() {
+        ty:return_type() _ b:body() {
             rlt::BodiedFunction {
                 keyword: Keyword::from_located(k),
                 params: ps.map(|it| it.into()),
@@ -523,7 +527,7 @@ pub struct Parser<const TRACE: bool = false>;
 impl RLTProducer for Parser<TRACING_OPTION> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         grammar::kodept(input)
     }
 }
@@ -532,7 +536,7 @@ impl RLTProducer for Parser<TRACING_OPTION> {
 impl RLTProducer for Parser<false> {
     type Error<'t> = ParseError<Position>;
 
-    fn parse_stream<'t>(&self, input: &PackedTokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
+    fn parse_stream<'t>(&self, input: &TokenStream<'t>) -> Result<RLT, Self::Error<'t>> {
         let _gag = gag::Gag::stdout().expect("Cannot suppress stdout");
         grammar::kodept(&input)
     }

@@ -382,26 +382,9 @@ mod impls {
             let this = ErasedNodePtr::new_with_parent(self);
             callback(this);
 
-            match self {
-                prelude::Variable::Mutable {
-                    keyword,
-                    id,
-                    assigned_type,
-                } => {
-                    keyword.traverse(callback);
-                    id.traverse(callback);
-                    assigned_type.traverse(callback);
-                }
-                prelude::Variable::Immutable {
-                    keyword,
-                    id,
-                    assigned_type,
-                } => {
-                    keyword.traverse(callback);
-                    id.traverse(callback);
-                    assigned_type.traverse(callback);
-                }
-            }
+            self.keyword.traverse(callback);
+            self.id.traverse(callback);
+            self.assigned_type.traverse(callback);
         },
         kind => SyntaxNodeKind::Variable
     });

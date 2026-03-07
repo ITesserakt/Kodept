@@ -1,8 +1,10 @@
 use crate::prelude::{Source, TryReadCode};
 use crate::read_code_source::ReadSource;
-use bevy_ecs::prelude::{Component, Resource};
 use kodept_core::Freeze;
 use kodept_core::file_name::FileName;
+use kodept_ecs::component::Component;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::resource::Resource;
 use kodept_report::files::external::{Error, Files};
 use kodept_report::{FileDescriptor, FileId};
 use std::collections::HashMap;

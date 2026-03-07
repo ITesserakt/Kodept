@@ -1,6 +1,7 @@
 use crate::Cli;
 use kodept_ast::resource::reflection::DebugRegistry;
 use kodept_cli::prelude::{LogPlugin, LoggingLevel, ReportsPlugin};
+use kodept_frontend::engine::utils::TaskPoolPlugin;
 use kodept_frontend::engine::{Engine, Plugin};
 
 struct RegisterReflectionPlugin;
@@ -10,7 +11,6 @@ impl Plugin for RegisterReflectionPlugin {
         let mut registry = DebugRegistry::new();
         kodept_ast_nodes::register_reflection_info(&mut registry);
         kodept_ast::register_reflection_info(&mut registry);
-        kodept_systems::register_reflection_info(&mut registry);
 
         engine.insert_resource(registry);
     }
@@ -33,6 +33,7 @@ impl Plugin for Plugins<'_> {
                 ReportsPlugin {
                     config: &self.config.diagnostic_config,
                 },
-            );
+            )
+            .add_plugin(TaskPoolPlugin::default());
     }
 }

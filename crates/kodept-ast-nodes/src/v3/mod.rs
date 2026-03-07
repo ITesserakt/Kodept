@@ -16,8 +16,7 @@ pub(super) fn register_reflection_info(
     registry.register::<Module>();
     registry.register::<Block>();
     registry.register::<Block<true>>();
-    registry.register::<Value<UnresolvedName>>();
-    registry.register::<Value<ResolvedName>>();
+    registry.register::<Value>();
     registry.register::<Literal>();
     registry.register::<Tuple>();
     registry.register::<Call>();
@@ -25,14 +24,15 @@ pub(super) fn register_reflection_info(
     registry.register::<Branch>();
     registry.register::<Otherwise>();
     registry.register::<Link>();
-    registry.register::<UserFunction<TypeAnnotation>>();
-    registry.register::<UserFunction<ResolvedTypeAnnotation>>();
-    registry.register::<Variable<TypeAnnotation>>();
-    registry.register::<Variable<ResolvedTypeAnnotation>>();
-    registry.register::<ForeignFunction<UnresolvedType>>();
-    registry.register::<ForeignFunction<ResolvedType>>();
-    registry.register::<AnonFunction<TypeAnnotation>>();
-    registry.register::<AnonFunction<ResolvedTypeAnnotation>>();
-    registry.register::<ValueCtor<UnresolvedType>>();
-    registry.register::<ValueCtor<ResolvedType>>();
+    registry.register::<UserFunction>();
+    registry.register::<Variable>();
+    registry.register::<ForeignFunction>();
+    registry.register::<AnonFunction>();
+    registry.register::<ValueCtor>();
+    registry.register::<Param>();
+
+    registry.register::<TypeAnnotation>();
+    registry.register::<ResolvedTypeAnnotation>();
+    registry.register::<UnresolvedType>();
+    registry.register::<ResolvedType>();
 }

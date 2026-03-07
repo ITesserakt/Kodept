@@ -1,23 +1,22 @@
 [package]
 name = "kodept-systems"
-version = "0.1.3"
+version = "0.1.4"
 edition.workspace = true
 rust-version.workspace = true
 
-[lib]
-crate-type = ["dylib"]
-
 [dependencies]
-bevy_ecs.workspace = true
 derive_more.workspace = true
 memmap2 = "0.9.8"
+num-bigint = "0.4"
 tracing.workspace = true
 yoke = "0.8.0"
 
-kodept-ast = { path = "../kodept-ast", version = "0.7", features = ["debug"] }
+kodept-ast = { path = "../kodept-ast", version = "0.7" }
 kodept-ast-nodes = { path = "../kodept-ast-nodes", version = "0.3" }
 kodept-core = { path = "../kodept-core", version = "0.4" }
+kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
 kodept-frontend = { path = "../kodept-frontend", version = "0.2" }
+kodept-inference = { path = "../kodept-inference", version = "0.2" }
 kodept-parse = { path = "../kodept-parse", version = "0.4" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
 kodept-report-macros = { path = "../kodept-report-macros", version = "0.1" }
@@ -31,5 +30,5 @@ workspace = true
 
 [features]
 default = []
-parallel = ["bevy_ecs/multi_threaded", "bevy_ecs/std"]
+parallel = ["kodept-ecs/parallel", "kodept-frontend/parallel", "kodept-ast/parallel"]
 reflection = ["kodept-ast/reflection"]

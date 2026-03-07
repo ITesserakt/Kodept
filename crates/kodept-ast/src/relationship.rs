@@ -1,8 +1,9 @@
 use crate::relationship::internal::ContainedBy;
 use crate::syntax_tree::children::Family;
-use bevy_ecs::component::{ComponentId, Immutable};
-use bevy_ecs::prelude::Resource;
-use bevy_ecs::relationship::Relationship;
+use kodept_ecs::component::{ComponentId, Immutable};
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::relationship::{Relationship, RelationshipTarget};
+use kodept_ecs::resource::Resource;
 use std::any::TypeId;
 use std::collections::HashSet;
 
@@ -24,13 +25,14 @@ pub enum ArityValue {
 
 mod internal {
     use crate::arity::{Arity, Optional, Singular};
-    use crate::export::Component;
     use crate::relationship::{NodeRelationships, RelationshipMetadata};
-    use bevy_ecs::entity::Entity;
-    use bevy_ecs::lifecycle::HookContext;
-    use bevy_ecs::prelude::{ChildOf, World};
-    use bevy_ecs::relationship::{Relationship, RelationshipSourceCollection};
-    use bevy_ecs::world::DeferredWorld;
+    use kodept_ecs::component::Component;
+    use kodept_ecs::entity::Entity;
+    use kodept_ecs::exported::bevy_ecs;
+    use kodept_ecs::hierarchy::ChildOf;
+    use kodept_ecs::lifecycle::HookContext;
+    use kodept_ecs::relationship::{Relationship, RelationshipSourceCollection};
+    use kodept_ecs::world::{DeferredWorld, World};
     use std::any::TypeId;
     use std::marker::PhantomData;
     use std::ops::{Deref, DerefMut};
@@ -215,8 +217,11 @@ pub struct RelationshipMetadata {
 #[derive(Debug, Resource, Default)]
 pub(crate) struct NodeRelationships(HashSet<RelationshipMetadata>);
 
-pub trait NodeRelationship<Tag, Arity> {
-    type Relationship: Relationship<Mutability = Immutable>;
+pub trait NodeRelationship<Tag, Arity: crate::arity::Arity> {
+    type Relationship: Relationship<
+            Mutability = Immutable,
+            RelationshipTarget: RelationshipTarget<Collection = Arity::Collection>,
+        >;
 }
 
 impl RelationshipMetadata {

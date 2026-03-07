@@ -57,7 +57,6 @@ impl Plugin for ThreadPoolPlugin {
         });
         // TODO: combine bevy's thread pool with rayon's one
         //       Maybe `Forte`? (https://github.com/NthTensor/Forte)
-        #[cfg(feature = "parallel")]
         rayon::ThreadPoolBuilder::new()
             .num_threads(self.total_threads / 2)
             .build_global()

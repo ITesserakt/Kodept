@@ -1,7 +1,9 @@
-use crate::Error::{CannotParseFloat, CannotParseInt, NoQuotesInLiteral, WrongLiteralLength};
+use crate::Error::{
+    CannotParseFloat, CannotParseInt, NoQuotesInLiteral, UnicodeLiteral, WrongLiteralLength,
+};
 use crate::{
     AnonFunction, Block, Call, Declaration, If, Lhs, Literal, Module, Path, Rhs, Tuple,
-    TypeAnnotation, UnresolvedName, UserFunction, UserType, Value, Variable,
+    UserFunction, UserType, Value, Variable,
 };
 use bigdecimal::{BigDecimal, Num};
 use kodept_ast::Str;
@@ -47,15 +49,15 @@ impl<B: Buffer> Dispatch<Module, Declaration, B> for Dispatcher<TopLevelNode> {
 
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Body>
 where
-    P: HasChild<Variable<TypeAnnotation>, T>,
+    P: HasChild<Variable, T>,
     P: HasChild<Block, T>,
-    P: HasChild<UserFunction<TypeAnnotation>, T>,
+    P: HasChild<UserFunction, T>,
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = Body;
@@ -80,15 +82,15 @@ where
 
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<BlockLevelNode>
 where
-    P: HasChild<Variable<TypeAnnotation>, T>,
+    P: HasChild<Variable, T>,
     P: HasChild<Block, T>,
-    P: HasChild<UserFunction<TypeAnnotation>, T>,
+    P: HasChild<UserFunction, T>,
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = BlockLevelNode;
@@ -120,11 +122,11 @@ where
 impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Operation>
 where
     P: HasChild<Block, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
+    P: HasChild<Value, T>,
     P: HasChild<Call, T>,
 {
     type Syntax = Operation;
@@ -145,7 +147,7 @@ where
                 Ok(Block::from_syntax(node, spawner.into_concrete(), source)?.cast())
             }
             Operation::Expression(node) => {
-                Dispatcher::<kodept_rlt::prelude::Expression>::dispatch(node, spawner, source)
+                Dispatcher::<Expression>::dispatch(node, spawner, source)
             }
             Operation::Application(node) => {
                 Ok(Call::from_syntax(&*node, spawner.into_concrete(), source)?.cast())
@@ -164,10 +166,8 @@ where
                     .spawn_in(spawner.into_concrete());
 
                 NodeBuilder::new(Value {
-                    inner: UnresolvedName {
-                        context: CORE_PATH,
-                        ident,
-                    },
+                    path: CORE_PATH,
+                    ident,
                 })
                 .with_property(SourceSpan(operator.bounds()))
                 .with_property(Lexeme::new(operator))
@@ -212,10 +212,8 @@ where
                     .spawn_in(spawner.into_concrete());
 
                 NodeBuilder::new(Value {
-                    inner: UnresolvedName {
-                        context: CORE_PATH,
-                        ident,
-                    },
+                    path: CORE_PATH,
+                    ident,
                 })
                 .with_property(SourceSpan(operation.bounds()))
                 .with_property(Lexeme::new(operation))
@@ -231,15 +229,15 @@ where
     }
 }
 
-impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<kodept_rlt::prelude::Expression>
+impl<P, T, B: Buffer> Dispatch<P, T, B> for Dispatcher<Expression>
 where
     P: HasChild<Literal, T>,
     P: HasChild<Tuple, T>,
-    P: HasChild<Value<UnresolvedName>, T>,
-    P: HasChild<AnonFunction<TypeAnnotation>, T>,
+    P: HasChild<Value, T>,
+    P: HasChild<AnonFunction, T>,
     P: HasChild<If, T>,
 {
-    type Syntax = kodept_rlt::prelude::Expression;
+    type Syntax = Expression;
     type Error = crate::Error;
 
     #[inline]
@@ -281,6 +279,11 @@ where
     ) -> Result<NodeId, Self::Error> {
         let text = source.get_chunk_located(node);
         let value = match node {
+            kodept_rlt::prelude::Literal::String(_) | kodept_rlt::prelude::Literal::Char(_)
+                if !text.is_ascii() =>
+            {
+                return Err(UnicodeLiteral(node.location()));
+            }
             kodept_rlt::prelude::Literal::String(_) => {
                 if !text.starts_with('"') || !text.ends_with('"') {
                     return Err(NoQuotesInLiteral(node.location()));
@@ -298,9 +301,6 @@ where
             kodept_rlt::prelude::Literal::Char(_) => {
                 if !text.starts_with('\'') || !text.ends_with('\'') {
                     return Err(NoQuotesInLiteral(node.location()));
-                }
-                if text.len() != 3 {
-                    return Err(WrongLiteralLength(node.location(), 3));
                 }
                 Literal::Char(text.chars().nth(1).unwrap())
             }

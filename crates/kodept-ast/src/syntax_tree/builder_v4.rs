@@ -3,15 +3,15 @@ use crate::prelude::ASTNode;
 use crate::properties::{HasProperty, Lexeme, Node, NodeProperty, SourceSpan};
 use crate::syntax_tree::buffer::{Buffer, RefBuffer};
 use crate::syntax_tree::children::HasChild;
-use bevy_ecs::change_detection::MaybeLocation;
-use bevy_ecs::component::Component;
-use bevy_ecs::error::{CommandWithEntity, HandleError};
-use bevy_ecs::prelude::{Bundle, Command, EntityCommand, EntityWorldMut};
-use bevy_ecs::relationship::Relationship;
-use bevy_ecs::system::entity_command::EntityCommandError;
-use bevy_ecs::world::error::EntityMutableFetchError;
-use bevy_utils::prelude::DebugName;
 use derive_more::{Deref, DerefMut, Display, Error};
+use kodept_ecs::bundle::Bundle;
+use kodept_ecs::change_detection::MaybeLocation;
+use kodept_ecs::component::Component;
+use kodept_ecs::error::{CommandWithEntity, HandleError};
+use kodept_ecs::relationship::Relationship;
+use kodept_ecs::system::{Command, EntityCommand, EntityCommandError};
+use kodept_ecs::utils::DebugName;
+use kodept_ecs::world::{EntityMutableFetchError, EntityWorldMut};
 use std::marker::PhantomData;
 
 #[derive(Debug, Deref, DerefMut)]
@@ -196,14 +196,22 @@ impl<N, Spawner> SpawnedNode<N, Spawner> {
     }
 }
 
-impl<N, B> SpawnerNode<N, B>
-where
-    B: Buffer,
-{
+impl<N, B: Buffer> SpawnerNode<N, B> {
     #[inline]
     pub fn spawner<Tag>(&mut self) -> RelatedNodeSpawner<N, Tag, B::Reborrowed<'_>> {
         RelatedNodeSpawner {
             buffer: self.0.spawner.buffer.reborrow(),
+            parent_id: self.0.spawner.parent_id,
+            tag: PhantomData,
+        }
+    }
+}
+
+impl<N, B: RefBuffer> SpawnerNode<N, B> {
+    #[inline]
+    pub fn spawner_ref<Tag>(&self) -> RelatedNodeSpawner<N, Tag, B::Reborrowed<'_>> {
+        RelatedNodeSpawner {
+            buffer: self.0.spawner.buffer.borrow(),
             parent_id: self.0.spawner.parent_id,
             tag: PhantomData,
         }

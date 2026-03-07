@@ -8,13 +8,8 @@
 
 use crate::fixed_hasher::FixedHasher;
 use core::{fmt::Debug, hash::Hash, ops::Deref};
-use std::fmt::Display;
-use std::sync::RwLockReadGuard;
-use std::{borrow::ToOwned, boxed::Box};
-use std::{
-    collections::HashSet,
-    sync::{PoisonError, RwLock},
-};
+use std::collections::HashSet;
+use std::sync::{PoisonError, RwLock, RwLockReadGuard};
 
 /// An interned value. Will stay valid until the end of the program and will not drop.
 ///
@@ -27,9 +22,24 @@ use std::{
 /// Two interned values are only guaranteed to compare equal if they were interned using
 /// the same [`Interner`] instance.
 // NOTE: This type must NEVER implement Borrow since it does not obey that trait's invariants.
-pub struct Interned<T: ?Sized + 'static>(pub &'static T);
+/// ```
+/// use kodept_interning::{Internable};
+/// #[derive(PartialEq, Eq, Hash, Debug)]
+/// struct Value(i32);
+/// impl Internable for Value {
+///     fn leak(&self) -> &'static Self { Box::leak(Box::new(Value(self.0))) }
+///     fn ref_eq(&self, other: &Self) -> bool { std::ptr::eq(self, other ) }
+///     fn ref_hash<H: std::hash::Hasher>(&self, state: &mut H) { std::ptr::hash(self, state); }
+/// }
+/// let interner_1 = Interner::new();
+/// let interner_2 = Interner::new();
+/// // Even though both values are identical, their interned forms do not
+/// // compare equal as they use different interner instances.
+/// assert_ne!(interner_1.intern(&Value(42)), interner_2.intern(&Value(42)));
+/// ```
+pub struct Interned<T: ?Sized + Internable + 'static>(pub &'static T);
 
-impl<T: ?Sized> Deref for Interned<T> {
+impl<T: ?Sized + Internable> Deref for Interned<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -37,13 +47,13 @@ impl<T: ?Sized> Deref for Interned<T> {
     }
 }
 
-impl<T: ?Sized> Clone for Interned<T> {
+impl<T: ?Sized + Internable> Clone for Interned<T> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<T: ?Sized> Copy for Interned<T> {}
+impl<T: ?Sized + Internable> Copy for Interned<T> {}
 
 // Two Interned<T> should only be equal if they are clones from the same instance.
 // Therefore, we only use the pointer to determine equality.
@@ -62,19 +72,19 @@ impl<T: ?Sized + Internable> Hash for Interned<T> {
     }
 }
 
-impl<T: ?Sized + Debug> Debug for Interned<T> {
+impl<T: ?Sized + Internable + Debug> Debug for Interned<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl<T: ?Sized + Display> Display for Interned<T> {
+impl<T: ?Sized + Internable + core::fmt::Display> core::fmt::Display for Interned<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
+        core::fmt::Display::fmt(self.0, f)
     }
 }
 
-impl<T> From<&Interned<T>> for Interned<T> {
+impl<T: ?Sized + Internable> From<&Interned<T>> for Interned<T> {
     fn from(value: &Interned<T>) -> Self {
         *value
     }
@@ -86,13 +96,6 @@ impl<T> From<&Interned<T>> for Interned<T> {
 pub trait Internable: Hash + Eq {
     /// Creates a static reference to `self`, possibly leaking memory.
     fn leak(&self) -> &'static Self;
-
-    fn leak_owned(self) -> &'static Self
-    where
-        Self: Sized,
-    {
-        Self::leak(&self)
-    }
 
     /// Returns `true` if the two references point to the same value.
     fn ref_eq(&self, other: &Self) -> bool;
@@ -159,6 +162,7 @@ impl<T: Internable + ?Sized> Interner<T> {
                 return Interned(*value);
             }
         }
+
         {
             let mut lock = self.set.write().unwrap_or_else(PoisonError::into_inner);
 
@@ -166,34 +170,6 @@ impl<T: Internable + ?Sized> Interner<T> {
                 Interned(*value)
             } else {
                 let leaked = value.leak();
-                lock.insert(leaked);
-                Interned(leaked)
-            }
-        }
-    }
-
-    pub fn intern_owned(&self, value: T) -> Interned<T>
-    where
-        T: Sized,
-    {
-        #[cfg(feature = "metrics")]
-        self.total_shares
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-        {
-            let lock = self.set.read().unwrap_or_else(PoisonError::into_inner);
-
-            if let Some(value) = lock.get(&value) {
-                return Interned(*value);
-            }
-        }
-        {
-            let mut lock = self.set.write().unwrap_or_else(PoisonError::into_inner);
-
-            if let Some(value) = lock.get(&value) {
-                Interned(*value)
-            } else {
-                let leaked = value.leak_owned();
                 lock.insert(leaked);
                 Interned(leaked)
             }
@@ -224,10 +200,10 @@ impl<T: ?Sized> Default for Interner<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Internable, Interned, Interner};
-    use crate::fixed_hasher::FixedHasher;
     use core::hash::{BuildHasher, Hash, Hasher};
-    use std::{boxed::Box, string::ToString};
+
+    use crate::fixed_hasher::FixedHasher;
+    use crate::{Internable, Interned, Interner};
 
     #[test]
     fn zero_sized_type() {
@@ -310,10 +286,8 @@ mod tests {
 
         assert_eq!(a, b);
 
-        let hasher = FixedHasher;
-
-        let hash_a = hasher.hash_one(a);
-        let hash_b = hasher.hash_one(b);
+        let hash_a = FixedHasher.hash_one(a);
+        let hash_b = FixedHasher.hash_one(b);
 
         assert_eq!(hash_a, hash_b);
     }

@@ -1,17 +1,19 @@
 use crate::source::collection::SourceView;
 use crate::utils::ReportSystemEx;
-use bevy_ecs::prelude::*;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::schedule::SystemSet;
+use kodept_ecs::system::{InMut, IntoSystem, Query};
 use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine};
-use kodept_report_macros::Report;
+use kodept_report_macros::IntoMessage;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::error_span;
 
-#[derive(Debug, Report)]
+#[derive(Debug, IntoMessage)]
 #[severity("error")]
-#[message("Cannot proceed")]
+#[message("Aborting due to previous errors")]
 #[fail_fast("Cannot process input files")]
 struct CannotProceed;
 
@@ -55,6 +57,8 @@ where
         let _guard = span.enter();
         // Update source
         engine.insert_resource(source.clone());
+        #[cfg(feature = "parallel")]
+        engine.set_executor_kind(kodept_ecs::schedule::ExecutorKind::MultiThreaded);
         // Configure engine
         configuration(&mut *engine);
         // Run it!

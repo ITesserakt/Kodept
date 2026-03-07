@@ -1,6 +1,5 @@
 extern crate core;
 
-use std::fmt::{Display, Formatter};
 use std::ops::ControlFlow;
 
 pub mod engine;
@@ -14,25 +13,6 @@ pub mod prelude {
     pub use super::report::{ExtractReports, Global};
     pub use super::source_files::{CollectedSources, SourceFiles, SourceView};
     pub use super::traits::{Compiler, Interpreter};
-}
-
-#[derive(Debug)]
-pub enum Either<A, B> {
-    Left(A),
-    Right(B),
-}
-
-impl<A, B> Display for Either<A, B>
-where
-    A: Display,
-    B: Display,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Either::Left(x) => x.fmt(f),
-            Either::Right(x) => x.fmt(f),
-        }
-    }
 }
 
 /// Some execution that can break with

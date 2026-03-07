@@ -5,12 +5,15 @@ use crate::syntax_tree::buffer::Buffer;
 use crate::syntax_tree::builder_v4::{Constructed, ConstructingNode, RelatedNodeSpawner};
 use crate::syntax_tree::children::{Family, HasChild};
 use crate::traits::TransmuteInto;
-use bevy_ecs::error::CommandWithEntity;
-use bevy_ecs::prelude::{
-    Bundle, ChildOf, EntityCommand, EntityWorldMut, RelationshipTarget, World,
-};
-use bevy_ecs::relationship::{OrderedRelationshipSourceCollection, Relationship};
 use derive_more::{Display, Error};
+use kodept_ecs::bundle::Bundle;
+use kodept_ecs::error::CommandWithEntity;
+use kodept_ecs::hierarchy::ChildOf;
+use kodept_ecs::relationship::{
+    OrderedRelationshipSourceCollection, Relationship, RelationshipTarget,
+};
+use kodept_ecs::system::EntityCommand;
+use kodept_ecs::world::{EntityWorldMut, World};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 
@@ -107,6 +110,10 @@ where
             id,
             removed: vec![],
         }
+    }
+
+    pub fn id(&self) -> NodeId<Node> {
+        self.id
     }
 
     #[track_caller]
@@ -212,7 +219,11 @@ where
 
         let this = id.entity();
         let buffer = buffer.queue(move |world: &mut World| {
-            world.entity_mut(this).remove::<Node>().insert(value);
+            world
+                .entity_mut(this)
+                .remove::<Node>()
+                .insert(value)
+                .modify_component(|it| *it = crate::properties::Node::of::<Into>());
         });
         NodeModification {
             id: id.cast(),
@@ -229,6 +240,18 @@ where
         let this = self.id.entity();
         (&mut self.buffer).queue(move |world: &mut World| {
             world.entity_mut(this).insert(value);
+        });
+        self
+    }
+
+    pub fn remove_property<Property>(&mut self) -> &mut Self
+    where
+        Node: HasProperty<Property>,
+        Property: NodeProperty,
+    {
+        let this = self.id.entity();
+        (&mut self.buffer).queue(move |world: &mut World| {
+            world.entity_mut(this).remove::<Property>();
         });
         self
     }

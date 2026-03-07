@@ -27,17 +27,11 @@ pub enum BlockLevelNode {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
-pub enum Variable {
-    Immutable {
-        keyword: Keyword,
-        id: Identifier,
-        assigned_type: Option<(Symbol, Type)>,
-    },
-    Mutable {
-        keyword: Keyword,
-        id: Identifier,
-        assigned_type: Option<(Symbol, Type)>,
-    },
+pub struct Variable {
+    pub is_mutable: bool,
+    pub keyword: Keyword,
+    pub id: Identifier,
+    pub assigned_type: Option<(Symbol, Type)>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -52,10 +46,7 @@ pub struct InitializedVariable {
 impl Located for Variable {
     #[inline]
     fn location(&self) -> CodePoint {
-        match self {
-            Variable::Immutable { id, .. } => id.location(),
-            Variable::Mutable { id, .. } => id.location(),
-        }
+        self.id.location()
     }
 }
 
@@ -120,20 +111,7 @@ impl SpanBounds for InitializedVariable {
 impl SpanBounds for Variable {
     #[inline]
     fn bounds(&self) -> Span {
-        match self {
-            Variable::Immutable {
-                keyword,
-                assigned_type,
-                id,
-                ..
-            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()) + id.0,
-            Variable::Mutable {
-                keyword,
-                assigned_type,
-                id,
-                ..
-            } => keyword.0 + assigned_type.as_ref().map(|it| it.1.location()) + id.0,
-        }
+        self.keyword.0 + self.assigned_type.as_ref().map(|it| it.1.location()) + self.id.0
     }
 }
 
