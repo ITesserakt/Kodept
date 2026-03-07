@@ -45,6 +45,7 @@ pub mod query {
         Access, Added, AnyOf, ArchetypeQueryData, Changed, EcsAccessType, FilteredAccess, Has, Or,
         QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, QueryManyUniqueIter,
         ROQueryItem, ReadOnlyQueryData, ReleaseStateQueryData, With, Without, WorldQuery,
+        IterQueryData, SingleEntityQueryData
     };
 }
 pub mod relationship {

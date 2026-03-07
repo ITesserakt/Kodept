@@ -5,7 +5,6 @@ use crate::per_file::typeck::first_part::{
     TypeckLiteral, TypeckTuple, TypeckUserFunction, TypeckValue,
 };
 use crate::per_file::utils::IntoNodeSystem;
-use crate::utils::LogSystemEx;
 use kodept_ast::prelude::NodeId;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::Added;

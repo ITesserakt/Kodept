@@ -8,8 +8,8 @@ use kodept_ecs::component::Mutable;
 use kodept_ecs::entity::{Entity, EntitySetIterator};
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::{
-    QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, QueryManyUniqueIter,
-    ROQueryItem, ReadOnlyQueryData,
+    IterQueryData, QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter,
+    QueryManyUniqueIter, ROQueryItem, ReadOnlyQueryData,
 };
 use kodept_ecs::relationship::{
     Relationship, RelationshipSourceCollection, RelationshipTarget, SourceIter,
@@ -45,8 +45,8 @@ mod node_query_data_impls {
     use kodept_ecs::component::{Component, ComponentId, Components, Mutable};
     use kodept_ecs::entity::Entity;
     use kodept_ecs::query::{
-        Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, QueryData, ReadOnlyQueryData,
-        WorldQuery,
+        Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, IterQueryData, QueryData,
+        ReadOnlyQueryData, SingleEntityQueryData, WorldQuery,
     };
     use kodept_ecs::storage::{Table, TableRow};
     use kodept_ecs::world::{UnsafeWorldCell, World};
@@ -207,7 +207,14 @@ mod node_query_data_impls {
     }
 
     #[allow(unsafe_code)]
-    unsafe impl<T: NodeProperty> ReadOnlyQueryData for Property<T> {}
+    unsafe impl<T: NodeProperty> ReadOnlyQueryData for Property<T> where &'static T: ReadOnlyQueryData {}
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty> IterQueryData for Property<T> where &'static T: IterQueryData {}
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty> SingleEntityQueryData for Property<T> where
+        &'static T: SingleEntityQueryData
+    {
+    }
     impl<T: NodeProperty> ArchetypeQueryData for Property<T> {}
 
     #[allow(unsafe_code)]
@@ -304,6 +311,8 @@ mod node_query_data_impls {
         }
     }
 
+    #[allow(unsafe_code)]
+    unsafe impl<T: NodeProperty<Mutability = Mutable>> IterQueryData for MutProperty<T> where &'static mut T: IterQueryData {}
     impl<T: NodeProperty<Mutability = Mutable>> ArchetypeQueryData for MutProperty<T> {}
 }
 
@@ -338,7 +347,7 @@ where
 
 pub struct ChildrenMutIter<'w, 's, Data, R, Id, Filter>
 where
-    Data: QueryData,
+    Data: IterQueryData,
     Filter: QueryFilter,
     R: Relationship,
     Id: ReadOnlyQueryData,
@@ -497,7 +506,7 @@ where
     T: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
-    ParentData: NodeQueryData<T> + 'static,
+    ParentData: NodeQueryData<T> + IterQueryData + 'static,
     ChildData: QueryData + 'static,
 {
     #[allow(unsafe_code)]
@@ -626,7 +635,7 @@ where
 impl<'w, 's, Data, T, Tag, Id, Filter> IntoIterator
     for ChildrenFetch<'w, 's, Data, T, Tag, Id, Filter>
 where
-    Data: QueryData,
+    Data: IterQueryData,
     Filter: QueryFilter,
     T: Family<Tag>,
     Id: ReadOnlyQueryData,
@@ -666,7 +675,7 @@ where
 
 impl<'w, 's, Data, Rel, Id, Filter> Iterator for ChildrenMutIter<'w, 's, Data, Rel, Id, Filter>
 where
-    Data: QueryData,
+    Data: IterQueryData,
     Filter: QueryFilter,
     Rel: Relationship,
     Id: ReadOnlyQueryData,
@@ -683,7 +692,7 @@ where
 
 impl<'w, 's, Data, Rel, Id, Filter> FusedIterator for ChildrenMutIter<'w, 's, Data, Rel, Id, Filter>
 where
-    Data: QueryData,
+    Data: IterQueryData,
     Filter: QueryFilter,
     Rel: Relationship,
     Id: ReadOnlyQueryData,
@@ -734,7 +743,7 @@ where
 
 impl<'w, 's, Data, T, Tag, Id, Filter> ChildrenFetch<'w, 's, Data, T, Tag, Id, Filter>
 where
-    Data: QueryData,
+    Data: IterQueryData,
     Filter: QueryFilter,
     T: Family<Tag>,
     Id: ReadOnlyQueryData,
@@ -807,7 +816,7 @@ where
     U: ASTNode,
     Tag: 'static,
     Filter: QueryFilter + 'static,
-    ParentData: NodeQueryData<T> + 'static,
+    ParentData: NodeQueryData<T> + IterQueryData + 'static,
     ChildData: NodeQueryData<U> + 'static,
 {
     pub fn iter_by_layers(

@@ -5,7 +5,7 @@ use kodept_ast::prelude::{
 };
 use kodept_ast::syntax_tree::children::{Family, HasChild};
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
-use kodept_ecs::query::{QueryData, QueryFilter};
+use kodept_ecs::query::{IterQueryData, QueryData, QueryFilter};
 use kodept_ecs::system::{
     Commands, InMut, IntoSystem, Query, StaticSystemParam, SystemParam, SystemParamItem,
 };
@@ -220,7 +220,7 @@ pub(super) type StaticQuery<T, F = ()> = Query<'static, 'static, T, F>;
 
 impl<T, F, Node> IterableSystemParam for Query<'_, '_, T, F>
 where
-    T: QueryData + SplitFirst<Head = NodeId<Node>, Tail: NodeQueryData<Node>> + 'static,
+    T: IterQueryData + SplitFirst<Head = NodeId<Node>, Tail: NodeQueryData<Node>> + 'static,
     F: QueryFilter + 'static,
     for<'w, 's> T::Item<'w, 's>: SplitFirst<Head = NodeId<Node>>,
 {
@@ -262,7 +262,7 @@ where
 impl<P, T, PD, CD, F> IterableSystemParam for HierarchicalQuery<'_, '_, P, T, PD, CD, F>
 where
     P: ASTNode + Family<T>,
-    PD: NodeQueryData<P>,
+    PD: NodeQueryData<P> + IterQueryData,
     CD: QueryData,
     F: QueryFilter,
 {
@@ -306,8 +306,8 @@ impl<P, C, T, PD, CD, F> IterableSystemParam for NarrowHierarchicalQuery<'_, '_,
 where
     P: HasChild<C, T>,
     C: ASTNode,
-    PD: NodeQueryData<P>,
-    CD: NodeQueryData<C>,
+    PD: NodeQueryData<P> + IterQueryData,
+    CD: NodeQueryData<C> + IterQueryData,
     F: QueryFilter,
 {
     type Target<'w, 's> = (

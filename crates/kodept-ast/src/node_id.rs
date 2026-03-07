@@ -4,8 +4,8 @@ use kodept_ecs::change_detection::Tick;
 use kodept_ecs::component::{ComponentId, Components};
 use kodept_ecs::entity::{ContainsEntity, Entity, EntityEquivalent, EntityMapper, MapEntities};
 use kodept_ecs::query::{
-    Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, QueryData, ReadOnlyQueryData,
-    ReleaseStateQueryData, With, WorldQuery,
+    Access, ArchetypeQueryData, EcsAccessType, FilteredAccess, IterQueryData, QueryData,
+    ReadOnlyQueryData, ReleaseStateQueryData, SingleEntityQueryData, With, WorldQuery,
 };
 use kodept_ecs::relationship::RelationshipSourceCollection;
 use kodept_ecs::storage::{Table, TableRow};
@@ -371,7 +371,30 @@ where
 // SAFETY: NodeId is just a thin wrapper around Entity.
 //         Queries with NodeId<T> behaves as entity with `With<T>` constrain
 #[allow(unsafe_code)]
-unsafe impl<T> ReadOnlyQueryData for NodeId<T> where T: crate::prelude::ASTNode {}
+unsafe impl<T> ReadOnlyQueryData for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+    Entity: ReadOnlyQueryData,
+{
+}
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId<T> behaves as entity with `With<T>` constrain
+#[allow(unsafe_code)]
+unsafe impl<T> IterQueryData for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+    Entity: IterQueryData,
+{
+}
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId<T> behaves as entity with `With<T>` constrain
+#[allow(unsafe_code)]
+unsafe impl<T> SingleEntityQueryData for NodeId<T>
+where
+    T: crate::prelude::ASTNode,
+    Entity: SingleEntityQueryData,
+{
+}
 
 impl<T> ReleaseStateQueryData for NodeId<T>
 where
@@ -515,7 +538,15 @@ unsafe impl QueryData for NodeId {
 // SAFETY: NodeId is just a thin wrapper around Entity.
 //         Queries with NodeId behaves as entity
 #[allow(unsafe_code)]
-unsafe impl ReadOnlyQueryData for NodeId {}
+unsafe impl ReadOnlyQueryData for NodeId where Entity: ReadOnlyQueryData {}
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId behaves as entity
+#[allow(unsafe_code)]
+unsafe impl IterQueryData for NodeId where Entity: IterQueryData {}
+// SAFETY: NodeId is just a thin wrapper around Entity.
+//         Queries with NodeId behaves as entity
+#[allow(unsafe_code)]
+unsafe impl SingleEntityQueryData for NodeId where Entity: SingleEntityQueryData {}
 
 impl ReleaseStateQueryData for NodeId
 where
