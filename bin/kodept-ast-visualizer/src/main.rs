@@ -47,9 +47,8 @@ struct Cli {
     #[command(flatten, next_help_heading = "Diagnostic options")]
     diagnostic_config: DiagnosticConfig,
 
-    #[cfg(feature = "graphviz")]
     #[command(flatten, next_help_heading = "Drawing options")]
-    draw_config: graphviz::Config,
+    draw_config: common::Config,
 }
 
 #[derive(Debug, Event)]
@@ -137,15 +136,11 @@ fn main() -> Result<(), CompilationFailed> {
                 ParserChoice::Auto => kodept_systems::configs::Parser::Peg,
             });
 
+            engine.insert_resource(cli_args.draw_config.clone());
             #[cfg(feature = "graphviz")]
-            {
-                engine.add_plugin(graphviz::GraphvizPlugin);
-                engine.insert_resource(cli_args.draw_config.clone());
-            }
+            engine.add_plugin(graphviz::GraphvizPlugin);
             #[cfg(feature = "typst")]
-            {
-                engine.add_plugin(typst::TypstPlugin);
-            }
+            engine.add_plugin(typst::TypstPlugin);
 
             engine
                 .install(ParseSourcePhase)

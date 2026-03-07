@@ -1,3 +1,4 @@
+use clap::Args;
 use kodept_ast::properties::Node;
 use kodept_ast::resource::reflection::{DebugRegistry, DynDebug};
 use kodept_ecs::archetype::Archetype;
@@ -5,16 +6,41 @@ use kodept_ecs::component::{ComponentId, ComponentInfo, Components};
 use kodept_ecs::entity::Entity;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::With;
+use kodept_ecs::resource::Resource;
 use kodept_ecs::system::{Query, Res, StaticSystemParam, SystemParam};
 use kodept_ecs::utils::DebugName;
 use kodept_ecs::world::EntityRef;
 use kodept_systems::configs::OutputDirectory;
 use kodept_systems::source::collection::SourceView;
-use std::any::TypeId;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
+
+#[derive(Debug, Resource, Args, Clone)]
+pub(crate) struct Config {
+    /// Specifies amount of information to show for each AST node
+    #[arg(short, long, action, default_value_t = false)]
+    pub(crate) verbose: bool,
+    /// Specifies whether components with no debug representation should appear in tables
+    #[arg(short = 'u', long = "unknown", action, default_value_t = false)]
+    pub(crate) show_unknown_components: bool,
+    /// Specifies whether components with zero size (ZST) should appear in tables
+    #[arg(short = 'z', long = "zst", action, default_value_t = false)]
+    pub(crate) show_zst_components: bool,
+    /// Adds a table column with components' size in bytes
+    #[arg(long = "size", action, default_value_t = false)]
+    pub(crate) show_components_size: bool,
+    /// Do not trim type path at component names
+    #[arg(short = 'l', long, action, default_value_t = false)]
+    pub(crate) long_type_paths: bool,
+    /// Specifies maximum length of a component value
+    #[arg(short, long, default_value_t = 50)]
+    pub(crate) max_length: usize,
+    /// Print component values with line breaks
+    #[arg(long, default_value_t = false)]
+    pub(crate) multiline: bool,
+}
 
 #[derive(SystemParam)]
 pub(crate) struct State<'w, 's, T: SystemParam + 'static> {
@@ -47,7 +73,7 @@ where
                     None => unsafe { DebugRegistry::debug_dynamic_global(value, type_id) },
                     Some(registry) => unsafe { registry.debug_dynamic(value, type_id) },
                 };
-                Some((debug_repr, info.name(), info.mutable(), info))
+                Some((debug_repr, info.name(), info))
             });
 
         StateOps::draw_node(self, entity.id(), components_debug_repr, buffer)
@@ -87,7 +113,7 @@ pub(crate) trait StateOps {
     fn draw_node<'a>(
         &self,
         id: Entity,
-        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, &'a ComponentInfo)>,
+        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, &'a ComponentInfo)>,
         buffer: &mut impl Write,
     ) -> std::io::Result<()>;
 }

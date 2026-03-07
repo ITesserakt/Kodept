@@ -1,8 +1,7 @@
 use crate::ExportControlEvent;
-use crate::common::{State, StateOps};
-use crate::graphviz::helpers::{DebugAsDisplay, row, sanitize, table};
-use crate::utils::NonVerboseComponents;
-use clap::Args;
+use crate::common::{Config, State, StateOps};
+use crate::graphviz::helpers::{row, sanitize, table};
+use crate::utils::{DebugAsDisplay, NonVerboseComponents};
 use kodept_ast::properties::Node;
 use kodept_ast::relationship::RelationshipMetadata;
 use kodept_ast::resource::reflection::DynDebug;
@@ -10,7 +9,6 @@ use kodept_ecs::archetype::Archetype;
 use kodept_ecs::component::{ComponentId, ComponentInfo};
 use kodept_ecs::entity::Entity;
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::resource::Resource;
 use kodept_ecs::system::{Local, On, Query, Res, SystemParam};
 use kodept_ecs::utils::{DebugName, ShortName};
 use kodept_ecs::world::EntityRef;
@@ -22,31 +20,6 @@ use std::io::{BufWriter, Write};
 
 pub(crate) struct GraphvizPlugin;
 
-#[derive(Debug, Resource, Args, Clone)]
-pub(crate) struct Config {
-    /// Specifies amount of information to show for each AST node
-    #[arg(short, long, action, default_value_t = false)]
-    verbose: bool,
-    /// Specifies whether components with no debug representation should appear in tables
-    #[arg(short = 'u', long = "unknown", action, default_value_t = false)]
-    show_unknown_components: bool,
-    /// Specifies whether components with zero size (ZST) should appear in tables
-    #[arg(short = 'z', long = "zst", action, default_value_t = false)]
-    show_zst_components: bool,
-    /// Adds a table column with components' size in bytes
-    #[arg(long = "size", action, default_value_t = false)]
-    show_components_size: bool,
-    /// Do not trim type path at component names
-    #[arg(short = 'l', long, action, default_value_t = false)]
-    long_type_paths: bool,
-    /// Specifies maximum length of a component value
-    #[arg(short, long, default_value_t = 50)]
-    max_length: usize,
-    /// Print component values with line breaks
-    #[arg(long, default_value_t = false)]
-    multiline: bool,
-}
-
 impl Plugin for GraphvizPlugin {
     fn build(self, engine: &mut Engine) {
         engine.add_observer(on_control_event.extract_reports());
@@ -54,42 +27,8 @@ impl Plugin for GraphvizPlugin {
 }
 
 mod helpers {
-    use std::fmt::{Debug, Display, Formatter};
+    use std::fmt::Display;
     use std::io::Write;
-
-    pub(super) struct DebugAsDisplay<T> {
-        value: T,
-        fancy: bool,
-    }
-
-    impl<T: Debug> Display for DebugAsDisplay<T> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            Debug::fmt(self, f)
-        }
-    }
-
-    impl<T: Debug> Debug for DebugAsDisplay<T> {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            if self.fancy {
-                write!(f, "{:#?}", self.value)
-            } else {
-                write!(f, "{:?}", self.value)
-            }
-        }
-    }
-
-    impl<T> DebugAsDisplay<T> {
-        pub(super) fn new(value: T) -> Self {
-            Self {
-                fancy: false,
-                value,
-            }
-        }
-
-        pub(super) fn fancy(value: T) -> Self {
-            Self { value, fancy: true }
-        }
-    }
 
     pub(super) fn table<W, T, U>(
         writer: &mut W,
@@ -215,7 +154,7 @@ impl StateOps for State<'_, '_, GraphvizState<'_, '_>> {
     fn draw_node<'a>(
         &self,
         id: Entity,
-        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, &'a ComponentInfo)>,
+        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, &'a ComponentInfo)>,
         buffer: &mut impl Write,
     ) -> std::io::Result<()> {
         let total_node_size = self
@@ -246,7 +185,7 @@ impl StateOps for State<'_, '_, GraphvizState<'_, '_>> {
                     Ok(())
                 })?;
 
-                for (repr, name, is_mutable, info) in properties {
+                for (repr, name, info) in properties {
                     if !repr.is_known() && !self.config.show_unknown_components {
                         continue;
                     }
@@ -280,7 +219,7 @@ impl StateOps for State<'_, '_, GraphvizState<'_, '_>> {
                         } else {
                             write!(buffer, "<td bgcolor=\"#0000000a\">")?;
                         }
-                        if is_mutable {
+                        if info.mutable() {
                             write!(buffer, "<i>{name}</i></td>")?;
                         } else {
                             write!(buffer, "{name}</td>")?;

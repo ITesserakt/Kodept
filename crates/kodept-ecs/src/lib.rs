@@ -21,8 +21,8 @@ pub mod change_detection {
 }
 pub mod entity {
     pub use bevy_ecs::entity::{
-        ContainsEntity, Entity, EntityEquivalent, EntityHashSet, EntityIndexSet, EntityMapper,
-        EntitySet, EntitySetIterator, MapEntities,
+        ContainsEntity, Entity, EntityEquivalent, EntityHashMap, EntityHashSet, EntityIndexSet,
+        EntityMapper, EntitySet, EntitySetIterator, MapEntities,
     };
 }
 pub mod error {

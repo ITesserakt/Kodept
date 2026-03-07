@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 pub(crate) struct NonVerboseComponents<'w, 's> {
     name: ComponentIdFor<'s, kodept_ast::properties::Name>,
     span: ComponentIdFor<'s, kodept_ast::properties::SourceSpan>,
-    node: ComponentIdFor<'s, kodept_ast::properties::Node>,
+    pub(crate) node: ComponentIdFor<'s, kodept_ast::properties::Node>,
     _phantom: PhantomData<&'w ()>,
 }
 
@@ -18,17 +18,35 @@ impl NonVerboseComponents<'_, '_> {
     }
 }
 
-#[repr(transparent)]
-pub(crate) struct DebugAsDisplay<T>(pub T);
+pub(crate) struct DebugAsDisplay<T> {
+    pub value: T,
+    pub fancy: bool,
+}
+
+impl<T> DebugAsDisplay<T> {
+    pub(crate) fn new(value: T) -> Self {
+        Self {
+            value,
+            fancy: false,
+        }
+    }
+
+    pub(crate) fn fancy(value: T) -> Self {
+        Self { value, fancy: true }
+    }
+}
 
 impl<T: Debug> Display for DebugAsDisplay<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        match self.fancy {
+            true => write!(f, "{:#?}", self.value),
+            false => write!(f, "{:?}", self.value),
+        }
     }
 }
 
 impl<T: Debug> Debug for DebugAsDisplay<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "{:?}", self.value)
     }
 }
