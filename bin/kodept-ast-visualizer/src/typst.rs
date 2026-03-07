@@ -1,12 +1,13 @@
 use crate::ExportControlEvent;
 use crate::common::{State, StateOps};
 use crate::utils::DebugAsDisplay;
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::component::ComponentId;
-use bevy_ecs::prelude::*;
-use bevy_utils::prelude::DebugName;
 use kodept_ast::relationship::RelationshipMetadata;
 use kodept_ast::resource::reflection::DynDebug;
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::component::{ComponentId, ComponentInfo};
+use kodept_ecs::entity::Entity;
+use kodept_ecs::system::{Local, On};
+use kodept_ecs::utils::DebugName;
 use kodept_frontend::engine::{Engine, Plugin};
 use kodept_systems::utils::ReportSystemEx;
 use std::any::TypeId;
@@ -69,7 +70,7 @@ fn sanitize(value: impl Display) -> String {
     result
 }
 
-impl State<'_, '_, ExtraState> {
+impl State<'_, '_, TypstState> {
     fn draw_edge(
         &self,
         from: Entity,
@@ -100,8 +101,8 @@ impl State<'_, '_, ExtraState> {
     }
 }
 
-type ExtraState = ();
-impl StateOps for State<'_, '_, ExtraState> {
+type TypstState = ();
+impl StateOps for State<'_, '_, TypstState> {
     fn get_entity_components(&self, archetype: &Archetype) -> impl Iterator<Item = ComponentId> {
         archetype.iter_components()
     }
@@ -109,7 +110,7 @@ impl StateOps for State<'_, '_, ExtraState> {
     fn draw_node<'a>(
         &self,
         id: Entity,
-        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, TypeId)>,
+        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, &'a ComponentInfo)>,
         buffer: &mut impl Write,
     ) -> std::io::Result<()> {
         write!(
@@ -130,17 +131,13 @@ impl StateOps for State<'_, '_, ExtraState> {
 
 fn on_control_event(
     control: On<ExportControlEvent>,
-    state: State<ExtraState>,
+    mut state: State<TypstState>,
     mut output_buffer: Local<Option<BufWriter<File>>>,
 ) -> std::io::Result<()> {
     match (control.event(), &mut *output_buffer) {
         (ExportControlEvent::Start, buffer) => {
-            state.output.create_missing_folders()?;
-            let descriptor = state.source.describe();
-            let filename = descriptor.name();
-            let filepath = state.output.get_path_for_source(filename, "typ")?;
+            let mut file = state.provide_output_file("typ")?;
 
-            let mut file = File::create(filepath)?;
             write_preamble(&mut file)?;
             *buffer = Some(BufWriter::new(file));
         }

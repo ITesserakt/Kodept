@@ -1,14 +1,20 @@
-use bevy_ecs::archetype::Archetype;
-use bevy_ecs::component::{ComponentId, Components};
-use bevy_ecs::prelude::*;
-use bevy_ecs::system::{StaticSystemParam, SystemParam};
-use bevy_utils::prelude::DebugName;
 use kodept_ast::properties::Node;
 use kodept_ast::resource::reflection::{DebugRegistry, DynDebug};
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::component::{ComponentId, ComponentInfo, Components};
+use kodept_ecs::entity::Entity;
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::query::With;
+use kodept_ecs::system::{Query, Res, StaticSystemParam, SystemParam};
+use kodept_ecs::utils::DebugName;
+use kodept_ecs::world::EntityRef;
 use kodept_systems::configs::OutputDirectory;
 use kodept_systems::source::collection::SourceView;
 use std::any::TypeId;
+use std::ffi::{OsStr, OsString};
+use std::fs::File;
 use std::io::Write;
+use std::ops::{Deref, DerefMut};
 
 #[derive(SystemParam)]
 pub(crate) struct State<'w, 's, T: SystemParam + 'static> {
@@ -41,19 +47,47 @@ where
                     None => unsafe { DebugRegistry::debug_dynamic_global(value, type_id) },
                     Some(registry) => unsafe { registry.debug_dynamic(value, type_id) },
                 };
-                Some((debug_repr, info.name(), info.mutable(), type_id))
+                Some((debug_repr, info.name(), info.mutable(), info))
             });
 
         StateOps::draw_node(self, entity.id(), components_debug_repr, buffer)
     }
+
+    pub(crate) fn provide_output_file(
+        &mut self,
+        extension: impl AsRef<OsStr>,
+    ) -> std::io::Result<File> {
+        self.output.create_missing_folders()?;
+        let source_descriptor = self.source.describe();
+        let filename = source_descriptor.name();
+        let output_path = self
+            .output
+            .get_path_for_source(filename, extension.as_ref())?;
+
+        File::create(output_path)
+    }
 }
 
-pub trait StateOps {
+impl<'w, 's, T: SystemParam + 'static> Deref for State<'w, 's, T> {
+    type Target = T::Item<'w, 's>;
+
+    fn deref(&self) -> &Self::Target {
+        self.extra.deref()
+    }
+}
+
+impl<'w, 's, T: SystemParam + 'static> DerefMut for State<'w, 's, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.extra.deref_mut()
+    }
+}
+
+pub(crate) trait StateOps {
     fn get_entity_components(&self, archetype: &Archetype) -> impl Iterator<Item = ComponentId>;
     fn draw_node<'a>(
         &self,
         id: Entity,
-        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, TypeId)>,
+        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, &'a ComponentInfo)>,
         buffer: &mut impl Write,
     ) -> std::io::Result<()>;
 }

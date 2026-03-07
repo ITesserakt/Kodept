@@ -1,5 +1,6 @@
-use bevy_ecs::component::{ComponentId, ComponentIdFor};
-use bevy_ecs::system::SystemParam;
+use kodept_ecs::component::{ComponentId, ComponentIdFor};
+use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::system::SystemParam;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
@@ -12,7 +13,7 @@ pub(crate) struct NonVerboseComponents<'w, 's> {
 }
 
 impl NonVerboseComponents<'_, '_> {
-    pub fn get(&self) -> [ComponentId; 3] {
+    pub(crate) fn get(&self) -> [ComponentId; 3] {
         [self.node.get(), self.span.get(), self.name.get()]
     }
 }

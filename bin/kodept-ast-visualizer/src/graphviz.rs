@@ -1,19 +1,20 @@
 use crate::ExportControlEvent;
+use crate::common::{State, StateOps};
 use crate::graphviz::helpers::{DebugAsDisplay, row, sanitize, table};
+use crate::utils::NonVerboseComponents;
 use clap::Args;
-use kodept_ast::properties::{Name, Node, SourceSpan};
+use kodept_ast::properties::Node;
 use kodept_ast::relationship::RelationshipMetadata;
-use kodept_ast::resource::reflection::DebugRegistry;
-use kodept_ecs::component::Components;
+use kodept_ast::resource::reflection::DynDebug;
+use kodept_ecs::archetype::Archetype;
+use kodept_ecs::component::{ComponentId, ComponentInfo};
+use kodept_ecs::entity::Entity;
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::query::With;
 use kodept_ecs::resource::Resource;
-use kodept_ecs::system::{Local, On, Query, Res};
-use kodept_ecs::utils::ShortName;
+use kodept_ecs::system::{Local, On, Query, Res, SystemParam};
+use kodept_ecs::utils::{DebugName, ShortName};
 use kodept_ecs::world::EntityRef;
 use kodept_frontend::engine::{Engine, Plugin};
-use kodept_systems::configs::OutputDirectory;
-use kodept_systems::source::collection::SourceView;
 use kodept_systems::utils::ReportSystemEx;
 use std::any::TypeId;
 use std::fs::File;
@@ -162,114 +163,6 @@ mod helpers {
     }
 }
 
-fn draw_node(
-    entity: EntityRef,
-    buffer: &mut impl Write,
-    debug_registry: Option<&DebugRegistry>,
-    components: &Components,
-    config: &Config,
-) -> std::io::Result<()> {
-    let non_verbose_components = [
-        components.component_id::<Node>(),
-        components.component_id::<SourceSpan>(),
-        components.component_id::<Name>(),
-    ];
-
-    let all_components = entity.archetype().components();
-
-    // SAFETY: `components_value` enumerates values in the same order as `all_components`.
-    //         That means type id must equal to the original type.
-    #[allow(unsafe_code)]
-    let components_debug_repr = all_components
-        .into_iter()
-        .filter(|id| config.verbose || non_verbose_components.contains(&Some(**id)))
-        .map(|id| (entity.get_by_id(*id), id))
-        .filter_map(|(value, &id)| Some((value.ok()?, components.get_info(id)?)))
-        .filter(|(_, info)| config.show_zst_components || info.layout().size() != 0)
-        .filter_map(|(value, info)| {
-            let type_id = info.type_id()?;
-            let debug_repr = match debug_registry {
-                Some(registry) => unsafe { registry.debug_dynamic(value, type_id) },
-                None => unsafe { DebugRegistry::debug_dynamic_global(value, type_id) },
-            };
-            Some((debug_repr, info.name(), info.mutable(), info))
-        });
-    let total_node_size = all_components
-        .into_iter()
-        .filter_map(|it| components.get_info(*it))
-        .map(|it| it.layout().size())
-        .sum::<usize>();
-
-    write!(buffer, "\t\"{}\" [ label=<", entity.id().to_bits())?;
-    table(
-        buffer,
-        [("border", 0), ("cellborder", 1), ("cellspacing", 0)],
-        move |buffer| {
-            row(buffer, |buffer| {
-                write!(
-                    buffer,
-                    "<td bgcolor=\"#00000033\" colspan=\"2\"><b>{}</b></td>",
-                    entity.id()
-                )?;
-
-                if config.show_components_size {
-                    write!(buffer, "<td>{}</td>", total_node_size)?;
-                }
-                Ok(())
-            })?;
-
-            for (repr, name, is_mutable, info) in components_debug_repr {
-                if !repr.is_known() && !config.show_unknown_components {
-                    continue;
-                }
-                let name = match config.long_type_paths {
-                    true => sanitize(name, config.max_length),
-                    false => sanitize(name.shortname(), config.max_length),
-                };
-                let is_known = repr.is_known();
-                let is_node = info.type_id().is_some_and(|it| it == TypeId::of::<Node>());
-                let repr = match (config.long_type_paths, is_node) {
-                    (false, true) => {
-                        #[allow(unsafe_code)]
-                        let node = unsafe { repr.into_inner().deref::<Node>() };
-                        let path = ShortName::from(node.name);
-                        sanitize(path, config.max_length)
-                    }
-                    _ => {
-                        let render = sanitize(DebugAsDisplay::new(repr), config.max_length);
-                        if render.len() >= config.max_length && config.multiline {
-                            sanitize(DebugAsDisplay::fancy(repr), usize::MAX)
-                        } else {
-                            render
-                        }
-                    }
-                };
-
-                row(buffer, |buffer| {
-                    if is_known {
-                        write!(buffer, "<td>")?;
-                    } else {
-                        write!(buffer, "<td bgcolor=\"#0000000a\">")?;
-                    }
-                    if is_mutable {
-                        write!(buffer, "<i>{name}</i></td>")?;
-                    } else {
-                        write!(buffer, "{name}</td>")?;
-                    }
-                    write!(buffer, "<td>{repr}</td>")?;
-                    if config.show_components_size {
-                        write!(buffer, "<td>{}</td>", info.layout().size())?;
-                    }
-                    Ok(())
-                })?;
-            }
-
-            Ok(())
-        },
-    )?;
-    writeln!(buffer, ">, shape=plain ]")
-}
-
 fn draw_edge(
     entity: EntityRef,
     parent: EntityRef,
@@ -301,24 +194,121 @@ fn draw_edge(
     }
 }
 
+#[derive(SystemParam)]
+struct GraphvizState<'w, 's> {
+    non_verbose_components: NonVerboseComponents<'w, 's>,
+    config: Res<'w, Config>,
+    archetypes: Query<'w, 's, &'static Archetype>,
+}
+
+impl StateOps for State<'_, '_, GraphvizState<'_, '_>> {
+    fn get_entity_components(&self, archetype: &Archetype) -> impl Iterator<Item = ComponentId> {
+        let non_verbose_components = self.non_verbose_components.get();
+
+        archetype
+            .components()
+            .into_iter()
+            .copied()
+            .filter(move |it| self.config.verbose || non_verbose_components.contains(it))
+    }
+
+    fn draw_node<'a>(
+        &self,
+        id: Entity,
+        properties: impl Iterator<Item = (DynDebug<'a>, DebugName, bool, &'a ComponentInfo)>,
+        buffer: &mut impl Write,
+    ) -> std::io::Result<()> {
+        let total_node_size = self
+            .archetypes
+            .get(id)
+            .map(|it| it.iter_components())
+            .into_iter()
+            .flatten()
+            .filter_map(|it| self.components.get_info(it))
+            .map(|it| it.layout().size())
+            .sum::<usize>();
+
+        write!(buffer, "\t\"{}\" [ label=<", id.to_bits())?;
+        table(
+            buffer,
+            [("border", 0), ("cellborder", 1), ("cellspacing", 0)],
+            move |buffer| {
+                row(buffer, |buffer| {
+                    write!(
+                        buffer,
+                        "<td bgcolor=\"#00000033\" colspan=\"2\"><b>{}</b></td>",
+                        id
+                    )?;
+
+                    if self.config.show_components_size {
+                        write!(buffer, "<td>{}</td>", total_node_size)?;
+                    }
+                    Ok(())
+                })?;
+
+                for (repr, name, is_mutable, info) in properties {
+                    if !repr.is_known() && !self.config.show_unknown_components {
+                        continue;
+                    }
+                    let name = match self.config.long_type_paths {
+                        true => sanitize(name, self.config.max_length),
+                        false => sanitize(name.shortname(), self.config.max_length),
+                    };
+                    let is_known = repr.is_known();
+                    let is_node = info.type_id().is_some_and(|it| it == TypeId::of::<Node>());
+                    let repr = match (self.config.long_type_paths, is_node) {
+                        (false, true) => {
+                            #[allow(unsafe_code)]
+                            let node = unsafe { repr.into_inner().deref::<Node>() };
+                            let path = ShortName::from(node.name);
+                            sanitize(path, self.config.max_length)
+                        }
+                        _ => {
+                            let render =
+                                sanitize(DebugAsDisplay::new(repr), self.config.max_length);
+                            if render.len() >= self.config.max_length && self.config.multiline {
+                                sanitize(DebugAsDisplay::fancy(repr), usize::MAX)
+                            } else {
+                                render
+                            }
+                        }
+                    };
+
+                    row(buffer, |buffer| {
+                        if is_known {
+                            write!(buffer, "<td>")?;
+                        } else {
+                            write!(buffer, "<td bgcolor=\"#0000000a\">")?;
+                        }
+                        if is_mutable {
+                            write!(buffer, "<i>{name}</i></td>")?;
+                        } else {
+                            write!(buffer, "{name}</td>")?;
+                        }
+                        write!(buffer, "<td>{repr}</td>")?;
+                        if self.config.show_components_size {
+                            write!(buffer, "<td>{}</td>", info.layout().size())?;
+                        }
+                        Ok(())
+                    })?;
+                }
+
+                Ok(())
+            },
+        )?;
+        writeln!(buffer, ">, shape=plain ]")
+    }
+}
+
 fn on_control_event(
     control: On<ExportControlEvent>,
-    output: Res<OutputDirectory>,
-    source: Res<SourceView>,
-    nodes: Query<EntityRef, With<Node>>,
-    components: &Components,
-    debug_registry: Option<Res<DebugRegistry>>,
-    config: Res<Config>,
+    mut state: State<GraphvizState>,
     mut output_buffer: Local<Option<BufWriter<File>>>,
 ) -> std::io::Result<()> {
     match (control.event(), &mut *output_buffer) {
         (ExportControlEvent::Start, buffer) => {
-            output.create_missing_folders()?;
-            let descriptor = source.describe();
-            let filename = descriptor.name();
-            let filepath = output.get_path_for_source(filename, "dot")?;
+            let mut file = state.provide_output_file("dot")?;
 
-            let mut file = File::create(filepath)?;
             writeln!(file, "digraph g {{")?;
             writeln!(file, "\tgraph [ rankdir = \"TD\", pad = 0.1 ]")?;
             writeln!(
@@ -336,14 +326,8 @@ fn on_control_event(
             }
         }
         (&ExportControlEvent::Root(id), Some(buffer)) => {
-            let entity = nodes.get(id).expect("Cannot get node");
-            draw_node(
-                entity,
-                buffer,
-                debug_registry.as_deref(),
-                components,
-                &*config,
-            )?;
+            let entity = state.nodes.get(id).expect("Cannot draw node");
+            state.draw_node(entity, buffer)?;
         }
         (
             ExportControlEvent::Inner {
@@ -353,17 +337,12 @@ fn on_control_event(
             },
             Some(buffer),
         ) => {
-            let [parent, entity] = nodes
+            let [parent, entity] = state
+                .nodes
                 .get_many([*parent_id, *this_id])
                 .expect("Cannot get node");
-            draw_node(
-                entity,
-                buffer,
-                debug_registry.as_deref(),
-                components,
-                &*config,
-            )?;
-            draw_edge(entity, parent, metadata, &*config, buffer)?;
+            state.draw_node(entity, buffer)?;
+            draw_edge(entity, parent, metadata, &*state.config, buffer)?;
         }
         _ => {}
     }
