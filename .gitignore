@@ -9,3 +9,4 @@ dhat-heap.json
 build/
 result/
 .toolchain
+.DS_Store
