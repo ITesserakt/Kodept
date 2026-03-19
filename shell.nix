@@ -10,6 +10,8 @@ in pkgs.mkShellNoCC rec {
 		gnuplot
 		pkgs.clangStdenv.cc
 		graphviz
+	] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+		pkgs.darwin.libiconv
 	];
 
 	RUST_SRC_PATH = toolchain.rustPlatform.rustLibSrc;
