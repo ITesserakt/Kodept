@@ -219,39 +219,35 @@ impl IterableSystem for TypeckIf<'_, '_> {
         mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
         _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        for (branch_id, ()) in self.branches.get_down(modification.id()).1 {
+        for (branch_id, ()) in self.branches.get_children(modification.id()) {
             let branch_conditions = self.param_set.p0();
-            let ((), condition) = branch_conditions.get_down(branch_id);
-            let (_, Some(_)) = condition.collect() else {
+            let (_, Some(_)) = branch_conditions.get_children(branch_id).collect() else {
                 return ();
             };
             let branch_bodies = self.param_set.p1();
-            let ((), body) = branch_bodies.get_down(branch_id);
-            let (_, Some(_)) = body.collect() else {
+            let (_, Some(_)) = branch_bodies.get_children(branch_id).collect() else {
                 return ();
             };
         }
-        let ((), otherwise_fetch) = self.otherwise.get_down(modification.id());
-        let mut partial = if let Some((otherwise_id, ())) = otherwise_fetch.collect() {
-            let mut otherwise_bodies = self.param_set.p2();
-            let ((), body) = otherwise_bodies.get_down_mut(otherwise_id);
-            let (_, Some(mut body)) = body.collect() else {
-                return ();
-            };
-            body.take()
-        } else {
-            PartialInfer::new(MonomorphicType::UNIT)
+        let mut partial = match self.otherwise.get_children(modification.id()).collect() {
+            Some((otherwise_id, ())) => {
+                let mut otherwise_bodies = self.param_set.p2();
+                let (_, Some(mut body)) = otherwise_bodies.get_children_mut(otherwise_id).collect()
+                else {
+                    return ();
+                };
+                body.take()
+            }
+            None => PartialInfer::new(MonomorphicType::UNIT),
         };
 
-        for (branch_id, ()) in self.branches.get_down(modification.id()).1 {
+        for (branch_id, ()) in self.branches.get_children(modification.id()) {
             let mut branch_conditions = self.param_set.p0();
-            let ((), condition) = branch_conditions.get_down_mut(branch_id);
-            let (_, condition) = condition.collect();
+            let (_, condition) = branch_conditions.get_children_mut(branch_id).collect();
             let condition = condition.unwrap().take();
 
             let mut branch_bodies = self.param_set.p1();
-            let ((), body) = branch_bodies.get_down_mut(branch_id);
-            let (_, body) = body.collect();
+            let (_, body) = branch_bodies.get_children_mut(branch_id).collect();
             let body = body.unwrap().take();
 
             let condition_ty = partial.merge(condition);
@@ -302,8 +298,7 @@ impl IterableSystem for TypeckCall<'_, '_> {
     ) -> impl TryReport {
         let lhs = self.param_set.p0();
         if lhs
-            .get_down(modification.id())
-            .1
+            .get_children(modification.id())
             .into_iter()
             .any(|it| it.1.is_none())
         {
@@ -311,8 +306,7 @@ impl IterableSystem for TypeckCall<'_, '_> {
         }
         let rhs = self.param_set.p1();
         if rhs
-            .get_down(modification.id())
-            .1
+            .get_children(modification.id())
             .into_iter()
             .any(|it| it.1.is_none())
         {
@@ -324,8 +318,7 @@ impl IterableSystem for TypeckCall<'_, '_> {
 
         let lhs_ty = {
             let mut lhs_fetch = self.param_set.p0();
-            let ((), lhs_fetch) = lhs_fetch.get_down_mut(modification.id());
-            let (_, lhs) = lhs_fetch.collect();
+            let (_, lhs) = lhs_fetch.get_children_mut(modification.id()).collect();
             let lhs_partial = lhs.unwrap().take();
 
             partial.merge(lhs_partial).0
@@ -333,24 +326,20 @@ impl IterableSystem for TypeckCall<'_, '_> {
 
         let mut rhs = self.param_set.p1();
         let mut inputs = vec![];
-        for (_, rhs) in rhs.get_down_mut(modification.id()).1 {
+        for (_, rhs) in rhs.get_children_mut(modification.id()) {
             let rhs = rhs.unwrap().take();
             inputs.push(partial.merge(rhs).0);
         }
-        if inputs.is_empty() {
-            partial.constraints.push(eq_cst(
-                lhs_ty,
-                MonomorphicType::fun1(MonomorphicType::UNIT, tv),
-            ));
-        } else {
-            let func_ty = inputs
+        let expected_func_ty = match &*inputs {
+            [] => MonomorphicType::fun1(MonomorphicType::UNIT, tv),
+            _ => inputs
                 .into_iter()
                 .rfold(MonomorphicType::from(tv), |acc, next| {
                     MonomorphicType::fun1(next, acc)
-                });
-            partial.constraints.push(eq_cst(lhs_ty, func_ty));
-        }
+                }),
+        };
 
+        partial.constraints.push(eq_cst(lhs_ty, expected_func_ty));
         modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
@@ -376,8 +365,7 @@ impl IterableSystem for TypeckLink<'_, '_> {
         mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
         _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        let ((), expr_fetch) = self.links.get_down_mut(modification.id());
-        let (_, Some(mut expr)) = expr_fetch.collect() else {
+        let (_, Some(mut expr)) = self.links.get_children_mut(modification.id()).collect() else {
             return ();
         };
         let partial = expr.take();
@@ -417,8 +405,7 @@ impl IterableSystem for TypeckBlock<'_, '_> {
     ) -> impl TryReport {
         if self
             .statements
-            .get_down(modification.id())
-            .1
+            .get_children(modification.id())
             .into_iter()
             .any(|it| it.1.1.is_none())
         {
@@ -427,7 +414,7 @@ impl IterableSystem for TypeckBlock<'_, '_> {
         let tv = TVar::new();
         let mut result = PartialInfer::new(tv);
 
-        for (_, (archetype, partial)) in self.statements.get_down_mut(modification.id()).1 {
+        for (_, (archetype, partial)) in self.statements.get_children_mut(modification.id()) {
             let partial = partial.unwrap().take();
             if archetype.contains(self.statement_component_ids.0.get()) {
                 // statement is block
@@ -506,21 +493,22 @@ impl IterableSystem for TypeckAnonFunction<'_, '_> {
         mut modification: Modification<Self::Iterable, B>,
         _: Params<Self::Iterable>,
     ) -> impl TryReport {
-        let ((), body_fetch) = self.bodies.get_down_mut(modification.id());
-        let (_, Some(mut body_partial)) = body_fetch.collect() else {
+        let (_, Some(mut body_partial)) = self.bodies.get_children_mut(modification.id()).collect()
+        else {
             return ();
         };
 
         let inputs = self
             .params
-            .get_down(modification.id())
-            .1
+            .get_children(modification.id())
             .into_iter()
             .map(|_| TVar::new())
             .collect::<Vec<_>>();
         let mut body_ty = body_partial.take();
 
-        for (&tv, (param_id, bound)) in inputs.iter().zip(self.params.get_down(modification.id()).1)
+        for (&tv, (param_id, bound)) in inputs
+            .iter()
+            .zip(self.params.get_children(modification.id()))
         {
             let param_assumptions = body_ty
                 .assumptions
@@ -531,18 +519,17 @@ impl IterableSystem for TypeckAnonFunction<'_, '_> {
             apply_bound(bound, &mut body_ty, tv.into());
         }
 
-        let func_ty = if inputs.is_empty() {
-            MonomorphicType::fun1(MonomorphicType::UNIT, body_ty.current_type.0)
-        } else {
-            inputs
+        let expected_func_ty = match &*inputs {
+            [] => MonomorphicType::fun1(MonomorphicType::UNIT, body_ty.current_type.0),
+            _ => inputs
                 .into_iter()
                 .rfold(body_ty.current_type.0.clone(), |acc, next| {
                     MonomorphicType::fun1(next, acc)
-                })
+                }),
         };
 
         modification.add_property(PartiallyTypechecked::from(
-            PartialInfer::new(func_ty)
+            PartialInfer::new(expected_func_ty)
                 .with_assumptions(body_ty.assumptions)
                 .with_constraints(body_ty.constraints),
         ));
@@ -584,8 +571,8 @@ impl IterableSystem for TypeckUserFunction<'_, '_> {
         mut modification: Modification<Self::Iterable, B>,
         params: Params<Self::Iterable>,
     ) -> impl TryReport {
-        let ((), block_fetch) = self.block.get_down_mut(modification.id());
-        let (_, Some(mut block_partial)) = block_fetch.collect() else {
+        let (_, Some(mut block_partial)) = self.block.get_children_mut(modification.id()).collect()
+        else {
             return ();
         };
         let mut block_ty = block_partial.take();
@@ -598,7 +585,9 @@ impl IterableSystem for TypeckUserFunction<'_, '_> {
             .map(|_| TVar::new())
             .collect::<Vec<_>>();
 
-        for (&tv, (param_id, bound)) in inputs.iter().zip(self.params.get_down(modification.id()).1)
+        for (&tv, (param_id, bound)) in inputs
+            .iter()
+            .zip(self.params.get_children(modification.id()))
         {
             let param_assumptions = block_ty
                 .assumptions
@@ -610,10 +599,9 @@ impl IterableSystem for TypeckUserFunction<'_, '_> {
         }
 
         let output_ty = block_ty.current_type.0.clone();
-        let func_ty = if inputs.is_empty() {
-            MonomorphicType::fun1(MonomorphicType::UNIT, output_ty.clone())
-        } else {
-            inputs.into_iter().rfold(output_ty.clone(), |acc, next| {
+        let expected_func_ty = match &*inputs {
+            [] => MonomorphicType::fun1(MonomorphicType::UNIT, output_ty.clone()),
+            _ => inputs.into_iter().rfold(output_ty.clone(), |acc, next| {
                 MonomorphicType::fun1(next, acc)
             })
         };
@@ -621,7 +609,7 @@ impl IterableSystem for TypeckUserFunction<'_, '_> {
         apply_bound(params.0, &mut block_ty, output_ty);
 
         modification.add_property(PartiallyTypechecked::from(
-            PartialInfer::new(func_ty)
+            PartialInfer::new(expected_func_ty)
                 .with_assumptions(block_ty.assumptions)
                 .with_constraints(block_ty.constraints),
         ));

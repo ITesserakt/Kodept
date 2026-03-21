@@ -599,6 +599,20 @@ where
             .expect("Cannot collect children into container")
     }
 
+    pub fn get_children(&self, id: NodeId<T>) -> ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>
+    where
+        T::Arity: TryFromIter,
+    {
+        self.get_down(id).1
+    }
+
+    pub fn get_children_mut(&mut self, id: NodeId<T>) -> ChildrenFetch<'_, 's, ChildData, T, Tag>
+    where
+        T::Arity: TryFromIter,
+    {
+        self.get_down_mut(id).1
+    }
+
     pub fn try_get_down(
         &self,
         id: NodeId<T>,
@@ -881,6 +895,17 @@ where
         T::Arity: TryFromIter,
     {
         self.get_down(id).1
+    }
+
+    #[inline]
+    pub fn get_children_mut(
+        &mut self,
+        id: NodeId<T>,
+    ) -> ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>>
+    where
+        T::Arity: TryFromIter,
+    {
+        self.get_down_mut(id).1
     }
 
     pub fn try_get_down(
