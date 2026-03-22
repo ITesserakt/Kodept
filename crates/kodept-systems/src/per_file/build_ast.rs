@@ -1,4 +1,3 @@
-use crate::source::collection::SourceView;
 use crate::utils::{LogSystemEx, ReportSystemEx};
 use derive_more::From;
 use kodept_ast::experimental::FromSyntax;
@@ -13,6 +12,7 @@ use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::system::{Commands, Res};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
+use kodept_frontend::prelude::SourceView;
 use kodept_report::prelude::{Diagnostic, IntoMessage, Severity};
 use std::borrow::Cow;
 

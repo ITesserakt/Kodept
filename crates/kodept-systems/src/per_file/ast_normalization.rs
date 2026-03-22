@@ -1,5 +1,4 @@
 use crate::per_file::utils::{IntoParNodeSystem, IterableSystemParam, ParIterableSystem};
-use crate::source::collection::Reporter;
 use crate::utils::TryReport;
 use kodept_ast::prelude::{HierarchicalQuery, NodeId, Property};
 use kodept_ast::properties::{Lexeme, Node, NodeProperty, RequireProperty, SourceSpan};
@@ -19,6 +18,7 @@ use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{Commands, On, Query, SystemParam};
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
+use kodept_frontend::engine::reporter::Reporter;
 use kodept_report_macros::IntoMessage;
 
 define_phase! {

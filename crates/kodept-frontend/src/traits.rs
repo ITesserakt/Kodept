@@ -2,10 +2,10 @@ use crate::Execution;
 use crate::prelude::SourceFiles;
 use std::sync::Arc;
 
-pub trait Compiler<SourceImpl> {
+pub trait Compiler {
     type Output;
 
-    fn from_sources(sources: Arc<SourceFiles<SourceImpl>>) -> Execution<Self::Output>;
+    fn from_sources(sources: Arc<SourceFiles>) -> Execution<Self::Output>;
 }
 
 pub trait Interpreter<Program> {

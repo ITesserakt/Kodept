@@ -1,9 +1,9 @@
-use crate::source::collection::SourceView;
 use crate::utils::ReportSystemEx;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::schedule::SystemSet;
 use kodept_ecs::system::{InMut, IntoSystem, Query};
 use kodept_frontend::engine::{Phase, PhaseEngine, SubEngine};
+use kodept_frontend::prelude::SourceView;
 use kodept_report_macros::IntoMessage;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};

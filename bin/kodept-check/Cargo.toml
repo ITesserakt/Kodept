@@ -8,7 +8,7 @@ rust-version.workspace = true
 clap = { version = "4.5", features = ["derive"] }
 
 kodept-cli = { path = "../../crates/kodept-cli", version = "0.1" }
-kodept-frontend = { path = "../../crates/kodept-frontend", version = "0.2" }
+kodept-frontend = { path = "../../crates/kodept-frontend", version = "0.3" }
 kodept-systems = { path = "../../crates/kodept-systems", version = "0.1" }
 
 [lints]

@@ -7,7 +7,6 @@ use crate::per_file::symbols::resolve::types::{
 };
 use crate::per_file::symbols::{SymbolKind, SymbolTable};
 use crate::per_file::utils::{IterableSystemParam, ParIterableSystem, StaticQuery};
-use crate::source::collection::Reporter;
 use crate::utils::TryReport;
 use kodept_ast::Str;
 use kodept_ast::prelude::{ASTNode, Erase, NodeId, Property};
@@ -27,6 +26,7 @@ use kodept_ecs::hierarchy::{ChildOf, Children};
 use kodept_ecs::lifecycle::Add;
 use kodept_ecs::query::{Has, Or, QueryFilter, With};
 use kodept_ecs::system::{Commands, On, Query, Res, SystemParam};
+use kodept_frontend::engine::reporter::Reporter;
 use std::iter::Peekable;
 use std::marker::PhantomData;
 pub(crate) use types::ResolvedTo;

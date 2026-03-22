@@ -1,12 +1,10 @@
 use crate::loader::{Loader, LoadingError};
-use crate::source::collection::Sources;
 use crate::source::unloaded::CodeSourceError;
 use derive_more::{Display, Error, From};
+use kodept_frontend::prelude::SourceFiles;
 use kodept_report::message::Severity;
 use kodept_report::prelude::{IntoMessage, ReportMessage};
 
-pub mod collection;
-pub mod loaded;
 pub mod unloaded;
 
 #[derive(Debug, Error, From, Display)]
@@ -15,9 +13,9 @@ pub enum SourcesLoadingError {
     Loading(CodeSourceError),
 }
 
-pub fn load_each_source(loader: Loader) -> Result<Sources, SourcesLoadingError> {
+pub fn load_each_source(loader: Loader) -> Result<SourceFiles, SourcesLoadingError> {
     let unloaded_sources = loader.into_sources()?;
-    let mut sources = Sources::new();
+    let mut sources = SourceFiles::new();
     for source in unloaded_sources {
         sources.insert(source)?;
     }

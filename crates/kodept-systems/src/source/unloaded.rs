@@ -1,7 +1,6 @@
-use crate::source::loaded::SourceImpl;
 use derive_more::{Display, Error, From};
 use kodept_core::file_name::FileName;
-use kodept_frontend::prelude::{ReadSource, Source, TryReadCode};
+use kodept_frontend::prelude::{ReadSource, TryReadSource};
 use memmap2::{Mmap, MmapOptions};
 use std::env::current_dir;
 use std::fs::File;
@@ -90,33 +89,22 @@ pub enum CodeSourceError {
     UTF8String(std::string::FromUtf8Error),
 }
 
-fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
-    core::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
-}
-
-impl TryReadCode<CodeSource> for SourceImpl {
+impl TryReadSource for CodeSource {
     type Error = CodeSourceError;
 
-    fn try_read(value: CodeSource) -> Result<ReadSource<Self>, Self::Error> {
-        let path = value.path().get_relative_path(&current_dir()?);
-        let (value, starts) = match value {
+    fn try_read(self) -> Result<ReadSource, Self::Error> {
+        let path = self.path().get_relative_path(&current_dir()?);
+        match self {
             CodeSource::Memory { contents, .. } => {
-                let starts = line_starts(contents.get_ref()).collect();
-                (SourceImpl::explicit(contents.into_inner()), starts)
+                Ok(ReadSource::explicit(contents.into_inner(), path))
             }
             CodeSource::File { mut file, .. } => {
                 let mut buf = Vec::with_capacity(1024);
                 file.read_to_end(&mut buf)?;
                 let buf = String::from_utf8(buf)?;
-                let starts = line_starts(&buf).collect();
-                (SourceImpl::explicit(buf), starts)
+                Ok(ReadSource::explicit(buf, path))
             }
-            CodeSource::MappedFile { map, .. } => {
-                let value = SourceImpl::implicit(map.into_inner())?;
-                let starts = line_starts(value.as_ref()).collect();
-                (value, starts)
-            }
-        };
-        Ok(ReadSource::new(value, path, starts))
+            CodeSource::MappedFile { map, .. } => Ok(ReadSource::implicit(map.into_inner(), path)?),
+        }
     }
 }

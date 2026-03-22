@@ -1,6 +1,5 @@
 use crate::engine::reporter::sequential::Reports;
 use crate::prelude::{CollectedSources, Global, SourceView};
-use crate::read_code_source::SyncSource;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::resource::Resource;
 use kodept_ecs::system::{Deferred, Res, SystemBuffer, SystemParam};
@@ -50,26 +49,26 @@ pub enum Settings {
 }
 
 #[derive(SystemParam)]
-struct Config<'w, Impl: SyncSource> {
-    single_source: Option<Res<'w, SourceView<Impl>>>,
-    all_sources: Option<Res<'w, CollectedSources<Impl>>>,
+struct Config<'w> {
+    single_source: Option<Res<'w, SourceView>>,
+    all_sources: Option<Res<'w, CollectedSources>>,
     settings: Option<Res<'w, Settings>>,
 }
 
 #[derive(SystemParam)]
-pub struct Reporter<'w, 's, Impl: SyncSource, Buffer: SystemBuffer = Reports<Impl>> {
-    config: Config<'w, Impl>,
+pub struct Reporter<'w, 's, Buffer: SystemBuffer = Reports> {
+    config: Config<'w>,
     buffer: Deferred<'s, Buffer>,
 }
 #[cfg(feature = "parallel")]
-pub type ParallelReporter<'w, 's, Impl> = Reporter<'w, 's, Impl, parallel::ParallelReports<Impl>>;
+pub type ParallelReporter<'w, 's> = Reporter<'w, 's, parallel::ParallelReports>;
 
 trait Ops {
     fn mark_stop(self, stop: bool) -> Self;
     fn push_report(self, report: GenericReport);
 }
 
-impl<Impl: SyncSource> Config<'_, Impl> {
+impl Config<'_> {
     fn report_inner(&self, message: impl IntoMessage, buffer: impl Ops) {
         let behaviour = message.behaviour();
         let buffer = match behaviour {
@@ -135,7 +134,6 @@ mod sequential {
     use crate::engine::reporter::{
         CompilationFailed, GenericReport, Helper, Ops, Reporter, Settings,
     };
-    use crate::read_code_source::SyncSource;
     use crate::report::Global;
     use crate::source_files::{CollectedSources, SourceView};
     use kodept_ecs::system::{SystemBuffer, SystemMeta};
@@ -145,36 +143,30 @@ mod sequential {
     use std::marker::PhantomData;
     use tracing::error;
 
-    pub struct Reports<Impl> {
+    pub struct Reports {
         pub(super) deferred_reports: Vec<GenericReport>,
         pub(super) should_stop: bool,
-        pub(super) _phantom: PhantomData<fn() -> Impl>,
     }
 
-    impl<Impl> Default for Reports<Impl> {
+    impl Default for Reports {
         #[inline]
         fn default() -> Self {
             Self {
                 deferred_reports: vec![],
                 should_stop: false,
-                _phantom: PhantomData,
             }
         }
     }
 
-    impl<Impl: SyncSource> SystemBuffer for Reports<Impl> {
+    impl SystemBuffer for Reports {
         fn apply(&mut self, _: &SystemMeta, world: &mut World) {
             let mut any_error = false;
             world.try_resource_scope(|world, mut settings| {
                 let all_files = {
                     world
-                        .get_resource::<CollectedSources<Impl>>()
+                        .get_resource::<CollectedSources>()
                         .map(|it| it.inner.as_ref())
-                        .or_else(|| {
-                            world
-                                .get_resource::<SourceView<Impl>>()
-                                .map(|it| it.all_files())
-                        })
+                        .or_else(|| world.get_resource::<SourceView>().map(|it| it.all_files()))
                 };
 
                 match &mut *settings {
@@ -208,7 +200,7 @@ mod sequential {
         }
     }
 
-    impl<Impl> Ops for &mut Reports<Impl> {
+    impl Ops for &mut Reports {
         fn mark_stop(self, stop: bool) -> Self {
             self.should_stop = stop;
             self
@@ -219,7 +211,7 @@ mod sequential {
         }
     }
 
-    impl<Impl: SyncSource> Reporter<'_, '_, Impl> {
+    impl Reporter<'_, '_, Reports> {
         #[inline]
         pub fn report(&mut self, message: impl IntoMessage) {
             self.config.report_inner(message, &mut *self.buffer);
@@ -238,7 +230,6 @@ mod sequential {
 #[cfg(feature = "parallel")]
 mod parallel {
     use crate::engine::reporter::{GenericReport, Helper, Ops, Reporter, Reports};
-    use crate::read_code_source::SyncSource;
     use kodept_ecs::system::{SystemBuffer, SystemMeta};
     use kodept_ecs::utils::Parallel;
     use kodept_ecs::world::World;
@@ -246,26 +237,23 @@ mod parallel {
     use std::marker::PhantomData;
     use std::sync::atomic::{AtomicBool, Ordering};
 
-    pub struct ParallelReports<Impl> {
+    pub struct ParallelReports {
         sinks: Parallel<Vec<GenericReport>>,
         should_stop: AtomicBool,
-        _phantom: PhantomData<fn() -> Impl>,
     }
 
-    impl<Impl> Default for ParallelReports<Impl> {
+    impl Default for ParallelReports {
         fn default() -> Self {
             Self {
                 sinks: Parallel::default(),
                 should_stop: AtomicBool::new(false),
-                _phantom: PhantomData,
             }
         }
     }
 
-    impl<Impl: SyncSource> SystemBuffer for ParallelReports<Impl> {
+    impl SystemBuffer for ParallelReports {
         fn apply(&mut self, system_meta: &SystemMeta, world: &mut World) {
             let mut local_reports = Reports {
-                _phantom: PhantomData::<fn() -> Impl>,
                 should_stop: *self.should_stop.get_mut(),
                 deferred_reports: vec![],
             };
@@ -275,7 +263,7 @@ mod parallel {
         }
     }
 
-    impl<Impl> Ops for &ParallelReports<Impl> {
+    impl Ops for &ParallelReports {
         fn mark_stop(self, stop: bool) -> Self {
             self.should_stop.store(stop, Ordering::Relaxed);
             self
@@ -286,7 +274,7 @@ mod parallel {
         }
     }
 
-    impl<Impl: SyncSource> Reporter<'_, '_, Impl, ParallelReports<Impl>> {
+    impl Reporter<'_, '_, ParallelReports> {
         pub fn report(&self, message: impl IntoMessage) {
             self.config.report_inner(message, &*self.buffer);
         }

@@ -1,4 +1,3 @@
-use crate::source::collection::Reporter;
 use crate::utils::TryReport;
 use kodept_ast::prelude::{
     ASTNode, ChildrenFetch, HierarchicalQuery, NarrowHierarchicalQuery, NodeId, NodeQueryData,
@@ -9,6 +8,7 @@ use kodept_ecs::query::{QueryData, QueryFilter};
 use kodept_ecs::system::{
     Commands, InMut, IntoSystem, Query, StaticSystemParam, SystemParam, SystemParamItem,
 };
+use kodept_frontend::engine::reporter::Reporter;
 use kodept_report::prelude::MessageBehaviour;
 use kodept_report::traits::IntoMessage;
 use std::ops::ControlFlow;

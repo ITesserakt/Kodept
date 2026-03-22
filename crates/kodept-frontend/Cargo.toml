@@ -1,6 +1,6 @@
 [package]
 name = "kodept-frontend"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -11,6 +11,7 @@ workspace = true
 kodept-core = { path = "../kodept-core", version = "0.4" }
 kodept-ecs = { path = "../kodept-ecs", version = "0.1" }
 kodept-report = { path = "../kodept-report", version = "0.2" }
+memmap2 = "0.9"
 tracing.workspace = true
 yoke = "0.8.0"
 

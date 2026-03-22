@@ -1,6 +1,5 @@
 use crate::per_file::symbols::{SymbolKind, SymbolTable};
 use crate::per_file::utils::{IterableSystemParam, ParIterableSystem};
-use crate::source::collection::Reporter;
 use crate::utils::TryReport;
 use kodept_ast::prelude::{ASTNode, MutProperty, NarrowHierarchicalQuery, Property};
 use kodept_ast::properties::{HasProperty, Name, RequireProperty, SourceSpan};
@@ -11,6 +10,7 @@ use kodept_core::code_point::Span;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::With;
 use kodept_ecs::system::{Query, SystemParam};
+use kodept_frontend::engine::reporter::Reporter;
 use kodept_report::message::{Diagnostic, Severity};
 use kodept_report_macros::IntoMessage;
 use std::collections::HashMap;

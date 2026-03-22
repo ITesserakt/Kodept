@@ -9,7 +9,7 @@ mod source_files;
 mod traits;
 
 pub mod prelude {
-    pub use super::read_code_source::{ReadSource, Source, TryReadCode};
+    pub use super::read_code_source::{ReadSource, TryReadSource};
     pub use super::report::{ExtractReports, Global};
     pub use super::source_files::{CollectedSources, SourceFiles, SourceView};
     pub use super::traits::{Compiler, Interpreter};

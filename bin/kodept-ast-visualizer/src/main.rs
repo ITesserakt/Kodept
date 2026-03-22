@@ -23,13 +23,13 @@ use kodept_ecs::system::{InMut, Res};
 use kodept_frontend::engine::reporter::CompilationFailed;
 use kodept_frontend::engine::utils::{InjectResourcesPhase, Timings};
 use kodept_frontend::engine::{Engine, SubEngine};
+use kodept_frontend::prelude::SourceView;
 use kodept_systems::configs::{Lexer, OutputDirectory};
 use kodept_systems::global::prelude::{EachSubEnginePhase, FinishPhase, LoadAllSourcesPhase};
 use kodept_systems::loader::{Loader, LoadingError};
 use kodept_systems::per_file::prelude::{
     AstNormalizationPhase, BuildAstPhase, ParseSourcePhase, SymbolsPhase, TypeCheckPhase,
 };
-use kodept_systems::source::collection::SourceView;
 use std::io::{Read, stdin};
 
 #[derive(Debug, Parser)]

@@ -11,7 +11,7 @@ kodept-ast = { path = "../../crates/kodept-ast", version = "0.7", features = ["r
 kodept-ast-nodes = { path = "../../crates/kodept-ast-nodes", version = "0.3", features = ["reflection"] }
 kodept-cli = { path = "../../crates/kodept-cli", version = "0.1" }
 kodept-ecs = { path = "../../crates/kodept-ecs", version = "0.1", features = ["debug"] }
-kodept-frontend = { path = "../../crates/kodept-frontend", version = "0.2" }
+kodept-frontend = { path = "../../crates/kodept-frontend", version = "0.3" }
 kodept-systems = { path = "../../crates/kodept-systems", version = "0.1", features = ["reflection"] }
 
 [lints]

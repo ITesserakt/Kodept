@@ -999,11 +999,12 @@ dependencies = [
 
 [[package]]
 name = "kodept-frontend"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "kodept-core",
  "kodept-ecs",
  "kodept-report",
+ "memmap2",
  "tracing",
  "yoke",
 ]
@@ -1103,7 +1104,6 @@ dependencies = [
  "num-bigint",
  "tempfile",
  "tracing",
- "yoke",
 ]
 
 [[package]]

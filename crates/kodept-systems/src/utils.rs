@@ -1,6 +1,6 @@
-use crate::source::collection::Reporter;
 use kodept_ecs::schedule::IntoScheduleConfigs;
 use kodept_ecs::system::{In, IntoSystem, ScheduleSystem, System, SystemInput};
+use kodept_frontend::engine::reporter::Reporter;
 use kodept_report::prelude::IntoMessage;
 use std::borrow::Cow;
 use std::convert::Infallible;

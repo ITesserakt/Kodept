@@ -1,5 +1,4 @@
-use crate::prelude::{Source, TryReadCode};
-use crate::read_code_source::ReadSource;
+use crate::read_code_source::{ReadSource, TryReadSource};
 use kodept_core::Freeze;
 use kodept_core::file_name::FileName;
 use kodept_ecs::component::Component;
@@ -13,30 +12,30 @@ use std::sync::Arc;
 use yoke::Yoke;
 
 #[derive(Debug, Component, Resource)]
-pub struct SourceView<Impl: 'static> {
+pub struct SourceView {
     pub id: Freeze<FileId>,
-    source: Yoke<&'static ReadSource<Impl>, Arc<SourceFiles<Impl>>>,
+    source: Yoke<&'static ReadSource, Arc<SourceFiles>>,
 }
 
 #[derive(Debug, Resource)]
-pub struct CollectedSources<Impl> {
-    pub inner: Arc<SourceFiles<Impl>>,
+pub struct CollectedSources {
+    pub inner: Arc<SourceFiles>,
 }
 
 #[derive(Debug, Default)]
-pub struct SourceFiles<Impl> {
-    contents: HashMap<FileId, ReadSource<Impl>>,
+pub struct SourceFiles {
+    contents: HashMap<FileId, ReadSource>,
 }
 
-impl<Impl> Deref for SourceView<Impl> {
-    type Target = ReadSource<Impl>;
+impl Deref for SourceView {
+    type Target = ReadSource;
 
     fn deref(&self) -> &Self::Target {
         self.source.get()
     }
 }
 
-impl<Impl> Clone for SourceView<Impl> {
+impl Clone for SourceView {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
@@ -45,8 +44,8 @@ impl<Impl> Clone for SourceView<Impl> {
     }
 }
 
-impl<Impl> SourceView<Impl> {
-    pub fn all_files(&self) -> &SourceFiles<Impl> {
+impl SourceView {
+    pub fn all_files(&self) -> &SourceFiles {
         self.source.backing_cart()
     }
 
@@ -55,23 +54,23 @@ impl<Impl> SourceView<Impl> {
     }
 }
 
-impl<Impl: 'static> SourceFiles<Impl> {
+impl SourceFiles {
     pub fn new() -> Self {
         Self {
             contents: HashMap::new(),
         }
     }
 
-    pub fn insert<T>(&mut self, source: T) -> Result<(), Impl::Error>
+    pub fn insert<T>(&mut self, source: T) -> Result<(), T::Error>
     where
-        Impl: TryReadCode<T>,
+        T: TryReadSource,
     {
         let id = FileId::generate();
-        self.contents.insert(id, Impl::try_read(source)?);
+        self.contents.insert(id, source.try_read()?);
         Ok(())
     }
 
-    pub fn collect(self: &Arc<Self>) -> Vec<SourceView<Impl>> {
+    pub fn collect(self: &Arc<Self>) -> Vec<SourceView> {
         self.contents
             .keys()
             .copied()
@@ -83,14 +82,10 @@ impl<Impl: 'static> SourceFiles<Impl> {
     }
 }
 
-impl<'a, Impl> Files<'a> for SourceFiles<Impl>
-where
-    Impl: Source,
-    Impl::Ref<'a>: AsRef<str>,
-{
+impl<'a> Files<'a> for SourceFiles {
     type FileId = FileId;
     type Name = FileName;
-    type Source = Impl::Ref<'a>;
+    type Source = &'a str;
 
     fn name(&'a self, id: Self::FileId) -> Result<Self::Name, Error> {
         match self.contents.get(&id) {
@@ -121,14 +116,10 @@ where
     }
 }
 
-impl<'a, Impl> Files<'a> for SourceView<Impl>
-where
-    Impl: Source,
-    Impl::Ref<'a>: AsRef<str>,
-{
+impl<'a> Files<'a> for SourceView {
     type FileId = ();
     type Name = FileName;
-    type Source = Impl::Ref<'a>;
+    type Source = &'a str;
 
     fn name(&'a self, _: Self::FileId) -> Result<Self::Name, Error> {
         self.source.get().name(())

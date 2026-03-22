@@ -1,5 +1,4 @@
 use crate::engine::reporter::Reporter;
-use crate::read_code_source::SyncSource;
 use kodept_core::either::Either;
 use kodept_core::try_port::Try;
 use kodept_report::prelude::IntoMessage;
@@ -14,7 +13,7 @@ pub struct EitherExtractMarker;
 pub trait ExtractReports<Marker> {
     type Output;
 
-    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output;
+    fn extract_reports(self, sink: &mut Reporter) -> Self::Output;
 }
 
 impl<T> ExtractReports<SingleExtractMarker> for T
@@ -24,7 +23,7 @@ where
     type Output = ();
 
     #[inline]
-    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
+    fn extract_reports(self, sink: &mut Reporter) -> Self::Output {
         sink.report(self);
     }
 }
@@ -36,7 +35,7 @@ where
     type Output = ControlFlow<(), T>;
 
     #[inline]
-    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
+    fn extract_reports(self, sink: &mut Reporter) -> Self::Output {
         match self {
             Ok(x) => Continue(x),
             Err(e) => {
@@ -55,7 +54,7 @@ where
     type Output = ControlFlow<<E::Output as Try>::Residual>;
 
     #[inline]
-    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
+    fn extract_reports(self, sink: &mut Reporter) -> Self::Output {
         self.into_iter().fold(Continue(()), |acc, next| {
             match next.extract_reports(sink).branch() {
                 Continue(()) => acc,
@@ -73,7 +72,7 @@ where
     type Output = Output;
 
     #[inline]
-    fn extract_reports(self, sink: &mut Reporter<impl SyncSource>) -> Self::Output {
+    fn extract_reports(self, sink: &mut Reporter) -> Self::Output {
         match self {
             Either::Left(left) => left.extract_reports(sink),
             Either::Right(right) => right.extract_reports(sink),
