@@ -4,6 +4,7 @@ use derive_more::{Display, Error, From};
 use kodept_frontend::prelude::SourceFiles;
 use kodept_report::message::Severity;
 use kodept_report::prelude::{IntoMessage, ReportMessage};
+use tracing::trace;
 
 pub mod unloaded;
 
@@ -19,6 +20,9 @@ pub fn load_each_source(loader: Loader) -> Result<SourceFiles, SourcesLoadingErr
     for source in unloaded_sources {
         sources.insert(source)?;
     }
+
+    trace!("Loaded source files: {sources:#?}");
+
     Ok(sources)
 }
 

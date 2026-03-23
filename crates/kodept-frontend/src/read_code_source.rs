@@ -3,11 +3,11 @@ use kodept_core::file_name::FileName;
 use kodept_core::structure::span::CodeHolder;
 use kodept_report::files::external::{Error, Files};
 use memmap2::{Advice, Mmap};
+use std::fmt::{Debug, Formatter};
 use std::ops::Range;
 use tracing::warn;
 use yoke::Yoke;
 
-#[derive(Debug)]
 enum SourceBacking {
     /// Explicit storage in memory
     Explicit(String),
@@ -15,11 +15,33 @@ enum SourceBacking {
     ImplicitMMap(Yoke<&'static str, Box<Mmap>>),
 }
 
-#[derive(Debug)]
 pub struct ReadSource {
     source_contents: SourceBacking,
     source_path: FileName,
     line_starts: Vec<usize>,
+}
+
+impl Debug for SourceBacking {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SourceBacking::Explicit(_) => f
+                .debug_struct("SourceBacking::Explicit")
+                .finish_non_exhaustive(),
+            SourceBacking::ImplicitMMap(x) => f
+                .debug_struct("SourceBacking::ImplicitMMap")
+                .field("mmap", x.backing_cart())
+                .finish_non_exhaustive(),
+        }
+    }
+}
+
+impl Debug for ReadSource {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ReadSource")
+            .field("source_contents", &self.source_contents)
+            .field("source_path", &self.source_path)
+            .finish_non_exhaustive()
+    }
 }
 
 impl SourceBacking {
