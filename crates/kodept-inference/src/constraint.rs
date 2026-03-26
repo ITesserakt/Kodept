@@ -12,6 +12,7 @@ use kodept_interning::{InternInto, Interned};
 use smallvec::SmallVec;
 use std::collections::{HashSet, LinkedList};
 use std::fmt::{Debug, Display, Formatter};
+use std::mem::ManuallyDrop;
 
 #[derive(Debug, Error, From)]
 pub enum ConstraintsSolverError {
@@ -99,16 +100,17 @@ impl Extend<Constraint> for Constraints {
 }
 
 impl Constraints {
-    #[inline]
     fn pop_back(&mut self) -> Option<Constraint> {
-        match self.inner.pop_back() {
-            Some(back) if back.is_empty() => None,
-            Some(mut back) => {
-                let result = back.pop();
-                self.inner.push_back(back);
-                result
+        loop {
+            match self.inner.pop_back() {
+                None => return None,
+                Some(back) if back.is_empty() => continue,
+                Some(mut back) => {
+                    let mut result = back.pop();
+                    self.inner.push_back(back);
+                    return result;
+                }
             }
-            None => None,
         }
     }
 
@@ -142,7 +144,7 @@ impl Constraints {
                     Left(s) => {
                         #[allow(unsafe_code)]
                         self.iter_mut().for_each(|it| unsafe {
-                            let constraint = std::ptr::read(it);
+                            let constraint = ManuallyDrop::new(std::ptr::read(it));
                             std::ptr::write(it, constraint.substitute(&s));
                         });
                         s0 = s0 + s;
