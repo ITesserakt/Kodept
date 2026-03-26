@@ -198,7 +198,7 @@ where
     fn par_system_with_input(input: In) -> impl IntoSystem<(), (), ()> {
         let system = IntoSystem::into_system(
             move |mut query: StaticSystemParam<I>,
-                  reporter: crate::source::collection::ParallelReporter,
+                  reporter: kodept_frontend::engine::reporter::ParallelReporter,
                   extras: StaticSystemParam<F>,
                   commands: kodept_ecs::system::ParallelCommands| {
                 let extras = &*extras;
@@ -212,7 +212,7 @@ where
         );
 
         let name = std::any::type_name::<F>();
-        system.with_name(Cow::Borrowed(name))
+        system.with_name(std::borrow::Cow::Borrowed(name))
     }
 }
 
