@@ -11,6 +11,9 @@ pub struct Rhs;
 pub struct Condition;
 pub struct Else;
 
+#[derive(Debug)]
 pub struct Params;
+#[derive(Debug)]
 pub struct NamedParams;
+#[derive(Debug)]
 pub struct ReturnType;

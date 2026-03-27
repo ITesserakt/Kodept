@@ -693,6 +693,13 @@ where
         let value = iter.next()?;
         Some((value.0, value.1))
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match &self.inner {
+            None => (0, Some(0)),
+            Some(inner) => inner.size_hint(),
+        }
+    }
 }
 
 impl<'w, 's, Data, Rel, Id, Filter> FusedIterator for ChildrenMutIter<'w, 's, Data, Rel, Id, Filter>

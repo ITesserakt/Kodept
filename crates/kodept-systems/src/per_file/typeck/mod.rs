@@ -1,11 +1,12 @@
 mod first_part;
 
 use crate::per_file::typeck::first_part::{
-    PartiallyTypechecked, TypeckAnonFunction, TypeckBlock, TypeckCall, TypeckIf, TypeckLink,
-    TypeckLiteral, TypeckTuple, TypeckUserFunction, TypeckValue,
+    FillParamTyStubs, PartiallyTypechecked, TypeckAnonFunction, TypeckBlock, TypeckCall, TypeckIf,
+    TypeckLink, TypeckLiteral, TypeckTuple, TypeckUserFunction, TypeckValue, TypeckVariable,
 };
 use crate::per_file::utils::{IntoNodeSystem, IntoParNodeSystem};
 use kodept_ast::prelude::NodeId;
+use kodept_ast::properties::Name;
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::query::Added;
 use kodept_ecs::schedule::{IntoScheduleConfigs, Schedule, ScheduleLabel};
@@ -13,7 +14,10 @@ use kodept_ecs::system::{Commands, Query};
 use kodept_ecs::world::World;
 use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
-use kodept_frontend::engine::reporter::CompilationFailed;
+use kodept_frontend::engine::reporter::{CompilationFailed, Reporter};
+use kodept_report::message::Diagnostic;
+use kodept_report::prelude::Severity;
+use std::convert::Infallible;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, ScheduleLabel)]
 struct PartialsPropagationSchedule;
@@ -29,8 +33,16 @@ define_phase! {
 fn build(engine: &mut PhaseEngine<TypeCheckPhase>) {
     engine.add_systems(TypeckLiteral::par_system().before(partial_propagation_system));
     engine.add_systems(TypeckValue::par_system().before(partial_propagation_system));
+    engine.add_systems(FillParamTyStubs::par_system().before(partial_propagation_system));
 
-    engine.add_systems((partial_propagation_system, remove_empty_partials).chain());
+    engine.add_systems(
+        (
+            partial_propagation_system,
+            remove_empty_partials,
+            log_partials,
+        )
+            .chain(),
+    );
 }
 
 fn partial_propagation_system(world: &mut World) {
@@ -43,6 +55,7 @@ fn partial_propagation_system(world: &mut World) {
         TypeckLink::system(),
         TypeckAnonFunction::system(),
         TypeckUserFunction::system(),
+        TypeckVariable::system(),
     ));
     world.add_schedule(schedule);
     let mut any_partial_added_state = world.query_filtered::<(), Added<PartiallyTypechecked>>();
@@ -67,5 +80,20 @@ fn remove_empty_partials(partials: Query<(NodeId, &PartiallyTypechecked)>, mut c
                 .entity(id.entity())
                 .remove::<PartiallyTypechecked>();
         }
+    }
+}
+
+fn log_partials(
+    partials: Query<(Option<&Name>, &mut PartiallyTypechecked)>,
+    mut reporter: Reporter,
+) {
+    for (name, mut partial) in partials {
+        let partial = partial.take();
+        let result = partial.resolve(|_| Ok::<_, Infallible>(None));
+        reporter.report_ad_hoc(|| {
+            Diagnostic::new(Severity::Note)
+                .with_message(format!("{result:?}"))
+                .with_note(format!("{name:?}"))
+        });
     }
 }
