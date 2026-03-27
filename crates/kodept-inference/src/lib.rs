@@ -6,6 +6,7 @@ pub mod algorithm_u;
 pub mod assumption;
 pub mod constraint;
 // mod process;
+pub mod engine;
 pub mod process;
 pub mod substitution;
 pub mod traits;
@@ -15,45 +16,35 @@ pub mod r#type;
 mod utils {
     use std::fmt::{Display, Formatter};
 
-    pub struct JoinedDisplay<'a, T>(T, &'a str);
+    pub struct JoinedDisplay<'a, T>(T, &'a str, &'a str);
 
-    impl<'a, T> JoinedDisplay<'static, T> {
+    impl<'a, T> JoinedDisplay<'a, T> {
         pub const fn enumerate(iter: T) -> Self {
-            Self(iter, ", ")
+            Self(iter, ", ", "")
         }
 
-        pub fn join(self) -> String
-        where
-            T: Iterator<Item: Display>,
-        {
-            use std::fmt::Write;
+        pub const fn new(iter: T, separator: &'a str) -> Self {
+            Self(iter, separator, "")
+        }
 
-            let mut result = String::new();
-            let mut first = true;
-            for item in self.0 {
-                if first {
-                    first = false;
-                    _ = write!(result, "{item}");
-                } else {
-                    _ = write!(result, "{}{item}", self.1)
-                }
-            }
-            result
+        pub const fn with_prefix(mut self, prefix: &'a str) -> Self {
+            self.2 = prefix;
+            self
         }
     }
 
-    impl<'a, 'b, T> Display for JoinedDisplay<'a, &'b T>
+    impl<'a, 'b, T> Display for JoinedDisplay<'a, T>
     where
-        &'b T: IntoIterator<Item: Display>,
+        T: IntoIterator<Item: Display> + Clone,
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             let mut first = true;
-            for item in self.0.into_iter() {
+            for item in self.0.clone().into_iter() {
                 if first {
                     first = false;
-                    write!(f, "{item}")?;
+                    write!(f, "{}{item}", self.2)?;
                 } else {
-                    write!(f, "{}{item}", self.1)?;
+                    write!(f, "{}{}{item}", self.1, self.2)?;
                 }
             }
             Ok(())

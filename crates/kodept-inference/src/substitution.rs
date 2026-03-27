@@ -100,17 +100,29 @@ impl Add<Substitutions> for &Substitutions {
 
 impl Display for Substitutions {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            JoinedDisplay::enumerate(self.0.iter().map(|it| format!("{} := {}", it.0, it.1)))
-                .join()
-        )
+        struct Helper(TVar, Interned<MonomorphicType>);
+
+        impl Display for Helper {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{} := {}", self.0, self.1)
+            }
+        }
+
+        let iter = self.0.iter().map(|it| Helper(*it.0, *it.1));
+        if f.alternate() {
+            write!(
+                f,
+                "[\n{}\n]",
+                JoinedDisplay::new(iter, ",\n").with_prefix("\t")
+            )
+        } else {
+            write!(f, "[{}]", JoinedDisplay::enumerate(iter))
+        }
     }
 }
 
 impl Debug for Substitutions {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self}")
+        Display::fmt(self, f)
     }
 }

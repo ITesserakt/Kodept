@@ -215,7 +215,7 @@ mod ctors {
 
         pub fn fun<T: InternInto<MonomorphicType>>(
             head: impl InternInto<MonomorphicType>,
-            tail: impl IntoIterator<Item = T, IntoIter: DoubleEndedIterator<Item = T>>,
+            tail: impl IntoIterator<IntoIter: DoubleEndedIterator<Item = T>>,
             output: MonomorphicType,
         ) -> MonomorphicType {
             std::iter::once(head.intern_into())
@@ -379,6 +379,15 @@ impl PolymorphicType {
     }
 }
 
+impl From<PrimitiveType> for PolymorphicType {
+    fn from(value: PrimitiveType) -> Self {
+        Self {
+            binding_type: value.intern_into(),
+            bindings: Default::default(),
+        }
+    }
+}
+
 impl BitAnd<Substitutions> for PolymorphicType {
     type Output = PolymorphicType;
 
@@ -505,7 +514,7 @@ impl Display for Bound<&MonomorphicType> {
             MonomorphicType::Tuple(vec) => write!(
                 f,
                 "({})",
-                JoinedDisplay::enumerate(vec.iter().map(|it| Bound(it.0))).join()
+                JoinedDisplay::enumerate(vec.iter().map(|it| Bound(it.0)))
             ),
             MonomorphicType::Pointer(t) => write!(f, "*{}", Bound(t.0)),
             MonomorphicType::StaticArray(n, t) => write!(f, "{{{}}}[{}]", Bound(t.0), n),
@@ -558,7 +567,7 @@ impl Display for PolymorphicType {
         write!(
             f,
             "∀{} => {}",
-            JoinedDisplay::enumerate((0..vars_count).map(|it| Bound(TVar { index: it }))).join(),
+            JoinedDisplay::enumerate((0..vars_count).map(|it| Bound(TVar { index: it }))),
             Bound(&binding_type)
         )
     }

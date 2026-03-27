@@ -161,7 +161,6 @@ impl<Name: Display> Display for AssumptionSet<Name> {
                         "{key} :: [{}]",
                         JoinedDisplay::enumerate(value)
                     )))
-                    .join()
                 )
             }
         }
@@ -181,7 +180,6 @@ impl<Name: Debug> Debug for AssumptionSet<Name> {
                         "{key:?} :: [{}]",
                         JoinedDisplay::enumerate(value)
                     )))
-                    .join()
                 )
             }
         }

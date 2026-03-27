@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::sync::Arc;
 
 pub(crate) trait Substitutable {
     type Output;
@@ -99,7 +100,7 @@ impl Substitutable for Constraint {
             },
             ImplicitInstance { t1, ctx, t2 } => ImplicitInstance {
                 t1: t1.substitute(subst),
-                ctx: ctx.substitute(subst),
+                ctx: Arc::new(ctx.substitute(subst)),
                 t2: t2.substitute(subst),
             },
         }

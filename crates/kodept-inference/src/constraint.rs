@@ -1,6 +1,6 @@
 use crate::algorithm_u::AlgorithmUError;
 use crate::constraint::Constraint::Eq;
-use crate::constraint::ConstraintsSolverError::{AlgorithmU, Ambiguous};
+use crate::constraint::ConstraintsSolverError::{AlgorithmU, Ambiguous, Cycle};
 use crate::constraint::Either::{Left, Right};
 use crate::substitution::Substitutions;
 use crate::traits::{ActiveTVars, FreeTypeVars, Substitutable};
@@ -13,10 +13,12 @@ use smallvec::SmallVec;
 use std::collections::{HashSet, LinkedList};
 use std::fmt::{Debug, Display, Formatter};
 use std::mem::ManuallyDrop;
+use std::sync::Arc;
 
 #[derive(Debug, Error, From)]
 pub enum ConstraintsSolverError {
     AlgorithmU(AlgorithmUError),
+    Cycle,
     #[from(ignore)]
     Ambiguous(#[error(not(source))] Vec<Constraint>),
 }
@@ -52,7 +54,7 @@ pub enum Constraint {
     /// t1 should be an instance of generalize(t2, ctx)
     ImplicitInstance {
         t1: Interned<MonomorphicType>,
-        ctx: HashSet<TVar>,
+        ctx: Arc<HashSet<TVar>>,
         t2: Interned<MonomorphicType>,
     },
 }
@@ -61,6 +63,7 @@ impl Display for ConstraintsSolverError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             AlgorithmU(x) => write!(f, "{x}")?,
+            Cycle => write!(f, "Infinite cycle detected")?,
             Ambiguous(x) => {
                 for item in x {
                     match item {
@@ -77,7 +80,7 @@ impl Display for ConstraintsSolverError {
                             write!(
                                 f,
                                 "Cannot match expected type `{t1}` with generalization of type `{t2}` in context {{{}}}",
-                                JoinedDisplay::enumerate(ctx)
+                                JoinedDisplay::enumerate(&**ctx)
                             )?;
                         }
                     }
@@ -106,7 +109,7 @@ impl Constraints {
                 None => return None,
                 Some(back) if back.is_empty() => continue,
                 Some(mut back) => {
-                    let mut result = back.pop();
+                    let result = back.pop();
                     self.inner.push_back(back);
                     return result;
                 }
@@ -135,8 +138,13 @@ impl Constraints {
         }
     }
 
+    fn len(&self) -> usize {
+        self.inner.iter().map(|it| it.len()).sum()
+    }
+
     pub fn solve(mut self) -> Result<Substitutions, ConstraintsSolverError> {
         let mut s0 = Substitutions::empty();
+        let mut constraints_count = self.len();
 
         while let Some(c) = self.pop_back() {
             if c.solvable(self.iter()) {
@@ -151,8 +159,13 @@ impl Constraints {
                     }
                     Right(c) => self.push_front(c),
                 }
+                constraints_count = self.len();
             } else {
-                self.push_front(c)
+                self.push_front(c);
+                constraints_count -= 1;
+            }
+            if constraints_count == 0 && self.len() != 0 {
+                return Err(Cycle);
             }
         }
 
@@ -232,7 +245,7 @@ impl Display for Constraint {
             Eq(x) => write!(f, "{x}"),
             ExplicitInstance { t, s } => write!(f, "{t} ≼ {s}"),
             ImplicitInstance { t1, ctx, t2 } => {
-                write!(f, "{t1} ≤{{{}}} {t2}", JoinedDisplay::enumerate(ctx))
+                write!(f, "{t1} ≤{{{}}} {t2}", JoinedDisplay::enumerate(&**ctx))
             }
         }
     }
@@ -261,7 +274,7 @@ pub fn implicit_cst(
 ) -> Constraint {
     ImplicitInstance {
         t1: t1.intern_into(),
-        ctx: ctx.into(),
+        ctx: Arc::new(ctx.into()),
         t2: t2.intern_into(),
     }
 }
