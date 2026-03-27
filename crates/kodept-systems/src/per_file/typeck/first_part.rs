@@ -511,7 +511,7 @@ impl IterableSystem for TypeckAnonFunction<'_, '_> {
                 let tv = stub.0;
                 let param_assumptions = body_ty
                     .assumptions
-                    .resolve_take((param_id.cast(), SymbolKind::Parameter));
+                    .resolve_take(&(param_id.cast(), SymbolKind::Parameter));
                 for assumption in param_assumptions.into_iter() {
                     body_ty.constraints.push(eq_cst(assumption.0, tv));
                 }
@@ -583,7 +583,7 @@ impl IterableSystem for TypeckUserFunction<'_, '_> {
                 let tv = stub.0;
                 let param_assumptions = block_ty
                     .assumptions
-                    .resolve_take((param_id.cast(), SymbolKind::Parameter));
+                    .resolve_take(&(param_id.cast(), SymbolKind::Parameter));
                 for assumption in param_assumptions.into_iter() {
                     block_ty.constraints.push(eq_cst(assumption.0, tv));
                 }
@@ -718,7 +718,7 @@ impl IterableSystem for TypeckVariable<'_, '_> {
 
         let tys = expr_partial
             .assumptions
-            .resolve_take((modification.id().cast(), SymbolKind::Variable));
+            .resolve_take(&(modification.id().cast(), SymbolKind::Variable));
         let im_cs = tys
             .into_iter()
             .map(|it| implicit_cst(it.0, monomorphic_ctx.clone(), expr_partial.current_type.0));

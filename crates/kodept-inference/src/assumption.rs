@@ -93,21 +93,24 @@ where
 }
 
 impl<Name> AssumptionSet<Name> {
-    pub fn resolve_take(&mut self, key: Name) -> Cow<'_, [Interned<MonomorphicType>]>
+    pub fn resolve_take<'a>(
+        &'a mut self,
+        key: &Name,
+    ) -> impl IntoIterator<Item = Interned<MonomorphicType>> + use<'a, Name>
     where
         Name: Eq + Hash,
     {
         match &mut self.0 {
-            Empty => Cow::Borrowed(&[]),
-            Single(k, v) if k == &key => {
+            Empty => Vec::new(),
+            Single(k, v) if k == key => {
                 let result = std::mem::replace(v, vec![]);
                 self.0 = Empty;
-                Cow::Owned(result)
+                result
             }
-            Single(_, _) => Cow::Borrowed(&[]),
-            Map(x) => match x.remove(&key) {
-                Some(v) => Cow::Owned(v),
-                None => Cow::Borrowed(&[]),
+            Single(_, _) => Vec::new(),
+            Map(x) => match x.remove(key) {
+                Some(v) => v,
+                None => Vec::new(),
             },
         }
     }

@@ -35,14 +35,14 @@ pub enum LangItem<'a, Name> {
     /// Pass through
     Forward(PartialInfer<Name>),
     Lambda {
-        parameters: Box<dyn DoubleEndedIterator<Item = Parameter<Name>> + 'a>,
+        parameters: Box<dyn DoubleEndedIterator<Item = Parameter<&'a Name>> + 'a>,
         body: PartialInfer<Name>,
     },
     VariableRec {
         monomorphic_context: HashSet<TVar>,
         body: PartialInfer<Name>,
         bound: Option<MonomorphicType>,
-        name: Name,
+        name: &'a Name,
     },
     Variable {
         monomorphic_context: HashSet<TVar>,
@@ -170,7 +170,7 @@ pub trait TypeckContext<Name> {
                     .constraints
                     .extend(variable_assumptions.into_iter().map(|it| {
                         Constraint::ImplicitInstance {
-                            t1: *it,
+                            t1: it,
                             ctx: monomorphic_context.clone(),
                             t2: body_ty,
                         }
@@ -355,14 +355,14 @@ mod tests {
                 ctx: Arc<HashSet<TVar>>,
             ) {
                 for (var_name, var_type) in variables {
-                    let assumptions = item_partial.assumptions.resolve_take(*var_name);
+                    let assumptions = item_partial.assumptions.resolve_take(var_name);
                     item_partial
                         .constraints
                         .extend(
                             assumptions
                                 .into_iter()
                                 .map(|it| Constraint::ImplicitInstance {
-                                    t1: *it,
+                                    t1: it,
                                     ctx: ctx.clone(),
                                     t2: *var_type,
                                 }),
@@ -445,7 +445,7 @@ mod tests {
                         parameters: Box::new(params.iter().zip(param_tvs.clone()).map(|it| {
                             Parameter {
                                 bound: it.0.1.clone(),
-                                name: it.0.0,
+                                name: &it.0.0,
                                 tv: it.1,
                             }
                         })),
@@ -475,7 +475,7 @@ mod tests {
                     monomorphic_context: lambda_params.clone(),
                     body: body.typeck_step(lambda_params, context),
                     bound: bound.clone(),
-                    name: *name,
+                    name,
                 },
             };
             context.eval(item)
