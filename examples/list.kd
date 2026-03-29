@@ -1,5 +1,5 @@
 module List =>
 
 struct Opaque;
-struct NonEmptylist(head: Opaque, tail: NonEmptyList)
+struct NonEmptyList(head: Opaque, tail: List::NonEmptyList)
 

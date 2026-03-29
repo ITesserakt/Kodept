@@ -2,6 +2,8 @@ module Main =>
 
 fun foo {
     val a = 1
-    fun bar => a
-    fun baz => bar
+    /// functions cannot capture local context
+    // fun bar => a
+    /// but closures can
+    val bar_ = [] => a
 }
