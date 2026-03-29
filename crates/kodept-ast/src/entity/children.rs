@@ -7,6 +7,7 @@ use derive_more::{Display, Error, From};
 use kodept_ecs::component::Mutable;
 use kodept_ecs::entity::{Entity, EntitySetIterator};
 use kodept_ecs::exported::bevy_ecs;
+use kodept_ecs::exported::bevy_ecs::query::QueryIter;
 use kodept_ecs::query::{
     QueryData, QueryEntityError, QueryFilter, QueryItem, QueryManyIter, QueryManyUniqueIter,
     ROQueryItem, ReadOnlyQueryData,
@@ -441,16 +442,13 @@ pub enum OptionChildError {
 }
 
 #[derive(From)]
-pub enum HierarchicalError<T: TryFromIter> {
+pub enum HierarchicalError<E> {
     #[from(ignore)]
-    WrongContainerSize(T::Error),
+    WrongContainerSize(E),
     CannotQuery(QueryEntityError),
 }
 
-impl<T: TryFromIter> Debug for HierarchicalError<T>
-where
-    T::Error: Debug,
-{
+impl<E: Debug> Debug for HierarchicalError<E> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             HierarchicalError::WrongContainerSize(x) => f
@@ -465,10 +463,7 @@ where
     }
 }
 
-impl<T: TryFromIter> Display for HierarchicalError<T>
-where
-    T::Error: Display,
-{
+impl<E: Display> Display for HierarchicalError<E> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             HierarchicalError::WrongContainerSize(x) => {
@@ -481,12 +476,60 @@ where
     }
 }
 
-impl<T: TryFromIter> std::error::Error for HierarchicalError<T> {
+impl<E: std::error::Error> std::error::Error for HierarchicalError<E> {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             HierarchicalError::WrongContainerSize(_) => None,
             HierarchicalError::CannotQuery(x) => Some(x),
         }
+    }
+}
+
+pub struct LayerFetch<'w, 's, Parent, Tag, ParentData, ChildData, Filter>
+where
+    Parent: Family<Tag>,
+    Parent: ASTNode,
+    Tag: 'static,
+    Filter: QueryFilter + 'static,
+    ParentData: NodeQueryData<Parent> + 'static,
+    ChildData: QueryData + 'static,
+{
+    parent_iter: QueryIter<
+        'w,
+        's,
+        (
+            NodeId<Parent>,
+            ParentData,
+            Option<&'static Target<Rel<Parent, Tag>>>,
+        ),
+        Filter,
+    >,
+    children: Query<'w, 's, (NodeId, ChildData, &'static Rel<Parent, Tag>)>,
+}
+
+impl<'w, 's, Parent, Tag, ParentData, ChildData, Filter>
+    LayerFetch<'w, 's, Parent, Tag, ParentData, ChildData, Filter>
+where
+    Parent: Family<Tag>,
+    Parent: ASTNode,
+    Tag: 'static,
+    Filter: QueryFilter + 'static,
+    ParentData: NodeQueryData<Parent> + 'static,
+    ChildData: QueryData + 'static,
+{
+    pub fn fetch_next(
+        &mut self,
+    ) -> Option<(
+        NodeId<Parent>,
+        QueryItem<'_, 's, ParentData>,
+        ChildrenFetch<'_, 's, ChildData, Parent, Tag, NodeId, ()>,
+    )> {
+        let (parent_id, parent_data, children) = self.parent_iter.next()?;
+        let children_fetch = ChildrenFetch {
+            collection: children,
+            query: self.children.reborrow()
+        };
+        Some((parent_id, ParentData::shrink(parent_data), children_fetch))
     }
 }
 
@@ -500,7 +543,6 @@ where
     ParentData: NodeQueryData<T> + 'static,
     ChildData: QueryData + 'static,
 {
-    #[allow(unsafe_code)]
     pub fn iter_by_layers(
         &mut self,
     ) -> impl Iterator<
@@ -522,6 +564,15 @@ where
                     },
                 )
             })
+    }
+
+    pub fn iter_mut_by_layers(
+        &mut self,
+    ) -> LayerFetch<'_, 's, T, Tag, ParentData, ChildData, Filter> {
+        LayerFetch {
+            parent_iter: self.parent_query.iter_mut(),
+            children: self.children_query.reborrow()
+        }
     }
 
     pub fn par_iter_by_layers(
@@ -554,10 +605,7 @@ where
     ) -> (
         QueryItem<'_, 's, ParentData>,
         ChildrenFetch<'_, 's, ChildData, T, Tag>,
-    )
-    where
-        T::Arity: TryFromIter,
-    {
+    ) {
         self.try_get_down_mut(id).unwrap()
     }
 
@@ -569,11 +617,8 @@ where
             QueryItem<'_, 's, ParentData>,
             ChildrenFetch<'_, 's, ChildData, T, Tag>,
         ),
-        HierarchicalError<T::Arity>,
-    >
-    where
-        T::Arity: TryFromIter,
-    {
+        HierarchicalError<Infallible>,
+    > {
         let (_, parent, children) = self.parent_query.get_mut(id.entity())?;
         Ok((
             parent,
@@ -591,10 +636,7 @@ where
     ) -> (
         ROQueryItem<'_, 's, ParentData>,
         ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
-    )
-    where
-        T::Arity: TryFromIter,
-    {
+    ) {
         self.try_get_down(id)
             .expect("Cannot collect children into container")
     }
@@ -621,11 +663,8 @@ where
             ROQueryItem<'_, 's, ParentData>,
             ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag>,
         ),
-        HierarchicalError<T::Arity>,
-    >
-    where
-        T::Arity: TryFromIter,
-    {
+        HierarchicalError<Infallible>,
+    > {
         let (_, parent, children) = self.parent_query.get(id.entity())?;
         Ok((
             parent,
@@ -775,6 +814,7 @@ where
     }
 
     #[inline]
+    #[track_caller]
     pub fn collect(self) -> Container<T::Arity, (QueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>)>
     where
         T::Arity: TryFromIter,
@@ -786,7 +826,7 @@ where
         self,
     ) -> Result<
         Container<T::Arity, (QueryItem<'w, 's, Id>, QueryItem<'w, 's, Data>)>,
-        HierarchicalError<T::Arity>,
+        HierarchicalError<<T::Arity as TryFromIter>::Error>,
     >
     where
         T::Arity: TryFromIter,
@@ -885,10 +925,7 @@ where
     ) -> (
         ROQueryItem<'_, 's, ParentData>,
         ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
-    )
-    where
-        T::Arity: TryFromIter,
-    {
+    ) {
         self.try_get_down(id)
             .expect("Cannot collect children into container")
     }
@@ -897,10 +934,7 @@ where
     pub fn get_children(
         &self,
         id: NodeId<T>,
-    ) -> ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>
-    where
-        T::Arity: TryFromIter,
-    {
+    ) -> ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>> {
         self.get_down(id).1
     }
 
@@ -908,10 +942,7 @@ where
     pub fn get_children_mut(
         &mut self,
         id: NodeId<T>,
-    ) -> ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>>
-    where
-        T::Arity: TryFromIter,
-    {
+    ) -> ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>> {
         self.get_down_mut(id).1
     }
 
@@ -923,11 +954,8 @@ where
             ROQueryItem<'_, 's, ParentData>,
             ChildrenFetch<'_, 's, ChildData::ReadOnly, T, Tag, NodeId<U>>,
         ),
-        HierarchicalError<T::Arity>,
-    >
-    where
-        T::Arity: TryFromIter,
-    {
+        HierarchicalError<Infallible>,
+    > {
         let (_, parent, children) = self.parent_query.get(id.entity())?;
         Ok((
             parent,
@@ -944,10 +972,7 @@ where
     ) -> (
         QueryItem<'_, 's, ParentData>,
         ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>>,
-    )
-    where
-        T::Arity: TryFromIter,
-    {
+    ) {
         self.try_get_down_mut(id).unwrap()
     }
 
@@ -959,11 +984,8 @@ where
             QueryItem<'_, 's, ParentData>,
             ChildrenFetch<'_, 's, ChildData, T, Tag, NodeId<U>>,
         ),
-        HierarchicalError<T::Arity>,
-    >
-    where
-        T::Arity: TryFromIter,
-    {
+        HierarchicalError<Infallible>,
+    > {
         let (_, parent, children) = self.parent_query.get_mut(id.entity())?;
         Ok((
             parent,
