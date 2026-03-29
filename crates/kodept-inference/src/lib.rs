@@ -14,7 +14,7 @@ pub mod r#type;
 
 #[allow(unreachable_pub)]
 mod utils {
-    use std::fmt::{Display, Formatter};
+    use std::fmt::{Debug, Display, Formatter};
 
     pub struct JoinedDisplay<'a, T>(T, &'a str, &'a str);
 
@@ -33,7 +33,7 @@ mod utils {
         }
     }
 
-    impl<'a, 'b, T> Display for JoinedDisplay<'a, T>
+    impl<'a, T> Display for JoinedDisplay<'a, T>
     where
         T: IntoIterator<Item: Display> + Clone,
     {
@@ -45,6 +45,24 @@ mod utils {
                     write!(f, "{}{item}", self.2)?;
                 } else {
                     write!(f, "{}{}{item}", self.1, self.2)?;
+                }
+            }
+            Ok(())
+        }
+    }
+    
+    impl<'a, T> Debug for JoinedDisplay<'a, T>
+    where 
+        T: IntoIterator<Item: Debug> + Clone,
+    {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            let mut first = true;
+            for item in self.0.clone().into_iter() {
+                if first {
+                    first = false;
+                    write!(f, "{}{item:?}", self.2)?;
+                } else {
+                    write!(f, "{}{}{item:?}", self.1, self.2)?;
                 }
             }
             Ok(())

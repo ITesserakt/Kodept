@@ -12,11 +12,16 @@ pub struct Branch<Name> {
     pub body: PartialInfer<Name>,
 }
 
-#[derive(Debug)]
-pub struct Parameter<Name> {
-    tv: TVar,
-    bound: Option<MonomorphicType>,
-    name: Name,
+pub struct Parameter<'a, Name> {
+    pub tv: TVar,
+    pub bound: Annotation<'a, Name>,
+    pub name: Name,
+}
+
+pub enum Annotation<'a, Name> {
+    None,
+    Single(Name),
+    Tuple(Box<dyn Iterator<Item = Annotation<'a, Name>> + 'a>),
 }
 
 pub enum LangItem<'a, Name> {
@@ -35,26 +40,50 @@ pub enum LangItem<'a, Name> {
     /// Pass through
     Forward(PartialInfer<Name>),
     Lambda {
-        parameters: Box<dyn DoubleEndedIterator<Item = Parameter<&'a Name>> + 'a>,
+        parameters: Box<dyn DoubleEndedIterator<Item = Parameter<'a, Name>> + 'a>,
         body: PartialInfer<Name>,
     },
     VariableRec {
         monomorphic_context: HashSet<TVar>,
         body: PartialInfer<Name>,
-        bound: Option<MonomorphicType>,
+        bound: Annotation<'a, Name>,
         name: &'a Name,
     },
     Variable {
-        monomorphic_context: HashSet<TVar>,
         body: PartialInfer<Name>,
-        bound: Option<MonomorphicType>,
+        bound: Annotation<'a, Name>,
     },
 }
 
 #[derive(Debug, Default)]
 pub struct DefaultTypeckContext;
 
-pub trait TypeckContext<Name> {
+impl<Name> Annotation<'_, Name> {
+    fn apply_to_container(
+        self,
+        associate: impl InternInto<MonomorphicType>,
+        context: &impl TypeckContext<Name>,
+        partial: &mut PartialInfer<Name>,
+    ) where
+        Name: Hash + Eq,
+    {
+        match self {
+            Annotation::None => {}
+            Annotation::Single(x) => partial.assumptions.push_single(x, associate),
+            Annotation::Tuple(items) => {
+                let tuple_ty = items.into_iter().map(|it| {
+                    let tv = context.allocate_type_var();
+                    it.apply_to_container(tv, context, partial);
+                    tv
+                });
+                let tuple_ty = MonomorphicType::tuple(tuple_ty);
+                partial.constraints.push(eq_cst(tuple_ty, associate));
+            }
+        }
+    }
+}
+
+pub trait TypeckContext<Name>: Sized {
     fn allocate_type_var(&self) -> TVar {
         TVar::new()
     }
@@ -130,13 +159,11 @@ pub trait TypeckContext<Name> {
             } => {
                 let apply_parameter = |parameter, container: &mut PartialInfer<Name>| {
                     let Parameter { tv, bound, name } = parameter;
-                    let parameter_assumptions = container.assumptions.resolve_take(name);
+                    let parameter_assumptions = container.assumptions.resolve_take(&name);
                     container
                         .constraints
                         .extend(parameter_assumptions.into_iter().map(|it| eq_cst(it.0, tv)));
-                    container
-                        .constraints
-                        .extend(bound.into_iter().map(|it| eq_cst(it, tv)));
+                    bound.apply_to_container(tv, self, container);
                     tv
                 };
 
@@ -175,31 +202,13 @@ pub trait TypeckContext<Name> {
                             t2: body_ty,
                         }
                     }));
-                container.constraints.extend(bound.into_iter().map(|it| {
-                    Constraint::ImplicitInstance {
-                        t1: it.intern_into(),
-                        ctx: monomorphic_context.clone(),
-                        t2: body_ty,
-                    }
-                }));
+                bound.apply_to_container(body_ty.0, self, &mut container);
 
                 container.with_type(body_ty.0)
             }
-            LangItem::Variable {
-                monomorphic_context,
-                body,
-                bound,
-            } => {
+            LangItem::Variable { body, bound } => {
                 let mut container = body;
-                let monomorphic_context = Arc::new(monomorphic_context);
-
-                container.constraints.extend(bound.into_iter().map(|it| {
-                    Constraint::ImplicitInstance {
-                        t1: it.intern_into(),
-                        ctx: monomorphic_context.clone(),
-                        t2: container.current_type,
-                    }
-                }));
+                bound.apply_to_container(container.current_type.0, self, &mut container);
 
                 container
             }
@@ -211,8 +220,10 @@ impl<Name> TypeckContext<Name> for DefaultTypeckContext {}
 
 #[cfg(test)]
 mod tests {
-    use crate::constraint::{Constraint, eq_cst};
-    use crate::engine::{Branch, DefaultTypeckContext, LangItem, Parameter, TypeckContext};
+    use crate::constraint::{Constraint, eq_cst, implicit_cst};
+    use crate::engine::{
+        Annotation, Branch, DefaultTypeckContext, LangItem, Parameter, TypeckContext,
+    };
     use crate::process::{InferError, PartialInfer};
     use crate::r#type::{MonomorphicType, PolymorphicType, PrimitiveType, TVar};
     use kodept_interning::Interned;
@@ -239,12 +250,11 @@ mod tests {
         },
         Return(Box<Expr>),
         Lambda {
-            params: Vec<(&'static str, Option<MonomorphicType>)>,
+            params: Vec<&'static str>,
             body: Box<Expr>,
         },
         Variable {
             name: &'static str,
-            bound: Option<MonomorphicType>,
             body: Box<Expr>,
             recursive: bool,
         },
@@ -290,7 +300,6 @@ mod tests {
         fn var(&mut self, name: &'static str, body: Expr) {
             self.0.push(Expr::Variable {
                 name,
-                bound: None,
                 body: Box::new(body),
                 recursive: false,
             })
@@ -299,7 +308,6 @@ mod tests {
         fn rec(&mut self, name: &'static str, body: Expr) {
             self.0.push(Expr::Variable {
                 name,
-                bound: None,
                 body: Box::new(body),
                 recursive: true,
             })
@@ -356,17 +364,11 @@ mod tests {
             ) {
                 for (var_name, var_type) in variables {
                     let assumptions = item_partial.assumptions.resolve_take(var_name);
-                    item_partial
-                        .constraints
-                        .extend(
-                            assumptions
-                                .into_iter()
-                                .map(|it| Constraint::ImplicitInstance {
-                                    t1: it,
-                                    ctx: ctx.clone(),
-                                    t2: *var_type,
-                                }),
-                        );
+                    item_partial.constraints.extend(
+                        assumptions
+                            .into_iter()
+                            .map(|it| implicit_cst(it.0, &ctx, var_type.0)),
+                    );
                 }
             }
 
@@ -444,8 +446,8 @@ mod tests {
                     let result = LangItem::Lambda {
                         parameters: Box::new(params.iter().zip(param_tvs.clone()).map(|it| {
                             Parameter {
-                                bound: it.0.1.clone(),
-                                name: &it.0.0,
+                                bound: Annotation::None,
+                                name: *it.0,
                                 tv: it.1,
                             }
                         })),
@@ -457,24 +459,21 @@ mod tests {
                     result
                 }
                 Expr::Variable {
-                    bound,
                     body,
                     recursive: false,
                     ..
                 } => LangItem::Variable {
-                    bound: bound.clone(),
-                    monomorphic_context: lambda_params.clone(),
+                    bound: Annotation::None,
                     body: body.typeck_step(lambda_params, context),
                 },
                 Expr::Variable {
-                    bound,
                     body,
                     name,
                     recursive: true,
                 } => LangItem::VariableRec {
                     monomorphic_context: lambda_params.clone(),
                     body: body.typeck_step(lambda_params, context),
-                    bound: bound.clone(),
+                    bound: Annotation::None,
                     name,
                 },
             };
@@ -500,7 +499,7 @@ mod tests {
 
     fn lambda(params: impl IntoIterator<Item = &'static str>, body: Expr) -> Expr {
         Expr::Lambda {
-            params: params.into_iter().map(|it| (it, None)).collect(),
+            params: Vec::from_iter(params),
             body: Box::new(body),
         }
     }

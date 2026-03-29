@@ -11,7 +11,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-#[derive(Debug, Display, Error, From)]
+#[derive(Debug, Display, Error, From, Clone)]
 pub enum InferError<Name, E> {
     #[from(ignore)]
     External(E),

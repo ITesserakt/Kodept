@@ -8,13 +8,13 @@ use derive_more::with_trait::{Display, Error, From};
 use kodept_interning::{GlobalInterner, Interned};
 use std::fmt::Formatter;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub struct UnificationMismatch(
     pub Box<[Interned<MonomorphicType>]>,
     pub Box<[Interned<MonomorphicType>]>,
 );
 
-#[derive(Debug, Display, Error, From)]
+#[derive(Debug, Display, Error, From, Clone)]
 pub enum AlgorithmUError {
     #[display("Cannot unify types: {_0} with {_1}")]
     #[from(ignore)]

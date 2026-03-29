@@ -15,7 +15,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::mem::ManuallyDrop;
 use std::sync::Arc;
 
-#[derive(Debug, Error, From)]
+#[derive(Debug, Error, From, Clone)]
 pub enum ConstraintsSolverError {
     AlgorithmU(AlgorithmUError),
     Cycle,
@@ -267,14 +267,37 @@ pub fn eq_cst(
     })
 }
 
-pub fn implicit_cst(
+trait IntoMonomorphicContext<const MARKER: bool> {
+    fn into(self) -> Arc<HashSet<TVar>>;
+}
+
+impl<T: Into<HashSet<TVar>>> IntoMonomorphicContext<false> for T {
+    fn into(self) -> Arc<HashSet<TVar>> {
+        Arc::new(self.into())
+    }
+}
+
+impl IntoMonomorphicContext<true> for Arc<HashSet<TVar>> {
+    fn into(self) -> Arc<HashSet<TVar>> {
+        self
+    }
+}
+
+impl IntoMonomorphicContext<true> for &Arc<HashSet<TVar>> {
+    fn into(self) -> Arc<HashSet<TVar>> {
+        self.clone()
+    }
+}
+
+#[allow(private_bounds)]
+pub fn implicit_cst<const MARKER: bool>(
     t1: impl InternInto<MonomorphicType>,
-    ctx: impl Into<HashSet<TVar>>,
+    ctx: impl IntoMonomorphicContext<MARKER>,
     t2: impl InternInto<MonomorphicType>,
 ) -> Constraint {
     ImplicitInstance {
         t1: t1.intern_into(),
-        ctx: Arc::new(ctx.into()),
+        ctx: ctx.into(),
         t2: t2.intern_into(),
     }
 }
