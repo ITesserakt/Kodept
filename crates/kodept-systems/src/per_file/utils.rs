@@ -264,7 +264,6 @@ where
         });
     }
 
-    #[inline]
     fn par_for_each<'s>(
         this: &mut Self::Item<'_, 's>,
         on_each: impl Fn(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>
@@ -292,23 +291,22 @@ where
     CD: QueryData,
     F: QueryFilter,
 {
-    type Target<'w, 's> = (
-        PD::Item<'w, 's>,
-        ChildrenFetch<'w, 's, CD::ReadOnly, P, T, NodeId>,
-    );
+    type Target<'w, 's> = (PD::Item<'w, 's>, ChildrenFetch<'w, 's, CD, P, T, NodeId>);
     type Node = P;
 
-    #[inline]
     fn for_each<'s>(
         this: &mut Self::Item<'_, 's>,
         mut on_each: impl FnMut(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>,
     ) {
-        _ = this
-            .iter_by_layers()
-            .try_for_each(|(id, parent, children)| on_each(id, (parent, children)));
+        let mut iter = this.iter_mut_by_layers();
+        while let Some((id, parent, children)) = iter.fetch_next() {
+            match on_each(id, (parent, children)) {
+                ControlFlow::Continue(()) => continue,
+                ControlFlow::Break(()) => break,
+            }
+        }
     }
 
-    #[inline]
     fn par_for_each<'s>(
         this: &mut Self::Item<'_, 's>,
         on_each: impl Fn(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>
@@ -316,15 +314,13 @@ where
         + Sync
         + Clone,
     ) {
-        let should_stop = AtomicBool::new(false);
-        this.par_iter_by_layers(|id, parent, children| {
-            if should_stop.load(Ordering::Acquire) {
-                return;
+        let mut iter = this.iter_mut_by_layers();
+        while let Some((id, parent, children)) = iter.fetch_next() {
+            match on_each(id, (parent, children)) {
+                ControlFlow::Continue(()) => continue,
+                ControlFlow::Break(()) => break,
             }
-            if on_each(id, (parent, children)).is_break() {
-                should_stop.store(true, Ordering::Release);
-            }
-        });
+        }
     }
 }
 
@@ -342,7 +338,6 @@ where
     );
     type Node = P;
 
-    #[inline]
     fn for_each<'s>(
         this: &mut Self::Item<'_, 's>,
         mut on_each: impl FnMut(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>,
@@ -352,7 +347,6 @@ where
             .try_for_each(|(id, parent, children)| on_each(id, (parent, children)));
     }
 
-    #[inline]
     fn par_for_each<'s>(
         this: &mut Self::Item<'_, 's>,
         on_each: impl Fn(NodeId<Self::Node>, Self::Target<'_, 's>) -> ControlFlow<()>

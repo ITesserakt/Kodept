@@ -3,12 +3,12 @@ use crate::per_file::utils::{
     IterableSystem, IterableSystemParam, Modification, ParIterableSystem, Params, StaticQuery,
 };
 use crate::utils::TryReport;
+use kodept_ast::arity::{Plural, Singular};
 use kodept_ast::prelude::{
     HierarchicalQuery, MutProperty, NarrowHierarchicalQuery, NodeId, Property,
 };
-use kodept_ast::properties::{NodeProperty, RequireProperty, SourceSpan};
-use kodept_ast::relationship::NodeRelationship;
-use kodept_ast::syntax_tree::children::{Family, MembersOf, Wrapper};
+use kodept_ast::properties::{HasProperty, NodeProperty, RequireProperty, SourceSpan};
+use kodept_ast::syntax_tree::children::{HasChild, MembersOf, Wrapper};
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeModification};
 use kodept_ast_nodes::{
     AnonFunction, Branch, Call, Condition, Else, Expression, If, Lhs, Link, Literal,
@@ -20,17 +20,18 @@ use kodept_ecs::archetype::Archetype;
 use kodept_ecs::component::{Component, ComponentIdFor};
 use kodept_ecs::exported::bevy_ecs;
 use kodept_ecs::hierarchy::ChildOf;
-use kodept_ecs::query::{AnyOf, Has, Without};
-use kodept_ecs::relationship::Relationship;
+use kodept_ecs::query::{Has, Without};
 use kodept_ecs::system::{ParamSet, Query, SystemParam};
 use kodept_inference::constraint::{eq_cst, implicit_cst};
+use kodept_inference::engine::{DefaultTypeckContext, LangItem, TypeckContext};
 use kodept_inference::process::PartialInfer;
-use kodept_inference::r#type::{MonomorphicType, PrimitiveType, TVar};
+use kodept_inference::r#type::{MonomorphicType, PolymorphicType, PrimitiveType, TVar};
 use kodept_report_macros::IntoMessage;
 use num_bigint::Sign;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::num::NonZeroU8;
+use std::sync::Arc;
 
 type Referral = (NodeId, SymbolKind);
 
@@ -39,10 +40,6 @@ type Referral = (NodeId, SymbolKind);
 pub(super) struct PartiallyTypechecked(Option<PartialInfer<Referral>>);
 
 impl PartiallyTypechecked {
-    fn new(ty: MonomorphicType) -> Self {
-        Self(Some(PartialInfer::new(ty)))
-    }
-
     pub(super) fn take(&mut self) -> PartialInfer<Referral> {
         self.0.take().expect("Cannot take partial")
     }
@@ -82,37 +79,37 @@ struct IntegerIsTooBig {
 pub(super) struct TypeckLiteral;
 
 impl ParIterableSystem for TypeckLiteral {
-    type Iterable = StaticQuery<(NodeId<Literal>, &'static Literal, Property<SourceSpan>)>;
+    type Iterable = StaticQuery<
+        (NodeId<Literal>, &'static Literal, Property<SourceSpan>),
+        Without<PartiallyTypechecked>,
+    >;
 
     fn for_each<B: Buffer>(
         &self,
-        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        mut modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
     ) -> impl TryReport {
         let (literal, &SourceSpan(span)) = params;
-        let ty = match literal {
-            Literal::Integer(x) => {
-                let Ok(bits) = u8::try_from(x.bits()) else {
-                    return Err(IntegerIsTooBig { span });
-                };
-                match (x.sign(), NonZeroU8::new(bits)) {
+
+        let literal_type = match literal {
+            Literal::Integer(x) => match u8::try_from(x.bits()) {
+                Ok(bits) => match (x.sign(), NonZeroU8::new(bits)) {
                     (Sign::NoSign, None) => PrimitiveType::custom(false, NonZeroU8::MIN),
-                    (Sign::Minus, Some(bits)) => PrimitiveType::custom(true, bits),
+                    (_, None) => panic!("Signed value has no bits: {x}"),
+                    (Sign::NoSign, _) => panic!("Zero value with bits: {x}"),
                     (Sign::Plus, Some(bits)) => PrimitiveType::custom(false, bits),
-                    (_, None) => unreachable!("Signed value has no bits"),
-                    (Sign::NoSign, Some(_)) => unreachable!("Zero has some bits"),
-                }
-            }
-            Literal::Floating(_) => {
-                // TODO: check whether value will fit into F24
-                PrimitiveType::f24()
-            }
+                    (Sign::Minus, Some(bits)) => PrimitiveType::custom(true, bits),
+                },
+                Err(_) => return Err(IntegerIsTooBig { span }),
+            },
+            Literal::Floating(_) => PrimitiveType::f24(),
             Literal::Char(_) => PrimitiveType::u8(),
             Literal::String(x) => PrimitiveType::string(x.len() as u64),
         };
 
-        modification.add_property(PartiallyTypechecked::new(ty.into()));
-
+        let item = LangItem::Type(PolymorphicType::from(literal_type));
+        let partial = DefaultTypeckContext.eval(item);
+        modification.add_property(PartiallyTypechecked::from(partial));
         Ok(())
     }
 }
@@ -125,13 +122,12 @@ impl ParIterableSystem for TypeckValue {
 
     fn for_each<B: Buffer>(
         &self,
-        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        mut modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
     ) -> impl TryReport {
-        let (&ResolvedTo { referral, kind },) = params;
-
-        let var = TVar::new();
-        let partial = PartialInfer::new(var).with_assumption((referral, kind), var);
+        let (ResolvedTo { referral, kind },) = params;
+        let item = LangItem::Value((*referral, *kind));
+        let partial = DefaultTypeckContext.eval(item);
         modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
@@ -154,26 +150,23 @@ impl IterableSystem for TypeckTuple<'_, '_> {
 
     fn for_each<B: Buffer>(
         &mut self,
-        mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        mut modification: Modification<Self::Iterable, B>,
+        params: Params<Self::Iterable>,
     ) -> impl TryReport {
         let ((), children) = params;
-        for (child_id, ()) in &children {
-            if let None = self.partials.get(child_id.entity()).ok().flatten() {
-                return ();
-            }
+        if children
+            .iter()
+            .map(|it| self.partials.get(it.0.entity()).ok().flatten())
+            .any(|it| it.is_none())
+        {
+            return ();
         }
-        let mut partial = PartialInfer::new(MonomorphicType::UNIT);
-        let tuple_ty = children
-            .into_iter()
-            .filter_map(|(child_id, ())| {
-                let mut partial = self.partials.get_mut(child_id.entity()).ok()??;
-                Some(partial.take())
-            })
-            .map(|it| partial.merge(it).0);
-        let tuple_ty = MonomorphicType::tuple(tuple_ty);
-        let partial = partial.with_type(tuple_ty);
 
+        let item = LangItem::Tuple(Box::new(children.into_iter().map(|it| {
+            let value = self.partials.get_mut(it.0.entity());
+            value.unwrap().unwrap().take()
+        })));
+        let partial = DefaultTypeckContext.eval(item);
         modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
@@ -225,44 +218,54 @@ impl IterableSystem for TypeckIf<'_, '_> {
         _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
         for (branch_id, ()) in self.branches.get_children(modification.id()) {
-            let branch_conditions = self.param_set.p0();
-            let (_, Some(_)) = branch_conditions.get_children(branch_id).collect() else {
+            let p0 = self.param_set.p0();
+            let (_, Some(_)) = p0.get_children(branch_id).collect() else {
                 return ();
             };
-            let branch_bodies = self.param_set.p1();
-            let (_, Some(_)) = branch_bodies.get_children(branch_id).collect() else {
+            let p1 = self.param_set.p1();
+            let (_, Some(_)) = p1.get_children(branch_id).collect() else {
                 return ();
             };
         }
-        let mut partial = match self.otherwise.get_children(modification.id()).collect() {
+        let otherwise = match self.otherwise.get_children(modification.id()).collect() {
+            None => kodept_inference::engine::Branch {
+                condition: PartialInfer::new(PrimitiveType::bool()),
+                body: PartialInfer::new(MonomorphicType::UNIT),
+            },
             Some((otherwise_id, ())) => {
-                let mut otherwise_bodies = self.param_set.p2();
-                let (_, Some(mut body)) = otherwise_bodies.get_children_mut(otherwise_id).collect()
-                else {
+                let mut p2 = self.param_set.p2();
+                let (_, Some(mut body)) = p2.get_children_mut(otherwise_id).collect() else {
                     return ();
                 };
-                body.take()
+                kodept_inference::engine::Branch {
+                    condition: PartialInfer::new(PrimitiveType::bool()),
+                    body: body.take(),
+                }
             }
-            None => PartialInfer::new(MonomorphicType::UNIT),
         };
 
-        for (branch_id, ()) in self.branches.get_children(modification.id()) {
-            let mut branch_conditions = self.param_set.p0();
-            let (_, condition) = branch_conditions.get_children_mut(branch_id).collect();
-            let condition = condition.unwrap().take();
+        let item = LangItem::Branches(Box::new(
+            self.branches
+                .get_children(modification.id())
+                .into_iter()
+                .map(|(id, ())| {
+                    let mut p0 = self.param_set.p0();
+                    let (_, Some(mut condition)) = p0.get_children_mut(id).collect() else {
+                        unreachable!()
+                    };
+                    let condition = condition.take();
 
-            let mut branch_bodies = self.param_set.p1();
-            let (_, body) = branch_bodies.get_children_mut(branch_id).collect();
-            let body = body.unwrap().take();
+                    let mut p1 = self.param_set.p1();
+                    let (_, Some(mut body)) = p1.get_children_mut(id).collect() else {
+                        unreachable!()
+                    };
+                    let body = body.take();
 
-            let condition_ty = partial.merge(condition);
-            let body_ty = partial.merge(body);
-            partial.constraints.extend([
-                eq_cst(condition_ty.0, PrimitiveType::Boolean),
-                eq_cst(body_ty.0, partial.current_type.0),
-            ]);
-        }
-
+                    kodept_inference::engine::Branch { condition, body }
+                })
+                .chain([otherwise]),
+        ));
+        let partial = DefaultTypeckContext.eval(item);
         modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
@@ -301,79 +304,64 @@ impl IterableSystem for TypeckCall<'_, '_> {
         mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
         _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        let lhs = self.param_set.p0();
-        if lhs
+        let p1 = self.param_set.p1();
+        if p1
             .get_children(modification.id())
             .into_iter()
             .any(|it| it.1.is_none())
         {
             return ();
         }
-        let rhs = self.param_set.p1();
-        if rhs
-            .get_children(modification.id())
-            .into_iter()
-            .any(|it| it.1.is_none())
-        {
-            return ();
-        }
-
-        let tv = TVar::new();
-        let mut partial = PartialInfer::new(tv);
-
-        let lhs_ty = {
-            let mut lhs_fetch = self.param_set.p0();
-            let (_, lhs) = lhs_fetch.get_children_mut(modification.id()).collect();
-            let lhs_partial = lhs.unwrap().take();
-
-            partial.merge(lhs_partial).0
+        let callable = {
+            let mut p0 = self.param_set.p0();
+            let (_, Some(mut callable)) = p0.get_children_mut(modification.id()).collect() else {
+                return ();
+            };
+            callable.take()
         };
 
-        let mut rhs = self.param_set.p1();
-        let mut inputs = vec![];
-        for (_, rhs) in rhs.get_children_mut(modification.id()) {
-            let rhs = rhs.unwrap().take();
-            inputs.push(partial.merge(rhs).0);
-        }
-        let expected_func_ty = match &*inputs {
-            [] => MonomorphicType::fun1(MonomorphicType::UNIT, tv),
-            _ => inputs
-                .into_iter()
-                .rfold(MonomorphicType::from(tv), |acc, next| {
-                    MonomorphicType::fun1(next, acc)
-                }),
+        let mut p1 = self.param_set.p1();
+        let item = LangItem::Call {
+            callable,
+            arguments: Box::new(
+                p1.get_children_mut(modification.id())
+                    .into_iter()
+                    .map(|it| it.1.unwrap().take())
+                    .collect::<Vec<_>>()
+                    .into_iter(),
+            ),
         };
-
-        partial.constraints.push(eq_cst(lhs_ty, expected_func_ty));
+        let partial = DefaultTypeckContext.eval(item);
         modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
 
 #[derive(SystemParam)]
-pub(super) struct TypeckLink<'w, 's> {
-    links: HierarchicalQuery<
-        'w,
-        's,
+pub(super) struct TypeckLink;
+
+impl ParIterableSystem for TypeckLink {
+    type Iterable = HierarchicalQuery<
+        'static,
+        'static,
         Link,
         Expression,
         (),
         Option<MutProperty<PartiallyTypechecked>>,
         Without<PartiallyTypechecked>,
-    >,
-}
-
-impl IterableSystem for TypeckLink<'_, '_> {
-    type Iterable = StaticQuery<(NodeId<Link>,), Without<PartiallyTypechecked>>;
+    >;
 
     fn for_each<B: Buffer>(
-        &mut self,
+        &self,
         mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        let (_, Some(mut expr)) = self.links.get_children_mut(modification.id()).collect() else {
+        let ((), params_fetch) = params;
+        let (_, Some(mut expr_partial)) = params_fetch.collect() else {
             return ();
         };
-        let partial = expr.take();
+        let partial = expr_partial.take();
+        let item = LangItem::Forward(partial);
+        let partial = DefaultTypeckContext.eval(item);
         modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
@@ -384,74 +372,165 @@ impl<'a> Wrapper for ComponentIdWrapper<'a> {
 }
 
 #[derive(SystemParam)]
-pub(super) struct TypeckBlock<'w, 's> {
-    statements: HierarchicalQuery<
+pub(super) struct CollectMonomorphicContext<'w, 's> {
+    parents: Query<
         'w,
         's,
+        (
+            NodeId,
+            Option<&'static ChildOf>,
+            Has<UserFunction>,
+            Has<AnonFunction>,
+        ),
+    >,
+    user_function_params: NarrowHierarchicalQuery<
+        'w,
+        's,
+        UserFunction,
+        Param,
+        kodept_ast_nodes::Params,
+        (),
+        Property<ParamTyStub>,
+    >,
+    anon_function_params: NarrowHierarchicalQuery<
+        'w,
+        's,
+        AnonFunction,
+        Param,
+        kodept_ast_nodes::Params,
+        (),
+        Property<ParamTyStub>,
+    >,
+}
+
+#[derive(Debug, Component)]
+#[component(storage = "SparseSet")]
+#[component(immutable)]
+pub(super) struct MonomorphicContext(Arc<HashSet<TVar>>);
+
+impl NodeProperty for MonomorphicContext {}
+impl RequireProperty<MonomorphicContext> for NormalizedBlock {}
+
+impl ParIterableSystem for CollectMonomorphicContext<'_, '_> {
+    type Iterable = StaticQuery<(NodeId<NormalizedBlock>,)>;
+
+    fn for_each<B: Buffer>(
+        &self,
+        mut modification: Modification<Self::Iterable, B>,
+        _: Params<Self::Iterable>,
+    ) -> impl TryReport {
+        let mut current = modification.id().entity();
+        let mut ctx = HashSet::new();
+
+        loop {
+            let Ok((id, parent, is_user_fn, is_anon_fn)) = self.parents.get(current) else {
+                return ();
+            };
+            let Some(&ChildOf(parent)) = parent else {
+                break;
+            };
+
+            if is_anon_fn {
+                let id = id.cast();
+                let params = self.anon_function_params.get_children(id);
+                ctx.extend(params.into_iter().map(|it| it.1.0));
+            } else if is_user_fn {
+                let id = id.cast();
+                let params = self.user_function_params.get_children(id);
+                ctx.extend(params.into_iter().map(|it| it.1.0));
+                break;
+            }
+
+            current = parent;
+        }
+
+        modification.add_property(MonomorphicContext(Arc::new(ctx)));
+    }
+}
+
+#[derive(SystemParam)]
+pub(super) struct TypeckBlock<'s> {
+    statement_component_ids: MembersOf<NormalizedBlock, Statement, ComponentIdWrapper<'s>>,
+}
+
+impl TypeckBlock<'_> {
+    fn resolve_variables(
+        statement_partial: &mut PartialInfer<Referral>,
+        variables: &[(Referral, &MonomorphicType)],
+        ctx: Arc<HashSet<TVar>>,
+    ) {
+        for (var_referral, var_type) in variables {
+            let assumptions = statement_partial.assumptions.resolve_take(var_referral);
+            statement_partial.constraints.extend(
+                assumptions
+                    .into_iter()
+                    .map(|it| implicit_cst(it.0, &ctx, *var_type)),
+            );
+        }
+    }
+}
+
+impl ParIterableSystem for TypeckBlock<'_> {
+    type Iterable = HierarchicalQuery<
+        'static,
+        'static,
         NormalizedBlock,
         Statement,
-        (),
+        Property<MonomorphicContext>,
         (
             &'static Archetype,
             Option<MutProperty<PartiallyTypechecked>>,
         ),
         Without<PartiallyTypechecked>,
-    >,
-    statement_component_ids: MembersOf<NormalizedBlock, Statement, ComponentIdWrapper<'s>>,
-}
-
-impl IterableSystem for TypeckBlock<'_, '_> {
-    type Iterable = StaticQuery<(NodeId<NormalizedBlock>,), Without<PartiallyTypechecked>>;
+    >;
 
     fn for_each<B: Buffer>(
-        &mut self,
+        &self,
         mut modification: NodeModification<<Self::Iterable as IterableSystemParam>::Node, B>,
-        _: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
+        params: <Self::Iterable as IterableSystemParam>::Target<'_, '_>,
     ) -> impl TryReport {
-        if self
-            .statements
-            .get_children(modification.id())
-            .into_iter()
-            .any(|it| it.1.1.is_none())
-        {
+        let (MonomorphicContext(ctx), statements) = params;
+        if statements.iter().any(|it| it.1.1.is_none()) {
             return ();
         }
-        let tv = TVar::new();
-        let mut result = PartialInfer::new(tv);
+        let mut container = PartialInfer::new(TVar::new());
+        let mut any_returns = false;
+        let mut declared_variables = Vec::new();
 
-        for (_, (archetype, partial)) in self.statements.get_children_mut(modification.id()) {
-            let partial = partial.unwrap().take();
-            if archetype.contains(self.statement_component_ids.0.get()) {
-                // statement is block
-                result.merge(partial);
-            } else if archetype.contains(self.statement_component_ids.1.get()) {
-                // statement is call
-                result.merge(partial);
-            } else if archetype.contains(self.statement_component_ids.2.get()) {
-                // statement is if
-                result.merge(partial);
-            } else if archetype.contains(self.statement_component_ids.3.get()) {
-                // statement is link
-                let link_ty = result.merge(partial);
-                result.constraints.push(eq_cst(tv, link_ty.0));
-            } else if archetype.contains(self.statement_component_ids.4.get()) {
-                // statement is user function
+        for (statement_id, (archetype, partial)) in statements {
+            let mut partial = partial.unwrap().take();
+            Self::resolve_variables(&mut partial, &declared_variables, ctx.clone());
+            let statement_ty = container.merge(partial);
+
+            if archetype.contains(self.statement_component_ids.3.get()) {
+                // statement is a link
+                any_returns = true;
+                container
+                    .constraints
+                    .push(eq_cst(statement_ty.0, container.current_type.0));
             } else if archetype.contains(self.statement_component_ids.5.get()) {
-                // statement is variable
-                _ = result.merge(partial);
+                // statement is a variable
+                declared_variables.push(((statement_id, SymbolKind::Variable), statement_ty.0));
             }
         }
-
-        modification.add_property(PartiallyTypechecked::from(result));
+        if !any_returns {
+            container
+                .constraints
+                .push(eq_cst(MonomorphicType::UNIT, container.current_type.0));
+        }
+        modification.add_property(PartiallyTypechecked::from(container));
     }
 }
 
 #[derive(SystemParam)]
-pub(super) struct TypeckAnonFunction<'w, 's> {
+pub(super) struct TypeckFunction<'w, 's, T>
+where
+    T: HasChild<NormalizedBlock> + HasChild<Param, kodept_ast_nodes::Params>,
+{
     bodies: NarrowHierarchicalQuery<
         'w,
         's,
-        AnonFunction,
+        T,
         NormalizedBlock,
         (),
         (),
@@ -461,7 +540,7 @@ pub(super) struct TypeckAnonFunction<'w, 's> {
     params: NarrowHierarchicalQuery<
         'w,
         's,
-        AnonFunction,
+        T,
         Param,
         kodept_ast_nodes::Params,
         (),
@@ -469,144 +548,54 @@ pub(super) struct TypeckAnonFunction<'w, 's> {
     >,
 }
 
-fn apply_bound(
-    bound: &ResolvedTypeAnnotation,
-    partial: &mut PartialInfer<Referral>,
-    tv: MonomorphicType,
-) {
-    match bound {
-        ResolvedTypeAnnotation::Infer => {}
-        &ResolvedTypeAnnotation::Named(x) => {
-            partial.assumptions.push_single((x, SymbolKind::Type), tv)
+fn convert_annotation(
+    input: &ResolvedTypeAnnotation,
+) -> kodept_inference::engine::Annotation<'_, Referral> {
+    match input {
+        ResolvedTypeAnnotation::Infer => kodept_inference::engine::Annotation::None,
+        ResolvedTypeAnnotation::Named(x) => {
+            kodept_inference::engine::Annotation::Single((*x, SymbolKind::Type))
         }
-        ResolvedTypeAnnotation::Tuple(items) => {
-            let tuple = items.iter().map(|it| {
-                let tp = TVar::new();
-                apply_bound(it, partial, tp.into());
-                tp
-            });
-            let tu = MonomorphicType::tuple(tuple);
-            partial.constraints.push(eq_cst(tv, tu));
-        }
+        ResolvedTypeAnnotation::Tuple(vec) => kodept_inference::engine::Annotation::Tuple(
+            Box::new(vec.iter().map(|x| convert_annotation(x))),
+        ),
     }
 }
 
-impl IterableSystem for TypeckAnonFunction<'_, '_> {
-    type Iterable = StaticQuery<(NodeId<AnonFunction>,), Without<PartiallyTypechecked>>;
+impl<T> IterableSystem for TypeckFunction<'_, '_, T>
+where
+    T: HasChild<NormalizedBlock, Arity = Singular>,
+    T: HasChild<Param, kodept_ast_nodes::Params, Arity = Plural>,
+    T: HasProperty<PartiallyTypechecked>,
+{
+    type Iterable = StaticQuery<(NodeId<T>,), Without<PartiallyTypechecked>>;
 
     fn for_each<B: Buffer>(
         &mut self,
         mut modification: Modification<Self::Iterable, B>,
         _: Params<Self::Iterable>,
     ) -> impl TryReport {
-        let (_, Some(mut body_partial)) = self.bodies.get_children_mut(modification.id()).collect()
-        else {
-            return ();
+        let body = {
+            let (_, Some(mut body)) = self.bodies.get_children_mut(modification.id()).collect()
+            else {
+                return ();
+            };
+            body.take()
         };
 
-        let mut body_ty = body_partial.take();
-
-        let mut inputs_iter = self.params.get_children(modification.id()).into_iter().map(
-            |(param_id, (bound, stub))| {
-                let tv = stub.0;
-                let param_assumptions = body_ty
-                    .assumptions
-                    .resolve_take(&(param_id.cast(), SymbolKind::Parameter));
-                for assumption in param_assumptions.into_iter() {
-                    body_ty.constraints.push(eq_cst(assumption.0, tv));
+        let fetch = self.params.get_children(modification.id());
+        let item = LangItem::Lambda {
+            body,
+            parameters: Box::new(fetch.iter().map(|(id, (annotation, &ParamTyStub(tv)))| {
+                kodept_inference::engine::Parameter {
+                    tv,
+                    name: (id.cast(), SymbolKind::Parameter),
+                    bound: convert_annotation(annotation),
                 }
-                apply_bound(bound, &mut body_ty, tv.into());
-                tv
-            },
-        );
-
-        let expected_func_ty = match inputs_iter.next() {
-            None => MonomorphicType::fun1(MonomorphicType::UNIT, body_ty.current_type.0),
-            Some(head) => {
-                let inputs = inputs_iter.collect::<Vec<_>>();
-                MonomorphicType::fun(head, inputs, body_ty.current_type.0.clone())
-            }
+            })),
         };
-
-        modification.add_property(PartiallyTypechecked::from(
-            PartialInfer::new(expected_func_ty)
-                .with_assumptions(body_ty.assumptions)
-                .with_constraints(body_ty.constraints),
-        ));
-    }
-}
-
-#[derive(SystemParam)]
-pub(super) struct TypeckUserFunction<'w, 's> {
-    block: NarrowHierarchicalQuery<
-        'w,
-        's,
-        UserFunction,
-        NormalizedBlock,
-        (),
-        (),
-        Option<MutProperty<PartiallyTypechecked>>,
-        Without<PartiallyTypechecked>,
-    >,
-    params: NarrowHierarchicalQuery<
-        'w,
-        's,
-        UserFunction,
-        Param,
-        kodept_ast_nodes::Params,
-        (),
-        (Property<ResolvedTypeAnnotation>, Property<ParamTyStub>),
-        Without<PartiallyTypechecked>,
-    >,
-}
-
-impl IterableSystem for TypeckUserFunction<'_, '_> {
-    type Iterable = StaticQuery<
-        (NodeId<UserFunction>, Property<ResolvedTypeAnnotation>),
-        Without<PartiallyTypechecked>,
-    >;
-
-    fn for_each<B: Buffer>(
-        &mut self,
-        mut modification: Modification<Self::Iterable, B>,
-        params: Params<Self::Iterable>,
-    ) -> impl TryReport {
-        let (_, Some(mut block_partial)) = self.block.get_children_mut(modification.id()).collect()
-        else {
-            return ();
-        };
-        let mut block_ty = block_partial.take();
-
-        let output_ty = block_ty.current_type.0.clone();
-        let mut inputs_iter = self.params.get_children(modification.id()).into_iter().map(
-            |(param_id, (bound, stub))| {
-                let tv = stub.0;
-                let param_assumptions = block_ty
-                    .assumptions
-                    .resolve_take(&(param_id.cast(), SymbolKind::Parameter));
-                for assumption in param_assumptions.into_iter() {
-                    block_ty.constraints.push(eq_cst(assumption.0, tv));
-                }
-                apply_bound(bound, &mut block_ty, tv.into());
-                tv
-            },
-        );
-
-        let expected_func_ty = match inputs_iter.next() {
-            None => MonomorphicType::fun1(MonomorphicType::UNIT, block_ty.current_type.0),
-            Some(head) => {
-                let inputs = inputs_iter.collect::<Vec<_>>();
-                MonomorphicType::fun(head, inputs, output_ty.clone())
-            }
-        };
-
-        apply_bound(params.0, &mut block_ty, output_ty);
-
-        modification.add_property(PartiallyTypechecked::from(
-            PartialInfer::new(expected_func_ty)
-                .with_assumptions(block_ty.assumptions)
-                .with_constraints(block_ty.constraints),
-        ));
+        let partial = DefaultTypeckContext.eval(item);
+        modification.add_property(PartiallyTypechecked::from(partial));
     }
 }
 
@@ -634,99 +623,35 @@ impl ParIterableSystem for FillParamTyStubs {
     }
 }
 
-type ChildrenFor<P, Tag> = <<P as NodeRelationship<Tag, <P as Family<Tag>>::Arity>>::Relationship as Relationship>::RelationshipTarget;
-
 #[derive(SystemParam)]
-pub(super) struct TypeckVariable<'w, 's> {
-    ps: ParamSet<
-        'w,
-        's,
-        (
-            (
-                Query<
-                    'w,
-                    's,
-                    (
-                        NodeId,
-                        &'static ChildOf,
-                        Has<UserFunction>,
-                        Has<AnonFunction>,
-                    ),
-                >,
-                StaticQuery<&'static ParamTyStub>,
-                StaticQuery<
-                    Option<
-                        AnyOf<(
-                            &'static ChildrenFor<UserFunction, kodept_ast_nodes::Params>,
-                            &'static ChildrenFor<AnonFunction, kodept_ast_nodes::Params>,
-                        )>,
-                    >,
-                >,
-            ),
-            StaticQuery<&'static mut PartiallyTypechecked>,
-        ),
-    >,
-}
+pub(super) struct TypeckVariable;
 
-impl IterableSystem for TypeckVariable<'_, '_> {
+impl ParIterableSystem for TypeckVariable {
     type Iterable = HierarchicalQuery<
         'static,
         'static,
         Variable,
         Expression,
-        (),
-        (),
+        Property<ResolvedTypeAnnotation>,
+        Option<MutProperty<PartiallyTypechecked>>,
         Without<PartiallyTypechecked>,
     >;
 
     fn for_each<B: Buffer>(
-        &mut self,
+        &self,
         mut modification: Modification<Self::Iterable, B>,
         params: Params<Self::Iterable>,
     ) -> impl TryReport {
-        let ((), expr_fetch) = params;
-        let (expr_id, ()) = expr_fetch.collect();
-        let mut expr_partial = {
-            let mut p1 = self.ps.p1();
-            let Ok(mut expr_partial) = p1.get_mut(expr_id.entity()) else {
-                return ();
-            };
-            expr_partial.take()
+        let (annotation, expr_fetch) = params;
+        let (_, Some(mut expr_partial)) = expr_fetch.collect() else {
+            return ();
         };
-        let (parents, param_stubs, params) = self.ps.p0();
 
-        let mut current = modification.id().entity();
-        let mut monomorphic_ctx = HashSet::new();
-        loop {
-            let Ok((id, &ChildOf(parent), is_user_function, is_anon_function)) =
-                parents.get(current)
-            else {
-                break;
-            };
-            current = parent;
-            if is_user_function || is_anon_function {
-                let children = match params.get(id.entity()).unwrap() {
-                    None => continue,
-                    Some((Some(children), Some(_))) => children,
-                    Some((Some(children), None)) | Some((None, Some(children))) => children,
-                    _ => unreachable!(),
-                };
-                let param_stubs_fetch = param_stubs.iter_many(children);
-                monomorphic_ctx.extend(param_stubs_fetch.map(|it| it.0));
-            }
-        }
-
-        let tys = expr_partial
-            .assumptions
-            .resolve_take(&(modification.id().cast(), SymbolKind::Variable));
-        let im_cs = tys
-            .into_iter()
-            .map(|it| implicit_cst(it.0, monomorphic_ctx.clone(), expr_partial.current_type.0));
-
-        let resulting_partial = PartialInfer::new(MonomorphicType::UNIT)
-            .with_constraints(im_cs)
-            .with_constraints(expr_partial.constraints)
-            .with_assumptions(expr_partial.assumptions);
-        modification.add_property(PartiallyTypechecked::from(resulting_partial));
+        let item = LangItem::Variable {
+            bound: convert_annotation(annotation),
+            body: expr_partial.take(),
+        };
+        let partial = DefaultTypeckContext.eval(item);
+        modification.add_property(PartiallyTypechecked::from(partial));
     }
 }

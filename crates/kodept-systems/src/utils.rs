@@ -8,38 +8,38 @@ use std::fmt::Debug;
 use std::ops::ControlFlow;
 use tracing::trace;
 
-pub(super) trait TryReport {
+pub(super) trait TryReport<T = ()> {
     type Output: IntoMessage;
 
-    fn branch(self) -> ControlFlow<Self::Output, ()>;
+    fn branch(self) -> ControlFlow<Self::Output, T>;
 }
 
-impl TryReport for () {
+impl<T> TryReport<T> for T {
     type Output = Infallible;
 
     #[inline(always)]
-    fn branch(self) -> ControlFlow<Self::Output, ()> {
-        ControlFlow::Continue(())
+    fn branch(self) -> ControlFlow<Self::Output, T> {
+        ControlFlow::Continue(self)
     }
 }
 
-impl<T: IntoMessage> TryReport for Result<(), T> {
-    type Output = T;
+impl<T, R: IntoMessage> TryReport<T> for Result<T, R> {
+    type Output = R;
 
     #[inline(always)]
-    fn branch(self) -> ControlFlow<Self::Output, ()> {
+    fn branch(self) -> ControlFlow<Self::Output, T> {
         match self {
-            Ok(()) => ControlFlow::Continue(()),
+            Ok(x) => ControlFlow::Continue(x),
             Err(e) => ControlFlow::Break(e),
         }
     }
 }
 
-impl<T: IntoMessage> TryReport for ControlFlow<T> {
-    type Output = T;
+impl<T, E: IntoMessage> TryReport<T> for ControlFlow<E, T> {
+    type Output = E;
 
     #[inline(always)]
-    fn branch(self) -> ControlFlow<Self::Output, ()> {
+    fn branch(self) -> ControlFlow<E, T> {
         self
     }
 }

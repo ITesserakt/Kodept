@@ -1,14 +1,17 @@
 mod first_part;
 
+use std::collections::HashSet;
 use crate::per_file::typeck::first_part::{
-    FillParamTyStubs, PartiallyTypechecked, TypeckAnonFunction, TypeckBlock, TypeckCall, TypeckIf,
-    TypeckLink, TypeckLiteral, TypeckTuple, TypeckUserFunction, TypeckValue, TypeckVariable,
+    CollectMonomorphicContext, FillParamTyStubs, MonomorphicContext, PartiallyTypechecked,
+    TypeckBlock, TypeckCall, TypeckFunction, TypeckIf, TypeckLink, TypeckLiteral, TypeckTuple,
+    TypeckValue, TypeckVariable,
 };
 use crate::per_file::utils::{IntoNodeSystem, IntoParNodeSystem};
 use kodept_ast::prelude::NodeId;
 use kodept_ast::properties::Name;
+use kodept_ast_nodes::{AnonFunction, UserFunction};
 use kodept_ecs::exported::bevy_ecs;
-use kodept_ecs::query::Added;
+use kodept_ecs::query::{Added, With};
 use kodept_ecs::schedule::{IntoScheduleConfigs, Schedule, ScheduleLabel};
 use kodept_ecs::system::{Commands, Query};
 use kodept_ecs::world::World;
@@ -37,8 +40,9 @@ fn build(engine: &mut PhaseEngine<TypeCheckPhase>) {
 
     engine.add_systems(
         (
+            CollectMonomorphicContext::par_system(),
             partial_propagation_system,
-            remove_empty_partials,
+            cleanup,
             log_partials,
         )
             .chain(),
@@ -51,11 +55,11 @@ fn partial_propagation_system(world: &mut World) {
         TypeckIf::system(),
         TypeckTuple::system(),
         TypeckCall::system(),
-        TypeckBlock::system(),
-        TypeckLink::system(),
-        TypeckAnonFunction::system(),
-        TypeckUserFunction::system(),
-        TypeckVariable::system(),
+        TypeckBlock::par_system(),
+        TypeckLink::par_system(),
+        TypeckFunction::<AnonFunction>::system(),
+        TypeckFunction::<UserFunction>::system(),
+        TypeckVariable::par_system(),
     ));
     world.add_schedule(schedule);
     let mut any_partial_added_state = world.query_filtered::<(), Added<PartiallyTypechecked>>();
@@ -73,13 +77,20 @@ fn partial_propagation_system(world: &mut World) {
     }
 }
 
-fn remove_empty_partials(partials: Query<(NodeId, &PartiallyTypechecked)>, mut commands: Commands) {
+fn cleanup(
+    partials: Query<(NodeId, &PartiallyTypechecked)>,
+    monomorphic_contexts: Query<NodeId, With<MonomorphicContext>>,
+    mut commands: Commands,
+) {
     for (id, partial) in partials {
         if partial.is_empty() {
             commands
                 .entity(id.entity())
                 .remove::<PartiallyTypechecked>();
         }
+    }
+    for id in monomorphic_contexts {
+        commands.entity(id.entity()).remove::<MonomorphicContext>();
     }
 }
 
@@ -90,10 +101,15 @@ fn log_partials(
     for (name, mut partial) in partials {
         let partial = partial.take();
         let result = partial.resolve(|_| Ok::<_, Infallible>(None));
-        reporter.report_ad_hoc(|| {
-            Diagnostic::new(Severity::Note)
-                .with_message(format!("{result:?}"))
-                .with_note(format!("{name:?}"))
-        });
+        match result {
+            Ok((s, t)) => reporter.report_ad_hoc(|| {
+                let gen_t = t.0.generalize(&HashSet::new());
+                Diagnostic::new(Severity::Note)
+                    .with_message(format!("{} :: {gen_t}", name.unwrap_or(&Name::new("UNKNOWN"))))
+                    .with_note(format!("{s}"))
+            }),
+            Err(e) => reporter
+                .report_ad_hoc(|| Diagnostic::new(Severity::Error).with_message(format!("{e:?}"))),
+        }
     }
 }
