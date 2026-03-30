@@ -1,9 +1,17 @@
 module Test =>
 
 fun a() {
-	val a = (1, 2, 3)
-	val b = (a, 2, 3)
-	val c = ((a, b), 3)
-	val d = (a, (b, ), c)
-	val e = (a, b, c)
+	val a = (1, 2, 3, 3)
+	val b = (a, a, a, a)
+	val c = (b, b, b, b)
+	val d = (c, c, c, c)
+	val e = (d, d, d, d)
+	val f = (e, e, e, e)
+	val g = (f, f, f, f)
+	val h = (g, g, g, g)
+	val i = (h, h, h, h)
+	val j = (i, i, i, i)
+	val k = (j, j, j, j)
+	val l = (k, k, k, k)
+	val m = (l, l, l, l)
 }

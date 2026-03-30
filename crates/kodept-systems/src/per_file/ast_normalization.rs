@@ -2,10 +2,11 @@ use crate::per_file::utils::{IntoParNodeSystem, IterableSystemParam, ParIterable
 use crate::utils::TryReport;
 use kodept_ast::prelude::{HierarchicalQuery, NodeId, Property};
 use kodept_ast::properties::{Lexeme, Node, NodeProperty, RequireProperty, SourceSpan};
+use kodept_ast::syntax_tree::children::{MembersOf, Wrapper};
 use kodept_ast::syntax_tree::experimental::{Buffer, NodeBuilder, NodeModification};
 use kodept_ast_nodes::{
-    AnonFunction, Block, Expression, ForeignFunction, Link, Literal, Module, NormalizedBlock,
-    Param, Statement, Tuple, UserFunction, Value, Variable,
+    AnonFunction, Block, Expression, ForeignFunction, Link, Module, NormalizedBlock, Param,
+    Statement, Tuple, UserFunction, Value, Variable,
 };
 use kodept_core::code_point::Span;
 use kodept_ecs::archetype::Archetype;
@@ -20,6 +21,7 @@ use kodept_frontend::define_phase;
 use kodept_frontend::engine::PhaseEngine;
 use kodept_frontend::engine::reporter::Reporter;
 use kodept_report_macros::IntoMessage;
+use std::marker::PhantomData;
 
 define_phase! {
     pub phase AstNormalizationPhase[AstNormalizationPhaseLabel];
@@ -126,24 +128,56 @@ fn ensure_no_non_normalized_blocks(
     );
 }
 
+struct Helper<'a>(PhantomData<&'a ()>);
+
+impl<'a> Wrapper for Helper<'a> {
+    type Wrapped<T: Component> = ComponentIdFor<'a, T>;
+}
+
 #[derive(SystemParam)]
 struct NormalizeBlock<'s> {
-    anon_function: ComponentIdFor<'s, AnonFunction>,
-    literal: ComponentIdFor<'s, Literal>,
-    tuple: ComponentIdFor<'s, Tuple>,
+    block_members: MembersOf<Block, Statement, Helper<'s>>,
+    // since `Value` member is commented away we need to include it manually here
     value: ComponentIdFor<'s, Value>,
-    user_function: ComponentIdFor<'s, UserFunction>,
-    link: ComponentIdFor<'s, Link>,
-    block: ComponentIdFor<'s, Block>,
+    // ordinary block cannot contain normalized one, but it can appear within that system
+    normalized_block: ComponentIdFor<'s, NormalizedBlock>,
 }
 
 impl NormalizeBlock<'_> {
+    #[inline]
     fn is_non_normalized(&self, archetype: &Archetype) -> bool {
-        archetype.contains(self.anon_function.get())
-            || archetype.contains(self.literal.get())
-            || archetype.contains(self.tuple.get())
-            || archetype.contains(self.value.get())
-            || archetype.contains(self.block.get())
+        let component_ids = [
+            self.block_members.0.get(),
+            self.block_members.5.get(),
+            self.block_members.6.get(),
+            self.value.get(),
+        ];
+
+        component_ids.into_iter().any(|it| archetype.contains(it))
+    }
+
+    #[inline]
+    fn is_linkable(&self, archetype: &Archetype) -> bool {
+        let component_ids = [
+            self.block_members.1.get(),
+            self.normalized_block.get(),
+            self.value.get(),
+            self.block_members.0.get(),
+            self.block_members.2.get(),
+            self.block_members.3.get(),
+            self.block_members.5.get(),
+            self.block_members.6.get(),
+        ];
+
+        component_ids.into_iter().any(|it| archetype.contains(it))
+    }
+
+    fn is_ignored(&self, archetype: &Archetype) -> bool {
+        archetype.contains(self.block_members.7.get())
+    }
+
+    fn is_link(&self, archetype: &Archetype) -> bool {
+        archetype.contains(self.block_members.4.get())
     }
 }
 
@@ -174,8 +208,8 @@ impl ParIterableSystem for NormalizeBlock<'_> {
                 continue;
             }
 
-            if archetype.contains(self.user_function.get()) {
-            } else if self.is_non_normalized(archetype) {
+            if self.is_ignored(archetype) {
+            } else if self.is_non_normalized(archetype) || self.is_linkable(archetype) {
                 linked = true;
                 let statement = modification.remove_child_unchecked::<Statement>(statement_id);
 
@@ -186,7 +220,7 @@ impl ParIterableSystem for NormalizeBlock<'_> {
                             .with_property(*lexeme),
                     )
                     .add_child_unchecked::<Expression>(statement);
-            } else if archetype.contains(self.link.get()) {
+            } else if self.is_link(archetype) {
                 linked = true;
             } else {
                 linked = true;

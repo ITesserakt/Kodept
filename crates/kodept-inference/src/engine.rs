@@ -220,7 +220,7 @@ impl<Name> TypeckContext<Name> for DefaultTypeckContext {}
 
 #[cfg(test)]
 mod tests {
-    use crate::constraint::{Constraint, eq_cst, implicit_cst};
+    use crate::constraint::{eq_cst, implicit_cst};
     use crate::engine::{
         Annotation, Branch, DefaultTypeckContext, LangItem, Parameter, TypeckContext,
     };
@@ -706,6 +706,20 @@ mod tests {
                 it.ret(v("zero").call(["zero", "id"]));
             }),
             "()",
+        )
+    }
+
+    #[test]
+    fn test_compose_fn() {
+        test(
+            scope(|mut it| {
+                it.var(
+                    "compose",
+                    lambda(["f", "g"], lambda(["x"], v("f").call([v("g").call(["x"])]))),
+                );
+                it.ret(v("compose"))
+            }),
+            "∀a, b, c => (a -> b) -> (c -> a) -> c -> b",
         )
     }
 }

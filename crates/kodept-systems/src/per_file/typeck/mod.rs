@@ -109,7 +109,7 @@ fn log_partials(
                     .with_note(format!("{s}"))
             }),
             Err(e) => reporter
-                .report_ad_hoc(|| Diagnostic::new(Severity::Error).with_message(format!("{e:?}"))),
+                .report_ad_hoc(|| Diagnostic::new(Severity::Warning).with_message(format!("{e:?}"))),
         }
     }
 }
